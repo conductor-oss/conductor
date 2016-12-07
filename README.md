@@ -1,6 +1,6 @@
 # Conductor
 
-![Conductor](http://Netflix.github.io/conductor/img/corner-logo2.png)
+![Conductor](https://netflix.github.io/conductor/img/corner-logo2.png)
 
 [![Build Status](https://travis-ci.org/Netflix/conductor.svg?branch=master)](https://travis-ci.org/Netflix/conductor)
 
