@@ -22,7 +22,6 @@ import java.util.function.Supplier;
 
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
 /**
  * 
@@ -35,9 +34,9 @@ public interface Worker {
 	
 	/**
 	 * Executes a task and returns the updated task.
-	 * @param task
+	 * @param task Task to be executed.
 	 * @return
-	 * For tasks which are async, return the task object with {@link TaskResult.Status.IN_PROGRESS} 
+	 * If the task is not completed yet, return with the status as IN_PROGRESS. 
 	 */
 	public Task execute(Task task);
 	
@@ -45,7 +44,7 @@ public interface Worker {
 	 * Called when the task coordinator fails to update the task to the server.
 	 * Client should store the task id (in a database) and retry the update later
 	 * @see TaskClient#updateTask(Task)
-	 * @param task
+	 * @param task Task which cannot be updated back to the server.
 	 * 
 	 */
 	public default void onErrorUpdate(Task task){
@@ -54,7 +53,7 @@ public interface Worker {
 
 	/**
 	 * Override this method to pause the worker from polling. 
-	 * @return
+	 * @return true if the worker is paused and no more tasks should be polled from server.
 	 */
 	public default boolean paused() {
 		return false;
@@ -62,7 +61,7 @@ public interface Worker {
 	
 	/**
 	 * 
-	 * @return returns NetflixConfiguration.getServerId() -> Override this method to app specific rules
+	 * @return returns NetflixConfiguration.getServerId().  Override this method to app specific rules
 	 */
 	public default String getIdentity(){
 		String serverId;

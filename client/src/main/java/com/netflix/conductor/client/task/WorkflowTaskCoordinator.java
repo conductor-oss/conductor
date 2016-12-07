@@ -78,10 +78,10 @@ public class WorkflowTaskCoordinator {
 	/**
 	 * 
 	 * @param ec Eureka client - used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is terminated.  If passed null, discovery check is not done.
-	 * @param client 
+	 * @param client Task client used to communicate to conductor server. 
 	 * @param threadCount # of threads assigned to the workers.  Should be at-least the size of taskWorkers to avoid starvation in a busy system.
-	 * @param taskWorkers
-	 * <p><b>Important Note:<b></p>Please see {@link #init()} method.  The method must be called after this constructor for the polling to start.  
+	 * @param taskWorkers workers that will be used for polling work and task execution.
+	 * Please see {@link #init()} method.  The method must be called after this constructor for the polling to start.  
 	 */
 	public WorkflowTaskCoordinator(EurekaClient ec, TaskClient client, int threadCount, Worker...taskWorkers) {
 		this(ec, client, threadCount, Arrays.asList(taskWorkers));
@@ -91,10 +91,11 @@ public class WorkflowTaskCoordinator {
 	/**
 	 *
 	 * @param ec Eureka client - used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is terminated.  If passed null, discovery check is not done.
-	 * @param client
+	 * @param client TaskClient used to communicate to the conductor server
 	 * @param threadCount # of threads assigned to the workers.  Should be at-least the size of taskWorkers to avoid starvation in a busy system.
-	 * @param taskWorkers
-	 * <p><b>Important Note:<b></p>Please see {@link #init()} method.  The method must be called after this constructor for the polling to start.
+	 * @param taskWorkers workers that will be used for polling work and task execution.
+	 * 
+	 * Please see {@link #init()} method.  The method must be called after this constructor for the polling to start.
 	 */
 	public WorkflowTaskCoordinator(EurekaClient ec, TaskClient client, int threadCount, Iterable<Worker> taskWorkers) {
 		this.ec = ec;
@@ -108,7 +109,7 @@ public class WorkflowTaskCoordinator {
 	/**
 	 * 
 	 * @param pollInterval polling interval in <b>millisecond</b>.
-	 * @return
+	 * @return Returns the current instance.
 	 */
 	public WorkflowTaskCoordinator withPollInterval(int pollInterval) {
 		this.pollInterval = pollInterval;
@@ -118,7 +119,7 @@ public class WorkflowTaskCoordinator {
 	/**
 	 * 
 	 * @param sleepWhenRetry time in millisecond, for which the thread should sleep when task update call fails, before retrying the operation.
-	 * @return
+	 * @return Returns the current instance.
 	 */
 	public WorkflowTaskCoordinator withSleepWhenRetry(int sleepWhenRetry) {
 		this.sleepWhenRetry = sleepWhenRetry;
@@ -128,7 +129,7 @@ public class WorkflowTaskCoordinator {
 	/**
 	 * 
 	 * @param updateRetryCount # of attempts to be made when updating task status when update status call fails.
-	 * @return
+	 * @return Returns the current instance.
 	 * @see #withSleepWhenRetry(int)
 	 */
 	public WorkflowTaskCoordinator withUpdateRetryCount(int updateRetryCount) {
@@ -139,7 +140,7 @@ public class WorkflowTaskCoordinator {
 	/**
 	 * 
 	 * @param workerQueueSize Worker queue size.  
-	 * @return
+	 * @return Returns the current instance.
 	 */
 	public WorkflowTaskCoordinator withWorkerQueueSize(int workerQueueSize) {
 		this.workerQueueSize = workerQueueSize;
