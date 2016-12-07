@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Extended Tasks & Features - Conductor</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/highlight.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Extended Tasks & Features";
+    var mkdocs_page_input_path = "extend/tasks.md";
+    var mkdocs_page_url = "/extend/tasks/";
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js"></script>
+  <script src="../../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search" style="background-color:#000000">
+        <a href="../.." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#000000;border:0;padding:0" class="cornerlogo" src="../../img/corner-logo2.png"/>
+        </a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../..">Introduction</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../intro/">Getting Started</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../intro/concepts/">Basic Concepts</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../intro/steps/">Highlevel Steps</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Defining Workflow Metadata</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../metadata/">Definitions</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../metadata/task/">Workflow Tasks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../metadata/io/">Wiring inputs</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../metadata/systask/">System Tasks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Extended Tasks & Features</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#wait-task">Wait Task</a></li>
+                
+                    <li><a class="toctree-l4" href="#exernal-triggers-for-wait-task">Exernal Triggers for Wait Task</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#http">HTTP</a></li>
+                
+            
+            </ul>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../runtime/">Workflow Management</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../">Extending Features</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Workflow Metrics</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../metrics/">Server Metrics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../../metrics/client/">Worker Metrics</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../license/">License</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" style="background:#000000" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Defining Workflow Metadata &raquo;</li>
+        
+      
+    
+    <li>Extended Tasks & Features</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/extend/tasks.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p>Contrib module provides additional functionality and task that are executed on the workflow server.</p>
+<h1 id="wait-task">Wait Task<a class="headerlink" href="#wait-task" title="Permanent link">&para;</a></h1>
+<p>A wait task is implemented as a gate that remains in <code>IN_PROGRESS</code> state unless marked as <code>COMPLETED</code> or <code>FAILED</code> by an external trigger.
+To use a wait task, set the task type as <code>WAIT</code></p>
+<h3 id="exernal-triggers-for-wait-task">Exernal Triggers for Wait Task<a class="headerlink" href="#exernal-triggers-for-wait-task" title="Permanent link">&para;</a></h3>
+<p>Task Resource endpoint can be used to update the status of a task to a terminate state. </p>
+<p>Contrib module provides SQS integration where an external system can place a message in a pre-configured queue that the server listens on.  As the messages arrive, they are marked as <code>COMPLETED</code> or <code>FAILED</code>.  </p>
+<h4 id="sqs-queues">SQS Queues<a class="headerlink" href="#sqs-queues" title="Permanent link">&para;</a></h4>
+<ul>
+<li>
+<p>SQS queues used by the server to update the task status can be retrieve using the following URL:</p>
+<p><code>GET /queue</code></p>
+</li>
+<li>
+<p>When updating the status of the task, the message needs to conform to the following spec:</p>
+<ul>
+<li>Message has to be a valid JSON string.</li>
+<li>The message JSON should contain a key named <code>externalId</code> with the value being a JSONified string that contains the following keys:<ul>
+<li><code>workflowId</code>: Id of the workflow</li>
+<li><code>taskRefName</code>: Task reference name that should be updated.</li>
+</ul>
+</li>
+<li>Each queue represents a specific task status and tasks are marked accordingly.  e.g. message coming to a <code>COMPLETED</code> queue marks the task status as <code>COMPLETED</code>.</li>
+<li>Tasks' output is updated with the message.</li>
+</ul>
+</li>
+<li>
+<p>Example:</p>
+<p><code>{
+  "some_key": "valuex",
+  "externalId": "{\"taskRefName\":\"TASK_REFERENCE_NAME\",\"workflowId\":\"WORKFLOW_ID\"}"
+}</code></p>
+</li>
+</ul>
+<h1 id="http">HTTP<a class="headerlink" href="#http" title="Permanent link">&para;</a></h1>
+<p>An HTTP task is used to make calls to another microservice over HTTP.
+The task expects an input parameter named <code>http_request</code> as part of the task's input with the following details:</p>
+<pre><code>uri: URI for the service.  Can be a partial when using vipAddress or includes the server address.
+
+method: HTTP method.  One of the GET, PUT, POST, DELETE, OPTIONS, HEAD
+
+accept: Accpet header as required by server.
+
+contentType: Content Type - supported types are text/plain, text/html and, application/json
+
+headers: A map of additional http headers to be sent along with the request.
+
+body:  Request body.
+
+vipAddress: When using discovery based service URLs. A custom 
+</code></pre>
+
+<p><strong>Examples</strong></p>
+<p>Task Input payload using vipAddress</p>
+<pre><code class="json">{
+  &quot;http_request&quot;: {
+    &quot;vipAddress&quot;: &quot;examplevip-prod&quot;,
+    &quot;uri&quot;: &quot;/&quot;,
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;accept&quot;: &quot;text/plain&quot;
+  }
+}
+</code></pre>
+
+<p>Task Input using an absolute URL</p>
+<pre><code class="json">{
+  &quot;http_request&quot;: {
+    &quot;uri&quot;: &quot;http://example.com/&quot;,
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;accept&quot;: &quot;text/plain&quot;
+  }
+}
+</code></pre>
+
+<p>The task is marked as <code>FAILED</code> if the request cannot be completed or the remote server returns non successful status code.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../../runtime/" class="btn btn-neutral float-right" title="Workflow Management">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../../metadata/systask/" class="btn btn-neutral" title="System Tasks"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/Netflix/conductor" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../../metadata/systask/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../../runtime/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script src="../../js/theme.js"></script>
+
+</body>
+</html>

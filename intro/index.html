@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Getting Started - Conductor</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Getting Started";
+    var mkdocs_page_input_path = "intro/index.md";
+    var mkdocs_page_url = "/intro/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search" style="background-color:#000000">
+        <a href=".." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#000000;border:0;padding:0" class="cornerlogo" src="../img/corner-logo2.png"/>
+        </a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Introduction</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Getting Started</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#high-level-architecture">High Level Architecture</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#installing-and-running">Installing and Running</a></li>
+                
+                    <li><a class="toctree-l4" href="#run-in-memory-server">Run In-Memory Server</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#runtime-model">Runtime Model</a></li>
+                
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="concepts/">Basic Concepts</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="steps/">Highlevel Steps</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Defining Workflow Metadata</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../metadata/">Definitions</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../metadata/task/">Workflow Tasks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../metadata/io/">Wiring inputs</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../metadata/systask/">System Tasks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../extend/tasks/">Extended Tasks & Features</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../runtime/">Workflow Management</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../extend/">Extending Features</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Workflow Metrics</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../metrics/">Server Metrics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../metrics/client/">Worker Metrics</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../license/">License</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" style="background:#000000" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Getting Started</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/intro/index.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="high-level-architecture">High Level Architecture<a class="headerlink" href="#high-level-architecture" title="Permanent link">&para;</a></h1>
+<p><img alt="Architecture" src="./images/conductor-architecture.png" /></p>
+<p>The API and stroage layers are pluggable and provides ability to work with different backend and queue service providers.</p>
+<h1 id="installing-and-running">Installing and Running<a class="headerlink" href="#installing-and-running" title="Permanent link">&para;</a></h1>
+<p><strong>Requirements</strong></p>
+<ol>
+<li><strong>Database</strong>: Dynomite</li>
+<li><strong>Servlet Container</strong>: Tomcat, Jetty, or similar running JDK 1.8 or higher</li>
+</ol>
+<h2 id="run-in-memory-server">Run In-Memory Server<a class="headerlink" href="#run-in-memory-server" title="Permanent link">&para;</a></h2>
+<p>Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor</p>
+<p><strong>Checkout the source from github</strong></p>
+<pre><code>git clone git@github.com:Netflix/conductor.git
+</code></pre>
+
+<p><strong>Start Local Server</strong></p>
+<pre><code class="shell">cd test-harness
+../gradlew server
+# wait for the server to come online
+</code></pre>
+
+<p>Swagger APIs can be accessed at <a href="http://localhost:8080/swagger-ui/">http://localhost:8080/swagger-ui/</a></p>
+<p><strong>Start UI Server</strong></p>
+<pre><code class="shell">cd ui
+gulp watch
+</code></pre>
+
+<p>Launch UI at <a href="http://localhost:3000/">http://localhost:3000/</a></p>
+<h1 id="runtime-model">Runtime Model<a class="headerlink" href="#runtime-model" title="Permanent link">&para;</a></h1>
+<p>Conductor follows RPC based communication model where workers are running on a separate machine from the server.  Workers communicate with server over HTTP based endpoints and employs polling model for managing work queues.</p>
+<p><img alt="name_for_alt" src="./overview.png" /></p>
+<p><strong>Notes</strong></p>
+<ul>
+<li>Workers are remote systems and communicates ove HTTP (or any supported RPC mechanism) with conductor servers.</li>
+<li>Task Queues are used to schedule tasks for workers.  We use <a href="https://github.com/Netflix/dyno-queues">dyno-queues</a> internally but it can easily be swapped with SQS or similar pub-sub mechanism.</li>
+<li>conductor-redis-persistence module uses <a href="https://github.com/Netflix/dynomite">dynomite</a> for storaing the state and metadata along with [elastic[[3] for indexing backend.</li>
+<li>See section under extending backend for implementing support for different databases for storage and indexing.</li>
+</ul>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="concepts/" class="btn btn-neutral float-right" title="Basic Concepts">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href=".." class="btn btn-neutral" title="Introduction"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/Netflix/conductor" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href=".." style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="concepts/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script src="../js/theme.js"></script>
+
+</body>
+</html>

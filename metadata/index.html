@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Definitions - Conductor</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Definitions";
+    var mkdocs_page_input_path = "metadata/index.md";
+    var mkdocs_page_url = "/metadata/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search" style="background-color:#000000">
+        <a href=".." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#000000;border:0;padding:0" class="cornerlogo" src="../img/corner-logo2.png"/>
+        </a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Introduction</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../intro/">Getting Started</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../intro/concepts/">Basic Concepts</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../intro/steps/">Highlevel Steps</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Defining Workflow Metadata</span></li>
+
+        
+            
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Definitions</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#workflow-definition">Workflow Definition</a></li>
+                
+            
+                <li class="toctree-l3"><a href="#task-definition">Task Definition</a></li>
+                
+            
+            </ul>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="task/">Workflow Tasks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="io/">Wiring inputs</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="systask/">System Tasks</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../extend/tasks/">Extended Tasks & Features</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../runtime/">Workflow Management</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../extend/">Extending Features</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Workflow Metrics</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../metrics/">Server Metrics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../metrics/client/">Worker Metrics</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../license/">License</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" style="background:#000000" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Defining Workflow Metadata &raquo;</li>
+        
+      
+    
+    <li>Definitions</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/metadata/index.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="workflow-definition">Workflow Definition<a class="headerlink" href="#workflow-definition" title="Permanent link">&para;</a></h1>
+<p>A typical workflow has the following structure:</p>
+<pre><code class="json">{
+  &quot;name&quot;: &quot;workflow_name&quot;,
+  &quot;description&quot;: &quot;Description of workflow&quot;,
+  &quot;version&quot;: 1,
+  &quot;tasks&quot;: [
+    {
+      &quot;name&quot;: &quot;name_of_task&quot;,
+      &quot;taskReferenceName&quot;: &quot;ref_name_unique_within_blueprint&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;movieId&quot;: &quot;${workflow.input.movieId}&quot;,
+        &quot;url&quot;: &quot;${workflow.input.fileLocation}&quot;
+      },
+      &quot;type&quot;: &quot;SIMPLE&quot;,
+      ... (any other task specific parameters)
+    },
+    {}
+    ...
+  ],
+  &quot;outputParameters&quot;: {
+    &quot;encoded_url&quot;: &quot;${encode.output.location}&quot;
+  }
+}
+</code></pre>
+
+<p>A sample encoding flow</p>
+<pre><code class="json">{
+  &quot;name&quot;: &quot;workflow_name&quot;,
+  &quot;description&quot;: &quot;Description of workflow&quot;,
+  &quot;version&quot;: 1,
+  &quot;tasks&quot;: [
+    {
+      &quot;name&quot;: &quot;store_in_s3&quot;,
+      &quot;taskReferenceName&quot;: &quot;t1&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;movieId&quot;: &quot;${workflow.input.movieId}&quot;,
+        &quot;url&quot;: &quot;${workflow.input.fileLocation}&quot;
+      },
+      &quot;type&quot;: &quot;SIMPLE&quot;
+    },
+    {
+      &quot;name&quot;: &quot;encode&quot;,
+      &quot;taskReferenceName&quot;: &quot;encode&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;recipe&quot;: &quot;${workflow.input.recipe}&quot;,
+        &quot;location&quot;: &quot;${t1.output.s3Location}&quot;
+      },
+      &quot;type&quot;: &quot;SIMPLE&quot;
+    }
+  ],
+  &quot;outputParameters&quot;: {
+    &quot;encoded_url&quot;: &quot;${encode.output.location}&quot;
+  }
+}
+</code></pre>
+
+<p>In the above definition, tasks are series of steps that are executed in sequence.</p>
+<p>Below is the list of all the parameters used to define a workflow blueprint:</p>
+<pre><code class="json">{
+    &quot;name&quot;: &quot;Workflow Name. Used for all the operations&quot;,
+    &quot;description&quot;: &quot;Human readable description&quot;,
+    &quot;version&quot;: 1 //defines the version of workflow blueprint. Useful for versioning
+    &quot;inputParameters&quot;: &quot;List of required inputs to workflow&quot;,
+    &quot;outputParameters&quot;: &quot;Map of key - value used to determine the output of the workflow&quot;,
+    &quot;failureWorkflow&quot;: &quot;Name of another workflow to be started if this workflow fails&quot;,
+    &quot;tasks&quot;: &quot;list of tasks that makes up this blueprint&quot;
+}
+</code></pre>
+
+<h1 id="task-definition">Task Definition<a class="headerlink" href="#task-definition" title="Permanent link">&para;</a></h1>
+<p>Workflow tasks are defined within the <code>tasks</code> block in the blueprint.<br />
+Each task represent either a system task (executed by the engine and used for control flow) or a user task which is executed on a remote system and communicates with the conductor server using REST APIs.</p>
+<p>Tasks are defined using a JSON DSL.  Conductor maintain a registry of all the tasks.</p>
+<pre><code class="json">{
+  &quot;name&quot;: &quot;encode_task&quot;,
+  &quot;retryCount&quot;: 3,
+  &quot;timeoutSeconds&quot;: 1200,
+  &quot;inputKeys&quot;: [
+    &quot;sourceRequestId&quot;,
+    &quot;qcElementType&quot;
+  ],
+  &quot;outputKeys&quot;: [
+    &quot;state&quot;,
+    &quot;skipped&quot;,
+    &quot;result&quot;
+  ],
+  &quot;timeoutPolicy&quot;: &quot;TIME_OUT_WF&quot;,
+  &quot;retryLogic&quot;: &quot;FIXED&quot;,
+  &quot;retryDelaySeconds&quot;: 600,
+  &quot;responseTimeoutSeconds&quot;: 3600
+}
+</code></pre>
+
+<ul>
+<li><code>retryCount</code> No. of retries to attempt when a task is marked as failure.</li>
+<li><code>timeoutPolicy</code> Can be either of the following:<ul>
+<li>RETRY : Retries the task again</li>
+<li>TIME_OUT_WF : Workflow is marked as TIMED_OUT and terminated</li>
+<li>ALERT_ONLY : Registers a counter (task_timeout)</li>
+</ul>
+</li>
+<li><code>retryLogic</code><ul>
+<li>FIXED : Reschedule the task afer the <code>retryDelaySeconds</code></li>
+<li>EXPONENTIAL_BACKOFF : reschedule after <code>retryDelaySeconds  * attempNo</code></li>
+</ul>
+</li>
+<li><code>responseTimeoutSeconds</code> if greater than 0, the task is rescheduled if not updated with a status after this time.  Useful when the worker polls for the task but fails to complete due to errors/network failure.</li>
+<li><code>inputKeys</code> Set of inputs that task expects</li>
+<li><code>outputKeys</code> SEt of output that task produces upon execution</li>
+</ul>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="task/" class="btn btn-neutral float-right" title="Workflow Tasks">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../intro/steps/" class="btn btn-neutral" title="Highlevel Steps"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/Netflix/conductor" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../intro/steps/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="task/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script src="../js/theme.js"></script>
+
+</body>
+</html>
