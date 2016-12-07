@@ -1,10 +1,11 @@
-# Conductor
-
 ![Conductor](https://netflix.github.io/conductor/img/corner-logo2.png)
+
+## Conductor
+Conductor is an _orchestration_ engine that runs in the cloud.
 
 [![Build Status](https://travis-ci.org/Netflix/conductor.svg?branch=master)](https://travis-ci.org/Netflix/conductor)
 
-Conductor is an _orchestration_ engine that runs in the cloud.
+
 
 ## Documentation & Getting Started
 [http://netflix.github.io/conductor/](http://netflix.github.io/conductor/)
