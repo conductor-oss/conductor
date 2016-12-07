@@ -1,0 +1,18 @@
+dependencies {
+	
+	compile project(':conductor-common')
+	compile project(':conductor-core')
+
+	compile 'io.reactivex:rxjava:1.2.2'
+	compile 'com.amazonaws:aws-java-sdk-sqs:latest.release'
+	compile ('com.google.inject:guice:4.1+') { force= true}
+	
+	provided 'javax.ws.rs:jsr311-api:1.1.1'
+	provided 'io.swagger:swagger-jaxrs:1.5.9'
+	
+	
+	testCompile 'org.eclipse.jetty:jetty-server:9.3.9.+'
+	testCompile 'org.eclipse.jetty:jetty-servlet:9.3.9.+'
+	
+    
+}

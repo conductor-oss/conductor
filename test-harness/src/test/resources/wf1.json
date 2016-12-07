@@ -1,0 +1,372 @@
+{
+  "createTime": 1477681181098,
+  "updateTime": 1478835878290,
+  "name": "main_workflow",
+  "description": "Kitchensink workflow",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "task_1",
+      "taskReferenceName": "task_1",
+      "inputParameters": {
+        "mod": "workflow.input.mod",
+        "oddEven": "workflow.input.oddEven"
+      },
+      "type": "SIMPLE",
+      "startDelay": 0,
+      "callbackFromWorker": true
+    },
+    {
+      "name": "dyntask",
+      "taskReferenceName": "task_2",
+      "inputParameters": {
+        "taskToExecute": "workflow.input.task2Name"
+      },
+      "type": "DYNAMIC",
+      "dynamicTaskNameParam": "taskToExecute",
+      "startDelay": 0,
+      "callbackFromWorker": true
+    },
+    {
+      "name": "task_3",
+      "taskReferenceName": "task_3",
+      "inputParameters": {
+        "mod": "task_2.output.mod",
+        "oddEven": "task_2.output.oddEven"
+      },
+      "type": "SIMPLE",
+      "startDelay": 0,
+      "callbackFromWorker": true
+    },
+    {
+      "name": "oddEvenDecision",
+      "taskReferenceName": "oddEvenDecision",
+      "inputParameters": {
+        "oddEven": "task_3.output.oddEven"
+      },
+      "type": "DECISION",
+      "caseValueParam": "oddEven",
+      "decisionCases": {
+        "0": [
+          {
+            "name": "task_4",
+            "taskReferenceName": "task_4",
+            "inputParameters": {
+              "mod": "task_3.output.mod",
+              "oddEven": "task_3.output.oddEven"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "callbackFromWorker": true
+          },
+          {
+            "name": "dynamic_fanout",
+            "taskReferenceName": "fanout1",
+            "inputParameters": {
+              "dynamicTasks": "task_4.output.dynamicTasks",
+              "input": "task_4.output.inputs"
+            },
+            "type": "FORK_JOIN_DYNAMIC",
+            "dynamicForkTasksParam": "dynamicTasks",
+            "dynamicForkTasksInputParamName": "input",
+            "startDelay": 0,
+            "callbackFromWorker": true
+          },
+          {
+            "name": "dynamic_join",
+            "taskReferenceName": "join1",
+            "type": "JOIN",
+            "startDelay": 0,
+            "callbackFromWorker": true
+          },
+          {
+            "name": "task_5",
+            "taskReferenceName": "task_5",
+            "inputParameters": {
+              "mod": "task_4.output.mod",
+              "oddEven": "task_4.output.oddEven"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "callbackFromWorker": true
+          },
+          {
+            "name": "task_6",
+            "taskReferenceName": "task_6",
+            "inputParameters": {
+              "mod": "task_5.output.mod",
+              "oddEven": "task_5.output.oddEven"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "callbackFromWorker": true
+          }
+        ],
+        "1": [
+          {
+            "name": "task_7",
+            "taskReferenceName": "task_7",
+            "inputParameters": {
+              "mod": "task_3.output.mod",
+              "oddEven": "task_3.output.oddEven"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "callbackFromWorker": true
+          },
+          {
+            "name": "task_8",
+            "taskReferenceName": "task_8",
+            "inputParameters": {
+              "mod": "task_7.output.mod",
+              "oddEven": "task_7.output.oddEven"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "callbackFromWorker": true
+          },
+          {
+            "name": "task_9",
+            "taskReferenceName": "task_9",
+            "inputParameters": {
+              "mod": "task_8.output.mod",
+              "oddEven": "task_8.output.oddEven"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "callbackFromWorker": true
+          },
+          {
+            "name": "modDecision",
+            "taskReferenceName": "modDecision",
+            "inputParameters": {
+              "mod": "task_8.output.mod"
+            },
+            "type": "DECISION",
+            "caseValueParam": "mod",
+            "decisionCases": {
+              "0": [
+                {
+                  "name": "task_12",
+                  "taskReferenceName": "task_12",
+                  "inputParameters": {
+                    "mod": "task_9.output.mod",
+                    "oddEven": "task_9.output.oddEven"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0,
+                  "callbackFromWorker": true
+                },
+                {
+                  "name": "task_13",
+                  "taskReferenceName": "task_13",
+                  "inputParameters": {
+                    "mod": "task_12.output.mod",
+                    "oddEven": "task_12.output.oddEven"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0,
+                  "callbackFromWorker": true
+                },
+                {
+                  "name": "sub_workflow_x",
+                  "taskReferenceName": "wf1",
+                  "inputParameters": {
+                    "mod": "task_12.output.mod",
+                    "oddEven": "task_12.output.oddEven"
+                  },
+                  "type": "SUB_WORKFLOW",
+                  "startDelay": 0,
+                  "callbackFromWorker": true,
+                  "subWorkflowParam": {
+                    "name": "sub_flow_1",
+                    "version": 1
+                  }
+                }
+              ],
+              "1": [
+                {
+                  "name": "task_15",
+                  "taskReferenceName": "task_15",
+                  "inputParameters": {
+                    "mod": "task_9.output.mod",
+                    "oddEven": "task_9.output.oddEven"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0,
+                  "callbackFromWorker": true
+                },
+                {
+                  "name": "task_16",
+                  "taskReferenceName": "task_16",
+                  "inputParameters": {
+                    "mod": "task_15.output.mod",
+                    "oddEven": "task_15.output.oddEven"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0,
+                  "callbackFromWorker": true
+                },
+                {
+                  "name": "sub_workflow_x",
+                  "taskReferenceName": "wf2",
+                  "inputParameters": {
+                    "mod": "task_12.output.mod",
+                    "oddEven": "task_12.output.oddEven"
+                  },
+                  "type": "SUB_WORKFLOW",
+                  "startDelay": 0,
+                  "callbackFromWorker": true,
+                  "subWorkflowParam": {
+                    "name": "sub_flow_1",
+                    "version": 1
+                  }
+                }
+              ],
+              "4": [
+                {
+                  "name": "task_18",
+                  "taskReferenceName": "task_18",
+                  "inputParameters": {
+                    "mod": "task_9.output.mod",
+                    "oddEven": "task_9.output.oddEven"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0,
+                  "callbackFromWorker": true
+                },
+                {
+                  "name": "task_19",
+                  "taskReferenceName": "task_19",
+                  "inputParameters": {
+                    "mod": "task_18.output.mod",
+                    "oddEven": "task_18.output.oddEven"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0,
+                  "callbackFromWorker": true
+                }
+              ],
+              "5": [
+                {
+                  "name": "task_21",
+                  "taskReferenceName": "task_21",
+                  "inputParameters": {
+                    "mod": "task_9.output.mod",
+                    "oddEven": "task_9.output.oddEven"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0,
+                  "callbackFromWorker": true
+                },
+                {
+                  "name": "sub_workflow_x",
+                  "taskReferenceName": "wf3",
+                  "inputParameters": {
+                    "mod": "task_12.output.mod",
+                    "oddEven": "task_12.output.oddEven"
+                  },
+                  "type": "SUB_WORKFLOW",
+                  "startDelay": 0,
+                  "callbackFromWorker": true,
+                  "subWorkflowParam": {
+                    "name": "sub_flow_1",
+                    "version": 1
+                  }
+                },
+                {
+                  "name": "task_22",
+                  "taskReferenceName": "task_22",
+                  "inputParameters": {
+                    "mod": "task_21.output.mod",
+                    "oddEven": "task_21.output.oddEven"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0,
+                  "callbackFromWorker": true
+                }
+              ]
+            },
+            "defaultCase": [
+              {
+                "name": "task_24",
+                "taskReferenceName": "task_24",
+                "inputParameters": {
+                  "mod": "task_9.output.mod",
+                  "oddEven": "task_9.output.oddEven"
+                },
+                "type": "SIMPLE",
+                "startDelay": 0,
+                "callbackFromWorker": true
+              },
+              {
+                "name": "sub_workflow_x",
+                "taskReferenceName": "wf4",
+                "inputParameters": {
+                  "mod": "task_12.output.mod",
+                  "oddEven": "task_12.output.oddEven"
+                },
+                "type": "SUB_WORKFLOW",
+                "startDelay": 0,
+                "callbackFromWorker": true,
+                "subWorkflowParam": {
+                  "name": "sub_flow_1",
+                  "version": 1
+                }
+              },
+              {
+                "name": "task_25",
+                "taskReferenceName": "task_25",
+                "inputParameters": {
+                  "mod": "task_24.output.mod",
+                  "oddEven": "task_24.output.oddEven"
+                },
+                "type": "SIMPLE",
+                "startDelay": 0,
+                "callbackFromWorker": true
+              }
+            ],
+            "startDelay": 0,
+            "callbackFromWorker": true
+          }
+        ]
+      },
+      "startDelay": 0,
+      "callbackFromWorker": true
+    },
+    {
+      "name": "task_28",
+      "taskReferenceName": "task_28",
+      "inputParameters": {
+        "mod": "task_3.output.mod",
+        "oddEven": "task_3.output.oddEven"
+      },
+      "type": "SIMPLE",
+      "startDelay": 0,
+      "callbackFromWorker": true
+    },
+    {
+      "name": "task_29",
+      "taskReferenceName": "task_29",
+      "inputParameters": {
+        "mod": "task_28.output.mod",
+        "oddEven": "task_28.output.oddEven"
+      },
+      "type": "SIMPLE",
+      "startDelay": 0,
+      "callbackFromWorker": true
+    },
+    {
+      "name": "task_30",
+      "taskReferenceName": "task_30",
+      "inputParameters": {
+        "mod": "task_29.output.mod",
+        "oddEven": "task_29.output.oddEven"
+      },
+      "type": "SIMPLE",
+      "startDelay": 0,
+      "callbackFromWorker": true
+    }
+  ],
+  "schemaVersion": 1
+}

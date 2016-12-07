@@ -1,0 +1,26 @@
+configurations.all {
+    resolutionStrategy {
+		force 'com.fasterxml.jackson.core:jackson-core:2.7.5'
+    }
+}
+dependencies {
+
+	testCompile project(':conductor-core')
+	testCompile project(':conductor-jersey')
+	testCompile project(':conductor-redis-persistence')
+	testCompile project(':conductor-client')
+	
+	testCompile 'org.eclipse.jetty:jetty-server:9.3.9.+'
+	testCompile 'org.eclipse.jetty:jetty-servlet:9.3.9.+'
+	testCompile 'org.rarefiedredis.redis:redis-java:0.0.17'
+	testCompile 'com.sun.jersey.contribs:jersey-guice:1.19.+'	
+
+	testCompile 'com.google.inject:guice:4.+'
+	testCompile 'com.google.inject.extensions:guice-servlet:4.+'
+	testCompile 'io.swagger:swagger-jersey-jaxrs:1.5.0'
+}
+
+task server(type: JavaExec) {
+  main = 'com.netflix.conductor.demo.Main'
+  classpath = sourceSets.test.runtimeClasspath  
+}

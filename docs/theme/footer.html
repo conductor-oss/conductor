@@ -1,0 +1,24 @@
+<footer>
+  {%- block next_prev %}
+  {% if page and page.next_page or page.previous_page %}
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      {% if page.next_page %}
+        <a href="{{ page.next_page.url }}" class="btn btn-neutral float-right" title="{{ page.next_page.title }}">Next <span class="icon icon-circle-arrow-right"></span></a>
+      {% endif %}
+      {% if page.previous_page %}
+        <a href="{{ page.previous_page.url }}" class="btn btn-neutral" title="{{ page.previous_page.title }}"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      {% endif %}
+    </div>
+  {% endif %}
+  {%- endblock %}
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    {% if config.copyright %}
+      <p>{{ config.copyright }}</p>
+    {% endif %}
+  </div>
+
+</footer>

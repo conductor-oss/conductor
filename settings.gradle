@@ -1,0 +1,3 @@
+rootProject.name='conductor'
+include 'common', 'core', 'redis-persistence', 'jersey', 'client', 'test-harness', 'ui', 'contribs'
+rootProject.children.each {it.name="conductor-${it.name}"}
