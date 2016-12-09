@@ -3176,7 +3176,7 @@ public class DynoJedisClient implements JedisCommands, BinaryJedisCommands, Mult
      * NOT SUPPORTED ! Use {@link #dyno_scan(CursorBasedResult, String...)}
      * instead.
      *
-     * @param cursor
+     * @param cursor cursor
      * @return nothing -- throws UnsupportedOperationException when invoked
      * @see #dyno_scan(CursorBasedResult, String...)
      */
@@ -3189,7 +3189,7 @@ public class DynoJedisClient implements JedisCommands, BinaryJedisCommands, Mult
      * NOT SUPPORTED ! Use {@link #dyno_scan(CursorBasedResult, String...)}
      * instead.
      *
-     * @param cursor
+     * @param cursor cursor
      * @return nothing -- throws UnsupportedOperationException when invoked
      * @see #dyno_scan(CursorBasedResult, String...)
      */
