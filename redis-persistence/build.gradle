@@ -2,8 +2,8 @@ dependencies {
 
 	compile project(':conductor-core')
 	compile 'com.google.inject:guice:3.0'
-	compile 'com.netflix.dyno:dyno-jedis:1.5.6'
- 	compile 'com.netflix.dyno-queues:dyno-queues-redis:1.0.6'
+	compile ('com.netflix.dyno:dyno-jedis:1.4.7') { force = true}
+ 	compile 'com.netflix.dyno-queues:dyno-queues-redis:1.0.5-rc1'
 	compile 'org.elasticsearch:elasticsearch:2.+'
 
 	//In memory redis for unit testing

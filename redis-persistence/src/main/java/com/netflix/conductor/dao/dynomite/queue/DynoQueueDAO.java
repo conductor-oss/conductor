@@ -30,10 +30,13 @@ import org.slf4j.LoggerFactory;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.discovery.DiscoveryClient;
-import com.netflix.dyno.jedis.DynoJedisClient;
+import com.netflix.dyno.connectionpool.Host;
+import com.netflix.dyno.connectionpool.impl.ConnectionPoolConfigurationImpl;
+import com.netflix.dyno.contrib.EurekaHostsSupplier;
 import com.netflix.dyno.queues.DynoQueue;
 import com.netflix.dyno.queues.Message;
 import com.netflix.dyno.queues.ShardSupplier;
+import com.netflix.dyno.queues.redis.DynoJedisClient;
 import com.netflix.dyno.queues.redis.DynoShardSupplier;
 import com.netflix.dyno.queues.redis.RedisQueues;
 
@@ -68,8 +71,20 @@ public class DynoQueueDAO implements QueueDAO {
 		DynoJedisClient dyno = new DynoJedisClient.Builder().withApplicationName(config.getAppId()).withDynomiteClusterName(cluster)
 				.withDiscoveryClient(dc).build();
 
+		
+		this.dynoClientRead = new DynoJedisClient.Builder().withApplicationName(config.getAppId()).withDynomiteClusterName(cluster)
+				.withHostSupplier(new EurekaHostsSupplier(cluster, dc) {
+
+					@Override
+					public List<Host> getHosts() {
+						List<Host> hosts = super.getHosts();
+						hosts.forEach(host -> host.setPort(22122));
+						return hosts;
+					}
+
+				}).withPort(22122).withCPConfig(new ConnectionPoolConfigurationImpl(config.getAppId()+"read").setPort(22122)).build();
+
 		this.dynoClient = dyno;
-		this.dynoClientRead = dyno;
 
 		String region = config.getRegion();
 		String localDC = config.getAvailabilityZone();
