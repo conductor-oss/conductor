@@ -17,7 +17,7 @@ Binaries are available from Maven Central and jcenter.
 
 |Group|Artifact|Latest Stable Version|
 |-----------|---------------|---------------------|
-|com.netflix.conductor|conductor-*|1.5.0|
+|com.netflix.conductor|conductor-*|1.5.+|
 
 Below are the various artifacts published:
 
