@@ -217,7 +217,7 @@
 <h1 id="installing-and-running">Installing and Running<a class="headerlink" href="#installing-and-running" title="Permanent link">&para;</a></h1>
 <p><strong>Requirements</strong></p>
 <ol>
-<li><strong>Database</strong>: Dynomite</li>
+<li><strong>Database</strong>: <a href="https://github.com/Netflix/dynomite">Dynomite</a></li>
 <li><strong>Servlet Container</strong>: Tomcat, Jetty, or similar running JDK 1.8 or higher</li>
 </ol>
 <h2 id="run-in-memory-server">Run In-Memory Server<a class="headerlink" href="#run-in-memory-server" title="Permanent link">&para;</a></h2>
@@ -246,7 +246,7 @@ gulp watch
 <ul>
 <li>Workers are remote systems and communicates ove HTTP (or any supported RPC mechanism) with conductor servers.</li>
 <li>Task Queues are used to schedule tasks for workers.  We use <a href="https://github.com/Netflix/dyno-queues">dyno-queues</a> internally but it can easily be swapped with SQS or similar pub-sub mechanism.</li>
-<li>conductor-redis-persistence module uses <a href="https://github.com/Netflix/dynomite">dynomite</a> for storaing the state and metadata along with [elastic[[3] for indexing backend.</li>
+<li>conductor-redis-persistence module uses <a href="https://github.com/Netflix/dynomite">Dynomite</a> for storaing the state and metadata along with <a href="https://www.elastic.co">Elasticsearch</a> for indexing backend.</li>
 <li>See section under extending backend for implementing support for different databases for storage and indexing.</li>
 </ul>
               
