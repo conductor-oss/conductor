@@ -7,7 +7,7 @@ The API and stroage layers are pluggable and provides ability to work with diffe
 
 **Requirements**
 
-1. **Database**: Dynomite
+1. **Database**: [Dynomite](https://github.com/Netflix/dynomite)
 2. **Servlet Container**: Tomcat, Jetty, or similar running JDK 1.8 or higher
 
 ## Run In-Memory Server
@@ -43,7 +43,7 @@ Conductor follows RPC based communication model where workers are running on a s
 
 * Workers are remote systems and communicates ove HTTP (or any supported RPC mechanism) with conductor servers.
 * Task Queues are used to schedule tasks for workers.  We use [dyno-queues][1] internally but it can easily be swapped with SQS or similar pub-sub mechanism.
-* conductor-redis-persistence module uses [dynomite][2] for storaing the state and metadata along with [elastic[[3] for indexing backend.
+* conductor-redis-persistence module uses [Dynomite][2] for storaing the state and metadata along with [Elasticsearch][3] for indexing backend.
 * See section under extending backend for implementing support for different databases for storage and indexing.
 
 [1]: https://github.com/Netflix/dyno-queues
