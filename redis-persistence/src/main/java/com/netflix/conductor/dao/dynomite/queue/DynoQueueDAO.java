@@ -36,7 +36,6 @@ import com.netflix.dyno.contrib.EurekaHostsSupplier;
 import com.netflix.dyno.queues.DynoQueue;
 import com.netflix.dyno.queues.Message;
 import com.netflix.dyno.queues.ShardSupplier;
-import com.netflix.dyno.queues.redis.DynoJedisClient;
 import com.netflix.dyno.queues.redis.DynoShardSupplier;
 import com.netflix.dyno.queues.redis.RedisQueues;
 
