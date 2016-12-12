@@ -141,8 +141,8 @@ public class WorkflowClient extends ClientBase {
 		put("workflow/{workflowId}/skiptask/{taskReferenceName}", null, workflowId, taskReferenceName);		
 	}
 
-	public void runDecider(String workflowName) {
-		put("workflow/decide/{workflowName}", null, workflowName);
+	public void runDecider(String workflowId) {
+		put("workflow/decide/{workflowId}", null, null, workflowId);
 	}
 
 	public SearchResult<WorkflowSummary> search(String query) {
