@@ -750,7 +750,9 @@ public class DeciderService {
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private Map<String, Object> getTaskInputV2(Map input, Workflow workflow, String taskId, TaskDef taskDef) {
 		Map<String, Object> inputParams = new HashMap<>();
-		inputParams.putAll(input);
+		if(input != null) {
+			inputParams.putAll(input);
+		}
 		if(taskDef != null && taskDef.getInputTemplate() != null) {
 			inputParams.putAll(taskDef.getInputTemplate());
 		}
