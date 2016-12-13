@@ -796,10 +796,7 @@ public class DeciderService {
 	private Object _replace(Workflow workflow, ParametersUtils pu, Object value, String taskId) {
 		if (value instanceof String) {
 			String valueString = value.toString();
-			if(valueString.startsWith("${") && valueString.endsWith("}")) {
-				Object replaced = pu.replaceVariables(valueString, workflow, taskId);
-				return replaced;
-			}
+			return pu.replaceVariables(valueString, workflow, taskId);
 		} else if (value instanceof Map) {
 			Map<String, Object> valueMap = (Map<String, Object>)value;
 			Map<String, Object> replaced = replace(valueMap, workflow, taskId);

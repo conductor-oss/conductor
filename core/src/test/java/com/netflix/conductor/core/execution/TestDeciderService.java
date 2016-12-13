@@ -35,6 +35,8 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -65,6 +67,9 @@ public class TestDeciderService {
 		
 		workflow = new Workflow();
 		workflow.getInput().put("requestId", "request id 001");
+		Map<String, String> name = new HashMap<>();
+		name.put("who", "The Who");
+		workflow.getOutput().put("name", name);
 		Task task = new Task();
 		task.setReferenceTaskName("task2");
 		task.getOutputData().put("location", "http://location");
@@ -100,6 +105,38 @@ public class TestDeciderService {
 		assertEquals("request id 001", taskInput.get("workflowInputParam"));
 		assertEquals("http://location", taskInput.get("taskOutputParam"));
 		assertNull(taskInput.get("taskOutputParam3"));
+		workflow.setSchemaVersion(1);
+	}
+	
+	@Test
+	public void testGetTaskInputV2Partial() throws Exception {
+		System.setProperty("EC2_INSTANCE", "i-123abcdef990");
+		
+		workflow.setSchemaVersion(2);
+		Map<String, String> ip = new HashMap<String, String>();
+		ip.put("workflowInputParam", "${workflow.input.requestId}");
+		ip.put("workfowOutputParam", "${workflow.output.name}");
+		ip.put("taskOutputParam", "${task2.output.location}");
+		ip.put("taskOutputParam2", "${task2.output.locationBad}");
+		ip.put("taskOutputParam3", "${task3.output.location}");
+		ip.put("constParam", "Some String value   &");
+		ip.put("partial", "${task2.output.location}/something?host=${EC2_INSTANCE}");
+		
+		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null);
+		System.out.println("json=" + new ObjectMapper().configure(SerializationFeature.INDENT_OUTPUT, true).writeValueAsString(taskInput));
+		
+		assertNotNull(taskInput);
+		assertTrue(taskInput.containsKey("workflowInputParam"));
+		assertTrue(taskInput.containsKey("taskOutputParam"));
+		assertTrue(taskInput.containsKey("taskOutputParam2"));
+		assertTrue(taskInput.containsKey("taskOutputParam3"));
+		assertNull(taskInput.get("taskOutputParam2"));
+		
+		assertEquals("request id 001", taskInput.get("workflowInputParam"));
+		assertEquals("http://location", taskInput.get("taskOutputParam"));
+		assertNull(taskInput.get("taskOutputParam3"));
+		assertNotNull(taskInput.get("partial"));
+		assertEquals("http://location/something?host=i-123abcdef990", taskInput.get("partial"));
 		workflow.setSchemaVersion(1);
 	}
 	

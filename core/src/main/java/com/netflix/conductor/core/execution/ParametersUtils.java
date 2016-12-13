@@ -16,6 +16,7 @@
 package com.netflix.conductor.core.execution;
 
 import java.util.Map;
+import java.util.Optional;
 
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -43,13 +44,15 @@ public class ParametersUtils {
 
 	public Object replaceVariables(String paramString, Workflow workflow, String taskId){
 		// If the parameter String is "v1 v2 v3" then make sure split it first
-		String[] values = paramString.split("\\s+");
+		//String[] values = paramString.split("\\s+");
+		String[] values = paramString.split("(?=\\$\\{)|(?<=\\s+)|(?<=\\})");
 		Object[] convertedValues = new Object[values.length];
 		for(int i=0; i < values.length; i++){
 			convertedValues[i] = values[i];
 			if(values[i].startsWith("${") && values[i].endsWith("}")){
 				// First check if it is on of the SystemParameters
 				String paramName = values[i].substring(2, values[i].length()-1);
+				System.out.println(paramName);
 				if(contains(paramName)){
 					String sysValue = getSystemParametersValue(paramName, workflow, taskId);
 					if(sysValue != null){
@@ -101,7 +104,7 @@ public class ParametersUtils {
 				if(i == 0){
 					retObj = val.toString();
 				} else {
-					retObj = retObj.toString() + " " + val.toString();				
+					retObj = retObj.toString() + "" + val.toString();				
 				}
 			}
 			
@@ -113,7 +116,11 @@ public class ParametersUtils {
 		if("CPEWF_TASK_ID".equals(sysParam)) {
 			return taskId;
 		}
-		return System.getProperty(sysParam);
+		String value = System.getProperty(sysParam);
+		if(value == null) {
+			value = System.getenv(sysParam);
+		}
+		return value;
 	}
 	
 	private boolean contains(String test) {
@@ -122,7 +129,7 @@ public class ParametersUtils {
 	            return true;
 	        }
 	    }
-	    return System.getProperties().containsKey(test);
+	    String value = Optional.ofNullable(System.getProperty(test)).orElse(Optional.ofNullable(System.getenv(test)).orElse(null));
+	    return value != null;
 	}
-
 }
