@@ -12,7 +12,7 @@ Conductor is an _orchestration_ engine that runs in the cloud.
 
 [Getting Started](http://netflix.github.io/conductor/intro) guide.
 
-## Get Condcutor
+## Get Conductor
 Binaries are available from Maven Central and jcenter.
 
 |Group|Artifact|Latest Stable Version|
