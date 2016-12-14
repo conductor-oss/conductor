@@ -1,7 +1,7 @@
 # High Level Architecture
 ![Architecture](images/conductor-architecture.png)
 
-The API and stroage layers are pluggable and provides ability to work with different backend and queue service providers.
+The API and storage layers are pluggable and provide ability to work with different backend and queue service providers.
 
 # Installing and Running
 
