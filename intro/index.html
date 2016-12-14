@@ -244,9 +244,9 @@ gulp watch
 <p><img alt="name_for_alt" src="./overview.png" /></p>
 <p><strong>Notes</strong></p>
 <ul>
-<li>Workers are remote systems and communicates ove HTTP (or any supported RPC mechanism) with conductor servers.</li>
+<li>Workers are remote systems and communicates over HTTP (or any supported RPC mechanism) with conductor servers.</li>
 <li>Task Queues are used to schedule tasks for workers.  We use <a href="https://github.com/Netflix/dyno-queues">dyno-queues</a> internally but it can easily be swapped with SQS or similar pub-sub mechanism.</li>
-<li>conductor-redis-persistence module uses <a href="https://github.com/Netflix/dynomite">Dynomite</a> for storaing the state and metadata along with <a href="https://www.elastic.co">Elasticsearch</a> for indexing backend.</li>
+<li>conductor-redis-persistence module uses <a href="https://github.com/Netflix/dynomite">Dynomite</a> for storing the state and metadata along with <a href="https://www.elastic.co">Elasticsearch</a> for indexing backend.</li>
 <li>See section under extending backend for implementing support for different databases for storage and indexing.</li>
 </ul>
               
