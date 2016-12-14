@@ -209,13 +209,13 @@
 <li>System tasks (e.g. DECISION, FORK, JOIN etc.)</li>
 <li>Remote worker tasks.</li>
 </ul>
-<p>System tasks are executed within the JVM of the engine's server.  User defined tasks are remote tasks that executes on remote JVM and talks to the conductor server using REST endpoints.</p>
+<p>System tasks are executed within the JVM of the engine's server.  User defined tasks are remote tasks that executes on remote JVM and talk to the conductor server using REST endpoints.</p>
 <ul>
 <li><strong>SIMPLE</strong> Task that is executed by a worker running on a remote machine.  Orchestration engine schedules the task and awaits completion.</li>
 <li><strong>DECIDE</strong> Decision task used to create a branch.  Only one branch is executed based on the condition.</li>
 <li><strong>FORK</strong> Forks a parallel set of tasks.  Each set is scheduled to be executed in parallel.</li>
-<li><strong>JOIN</strong> Waits for one or more tasks to be completed before proceeding.  Used in conjunction with <em>FORK</em> or _ FORK_JOIN_DYNAMIC_</li>
-<li><strong>SUB_WORKFLOW</strong> Allows nesting another workflow as a task.  When executed, system spawns the workflow and task waits its completion.  If the newly spawned workflow fails, the task is marked as FAILEd.</li>
+<li><strong>JOIN</strong> Waits for one or more tasks to be completed before proceeding.  Used in conjunction with <em>FORK</em> or <em>FORK_JOIN_DYNAMIC</em></li>
+<li><strong>SUB_WORKFLOW</strong> Allows nesting another workflow as a task.  When executed, system spawns the workflow and task waits its completion.  If the newly spawned workflow fails, the task is marked as FAILED.</li>
 <li><strong>DYNAMIC</strong> A dynamic task.  Similar to <em>SIMPLE</em>.  The difference being the name of the task to be scheduled is determined at runtime using parameters from workflow input or other task input/output.</li>
 <li><strong>FORK_JOIN_DYNAMIC</strong></li>
 </ul>

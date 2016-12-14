@@ -272,7 +272,7 @@
 <pre><code class="json">{
     &quot;name&quot;: &quot;Workflow Name. Used for all the operations&quot;,
     &quot;description&quot;: &quot;Human readable description&quot;,
-    &quot;version&quot;: 1 //defines the version of workflow blueprint. Useful for versioning
+    &quot;version&quot;: 1, //defines the version of workflow blueprint. Useful for versioning
     &quot;inputParameters&quot;: &quot;List of required inputs to workflow&quot;,
     &quot;outputParameters&quot;: &quot;Map of key - value used to determine the output of the workflow&quot;,
     &quot;failureWorkflow&quot;: &quot;Name of another workflow to be started if this workflow fails&quot;,
@@ -319,7 +319,7 @@ Each task represent either a system task (executed by the engine and used for co
 </li>
 <li><code>responseTimeoutSeconds</code> if greater than 0, the task is rescheduled if not updated with a status after this time.  Useful when the worker polls for the task but fails to complete due to errors/network failure.</li>
 <li><code>inputKeys</code> Set of inputs that task expects</li>
-<li><code>outputKeys</code> SEt of output that task produces upon execution</li>
+<li><code>outputKeys</code> Set of output that task produces upon execution</li>
 </ul>
               
             </div>
