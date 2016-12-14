@@ -66,7 +66,7 @@ Below is the list of all the parameters used to define a workflow blueprint:
 {
 	"name": "Workflow Name. Used for all the operations",
 	"description": "Human readable description",
-	"version": 1 //defines the version of workflow blueprint. Useful for versioning
+	"version": 1, //defines the version of workflow blueprint. Useful for versioning
 	"inputParameters": "List of required inputs to workflow",
 	"outputParameters": "Map of key - value used to determine the output of the workflow",
 	"failureWorkflow": "Name of another workflow to be started if this workflow fails",
