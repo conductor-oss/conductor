@@ -41,7 +41,7 @@ Conductor follows RPC based communication model where workers are running on a s
 
 **Notes**
 
-* Workers are remote systems and communicates ove HTTP (or any supported RPC mechanism) with conductor servers.
+* Workers are remote systems and communicates over HTTP (or any supported RPC mechanism) with conductor servers.
 * Task Queues are used to schedule tasks for workers.  We use [dyno-queues][1] internally but it can easily be swapped with SQS or similar pub-sub mechanism.
 * conductor-redis-persistence module uses [Dynomite][2] for storing the state and metadata along with [Elasticsearch][3] for indexing backend.
 * See section under extending backend for implementing support for different databases for storage and indexing.
