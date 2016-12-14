@@ -111,4 +111,4 @@ Tasks are defined using a JSON DSL.  Conductor maintain a registry of all the ta
 	* EXPONENTIAL_BACKOFF : reschedule after ```retryDelaySeconds  * attempNo```
 * ```responseTimeoutSeconds``` if greater than 0, the task is rescheduled if not updated with a status after this time.  Useful when the worker polls for the task but fails to complete due to errors/network failure.
 * ```inputKeys``` Set of inputs that task expects
-* ```outputKeys``` SEt of output that task produces upon execution
+* ```outputKeys``` Set of output that task produces upon execution
