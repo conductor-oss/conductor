@@ -3,7 +3,7 @@ Workflow Tasks are of two types:
 * System tasks (e.g. DECISION, FORK, JOIN etc.)
 * Remote worker tasks.
 
-System tasks are executed within the JVM of the engine's server.  User defined tasks are remote tasks that executes on remote JVM and talks to the conductor server using REST endpoints.
+System tasks are executed within the JVM of the engine's server.  User defined tasks are remote tasks that executes on remote JVM and talk to the conductor server using REST endpoints.
 
 * **SIMPLE** Task that is executed by a worker running on a remote machine.  Orchestration engine schedules the task and awaits completion.
 * **DECIDE** Decision task used to create a branch.  Only one branch is executed based on the condition.
