@@ -52,7 +52,7 @@
         }, 
         {
             "location": "/intro/steps/", 
-            "text": "Steps required for a new workflow to be registered and get executed:\n\n\n\n\nDefine task definitions used by the workflow.\n\n\nCreate the workflow definition\n\n\n\n\nCreate task worker(s) that polls for scheduled tasks at regular interval\n\n\nGET /tasks/poll/batch/{taskType}\n\n\nUpdate task status:\n\nPOST /tasks\n{\n    ... //json payload with task status\n}\n\n\n\n\n\n\nUse the REST endpoint to trigger the workflow execution\n\n\nPOST /workflow/{name}\n{\n    ... //json payload as workflow input\n}", 
+            "text": "Steps required for a new workflow to be registered and get executed:\n\n\n\n\nDefine task definitions used by the workflow.\n\n\nCreate the workflow definition\n\n\n\n\nCreate task worker(s) that polls for scheduled tasks at regular interval\n\n\nGET /tasks/poll/batch/{taskType}\n\n\nUpdate task status:\n\n\nPOST /tasks\n{\n    ... //json payload with task status\n}\n\n\n\n\n\n\nUse the REST endpoint to trigger the workflow execution\n\n\nPOST /workflow/{name}\n{\n    ... //json payload as workflow input\n}", 
             "title": "Highlevel Steps"
         }, 
         {
