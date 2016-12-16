@@ -30,9 +30,7 @@ import org.slf4j.LoggerFactory;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.discovery.DiscoveryClient;
-import com.netflix.dyno.connectionpool.Host;
-import com.netflix.dyno.connectionpool.impl.ConnectionPoolConfigurationImpl;
-import com.netflix.dyno.contrib.EurekaHostsSupplier;
+import com.netflix.dyno.jedis.DynoJedisClient;
 import com.netflix.dyno.queues.DynoQueue;
 import com.netflix.dyno.queues.Message;
 import com.netflix.dyno.queues.ShardSupplier;
@@ -49,8 +47,6 @@ public class DynoQueueDAO implements QueueDAO {
 	private RedisQueues queues;
 
 	private JedisCommands dynoClient;
-
-	private JedisCommands dynoClientRead;
 
 	private ShardSupplier ss;
 
@@ -70,19 +66,6 @@ public class DynoQueueDAO implements QueueDAO {
 		DynoJedisClient dyno = new DynoJedisClient.Builder().withApplicationName(config.getAppId()).withDynomiteClusterName(cluster)
 				.withDiscoveryClient(dc).build();
 
-		
-		this.dynoClientRead = new DynoJedisClient.Builder().withApplicationName(config.getAppId()).withDynomiteClusterName(cluster)
-				.withHostSupplier(new EurekaHostsSupplier(cluster, dc) {
-
-					@Override
-					public List<Host> getHosts() {
-						List<Host> hosts = super.getHosts();
-						hosts.forEach(host -> host.setPort(22122));
-						return hosts;
-					}
-
-				}).withPort(22122).withCPConfig(new ConnectionPoolConfigurationImpl(config.getAppId()+"read").setPort(22122)).build();
-
 		this.dynoClient = dyno;
 
 		String region = config.getRegion();
@@ -99,7 +82,6 @@ public class DynoQueueDAO implements QueueDAO {
 
 	public DynoQueueDAO(JedisCommands dynoClient, JedisCommands dynoClientRead, ShardSupplier ss, Configuration config, int dynoThreadCount) {
 		this.dynoClient = dynoClient;
-		this.dynoClientRead = dynoClientRead;
 		this.ss = ss;
 		this.config = config;
 		this.dynoThreadCount = dynoThreadCount;
@@ -114,8 +96,8 @@ public class DynoQueueDAO implements QueueDAO {
 		if (domain != null) {
 			prefix = prefix + "." + domain;
 		}
-		queues = new RedisQueues(dynoClient, dynoClientRead, prefix, ss, 60_000, 60_000, dynoThreadCount);
-		logger.info("DistQueueDynoDAO::INIT " + prefix);
+		queues = new RedisQueues(dynoClient, dynoClient, prefix, ss, 60_000, 60_000, dynoThreadCount);
+		logger.info("DynoQueueDAO initialized with prefix " + prefix);
 	}
 
 	@Override
