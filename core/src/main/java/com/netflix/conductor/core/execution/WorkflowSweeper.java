@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
@@ -48,7 +47,6 @@ import com.netflix.conductor.metrics.Monitors;
  *
  */
 @Singleton
-@Trace
 public class WorkflowSweeper {
 
 	private static Logger logger = LoggerFactory.getLogger(WorkflowSweeper.class);
@@ -113,6 +111,9 @@ public class WorkflowSweeper {
 					
 					WorkflowContext ctx = new WorkflowContext(config.getAppId());
 					WorkflowContext.set(ctx);
+					if(logger.isDebugEnabled()) {
+						logger.debug("Running sweeper for workflow {}", workflowId);
+					}
 					boolean done = ds.decide(workflowId, workflowProvider);
 					if(!done) {
 						queues.setUnackTimeout(WorkflowExecutor.deciderQueue, workflowId, config.getSweepFrequency() * 1000);
