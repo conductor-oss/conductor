@@ -74,6 +74,7 @@ public class WorkflowSweeper {
 		this.executorThreadPoolSize = config.getIntProperty("workflow.sweeper.thread.count", 5);
 		this.es = Executors.newFixedThreadPool(executorThreadPoolSize);
 		init(workflowProvider);
+		logger.info("Workflow Sweeper Initialized");
 	}
 
 	public void init(WorkflowExecutor workflowProvider) {
@@ -86,10 +87,10 @@ public class WorkflowSweeper {
 				
 				logger.debug("Workflow sweeping...");
 				if(config.disableSweep()){
-					logger.debug("Workflow sweep is disabled.");
+					logger.info("Workflow sweep is disabled.");
 					return;
 				}
-				List<String> workflowIds = queues.pop(WorkflowExecutor.deciderQueue, executorThreadPoolSize, 1000);
+				List<String> workflowIds = queues.pop(WorkflowExecutor.deciderQueue, 2 * executorThreadPoolSize, 2000);
 				sweep(workflowIds, workflowProvider);
 				
 			}catch(Exception e){
@@ -99,7 +100,7 @@ public class WorkflowSweeper {
 			}
 			
 			
-		}, 2 * config.getSweepFrequency(), 500, TimeUnit.MILLISECONDS);
+		}, 500, 500, TimeUnit.MILLISECONDS);
 	}
 
 	public void sweep(List<String> workflowIds, WorkflowExecutor workflowProvider) throws Exception {
