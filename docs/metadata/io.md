@@ -26,6 +26,6 @@ e.g.
 ``` json
 {
  "some_key": "const string value",
- "num_value: 42
+ "num_value": 42
 }
 ```
