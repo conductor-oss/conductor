@@ -81,7 +81,7 @@ Fork is used to schedule parallel set of tasks.
 
 **Parameters**
 
-* ```forkTasks``` A list of list of tasks.  Each list if scheduled to be executed in parallel.  However, within the list tasks are scheduled in serial.
+* ```forkTasks``` A list of list of tasks.  Each sublist is scheduled to be executed in parallel.  However, tasks within the sublists are scheduled in a serial fashion.
 
 **Sample**
 
