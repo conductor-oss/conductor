@@ -15,6 +15,7 @@
  */
 package com.netflix.conductor.dao.dynomite.queue;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -30,6 +31,9 @@ import org.slf4j.LoggerFactory;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.discovery.DiscoveryClient;
+import com.netflix.dyno.connectionpool.Host;
+import com.netflix.dyno.connectionpool.Host.Status;
+import com.netflix.dyno.contrib.EurekaHostsSupplier;
 import com.netflix.dyno.jedis.DynoJedisClient;
 import com.netflix.dyno.queues.DynoQueue;
 import com.netflix.dyno.queues.Message;
@@ -47,6 +51,8 @@ public class DynoQueueDAO implements QueueDAO {
 	private RedisQueues queues;
 
 	private JedisCommands dynoClient;
+	
+	private JedisCommands dynoClientRead;
 
 	private ShardSupplier ss;
 
@@ -58,14 +64,30 @@ public class DynoQueueDAO implements QueueDAO {
 
 	@Inject
 	public DynoQueueDAO(DiscoveryClient dc, Configuration config) {
+		
+		logger.info("DynoQueueDAO::INIT");
+		
 		this.config = config;
 		this.domain = config.getProperty("workflow.dyno.keyspace.domain", null);
 		String cluster = config.getProperty("workflow.dynomite.cluster", null);
 		this.dynoThreadCount = config.getIntProperty("queues.dynomite.threads", 100);
+		final int readConnPort = config.getIntProperty("queues.dynomite.nonQuorum.port", 22122);
 		
-		DynoJedisClient dyno = new DynoJedisClient.Builder().withApplicationName(config.getAppId()).withDynomiteClusterName(cluster)
-				.withDiscoveryClient(dc).build();
-
+		EurekaHostsSupplier hostSupplier = new EurekaHostsSupplier(cluster, dc) {
+			@Override
+			public List<Host> getHosts() {
+				List<Host> hosts = super.getHosts();
+				List<Host> updatedHosts = new ArrayList<>(hosts.size());
+				hosts.forEach(host -> {
+					updatedHosts.add(new Host(host.getHostName(), host.getIpAddress(), readConnPort, host.getRack(), host.getDatacenter(), Status.Up));
+				});
+				return updatedHosts;
+			}
+		};
+		
+		this.dynoClientRead = new DynoJedisClient.Builder().withApplicationName(config.getAppId()).withDynomiteClusterName(cluster).withHostSupplier(hostSupplier).build();
+		DynoJedisClient dyno = new DynoJedisClient.Builder().withApplicationName(config.getAppId()).withDynomiteClusterName(cluster).withDiscoveryClient(dc).build();
+		
 		this.dynoClient = dyno;
 
 		String region = config.getRegion();
@@ -96,8 +118,8 @@ public class DynoQueueDAO implements QueueDAO {
 		if (domain != null) {
 			prefix = prefix + "." + domain;
 		}
-		queues = new RedisQueues(dynoClient, dynoClient, prefix, ss, 60_000, 60_000, dynoThreadCount);
-		logger.info("DynoQueueDAO initialized with prefix " + prefix);
+		queues = new RedisQueues(dynoClient, dynoClientRead, prefix, ss, 60_000, 60_000, dynoThreadCount);
+		logger.info("DynoQueueDAO initialized with prefix " + prefix + "!");
 	}
 
 	@Override
