@@ -68,7 +68,7 @@ public class WorkflowSweeper {
 	@Inject
 	public WorkflowSweeper(ExecutionDAO edao, MetadataDAO metadata, ObjectMapper om, WorkflowExecutor workflowProvider, Configuration config, QueueDAO queues) {
 		this.om = om;
-		this.ds = new DeciderService(metadata, edao, om, config);
+		this.ds = new DeciderService(metadata, edao, om);
 		this.config = config;
 		this.queues = queues;
 		this.executorThreadPoolSize = config.getIntProperty("workflow.sweeper.thread.count", 5);
@@ -84,8 +84,7 @@ public class WorkflowSweeper {
 		deciderPool.scheduleWithFixedDelay(() -> {
 
 			try{
-				
-				logger.debug("Workflow sweeping...");
+
 				if(config.disableSweep()){
 					logger.info("Workflow sweep is disabled.");
 					return;

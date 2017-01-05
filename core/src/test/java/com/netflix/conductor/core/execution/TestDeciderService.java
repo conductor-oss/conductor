@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
@@ -38,16 +39,14 @@ import org.junit.Test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
-import com.netflix.conductor.core.execution.DeciderService;
-import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 
 
@@ -67,15 +66,33 @@ public class TestDeciderService {
 		
 		workflow = new Workflow();
 		workflow.getInput().put("requestId", "request id 001");
-		Map<String, String> name = new HashMap<>();
-		name.put("who", "The Who");
+		workflow.getInput().put("hasAwards", true);
+		Map<String, Object> name = new HashMap<>();
+		name.put("name", "The Who");
+		name.put("year", 1970);
+		Map<String, Object> name2 = new HashMap<>();
+		name2.put("name", "The Doors");
+		name2.put("year", 1975);
+		
+		List<Object> names = new LinkedList<>();
+		names.add(name);
+		names.add(name2);
+		
 		workflow.getOutput().put("name", name);
+		workflow.getOutput().put("names", names);
+		workflow.getOutput().put("awards", 200);
+		
 		Task task = new Task();
 		task.setReferenceTaskName("task2");
 		task.getOutputData().put("location", "http://location");
+		
+		Task task2 = new Task();
+		task2.setReferenceTaskName("task3");
+		task2.getOutputData().put("refId", "abcddef_1234_7890_aaffcc");
+		
 		workflow.getTasks().add(task);
-		ParametersUtils pu = new ParametersUtils(new TestConfiguration());
-		ds.setParametersUtils(pu);
+		workflow.getTasks().add(task2);
+
 		MetadataDAO mdao = mock(MetadataDAO.class);
 		TaskDef taskDef = new TaskDef();
 		when(mdao.getTaskDef(any())).thenReturn(taskDef);
@@ -111,8 +128,23 @@ public class TestDeciderService {
 	@Test
 	public void testGetTaskInputV2Partial() throws Exception {
 		System.setProperty("EC2_INSTANCE", "i-123abcdef990");
+		Map<String, Object> wfi = new HashMap<>();
+		Map<String, Object> wfmap = new HashMap<>();
+		wfmap.put("input", workflow.getInput());
+		wfmap.put("output", workflow.getOutput());
+		wfi.put("workflow", wfmap);
+		
+		workflow.getTasks().stream().map(task -> task.getReferenceTaskName()).forEach(ref -> {
+			Map<String, Object> taskInput = workflow.getTaskByRefName(ref).getInputData();
+			Map<String, Object> taskOutput = workflow.getTaskByRefName(ref).getOutputData();
+			Map<String, Object> io = new HashMap<>();
+			io.put("input", taskInput);
+			io.put("output", taskOutput);
+			wfi.put(ref, io);
+		});
 		
 		workflow.setSchemaVersion(2);
+		
 		Map<String, String> ip = new HashMap<String, String>();
 		ip.put("workflowInputParam", "${workflow.input.requestId}");
 		ip.put("workfowOutputParam", "${workflow.output.name}");
@@ -121,9 +153,24 @@ public class TestDeciderService {
 		ip.put("taskOutputParam3", "${task3.output.location}");
 		ip.put("constParam", "Some String value   &");
 		ip.put("partial", "${task2.output.location}/something?host=${EC2_INSTANCE}");
+		ip.put("jsonPathExtracted", "${workflow.output.names[*].year}");
+		ip.put("secondName", "${workflow.output.names[1].name}");
+		ip.put("concatenatedName", "The Band is: ${workflow.output.names[1].name}-\t${EC2_INSTANCE}");
 		
-		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null);
-		System.out.println("json=" + new ObjectMapper().configure(SerializationFeature.INDENT_OUTPUT, true).writeValueAsString(taskInput));
+		TaskDef taskDef = new TaskDef();
+		taskDef.getInputTemplate().put("opname", "${workflow.output.name}");
+		List<Object> listParams = new LinkedList<>();
+		List<Object> listParams2 = new LinkedList<>();
+		listParams2.add("${workflow.input.requestId}-10-${EC2_INSTANCE}");
+		listParams.add(listParams2);
+		Map<String, Object> map = new HashMap<>();
+		map.put("name", "${workflow.output.names[0].name}");
+		map.put("hasAwards", "${workflow.input.hasAwards}");
+		listParams.add(map);
+		taskDef.getInputTemplate().put("listValues", listParams);
+		
+		
+		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, taskDef);
 		
 		assertNotNull(taskInput);
 		assertTrue(taskInput.containsKey("workflowInputParam"));
@@ -131,6 +178,14 @@ public class TestDeciderService {
 		assertTrue(taskInput.containsKey("taskOutputParam2"));
 		assertTrue(taskInput.containsKey("taskOutputParam3"));
 		assertNull(taskInput.get("taskOutputParam2"));
+		assertNotNull(taskInput.get("jsonPathExtracted"));
+		assertTrue(taskInput.get("jsonPathExtracted") instanceof List);
+		assertNotNull(taskInput.get("secondName"));
+		assertTrue(taskInput.get("secondName") instanceof String);
+		assertEquals("The Doors", taskInput.get("secondName"));
+		assertEquals("The Band is: The Doors-\ti-123abcdef990" , taskInput.get("concatenatedName"));
+		
+		System.out.println(new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(taskInput));
 		
 		assertEquals("request id 001", taskInput.get("workflowInputParam"));
 		assertEquals("http://location", taskInput.get("taskOutputParam"));

@@ -55,7 +55,7 @@ public final class JerseyModule extends JerseyServletModule {
         Map<String, String> jerseyParams = new HashMap<>();	
 		jerseyParams.put("com.sun.jersey.config.feature.FilterForwardOn404", "true");
 		jerseyParams.put("com.sun.jersey.config.property.WebPageContentRegex", "/(((webjars|api-docs|swagger-ui/docs|manage)/.*)|(favicon\\.ico))");
-		jerseyParams.put(PackagesResourceConfig.PROPERTY_PACKAGES, "com.netflix.conductor.server.resources;com.netflix.conductor.contribs.queue;io.swagger.jaxrs.json;io.swagger.jaxrs.listing");
+		jerseyParams.put(PackagesResourceConfig.PROPERTY_PACKAGES, "com.netflix.conductor.server.resources;io.swagger.jaxrs.json;io.swagger.jaxrs.listing");
 		jerseyParams.put(ResourceConfig.FEATURE_DISABLE_WADL, "false");
 		serve("/api/*").with(GuiceContainer.class, jerseyParams);
     }

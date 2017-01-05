@@ -222,7 +222,7 @@ public class SQSObservableQueue implements ObservableQueue {
 	}
 	
 	private String getPolicy(List<String> accountIds) {
-		Policy policy = new Policy("ReloadedWorkerAccessPolicy");
+		Policy policy = new Policy("AuthorizedWorkerAccessPolicy");
 		Statement stmt = new Statement(Effect.Allow);
 		Action action = SQSActions.SendMessage;
 		stmt.getActions().add(action);
