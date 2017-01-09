@@ -186,7 +186,6 @@ public abstract class ClientBase {
 	}
 
 	private void handleException(Exception e) {
-		e.printStackTrace();
 		throw new RuntimeException(e);		
 	}	
 	
