@@ -114,7 +114,7 @@ public class TaskResource {
 	@Path("/{taskId}/ack")
 	@ApiOperation("Ack Task is recieved")
 	@Consumes({ MediaType.WILDCARD })
-	@Produces({ MediaType.TEXT_PLAIN })
+	@Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON })
 	public String ack(@PathParam("taskId") String taskId, @QueryParam("workerid") String workerId) throws Exception {
 		return "" + taskService.ackTaskRecieved(taskId, workerId);
 	}
@@ -162,7 +162,7 @@ public class TaskResource {
 	@Path("/queue/requeue")
 	@ApiOperation("Requeue pending tasks for all the running workflows")
 	@Consumes({ MediaType.WILDCARD })
-	@Produces({ MediaType.TEXT_PLAIN })
+	@Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON })
 	public String requeue() throws Exception {
 		return "" + taskService.requeuePendingTasks();
 	}
@@ -171,7 +171,7 @@ public class TaskResource {
 	@Path("/queue/requeue/{taskType}")
 	@ApiOperation("Requeue pending tasks")
 	@Consumes({ MediaType.WILDCARD })
-	@Produces({ MediaType.TEXT_PLAIN })
+	@Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON })
 	public String requeue(@PathParam("taskType") String taskType) throws Exception {
 		return "" + taskService.requeuePendingTasks(taskType);
 	}
