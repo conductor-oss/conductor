@@ -104,7 +104,7 @@ public class TestDeciderService {
 	public void testGetTaskInputV2() throws Exception {
 		
 		workflow.setSchemaVersion(2);
-		Map<String, String> ip = new HashMap<String, String>();
+		Map<String, Object> ip = new HashMap<>();
 		ip.put("workflowInputParam", "${workflow.input.requestId}");
 		ip.put("taskOutputParam", "${task2.output.location}");
 		ip.put("taskOutputParam2", "${task2.output.locationBad}");
@@ -145,7 +145,7 @@ public class TestDeciderService {
 		
 		workflow.setSchemaVersion(2);
 		
-		Map<String, String> ip = new HashMap<String, String>();
+		Map<String, Object> ip = new HashMap<>();
 		ip.put("workflowInputParam", "${workflow.input.requestId}");
 		ip.put("workfowOutputParam", "${workflow.output.name}");
 		ip.put("taskOutputParam", "${task2.output.location}");
@@ -195,28 +195,71 @@ public class TestDeciderService {
 		workflow.setSchemaVersion(1);
 	}
 	
+	@SuppressWarnings("unchecked")
 	@Test
 	public void testGetTaskInput() throws Exception {
-		Map<String, String> ip = new HashMap<String, String>();
-		ip.put("workflowInputParam", "workflow.input.requestId");
-		ip.put("taskOutputParam", "task2.output.location");
-				
+		Map<String, Object> ip = new HashMap<>();
+		ip.put("workflowInputParam", "${workflow.input.requestId}");
+		ip.put("taskOutputParam", "${task2.output.location}");
+		List<Map<String, Object>> json = new LinkedList<>();
+		Map<String, Object> m1 = new HashMap<>();
+		m1.put("name", "person name");
+		m1.put("city", "New York");
+		m1.put("phone", 2120001234);
+		m1.put("status", "${task2.output.isPersonActive}");
+		
+		Map<String, Object> m2 = new HashMap<>();
+		m2.put("employer", "City Of New York");
+		m2.put("color", "purple");
+		m2.put("requestId", "${workflow.input.requestId}");
+		
+		json.add(m1);
+		json.add(m2);
+		ip.put("complexJson", json);
 		
 		Workflow workflow = new Workflow();
 		workflow.getInput().put("requestId", "request id 001");
 		Task task = new Task();
 		task.setReferenceTaskName("task2");
 		task.getOutputData().put("location", "http://location");
+		task.getOutputData().put("isPersonActive", true);
 		workflow.getTasks().add(task);
+		workflow.setSchemaVersion(2);
 		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null);
+		System.out.println(taskInput.get("complexJson"));
+		assertNotNull(taskInput);
+		assertTrue(taskInput.containsKey("workflowInputParam"));
+		assertTrue(taskInput.containsKey("taskOutputParam"));
+		assertEquals("request id 001", taskInput.get("workflowInputParam"));
+		assertEquals("http://location", taskInput.get("taskOutputParam"));
+		assertNotNull(taskInput.get("complexJson"));
+		assertTrue(taskInput.get("complexJson") instanceof List);
 		
+		List<Map<String, Object>> resolvedInput = (List<Map<String, Object>>) taskInput.get("complexJson");
+		assertEquals(2, resolvedInput.size());
+	}
+	
+	@Test
+	public void testGetTaskInputV1() throws Exception {
+		Map<String, Object> ip = new HashMap<>();
+		ip.put("workflowInputParam", "workflow.input.requestId");
+		ip.put("taskOutputParam", "task2.output.location");
+		
+		Workflow workflow = new Workflow();
+		workflow.getInput().put("requestId", "request id 001");
+		Task task = new Task();
+		task.setReferenceTaskName("task2");
+		task.getOutputData().put("location", "http://location");
+		task.getOutputData().put("isPersonActive", true);
+		workflow.getTasks().add(task);
+		workflow.setSchemaVersion(1);
+		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null);
 		
 		assertNotNull(taskInput);
 		assertTrue(taskInput.containsKey("workflowInputParam"));
 		assertTrue(taskInput.containsKey("taskOutputParam"));
 		assertEquals("request id 001", taskInput.get("workflowInputParam"));
 		assertEquals("http://location", taskInput.get("taskOutputParam"));
-		
 	}
 	
 	@Test
@@ -285,7 +328,7 @@ public class TestDeciderService {
 		def.setVersion(1);
 		def.setInputParameters(Arrays.asList("param1", "param2"));
 		
-		Map<String, String> ip1 = new HashMap<>();
+		Map<String, Object> ip1 = new HashMap<>();
 		ip1.put("p1", "workflow.input.param1");
 		ip1.put("p2", "workflow.input.param2");
 		
@@ -354,7 +397,7 @@ public class TestDeciderService {
 		
 		WorkflowTask wft1 = new WorkflowTask();
 		wft1.setName("junit_task_s1");
-		Map<String, String> ip1 = new HashMap<>();
+		Map<String, Object> ip1 = new HashMap<>();
 		ip1.put("p1", "workflow.input.param1");
 		ip1.put("p2", "workflow.input.param2");
 		wft1.setInputParameters(ip1);
@@ -401,7 +444,7 @@ public class TestDeciderService {
 		
 		WorkflowTask wft1 = new WorkflowTask();
 		wft1.setName("junit_task_1");
-		Map<String, String> ip1 = new HashMap<>();
+		Map<String, Object> ip1 = new HashMap<>();
 		ip1.put("p1", "workflow.input.param1");
 		ip1.put("p2", "workflow.input.param2");
 		wft1.setInputParameters(ip1);
@@ -409,14 +452,14 @@ public class TestDeciderService {
 		
 		WorkflowTask wft2 = new WorkflowTask();
 		wft2.setName("junit_task_2");
-		Map<String, String> ip2 = new HashMap<>();
+		Map<String, Object> ip2 = new HashMap<>();
 		ip2.put("tp1", "workflow.input.param1");
 		wft2.setInputParameters(ip2);
 		wft2.setTaskReferenceName("t2");
 		
 		WorkflowTask wft3 = new WorkflowTask();
 		wft3.setName("junit_task_3");
-		Map<String, String> ip3 = new HashMap<>();
+		Map<String, Object> ip3 = new HashMap<>();
 		ip2.put("tp3", "workflow.input.param2");
 		wft3.setInputParameters(ip3);
 		wft3.setTaskReferenceName("t3");
@@ -460,7 +503,7 @@ public class TestDeciderService {
 		finalTask.setTaskReferenceName("tf");
 		finalTask.setType(Type.DECISION.name());
 		finalTask.setCaseValueParam("finalCase");
-		Map<String, String> fi = new HashMap<>();
+		Map<String, Object> fi = new HashMap<>();
 		fi.put("finalCase", "workflow.input.finalCase");
 		finalTask.setInputParameters(fi);
 		finalTask.getDecisionCases().put("notify", Arrays.asList(notifyTask));

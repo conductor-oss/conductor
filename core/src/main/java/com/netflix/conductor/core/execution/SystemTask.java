@@ -129,7 +129,6 @@ public class SystemTask extends Task {
 		st.setTaskId(taskId);
 		st.setInputData(input);
 		st.setStatus(Status.SCHEDULED);
-		st.setCallbackFromWorker(taskToSchedule.isCallbackFromWorker());
 	    st.setRetryCount(retryCount);
 	    st.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
 	    

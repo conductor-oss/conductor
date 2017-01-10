@@ -43,7 +43,7 @@ public class WorkflowDef extends Auditable {
 	
 	private List<String> inputParameters = new LinkedList<String>();
 	
-	private Map<String, String> outputParameters = new HashMap<>();
+	private Map<String, Object> outputParameters = new HashMap<>();
 
 	private String failureWorkflow;
 	
@@ -109,14 +109,14 @@ public class WorkflowDef extends Auditable {
 	/**
 	 * @return the outputParameters
 	 */
-	public Map<String, String> getOutputParameters() {
+	public Map<String, Object> getOutputParameters() {
 		return outputParameters;
 	}
 
 	/**
 	 * @param outputParameters the outputParameters to set
 	 */
-	public void setOutputParameters(Map<String, String> outputParameters) {
+	public void setOutputParameters(Map<String, Object> outputParameters) {
 		this.outputParameters = outputParameters;
 	}
 		

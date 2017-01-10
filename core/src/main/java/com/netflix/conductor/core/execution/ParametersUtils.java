@@ -49,8 +49,7 @@ public class ParametersUtils {
 		
 	}
 	
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	public Map<String, Object> getTaskInputV2(Map input, Workflow workflow, String taskId, TaskDef taskDef) {
+	public Map<String, Object> getTaskInputV2(Map<String, Object> input, Workflow workflow, String taskId, TaskDef taskDef) {
 		Map<String, Object> inputParams = new HashMap<>();
 		if(input != null) {
 			inputParams.putAll(input);

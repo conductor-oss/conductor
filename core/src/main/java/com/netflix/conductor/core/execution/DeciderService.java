@@ -533,7 +533,7 @@ public class DeciderService {
 				}
 				String name = subWorkflowParams.getName();
 				Object version = subWorkflowParams.getVersion();
-				Map<String, String> params = new HashMap<>();
+				Map<String, Object> params = new HashMap<>();
 				params.put("name", name);
 				if(version != null){
 					params.put("version", version.toString());	
@@ -672,42 +672,45 @@ public class DeciderService {
 	}
 	
 	@VisibleForTesting
-	Map<String, Object> getTaskInput(Map<String, String> inputParams, Workflow workflow, TaskDef taskDef)  {
+	Map<String, Object> getTaskInput(Map<String, Object> inputParams, Workflow workflow, TaskDef taskDef)  {
 		if(workflow.getSchemaVersion() > 1){
 			return pu.getTaskInputV2(inputParams, workflow, null, taskDef);
 		}
+		return getTaskInputV1(workflow, inputParams);
+	}
+
+	@Deprecated
+	//Workflow schema version 1 is deprecated and new workflows should be using version 2
+	private Map<String, Object> getTaskInputV1(Workflow workflow, Map<String, Object> inputParams) {
 		Map<String, Object> input = new HashMap<>();
+		if(inputParams == null){
+			return input;
+		}
 		Map<String, Object> workflowInput = workflow.getInput();
-		
-		Preconditions.checkNotNull(workflowInput, "Workflow Input is null");
-		if(inputParams != null){
-			inputParams.entrySet().forEach(e -> {
-				
-				String paramName = e.getKey();
-				String paramPath = e.getValue();
-				String[] paramPathComponents = paramPath.split("\\.");
-				Preconditions.checkArgument(paramPathComponents.length == 3, "Invalid input expression for " + paramName + ", expression=" + paramPath);
-				
-				String source = paramPathComponents[0];	//workflow, or task reference name
-				String type = paramPathComponents[1];	//input/output
-				String name = paramPathComponents[2];	//name of the parameter
-				if("workflow".equals(source)){
-					input.put(paramName, workflowInput.get(name));
-				}else{
-					Task task = workflow.getTaskByRefName(source);
-					if(task != null){
-						if("input".equals(type)){
-							input.put(paramName, task.getInputData().get(name));
-						}else{
-							input.put(paramName, task.getOutputData().get(name));
-						}
+		inputParams.entrySet().forEach(e -> {
+			
+			String paramName = e.getKey();
+			String paramPath = ""+e.getValue();
+			String[] paramPathComponents = paramPath.split("\\.");
+			Preconditions.checkArgument(paramPathComponents.length == 3, "Invalid input expression for " + paramName + ", paramPathComponents.size=" + paramPathComponents.length + ", expression=" + paramPath);
+			
+			String source = paramPathComponents[0];	//workflow, or task reference name
+			String type = paramPathComponents[1];	//input/output
+			String name = paramPathComponents[2];	//name of the parameter
+			if("workflow".equals(source)){
+				input.put(paramName, workflowInput.get(name));
+			}else{
+				Task task = workflow.getTaskByRefName(source);
+				if(task != null){
+					if("input".equals(type)){
+						input.put(paramName, task.getInputData().get(name));
+					}else{
+						input.put(paramName, task.getOutputData().get(name));
 					}
 				}
-			});
-		}
-		
+			}
+		});
 		return input;
-
 	}
 	
 	private boolean isTaskSkipped(WorkflowTask taskToSchedule, Workflow workflow) {
