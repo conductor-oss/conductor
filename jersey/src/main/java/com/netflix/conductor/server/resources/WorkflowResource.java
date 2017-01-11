@@ -83,7 +83,7 @@ public class WorkflowResource {
 
 	@POST
 	@Path("/{name}")
-	@Produces({MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON})
+	@Produces({ MediaType.TEXT_PLAIN })
 	@ApiOperation("Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking")
 	public String startWorkflow (
 			@PathParam("name") String name, @QueryParam("version") Integer version, 

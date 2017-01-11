@@ -119,7 +119,7 @@ public class TaskResource {
 	@Path("/{taskId}/ack")
 	@ApiOperation("Ack Task is recieved")
 	@Consumes({ MediaType.WILDCARD })
-	@Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON })
+	@Produces({ MediaType.TEXT_PLAIN })
 	public String ack(@PathParam("taskId") String taskId, @QueryParam("workerid") String workerId) throws Exception {
 		return "" + taskService.ackTaskRecieved(taskId, workerId);
 	}
