@@ -11,7 +11,9 @@ The API and storage layers are pluggable and provide ability to work with differ
 2. **Servlet Container**: Tomcat, Jetty, or similar running JDK 1.8 or higher
 
 ## Run In-Memory Server
-Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor
+Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.
+
+<font color='red'>In-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies</font>
 
 **Checkout the source from github**
 
@@ -49,3 +51,40 @@ Conductor follows RPC based communication model where workers are running on a s
 [1]: https://github.com/Netflix/dyno-queues
 [2]: https://github.com/Netflix/dynomite
 [3]: https://www.elastic.co
+
+# High Level Steps
+**Steps required for a new workflow to be registered and get executed:**
+
+1. Define task definitions used by the workflow.
+2. Create the workflow definition
+3. Create task worker(s) that polls for scheduled tasks at regular interval
+
+**Trigger Workflow Execution**
+
+```
+POST /workflow/{name}
+{
+	... //json payload as workflow input
+}
+```
+
+**Polling for a task**
+
+```
+GET /tasks/poll/batch/{taskType}
+```
+	
+**Update task status**
+	
+```json
+POST /tasks
+{
+	"outputData": {
+        "encodeResult":"success",
+        "location": "http://cdn.example.com/file/location.png"
+        //any task specific output
+     },
+     "taskStatus": "COMPLETED"
+}
+```
+	
