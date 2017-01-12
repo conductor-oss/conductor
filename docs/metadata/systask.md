@@ -1,6 +1,6 @@
 # Dynamic Task
 
-## Paramters:
+## Parameters:
 |name|description|
 |---|---|
 | dynamicTaskNameParam|Name of the parameter from the task input whose value is used to schedule the task.  e.g. if the value of the parameter is ABC, the next task scheduled is of type 'ABC'.|
@@ -24,7 +24,7 @@ If the workflow is started with input parameter user_supplied_task's value as __
 A decision task is similar to ```case...switch``` statement in a programming langugage.
 The task takes 3 parameters:
 
-## Paramters:
+## Parameters:
 |name|description|
 |---|---|
 |caseValueParam |Name of the parameter in task input whose value will be used as a switch.|
@@ -87,7 +87,7 @@ The task takes 3 parameters:
 
 Fork is used to schedule parallel set of tasks.
 
-## Paramters:
+## Parameters:
 |name|description|
 |---|---|
 | forkTasks |A list of list of tasks.  Each sublist is scheduled to be executed in parallel.  However, tasks within the sublists are scheduled in a serial fashion.|
