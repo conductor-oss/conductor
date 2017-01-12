@@ -9,7 +9,7 @@
         "taskReferenceName": "get_es_0",
         "inputParameters": {
           "http_request": {
-            "uri": "http://es_cpe_wfe.us-east-1.dyntest.netflix.net:7104/wfe_perf/workflow/_search?q=status:COMPLETED&size=10",
+            "uri": "http://localhost:9200/wfe_perf/workflow/_search?q=status:COMPLETED&size=10",
             "method": "GET",
             "vipAddress": "es_cpe_wfe.us-east-1.cloud.netflix.com"
           }
@@ -17,8 +17,8 @@
         "type": "HTTP"
       },
       {
-        "name": "perf_task_1",
-        "taskReferenceName": "perf_task_1",
+        "name": "task_1",
+        "taskReferenceName": "task_1",
         "inputParameters": {
           "mod": "${workflow.input.mod}",
           "oddEven": "${workflow.input.oddEven}"
@@ -27,7 +27,7 @@
       },
       {
         "name": "dyntask",
-        "taskReferenceName": "perf_task_2",
+        "taskReferenceName": "task_2",
         "inputParameters": {
           "taskToExecute": "${workflow.input.task2Name}"
         },
@@ -38,18 +38,18 @@
         "name": "oddEvenDecision",
         "taskReferenceName": "oddEvenDecision",
         "inputParameters": {
-          "oddEven": "${perf_task_2.output.oddEven}"
+          "oddEven": "${task_2.output.oddEven}"
         },
         "type": "DECISION",
         "caseValueParam": "oddEven",
         "decisionCases": {
           "0": [
             {
-              "name": "perf_task_4",
-              "taskReferenceName": "perf_task_4",
+              "name": "task_4",
+              "taskReferenceName": "task_4",
               "inputParameters": {
-                "mod": "${perf_task_2.output.mod}",
-                "oddEven": "${perf_task_2.output.oddEven}"
+                "mod": "${task_2.output.mod}",
+                "oddEven": "${task_2.output.oddEven}"
               },
               "type": "SIMPLE"
             },
@@ -57,8 +57,8 @@
               "name": "dynamic_fanout",
               "taskReferenceName": "fanout1",
               "inputParameters": {
-                "dynamicTasks": "${perf_task_4.output.dynamicTasks}",
-                "input": "${perf_task_4.output.inputs}"
+                "dynamicTasks": "${task_4.output.dynamicTasks}",
+                "input": "${task_4.output.inputs}"
               },
               "type": "FORK_JOIN_DYNAMIC",
               "dynamicForkTasksParam": "dynamicTasks",
@@ -78,16 +78,16 @@
               "forkTasks": [
                 [
                   {
-                    "name": "perf_task_10",
-                    "taskReferenceName": "perf_task_10",
+                    "name": "task_10",
+                    "taskReferenceName": "task_10",
                     "type": "SIMPLE"
                   },
                   {
                     "name": "sub_workflow_x",
                     "taskReferenceName": "wf3",
                     "inputParameters": {
-                      "mod": "${perf_task_1.output.mod}",
-                      "oddEven": "${perf_task_1.output.oddEven}"
+                      "mod": "${task_1.output.mod}",
+                      "oddEven": "${task_1.output.oddEven}"
                     },
                     "type": "SUB_WORKFLOW",
                     "subWorkflowParam": {
@@ -98,16 +98,16 @@
                 ],
                 [
                   {
-                    "name": "perf_task_11",
-                    "taskReferenceName": "perf_task_11",
+                    "name": "task_11",
+                    "taskReferenceName": "task_11",
                     "type": "SIMPLE"
                   },
                   {
                     "name": "sub_workflow_x",
                     "taskReferenceName": "wf4",
                     "inputParameters": {
-                      "mod": "${perf_task_1.output.mod}",
-                      "oddEven": "${perf_task_1.output.oddEven}"
+                      "mod": "${task_1.output.mod}",
+                      "oddEven": "${task_1.output.oddEven}"
                     },
                     "type": "SUB_WORKFLOW",
                     "subWorkflowParam": {
@@ -142,8 +142,8 @@
         "type": "HTTP"
       },
       {
-        "name": "perf_task_30",
-        "taskReferenceName": "perf_task_30",
+        "name": "task_30",
+        "taskReferenceName": "task_30",
         "inputParameters": {
           "statuses": "${get_es_1.output...status}",
           "fistWorkflowId": "${get_es_1.output.workflowId[0]}"
