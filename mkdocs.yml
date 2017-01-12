@@ -9,9 +9,8 @@ pages:
 - 'Basic Concepts': intro/concepts.md
 - 'Metadata Definitions': metadata/index.md 
 - 'System Tasks': metadata/systask.md
-- 'Conductor Server': server/index.md
+- 'Extending Conductor': extend/index.md
 - 'Workflow Management': runtime/index.md
-- 'Extending Backend': extend/index.md
 - 'Workflow Metrics':
    - 'Server Metrics': metrics/index.md
    - 'Worker Metrics': metrics/client.md

@@ -1,8 +1,8 @@
 # Conductor
 
-Conductor is an _orchestration_ engine that runs in the cloud.  
-<center>![Logo](img/corner-logo2.png)</center>
-
+<center>![Logo](img/conductor-vector-x.png)</center>
+<center>![Logo](img/corner-logo-oss.png)</center>
+<center>Conductor is an _orchestration_ engine that runs in the cloud. </center>
 ## Motivation
 
 We built Conductor to help us orchestrate microservices based process flows at Netflix with the following features:
