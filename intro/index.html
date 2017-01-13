@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../css/custom.css" rel="stylesheet">
   
   <script>
     // Current page data
@@ -34,8 +35,8 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
-      <div class="wy-side-nav-search" style="background-color:#000000">
-        <a href=".." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#000000;border:0;padding:0" class="cornerlogo" src="../img/corner-logo2.png"/>
+      <div class="wy-side-nav-search" style="background-color:#fcfcfc">
+        <a href=".." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#fcfcfc;border:0;padding:0" class="cornerlogo" src="../img/conductor-vector-x.png"/>
         </a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -61,15 +62,12 @@
             <ul>
             
                 <li class="toctree-l3"><a href="#high-level-architecture">High Level Architecture</a></li>
-                
             
                 <li class="toctree-l3"><a href="#installing-and-running">Installing and Running</a></li>
-                
-                    <li><a class="toctree-l4" href="#run-in-memory-server">Run In-Memory Server</a></li>
-                
             
                 <li class="toctree-l3"><a href="#runtime-model">Runtime Model</a></li>
-                
+            
+                <li class="toctree-l3"><a href="#high-level-steps">High Level Steps</a></li>
             
             </ul>
         
@@ -85,64 +83,35 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="steps/">Highlevel Steps</a>
+        <a class="" href="../metadata/">Metadata Definitions</a>
         
     </li>
 <li>
           
             <li>
-    <ul class="subnav">
-    <li><span>Defining Workflow Metadata</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../metadata/">Definitions</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../metadata/task/">Workflow Tasks</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../metadata/io/">Wiring inputs</a>
-        
-    </li>
-
-        
-            
     <li class="toctree-l1 ">
         <a class="" href="../metadata/systask/">System Tasks</a>
         
     </li>
-
-        
-            
+<li>
+          
+            <li>
     <li class="toctree-l1 ">
-        <a class="" href="../extend/tasks/">Extended Tasks & Features</a>
+        <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
         
     </li>
-
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../extend/">Extending Conductor</a>
         
-    </ul>
+    </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
         <a class="" href="../runtime/">Workflow Management</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../extend/">Extending Features</a>
         
     </li>
 <li>
@@ -221,7 +190,8 @@
 <li><strong>Servlet Container</strong>: Tomcat, Jetty, or similar running JDK 1.8 or higher</li>
 </ol>
 <h2 id="run-in-memory-server">Run In-Memory Server<a class="headerlink" href="#run-in-memory-server" title="Permanent link">&para;</a></h2>
-<p>Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor</p>
+<p>Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.</p>
+<p><font color='red'>In-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies</font></p>
 <p><strong>Checkout the source from github</strong></p>
 <pre><code>git clone git@github.com:Netflix/conductor.git
 </code></pre>
@@ -249,6 +219,35 @@ gulp watch
 <li>conductor-redis-persistence module uses <a href="https://github.com/Netflix/dynomite">Dynomite</a> for storing the state and metadata along with <a href="https://www.elastic.co">Elasticsearch</a> for indexing backend.</li>
 <li>See section under extending backend for implementing support for different databases for storage and indexing.</li>
 </ul>
+<h1 id="high-level-steps">High Level Steps<a class="headerlink" href="#high-level-steps" title="Permanent link">&para;</a></h1>
+<p><strong>Steps required for a new workflow to be registered and get executed:</strong></p>
+<ol>
+<li>Define task definitions used by the workflow.</li>
+<li>Create the workflow definition</li>
+<li>Create task worker(s) that polls for scheduled tasks at regular interval</li>
+</ol>
+<p><strong>Trigger Workflow Execution</strong></p>
+<pre><code>POST /workflow/{name}
+{
+    ... //json payload as workflow input
+}
+</code></pre>
+
+<p><strong>Polling for a task</strong></p>
+<pre><code>GET /tasks/poll/batch/{taskType}
+</code></pre>
+
+<p><strong>Update task status</strong></p>
+<pre><code class="json">POST /tasks
+{
+    &quot;outputData&quot;: {
+        &quot;encodeResult&quot;:&quot;success&quot;,
+        &quot;location&quot;: &quot;http://cdn.example.com/file/location.png&quot;
+        //any task specific output
+     },
+     &quot;taskStatus&quot;: &quot;COMPLETED&quot;
+}
+</code></pre>
               
             </div>
           </div>

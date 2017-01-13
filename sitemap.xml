@@ -4,7 +4,7 @@
     
     <url>
      <loc>/</loc>
-     <lastmod>2016-12-15</lastmod>
+     <lastmod>2017-01-12</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -12,7 +12,7 @@
     
     <url>
      <loc>/intro/</loc>
-     <lastmod>2016-12-15</lastmod>
+     <lastmod>2017-01-12</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -20,57 +20,31 @@
     
     <url>
      <loc>/intro/concepts/</loc>
-     <lastmod>2016-12-15</lastmod>
+     <lastmod>2017-01-12</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
 
     
-    <url>
-     <loc>/intro/steps/</loc>
-     <lastmod>2016-12-15</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-    
-
-    
-        
     <url>
      <loc>/metadata/</loc>
-     <lastmod>2016-12-15</lastmod>
+     <lastmod>2017-01-12</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
-    <url>
-     <loc>/metadata/task/</loc>
-     <lastmod>2016-12-15</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>/metadata/io/</loc>
-     <lastmod>2016-12-15</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>/metadata/systask/</loc>
-     <lastmod>2016-12-15</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
-    <url>
-     <loc>/extend/tasks/</loc>
-     <lastmod>2016-12-15</lastmod>
-     <changefreq>daily</changefreq>
-    </url>
-        
     
 
     
     <url>
-     <loc>/runtime/</loc>
-     <lastmod>2016-12-15</lastmod>
+     <loc>/metadata/systask/</loc>
+     <lastmod>2017-01-12</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/metadata/kitchensink/</loc>
+     <lastmod>2017-01-12</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -78,7 +52,15 @@
     
     <url>
      <loc>/extend/</loc>
-     <lastmod>2016-12-15</lastmod>
+     <lastmod>2017-01-12</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
+     <loc>/runtime/</loc>
+     <lastmod>2017-01-12</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -87,13 +69,13 @@
         
     <url>
      <loc>/metrics/</loc>
-     <lastmod>2016-12-15</lastmod>
+     <lastmod>2017-01-12</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>/metrics/client/</loc>
-     <lastmod>2016-12-15</lastmod>
+     <lastmod>2017-01-12</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -102,7 +84,7 @@
     
     <url>
      <loc>/license/</loc>
-     <lastmod>2016-12-15</lastmod>
+     <lastmod>2017-01-12</lastmod>
      <changefreq>daily</changefreq>
     </url>
     

@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../../css/highlight.css">
+  <link href="../../css/custom.css" rel="stylesheet">
   
   <script>
     // Current page data
@@ -34,8 +35,8 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
-      <div class="wy-side-nav-search" style="background-color:#000000">
-        <a href="../.." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#000000;border:0;padding:0" class="cornerlogo" src="../../img/corner-logo2.png"/>
+      <div class="wy-side-nav-search" style="background-color:#fcfcfc">
+        <a href="../.." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#fcfcfc;border:0;padding:0" class="cornerlogo" src="../../img/conductor-vector-x.png"/>
         </a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
@@ -70,86 +71,55 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../intro/steps/">Highlevel Steps</a>
+        <a class="" href="../">Metadata Definitions</a>
         
     </li>
 <li>
           
             <li>
-    <ul class="subnav">
-    <li><span>Defining Workflow Metadata</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../">Definitions</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../task/">Workflow Tasks</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../io/">Wiring inputs</a>
-        
-    </li>
-
-        
-            
     <li class="toctree-l1 current">
         <a class="current" href="./">System Tasks</a>
         
             <ul>
             
                 <li class="toctree-l3"><a href="#dynamic-task">Dynamic Task</a></li>
-                
             
-                <li class="toctree-l3"><a href="#decision-task">Decision Task</a></li>
-                
+                <li class="toctree-l3"><a href="#decision">Decision</a></li>
             
                 <li class="toctree-l3"><a href="#fork">Fork</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#join">Join</a></li>
-                
             
                 <li class="toctree-l3"><a href="#dynamic-fork">Dynamic Fork</a></li>
-                
+            
+                <li class="toctree-l3"><a href="#join">Join</a></li>
             
                 <li class="toctree-l3"><a href="#sub-workflow">Sub Workflow</a></li>
-                
+            
+                <li class="toctree-l3"><a href="#wait">Wait</a></li>
+            
+                <li class="toctree-l3"><a href="#http">HTTP</a></li>
             
             </ul>
         
     </li>
-
-        
-            
+<li>
+          
+            <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../extend/tasks/">Extended Tasks & Features</a>
+        <a class="" href="../kitchensink/">Kitchensink Example</a>
         
     </li>
-
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../extend/">Extending Conductor</a>
         
-    </ul>
+    </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
         <a class="" href="../../runtime/">Workflow Management</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../extend/">Extending Features</a>
         
     </li>
 <li>
@@ -204,10 +174,6 @@
     <li><a href="../..">Docs</a> &raquo;</li>
     
       
-        
-          <li>Defining Workflow Metadata &raquo;</li>
-        
-      
     
     <li>System Tasks</li>
     <li class="wy-breadcrumbs-aside">
@@ -222,10 +188,23 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="dynamic-task">Dynamic Task<a class="headerlink" href="#dynamic-task" title="Permanent link">&para;</a></h2>
-<p>Required paramters:
-<code>dynamicTaskNameParam</code> Name of the parameter from the task input whose value is used to schedule the task.  e.g. if the value of the parameter is ABC, the next task scheduled is of type 'ABC'.</p>
-<p>Example Task configuration:</p>
+                <h1 id="dynamic-task">Dynamic Task<a class="headerlink" href="#dynamic-task" title="Permanent link">&para;</a></h1>
+<h3 id="parameters">Parameters:<a class="headerlink" href="#parameters" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dynamicTaskNameParam</td>
+<td>Name of the parameter from the task input whose value is used to schedule the task.  e.g. if the value of the parameter is ABC, the next task scheduled is of type 'ABC'.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="example">Example<a class="headerlink" href="#example" title="Permanent link">&para;</a></h3>
 <pre><code class="json">{
   &quot;name&quot;: &quot;user_task&quot;,
   &quot;taskReferenceName&quot;: &quot;t1&quot;,
@@ -238,15 +217,34 @@
 }
 </code></pre>
 
-<h2 id="decision-task">Decision Task<a class="headerlink" href="#decision-task" title="Permanent link">&para;</a></h2>
+<p>If the workflow is started with input parameter user_supplied_task's value as <strong>user_task_2</strong>, Conductor will schedule <strong>user_task_2</strong> when scheduling this dynamic task.</p>
+<h1 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h1>
 <p>A decision task is similar to <code>case...switch</code> statement in a programming langugage.
 The task takes 3 parameters:</p>
-<ul>
-<li><code>caseValueParam</code> Name of the parameter in task input whose value will be used as a switch.</li>
-<li><code>decisionCases</code> Map where key is possible values of <code>caseValueParam</code> with value being list of tasks to be executed.</li>
-<li><code>defaultCase</code> List of tasks to be executed when no matching value if found in decision case (default condition)</li>
-</ul>
-<p><strong>Sample</strong></p>
+<h3 id="parameters_1">Parameters:<a class="headerlink" href="#parameters_1" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>caseValueParam</td>
+<td>Name of the parameter in task input whose value will be used as a switch.</td>
+</tr>
+<tr>
+<td>decisionCases</td>
+<td>Map where key is possible values of <code>caseValueParam</code> with value being list of tasks to be executed.</td>
+</tr>
+<tr>
+<td>defaultCase</td>
+<td>List of tasks to be executed when no matching value if found in decision case (default condition)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="example_1">Example<a class="headerlink" href="#example_1" title="Permanent link">&para;</a></h3>
 <pre><code class="json">{
   &quot;name&quot;: &quot;decide_task&quot;,
   &quot;taskReferenceName&quot;: &quot;decide1&quot;,
@@ -296,13 +294,24 @@ The task takes 3 parameters:</p>
 }
 </code></pre>
 
-<h2 id="fork">Fork<a class="headerlink" href="#fork" title="Permanent link">&para;</a></h2>
+<h1 id="fork">Fork<a class="headerlink" href="#fork" title="Permanent link">&para;</a></h1>
 <p>Fork is used to schedule parallel set of tasks.</p>
-<p><strong>Parameters</strong></p>
-<ul>
-<li><code>forkTasks</code> A list of list of tasks.  Each list if scheduled to be executed in parallel.  However, within the list tasks are scheduled in serial.</li>
-</ul>
-<p><strong>Sample</strong></p>
+<h3 id="parameters_2">Parameters:<a class="headerlink" href="#parameters_2" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>forkTasks</td>
+<td>A list of list of tasks.  Each sublist is scheduled to be executed in parallel.  However, tasks within the sublists are scheduled in a serial fashion.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="example_2">Example<a class="headerlink" href="#example_2" title="Permanent link">&para;</a></h3>
 <pre><code class="json">{
   &quot;forkTasks&quot;: [
     [
@@ -330,19 +339,262 @@ The task takes 3 parameters:</p>
 </code></pre>
 
 <p>When executed, <em>task11</em> and <em>task21</em> are scheduled to be executed at the same time.</p>
-<h2 id="join">Join<a class="headerlink" href="#join" title="Permanent link">&para;</a></h2>
+<h1 id="dynamic-fork">Dynamic Fork<a class="headerlink" href="#dynamic-fork" title="Permanent link">&para;</a></h1>
+<p>A dynamic fork is same as FORK_JOIN task.  Except that the list of tasks to be forked is provided at runtime using task's input.  Useful when number of tasks to be forked is not fixed and varies based on the input.</p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dynamicForkTasksParam</td>
+<td>Name of the parameter that contains list of workflow task configuration to be executed in parallel</td>
+</tr>
+<tr>
+<td>dynamicForkTasksInputParamName</td>
+<td>Name of the parameter whose value should be a map with key as forked task's referece name and value as input the forked task</td>
+</tr>
+</tbody>
+</table>
+<h3 id="example_3">Example<a class="headerlink" href="#example_3" title="Permanent link">&para;</a></h3>
+<pre><code class="json">{
+  &quot;dynamicTasks&quot;: &quot;${taskA.output.dynamicTasksJSON}&quot;,
+  &quot;dynamicTasksInput&quot;: &quot;${taskA.output.dynamicTasksInputJSON}&quot;,
+  &quot;type&quot;: &quot;FORK_JOIN_DYNAMIC&quot;,
+  &quot;dynamicForkTasksParam&quot;: &quot;dynamicTasks&quot;,
+  &quot;dynamicForkTasksInputParamName&quot;: &quot;dynamicTasksInput&quot;
+}
+</code></pre>
+
+<p>Consider <strong>taskA</strong>'s output as:</p>
+<pre><code class="json">{
+  &quot;dynamicTasksInputJSON&quot;: {
+    &quot;forkedTask1&quot;: {
+      &quot;width&quot;: 100,
+      &quot;height&quot;: 100,
+      &quot;params&quot;: {
+        &quot;recipe&quot;: &quot;jpg&quot;
+      }
+    },
+    &quot;forkedTask12&quot;: {
+      &quot;width&quot;: 200,
+      &quot;height&quot;: 200,
+      &quot;params&quot;: {
+        &quot;recipe&quot;: &quot;jpg&quot;
+      }
+    }
+  },
+  &quot;dynamicTasksJSON&quot;: [
+    {
+      &quot;name&quot;: &quot;encode_task&quot;,
+      &quot;taskReferenceName&quot;: &quot;forkedTask1&quot;,
+      &quot;type&quot;: &quot;SIMPLE&quot;
+    },
+    {
+      &quot;name&quot;: &quot;encode_task&quot;,
+      &quot;taskReferenceName&quot;: &quot;forkedTask2&quot;,
+      &quot;type&quot;: &quot;SIMPLE&quot;
+    }
+  ]
+}
+</code></pre>
+
+<p>When executed, the dynamic fork task will schedule two parallel task of type "encode_task" with reference names "forkedTask1" and "forkedTask2" and inputs as specified by _ dynamicTasksInputJSON_</p>
+<div class="admonition warning">
+<p class="admonition-title">Dyanmic Fork and Join</p>
+<p><strong>A Join task MUST follow FORK_JOIN_DYNAMIC</strong></p>
+<p>Workflow definition MUST include a Join task definition followed by FORK_JOIN_DYNAMIC task.  However, given the dynamic nature of the task, no joinOn parameters are required for this Join.  The join will wait for ALL the forked branches to complete before completing.</p>
+<p>Unlike FORK, which can execute parallel flows with each fork executing a series of tasks in  sequence, FORK_JOIN_DYNAMIC is limited to only one task per fork.  However, forked task can be a Sub Workflow, allowing for more complex execution flows.</p>
+</div>
+<h1 id="join">Join<a class="headerlink" href="#join" title="Permanent link">&para;</a></h1>
 <p>Join task is used to wait for completion of one or more tasks spawned by fork tasks.</p>
-<p><strong>Parameters</strong>
-<code>joinOn</code> List of task reference name, for which the JOIN will wait for completion.</p>
-<p><strong>Sample</strong></p>
+<h3 id="parameters_3">Parameters<a class="headerlink" href="#parameters_3" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>joinOn</td>
+<td>List of task reference name, for which the JOIN will wait for completion.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="example_4">Example<a class="headerlink" href="#example_4" title="Permanent link">&para;</a></h3>
 <pre><code class="json">{
     &quot;joinOn&quot;: [&quot;taskRef1&quot;, &quot;taskRef3&quot;]
 }
 </code></pre>
 
-<h2 id="dynamic-fork">Dynamic Fork<a class="headerlink" href="#dynamic-fork" title="Permanent link">&para;</a></h2>
-<p>A dynamic fork is same as FORK_JOIN task.  Except that the list of tasks to be forked is provided at runtime using task's input.  Useful when number of tasks to be forked is not fixed and varies based on the input.</p>
-<h2 id="sub-workflow">Sub Workflow<a class="headerlink" href="#sub-workflow" title="Permanent link">&para;</a></h2>
+<h3 id="join-task-output">Join Task Output<a class="headerlink" href="#join-task-output" title="Permanent link">&para;</a></h3>
+<p>Fork task's output will be a JSON object with key being the task reference name and value as the output of the fork task.</p>
+<h1 id="sub-workflow">Sub Workflow<a class="headerlink" href="#sub-workflow" title="Permanent link">&para;</a></h1>
+<p>Sub Workflow task allows for nesting a workflow within another workflow.</p>
+<h3 id="parameters_4">Parameters<a class="headerlink" href="#parameters_4" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>subWorkflowParam</td>
+<td>List of task reference name, for which the JOIN will wait for completion.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="example_5">Example<a class="headerlink" href="#example_5" title="Permanent link">&para;</a></h3>
+<pre><code class="json">{
+  &quot;name&quot;: &quot;sub_workflow_task&quot;,
+  &quot;taskReferenceName&quot;: &quot;sub1&quot;,
+  &quot;inputParameters&quot;: {
+    &quot;requestId&quot;: &quot;${workflow.input.requestId}&quot;,
+    &quot;file&quot;: &quot;${encode.output.location}&quot;
+  },
+  &quot;type&quot;: &quot;SUB_WORKFLOW&quot;,
+  &quot;subWorkflowParam&quot;: {
+    &quot;name&quot;: &quot;deployment_workflow&quot;,
+    &quot;version&quot;: 1
+  }
+}
+</code></pre>
+
+<p>When executed, a <code>deployment_workflow</code> is executed with two input parameters requestId and <em>file</em>.  The task is marked as completed upon the completion of the spawned workflow.  If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. </p>
+<h1 id="wait">Wait<a class="headerlink" href="#wait" title="Permanent link">&para;</a></h1>
+<p>A wait task is implemented as a gate that remains in <code>IN_PROGRESS</code> state unless marked as <code>COMPLETED</code> or <code>FAILED</code> by an external trigger.
+To use a wait task, set the task type as <code>WAIT</code></p>
+<h3 id="parameters_5">Parameters<a class="headerlink" href="#parameters_5" title="Permanent link">&para;</a></h3>
+<p>None required.</p>
+<h3 id="exernal-triggers-for-wait-task">Exernal Triggers for Wait Task<a class="headerlink" href="#exernal-triggers-for-wait-task" title="Permanent link">&para;</a></h3>
+<p>Task Resource endpoint can be used to update the status of a task to a terminate state. </p>
+<p>Contrib module provides SQS integration where an external system can place a message in a pre-configured queue that the server listens on.  As the messages arrive, they are marked as <code>COMPLETED</code> or <code>FAILED</code>.  </p>
+<h4 id="sqs-queues">SQS Queues<a class="headerlink" href="#sqs-queues" title="Permanent link">&para;</a></h4>
+<ul>
+<li>SQS queues used by the server to update the task status can be retrieve using the following API:</li>
+</ul>
+<pre><code>GET /queue
+</code></pre>
+
+<ul>
+<li>When updating the status of the task, the message needs to conform to the following spec:<ul>
+<li>Message has to be a valid JSON string.</li>
+<li>The message JSON should contain a key named <code>externalId</code> with the value being a JSONified string that contains the following keys:<ul>
+<li><code>workflowId</code>: Id of the workflow</li>
+<li><code>taskRefName</code>: Task reference name that should be updated.</li>
+</ul>
+</li>
+<li>Each queue represents a specific task status and tasks are marked accordingly.  e.g. message coming to a <code>COMPLETED</code> queue marks the task status as <code>COMPLETED</code>.</li>
+<li>Tasks' output is updated with the message.</li>
+</ul>
+</li>
+</ul>
+<h4 id="example-sqs-payload">Example SQS Payload:<a class="headerlink" href="#example-sqs-payload" title="Permanent link">&para;</a></h4>
+<pre><code>{
+  &quot;some_key&quot;: &quot;valuex&quot;,
+  &quot;externalId&quot;: &quot;{\&quot;taskRefName\&quot;:\&quot;TASK_REFERENCE_NAME\&quot;,\&quot;workflowId\&quot;:\&quot;WORKFLOW_ID\&quot;}&quot;
+}
+</code></pre>
+
+<h1 id="http">HTTP<a class="headerlink" href="#http" title="Permanent link">&para;</a></h1>
+<p>An HTTP task is used to make calls to another microservice over HTTP.</p>
+<h3 id="parameters_6">Parameters<a class="headerlink" href="#parameters_6" title="Permanent link">&para;</a></h3>
+<p>The task expects an input parameter named <code>http_request</code> as part of the task's input with the following details:</p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>uri</td>
+<td>URI for the service.  Can be a partial when using vipAddress or includes the server address.</td>
+</tr>
+<tr>
+<td>method</td>
+<td>HTTP method.  One of the GET, PUT, POST, DELETE, OPTIONS, HEAD</td>
+</tr>
+<tr>
+<td>accept</td>
+<td>Accpet header as required by server.</td>
+</tr>
+<tr>
+<td>contentType</td>
+<td>Content Type - supported types are text/plain, text/html and, application/json</td>
+</tr>
+<tr>
+<td>headers</td>
+<td>A map of additional http headers to be sent along with the request.</td>
+</tr>
+<tr>
+<td>body</td>
+<td>Request body</td>
+</tr>
+<tr>
+<td>vipAddress</td>
+<td>When using discovery based service URLs.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="http-task-output">HTTP Task Output<a class="headerlink" href="#http-task-output" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>response</td>
+<td>JSON body containing the response if one is present</td>
+</tr>
+<tr>
+<td>headers</td>
+<td>Response Headers</td>
+</tr>
+<tr>
+<td>statusCode</td>
+<td>Integer status code</td>
+</tr>
+</tbody>
+</table>
+<h3 id="example_6">Example<a class="headerlink" href="#example_6" title="Permanent link">&para;</a></h3>
+<p>Task Input payload using vipAddress</p>
+<pre><code class="json">{
+  &quot;http_request&quot;: {
+    &quot;vipAddress&quot;: &quot;examplevip-prod&quot;,
+    &quot;uri&quot;: &quot;/&quot;,
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;accept&quot;: &quot;text/plain&quot;
+  }
+}
+</code></pre>
+
+<p>Task Input using an absolute URL</p>
+<pre><code class="json">{
+  &quot;http_request&quot;: {
+    &quot;uri&quot;: &quot;http://example.com/&quot;,
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;accept&quot;: &quot;text/plain&quot;
+  }
+}
+</code></pre>
+
+<p>The task is marked as <code>FAILED</code> if the request cannot be completed or the remote server returns non successful status code. </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>HTTP task currently only supports Content-Type as application/json and is able to parse the text as well as JSON response.  XML input/output is currently not supported.  However, if the response cannot be parsed as JSON or Text, a string representation is stored as a text value.</p>
+</div>
               
             </div>
           </div>
@@ -350,10 +602,10 @@ The task takes 3 parameters:</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../../extend/tasks/" class="btn btn-neutral float-right" title="Extended Tasks & Features">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../kitchensink/" class="btn btn-neutral float-right" title="Kitchensink Example">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../io/" class="btn btn-neutral" title="Wiring inputs"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../" class="btn btn-neutral" title="Metadata Definitions"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -380,10 +632,10 @@ The task takes 3 parameters:</p>
           <a href="https://github.com/Netflix/conductor" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../io/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../../extend/tasks/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../kitchensink/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

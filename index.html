@@ -14,6 +14,7 @@
   <link rel="stylesheet" href="./css/theme.css" type="text/css" />
   <link rel="stylesheet" href="./css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="./css/highlight.css">
+  <link href="./css/custom.css" rel="stylesheet">
   
   <script>
     // Current page data
@@ -34,8 +35,8 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
-      <div class="wy-side-nav-search" style="background-color:#000000">
-        <a href="." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#000000;border:0;padding:0" class="cornerlogo" src="./img/corner-logo2.png"/>
+      <div class="wy-side-nav-search" style="background-color:#fcfcfc">
+        <a href="." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#fcfcfc;border:0;padding:0" class="cornerlogo" src="./img/conductor-vector-x.png"/>
         </a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="./search.html" method="get">
@@ -53,8 +54,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#motivation">Motivation</a></li>
-                
+                <li class="toctree-l3"><a href="#conductor">Conductor</a></li>
             
             </ul>
         
@@ -77,64 +77,35 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="intro/steps/">Highlevel Steps</a>
+        <a class="" href="metadata/">Metadata Definitions</a>
         
     </li>
 <li>
           
             <li>
-    <ul class="subnav">
-    <li><span>Defining Workflow Metadata</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="metadata/">Definitions</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="metadata/task/">Workflow Tasks</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="metadata/io/">Wiring inputs</a>
-        
-    </li>
-
-        
-            
     <li class="toctree-l1 ">
         <a class="" href="metadata/systask/">System Tasks</a>
         
     </li>
-
-        
-            
+<li>
+          
+            <li>
     <li class="toctree-l1 ">
-        <a class="" href="extend/tasks/">Extended Tasks & Features</a>
+        <a class="" href="metadata/kitchensink/">Kitchensink Example</a>
         
     </li>
-
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="extend/">Extending Conductor</a>
         
-    </ul>
+    </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
         <a class="" href="runtime/">Workflow Management</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="extend/">Extending Features</a>
         
     </li>
 <li>
@@ -203,9 +174,11 @@
           <div role="main">
             <div class="section">
               
-                <p><center><img alt="Logo" src="./img/corner-logo2.png" /></center></p>
-<p>Conductor is an <em>orchestration</em> engine that runs in the cloud.  </p>
-<h1 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h1>
+                <h1 id="conductor">Conductor<a class="headerlink" href="#conductor" title="Permanent link">&para;</a></h1>
+<p><center><img alt="Logo" src="./img/conductor-vector-x.png" /></center>
+<center><img alt="Logo" src="./img/corner-logo-oss.png" /></center>
+<center>Conductor is an <em>orchestration</em> engine that runs in the cloud. </center></p>
+<h2 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h2>
 <p>We built Conductor to help us orchestrate microservices based process flows at Netflix with the following features:</p>
 <ul>
 <li>Allow creating complex process / business flows in which individual task is implemented by a microservice.</li>
@@ -274,5 +247,5 @@ Pub/sub model worked for simplest of the flows, but quickly highlighted some of 
 
 <!--
 MkDocs version : 0.16.0
-Build Date UTC : 2016-12-15 18:58:11
+Build Date UTC : 2017-01-13 00:25:46
 -->

@@ -8,16 +8,17 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Definitions - Conductor</title>
+  <title>Metadata Definitions - Conductor</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../css/custom.css" rel="stylesheet">
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Definitions";
+    var mkdocs_page_name = "Metadata Definitions";
     var mkdocs_page_input_path = "metadata/index.md";
     var mkdocs_page_url = "/metadata/";
   </script>
@@ -34,8 +35,8 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
-      <div class="wy-side-nav-search" style="background-color:#000000">
-        <a href=".." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#000000;border:0;padding:0" class="cornerlogo" src="../img/corner-logo2.png"/>
+      <div class="wy-side-nav-search" style="background-color:#fcfcfc">
+        <a href=".." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#fcfcfc;border:0;padding:0" class="cornerlogo" src="../img/conductor-vector-x.png"/>
         </a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
@@ -69,75 +70,46 @@
 <li>
           
             <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../intro/steps/">Highlevel Steps</a>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Metadata Definitions</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#task-definition">Task Definition</a></li>
+            
+                <li class="toctree-l3"><a href="#workflow-definition">Workflow Definition</a></li>
+            
+                <li class="toctree-l3"><a href="#wiring-inputs-and-outputs">Wiring Inputs and Outputs</a></li>
+            
+            </ul>
         
     </li>
 <li>
           
             <li>
-    <ul class="subnav">
-    <li><span>Defining Workflow Metadata</span></li>
-
-        
-            
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Definitions</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#workflow-definition">Workflow Definition</a></li>
-                
-            
-                <li class="toctree-l3"><a href="#task-definition">Task Definition</a></li>
-                
-            
-            </ul>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="task/">Workflow Tasks</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="io/">Wiring inputs</a>
-        
-    </li>
-
-        
-            
     <li class="toctree-l1 ">
         <a class="" href="systask/">System Tasks</a>
         
     </li>
-
-        
-            
+<li>
+          
+            <li>
     <li class="toctree-l1 ">
-        <a class="" href="../extend/tasks/">Extended Tasks & Features</a>
+        <a class="" href="kitchensink/">Kitchensink Example</a>
         
     </li>
-
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../extend/">Extending Conductor</a>
         
-    </ul>
+    </li>
 <li>
           
             <li>
     <li class="toctree-l1 ">
         <a class="" href="../runtime/">Workflow Management</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../extend/">Extending Features</a>
         
     </li>
 <li>
@@ -192,12 +164,8 @@
     <li><a href="..">Docs</a> &raquo;</li>
     
       
-        
-          <li>Defining Workflow Metadata &raquo;</li>
-        
-      
     
-    <li>Definitions</li>
+    <li>Metadata Definitions</li>
     <li class="wy-breadcrumbs-aside">
       
         <a href="https://github.com/Netflix/conductor/edit/master/docs/metadata/index.md"
@@ -210,80 +178,9 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="workflow-definition">Workflow Definition<a class="headerlink" href="#workflow-definition" title="Permanent link">&para;</a></h1>
-<p>A typical workflow has the following structure:</p>
-<pre><code class="json">{
-  &quot;name&quot;: &quot;workflow_name&quot;,
-  &quot;description&quot;: &quot;Description of workflow&quot;,
-  &quot;version&quot;: 1,
-  &quot;tasks&quot;: [
-    {
-      &quot;name&quot;: &quot;name_of_task&quot;,
-      &quot;taskReferenceName&quot;: &quot;ref_name_unique_within_blueprint&quot;,
-      &quot;inputParameters&quot;: {
-        &quot;movieId&quot;: &quot;${workflow.input.movieId}&quot;,
-        &quot;url&quot;: &quot;${workflow.input.fileLocation}&quot;
-      },
-      &quot;type&quot;: &quot;SIMPLE&quot;,
-      ... (any other task specific parameters)
-    },
-    {}
-    ...
-  ],
-  &quot;outputParameters&quot;: {
-    &quot;encoded_url&quot;: &quot;${encode.output.location}&quot;
-  }
-}
-</code></pre>
-
-<p>A sample encoding flow</p>
-<pre><code class="json">{
-  &quot;name&quot;: &quot;workflow_name&quot;,
-  &quot;description&quot;: &quot;Description of workflow&quot;,
-  &quot;version&quot;: 1,
-  &quot;tasks&quot;: [
-    {
-      &quot;name&quot;: &quot;store_in_s3&quot;,
-      &quot;taskReferenceName&quot;: &quot;t1&quot;,
-      &quot;inputParameters&quot;: {
-        &quot;movieId&quot;: &quot;${workflow.input.movieId}&quot;,
-        &quot;url&quot;: &quot;${workflow.input.fileLocation}&quot;
-      },
-      &quot;type&quot;: &quot;SIMPLE&quot;
-    },
-    {
-      &quot;name&quot;: &quot;encode&quot;,
-      &quot;taskReferenceName&quot;: &quot;encode&quot;,
-      &quot;inputParameters&quot;: {
-        &quot;recipe&quot;: &quot;${workflow.input.recipe}&quot;,
-        &quot;location&quot;: &quot;${t1.output.s3Location}&quot;
-      },
-      &quot;type&quot;: &quot;SIMPLE&quot;
-    }
-  ],
-  &quot;outputParameters&quot;: {
-    &quot;encoded_url&quot;: &quot;${encode.output.location}&quot;
-  }
-}
-</code></pre>
-
-<p>In the above definition, tasks are series of steps that are executed in sequence.</p>
-<p>Below is the list of all the parameters used to define a workflow blueprint:</p>
-<pre><code class="json">{
-    &quot;name&quot;: &quot;Workflow Name. Used for all the operations&quot;,
-    &quot;description&quot;: &quot;Human readable description&quot;,
-    &quot;version&quot;: 1, //defines the version of workflow blueprint. Useful for versioning
-    &quot;inputParameters&quot;: &quot;List of required inputs to workflow&quot;,
-    &quot;outputParameters&quot;: &quot;Map of key - value used to determine the output of the workflow&quot;,
-    &quot;failureWorkflow&quot;: &quot;Name of another workflow to be started if this workflow fails&quot;,
-    &quot;tasks&quot;: &quot;list of tasks that makes up this blueprint&quot;
-}
-</code></pre>
-
-<h1 id="task-definition">Task Definition<a class="headerlink" href="#task-definition" title="Permanent link">&para;</a></h1>
-<p>Workflow tasks are defined within the <code>tasks</code> block in the blueprint.<br />
-Each task represent either a system task (executed by the engine and used for control flow) or a user task which is executed on a remote system and communicates with the conductor server using REST APIs.</p>
-<p>Tasks are defined using a JSON DSL.  Conductor maintain a registry of all the tasks.</p>
+                <h1 id="task-definition">Task Definition<a class="headerlink" href="#task-definition" title="Permanent link">&para;</a></h1>
+<p>Conductor maintains a registry of worker task types.  A task type MUST be registered before using in a workflow.</p>
+<p><strong>Example</strong></p>
 <pre><code class="json">{
   &quot;name&quot;: &quot;encode_task&quot;,
   &quot;retryCount&quot;: 3,
@@ -304,23 +201,280 @@ Each task represent either a system task (executed by the engine and used for co
 }
 </code></pre>
 
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>description</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>Task Type</td>
+<td>Unique</td>
+</tr>
+<tr>
+<td>retryCount</td>
+<td>No. of retries to attempt when a task is marked as failure</td>
+<td></td>
+</tr>
+<tr>
+<td>retryLogic</td>
+<td>Mechanism for the retries</td>
+<td>see possible values below</td>
+</tr>
+<tr>
+<td>timeoutSeconds</td>
+<td>Time in milliseconds, after which the task is marked as TIMED_OUT if not completed after transiting to <code>IN_PROGRESS</code> status</td>
+<td>No timeouts if set to 0</td>
+</tr>
+<tr>
+<td>timeoutPolicy</td>
+<td>Task's timeout policy</td>
+<td>see possible values below</td>
+</tr>
+<tr>
+<td>responseTimeoutSeconds</td>
+<td>if greater than 0, the task is rescheduled if not updated with a status after this time.  Useful when the worker polls for the task but fails to complete due to errors/network failure.</td>
+<td></td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>outputKeys</td>
+<td>Set of keys of task's output.  Used for documenting task's output</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p><strong>Retry Logic</strong></p>
 <ul>
-<li><code>retryCount</code> No. of retries to attempt when a task is marked as failure.</li>
-<li><code>timeoutPolicy</code> Can be either of the following:<ul>
+<li>FIXED : Reschedule the task afer the <code>retryDelaySeconds</code></li>
+<li>EXPONENTIAL_BACKOFF : reschedule after <code>retryDelaySeconds  * attempNo</code></li>
+</ul>
+<p><strong>Timeout Policy</strong></p>
+<ul>
 <li>RETRY : Retries the task again</li>
 <li>TIME_OUT_WF : Workflow is marked as TIMED_OUT and terminated</li>
 <li>ALERT_ONLY : Registers a counter (task_timeout)</li>
 </ul>
-</li>
-<li><code>retryLogic</code><ul>
-<li>FIXED : Reschedule the task afer the <code>retryDelaySeconds</code></li>
-<li>EXPONENTIAL_BACKOFF : reschedule after <code>retryDelaySeconds  * attempNo</code></li>
-</ul>
-</li>
-<li><code>responseTimeoutSeconds</code> if greater than 0, the task is rescheduled if not updated with a status after this time.  Useful when the worker polls for the task but fails to complete due to errors/network failure.</li>
-<li><code>inputKeys</code> Set of inputs that task expects</li>
-<li><code>outputKeys</code> Set of output that task produces upon execution</li>
-</ul>
+<h1 id="workflow-definition">Workflow Definition<a class="headerlink" href="#workflow-definition" title="Permanent link">&para;</a></h1>
+<p>Workflows are define using a JSON based DSL.</p>
+<p><strong>Example</strong></p>
+<pre><code class="json">{
+  &quot;name&quot;: &quot;encode_and_deploy&quot;,
+  &quot;description&quot;: &quot;Encodes a file and deploys to CDN&quot;,
+  &quot;version&quot;: 1,
+  &quot;tasks&quot;: [
+    {
+      &quot;name&quot;: &quot;encode&quot;,
+      &quot;taskReferenceName&quot;: &quot;encode&quot;,
+      &quot;type&quot;: &quot;SIMPLE&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;fileLocation&quot;: &quot;${workflow.input.fileLocation}&quot;
+      }
+    },
+    {
+      &quot;name&quot;: &quot;deploy&quot;,
+      &quot;taskReferenceName&quot;: &quot;d1&quot;,
+      &quot;type&quot;: &quot;SIMPLE&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;fileLocation&quot;: &quot;${encode.output.encodeLocation}&quot;
+      }
+
+    }
+  ],
+  &quot;outputParameters&quot;: {
+    &quot;cdn_url&quot;: &quot;${d1.output.location}&quot;
+  },
+  &quot;schemaVersion&quot;: 2
+}
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th align="left">field</th>
+<th align="left">description</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">name</td>
+<td align="left">Name of the workflow</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">description</td>
+<td align="left">Descriptive name of the workflow</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">version</td>
+<td align="left">Numeric field used to identify the version of the schema.  Use incrementing numbers</td>
+<td align="left">When starting a workflow execution, if not specified, the definition with highest version is used</td>
+</tr>
+<tr>
+<td align="left">tasks</td>
+<td align="left">An array of task defintions as described below.</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">outputParameters</td>
+<td align="left">JSON template used to generate the output of the workflow</td>
+<td align="left">If not specified, the output is defined as the output of the <em>last</em> executed task</td>
+</tr>
+<tr>
+<td align="left">inputParameters</td>
+<td align="left">List of input parameters.  Used for documenting the required inputs to workflow</td>
+<td align="left">optional</td>
+</tr>
+</tbody>
+</table>
+<h2 id="tasks-within-workflow">Tasks within Workflow<a class="headerlink" href="#tasks-within-workflow" title="Permanent link">&para;</a></h2>
+<p><code>tasks</code> property in a workflow defines an array of tasks to be executed in that order.
+Below are the mandatory minimum parameters required for each task:</p>
+<table>
+<thead>
+<tr>
+<th align="left">field</th>
+<th align="left">description</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">name</td>
+<td align="left">Name of the task.  MUST be registered as a task type with Conductor before starting workflow</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">taskReferenceName</td>
+<td align="left">Alias used to refer the task within the workflow.  MUST be unique.</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">type</td>
+<td align="left">Type of task. SIMPLE for tasks executed by remote workers, or one of the system task types</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">inputParameters</td>
+<td align="left">JSON template that defines the input given to the task</td>
+<td align="left">See "wiring inputs and outputs" for details</td>
+</tr>
+</tbody>
+</table>
+<p>In addition to these paramters, additional parameters speciific to the task type are required as documented <a href="../metadata/systask/">here</a></p>
+<h1 id="wiring-inputs-and-outputs">Wiring Inputs and Outputs<a class="headerlink" href="#wiring-inputs-and-outputs" title="Permanent link">&para;</a></h1>
+<p>Workflows are supplied inputs by client when a new execution is triggered. 
+Workflow input is a JSON payload that is available via <code>${workflow.input...}</code> expressions.</p>
+<p>Each task in the workflow is given input based on the <code>inputParameters</code> template configured in workflow definition.  <code>inputParameters</code> is a JSON fragment with value containing parameters for mapping values from input or output of a workflow or another task during the execution.</p>
+<p>Syntax for mapping the values follows the pattern as: </p>
+<p><strong>${SOURCE.input/output.JSONPath}</strong></p>
+<table>
+<thead>
+<tr>
+<th>-</th>
+<th>-</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SOURCE</td>
+<td>can be either "workflow" or reference name of any of the task</td>
+</tr>
+<tr>
+<td>input/output</td>
+<td>refers to either the input or output of the source</td>
+</tr>
+<tr>
+<td>JSONPath</td>
+<td>JSON path expression to extract JSON fragment from source's input/output</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">JSON Path Support</p>
+<p>Conductor supports <a href="http://goessner.net/articles/JsonPath/">JSONPath</a> specification and uses Java implementaion from <a href="https://github.com/jayway/JsonPath">here</a>.</p>
+</div>
+<p><strong>Example</strong></p>
+<p>Consider a task with input configured to use input/output parameters from workflow and a task named <strong>loc_task</strong>.</p>
+<pre><code class="json">{
+  &quot;inputParameters&quot;: {
+    &quot;movieId&quot;: &quot;${workflow.input.movieId}&quot;,
+    &quot;url&quot;: &quot;${workflow.input.fileLocation}&quot;,
+    &quot;lang&quot;: &quot;${loc_task.output.languages[0]}&quot;,
+    &quot;http_request&quot;: {
+      &quot;method&quot;: &quot;POST&quot;,
+      &quot;url&quot;: &quot;http://example.com/${loc_task.output.fileId}/encode&quot;,
+      &quot;body&quot;: {
+        &quot;recipe&quot;: &quot;${workflow.input.recipe}&quot;,
+        &quot;params&quot;: {
+          &quot;width&quot;: 100,
+          &quot;height&quot;: 100
+        }
+      },
+      &quot;headers&quot;: [
+        {
+          &quot;Accept&quot;: &quot;application/json&quot;
+        },
+        {
+          &quot;Content-Type&quot;: &quot;application/json&quot;
+        }
+      ]
+    }
+  }
+}
+</code></pre>
+
+<p>Consider the following as the <em>workflow input</em></p>
+<pre><code class="json">{
+  &quot;movieId&quot;: &quot;movie_123&quot;,
+  &quot;fileLocation&quot;:&quot;s3://moviebucket/file123&quot;,
+  &quot;recipe&quot;:&quot;png&quot;
+}
+</code></pre>
+
+<p>And the output of the <em>loc_task</em> as the following;</p>
+<pre><code class="json">{
+  &quot;fileId&quot;: &quot;file_xxx_yyy_zzz&quot;,
+  &quot;languages&quot;: [&quot;en&quot;,&quot;ja&quot;,&quot;es&quot;]
+}
+</code></pre>
+
+<p>When scheduling the task, Conductor will merge the values from workflow input and loc_tak's output and create the input to the task as follows:</p>
+<pre><code class="json">{
+  &quot;movieId&quot;: &quot;movie_123&quot;,
+  &quot;url&quot;: &quot;s3://moviebucket/file123&quot;,
+  &quot;lang&quot;: &quot;en&quot;,
+  &quot;http_request&quot;: {
+    &quot;method&quot;: &quot;POST&quot;,
+    &quot;url&quot;: &quot;http://example.com/file_xxx_yyy_zzz/encode&quot;,
+    &quot;body&quot;: {
+      &quot;recipe&quot;: &quot;png&quot;,
+      &quot;params&quot;: {
+        &quot;width&quot;: 100,
+        &quot;height&quot;: 100
+      }
+    },
+    &quot;headers&quot;: [
+      {
+        &quot;Accept&quot;: &quot;application/json&quot;
+      },
+      {
+        &quot;Content-Type&quot;: &quot;application/json&quot;
+      }
+    ]
+  }
+}
+</code></pre>
               
             </div>
           </div>
@@ -328,10 +482,10 @@ Each task represent either a system task (executed by the engine and used for co
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="task/" class="btn btn-neutral float-right" title="Workflow Tasks">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="systask/" class="btn btn-neutral float-right" title="System Tasks">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../intro/steps/" class="btn btn-neutral" title="Highlevel Steps"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../intro/concepts/" class="btn btn-neutral" title="Basic Concepts"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -358,10 +512,10 @@ Each task represent either a system task (executed by the engine and used for co
           <a href="https://github.com/Netflix/conductor" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../intro/steps/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../intro/concepts/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="task/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="systask/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
