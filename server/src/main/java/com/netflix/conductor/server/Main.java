@@ -37,7 +37,7 @@ public class Main {
 		
 		ConductorConfig config = new ConductorConfig();
 		ConductorServer server = new ConductorServer(config);
-		server.start(config.getIntProperty("port", 8081));
+		server.start(config.getIntProperty("port", 8080));
 	}
 
 }

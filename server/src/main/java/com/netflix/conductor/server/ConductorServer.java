@@ -55,7 +55,12 @@ public class ConductorServer {
 		
 		List<Host> dynoHosts = new LinkedList<>();
 		String dbstring = cc.getProperty("db", "dynomite");
-		db = DB.valueOf(dbstring);
+		try {
+			db = DB.valueOf(dbstring);
+		}catch(IllegalArgumentException ie) {
+			logger.error("Invalid db name: " + dbstring + ", supported values are: redis, dynomite, memory");
+			System.exit(1);
+		}
 		
 		if(!db.equals(DB.memory)) {
 			String hosts = cc.getProperty("workflow.dynomite.cluster.hosts", null);

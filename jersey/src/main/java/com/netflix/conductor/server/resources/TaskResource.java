@@ -171,7 +171,7 @@ public class TaskResource {
 		});
 		sorted.addAll(entries);
 		LinkedHashMap<String, Long> sortedMap = new LinkedHashMap<>();
-		sorted.stream().map(e -> sortedMap.put(e.getKey(), e.getValue()));
+		sorted.stream().forEach(e -> sortedMap.put(e.getKey(), e.getValue()));
 		return sortedMap;
 	}
 

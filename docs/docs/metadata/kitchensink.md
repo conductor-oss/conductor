@@ -9,8 +9,8 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
   "version": 1,
   "tasks": [
     {
-      "name": "task_1",
-      "taskReferenceName": "task_1",
+      "name": "perf_ task_1",
+      "taskReferenceName": "perf_ task_1",
       "inputParameters": {
         "mod": "${workflow.input.mod}",
         "oddEven": "${workflow.input.oddEven}"
@@ -19,7 +19,7 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
     },
     {
       "name": "dyntask",
-      "taskReferenceName": "task_2",
+      "taskReferenceName": "perf_ task_2",
       "inputParameters": {
         "taskToExecute": "${workflow.input.task2Name}"
       },
@@ -30,18 +30,18 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
       "name": "oddEvenDecision",
       "taskReferenceName": "oddEvenDecision",
       "inputParameters": {
-        "oddEven": "${task_2.output.oddEven}"
+        "oddEven": "${perf_ task_2.output.oddEven}"
       },
       "type": "DECISION",
       "caseValueParam": "oddEven",
       "decisionCases": {
         "0": [
           {
-            "name": "task_4",
-            "taskReferenceName": "task_4",
+            "name": "perf_ task_4",
+            "taskReferenceName": "perf_ task_4",
             "inputParameters": {
-              "mod": "${task_2.output.mod}",
-              "oddEven": "${task_2.output.oddEven}"
+              "mod": "${perf_ task_2.output.mod}",
+              "oddEven": "${perf_ task_2.output.oddEven}"
             },
             "type": "SIMPLE"
           },
@@ -49,8 +49,8 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
             "name": "dynamic_fanout",
             "taskReferenceName": "fanout1",
             "inputParameters": {
-              "dynamicTasks": "${task_4.output.dynamicTasks}",
-              "input": "${task_4.output.inputs}"
+              "dynamicTasks": "${perf_ task_4.output.dynamicTasks}",
+              "input": "${perf_ task_4.output.inputs}"
             },
             "type": "FORK_JOIN_DYNAMIC",
             "dynamicForkTasksParam": "dynamicTasks",
@@ -70,16 +70,16 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
             "forkTasks": [
               [
                 {
-                  "name": "task_10",
-                  "taskReferenceName": "task_10",
+                  "name": "perf_ task_10",
+                  "taskReferenceName": "perf_ task_10",
                   "type": "SIMPLE"
                 },
                 {
                   "name": "sub_workflow_x",
                   "taskReferenceName": "wf3",
                   "inputParameters": {
-                    "mod": "${task_1.output.mod}",
-                    "oddEven": "${task_1.output.oddEven}"
+                    "mod": "${perf_ task_1.output.mod}",
+                    "oddEven": "${perf_ task_1.output.oddEven}"
                   },
                   "type": "SUB_WORKFLOW",
                   "subWorkflowParam": {
@@ -90,16 +90,16 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
               ],
               [
                 {
-                  "name": "task_11",
-                  "taskReferenceName": "task_11",
+                  "name": "perf_ task_11",
+                  "taskReferenceName": "perf_ task_11",
                   "type": "SIMPLE"
                 },
                 {
                   "name": "sub_workflow_x",
                   "taskReferenceName": "wf4",
                   "inputParameters": {
-                    "mod": "${task_1.output.mod}",
-                    "oddEven": "${task_1.output.oddEven}"
+                    "mod": "${perf_ task_1.output.mod}",
+                    "oddEven": "${perf_ task_1.output.oddEven}"
                   },
                   "type": "SUB_WORKFLOW",
                   "subWorkflowParam": {
@@ -134,8 +134,8 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
       "type": "HTTP"
     },
     {
-      "name": "task_30",
-      "taskReferenceName": "task_30",
+      "name": "perf_task_30",
+      "taskReferenceName": "perf_task_30",
       "inputParameters": {
         "statuses": "${get_es_1.output..status}",
         "fistWorkflowId": "${get_es_1.output.workflowId[0]}"
