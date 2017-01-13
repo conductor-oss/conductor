@@ -184,8 +184,8 @@
   &quot;version&quot;: 1,
   &quot;tasks&quot;: [
     {
-      &quot;name&quot;: &quot;task_1&quot;,
-      &quot;taskReferenceName&quot;: &quot;task_1&quot;,
+      &quot;name&quot;: &quot;perf_ task_1&quot;,
+      &quot;taskReferenceName&quot;: &quot;perf_ task_1&quot;,
       &quot;inputParameters&quot;: {
         &quot;mod&quot;: &quot;${workflow.input.mod}&quot;,
         &quot;oddEven&quot;: &quot;${workflow.input.oddEven}&quot;
@@ -194,7 +194,7 @@
     },
     {
       &quot;name&quot;: &quot;dyntask&quot;,
-      &quot;taskReferenceName&quot;: &quot;task_2&quot;,
+      &quot;taskReferenceName&quot;: &quot;perf_ task_2&quot;,
       &quot;inputParameters&quot;: {
         &quot;taskToExecute&quot;: &quot;${workflow.input.task2Name}&quot;
       },
@@ -205,18 +205,18 @@
       &quot;name&quot;: &quot;oddEvenDecision&quot;,
       &quot;taskReferenceName&quot;: &quot;oddEvenDecision&quot;,
       &quot;inputParameters&quot;: {
-        &quot;oddEven&quot;: &quot;${task_2.output.oddEven}&quot;
+        &quot;oddEven&quot;: &quot;${perf_ task_2.output.oddEven}&quot;
       },
       &quot;type&quot;: &quot;DECISION&quot;,
       &quot;caseValueParam&quot;: &quot;oddEven&quot;,
       &quot;decisionCases&quot;: {
         &quot;0&quot;: [
           {
-            &quot;name&quot;: &quot;task_4&quot;,
-            &quot;taskReferenceName&quot;: &quot;task_4&quot;,
+            &quot;name&quot;: &quot;perf_ task_4&quot;,
+            &quot;taskReferenceName&quot;: &quot;perf_ task_4&quot;,
             &quot;inputParameters&quot;: {
-              &quot;mod&quot;: &quot;${task_2.output.mod}&quot;,
-              &quot;oddEven&quot;: &quot;${task_2.output.oddEven}&quot;
+              &quot;mod&quot;: &quot;${perf_ task_2.output.mod}&quot;,
+              &quot;oddEven&quot;: &quot;${perf_ task_2.output.oddEven}&quot;
             },
             &quot;type&quot;: &quot;SIMPLE&quot;
           },
@@ -224,8 +224,8 @@
             &quot;name&quot;: &quot;dynamic_fanout&quot;,
             &quot;taskReferenceName&quot;: &quot;fanout1&quot;,
             &quot;inputParameters&quot;: {
-              &quot;dynamicTasks&quot;: &quot;${task_4.output.dynamicTasks}&quot;,
-              &quot;input&quot;: &quot;${task_4.output.inputs}&quot;
+              &quot;dynamicTasks&quot;: &quot;${perf_ task_4.output.dynamicTasks}&quot;,
+              &quot;input&quot;: &quot;${perf_ task_4.output.inputs}&quot;
             },
             &quot;type&quot;: &quot;FORK_JOIN_DYNAMIC&quot;,
             &quot;dynamicForkTasksParam&quot;: &quot;dynamicTasks&quot;,
@@ -245,16 +245,16 @@
             &quot;forkTasks&quot;: [
               [
                 {
-                  &quot;name&quot;: &quot;task_10&quot;,
-                  &quot;taskReferenceName&quot;: &quot;task_10&quot;,
+                  &quot;name&quot;: &quot;perf_ task_10&quot;,
+                  &quot;taskReferenceName&quot;: &quot;perf_ task_10&quot;,
                   &quot;type&quot;: &quot;SIMPLE&quot;
                 },
                 {
                   &quot;name&quot;: &quot;sub_workflow_x&quot;,
                   &quot;taskReferenceName&quot;: &quot;wf3&quot;,
                   &quot;inputParameters&quot;: {
-                    &quot;mod&quot;: &quot;${task_1.output.mod}&quot;,
-                    &quot;oddEven&quot;: &quot;${task_1.output.oddEven}&quot;
+                    &quot;mod&quot;: &quot;${perf_ task_1.output.mod}&quot;,
+                    &quot;oddEven&quot;: &quot;${perf_ task_1.output.oddEven}&quot;
                   },
                   &quot;type&quot;: &quot;SUB_WORKFLOW&quot;,
                   &quot;subWorkflowParam&quot;: {
@@ -265,16 +265,16 @@
               ],
               [
                 {
-                  &quot;name&quot;: &quot;task_11&quot;,
-                  &quot;taskReferenceName&quot;: &quot;task_11&quot;,
+                  &quot;name&quot;: &quot;perf_ task_11&quot;,
+                  &quot;taskReferenceName&quot;: &quot;perf_ task_11&quot;,
                   &quot;type&quot;: &quot;SIMPLE&quot;
                 },
                 {
                   &quot;name&quot;: &quot;sub_workflow_x&quot;,
                   &quot;taskReferenceName&quot;: &quot;wf4&quot;,
                   &quot;inputParameters&quot;: {
-                    &quot;mod&quot;: &quot;${task_1.output.mod}&quot;,
-                    &quot;oddEven&quot;: &quot;${task_1.output.oddEven}&quot;
+                    &quot;mod&quot;: &quot;${perf_ task_1.output.mod}&quot;,
+                    &quot;oddEven&quot;: &quot;${perf_ task_1.output.oddEven}&quot;
                   },
                   &quot;type&quot;: &quot;SUB_WORKFLOW&quot;,
                   &quot;subWorkflowParam&quot;: {
@@ -309,8 +309,8 @@
       &quot;type&quot;: &quot;HTTP&quot;
     },
     {
-      &quot;name&quot;: &quot;task_30&quot;,
-      &quot;taskReferenceName&quot;: &quot;task_30&quot;,
+      &quot;name&quot;: &quot;perf_task_30&quot;,
+      &quot;taskReferenceName&quot;: &quot;perf_task_30&quot;,
       &quot;inputParameters&quot;: {
         &quot;statuses&quot;: &quot;${get_es_1.output..status}&quot;,
         &quot;fistWorkflowId&quot;: &quot;${get_es_1.output.workflowId[0]}&quot;
