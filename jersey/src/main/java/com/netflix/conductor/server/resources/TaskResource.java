@@ -162,7 +162,13 @@ public class TaskResource {
 	public Map<String, Long> all() throws Exception {
 		Map<String, Long> all = queues.queuesDetail();
 		Set<Entry<String, Long>> entries = all.entrySet();
-		Set<Entry<String, Long>> sorted = new TreeSet<>(Comparator.comparingLong(e -> e.getValue()));
+		Set<Entry<String, Long>> sorted = new TreeSet<>(new Comparator<Entry<String, Long>>() {
+
+			@Override
+			public int compare(Entry<String, Long> o1, Entry<String, Long> o2) {
+				return o1.getKey().compareTo(o2.getKey());
+			}
+		});
 		sorted.addAll(entries);
 		LinkedHashMap<String, Long> sortedMap = new LinkedHashMap<>();
 		sorted.stream().map(e -> sortedMap.put(e.getKey(), e.getValue()));
@@ -186,5 +192,5 @@ public class TaskResource {
 	public String requeue(@PathParam("taskType") String taskType) throws Exception {
 		return "" + taskService.requeuePendingTasks(taskType);
 	}
-
+	
 }
