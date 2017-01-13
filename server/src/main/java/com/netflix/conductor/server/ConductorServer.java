@@ -24,6 +24,9 @@ import com.netflix.dyno.connectionpool.Host.Status;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.jedis.DynoJedisClient;
 
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisCommands;
+
 /**
  * @author Viren
  *
@@ -69,11 +72,23 @@ public class ConductorServer {
 				return dynoHosts;
 			}
 		};
-		DynoJedisClient jedis = new DynoJedisClient.Builder()
-				.withHostSupplier(hs)
-				.withApplicationName(cc.getAppId())
-				.withDynomiteClusterName(dynoClusterName)
-				.build();		
+		String db = cc.getProperty("db", "dynomite");
+		JedisCommands jedis = null;
+		
+		if("redis".equalsIgnoreCase(db)) {
+			
+			String host = dynoHosts.get(0).getHostName();
+			int port = dynoHosts.get(0).getPort();
+			jedis = new Jedis(host, port);
+			
+		}else {
+			
+			jedis = new DynoJedisClient.Builder()
+					.withHostSupplier(hs)
+					.withApplicationName(cc.getAppId())
+					.withDynomiteClusterName(dynoClusterName)
+					.build();		
+		}
 		
 		this.sm = new ServerModule(jedis, hs, cc);
 	}
@@ -103,7 +118,7 @@ public class ConductorServer {
 		context.addServlet(new ServletHolder(staticServlet), "/*");
 		
 		server.start();
-		System.out.println("Started server on http://localhost:8080/");
+		System.out.println("Started server on http://localhost:" + port + "/");
 		
 		server.join();
 

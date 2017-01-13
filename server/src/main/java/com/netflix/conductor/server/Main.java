@@ -30,9 +30,11 @@ public class Main {
 			System.err.println("Missing dynomite/redis hosts.  Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied properties file " + propertyFile);
 		}
 		
-		System.out.println("Starting...");
-		ConductorServer server = new ConductorServer(new ConductorConfig());
-		server.start(8080);
+		System.out.println("Starting conductor server...");
+		
+		ConductorConfig config = new ConductorConfig();
+		ConductorServer server = new ConductorServer(config);
+		server.start(config.getIntProperty("port", 8081));
 	}
 
 }
