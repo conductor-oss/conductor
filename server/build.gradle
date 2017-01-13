@@ -20,6 +20,15 @@ publishing {
     }
   }
 }
+
+artifactory {
+	publish {
+		defaults {
+			publishArtifacts = true
+            publications('shadow')
+		}
+	}
+}
 apply plugin: 'com.github.johnrengelman.shadow'
 
 dependencies {
