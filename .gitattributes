@@ -1,5 +1,4 @@
 docs/* linguist-documentation
-test-harness/src/test/resources/webapp/swagger-ui/* linguist-vendored
-server/src/main/resources/webapp/swagger-ui/* linguist-vendored
+server/src/main/resources/swagger-ui/* linguist-vendored
 
 

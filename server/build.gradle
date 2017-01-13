@@ -5,9 +5,20 @@ configurations.all {
 }
 
 buildscript {
+ 	repositories {
+        jcenter()
+    }
     dependencies {
         classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.4'
     }
+}
+
+publishing {
+  publications {
+    shadow(MavenPublication) {
+      from components.shadow
+    }
+  }
 }
 apply plugin: 'com.github.johnrengelman.shadow'
 
@@ -34,7 +45,17 @@ dependencies {
 	compile 'org.rarefiedredis.redis:redis-java:0.0.17'
 }
 
+shadowJar {
+   configurations = [project.configurations.compile]
+   manifest {
+       attributes 'Description': 'Self contained Conductor server jar'
+       attributes 'Main-Class' : 'com.netflix.conductor.server.Main'
+   }
+}
+
+build.dependsOn('shadowJar')
 task server(type: JavaExec) {
-  main = 'com.netflix.conductor.demo.Main'
+  systemProperty 'workflow.elasticsearch.url', 'localhost:9300'
+  main = 'com.netflix.conductor.server.Main'
   classpath = sourceSets.test.runtimeClasspath  
 }

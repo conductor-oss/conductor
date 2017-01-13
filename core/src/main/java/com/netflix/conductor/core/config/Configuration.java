@@ -18,7 +18,10 @@
  */
 package com.netflix.conductor.core.config;
 
+import java.util.List;
 import java.util.Map;
+
+import com.google.inject.AbstractModule;
 
 /**
  * @author Viren
@@ -96,5 +99,15 @@ public interface Configuration {
 	 * @return Returns all the configurations in a map.
 	 */
 	public Map<String, Object> getAll();
+	
+	/**
+	 * 
+	 * @return Provides a list of additional modules to configure. 
+	 * Use this to inject additional modules that should be loaded as part of the Conductor server initialization
+	 * If you are creating custom tasks (com.netflix.conductor.core.execution.tasks.WorkflowSystemTask) then initialize them as part of the custom modules.
+	 */
+	public default List<AbstractModule> getAdditionalModules() {
+		return null;
+	}
 
 }

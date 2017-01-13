@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.server;
 
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -89,6 +90,14 @@ public class ServerModule extends AbstractModule {
 		
 		DynoProxy proxy = new DynoProxy(dynoConn);
 		bind(DynoProxy.class).toInstance(proxy);
+		
+		install(new JerseyModule());
+		List<AbstractModule> additionalModules = config.getAdditionalModules();
+		if(additionalModules != null) {
+			for(AbstractModule additionalModule : additionalModules) {
+				install(additionalModule);
+			}
+		}
 	}
 	
 	@Provides

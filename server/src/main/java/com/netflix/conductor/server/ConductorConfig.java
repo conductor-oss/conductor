@@ -1,4 +1,19 @@
 /**
+ * Copyright 2017 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
  * 
  */
 package com.netflix.conductor.server;
@@ -6,11 +21,19 @@ package com.netflix.conductor.server;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.google.inject.AbstractModule;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.DeciderService;
 
 /**
  * @author Viren
@@ -18,6 +41,8 @@ import com.netflix.conductor.core.config.Configuration;
  */
 public class ConductorConfig implements Configuration {
 
+	private static Logger logger = LoggerFactory.getLogger(ConductorConfig.class);
+	
 	@Override
 	public int getSweepFrequency() {
 		return getIntProperty("decider.sweep.frequency.seconds", 30);
@@ -86,4 +111,28 @@ public class ConductorConfig implements Configuration {
 		return map;
 	}
 
+	@Override
+	public List<AbstractModule> getAdditionalModules() {
+		
+		String additionalModuleClasses = getProperty("conductor.additional.modules", null);
+		if(!StringUtils.isEmpty(additionalModuleClasses)) {
+			try {
+				List<AbstractModule> modules = new LinkedList<>();
+				String[] classes = additionalModuleClasses.split(",");
+				for(String clazz : classes) {
+					Object moduleObj = Class.forName(clazz).newInstance();
+					if(moduleObj instanceof AbstractModule) {
+						AbstractModule abstractModule = (AbstractModule)moduleObj;
+						modules.add(abstractModule);
+					} else {
+						logger.error(clazz + " does not implement " + AbstractModule.class.getName() + ", skipping...");
+					}
+				}
+				return modules;
+			}catch(Exception e) {
+				logger.warn(e.getMessage(), e);
+			}
+		}
+		return null;
+	}
 }

@@ -30,6 +30,7 @@ Below are the various artifacts published:
 |conductor-ui|node.js based UI for Conductor|
 |conductor-contribs|Optional contrib package that holds extended workflow tasks and support for SQS|
 |conductor-client|Java client for Conductor that includes helpers for running a worker tasks|
+|conductor-server|Self contained Jetty server|
 |conductor-test-harness|Used for building test harness and an in-memory kitchensink demo|
 
 ## Building
