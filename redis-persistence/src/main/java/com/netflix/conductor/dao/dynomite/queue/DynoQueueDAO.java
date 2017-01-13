@@ -102,12 +102,12 @@ public class DynoQueueDAO implements QueueDAO {
 		init();
 	}
 
-	public DynoQueueDAO(JedisCommands dynoClient, JedisCommands dynoClientRead, ShardSupplier ss, Configuration config, int dynoThreadCount) {
+	public DynoQueueDAO(JedisCommands dynoClient, JedisCommands dynoClientRead, ShardSupplier ss, Configuration config) {
 		this.dynoClient = dynoClient;
 		this.dynoClientRead = dynoClient;
 		this.ss = ss;
 		this.config = config;
-		this.dynoThreadCount = dynoThreadCount;
+		this.dynoThreadCount = config.getIntProperty("queues.dynomite.threads", 100);
 		init();
 	}
 
