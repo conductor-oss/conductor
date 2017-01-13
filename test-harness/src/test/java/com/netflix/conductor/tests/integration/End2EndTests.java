@@ -190,6 +190,7 @@ public class End2EndTests {
 		assertEquals(t1.getTaskReferenceName(), pending.getReferenceTaskName());
 		assertEquals(workflowId, pending.getWorkflowInstanceId());
 		
+		Thread.sleep(1000);
 		SearchResult<WorkflowSummary> searchResult = wc.search("workflowType='" + def.getName() + "'");
 		assertNotNull(searchResult);
 		assertEquals(1, searchResult.getTotalHits());
