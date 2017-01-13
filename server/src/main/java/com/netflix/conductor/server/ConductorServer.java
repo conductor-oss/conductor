@@ -20,7 +20,8 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.Guice;
 import com.google.inject.servlet.GuiceFilter;
-import com.netflix.conductor.dao.redis.JedisMock;
+import com.netflix.conductor.redis.utils.JedisMock;
+import com.netflix.conductor.server.es.EmbeddedElasticSearch;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.Host.Status;
 import com.netflix.dyno.connectionpool.HostSupplier;
@@ -80,6 +81,10 @@ public class ConductorServer {
 				dynoHosts.add(dynoHost);
 			}
 				
+		}else {
+			//Create a single shard host supplier
+			Host dynoHost = new Host("localhost", 0, cc.getAvailabilityZone(), Status.Up);
+			dynoHosts.add(dynoHost);
 		}
 		init(dynoClusterName, dynoHosts);
 	}
@@ -111,6 +116,11 @@ public class ConductorServer {
 			break;
 		case memory:
 			jedis = new JedisMock();
+			try {
+				EmbeddedElasticSearch.start();
+			} catch (Exception e) {
+				logger.error("Error starting embedded elasticsearch.  Search functionality will be impacted: " + e.getMessage(), e);
+			}
 			logger.info("Starting conductor server using in memory data store");
 			break;
 		}
@@ -118,7 +128,7 @@ public class ConductorServer {
 		this.sm = new ServerModule(jedis, hs, cc);
 	}
 	
-	public synchronized void start(int port) throws Exception {
+	public synchronized void start(int port, boolean join) throws Exception {
 		
 		if(server != null) {
 			throw new IllegalStateException("Server is already running");
@@ -131,11 +141,12 @@ public class ConductorServer {
 		String htmlLoc = indexLoc.getParentFile().getParentFile().getAbsolutePath();
 		
 		this.server = new Server(port);
-
+		
 		ServletContextHandler context = new ServletContextHandler();
 		context.addFilter(GuiceFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
 		context.setResourceBase(htmlLoc);
 		context.setWelcomeFiles(new String[] { "index.html" });
+		
 		server.setHandler(context);
 
 
@@ -145,7 +156,9 @@ public class ConductorServer {
 		server.start();
 		System.out.println("Started server on http://localhost:" + port + "/");
 		
-		server.join();
+		if(join) {
+			server.join();
+		}
 
 	}
 	

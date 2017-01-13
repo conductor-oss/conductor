@@ -60,7 +60,7 @@ public class ServerModule extends AbstractModule {
 	
 	private ConductorConfig config;
 	
-	ServerModule(JedisCommands jedis, HostSupplier hs, ConductorConfig config) {
+	public ServerModule(JedisCommands jedis, HostSupplier hs, ConductorConfig config) {
 		this.dynoConn = jedis;
 		this.hs = hs;
 		this.config = config;
@@ -75,7 +75,9 @@ public class ServerModule extends AbstractModule {
 		configureExecutorService();
 		
 		bind(Configuration.class).to(ConductorConfig.class);
-		DynoShardSupplier ss = new DynoShardSupplier(hs, region, localRack);
+		String localDC = localRack;
+		localDC = localDC.replaceAll(region, "");
+		DynoShardSupplier ss = new DynoShardSupplier(hs, region, localDC);
 		DynoQueueDAO queueDao = new DynoQueueDAO(dynoConn, dynoConn, ss, config);
 		
 		install(new ElasticsearchModule());

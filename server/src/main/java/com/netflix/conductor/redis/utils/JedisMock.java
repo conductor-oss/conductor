@@ -16,7 +16,7 @@
 /**
  * 
  */
-package com.netflix.conductor.tests.utils;
+package com.netflix.conductor.redis.utils;
 
 import java.util.ArrayList;
 import java.util.HashSet;

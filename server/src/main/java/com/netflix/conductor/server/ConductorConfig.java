@@ -55,12 +55,12 @@ public class ConductorConfig implements Configuration {
 
 	@Override
 	public String getRegion() {
-		return "us-east-1";
+		return getProperty("EC2_REGION", "us-east-1");
 	}
 
 	@Override
 	public String getAvailabilityZone() {
-		return "us-east-1c";
+		return getProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
 	}
 
 	@Override

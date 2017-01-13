@@ -234,12 +234,12 @@ public class WorkflowServiceTest {
 	@Test
 	public void testTaskDefTemplate() throws Exception {
 		
-		System.setProperty("STACK", "test_stack");
+		System.setProperty("STACK2", "test_stack");
 		TaskDef templatedTask = new TaskDef();
 		templatedTask.setName("templated_task");
 		Map<String, Object> httpRequest = new HashMap<>();
 		httpRequest.put("method", "GET");
-		httpRequest.put("vipStack", "${STACK}");
+		httpRequest.put("vipStack", "${STACK2}");
 		httpRequest.put("uri", "/get/something");
 		Map<String, Object> body = new HashMap<>();
 		body.put("inputPaths", Arrays.asList("${workflow.input.path1}", "${workflow.input.path2}"));

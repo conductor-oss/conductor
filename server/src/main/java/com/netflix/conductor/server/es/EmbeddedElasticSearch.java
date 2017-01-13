@@ -1,4 +1,4 @@
-package com.netflix.conductor.demo;
+package com.netflix.conductor.server.es;
 
 import java.io.File;
 import java.io.IOException;

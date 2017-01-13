@@ -18,20 +18,10 @@
  */
 package com.netflix.conductor.tests.utils;
 
-import java.util.EnumSet;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import javax.servlet.DispatcherType;
-
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.junit.runners.BlockJUnit4ClassRunner;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-import com.google.inject.servlet.GuiceFilter;
-import com.netflix.conductor.demo.EmbeddedElasticSearch;
 
 /**
  * @author Viren
@@ -40,8 +30,6 @@ import com.netflix.conductor.demo.EmbeddedElasticSearch;
 public class TestRunner extends BlockJUnit4ClassRunner {
 
 	private Injector injector;
-
-	private static AtomicBoolean running = new AtomicBoolean(false);
 	
 	static {
 		System.setProperty("EC2_REGION", "us-east-1");
@@ -52,17 +40,7 @@ public class TestRunner extends BlockJUnit4ClassRunner {
 	public TestRunner(Class<?> klass) throws Exception {
 		super(klass);
 		System.setProperty("workflow.namespace.prefix", "conductor" + System.getProperty("user.name"));
-		EmbeddedElasticSearch.start();
-		injector = Guice.createInjector(new TestModule(), new JerseyModule());
-	
-		if(!running.get()) {
-			Server server = new Server(8080);
-			ServletContextHandler servletContextHandler = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
-			servletContextHandler.addFilter(GuiceFilter.class, "/*", EnumSet.allOf(DispatcherType.class));
-			servletContextHandler.addServlet(DefaultServlet.class, "/");
-			server.start();
-			running.set(true);
-		}
+		injector = Guice.createInjector(new TestModule());
 	}
 
 	@Override
