@@ -127,7 +127,7 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
       "taskReferenceName": "get_es_1",
       "inputParameters": {
         "http_request": {
-          "uri": "http://es_cpe_wfe.us-east-1.dyntest.netflix.net:7104/wfe_perf/workflow/_search?q=status:COMPLETED&size=10",
+          "uri": "http://localhost:9200/wfe_perf/workflow/_search?size=10",
           "method": "GET"
         }
       },
