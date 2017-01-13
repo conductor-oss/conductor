@@ -1,11 +1,11 @@
 # Dynamic Task
 
-## Parameters:
+### Parameters:
 |name|description|
 |---|---|
 | dynamicTaskNameParam|Name of the parameter from the task input whose value is used to schedule the task.  e.g. if the value of the parameter is ABC, the next task scheduled is of type 'ABC'.|
 
-## Example
+### Example
 ``` json
 {
   "name": "user_task",
@@ -24,14 +24,14 @@ If the workflow is started with input parameter user_supplied_task's value as __
 A decision task is similar to ```case...switch``` statement in a programming langugage.
 The task takes 3 parameters:
 
-## Parameters:
+### Parameters:
 |name|description|
 |---|---|
 |caseValueParam |Name of the parameter in task input whose value will be used as a switch.|
 |decisionCases|Map where key is possible values of ```caseValueParam``` with value being list of tasks to be executed.|
 |defaultCase|List of tasks to be executed when no matching value if found in decision case (default condition)|
 
-## Example
+### Example
 
 ``` json
 {
@@ -87,12 +87,12 @@ The task takes 3 parameters:
 
 Fork is used to schedule parallel set of tasks.
 
-## Parameters:
+### Parameters:
 |name|description|
 |---|---|
 | forkTasks |A list of list of tasks.  Each sublist is scheduled to be executed in parallel.  However, tasks within the sublists are scheduled in a serial fashion.|
 
-## Example
+### Example
 
 ``` json
 {
@@ -130,7 +130,7 @@ A dynamic fork is same as FORK_JOIN task.  Except that the list of tasks to be f
 | dynamicForkTasksParam |Name of the parameter that contains list of workflow task configuration to be executed in parallel|
 |dynamicForkTasksInputParamName|Name of the parameter whose value should be a map with key as forked task's referece name and value as input the forked task|
 
-##Example
+###Example
 
 ```json
 {
@@ -187,13 +187,13 @@ When executed, the dynamic fork task will schedule two parallel task of type "en
 # Join
 Join task is used to wait for completion of one or more tasks spawned by fork tasks.
 
-## Parameters
+### Parameters
 |name|description|
 |---|---|
 | joinOn |List of task reference name, for which the JOIN will wait for completion.|
 
 
-## Example
+### Example
 
 ``` json
 {
@@ -201,15 +201,18 @@ Join task is used to wait for completion of one or more tasks spawned by fork ta
 }
 ```
 
+### Join Task Output
+Fork task's output will be a JSON object with key being the task reference name and value as the output of the fork task.
+
 # Sub Workflow
 Sub Workflow task allows for nesting a workflow within another workflow.
 
-## Parameters
+### Parameters
 |name|description|
 |---|---|
 | subWorkflowParam |List of task reference name, for which the JOIN will wait for completion.|
 
-##Example
+###Example
 
 ```json
 {
@@ -232,16 +235,16 @@ When executed, a ```deployment_workflow``` is executed with two input parameters
 A wait task is implemented as a gate that remains in ```IN_PROGRESS``` state unless marked as ```COMPLETED``` or ```FAILED``` by an external trigger.
 To use a wait task, set the task type as ```WAIT```
 
-## Parameters
+### Parameters
 None required.
 
-## Exernal Triggers for Wait Task
+### Exernal Triggers for Wait Task
 
 Task Resource endpoint can be used to update the status of a task to a terminate state. 
 
 Contrib module provides SQS integration where an external system can place a message in a pre-configured queue that the server listens on.  As the messages arrive, they are marked as ```COMPLETED``` or ```FAILED```.  
 
-### SQS Queues
+#### SQS Queues
 * SQS queues used by the server to update the task status can be retrieve using the following API:
 ```
 GET /queue
@@ -255,7 +258,7 @@ GET /queue
 	*  Each queue represents a specific task status and tasks are marked accordingly.  e.g. message coming to a ```COMPLETED``` queue marks the task status as ```COMPLETED```.
 	*  Tasks' output is updated with the message.
 
-### Example SQS Payload:
+#### Example SQS Payload:
 
 ```
 {
@@ -267,7 +270,7 @@ GET /queue
 # HTTP
 An HTTP task is used to make calls to another microservice over HTTP.
 
-## Parameters
+### Parameters
 The task expects an input parameter named ```http_request``` as part of the task's input with the following details:
 
 |name|description|
@@ -280,14 +283,14 @@ The task expects an input parameter named ```http_request``` as part of the task
 |body|Request body|
 |vipAddress|When using discovery based service URLs.|
 
-## Task Output
+### HTTP Task Output
 |name|description|
 |---|---|
 |response|JSON body containing the response if one is present|
 |headers|Response Headers|
 |statusCode|Integer status code|
 
-##Example
+### Example
 
 Task Input payload using vipAddress
 

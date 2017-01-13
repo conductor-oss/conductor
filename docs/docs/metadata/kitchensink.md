@@ -1,20 +1,13 @@
+An example kitchensink workflow that demonstrates the usage of all the schema constructs.
+
+###Definition
+
+```json
 {
   "name": "kitchensink",
   "description": "kitchensink workflow",
   "version": 1,
   "tasks": [
-    {
-      "name": "search_elasticsearch",
-      "taskReferenceName": "get_es_0",
-      "inputParameters": {
-        "http_request": {
-          "uri": "http://localhost:9200/wfe_perf/workflow/_search?q=status:COMPLETED&size=10",
-          "method": "GET",
-          "vipAddress": "es_cpe_wfe.us-east-1.cloud.netflix.com"
-        }
-      },
-      "type": "HTTP"
-    },
     {
       "name": "task_1",
       "taskReferenceName": "task_1",
@@ -144,11 +137,18 @@
       "name": "task_30",
       "taskReferenceName": "task_30",
       "inputParameters": {
-        "statuses": "${get_es_1.output...status}",
+        "statuses": "${get_es_1.output..status}",
         "fistWorkflowId": "${get_es_1.output.workflowId[0]}"
       },
       "type": "SIMPLE"
     }
   ],
+  "outputParameters": {
+    "statues": "${get_es_1.output..status}",
+    "workflowIds": "${get_es_1.output..workflowId}"
+  },
   "schemaVersion": 2
 }
+```
+### Visual Flow
+![img](../img/kitchensink.png)

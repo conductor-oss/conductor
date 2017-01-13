@@ -1,4 +1,4 @@
-![Conductor](https://netflix.github.io/conductor/img/corner-logo2.png)
+![Conductor](docs/img/conductor-vector-x.png)
 
 ## Conductor
 Conductor is an _orchestration_ engine that runs in the cloud.
@@ -58,7 +58,7 @@ com.netflix.conductor.dao.RedisESWorkflowModule
 
 * The default persistence used is [Dynomite](https://github.com/Netflix/dynomite)
 * For queues, we are relying on [dyno-queues](https://github.com/Netflix/dyno-queues)
-* The indexing backend is [Elastic](https://www.elastic.co/) (2.+)
+* The indexing backend is [Elasticsearch](https://www.elastic.co/) (2.+)
 
 ## Other Requirements
 * JDK 1.8+

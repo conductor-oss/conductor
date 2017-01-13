@@ -7,8 +7,9 @@ pages:
 - 'Introduction' : index.md
 - 'Getting Started': intro/index.md
 - 'Basic Concepts': intro/concepts.md
-- 'Metadata Definitions': metadata/index.md 
+- 'Metadata Definitions': metadata/index.md
 - 'System Tasks': metadata/systask.md
+- 'Kitchensink Example': metadata/kitchensink.md
 - 'Extending Conductor': extend/index.md
 - 'Workflow Management': runtime/index.md
 - 'Workflow Metrics':
