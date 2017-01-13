@@ -21,6 +21,9 @@ dependencies {
 	
 	//Swagger
 	compile 'io.swagger:swagger-jersey-jaxrs:1.5.0'
+	
+	//In memory
+	compile 'org.rarefiedredis.redis:redis-java:0.0.17'
 }
 
 task server(type: JavaExec) {

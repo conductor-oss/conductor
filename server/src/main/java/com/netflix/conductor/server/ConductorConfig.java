@@ -5,8 +5,10 @@ package com.netflix.conductor.server;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Properties;
 
 import com.netflix.conductor.core.config.Configuration;
 
@@ -18,12 +20,13 @@ public class ConductorConfig implements Configuration {
 
 	@Override
 	public int getSweepFrequency() {
-		return 30;
+		return getIntProperty("decider.sweep.frequency.seconds", 30);
 	}
 
 	@Override
 	public boolean disableSweep() {
-		return false;
+		String disable = getProperty("decider.sweep.disable", "false");
+		return Boolean.getBoolean(disable);
 	}
 
 	@Override
@@ -61,8 +64,13 @@ public class ConductorConfig implements Configuration {
 	}
 
 	@Override
-	public int getIntProperty(String name, int defaultValue) {
-		return defaultValue;
+	public int getIntProperty(String key, int defaultValue) {
+		String val = System.getProperty(key);
+		int value  = defaultValue;
+		try{
+			value = Integer.parseInt(val);
+		}catch(Exception e){}
+		return value;
 	}
 
 	@Override
@@ -72,7 +80,10 @@ public class ConductorConfig implements Configuration {
 
 	@Override
 	public Map<String, Object> getAll() {
-		return null;
+		Map<String, Object> map = new HashMap<>();
+		Properties props = System.getProperties();
+		props.entrySet().forEach(entry -> map.put(entry.getKey().toString(), entry.getValue()));
+		return map;
 	}
 
 }
