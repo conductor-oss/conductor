@@ -38,17 +38,18 @@ log4j.properties file path is optional and allows finer control over the logging
 
 # Database persistence model.  Possible values are memory, redis, and dynomite.
 # If ommitted, the persistence used is memory
+#
 # memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo
 # redis : non-Dynomite based redis instance
 # dynomite : Dynomite cluster.  Use this for HA configuration.
-db=memory
+db=dynomite
 
 # Dynomite Cluster details.
 # format is host:port:rack separated by semicolon  
 workflow.dynomite.cluster.hosts=host1:8102:us-east-1c;host2:8102:us-east-1d;host3:8102:us-east-1e
 
 # Dynomite cluster name
-workflow.dynomite.cluster.name=dyno_cpe_wfe2
+workflow.dynomite.cluster.name=dyno_cluster_name
 
 # Namespace for the keys stored in Dynomite/Redis 
 workflow.namespace.prefix=conductor
