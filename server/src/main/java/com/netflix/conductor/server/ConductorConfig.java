@@ -33,7 +33,6 @@ import org.slf4j.LoggerFactory;
 
 import com.google.inject.AbstractModule;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.DeciderService;
 
 /**
  * @author Viren

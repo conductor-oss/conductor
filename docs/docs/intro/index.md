@@ -5,35 +5,36 @@ The API and storage layers are pluggable and provide ability to work with differ
 
 # Installing and Running
 
-**Requirements**
+### Requirements
 
 1. **Database**: [Dynomite](https://github.com/Netflix/dynomite)
+2. Indexing Backend: [Elasticsearch 2.x](https://www.elastic.co)
 2. **Servlet Container**: Tomcat, Jetty, or similar running JDK 1.8 or higher
 
-## Run In-Memory Server
+## Runnin In-Memory Server
 Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.
 
-<font color='red'>In-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies</font>
+!!!warning:
+	In-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies.
 
-**Checkout the source from github**
+#### Checkout the source from github
 
 ```
 git clone git@github.com:Netflix/conductor.git
 ```
-**Start Local Server**
+#### Start Local Server
 ```shell
-cd test-harness
+cd server
 ../gradlew server
 # wait for the server to come online
 ```
-Swagger APIs can be accessed at [http://localhost:8080/swagger-ui/](http://localhost:8080/swagger-ui/)
+Swagger APIs can be accessed at [http://localhost:8080/](http://localhost:8080/)
 
-**Start UI Server**
+#### Start UI Server**
 ```shell
 cd ui
 gulp watch
 ```
-
 Launch UI at [http://localhost:3000/](http://localhost:3000/)
 
 #Runtime Model

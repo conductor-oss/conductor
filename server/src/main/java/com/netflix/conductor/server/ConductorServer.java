@@ -18,12 +18,16 @@
  */
 package com.netflix.conductor.server;
 
+import java.net.URL;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 
 import javax.servlet.DispatcherType;
+import javax.ws.rs.core.MediaType;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
@@ -32,14 +36,17 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Guice;
 import com.google.inject.servlet.GuiceFilter;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.redis.utils.JedisMock;
 import com.netflix.conductor.server.es.EmbeddedElasticSearch;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.Host.Status;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.jedis.DynoJedisClient;
+import com.sun.jersey.api.client.Client;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCommands;
@@ -172,6 +179,15 @@ public class ConductorServer {
 		
 		server.start();
 		System.out.println("Started server on http://localhost:" + port + "/");
+		try {
+			boolean create = Boolean.getBoolean("loadSample");
+			if(create) {
+				System.out.println("Creating kitchensink workflow");
+				createKitchenSink(port);
+			}
+		}catch(Exception e) {
+			logger.error(e.getMessage(), e);
+		}
 		
 		if(join) {
 			server.join();
@@ -185,5 +201,23 @@ public class ConductorServer {
 		}
 		server.stop();
 		server = null;
+	}
+	
+	private static void createKitchenSink(int port) throws Exception {
+		
+		List<TaskDef> taskDefs = new LinkedList<>();
+		for(int i = 0; i < 40; i++) {
+			taskDefs.add(new TaskDef("task_" + i, "task_" + i, 1, 0));
+		}
+		Client client = Client.create();
+		ObjectMapper om = new ObjectMapper();
+		client.resource("http://localhost:" + port + "/api/metadata/taskdefs").type(MediaType.APPLICATION_JSON).post(om.writeValueAsString(taskDefs));
+		
+		URL template = Main.class.getClassLoader().getResource("kitchensink.json");
+		byte[] source = Files.readAllBytes(Paths.get(template.getFile()));
+		String json = new String(source);
+		client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(json);
+		
+		logger.info("Kitchen sink workflows are created!");
 	}
 }
