@@ -184,26 +184,30 @@
 <p><img alt="Architecture" src="./images/conductor-architecture.png" /></p>
 <p>The API and storage layers are pluggable and provide ability to work with different backend and queue service providers.</p>
 <h1 id="installing-and-running">Installing and Running<a class="headerlink" href="#installing-and-running" title="Permanent link">&para;</a></h1>
-<p><strong>Requirements</strong></p>
+<h3 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>Database</strong>: <a href="https://github.com/Netflix/dynomite">Dynomite</a></li>
+<li>Indexing Backend: <a href="https://www.elastic.co">Elasticsearch 2.x</a></li>
 <li><strong>Servlet Container</strong>: Tomcat, Jetty, or similar running JDK 1.8 or higher</li>
 </ol>
-<h2 id="run-in-memory-server">Run In-Memory Server<a class="headerlink" href="#run-in-memory-server" title="Permanent link">&para;</a></h2>
+<h2 id="runnin-in-memory-server">Runnin In-Memory Server<a class="headerlink" href="#runnin-in-memory-server" title="Permanent link">&para;</a></h2>
 <p>Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.</p>
-<p><font color='red'>In-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies</font></p>
-<p><strong>Checkout the source from github</strong></p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>In-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies.</p>
+</div>
+<h4 id="checkout-the-source-from-github">Checkout the source from github<a class="headerlink" href="#checkout-the-source-from-github" title="Permanent link">&para;</a></h4>
 <pre><code>git clone git@github.com:Netflix/conductor.git
 </code></pre>
 
-<p><strong>Start Local Server</strong></p>
-<pre><code class="shell">cd test-harness
+<h4 id="start-local-server">Start Local Server<a class="headerlink" href="#start-local-server" title="Permanent link">&para;</a></h4>
+<pre><code class="shell">cd server
 ../gradlew server
 # wait for the server to come online
 </code></pre>
 
-<p>Swagger APIs can be accessed at <a href="http://localhost:8080/swagger-ui/">http://localhost:8080/swagger-ui/</a></p>
-<p><strong>Start UI Server</strong></p>
+<p>Swagger APIs can be accessed at <a href="http://localhost:8080/">http://localhost:8080/</a></p>
+<h4 id="start-ui-server">Start UI Server**<a class="headerlink" href="#start-ui-server" title="Permanent link">&para;</a></h4>
 <pre><code class="shell">cd ui
 gulp watch
 </code></pre>
