@@ -229,10 +229,11 @@ The jar can be executed using:</p>
 <pre><code class="properties">
 # Database persistence model.  Possible values are memory, redis, and dynomite.
 # If ommitted, the persistence used is memory
+#
 # memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo
 # redis : non-Dynomite based redis instance
 # dynomite : Dynomite cluster.  Use this for HA configuration.
-db=memory
+db= dynomite
 
 # Dynomite Cluster details.
 # format is host:port:rack separated by semicolon  
