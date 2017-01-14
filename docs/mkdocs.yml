@@ -10,6 +10,7 @@ pages:
 - 'Metadata Definitions': metadata/index.md
 - 'System Tasks': metadata/systask.md
 - 'Kitchensink Example': metadata/kitchensink.md
+- 'Conductor Server': server/index.md
 - 'Extending Conductor': extend/index.md
 - 'Workflow Management': runtime/index.md
 - 'Workflow Metrics':

@@ -5,13 +5,11 @@ The API and storage layers are pluggable and provide ability to work with differ
 
 # Installing and Running
 
-### Requirements
-
-1. **Database**: [Dynomite](https://github.com/Netflix/dynomite)
-2. Indexing Backend: [Elasticsearch 2.x](https://www.elastic.co)
-2. **Servlet Container**: Tomcat, Jetty, or similar running JDK 1.8 or higher
+!!! hint "Running in production"
+	For a detailed configuration guide on installing and running Conductor server in production visit [Conductor Server](/server) documentation.
 
 ## Runnin In-Memory Server
+
 Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.
 
 !!!warning:
@@ -30,12 +28,16 @@ cd server
 ```
 Swagger APIs can be accessed at [http://localhost:8080/](http://localhost:8080/)
 
-#### Start UI Server**
+#### Start UI Server
 ```shell
 cd ui
 gulp watch
 ```
 Launch UI at [http://localhost:3000/](http://localhost:3000/)
+
+!!!Note:
+	The server will load a sample kitchen sink workflow definition by default.  See [here](/metadata/kitchensink/) for details.
+
 
 #Runtime Model
 Conductor follows RPC based communication model where workers are running on a separate machine from the server.  Workers communicate with server over HTTP based endpoints and employs polling model for managing work queues.
