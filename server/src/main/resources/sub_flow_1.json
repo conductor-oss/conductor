@@ -1,0 +1,20 @@
+{
+  "name": "sub_flow_1",
+  "description": "A Simple sub-workflow with 2 tasks",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "task_5",
+      "taskReferenceName": "task_5",
+      "inputParameters": {},
+      "type": "SIMPLE"
+    },
+    {
+      "name": "task_6",
+      "taskReferenceName": "task_6",
+      "type": "SIMPLE"
+    }
+  ],
+  "outputParameters": {},
+  "schemaVersion": 2
+}
