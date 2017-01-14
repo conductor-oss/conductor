@@ -4,8 +4,8 @@
   "version": 1,
   "tasks": [
     {
-      "name": " task_1",
-      "taskReferenceName": " task_1",
+      "name": "task_1",
+      "taskReferenceName": "task_1",
       "inputParameters": {
         "mod": "${workflow.input.mod}",
         "oddEven": "${workflow.input.oddEven}"
@@ -14,7 +14,7 @@
     },
     {
       "name": "dyntask",
-      "taskReferenceName": " task_2",
+      "taskReferenceName": "task_2",
       "inputParameters": {
         "taskToExecute": "${workflow.input.task2Name}"
       },
@@ -25,18 +25,18 @@
       "name": "oddEvenDecision",
       "taskReferenceName": "oddEvenDecision",
       "inputParameters": {
-        "oddEven": "${ task_2.output.oddEven}"
+        "oddEven": "${task_2.output.oddEven}"
       },
       "type": "DECISION",
       "caseValueParam": "oddEven",
       "decisionCases": {
         "0": [
           {
-            "name": " task_4",
-            "taskReferenceName": " task_4",
+            "name": "task_4",
+            "taskReferenceName": "task_4",
             "inputParameters": {
-              "mod": "${ task_2.output.mod}",
-              "oddEven": "${ task_2.output.oddEven}"
+              "mod": "${task_2.output.mod}",
+              "oddEven": "${task_2.output.oddEven}"
             },
             "type": "SIMPLE"
           },
@@ -44,8 +44,8 @@
             "name": "dynamic_fanout",
             "taskReferenceName": "fanout1",
             "inputParameters": {
-              "dynamicTasks": "${ task_4.output.dynamicTasks}",
-              "input": "${ task_4.output.inputs}"
+              "dynamicTasks": "${task_4.output.dynamicTasks}",
+              "input": "${task_4.output.inputs}"
             },
             "type": "FORK_JOIN_DYNAMIC",
             "dynamicForkTasksParam": "dynamicTasks",
@@ -65,16 +65,16 @@
             "forkTasks": [
               [
                 {
-                  "name": " task_10",
-                  "taskReferenceName": " task_10",
+                  "name": "task_10",
+                  "taskReferenceName": "task_10",
                   "type": "SIMPLE"
                 },
                 {
                   "name": "sub_workflow_x",
                   "taskReferenceName": "wf3",
                   "inputParameters": {
-                    "mod": "${ task_1.output.mod}",
-                    "oddEven": "${ task_1.output.oddEven}"
+                    "mod": "${task_1.output.mod}",
+                    "oddEven": "${task_1.output.oddEven}"
                   },
                   "type": "SUB_WORKFLOW",
                   "subWorkflowParam": {
@@ -85,16 +85,16 @@
               ],
               [
                 {
-                  "name": " task_11",
-                  "taskReferenceName": " task_11",
+                  "name": "task_11",
+                  "taskReferenceName": "task_11",
                   "type": "SIMPLE"
                 },
                 {
                   "name": "sub_workflow_x",
                   "taskReferenceName": "wf4",
                   "inputParameters": {
-                    "mod": "${ task_1.output.mod}",
-                    "oddEven": "${ task_1.output.oddEven}"
+                    "mod": "${task_1.output.mod}",
+                    "oddEven": "${task_1.output.oddEven}"
                   },
                   "type": "SUB_WORKFLOW",
                   "subWorkflowParam": {

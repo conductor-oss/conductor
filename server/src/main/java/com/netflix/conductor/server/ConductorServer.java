@@ -144,6 +144,12 @@ public class ConductorServer {
 			jedis = new JedisMock();
 			try {
 				EmbeddedElasticSearch.start();
+				if(System.getProperty("workflow.elasticsearch.url") == null) {
+					System.setProperty("workflow.elasticsearch.url", "localhost:9300");
+				}
+				if(System.getProperty("workflow.elasticsearch.index.name") == null) {
+					System.setProperty("workflow.elasticsearch.index.name", "conductor");
+				}
 			} catch (Exception e) {
 				logger.error("Error starting embedded elasticsearch.  Search functionality will be impacted: " + e.getMessage(), e);
 			}
@@ -209,6 +215,8 @@ public class ConductorServer {
 		for(int i = 0; i < 40; i++) {
 			taskDefs.add(new TaskDef("task_" + i, "task_" + i, 1, 0));
 		}
+		taskDefs.add(new TaskDef("search_elasticsearch", "search_elasticsearch", 1, 0));
+		
 		Client client = Client.create();
 		ObjectMapper om = new ObjectMapper();
 		client.resource("http://localhost:" + port + "/api/metadata/taskdefs").type(MediaType.APPLICATION_JSON).post(om.writeValueAsString(taskDefs));
@@ -216,6 +224,11 @@ public class ConductorServer {
 		URL template = Main.class.getClassLoader().getResource("kitchensink.json");
 		byte[] source = Files.readAllBytes(Paths.get(template.getFile()));
 		String json = new String(source);
+		client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(json);
+		
+		template = Main.class.getClassLoader().getResource("sub_flow_1.json");
+		source = Files.readAllBytes(Paths.get(template.getFile()));
+		json = new String(source);
 		client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(json);
 		
 		logger.info("Kitchen sink workflows are created!");

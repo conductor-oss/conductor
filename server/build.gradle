@@ -32,11 +32,12 @@ artifactory {
 apply plugin: 'com.github.johnrengelman.shadow'
 
 dependencies {
-
+ 
 	//Conductor
 	compile project(':conductor-core')
 	compile project(':conductor-jersey')
 	compile project(':conductor-redis-persistence')
+	compile project(':conductor-contribs')
 	
 	//Jetty
 	compile 'org.eclipse.jetty:jetty-server:9.3.9.+'

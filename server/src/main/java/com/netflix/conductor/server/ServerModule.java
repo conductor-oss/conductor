@@ -25,6 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.netflix.conductor.contribs.ContribsModule;
+import com.netflix.conductor.contribs.http.HttpTask;
+import com.netflix.conductor.contribs.http.RestClientManager;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
@@ -75,7 +78,7 @@ public class ServerModule extends AbstractModule {
 		
 		configureExecutorService();
 		
-		bind(Configuration.class).to(ConductorConfig.class);
+		bind(Configuration.class).toInstance(config);
 		String localDC = localRack;
 		localDC = localDC.replaceAll(region, "");
 		DynoShardSupplier ss = new DynoShardSupplier(hs, region, localDC);
@@ -92,6 +95,7 @@ public class ServerModule extends AbstractModule {
 		bind(DynoProxy.class).toInstance(proxy);
 		
 		install(new JerseyModule());
+		new HttpTask(new RestClientManager(), config);
 		List<AbstractModule> additionalModules = config.getAdditionalModules();
 		if(additionalModules != null) {
 			for(AbstractModule additionalModule : additionalModules) {

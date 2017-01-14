@@ -206,6 +206,8 @@ public class End2EndTests {
 		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
 		assertEquals(1, wf.getTasks().size());
 		
+		Thread.sleep(100000);
+		
 	}
 	
 }
