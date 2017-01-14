@@ -17,7 +17,7 @@
         }, 
         {
             "location": "/intro/", 
-            "text": "High Level Architecture\n\n\n\n\nThe API and storage layers are pluggable and provide ability to work with different backend and queue service providers.\n\n\nInstalling and Running\n\n\nRequirements\n\n\n\n\nDatabase\n: \nDynomite\n\n\nIndexing Backend: \nElasticsearch 2.x\n\n\nServlet Container\n: Tomcat, Jetty, or similar running JDK 1.8 or higher\n\n\n\n\nRunnin In-Memory Server\n\n\nFollow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.\n\n\n\n\nWarning\n\n\nIn-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies.\n\n\n\n\nCheckout the source from github\n\n\ngit clone git@github.com:Netflix/conductor.git\n\n\n\n\nStart Local Server\n\n\ncd server\n../gradlew server\n# wait for the server to come online\n\n\n\n\nSwagger APIs can be accessed at \nhttp://localhost:8080/\n\n\nStart UI Server**\n\n\ncd ui\ngulp watch\n\n\n\n\nLaunch UI at \nhttp://localhost:3000/\n\n\nRuntime Model\n\n\nConductor follows RPC based communication model where workers are running on a separate machine from the server.  Workers communicate with server over HTTP based endpoints and employs polling model for managing work queues.\n\n\n\n\nNotes\n\n\n\n\nWorkers are remote systems and communicates over HTTP (or any supported RPC mechanism) with conductor servers.\n\n\nTask Queues are used to schedule tasks for workers.  We use \ndyno-queues\n internally but it can easily be swapped with SQS or similar pub-sub mechanism.\n\n\nconductor-redis-persistence module uses \nDynomite\n for storing the state and metadata along with \nElasticsearch\n for indexing backend.\n\n\nSee section under extending backend for implementing support for different databases for storage and indexing.\n\n\n\n\nHigh Level Steps\n\n\nSteps required for a new workflow to be registered and get executed:\n\n\n\n\nDefine task definitions used by the workflow.\n\n\nCreate the workflow definition\n\n\nCreate task worker(s) that polls for scheduled tasks at regular interval\n\n\n\n\nTrigger Workflow Execution\n\n\nPOST /workflow/{name}\n{\n    ... //json payload as workflow input\n}\n\n\n\n\nPolling for a task\n\n\nGET /tasks/poll/batch/{taskType}\n\n\n\n\nUpdate task status\n\n\nPOST /tasks\n{\n    \noutputData\n: {\n        \nencodeResult\n:\nsuccess\n,\n        \nlocation\n: \nhttp://cdn.example.com/file/location.png\n\n        //any task specific output\n     },\n     \ntaskStatus\n: \nCOMPLETED\n\n}", 
+            "text": "High Level Architecture\n\n\n\n\nThe API and storage layers are pluggable and provide ability to work with different backend and queue service providers.\n\n\nInstalling and Running\n\n\n\n\nRunning in production\n\n\nFor a detailed configuration guide on installing and running Conductor server in production visit \nConductor Server\n documentation.\n\n\n\n\nRunnin In-Memory Server\n\n\nFollow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.\n\n\n\n\nWarning\n\n\nIn-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies.\n\n\n\n\nCheckout the source from github\n\n\ngit clone git@github.com:Netflix/conductor.git\n\n\n\n\nStart Local Server\n\n\ncd server\n../gradlew server\n# wait for the server to come online\n\n\n\n\nSwagger APIs can be accessed at \nhttp://localhost:8080/\n\n\nStart UI Server\n\n\ncd ui\ngulp watch\n\n\n\n\nLaunch UI at \nhttp://localhost:3000/\n\n\n\n\nNote\n\n\nThe server will load a sample kitchen sink workflow definition by default.  See \nhere\n for details.\n\n\n\n\nRuntime Model\n\n\nConductor follows RPC based communication model where workers are running on a separate machine from the server.  Workers communicate with server over HTTP based endpoints and employs polling model for managing work queues.\n\n\n\n\nNotes\n\n\n\n\nWorkers are remote systems and communicates over HTTP (or any supported RPC mechanism) with conductor servers.\n\n\nTask Queues are used to schedule tasks for workers.  We use \ndyno-queues\n internally but it can easily be swapped with SQS or similar pub-sub mechanism.\n\n\nconductor-redis-persistence module uses \nDynomite\n for storing the state and metadata along with \nElasticsearch\n for indexing backend.\n\n\nSee section under extending backend for implementing support for different databases for storage and indexing.\n\n\n\n\nHigh Level Steps\n\n\nSteps required for a new workflow to be registered and get executed:\n\n\n\n\nDefine task definitions used by the workflow.\n\n\nCreate the workflow definition\n\n\nCreate task worker(s) that polls for scheduled tasks at regular interval\n\n\n\n\nTrigger Workflow Execution\n\n\nPOST /workflow/{name}\n{\n    ... //json payload as workflow input\n}\n\n\n\n\nPolling for a task\n\n\nGET /tasks/poll/batch/{taskType}\n\n\n\n\nUpdate task status\n\n\nPOST /tasks\n{\n    \noutputData\n: {\n        \nencodeResult\n:\nsuccess\n,\n        \nlocation\n: \nhttp://cdn.example.com/file/location.png\n\n        //any task specific output\n     },\n     \ntaskStatus\n: \nCOMPLETED\n\n}", 
             "title": "Getting Started"
         }, 
         {
@@ -27,13 +27,8 @@
         }, 
         {
             "location": "/intro/#installing-and-running", 
-            "text": "", 
+            "text": "Running in production  For a detailed configuration guide on installing and running Conductor server in production visit  Conductor Server  documentation.", 
             "title": "Installing and Running"
-        }, 
-        {
-            "location": "/intro/#requirements", 
-            "text": "Database :  Dynomite  Indexing Backend:  Elasticsearch 2.x  Servlet Container : Tomcat, Jetty, or similar running JDK 1.8 or higher", 
-            "title": "Requirements"
         }, 
         {
             "location": "/intro/#runnin-in-memory-server", 
@@ -52,8 +47,8 @@
         }, 
         {
             "location": "/intro/#start-ui-server", 
-            "text": "cd ui\ngulp watch  Launch UI at  http://localhost:3000/", 
-            "title": "Start UI Server**"
+            "text": "cd ui\ngulp watch  Launch UI at  http://localhost:3000/   Note  The server will load a sample kitchen sink workflow definition by default.  See  here  for details.", 
+            "title": "Start UI Server"
         }, 
         {
             "location": "/intro/#runtime-model", 
@@ -269,6 +264,51 @@
             "location": "/metadata/kitchensink/#visual-flow", 
             "text": "", 
             "title": "Visual Flow"
+        }, 
+        {
+            "location": "/server/", 
+            "text": "Instaling\n\n\nRequirements\n\n\n\n\nDatabase\n: \nDynomite\n\n\nIndexing Backend\n: \nElasticsearch 2.x\n\n\nServlet Container\n: Tomcat, Jetty, or similar running JDK 1.8 or higher\n\n\n\n\nThere are 3 ways in which you can install Conductor:\n\n\n1. Build from source\n\n\nTo build from source, checkout the code from github and build server module using \ngradle build\n command.  This should produce a conductor-server-all-VERSION.jar.\nThe jar can be executed using:\n\n\njava -jar conductor-server-all-VERSION.jar\n\n\n\n\n2. Download pre-built binaries from jcenter or maven central\n\n\nUse the following coordiates:\n\n\n\n\n\n\n\n\ngroup\n\n\nartifact\n\n\nversion\n\n\n\n\n\n\n\n\n\n\ncom.netflix.conductor\n\n\nconductor-server-all\n\n\n1.6.+\n\n\n\n\n\n\n\n\n3. Use the pre-configured Docker image\n\n\nComing soon...\n\n\nConfiguration\n\n\nConductor server uses a property file based configuration.  The property file is passed to the Main class as a command line argument.\n\n\njava -jar conductor-server-all-VERSION.jar [PATH TO PROPERTY FILE] [log4j.properties file path]\n\n\n\n\nlog4j.properties file path is optional and allows finer control over the logging (defaults to INFO level logging in the console).\n\n\nConfiguration Parameters\n\n\n\n# Database persistence model.  Possible values are memory, redis, and dynomite.\n# If ommitted, the persistence used is memory\n# memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo\n# redis : non-Dynomite based redis instance\n# dynomite : Dynomite cluster.  Use this for HA configuration.\ndb=memory\n\n# Dynomite Cluster details.\n# format is host:port:rack separated by semicolon  \nworkflow.dynomite.cluster.hosts=host1:8102:us-east-1c;host2:8102:us-east-1d;host3:8102:us-east-1e\n\n# Dynomite cluster name\nworkflow.dynomite.cluster.name=dyno_cpe_wfe2\n\n# Namespace for the keys stored in Dynomite/Redis \nworkflow.namespace.prefix=conductor\n\n# Namespace prefix for the dyno queues\nworkflow.namespace.queue.prefix=conductor_queues\n\n# No. of threads allocated to dyno-queues (optional)\nqueues.dynomite.threads=10\n\n# Non-quorum port used to connect to local redis.  Used by dyno-queues.\n# When using redis directly, set this to the same port as redis server\n# For Dynomite, this is 22122 by default or the local redis-server port used by Dynomite.\nqueues.dynomite.nonQuorum.port=22122\n\n# Transport address to elasticsearch\nworkflow.elasticsearch.url=localhost:9300\n\n# Name of the elasticsearch cluster\nworkflow.elasticsearch.index.name=conductor\n\n# Additional modules (optional)\nconductor.additional.modules=class_extending_com.google.inject.AbstractModule\n\n\n\n\n\nHigh Availability Configuration\n\n\nConductor servers are stateless and can be deployed on multiple servers to handle scale and availability needs.  The scalability of the server is achieved by scaling the \nDynomite\n cluster along with \ndyno-queues\n which is used for queues.\n\n\nClients connects to the server via HTTP load balancer or using Discovery (on NetflixOSS stack).", 
+            "title": "Conductor Server"
+        }, 
+        {
+            "location": "/server/#instaling", 
+            "text": "", 
+            "title": "Instaling"
+        }, 
+        {
+            "location": "/server/#requirements", 
+            "text": "Database :  Dynomite  Indexing Backend :  Elasticsearch 2.x  Servlet Container : Tomcat, Jetty, or similar running JDK 1.8 or higher   There are 3 ways in which you can install Conductor:", 
+            "title": "Requirements"
+        }, 
+        {
+            "location": "/server/#1-build-from-source", 
+            "text": "To build from source, checkout the code from github and build server module using  gradle build  command.  This should produce a conductor-server-all-VERSION.jar.\nThe jar can be executed using:  java -jar conductor-server-all-VERSION.jar", 
+            "title": "1. Build from source"
+        }, 
+        {
+            "location": "/server/#2-download-pre-built-binaries-from-jcenter-or-maven-central", 
+            "text": "Use the following coordiates:     group  artifact  version      com.netflix.conductor  conductor-server-all  1.6.+", 
+            "title": "2. Download pre-built binaries from jcenter or maven central"
+        }, 
+        {
+            "location": "/server/#3-use-the-pre-configured-docker-image", 
+            "text": "Coming soon...", 
+            "title": "3. Use the pre-configured Docker image"
+        }, 
+        {
+            "location": "/server/#configuration", 
+            "text": "Conductor server uses a property file based configuration.  The property file is passed to the Main class as a command line argument.  java -jar conductor-server-all-VERSION.jar [PATH TO PROPERTY FILE] [log4j.properties file path]  log4j.properties file path is optional and allows finer control over the logging (defaults to INFO level logging in the console).", 
+            "title": "Configuration"
+        }, 
+        {
+            "location": "/server/#configuration-parameters", 
+            "text": "# Database persistence model.  Possible values are memory, redis, and dynomite.\n# If ommitted, the persistence used is memory\n# memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo\n# redis : non-Dynomite based redis instance\n# dynomite : Dynomite cluster.  Use this for HA configuration.\ndb=memory\n\n# Dynomite Cluster details.\n# format is host:port:rack separated by semicolon  \nworkflow.dynomite.cluster.hosts=host1:8102:us-east-1c;host2:8102:us-east-1d;host3:8102:us-east-1e\n\n# Dynomite cluster name\nworkflow.dynomite.cluster.name=dyno_cpe_wfe2\n\n# Namespace for the keys stored in Dynomite/Redis \nworkflow.namespace.prefix=conductor\n\n# Namespace prefix for the dyno queues\nworkflow.namespace.queue.prefix=conductor_queues\n\n# No. of threads allocated to dyno-queues (optional)\nqueues.dynomite.threads=10\n\n# Non-quorum port used to connect to local redis.  Used by dyno-queues.\n# When using redis directly, set this to the same port as redis server\n# For Dynomite, this is 22122 by default or the local redis-server port used by Dynomite.\nqueues.dynomite.nonQuorum.port=22122\n\n# Transport address to elasticsearch\nworkflow.elasticsearch.url=localhost:9300\n\n# Name of the elasticsearch cluster\nworkflow.elasticsearch.index.name=conductor\n\n# Additional modules (optional)\nconductor.additional.modules=class_extending_com.google.inject.AbstractModule", 
+            "title": "Configuration Parameters"
+        }, 
+        {
+            "location": "/server/#high-availability-configuration", 
+            "text": "Conductor servers are stateless and can be deployed on multiple servers to handle scale and availability needs.  The scalability of the server is achieved by scaling the  Dynomite  cluster along with  dyno-queues  which is used for queues.  Clients connects to the server via HTTP load balancer or using Discovery (on NetflixOSS stack).", 
+            "title": "High Availability Configuration"
         }, 
         {
             "location": "/extend/", 

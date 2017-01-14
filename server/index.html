@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Conductor Server - Conductor</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../css/highlight.css">
+  <link href="../css/custom.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Conductor Server";
+    var mkdocs_page_input_path = "server/index.md";
+    var mkdocs_page_url = "/server/";
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js"></script>
+  <script src="../js/modernizr-2.8.3.min.js"></script>
+  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search" style="background-color:#fcfcfc">
+        <a href=".." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#fcfcfc;border:0;padding:0" class="cornerlogo" src="../img/conductor-vector-x.png"/>
+        </a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="..">Introduction</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../intro/">Getting Started</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../intro/concepts/">Basic Concepts</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../metadata/">Metadata Definitions</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../metadata/systask/">System Tasks</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 current">
+        <a class="current" href="./">Conductor Server</a>
+        
+            <ul>
+            
+                <li class="toctree-l3"><a href="#instaling">Instaling</a></li>
+            
+                <li class="toctree-l3"><a href="#configuration">Configuration</a></li>
+            
+                <li class="toctree-l3"><a href="#high-availability-configuration">High Availability Configuration</a></li>
+            
+            </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../extend/">Extending Conductor</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../runtime/">Workflow Management</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <ul class="subnav">
+    <li><span>Workflow Metrics</span></li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../metrics/">Server Metrics</a>
+        
+    </li>
+
+        
+            
+    <li class="toctree-l1 ">
+        <a class="" href="../metrics/client/">Worker Metrics</a>
+        
+    </li>
+
+        
+    </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../license/">License</a>
+        
+    </li>
+<li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" style="background:#000000" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Conductor Server</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/server/index.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h1 id="instaling">Instaling<a class="headerlink" href="#instaling" title="Permanent link">&para;</a></h1>
+<h3 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h3>
+<ol>
+<li><strong>Database</strong>: <a href="https://github.com/Netflix/dynomite">Dynomite</a></li>
+<li><strong>Indexing Backend</strong>: <a href="https://www.elastic.co">Elasticsearch 2.x</a></li>
+<li><strong>Servlet Container</strong>: Tomcat, Jetty, or similar running JDK 1.8 or higher</li>
+</ol>
+<p>There are 3 ways in which you can install Conductor:</p>
+<h4 id="1-build-from-source">1. Build from source<a class="headerlink" href="#1-build-from-source" title="Permanent link">&para;</a></h4>
+<p>To build from source, checkout the code from github and build server module using <code>gradle build</code> command.  This should produce a conductor-server-all-VERSION.jar.
+The jar can be executed using:</p>
+<pre><code class="shell">java -jar conductor-server-all-VERSION.jar
+</code></pre>
+
+<h4 id="2-download-pre-built-binaries-from-jcenter-or-maven-central">2. Download pre-built binaries from jcenter or maven central<a class="headerlink" href="#2-download-pre-built-binaries-from-jcenter-or-maven-central" title="Permanent link">&para;</a></h4>
+<p>Use the following coordiates:</p>
+<table>
+<thead>
+<tr>
+<th>group</th>
+<th>artifact</th>
+<th>version</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>com.netflix.conductor</td>
+<td>conductor-server-all</td>
+<td>1.6.+</td>
+</tr>
+</tbody>
+</table>
+<h4 id="3-use-the-pre-configured-docker-image">3. Use the pre-configured Docker image<a class="headerlink" href="#3-use-the-pre-configured-docker-image" title="Permanent link">&para;</a></h4>
+<p>Coming soon...</p>
+<h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
+<p>Conductor server uses a property file based configuration.  The property file is passed to the Main class as a command line argument.</p>
+<pre><code class="shell">java -jar conductor-server-all-VERSION.jar [PATH TO PROPERTY FILE] [log4j.properties file path]
+</code></pre>
+
+<p>log4j.properties file path is optional and allows finer control over the logging (defaults to INFO level logging in the console).</p>
+<h3 id="configuration-parameters">Configuration Parameters<a class="headerlink" href="#configuration-parameters" title="Permanent link">&para;</a></h3>
+<pre><code class="properties">
+# Database persistence model.  Possible values are memory, redis, and dynomite.
+# If ommitted, the persistence used is memory
+# memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo
+# redis : non-Dynomite based redis instance
+# dynomite : Dynomite cluster.  Use this for HA configuration.
+db=memory
+
+# Dynomite Cluster details.
+# format is host:port:rack separated by semicolon  
+workflow.dynomite.cluster.hosts=host1:8102:us-east-1c;host2:8102:us-east-1d;host3:8102:us-east-1e
+
+# Dynomite cluster name
+workflow.dynomite.cluster.name=dyno_cpe_wfe2
+
+# Namespace for the keys stored in Dynomite/Redis 
+workflow.namespace.prefix=conductor
+
+# Namespace prefix for the dyno queues
+workflow.namespace.queue.prefix=conductor_queues
+
+# No. of threads allocated to dyno-queues (optional)
+queues.dynomite.threads=10
+
+# Non-quorum port used to connect to local redis.  Used by dyno-queues.
+# When using redis directly, set this to the same port as redis server
+# For Dynomite, this is 22122 by default or the local redis-server port used by Dynomite.
+queues.dynomite.nonQuorum.port=22122
+
+# Transport address to elasticsearch
+workflow.elasticsearch.url=localhost:9300
+
+# Name of the elasticsearch cluster
+workflow.elasticsearch.index.name=conductor
+
+# Additional modules (optional)
+conductor.additional.modules=class_extending_com.google.inject.AbstractModule
+
+</code></pre>
+
+<h1 id="high-availability-configuration">High Availability Configuration<a class="headerlink" href="#high-availability-configuration" title="Permanent link">&para;</a></h1>
+<p>Conductor servers are stateless and can be deployed on multiple servers to handle scale and availability needs.  The scalability of the server is achieved by scaling the <a href="https://github.com/Netflix/dynomite">Dynomite</a> cluster along with <a href="https://github.com/Netflix/dyno-queues">dyno-queues</a> which is used for queues.</p>
+<p>Clients connects to the server via HTTP load balancer or using Discovery (on NetflixOSS stack).</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../extend/" class="btn btn-neutral float-right" title="Extending Conductor">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../metadata/kitchensink/" class="btn btn-neutral" title="Kitchensink Example"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+</footer>
+	  
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/Netflix/conductor" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../metadata/kitchensink/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../extend/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script src="../js/theme.js"></script>
+
+</body>
+</html>

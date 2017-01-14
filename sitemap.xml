@@ -51,6 +51,14 @@
 
     
     <url>
+     <loc>/server/</loc>
+     <lastmod>2017-01-13</lastmod>
+     <changefreq>daily</changefreq>
+    </url>
+    
+
+    
+    <url>
      <loc>/extend/</loc>
      <lastmod>2017-01-13</lastmod>
      <changefreq>daily</changefreq>

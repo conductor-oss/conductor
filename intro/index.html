@@ -104,6 +104,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../server/">Conductor Server</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../extend/">Extending Conductor</a>
         
     </li>
@@ -184,12 +191,10 @@
 <p><img alt="Architecture" src="./images/conductor-architecture.png" /></p>
 <p>The API and storage layers are pluggable and provide ability to work with different backend and queue service providers.</p>
 <h1 id="installing-and-running">Installing and Running<a class="headerlink" href="#installing-and-running" title="Permanent link">&para;</a></h1>
-<h3 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h3>
-<ol>
-<li><strong>Database</strong>: <a href="https://github.com/Netflix/dynomite">Dynomite</a></li>
-<li>Indexing Backend: <a href="https://www.elastic.co">Elasticsearch 2.x</a></li>
-<li><strong>Servlet Container</strong>: Tomcat, Jetty, or similar running JDK 1.8 or higher</li>
-</ol>
+<div class="admonition hint">
+<p class="admonition-title">Running in production</p>
+<p>For a detailed configuration guide on installing and running Conductor server in production visit <a href="../server">Conductor Server</a> documentation.</p>
+</div>
 <h2 id="runnin-in-memory-server">Runnin In-Memory Server<a class="headerlink" href="#runnin-in-memory-server" title="Permanent link">&para;</a></h2>
 <p>Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.</p>
 <div class="admonition warning">
@@ -207,12 +212,16 @@
 </code></pre>
 
 <p>Swagger APIs can be accessed at <a href="http://localhost:8080/">http://localhost:8080/</a></p>
-<h4 id="start-ui-server">Start UI Server**<a class="headerlink" href="#start-ui-server" title="Permanent link">&para;</a></h4>
+<h4 id="start-ui-server">Start UI Server<a class="headerlink" href="#start-ui-server" title="Permanent link">&para;</a></h4>
 <pre><code class="shell">cd ui
 gulp watch
 </code></pre>
 
 <p>Launch UI at <a href="http://localhost:3000/">http://localhost:3000/</a></p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The server will load a sample kitchen sink workflow definition by default.  See <a href="../metadata/kitchensink/">here</a> for details.</p>
+</div>
 <h1 id="runtime-model">Runtime Model<a class="headerlink" href="#runtime-model" title="Permanent link">&para;</a></h1>
 <p>Conductor follows RPC based communication model where workers are running on a separate machine from the server.  Workers communicate with server over HTTP based endpoints and employs polling model for managing work queues.</p>
 <p><img alt="name_for_alt" src="./overview.png" /></p>
