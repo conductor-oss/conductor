@@ -1,0 +1,17 @@
+# Docker compose for netflix conductor + elasticsearch
+version: '2'
+services:
+  conductor:
+    image: conductor
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+      - 3000:3000
+    depends_on:
+      - elasticsearch
+  elasticsearch:
+    image: elasticsearch
+    ports:
+      - 9300:9300
