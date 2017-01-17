@@ -9,6 +9,7 @@ dependencies {
 	testCompile project(':conductor-jersey')
 	testCompile project(':conductor-redis-persistence')
 	testCompile project(':conductor-client')
+	testCompile project(':conductor-server')
 	
 	testCompile 'org.eclipse.jetty:jetty-server:9.3.9.+'
 	testCompile 'org.eclipse.jetty:jetty-servlet:9.3.9.+'

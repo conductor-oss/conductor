@@ -1,0 +1,4 @@
+docs/* linguist-documentation
+server/src/main/resources/swagger-ui/* linguist-vendored
+
+

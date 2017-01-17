@@ -73,7 +73,7 @@ public class DynoQueueDAOTest {
 			public String getCurrentShard() {
 				return "a";
 			}
-		}, new TestConfiguration(), 100);
+		}, new TestConfiguration());
 	}
 
 	@Rule

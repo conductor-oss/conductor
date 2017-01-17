@@ -18,7 +18,6 @@
  */
 package com.netflix.conductor.tests.utils;
 
-import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -26,16 +25,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.google.inject.TypeLiteral;
-import com.google.inject.matcher.Matchers;
-import com.google.inject.name.Names;
-import com.google.inject.spi.InjectionListener;
-import com.google.inject.spi.TypeEncounter;
-import com.google.inject.spi.TypeListener;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
@@ -45,8 +36,8 @@ import com.netflix.conductor.dao.dynomite.DynoProxy;
 import com.netflix.conductor.dao.dynomite.RedisExecutionDAO;
 import com.netflix.conductor.dao.dynomite.RedisMetadataDAO;
 import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
-import com.netflix.conductor.dao.index.ElasticSearchDAO;
-import com.netflix.conductor.dao.index.ElasticsearchModule;
+import com.netflix.conductor.redis.utils.JedisMock;
+import com.netflix.conductor.server.ConductorConfig;
 import com.netflix.dyno.queues.ShardSupplier;
 
 import redis.clients.jedis.JedisCommands;
@@ -65,8 +56,8 @@ public class TestModule extends AbstractModule {
 	protected void configure() {
 		
 		configureExecutorService();
-		
-		bind(Configuration.class).to(TestConfiguration.class);
+		ConductorConfig config = new ConductorConfig();
+		bind(Configuration.class).toInstance(config);
 		JedisCommands jedisMock = new JedisMock();
 		
 
@@ -81,44 +72,16 @@ public class TestModule extends AbstractModule {
 			public String getCurrentShard() {
 				return "a";
 			}
-		}, new TestConfiguration(), 100);
+		}, config);
 		
-		install(new ElasticsearchModule());
 		bind(MetadataDAO.class).to(RedisMetadataDAO.class);
 		bind(ExecutionDAO.class).to(RedisExecutionDAO.class);
 		bind(DynoQueueDAO.class).toInstance(queueDao);
 		bind(QueueDAO.class).to(DynoQueueDAO.class);
-		bind(IndexDAO.class).to(ElasticSearchDAO.class);
+		bind(IndexDAO.class).to(MockIndexDAO.class);
 		
 		DynoProxy proxy = new DynoProxy(jedisMock);
 		bind(DynoProxy.class).toInstance(proxy);
-		
-		bind(String.class).annotatedWith(Names.named("workflow.dyno.keyspace.domain")).toInstance(System.getProperty("user.name"));
-
-		bindListener(Matchers.any(), new TypeListener() {
-			
-			@Override
-			public <I> void hear(TypeLiteral<I> type, TypeEncounter<I> encounter) {
-				encounter.register(new InjectionListener<I>() {
-
-					@Override
-					public void afterInjection(I obj) {
-						Method[] methods = obj.getClass().getMethods();
-						for(Method method : methods){
-							PostConstruct[] annotations = method.getAnnotationsByType(PostConstruct.class);
-							if(annotations != null && annotations.length > 0){
-								try {
-									method.invoke(obj);
-								} catch (Exception e) {
-									e.printStackTrace();
-								} 
-							}
-						}
-					}
-				});
-				
-			}
-		});
 	}
 	
 	@Provides

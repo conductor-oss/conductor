@@ -25,7 +25,6 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -39,8 +38,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.DynamicForkJoinTask;
 import com.netflix.conductor.common.metadata.workflow.DynamicForkJoinTaskList;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
@@ -49,7 +48,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
-import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -73,24 +71,18 @@ public class DeciderService {
 	
 	private ObjectMapper om;
 	
-	private ParametersUtils pu;
+	private ParametersUtils pu = new ParametersUtils();
 	
 	@Inject
-	public DeciderService(MetadataDAO metadata, ExecutionDAO edao, ObjectMapper om, Configuration config) {
+	public DeciderService(MetadataDAO metadata, ExecutionDAO edao, ObjectMapper om) {
 		this.metadata = metadata;
 		this.edao = edao;
 		this.om = om;
-		this.pu = new ParametersUtils(config);
 	}
 
 
 	@VisibleForTesting
 	public DeciderService() {
-	}
-
-	@VisibleForTesting
-	void setParametersUtils(ParametersUtils pu){
-		this.pu = pu;
 	}
 	
 	@VisibleForTesting
@@ -541,12 +533,12 @@ public class DeciderService {
 				}
 				String name = subWorkflowParams.getName();
 				Object version = subWorkflowParams.getVersion();
-				Map<String, String> params = new HashMap<>();
+				Map<String, Object> params = new HashMap<>();
 				params.put("name", name);
 				if(version != null){
 					params.put("version", version.toString());	
 				}
-				Map<String, Object> resolvedParams = getTaskInputV2(params, workflow, null, null);
+				Map<String, Object> resolvedParams = pu.getTaskInputV2(params, workflow, null, null);
 				String workflowName = resolvedParams.get("name").toString();
 				version = resolvedParams.get("version");
 				int workflowVersion;
@@ -577,7 +569,7 @@ public class DeciderService {
 	    	throw new TerminateWorkflow(reason);
 	    }
 		String taskId = IDGenerator.generate();
-		Map<String, Object> input = getTaskInputV2(taskToSchedule.getInputParameters(), workflow, taskId, taskDef);
+		Map<String, Object> input = pu.getTaskInputV2(taskToSchedule.getInputParameters(), workflow, taskId, taskDef);
 		Task task = SystemTask.userDefined(workflow, taskToSchedule, taskDef, retryCount, taskId, input);
 		return task;
 	}
@@ -680,82 +672,45 @@ public class DeciderService {
 	}
 	
 	@VisibleForTesting
-	Map<String, Object> getTaskInput(Map<String, String> inputParams, Workflow workflow, TaskDef taskDef)  {
+	Map<String, Object> getTaskInput(Map<String, Object> inputParams, Workflow workflow, TaskDef taskDef)  {
 		if(workflow.getSchemaVersion() > 1){
-			return getTaskInputV2(inputParams, workflow, null, taskDef);
+			return pu.getTaskInputV2(inputParams, workflow, null, taskDef);
 		}
+		return getTaskInputV1(workflow, inputParams);
+	}
+
+	@Deprecated
+	//Workflow schema version 1 is deprecated and new workflows should be using version 2
+	private Map<String, Object> getTaskInputV1(Workflow workflow, Map<String, Object> inputParams) {
 		Map<String, Object> input = new HashMap<>();
+		if(inputParams == null){
+			return input;
+		}
 		Map<String, Object> workflowInput = workflow.getInput();
-		
-		Preconditions.checkNotNull(workflowInput, "Workflow Input is null");
-		if(inputParams != null){
-			inputParams.entrySet().forEach(e -> {
-				
-				String paramName = e.getKey();
-				String paramPath = e.getValue();
-				String[] paramPathComponents = paramPath.split("\\.");
-				Preconditions.checkArgument(paramPathComponents.length == 3, "Invalid input expression for " + paramName + ", expression=" + paramPath);
-				
-				String source = paramPathComponents[0];	//workflow, or task reference name
-				String type = paramPathComponents[1];	//input/output
-				String name = paramPathComponents[2];	//name of the parameter
-				if("workflow".equals(source)){
-					input.put(paramName, workflowInput.get(name));
-				}else{
-					Task task = workflow.getTaskByRefName(source);
-					if(task != null){
-						if("input".equals(type)){
-							input.put(paramName, task.getInputData().get(name));
-						}else{
-							input.put(paramName, task.getOutputData().get(name));
-						}
+		inputParams.entrySet().forEach(e -> {
+			
+			String paramName = e.getKey();
+			String paramPath = ""+e.getValue();
+			String[] paramPathComponents = paramPath.split("\\.");
+			Preconditions.checkArgument(paramPathComponents.length == 3, "Invalid input expression for " + paramName + ", paramPathComponents.size=" + paramPathComponents.length + ", expression=" + paramPath);
+			
+			String source = paramPathComponents[0];	//workflow, or task reference name
+			String type = paramPathComponents[1];	//input/output
+			String name = paramPathComponents[2];	//name of the parameter
+			if("workflow".equals(source)){
+				input.put(paramName, workflowInput.get(name));
+			}else{
+				Task task = workflow.getTaskByRefName(source);
+				if(task != null){
+					if("input".equals(type)){
+						input.put(paramName, task.getInputData().get(name));
+					}else{
+						input.put(paramName, task.getOutputData().get(name));
 					}
 				}
-			});
-		}
-		
+			}
+		});
 		return input;
-
-	}
-	
-	
-	//Kept for reference any debugging support
-	@SuppressWarnings("unused")
-	private Map<String, Object> getTaskInputV2_Prev(Map<String, String> inputParams, Workflow workflow, String taskId, TaskDef def) {
-		
-		Map<String, Object> input = new HashMap<>();
-		Map<String, Object> workflowInput = workflow.getInput();
-		
-		Preconditions.checkNotNull(workflowInput, "Workflow Input is null");
-		if(inputParams != null){
-			inputParams.entrySet().forEach(e -> {
-				
-				String paramName = e.getKey();
-				String paramPath = e.getValue();
-				
-				try {
-					Object value = pu.replaceVariables(paramPath, workflow, taskId);
-					input.put(paramName, value);
-				} catch(RuntimeException re){
-					re.printStackTrace();
-					throw new TerminateWorkflow(re.getMessage());
-				}
-			});		
-		}
-		
-		return input;
-
-	}
-
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private Map<String, Object> getTaskInputV2(Map input, Workflow workflow, String taskId, TaskDef taskDef) {
-		Map<String, Object> inputParams = new HashMap<>();
-		inputParams.putAll(input);
-		if(taskDef != null && taskDef.getInputTemplate() != null) {
-			inputParams.putAll(taskDef.getInputTemplate());
-		}
-		Map<String, Object> replaced = replace(inputParams, workflow, taskId);
-		return replaced;
 	}
 	
 	private boolean isTaskSkipped(WorkflowTask taskToSchedule, Workflow workflow) {
@@ -774,53 +729,5 @@ public class DeciderService {
 			throw new TerminateWorkflow(e.getMessage());
 		}
 
-	}
-	
-	private Map<String, Object> replace(Map<String, Object> input, Workflow workflow, String taskId) {
-		for( Entry<String, Object> e : input.entrySet()) {
-			Object value = e.getValue();
-			if((value instanceof String) || (value instanceof Map)) {
-				Object replaced = _replace(workflow, pu, value, taskId);
-				e.setValue(replaced);
-			}else if (value instanceof List) {
-				Object replaced = _replace(workflow, pu, (List<?>)value, taskId);
-				e.setValue(replaced);
-			}
-		}
-		return input;
-	}
-	
-	@SuppressWarnings("unchecked")
-	private Object _replace(Workflow workflow, ParametersUtils pu, Object value, String taskId) {
-		if (value instanceof String) {
-			String valueString = value.toString();
-			if(valueString.startsWith("${") && valueString.endsWith("}")) {
-				Object replaced = pu.replaceVariables(valueString, workflow, taskId);
-				return replaced;
-			}
-		} else if (value instanceof Map) {
-			Map<String, Object> valueMap = (Map<String, Object>)value;
-			Map<String, Object> replaced = replace(valueMap, workflow, taskId);
-			return replaced;
-		}else if (value instanceof List) {
-			List<?> valueList = (List<?>)value;
-			Object replaced = _replace(workflow, pu, valueList, taskId);
-			return replaced;
-		}
-		return value;
-	}
-	
-	private Object _replace(Workflow workflow, ParametersUtils pu, List<?> values, String taskId) {
-		List<Object> replacedList = new LinkedList<>();
-		for(Object listVal : values) {
-			if((listVal instanceof String) || (listVal instanceof Map)) {
-				Object replaced = _replace(workflow, pu, listVal, taskId);
-				replacedList.add(replaced);
-			}else if (listVal instanceof List) {
-				Object replaced = _replace(workflow, pu, (List<?>)listVal, taskId);
-				replacedList.add(replaced);
-			}
-		}
-		return replacedList;
 	}
 }

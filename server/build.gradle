@@ -1,0 +1,72 @@
+configurations.all {
+    resolutionStrategy {
+		force 'com.fasterxml.jackson.core:jackson-core:2.7.5'
+    }
+}
+
+buildscript {
+ 	repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.4'
+    }
+}
+
+publishing {
+  publications {
+    shadow(MavenPublication) {
+      from components.shadow
+    }
+  }
+}
+
+artifactory {
+	publish {
+		defaults {
+			publishArtifacts = true
+            publications('shadow')
+		}
+	}
+}
+apply plugin: 'com.github.johnrengelman.shadow'
+
+dependencies {
+ 
+	//Conductor
+	compile project(':conductor-core')
+	compile project(':conductor-jersey')
+	compile project(':conductor-redis-persistence')
+	compile project(':conductor-contribs')
+	
+	//Jetty
+	compile 'org.eclipse.jetty:jetty-server:9.3.9.+'
+	compile 'org.eclipse.jetty:jetty-servlet:9.3.9.+'
+	
+	//Guice
+	compile 'com.sun.jersey.contribs:jersey-guice:1.19.+'	
+	compile 'com.google.inject:guice:4.+'
+	compile 'com.google.inject.extensions:guice-servlet:4.+'
+	
+	//Swagger
+	compile 'io.swagger:swagger-jersey-jaxrs:1.5.0'
+	
+	//In memory
+	compile 'org.rarefiedredis.redis:redis-java:0.0.17'
+}
+
+shadowJar {
+   configurations = [project.configurations.compile]
+   manifest {
+       attributes 'Description': 'Self contained Conductor server jar'
+       attributes 'Main-Class' : 'com.netflix.conductor.server.Main'
+   }
+}
+
+build.dependsOn('shadowJar')
+task server(type: JavaExec) {
+  systemProperty 'workflow.elasticsearch.url', 'localhost:9300'
+  systemProperty 'loadSample', 'true'
+  main = 'com.netflix.conductor.server.Main'
+  classpath = sourceSets.test.runtimeClasspath  
+}

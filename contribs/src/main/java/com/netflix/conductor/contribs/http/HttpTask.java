@@ -19,6 +19,7 @@
 package com.netflix.conductor.contribs.http;
 
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,12 +27,12 @@ import java.util.Map;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -87,7 +88,6 @@ public class HttpTask extends WorkflowSystemTask {
 		logger.info("HttpTask initialized...");
 	}
 	
-	
 	@Override
 	public void start(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
 		Object request = task.getInputData().get(requestParameter);
@@ -116,8 +116,13 @@ public class HttpTask extends WorkflowSystemTask {
 		
 		try {
 			
-			Object response = httpCall(input);
-			task.setStatus(Status.COMPLETED);
+			HttpResponse response = httpCall(input);
+			if(response.statusCode > 199 && response.statusCode < 300) {
+				task.setStatus(Status.COMPLETED);
+			} else {
+				task.setReasonForIncompletion(response.body.toString());
+				task.setStatus(Status.FAILED);
+			}
 			if(response != null) {
 				task.getOutputData().put("response", response);
 			}
@@ -127,16 +132,15 @@ public class HttpTask extends WorkflowSystemTask {
 			task.setReasonForIncompletion(e.getMessage());
 			task.getOutputData().put("response", e.getMessage());
 		}
-		
 	}
 
 	/**
 	 * 
 	 * @param input HTTP Request
-	 * @return Response if any, null otherwise
+	 * @return Response of the http call
 	 * @throws Exception If there was an error making http call
 	 */
-	protected Object httpCall(Input input) throws Exception {
+	protected HttpResponse httpCall(Input input) throws Exception {
 		Client client = rcm.getClient(input);
 		Builder builder = client.resource(input.uri).type(MediaType.APPLICATION_JSON);
 		if(input.body != null) {
@@ -146,40 +150,59 @@ public class HttpTask extends WorkflowSystemTask {
 			builder.header(e.getKey(), e.getValue());
 		});
 		
-		Object response = null;
+		HttpResponse response = new HttpResponse();
 		try {
-			
-			String json = builder.accept(input.accept).method(input.method, String.class);
-			logger.debug(json);
-			try {
-				JsonNode node = om.readTree(json);
-				if(node.isArray()) {
-					response = om.convertValue(node, listOfObj);
-				} else if (node.isObject()) {
-					response = om.convertValue(node, mapOfObj);
-				} else if (node.isNumber()) {
-					response = om.convertValue(node, Double.class);
-				} else {
-					response = node.asText();
-				}
-				
-			}catch(JsonParseException jpe) {
-				logger.error(jpe.getMessage(), jpe);
-				response = json;
+
+			ClientResponse cr = builder.accept(input.accept).method(input.method, ClientResponse.class);
+			if (cr.hasEntity()) {
+				response.body = extractBody(cr);
 			}
+			response.statusCode = cr.getStatus();
+			response.headers = cr.getHeaders();
 			return response;
-			
+
 		} catch(UniformInterfaceException ex) {
 			
 			ClientResponse cr = ex.getResponse();
 			
 			if(cr.getStatus() > 199 && cr.getStatus() < 300) {
-				return cr.getEntity(String.class);
+				
+				if(cr.hasEntity()) {
+					response.body = extractBody(cr);
+				}
+				response.headers = cr.getHeaders();
+				response.statusCode = cr.getStatus();
+				return response;
+				
 			}else {
 				String reason = cr.getEntity(String.class);
 				logger.error(reason, ex);
 				throw new Exception(reason);
 			}
+		}
+	}
+
+	private Object extractBody(ClientResponse cr) {
+		
+		String json = cr.getEntity(String.class);
+		logger.debug(json);
+		
+		try {
+			
+			JsonNode node = om.readTree(json);
+			if (node.isArray()) {
+				return om.convertValue(node, listOfObj);
+			} else if (node.isObject()) {
+				return om.convertValue(node, mapOfObj);
+			} else if (node.isNumber()) {
+				return om.convertValue(node, Double.class);
+			} else {
+				return node.asText();
+			}
+
+		} catch (IOException jpe) {
+			logger.error(jpe.getMessage(), jpe);
+			return json;
 		}
 	}
 
@@ -210,6 +233,20 @@ public class HttpTask extends WorkflowSystemTask {
         om.setSerializationInclusion(Include.NON_NULL);
         om.setSerializationInclusion(Include.NON_EMPTY);
 	    return om;
+	}
+	
+	public static class HttpResponse {
+		
+		public Object body;
+		
+		public MultivaluedMap<String, String> headers;
+		
+		public int statusCode;
+
+		@Override
+		public String toString() {
+			return "HttpResponse [body=" + body + ", headers=" + headers + ", statusCode=" + statusCode + "]";
+		}
 	}
 	
 	public static class Input {

@@ -28,7 +28,6 @@ import java.util.List;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
@@ -43,21 +42,33 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.tests.utils.TestRunner;
+import com.netflix.conductor.server.ConductorConfig;
+import com.netflix.conductor.server.ConductorServer;
 
 /**
  * @author Viren
  *
  */
-@RunWith(TestRunner.class)
 public class End2EndTests {
 
+	static {
+		System.setProperty("EC2_REGION", "us-east-1");
+		System.setProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
+		System.setProperty("workflow.elasticsearch.url", "localhost:9300");
+		System.setProperty("workflow.elasticsearch.index.name", "conductor");
+		System.setProperty("db", "memory");
+	}
+	
 	private static TaskClient tc;
 	
 	private static WorkflowClient wc;
 	
+	
 	@BeforeClass
-	public static void setup() {
+	public static void setup() throws Exception {
+		ConductorServer server = new ConductorServer(new ConductorConfig());
+		server.start(8080, false);
+		
 		tc = new TaskClient();
 		tc.setRootURI("http://localhost:8080/api/");
 		
@@ -178,7 +189,8 @@ public class End2EndTests {
 		assertNotNull(pending);
 		assertEquals(t1.getTaskReferenceName(), pending.getReferenceTaskName());
 		assertEquals(workflowId, pending.getWorkflowInstanceId());
-
+		
+		Thread.sleep(1000);
 		SearchResult<WorkflowSummary> searchResult = wc.search("workflowType='" + def.getName() + "'");
 		assertNotNull(searchResult);
 		assertEquals(1, searchResult.getTotalHits());
@@ -193,6 +205,8 @@ public class End2EndTests {
 		assertNotNull(wf);
 		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
 		assertEquals(1, wf.getTasks().size());
+		
+		Thread.sleep(100000);
 		
 	}
 	

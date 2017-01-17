@@ -63,6 +63,10 @@ public class TaskResult {
 		
 	}
 
+	/**
+	 * 
+	 * @return Workflow instance id for which the task result is produced
+	 */
 	public String getWorkflowInstanceId() {
 		return workflowInstanceId;
 	}
@@ -105,6 +109,10 @@ public class TaskResult {
 
 	public Status getTaskStatus() {
 		return status;
+	}
+	
+	public void setTaskStatus(Status status) {
+		this.status = status;
 	}
 
 	/**

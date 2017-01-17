@@ -48,8 +48,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.contribs.http.HttpTask;
-import com.netflix.conductor.contribs.http.RestClientManager;
+import com.netflix.conductor.contribs.http.HttpTask.HttpResponse;
 import com.netflix.conductor.contribs.http.HttpTask.Input;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -126,7 +125,8 @@ public class TestHttpTask {
 		
 		httpTask.start(workflow, task, executor);
 		assertEquals(task.getReasonForIncompletion(), Task.Status.COMPLETED, task.getStatus());
-		Object response = task.getOutputData().get("response");	
+		HttpResponse hr = (HttpResponse) task.getOutputData().get("response");
+		Object response = hr.body;
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
 		assertTrue("response is: " + response, response instanceof Map);
 		Map<String, Object> map = (Map<String, Object>) response;
@@ -146,7 +146,7 @@ public class TestHttpTask {
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
 		httpTask.start(workflow, task, executor);
-		assertEquals(Task.Status.FAILED, task.getStatus());
+		assertEquals("Task output: " + task.getOutputData(), Task.Status.FAILED, task.getStatus());
 		assertEquals(ERROR_RESPONSE, task.getReasonForIncompletion());
 		
 		task.setStatus(Status.SCHEDULED);
@@ -166,7 +166,8 @@ public class TestHttpTask {
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
 		httpTask.start(workflow, task, executor);
-		Object response = task.getOutputData().get("response");
+		HttpResponse hr = (HttpResponse) task.getOutputData().get("response");
+		Object response = hr.body;
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
 		assertEquals(TEXT_RESPONSE, response);	
 	}
@@ -181,7 +182,8 @@ public class TestHttpTask {
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
 		httpTask.start(workflow, task, executor);
-		Object response = task.getOutputData().get("response");
+		HttpResponse hr = (HttpResponse) task.getOutputData().get("response");
+		Object response = hr.body;
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
 		assertEquals(NUM_RESPONSE, response);
 		assertTrue(response instanceof Number);
@@ -198,7 +200,8 @@ public class TestHttpTask {
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
 		httpTask.start(workflow, task, executor);
-		Object response = task.getOutputData().get("response");
+		HttpResponse hr = (HttpResponse) task.getOutputData().get("response");
+		Object response = hr.body;
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
 		assertTrue(response instanceof Map);
 		Map<String, Object> map = (Map<String, Object>) response;
@@ -218,12 +221,12 @@ public class TestHttpTask {
 		task.setScheduledTime(0);
 		httpTask.execute(workflow, task, executor);
 
-		Object response = task.getOutputData().get("response");
+		HttpResponse hr = (HttpResponse) task.getOutputData().get("response");
+		Object response = hr.body;
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
 		assertTrue(response instanceof Map);
 		Map<String, Object> map = (Map<String, Object>) response;
 		assertEquals(JSON_RESPONSE, om.writeValueAsString(map));
-		
 		
 		task.setStatus(Status.SCHEDULED);
 		task.setScheduledTime(System.currentTimeMillis()-100);

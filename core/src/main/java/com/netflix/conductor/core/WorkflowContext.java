@@ -25,7 +25,7 @@ package com.netflix.conductor.core;
  */
 public class WorkflowContext {
 
-	public static final ThreadLocal<WorkflowContext> threadLocal = new InheritableThreadLocal<WorkflowContext>();
+	public static final ThreadLocal<WorkflowContext> threadLocal = InheritableThreadLocal.withInitial(() -> new WorkflowContext(""));
 	
 	private String clientApp;
     

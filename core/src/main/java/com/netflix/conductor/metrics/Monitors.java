@@ -131,7 +131,9 @@ public class Monitors {
 		for (int j = 0; j < additionalTags.length - 1; j++) {
 			String tk = additionalTags[j];
 			String tv = "" + additionalTags[j + 1];
-			tags.put(tk, tv);
+			if(!tv.isEmpty()) {
+				tags.put(tk, tv);	
+			}			
 			j++;
 		}
 		return tags;
@@ -170,7 +172,7 @@ public class Monitors {
 	}
 
 	public static void recordRunningWorkflows(long count, String name, String version, String ownerApp) {
-		gauge(classQualifier, "workflow_running", count, "workflowName", name, "version", version, "ownerApp", ownerApp);
+		gauge(classQualifier, "workflow_running", count, "workflowName", name, "version", version, "ownerApp", ""+ownerApp);
 
 	}
 

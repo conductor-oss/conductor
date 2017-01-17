@@ -1,4 +1,4 @@
-![Conductor](https://netflix.github.io/conductor/img/corner-logo2.png)
+![Conductor](docs/docs/img/conductor-vector-x.png)
 
 ## Conductor
 Conductor is an _orchestration_ engine that runs in the cloud.
@@ -12,7 +12,7 @@ Conductor is an _orchestration_ engine that runs in the cloud.
 
 [Getting Started](http://netflix.github.io/conductor/intro) guide.
 
-## Get Condcutor
+## Get Conductor
 Binaries are available from Maven Central and jcenter.
 
 |Group|Artifact|Latest Stable Version|
@@ -30,6 +30,7 @@ Below are the various artifacts published:
 |conductor-ui|node.js based UI for Conductor|
 |conductor-contribs|Optional contrib package that holds extended workflow tasks and support for SQS|
 |conductor-client|Java client for Conductor that includes helpers for running a worker tasks|
+|conductor-server|Self contained Jetty server|
 |conductor-test-harness|Used for building test harness and an in-memory kitchensink demo|
 
 ## Building
@@ -58,7 +59,7 @@ com.netflix.conductor.dao.RedisESWorkflowModule
 
 * The default persistence used is [Dynomite](https://github.com/Netflix/dynomite)
 * For queues, we are relying on [dyno-queues](https://github.com/Netflix/dyno-queues)
-* The indexing backend is [Elastic](https://www.elastic.co/) (2.+)
+* The indexing backend is [Elasticsearch](https://www.elastic.co/) (2.+)
 
 ## Other Requirements
 * JDK 1.8+

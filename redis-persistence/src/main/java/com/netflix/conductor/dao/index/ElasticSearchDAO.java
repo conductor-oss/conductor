@@ -98,6 +98,7 @@ public class ElasticSearchDAO implements IndexDAO {
 			UpdateRequest req = new UpdateRequest(indexName, WORKFLOW_DOC_TYPE, id);
 			req.doc(doc);
 			req.upsert(doc);
+			req.retryOnConflict(5);
 			
 			BulkResponse response = client.prepareBulk().add(req).execute().actionGet();
 			BulkItemResponse[] indexedItems = response.getItems();

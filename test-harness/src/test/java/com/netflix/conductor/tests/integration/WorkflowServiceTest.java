@@ -151,7 +151,7 @@ public class WorkflowServiceTest {
 		def.setDescription(def.getName());
 		def.setVersion(1);
 		def.setInputParameters(Arrays.asList("param1", "param2"));
-		Map<String, String> outputParameters = new HashMap<>();
+		Map<String, Object> outputParameters = new HashMap<>();
 		outputParameters.put("o1", "${workflow.input.param1}");
 		outputParameters.put("o2", "${t2.output.uuid}");
 		outputParameters.put("o3", "${t1.output.op}");
@@ -162,7 +162,7 @@ public class WorkflowServiceTest {
 		
 		WorkflowTask wft1 = new WorkflowTask();
 		wft1.setName("junit_task_1");
-		Map<String, String> ip1 = new HashMap<>();
+		Map<String, Object> ip1 = new HashMap<>();
 		ip1.put("p1", "${workflow.input.param1}");
 		ip1.put("p2", "${workflow.input.param2}");
 		wft1.setInputParameters(ip1);
@@ -170,7 +170,7 @@ public class WorkflowServiceTest {
 		
 		WorkflowTask wft2 = new WorkflowTask();
 		wft2.setName("junit_task_2");
-		Map<String, String> ip2 = new HashMap<>();
+		Map<String, Object> ip2 = new HashMap<>();
 		ip2.put("tp1", "${workflow.input.param1}");
 		ip2.put("tp2", "${t1.output.op}");
 		wft2.setInputParameters(ip2);
@@ -182,7 +182,7 @@ public class WorkflowServiceTest {
 		
 		WorkflowTask wft3 = new WorkflowTask();
 		wft3.setName("junit_task_3");
-		Map<String, String> ip3 = new HashMap<>();
+		Map<String, Object> ip3 = new HashMap<>();
 		ip3.put("tp1", "${workflow.input.param1}");
 		ip3.put("tp2", "${t1.output.op}");
 		wft3.setInputParameters(ip3);
@@ -234,12 +234,12 @@ public class WorkflowServiceTest {
 	@Test
 	public void testTaskDefTemplate() throws Exception {
 		
-		System.setProperty("STACK", "test_stack");
+		System.setProperty("STACK2", "test_stack");
 		TaskDef templatedTask = new TaskDef();
 		templatedTask.setName("templated_task");
 		Map<String, Object> httpRequest = new HashMap<>();
 		httpRequest.put("method", "GET");
-		httpRequest.put("vipStack", "${STACK}");
+		httpRequest.put("vipStack", "${STACK2}");
 		httpRequest.put("uri", "/get/something");
 		Map<String, Object> body = new HashMap<>();
 		body.put("inputPaths", Arrays.asList("${workflow.input.path1}", "${workflow.input.path2}"));
@@ -751,7 +751,7 @@ public class WorkflowServiceTest {
 		
 		WorkflowTask wft1 = new WorkflowTask();
 		wft1.setName("junit_task_1");
-		Map<String, String> ip1 = new HashMap<>();
+		Map<String, Object> ip1 = new HashMap<>();
 		ip1.put("p1", "workflow.input.param1");
 		ip1.put("p2", "workflow.input.param2");
 		wft1.setInputParameters(ip1);
@@ -764,7 +764,7 @@ public class WorkflowServiceTest {
 		
 		WorkflowTask wft2 = new WorkflowTask();
 		wft2.setName("junit_task_2");
-		Map<String, String> ip2 = new HashMap<>();
+		Map<String, Object> ip2 = new HashMap<>();
 		ip2.put("tp1", "workflow.input.param1");
 		wft2.setInputParameters(ip2);
 		wft2.setTaskReferenceName("t2");
@@ -798,7 +798,7 @@ public class WorkflowServiceTest {
 		def.setVersion(1);
 		def.setInputParameters(Arrays.asList("param1", "param2"));
 		
-		Map<String, String> ip1 = new HashMap<>();
+		Map<String, Object> ip1 = new HashMap<>();
 		ip1.put("p1", "workflow.input.param1");
 		ip1.put("p2", "workflow.input.param2");
 		ip1.put("case", "workflow.input.case");
@@ -876,7 +876,7 @@ public class WorkflowServiceTest {
 
 		WorkflowTask wft1 = new WorkflowTask();
 		wft1.setName("junit_task_1");
-		Map<String, String> ip1 = new HashMap<>();
+		Map<String, Object> ip1 = new HashMap<>();
 		ip1.put("p1", "workflow.input.param1");
 		ip1.put("p2", "workflow.input.param2");
 		wft1.setInputParameters(ip1);
@@ -913,7 +913,7 @@ public class WorkflowServiceTest {
 
 		WorkflowTask wft1 = new WorkflowTask();
 		wft1.setName("junit_task_1");
-		Map<String, String> ip1 = new HashMap<>();
+		Map<String, Object> ip1 = new HashMap<>();
 		ip1.put("p1", "workflow.input.param1");
 		ip1.put("p2", "workflow.input.param2");
 		wft1.setInputParameters(ip1);
@@ -942,7 +942,7 @@ public class WorkflowServiceTest {
 		
 		WorkflowTask wft1 = new WorkflowTask();
 		wft1.setName("junit_task_1");
-		Map<String, String> ip1 = new HashMap<>();
+		Map<String, Object> ip1 = new HashMap<>();
 		ip1.put("p1", "workflow.input.param1");
 		ip1.put("p2", "workflow.input.param2");
 		wft1.setInputParameters(ip1);
@@ -950,14 +950,14 @@ public class WorkflowServiceTest {
 		
 		WorkflowTask wft2 = new WorkflowTask();
 		wft2.setName("junit_task_2");
-		Map<String, String> ip2 = new HashMap<>();
+		Map<String, Object> ip2 = new HashMap<>();
 		ip2.put("tp1", "workflow.input.param1");
 		wft2.setInputParameters(ip2);
 		wft2.setTaskReferenceName("t2");
 		
 		WorkflowTask wft3 = new WorkflowTask();
 		wft3.setName("junit_task_3");
-		Map<String, String> ip3 = new HashMap<>();
+		Map<String, Object> ip3 = new HashMap<>();
 		ip2.put("tp3", "workflow.input.param2");
 		wft3.setInputParameters(ip3);
 		wft3.setTaskReferenceName("t3");
@@ -1001,7 +1001,7 @@ public class WorkflowServiceTest {
 		finalTask.setTaskReferenceName("tf");
 		finalTask.setType(Type.DECISION.name());
 		finalTask.setCaseValueParam("finalCase");
-		Map<String, String> fi = new HashMap<>();
+		Map<String, Object> fi = new HashMap<>();
 		fi.put("finalCase", "workflow.input.finalCase");
 		finalTask.setInputParameters(fi);
 		finalTask.getDecisionCases().put("notify", Arrays.asList(notifyTask));
@@ -2651,7 +2651,7 @@ public class WorkflowServiceTest {
 		
 		WorkflowTask wft1 = new WorkflowTask();
 		wft1.setName("junit_task_5");
-		Map<String, String> ip1 = new HashMap<>();
+		Map<String, Object> ip1 = new HashMap<>();
 		ip1.put("p1", "${workflow.input.param1}");
 		ip1.put("p2", "${workflow.input.param2}");
 		wft1.setInputParameters(ip1);
@@ -2663,7 +2663,7 @@ public class WorkflowServiceTest {
 		SubWorkflowParams swp = new SubWorkflowParams();
 		swp.setName(LINEAR_WORKFLOW_T1_T2);
 		wft2.setSubWorkflowParam(swp);
-		Map<String, String> ip2 = new HashMap<>();
+		Map<String, Object> ip2 = new HashMap<>();
 		ip2.put("test", "test value");
 		ip2.put("param1", "sub workflow input param1");
 		wft2.setInputParameters(ip2);

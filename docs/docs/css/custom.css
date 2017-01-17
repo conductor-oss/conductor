@@ -1,0 +1,17 @@
+.hljs {
+	font-size: 13px;
+	background-color: #f3f6f6;
+}
+.hljs-attribute {
+	color: #000000
+}
+.hljs-string {
+	color: green
+}
+code {
+	color: green;
+	font-size: 13px
+}
+.wy-side-nav-search {
+	margin-bottom: 0;
+}

@@ -83,7 +83,7 @@ public class WorkflowResource {
 
 	@POST
 	@Path("/{name}")
-	@Produces({MediaType.TEXT_PLAIN})
+	@Produces({ MediaType.TEXT_PLAIN })
 	@ApiOperation("Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking")
 	public String startWorkflow (
 			@PathParam("name") String name, @QueryParam("version") Integer version, 
@@ -174,7 +174,7 @@ public class WorkflowResource {
 	@Path("/{workflowId}/rerun")
 	@ApiOperation("Reruns the workflow from a specific task")
 	@Consumes(MediaType.APPLICATION_JSON)
-	@Produces(MediaType.TEXT_PLAIN)
+	@Produces({MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON})
 	public String rerun(@PathParam("workflowId") String workflowId, RerunWorkflowRequest request) throws Exception {		
 		request.setReRunFromWorkflowId(workflowId);
 		return executor.rerun(request);
@@ -206,7 +206,7 @@ public class WorkflowResource {
 	
 	@ApiOperation(value="Search for workflows based in payload and other parameters", notes="use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC.  If order is not specified, defaults to ASC")
 	@GET
-	@Consumes(MediaType.TEXT_PLAIN)
+	@Consumes(MediaType.WILDCARD)
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/search")
     public SearchResult<WorkflowSummary> search(

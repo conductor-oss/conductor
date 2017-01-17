@@ -15,8 +15,13 @@
  */
 package com.netflix.conductor.server.resources;
 
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.TreeSet;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -155,14 +160,26 @@ public class TaskResource {
 	@ApiOperation("Get the details about each queue")
 	@Consumes({ MediaType.WILDCARD })
 	public Map<String, Long> all() throws Exception {
-		return queues.queuesDetail();
+		Map<String, Long> all = queues.queuesDetail();
+		Set<Entry<String, Long>> entries = all.entrySet();
+		Set<Entry<String, Long>> sorted = new TreeSet<>(new Comparator<Entry<String, Long>>() {
+
+			@Override
+			public int compare(Entry<String, Long> o1, Entry<String, Long> o2) {
+				return o1.getKey().compareTo(o2.getKey());
+			}
+		});
+		sorted.addAll(entries);
+		LinkedHashMap<String, Long> sortedMap = new LinkedHashMap<>();
+		sorted.stream().forEach(e -> sortedMap.put(e.getKey(), e.getValue()));
+		return sortedMap;
 	}
 
 	@POST
 	@Path("/queue/requeue")
 	@ApiOperation("Requeue pending tasks for all the running workflows")
 	@Consumes({ MediaType.WILDCARD })
-	@Produces({ MediaType.TEXT_PLAIN })
+	@Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON })
 	public String requeue() throws Exception {
 		return "" + taskService.requeuePendingTasks();
 	}
@@ -171,9 +188,9 @@ public class TaskResource {
 	@Path("/queue/requeue/{taskType}")
 	@ApiOperation("Requeue pending tasks")
 	@Consumes({ MediaType.WILDCARD })
-	@Produces({ MediaType.TEXT_PLAIN })
+	@Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON })
 	public String requeue(@PathParam("taskType") String taskType) throws Exception {
 		return "" + taskService.requeuePendingTasks(taskType);
 	}
-
+	
 }

@@ -182,11 +182,10 @@ public abstract class ClientBase {
 	}
 	
 	private Builder resource(URI URI, Object entity) {
-		return client.resource(URI).type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN);
+		return client.resource(URI).type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON);
 	}
 
 	private void handleException(Exception e) {
-		e.printStackTrace();
 		throw new RuntimeException(e);		
 	}	
 	

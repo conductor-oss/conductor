@@ -79,7 +79,7 @@ public class WorkflowExecutor {
 		this.edao = edao;
 		this.queue = queue;
 		this.config = config;
-		this.decider = new DeciderService(metadata, edao, om, config);
+		this.decider = new DeciderService(metadata, edao, om);
 	}
 
 	public String startWorkflow(String name, int version, String correlationId, Map<String, Object> input) throws Exception {
@@ -381,16 +381,22 @@ public class WorkflowExecutor {
 
 		List<Task> created = edao.createTasks(tasks);
 		List<Task> createdSystemTasks = created.stream().filter(task -> SystemTaskType.is(task.getTaskType())).collect(Collectors.toList());
-		for (Task task : createdSystemTasks) {
-			//SystemTaskType stt = SystemTaskType.valueOf(task.getTaskType());		//TODO: kep only for reference, remove after integration testing.
+		createdSystemTasks.parallelStream().forEach(task -> {
+			
 			WorkflowSystemTask stt = WorkflowSystemTask.get(task.getTaskType());
 			if(stt == null) {
 				throw new RuntimeException("No system task found by name " + task.getTaskType());
 			}
 			task.setStartTime(System.currentTimeMillis());
-			stt.start(workflow, task, this);
+			try {
+				stt.start(workflow, task, this);
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
 			edao.updateTask(task);
-		}
+			
+		});
+		
 		return addTaskToQueue(created);
 	}
 

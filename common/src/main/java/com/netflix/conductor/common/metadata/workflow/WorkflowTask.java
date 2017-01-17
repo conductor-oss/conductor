@@ -60,7 +60,7 @@ public class WorkflowTask {
 	
 	//Key: Name of the input parameter.  MUST be one of the keys defined in TaskDef (e.g. fileName)
 	//Value: mapping of the parameter from another task (e.g. task1.someOutputParameterAsFileName)
-	private Map<String, String> inputParameters = new HashMap<String, String>();
+	private Map<String, Object> inputParameters = new HashMap<String, Object>();
 
 	private String type = Type.SIMPLE.name();
 
@@ -88,11 +88,6 @@ public class WorkflowTask {
 	
 	private List<String> joinOn = new LinkedList<>();
 	
-	// Used for Titus, if Titus job calls back to update the task the value should be true
-	// else false. If false Workflow processing will only check if the titus job is finished and 
-	// then move on
-	private boolean callbackFromWorker = true; 
-
 	/**
 	 * @return the name
 	 */
@@ -124,14 +119,14 @@ public class WorkflowTask {
 	/**
 	 * @return the inputParameters
 	 */
-	public Map<String, String> getInputParameters() {
+	public Map<String, Object> getInputParameters() {
 		return inputParameters;
 	}
 
 	/**
 	 * @param inputParameters the inputParameters to set
 	 */
-	public void setInputParameters(Map<String, String> inputParameters) {
+	public void setInputParameters(Map<String, Object> inputParameters) {
 		this.inputParameters = inputParameters;
 	}
 	
@@ -295,14 +290,6 @@ public class WorkflowTask {
 	 */
 	public void setJoinOn(List<String> joinOn) {
 		this.joinOn = joinOn;
-	}
-
-	public boolean isCallbackFromWorker() {
-		return callbackFromWorker;
-	}
-
-	public void setCallbackFromWorker(boolean callbackFromWorker) {
-		this.callbackFromWorker = callbackFromWorker;
 	}
 
 	private Collection<List<WorkflowTask>> children(){
