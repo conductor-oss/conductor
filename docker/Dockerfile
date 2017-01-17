@@ -1,20 +1,22 @@
 #
 # netflix-condcutor: Netflix Condcutor Server
 #
-FROM ubuntu
+FROM java:8-jdk
+#FROM ubuntu
 
 MAINTAINER Jesse Antoszyk <Jesse@Antoszyk.com>
 
 COPY ./tmp /
 
 RUN apt-get update \
-  && apt-get -y install curl \
+  && apt-get -y install curl netcat iputils-ping \
 
   # Chmod scripts
   && chmod +x startup.sh \
+
   # Get Node
   && curl -sL https://deb.nodesource.com/setup_6.x |  bash - \
-  && apt-get install -y git nodejs build-essential default-jre default-jdk \
+  && apt-get install -y git nodejs build-essential \
 
   # Get Conductor
   && git clone https://github.com/Netflix/conductor.git \
@@ -26,9 +28,13 @@ RUN apt-get update \
 
   # Get UI project
   && mv ./ui ../ \
+  
+  # Install UI packages
+  && cd /ui \
+  && npm install \
 
   # Go back to root
-  && cd ../ \
+  && cd / \
 
   # Clean up
   && rm -rf conductor \
@@ -39,4 +45,3 @@ EXPOSE 3000 8080
 
 CMD ["/startup.sh"]
 ENTRYPOINT ["/bin/bash"]
-

@@ -11,6 +11,12 @@ services:
       - 3000:3000
     depends_on:
       - elasticsearch
+      - dynomite
+  dynomite:
+    image: ipapapa/dynomitedocker
+    ports:
+      - 8102:8102
+      - 22122:22122
   elasticsearch:
     image: elasticsearch
     ports:

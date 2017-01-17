@@ -1,9 +1,8 @@
 # Docker
 
-This dockerfile runs using an in-memory database and elasticsearch
+This dockerfile runs using dynomite and elasticsearch
 
 ##Building the image
-
 Building the image:
 `docker build -t conductor .`
 
@@ -18,5 +17,13 @@ Running the image:
 Using compose:
 `docker-compose up`
 
+## Exiting Compose
+`ctrl+c` will exit docker compose
 
+To ensure images are stopped do
+`docker-compose down`
+
+## Running in Interactive Mode 
+In interactive mode the default startup script for the container do not run
+`docker run -t -i conductor -`
 
