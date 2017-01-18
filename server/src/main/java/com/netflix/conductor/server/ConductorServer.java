@@ -211,6 +211,7 @@ public class ConductorServer {
 	
 	private static void createKitchenSink(int port) throws Exception {
 		
+
 		List<TaskDef> taskDefs = new LinkedList<>();
 		for(int i = 0; i < 40; i++) {
 			taskDefs.add(new TaskDef("task_" + i, "task_" + i, 1, 0));
@@ -222,12 +223,12 @@ public class ConductorServer {
 		client.resource("http://localhost:" + port + "/api/metadata/taskdefs").type(MediaType.APPLICATION_JSON).post(om.writeValueAsString(taskDefs));
 		
 		URL template = Main.class.getClassLoader().getResource("kitchensink.json");
-		byte[] source = Files.readAllBytes(Paths.get(template.getFile()));
+		byte[] source = Files.readAllBytes(Paths.get(ClassLoader.getSystemResource(template.getFile()).toURI()));
 		String json = new String(source);
 		client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(json);
 		
 		template = Main.class.getClassLoader().getResource("sub_flow_1.json");
-		source = Files.readAllBytes(Paths.get(template.getFile()));
+		source = Files.readAllBytes(Paths.get(ClassLoader.getSystemResource(template.getFile()).toURI()));
 		json = new String(source);
 		client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(json);
 		
