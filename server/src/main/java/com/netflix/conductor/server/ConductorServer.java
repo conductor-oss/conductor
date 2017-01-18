@@ -19,10 +19,12 @@
 package com.netflix.conductor.server;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.ws.rs.core.MediaType;
@@ -43,6 +45,9 @@ import com.netflix.conductor.server.es.EmbeddedElasticSearch;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.Host.Status;
 import com.netflix.dyno.connectionpool.HostSupplier;
+import com.netflix.dyno.connectionpool.TokenMapSupplier;
+import com.netflix.dyno.connectionpool.impl.ConnectionPoolConfigurationImpl;
+import com.netflix.dyno.connectionpool.impl.lb.HostToken;
 import com.netflix.dyno.jedis.DynoJedisClient;
 import com.sun.jersey.api.client.Client;
 
@@ -129,12 +134,30 @@ public class ConductorServer {
 			
 		case dynomite:
 			
+			ConnectionPoolConfigurationImpl cp = new ConnectionPoolConfigurationImpl(dynoClusterName).withTokenSupplier(new TokenMapSupplier() {
+				
+				HostToken token = new HostToken(1L, dynoHosts.get(0));
+				
+				@Override
+				public List<HostToken> getTokens(Set<Host> activeHosts) {
+					return Arrays.asList(token);
+				}
+				
+				@Override
+				public HostToken getTokenForHost(Host host, Set<Host> activeHosts) {
+					return token;
+				}
+			}).setLocalRack(cc.getAvailabilityZone()).setLocalDataCenter(cc.getRegion());
+			
 			jedis = new DynoJedisClient.Builder()
 				.withHostSupplier(hs)
 				.withApplicationName(cc.getAppId())
 				.withDynomiteClusterName(dynoClusterName)
+				.withCPConfig(cp)
 				.build();
+			
 			logger.info("Starting conductor server using dynomite cluster " + dynoClusterName);
+			
 			break;
 			
 		case memory:
