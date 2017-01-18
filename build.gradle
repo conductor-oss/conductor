@@ -38,4 +38,8 @@ subprojects {
     }
 
     group = "com.netflix.${githubProjectName}"
+    
+    tasks.withType(Test)  {
+  		maxParallelForks = 1
+	}
 }

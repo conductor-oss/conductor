@@ -17,11 +17,9 @@ package com.netflix.conductor.server.es;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.apache.commons.io.FileUtils;
 import org.elasticsearch.client.Client;
@@ -48,6 +46,51 @@ public class EmbeddedElasticSearch {
 	private static Client client;
 	private static File dataDir;
 
+	private static final String template = "{ " + 
+			"   " + 
+			"    \"order\": 0, " + 
+			"    \"template\": \"*\", " + 
+			"    \"settings\": {}, " + 
+			"    \"mappings\": { " + 
+			"      \"_default_\": { " + 
+			"        \"dynamic_templates\": [ " + 
+			"          { " + 
+			"            \"string_fields\": { " + 
+			"              \"mapping\": { " + 
+			"                \"index\": \"not_analyzed\", " + 
+			"                \"type\": \"string\", " + 
+			"                \"doc_values\": true " + 
+			"              }, " + 
+			"              \"match_mapping_type\": \"string\", " + 
+			"              \"match\": \"*\" " + 
+			"            } " + 
+			"          }, " + 
+			"          { " + 
+			"            \"long_fields\": { " + 
+			"              \"mapping\": { " + 
+			"                \"type\": \"long\", " + 
+			"                \"doc_values\": true " + 
+			"              }, " + 
+			"              \"match_mapping_type\": \"long\", " + 
+			"              \"match\": \"*\" " + 
+			"            } " + 
+			"          }, " + 
+			"          { " + 
+			"            \"double_fields\": { " + 
+			"              \"mapping\": { " + 
+			"                \"type\": \"double\", " + 
+			"                \"doc_values\": true " + 
+			"              }, " + 
+			"              \"match_mapping_type\": \"double\", " + 
+			"              \"match\": \"*\" " + 
+			"            } " + 
+			"          } " + 
+			"        ] " + 
+			"      } " + 
+			"    }, " + 
+			"    \"aliases\": {} " + 
+			"   " + 
+			"} ";
 	public static void start() throws Exception {
 		start(DEFAULT_CLUSTER_NAME, DEFAULT_HOST, DEFAULT_PORT, true);
 	}
@@ -73,10 +116,7 @@ public class EmbeddedElasticSearch {
 		});
 		logger.info("ElasticSearch cluster {} started in local mode on port {}", instance.settings().get("cluster.name"), getPort());
 		client = instance.client();
-		URL template = EmbeddedElasticSearch.class.getClassLoader().getResource("es_template.json");
-		byte[] source = Files.readAllBytes(Paths.get(template.getFile()));
-		
-		client.admin().indices().preparePutTemplate("conductor_template").setSource(source).get();
+		client.admin().indices().preparePutTemplate("conductor_template").setSource(template).get();
 		client.admin().indices().prepareCreate("conductor").execute().actionGet();
 	}
 
