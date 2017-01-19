@@ -114,6 +114,8 @@ public class WorkflowServiceTest {
 
 	private static final String LINEAR_WORKFLOW_T1_T2 = "junit_test_wf";
 	
+	private static final String LONG_RUNNING = "longRunningWf";
+	
 	private static final String TEST_WORKFLOW_NAME_3 = "junit_test_wf3";
 	
 	@Before
@@ -208,6 +210,8 @@ public class WorkflowServiceTest {
 				ms.updateWorkflowDef(wd);
 			}
 			createForkJoinWorkflow();
+			def.setName(LONG_RUNNING);
+			ms.updateWorkflowDef(def);
 		} catch (Exception e) {}
 		
 		taskDefs = ms.getTaskDefs();
@@ -1133,7 +1137,7 @@ public class WorkflowServiceTest {
 		
 		clearWorkflows();
 		
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+		WorkflowDef found = ms.getWorkflowDef(LONG_RUNNING, 1);
 		assertNotNull(found);
 		
 		String correlationId = "unit_test_1";
