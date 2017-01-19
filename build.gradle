@@ -1,19 +1,22 @@
 buildscript {
-
+	
+	repositories {
+        jcenter()
+    }
+    
     dependencies {
-        classpath 'com.netflix.nebula:gradle-aggregate-javadocs-plugin:2.2.+'
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:3.0.3'
+        classpath 'org.apache.ant:ant:1.9.7'
     }
 }
 plugins {
-    id 'nebula.netflixoss' version '3.2.3'
+    id 'nebula.netflixoss' version '3.5.2'
 }
 
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
 apply plugin: 'project-report'
-apply plugin: 'nebula-aggregate-javadocs'
 
 subprojects {
 
