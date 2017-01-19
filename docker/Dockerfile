@@ -1,15 +1,14 @@
 #
-# netflix-condcutor: Netflix Condcutor Server
+# netflix-conductor: Netflix conductor Server
 #
 FROM java:8-jdk
-#FROM ubuntu
 
-MAINTAINER Jesse Antoszyk <Jesse@Antoszyk.com>
+MAINTAINER Netflix OSS <conductor@netflix.com>
 
 COPY ./tmp /
 
 RUN apt-get update \
-  && apt-get -y install curl netcat iputils-ping \
+  && apt-get -y install curl netcat iputils-ping vim telnet \
 
   # Chmod scripts
   && chmod +x startup.sh \
@@ -21,14 +20,14 @@ RUN apt-get update \
   # Get Conductor
   && git clone https://github.com/Netflix/conductor.git \
   && cd conductor \
-  && ./gradlew build \
+  && ./gradlew build -x test \
 
   # Get Server Jar
   && mv ./server/build/libs/conductor-server-*-all.jar ../ \
 
   # Get UI project
   && mv ./ui ../ \
-  
+
   # Install UI packages
   && cd /ui \
   && npm install \
