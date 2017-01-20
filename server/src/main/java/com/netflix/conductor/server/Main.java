@@ -32,7 +32,7 @@ public class Main {
 	
 	public static void main(String[] args) throws Exception {
 		
-		if(args.length > 1) {
+		if(args.length > 0) {
 			String propertyFile = args[0];	
 			System.out.println("Using " + propertyFile);
 			FileInputStream propFile = new FileInputStream(propertyFile);

@@ -74,7 +74,7 @@ public class ConductorConfig implements Configuration {
 
 	@Override
 	public String getAppId() {
-		return getProperty("APP_ID", "");
+		return getProperty("APP_ID", "conductor");
 	}
 
 	@Override

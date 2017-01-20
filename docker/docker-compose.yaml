@@ -1,0 +1,40 @@
+# Docker compose for netflix conductor + elasticsearch
+version: '2'
+services:
+  conductor:
+    image: conductor
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - 8080:8080
+      - 3000:3000
+    depends_on:
+      - elasticsearch
+      - dynomite
+    networks:
+      conductornet:
+        aliases:
+          - conductor
+  dynomite:
+    image: v1r3n/dynomite
+    ports:
+      - 8102:8102
+      - 22122:22122
+      - 22222:22222
+    networks:
+      conductornet:
+        aliases:
+          - dyno1
+  elasticsearch:
+    image: elasticsearch
+    ports:
+      - 9300:9300
+      - 9200:9200
+    networks:
+      conductornet:
+        aliases:
+          - es
+networks:
+  conductornet:
+    driver: bridge
