@@ -175,11 +175,13 @@ gulp.task('watch', cb => {
 });
 
 gulp.task('set-env', function () {
+  //Only use localhost if WF_SERVER is not set
+  var wf_server = process.env.WF_SERVER || 'http://localhost:8080/api/';
   env({
     vars: {
-      WF_SERVER: 'http://localhost:8080/api/'
+      WF_SERVER: wf_server
     }
-  })
+  });
 });
 
 gulp.task('build', cb => {
