@@ -13,10 +13,13 @@ services:
       - dynomite
     networks:
       conductornet:
+        ipv4_address: 172.16.238.10
         aliases:
           - conductor-server
 
   conductor-ui:
+    environment:
+      - WF_SERVER=http://conductor-server:8080/api/
     image: conductor:ui
     build:
       context: ./ui
@@ -54,3 +57,8 @@ services:
 networks:
   conductornet:
     driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.16.238.0/24
+          gateway: 172.16.238.1

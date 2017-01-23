@@ -1,23 +1,24 @@
 #
-# conductor:server - Netflix conductor Server
+# conductor:serverAndUI - Netflix conductor server and UI
 #
 FROM java:8-jdk
 
 MAINTAINER Netflix OSS <conductor@netflix.com>
 
-COPY ./tmp /
+COPY ./bin ./conf /
 
 # Get all the dependencies
-RUN add-apt-repository -y ppa:cwchien/gradle \
-  && apt-get update -y \
-  && apt-get -y install curl netcat iputils-ping gradle \
+RUN apt-get update -y \
+  && apt-get install -y software-properties-common python-software-properties \
+  && add-apt-repository -y ppa:cwchien/gradle \
+  && apt-get -y install git curl netcat iputils-ping gradle \
 
   # Chmod scripts
   && chmod +x startup.sh \
 
   # Get node
   && curl -sL https://deb.nodesource.com/setup_6.x |  bash - \
-  && apt-get install -y git nodejs build-essential \
+  && apt-get install -y nodejs build-essential
 
 # Get and install conductor
 RUN git clone https://github.com/Netflix/conductor.git \
@@ -25,10 +26,10 @@ RUN git clone https://github.com/Netflix/conductor.git \
   && ./gradlew build -x test \
 
   # Get Server Jar
-  && mv ./server/build/libs/conductor-server-*-all.jar ../ \
+  && mv ./server/build/libs/conductor-server-*-all.jar / \
 
   # Get UI project
-  && mv ./ui ../ \
+  && mv ./ui / \
 
   # Install UI packages
   && cd /ui \
