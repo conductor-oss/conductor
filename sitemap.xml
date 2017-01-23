@@ -4,7 +4,7 @@
     
     <url>
      <loc>/</loc>
-     <lastmod>2017-01-13</lastmod>
+     <lastmod>2017-01-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -12,7 +12,7 @@
     
     <url>
      <loc>/intro/</loc>
-     <lastmod>2017-01-13</lastmod>
+     <lastmod>2017-01-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -20,7 +20,7 @@
     
     <url>
      <loc>/intro/concepts/</loc>
-     <lastmod>2017-01-13</lastmod>
+     <lastmod>2017-01-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -28,7 +28,7 @@
     
     <url>
      <loc>/metadata/</loc>
-     <lastmod>2017-01-13</lastmod>
+     <lastmod>2017-01-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -36,7 +36,7 @@
     
     <url>
      <loc>/metadata/systask/</loc>
-     <lastmod>2017-01-13</lastmod>
+     <lastmod>2017-01-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -44,7 +44,7 @@
     
     <url>
      <loc>/metadata/kitchensink/</loc>
-     <lastmod>2017-01-13</lastmod>
+     <lastmod>2017-01-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -52,7 +52,7 @@
     
     <url>
      <loc>/server/</loc>
-     <lastmod>2017-01-13</lastmod>
+     <lastmod>2017-01-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -60,7 +60,7 @@
     
     <url>
      <loc>/extend/</loc>
-     <lastmod>2017-01-13</lastmod>
+     <lastmod>2017-01-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -68,7 +68,7 @@
     
     <url>
      <loc>/runtime/</loc>
-     <lastmod>2017-01-13</lastmod>
+     <lastmod>2017-01-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
@@ -77,13 +77,13 @@
         
     <url>
      <loc>/metrics/</loc>
-     <lastmod>2017-01-13</lastmod>
+     <lastmod>2017-01-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
     <url>
      <loc>/metrics/client/</loc>
-     <lastmod>2017-01-13</lastmod>
+     <lastmod>2017-01-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
         
@@ -92,7 +92,7 @@
     
     <url>
      <loc>/license/</loc>
-     <lastmod>2017-01-13</lastmod>
+     <lastmod>2017-01-23</lastmod>
      <changefreq>daily</changefreq>
     </url>
     
