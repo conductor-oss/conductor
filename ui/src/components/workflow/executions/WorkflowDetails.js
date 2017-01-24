@@ -6,6 +6,8 @@ import { connect } from 'react-redux';
 import { getWorkflowDetails } from '../../../actions/WorkflowActions';
 import WorkflowAction  from './WorkflowAction';
 import WorkflowMetaDia from '../WorkflowMetaDia';
+import moment from 'moment';
+
 
 class WorkflowDetails extends Component {
 
@@ -35,15 +37,18 @@ class WorkflowDetails extends Component {
     if(wf.tasks == null){
       wf.tasks = [];
     }
-    var tasks = wf['tasks'];
+    let tasks = wf['tasks'];
+    tasks = tasks.sort(function(a,b){
+      return a.endTime - b.endTime;
+    });
     function formatDate(dt){
       if(dt == null || dt == ''){
         return '';
       }
-      return new Date(dt).toLocaleString('en-US');
+      return moment(dt).format('MM/DD/YYYY, HH:mm:ss:SSS');
     }
     function execTime(end, start){
-      if(end == null) {
+      if(end == null || end == 0) {
         return "";
       }
       var total = end - start;
@@ -66,7 +71,7 @@ class WorkflowDetails extends Component {
       if(cell == null){
         return "";
       }
-      let href = "#";      
+      let href = "#";
       return <a target="_new" href={href}>{cell}</a>;
     }
     function popoverLink(cell, row){
