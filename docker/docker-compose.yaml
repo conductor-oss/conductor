@@ -2,13 +2,15 @@
 version: '2'
 services:
   conductor:
+    environment:
+      - CONFIG_PROP=config.properties
     image: conductor
     build:
       context: .
       dockerfile: Dockerfile
     ports:
       - 8080:8080
-      - 3000:3000
+      - 5000:5000
     depends_on:
       - elasticsearch
       - dynomite
@@ -27,7 +29,7 @@ services:
         aliases:
           - dyno1
   elasticsearch:
-    image: elasticsearch
+    image: elasticsearch:2.4
     ports:
       - 9300:9300
       - 9200:9200
