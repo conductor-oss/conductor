@@ -5,16 +5,21 @@ FROM java:8-jdk
 
 MAINTAINER Netflix OSS <conductor@netflix.com>
 
-COPY ./bin ./conf /
+# Make app folders
+RUN mkdir -p /app/config /app/logs /app/libs
+
+# Startup script(s)
+COPY ./bin /app
+
+# Configs
+COPY ./config /app/config
 
 # Get all the dependencies
 RUN apt-get update -y \
-  && apt-get install -y software-properties-common python-software-properties \
-  && add-apt-repository -y ppa:cwchien/gradle \
-  && apt-get -y install git curl netcat iputils-ping gradle \
+  && apt-get -y install git curl \
 
   # Chmod scripts
-  && chmod +x startup.sh \
+  && chmod +x /app/startup.sh \
 
   # Get node
   && curl -sL https://deb.nodesource.com/setup_6.x |  bash - \
@@ -26,14 +31,15 @@ RUN git clone https://github.com/Netflix/conductor.git \
   && ./gradlew build -x test \
 
   # Get Server Jar
-  && mv ./server/build/libs/conductor-server-*-all.jar / \
+  && mv ./server/build/libs/conductor-server-*-all.jar /app/libs/ \
 
   # Get UI project
-  && mv ./ui / \
+  && mv ./ui /app \
 
   # Install UI packages
-  && cd /ui \
+  && cd /app/ui \
   && npm install \
+  && npm run build --server \
 
   # Go back to root
   && cd / \
@@ -42,7 +48,7 @@ RUN git clone https://github.com/Netflix/conductor.git \
   && rm -rf conductor
 
 
-EXPOSE 3000 8080
+EXPOSE 5000 8080
 
-CMD ["/startup.sh"]
+CMD ["/app/startup.sh"]
 ENTRYPOINT ["/bin/bash"]

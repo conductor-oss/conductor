@@ -5,14 +5,21 @@ FROM java:8-jdk
 
 MAINTAINER Netflix OSS <conductor@netflix.com>
 
-COPY ./bin ./conf /
+# Make app folders
+RUN mkdir -p /app/config /app/logs /app/libs
+
+# Startup script(s)
+COPY ./bin /app
+
+# Configs
+COPY ./config /app/config
 
 # Get all the dependencies
 RUN apt-get update -y \
-  && apt-get -y install git curl netcat iputils-ping \
+  && apt-get -y install git \
 
   # Chmod scripts
-  && chmod +x startup.sh
+  && chmod +x /app/startup.sh
 
 # Get and install conductor
 RUN git clone https://github.com/Netflix/conductor.git \
@@ -20,7 +27,7 @@ RUN git clone https://github.com/Netflix/conductor.git \
   && ./gradlew build -x test \
 
   # Get Server Jar
-  && mv ./server/build/libs/conductor-server-*-all.jar / \
+  && mv ./server/build/libs/conductor-server-*-all.jar /app/libs/ \
 
   # Go back to root
   && cd / \
@@ -31,5 +38,5 @@ RUN git clone https://github.com/Netflix/conductor.git \
 
 EXPOSE 8080
 
-CMD ["/startup.sh"]
+CMD ["/app/startup.sh"]
 ENTRYPOINT ["/bin/bash"]

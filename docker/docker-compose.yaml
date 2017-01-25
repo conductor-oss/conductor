@@ -5,19 +5,16 @@ services:
     environment:
       - CONFIG_PROP=config.properties
     image: conductor:server
-  conductor:
     build:
       context: ./server
       dockerfile: Dockerfile
     ports:
       - 8080:8080
-      - 5000:5000
     depends_on:
       - elasticsearch
       - dynomite
     networks:
       conductornet:
-        ipv4_address: 172.16.238.10
         aliases:
           - conductor-server
 
@@ -29,7 +26,7 @@ services:
       context: ./ui
       dockerfile: Dockerfile
     ports:
-      - 3000:3000
+      - 5000:5000
     depends_on:
       - conductor-server
     networks:
@@ -61,8 +58,3 @@ services:
 networks:
   conductornet:
     driver: bridge
-    ipam:
-      driver: default
-      config:
-        - subnet: 172.16.238.0/24
-          gateway: 172.16.238.1
