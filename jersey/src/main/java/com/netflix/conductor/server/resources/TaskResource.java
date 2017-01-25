@@ -37,6 +37,7 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 
@@ -111,7 +112,7 @@ public class TaskResource {
 
 	@POST
 	@ApiOperation("Update a task")
-	public void updateTask(Task task) throws Exception {
+	public void updateTask(TaskResult task) throws Exception {
 		taskService.updateTask(task);
 	}
 

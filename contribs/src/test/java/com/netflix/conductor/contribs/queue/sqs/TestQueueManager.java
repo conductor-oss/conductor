@@ -44,7 +44,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.contribs.queue.Message;
 import com.netflix.conductor.contribs.queue.ObservableQueue;
 import com.netflix.conductor.contribs.queue.QueueManager;
-import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue;
 import com.netflix.conductor.contribs.tasks.Wait;
 import com.netflix.conductor.service.ExecutionService;
 
@@ -125,7 +124,7 @@ public class TestQueueManager {
 				updatedTasks.add(invocation.getArgumentAt(0, Task.class));
 				return null;
 			}
-		}).when(es).updateTask(any());
+		}).when(es).updateTask(any(Task.class));
 
 	}
 	

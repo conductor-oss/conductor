@@ -22,6 +22,7 @@ import java.util.function.Supplier;
 
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
 /**
  * 
@@ -29,6 +30,7 @@ import com.netflix.conductor.common.metadata.tasks.Task;
  *
  */
 public interface Worker {
+	
 	
 	public String getTaskDefName();
 	
@@ -38,7 +40,7 @@ public interface Worker {
 	 * @return
 	 * If the task is not completed yet, return with the status as IN_PROGRESS. 
 	 */
-	public Task execute(Task task);
+	public TaskResult execute(Task task);
 	
 	/**
 	 * Called when the task coordinator fails to update the task to the server.
@@ -56,14 +58,14 @@ public interface Worker {
 	 * @return true if the worker is paused and no more tasks should be polled from server.
 	 */
 	public default boolean paused() {
-		return false;
+		return PropertyFactory.getBoolean(getTaskDefName(), "paused", false);
 	}
 	
 	/**
 	 * 
 	 * @return returns NetflixConfiguration.getServerId().  Override this method to app specific rules
 	 */
-	public default String getIdentity(){
+	public default String getIdentity() {
 		String serverId;
 		try {
 			serverId = InetAddress.getLocalHost().getHostName();
@@ -81,7 +83,7 @@ public interface Worker {
 	 * @return Number of tasks to be polled for.
 	 */
 	public default int getPollCount() {
-		return 1;
+		return PropertyFactory.getInteger(getTaskDefName(), "pollCount", 1);
 	}
 	
 	/**
@@ -90,14 +92,14 @@ public interface Worker {
 	 * Use a higher number here as opposed to more frequent polls.  Helps reduce the excessive calls. 
 	 */
 	public default int getLongPollTimeoutInMS() {
-		return 100;
+		return PropertyFactory.getInteger(getTaskDefName(), "longPollTimeout", 100);
 	}
-	
-	public static Worker create(String taskType, Function<Task, Task> executor){
+
+	public static Worker create(String taskType, Function<Task, TaskResult> executor){
 		return create(taskType, executor, ()->false);
 	}
 	
-	public static Worker create(String taskType, Function<Task, Task> executor, Supplier<Boolean> paused){
+	public static Worker create(String taskType, Function<Task, TaskResult> executor, Supplier<Boolean> paused){
 		return new Worker() {
 			
 			@Override
@@ -106,7 +108,7 @@ public interface Worker {
 			}
 			
 			@Override
-			public Task execute(Task task) {
+			public TaskResult execute(Task task) {
 				return executor.apply(task);
 			}
 			

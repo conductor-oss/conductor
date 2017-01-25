@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
@@ -122,7 +123,12 @@ public class ExecutionService {
 		return tasks;
 	}
 
+	//For backward compatibility - to be removed in the later versions
 	public void updateTask(Task task) throws Exception {
+		updateTask(new TaskResult(task));
+	}
+	
+	public void updateTask(TaskResult task) throws Exception {
 		executor.updateTask(task);
 	}
 

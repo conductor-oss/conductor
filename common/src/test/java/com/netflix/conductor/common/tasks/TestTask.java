@@ -42,11 +42,7 @@ public class TestTask {
 		Task task = new Task();
 		task.setStatus(Status.FAILED);
 		assertEquals(Status.FAILED, task.getStatus());
-		assertEquals(TaskResult.Status.FAILED, task.getTaskStatus());
 		
-		task = new Task();
-		task.setStatus(TaskResult.Status.FAILED);
-		assertEquals(TaskResult.Status.FAILED, task.getTaskStatus());
 		
 		Set<String> resultStatues = Arrays.asList(TaskResult.Status.values()).stream().map(status->status.name()).collect(Collectors.toSet());
 		
@@ -58,11 +54,7 @@ public class TestTask {
 				task = new Task();
 				task.setStatus(status);
 				assertEquals(status, task.getStatus());				
-				assertEquals(trStatus, task.getTaskStatus());
 				
-				task = new Task();
-				task.setStatus(trStatus);
-				assertEquals(trStatus, task.getTaskStatus());
 			}
 			
 			
