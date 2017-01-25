@@ -110,6 +110,8 @@ public class TestDeciderService {
 		ip.put("taskOutputParam2", "${task2.output.locationBad}");
 		ip.put("taskOutputParam3", "${task3.output.location}");
 		ip.put("constParam", "Some String value");
+		ip.put("nullValue", null);
+		ip.put(null, null);
 		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null);
 		
 		assertNotNull(taskInput);
@@ -122,6 +124,8 @@ public class TestDeciderService {
 		assertEquals("request id 001", taskInput.get("workflowInputParam"));
 		assertEquals("http://location", taskInput.get("taskOutputParam"));
 		assertNull(taskInput.get("taskOutputParam3"));
+		assertNull(taskInput.get("nullValue"));
+		System.out.println(taskInput);
 		workflow.setSchemaVersion(1);
 	}
 	

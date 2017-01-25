@@ -24,6 +24,7 @@ import org.junit.Test;
 
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
 /**
  * @author Viren
@@ -34,7 +35,7 @@ public class TestWorker {
 	@Test
 	public void testIdentity(){
 		Worker worker = Worker.create("Test", (Task task)->{
-			return task;
+			return new TaskResult(task);
 		});
 		assertNotNull(worker.getIdentity());
 	}

@@ -52,6 +52,11 @@ public class TaskResult {
 	public TaskResult(Task task) {
 		this.workflowInstanceId = task.getWorkflowInstanceId();
 		this.taskId = task.getTaskId();
+		this.reasonForIncompletion = task.getReasonForIncompletion();
+		this.callbackAfterSeconds = task.getCallbackAfterSeconds();
+		this.status = Status.valueOf(task.getStatus().name());
+		this.workerId = task.getWorkerId();
+		this.outputData = task.getOutputData();
 	}
 
 	public TaskResult(String workflowInstanceId, String taskId) {
@@ -113,6 +118,13 @@ public class TaskResult {
 	
 	public void setTaskStatus(Status status) {
 		this.status = status;
+	}
+	
+	/**
+	 * @return the status
+	 */
+	public Status getStatus() {
+		return status;
 	}
 
 	/**

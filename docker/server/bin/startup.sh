@@ -1,22 +1,33 @@
 #!/bin/bash
 # startup.sh - startup script for the server docker image
 
-# Wait for the DB to be up
-until ping -c1 dyno1 2>&1 >/dev/null; do
-  printf '.'
-  sleep 0.1
-done
 
-echo "Successfully pinged dynomite."
+echo "Starting Condcutor server and UI"
 
-#Wait up to a minute for port 22122 to be open for business.
-if nc -z -w 60 dyno1 22122; then
-  echo "Could not connect to the database: $?."
-  # exit 1
-else
-  echo "Database port 22122 open."
+# Start the UI
+cd /app/ui/dist
+if [ -z "$WF_SERVER" ];
+  then
+    export WF_SERVER=http://localhost:8080/api/
+  else
+    echo "using Conductor API server from '$WF_SERVER'"
 fi
 
+nohup node server.js 1>&2 > /app/logs/ui.log &
+
 # Start the server
-cd /
-java -jar conductor-server-*-all.jar config.properties
+cd /app/libs
+echo "Property file: $CONFIG_PROP"
+echo $CONFIG_PROP
+export config_file=
+
+if [ -z "$CONFIG_PROP" ];
+  then
+    echo "Using an in-memory instance of conductor";
+    export config_file=/app/config/config-local.properties
+  else
+    echo "Using '$CONFIG_PROP'";
+    export config_file=/app/config/$CONFIG_PROP
+fi
+
+nohup java -jar conductor-server-*-all.jar $config_file 1>&2 > /app/logs/server.log

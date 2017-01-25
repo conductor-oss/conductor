@@ -37,6 +37,7 @@ import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -400,18 +401,18 @@ public class WorkflowExecutor {
 		return addTaskToQueue(created);
 	}
 
-	public void updateTask(Task t) throws Exception {
-		if (t == null) {
-			logger.info("null task given for update..." + t);
+	public void updateTask(TaskResult result) throws Exception {
+		if (result == null) {
+			logger.info("null task given for update..." + result);
 			throw new ApplicationException(Code.INVALID_INPUT, "Task object is null");
 		}
-		String workflowId = t.getWorkflowInstanceId();
+		String workflowId = result.getWorkflowInstanceId();
 		Workflow wf = edao.getWorkflow(workflowId);
-		Task task = edao.getTask(t.getTaskId());
+		Task task = edao.getTask(result.getTaskId());
 
 		if (wf.getStatus().isTerminal()) {
 			// Workflow is in terminal state
-			queue.remove(task.getTaskType(), t.getTaskId());
+			queue.remove(task.getTaskType(), result.getTaskId());
 			String msg = "Workflow " + wf.getWorkflowId() + " is already completed as " + wf.getStatus() + ", task=" + task.getTaskType() + ", reason=" + wf.getReasonForIncompletion();
 			logger.info(msg);
 			Monitors.recordUpdateConflict(task.getTaskType(), wf.getWorkflowType(), wf.getStatus());
@@ -420,18 +421,18 @@ public class WorkflowExecutor {
 
 		if (task.getStatus().isTerminal()) {
 			// Task was already updated....
-			queue.remove(task.getTaskType(), t.getTaskId());
+			queue.remove(task.getTaskType(), result.getTaskId());
 			String msg = "Task is already completed as " + task.getStatus() + "@" + task.getEndTime() + ", workflow status=" + wf.getStatus() + ", workflowId=" + wf.getWorkflowId() + ", taskId=" + task.getTaskId();
 			logger.info(msg);
 			Monitors.recordUpdateConflict(task.getTaskType(), wf.getWorkflowType(), task.getStatus());
 			return;
 		}
-		
-		task.setStatus(Task.Status.valueOf(t.getTaskStatus().name()));
-		task.setOutputData(t.getOutputData());
-		task.setReasonForIncompletion(t.getReasonForIncompletion());
-		task.setWorkerId(t.getWorkerId());
-		task.setCallbackAfterSeconds(t.getCallbackAfterSeconds());
+
+		task.setStatus(Status.valueOf(result.getTaskStatus().name()));
+		task.setOutputData(result.getOutputData());
+		task.setReasonForIncompletion(result.getReasonForIncompletion());
+		task.setWorkerId(result.getWorkerId());
+		task.setCallbackAfterSeconds(result.getCallbackAfterSeconds());
 
 		if (task.getStatus().isTerminal()) {
 			task.setEndTime(System.currentTimeMillis());
@@ -441,19 +442,19 @@ public class WorkflowExecutor {
 		switch (task.getStatus()) {
 
 		case COMPLETED:
-			queue.remove(task.getTaskType(), t.getTaskId());
+			queue.remove(task.getTaskType(), result.getTaskId());
 			break;
 
 		case CANCELED:
-			queue.remove(task.getTaskType(), t.getTaskId());
+			queue.remove(task.getTaskType(), result.getTaskId());
 			break;
 		case FAILED:
-			queue.remove(task.getTaskType(), t.getTaskId());
+			queue.remove(task.getTaskType(), result.getTaskId());
 			break;
 		case IN_PROGRESS:
 			// put it back in queue based in callbackAfterSeconds
 			queue.remove(task.getTaskType(), task.getTaskId());
-			long callBack = t.getCallbackAfterSeconds();
+			long callBack = result.getCallbackAfterSeconds();
 			queue.push(task.getTaskType(), task.getTaskId(), callBack); // Milliseconds
 			break;
 		default:

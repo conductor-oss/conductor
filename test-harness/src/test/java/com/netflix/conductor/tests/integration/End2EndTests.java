@@ -35,6 +35,7 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
@@ -138,6 +139,7 @@ public class End2EndTests {
 		assertTrue(!byCorrId.isEmpty());
 		assertEquals(workflowId, byCorrId.get(0).getWorkflowId());
 		assertEquals(correlationId, byCorrId.get(0).getCorrelationId());
+		assertTrue(!byCorrId.get(0).getStatus().isTerminal());
 		
 		List<Task> polled = tc.poll("non existing task", "test", 1, 100);
 		assertNotNull(polled);
@@ -155,11 +157,11 @@ public class End2EndTests {
 		
 		task.getOutputData().put("key1", "value1");
 		task.setStatus(Status.COMPLETED);
-		tc.updateTask(task);
+		tc.updateTask(new TaskResult(task));
 		
 		polled = tc.poll(t0.getName(), "test", 1, 100);
 		assertNotNull(polled);
-		assertTrue(polled.isEmpty());
+		assertTrue(polled.toString(), polled.isEmpty());
 		
 		wf = wc.getWorkflow(workflowId, true);
 		assertNotNull(wf);
@@ -205,8 +207,6 @@ public class End2EndTests {
 		assertNotNull(wf);
 		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
 		assertEquals(1, wf.getTasks().size());
-		
-		Thread.sleep(100000);
 		
 	}
 	

@@ -248,6 +248,9 @@ public class ConductorServer {
 		stream = Main.class.getResourceAsStream("/sub_flow_1.json");
 		client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(stream);
 		
+		String input = "{\"task2Name\":\"task_5\"}";
+		client.resource("http://localhost:" + port + "/api/workflow/kitchensink").type(MediaType.APPLICATION_JSON).post(input);
+		
 		logger.info("Kitchen sink workflows are created!");
 	}
 }

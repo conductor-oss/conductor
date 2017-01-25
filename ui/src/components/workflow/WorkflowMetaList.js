@@ -40,7 +40,7 @@ const WorkflowMetaList = React.createClass({
     };
 
     function nameMaker(cell, row){
-      return (<Link to={`/workflow/metadata/${row.name}/${row.version}`}>{row.name}</Link>);
+      return (<Link to={`/workflow/metadata/${row.name}/${row.version}`}>{row.name} / {row.version}</Link>);
     };
 
     return (

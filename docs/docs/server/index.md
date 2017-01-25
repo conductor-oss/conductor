@@ -12,15 +12,17 @@ There are 3 ways in which you can install Conductor:
 To build from source, checkout the code from github and build server module using ```gradle build``` command.  This should produce a conductor-server-all-VERSION.jar.
 The jar can be executed using:
 ```shell
-java -jar conductor-server-all-VERSION.jar
+java -jar conductor-server-VERSION-all.jar
 ```
- 
+
 #### 2. Download pre-built binaries from jcenter or maven central
 Use the following coordiates:
 
 |group|artifact|version
 |---|---|---|
 |com.netflix.conductor|conductor-server-all|1.6.+|
+
+
 
 #### 3. Use the pre-configured Docker image
 Coming soon...
