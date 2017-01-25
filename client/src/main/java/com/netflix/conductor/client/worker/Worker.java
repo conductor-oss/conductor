@@ -45,7 +45,6 @@ public interface Worker {
 	/**
 	 * Called when the task coordinator fails to update the task to the server.
 	 * Client should store the task id (in a database) and retry the update later
-	 * @see TaskClient#updateTask(Task)
 	 * @param task Task which cannot be updated back to the server.
 	 * 
 	 */
