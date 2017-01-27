@@ -9,7 +9,8 @@
 There are 3 ways in which you can install Conductor:
 
 #### 1. Build from source
-To build from source, checkout the code from github and build server module using ```gradle build``` command. If you do not have gradle installed, you can run the command ```./gradlew build``` from the project root. This should produce a conductor-server-all-VERSION.jar in the folder ./server/build/libs/
+To build from source, checkout the code from github and build server module using ```gradle build``` command. If you do not have gradle installed, you can run the command ```./gradlew build``` from the project root. This produces *conductor-server-all-VERSION.jar* in the folder *./server/build/libs/*
+
 The jar can be executed using:
 ```shell
 java -jar conductor-server-VERSION-all.jar
@@ -37,6 +38,7 @@ docker-compose up
 ```
 
 This will create a docker container network that consists of the following images: conductor:server, conductor:ui, [elasticsearch:2.4](https://hub.docker.com/_/elasticsearch/), and (https://hub.docker.com/r/v1r3n/dynomite/)[v1r3n/dynomite:latest].
+
 To view the UI, navigate to [localhost:5000](http://localhost:5000/), to view the Swagger docs, navigate to [localhost:8080](http://localhost:8080/).
 
 # Configuration
