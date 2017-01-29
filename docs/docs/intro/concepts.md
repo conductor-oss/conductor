@@ -18,12 +18,12 @@ System tasks are executed within the JVM of the Conductor server and managed by 
 | [DECIDE](/metadata/systask/#decision) | Decision tasks - implements case...switch style fork|
 | [FORK](/metadata/systask/#fork) | Forks a parallel set of tasks.  Each set is scheduled to be executed in parallel |
 | [FORK_JOIN_DYNAMIC](/metadata/systask/#dynamic-fork) | Similar to FORK, but rather than the set of tasks defined in the blueprint for parallel execution, FORK_JOIN_DYNAMIC spawns the parallel tasks based on the input expression to this task |
-| [JOIN](/metadata/systask/#join) | Complements FORK and FORK_JOIN_DYNAMIC.  Used to merge one of more parallel branches* 
-| [SUB_WORKFLOW](/metadata/systask/#sub-workflow) | Nest another workflow as a sub workflow task.  Upon execution it instantiates the sub workflow and awaits it completion| 
+| [JOIN](/metadata/systask/#join) | Complements FORK and FORK_JOIN_DYNAMIC.  Used to merge one of more parallel branches*
+| [SUB_WORKFLOW](/metadata/systask/#sub-workflow) | Nest another workflow as a sub workflow task.  Upon execution it instantiates the sub workflow and awaits it completion|
 
 Conductor provides an API to create user defined tasks that are excuted in the same JVM as the engine.  see [WorkflowSystemTask](https://github.com/Netflix/conductor/blob/dev/core/src/main/java/com/netflix/conductor/core/execution/tasks/WorkflowSystemTask.java) interface for details.
 
-## Worker Taks
+## Worker Tasks
 Worker tasks are implemented by application(s) and runs in a separate environment from Conductor.  The worker tasks can be implemented in any langugage.  These tasks talk to Conductor server via REST API endpionts to poll for tasks and update its status after execution.
 
 Worker tasks are identified by task type __SIMPLE__ in the blueprint.
