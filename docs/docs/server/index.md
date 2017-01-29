@@ -1,4 +1,4 @@
-# Instaling
+# Installing
 
 ### Requirements
 
@@ -9,7 +9,8 @@
 There are 3 ways in which you can install Conductor:
 
 #### 1. Build from source
-To build from source, checkout the code from github and build server module using ```gradle build``` command.  This should produce a conductor-server-all-VERSION.jar.
+To build from source, checkout the code from github and build server module using ```gradle build``` command. If you do not have gradle installed, you can run the command ```./gradlew build``` from the project root. This produces *conductor-server-all-VERSION.jar* in the folder *./server/build/libs/*
+
 The jar can be executed using:
 ```shell
 java -jar conductor-server-VERSION-all.jar
@@ -25,7 +26,20 @@ Use the following coordiates:
 
 
 #### 3. Use the pre-configured Docker image
-Coming soon...
+To build the docker images for the conductor server and ui run the commands:
+```shell
+cd docker
+docker-compose build
+```
+
+After the docker images are built, run the following command to start the containers:
+```shell
+docker-compose up
+```
+
+This will create a docker container network that consists of the following images: conductor:server, conductor:ui, [elasticsearch:2.4](https://hub.docker.com/_/elasticsearch/), and (https://hub.docker.com/r/v1r3n/dynomite/)[v1r3n/dynomite:latest].
+
+To view the UI, navigate to [localhost:5000](http://localhost:5000/), to view the Swagger docs, navigate to [localhost:8080](http://localhost:8080/).
 
 # Configuration
 Conductor server uses a property file based configuration.  The property file is passed to the Main class as a command line argument.
@@ -47,13 +61,13 @@ log4j.properties file path is optional and allows finer control over the logging
 db=dynomite
 
 # Dynomite Cluster details.
-# format is host:port:rack separated by semicolon  
+# format is host:port:rack separated by semicolon
 workflow.dynomite.cluster.hosts=host1:8102:us-east-1c;host2:8102:us-east-1d;host3:8102:us-east-1e
 
 # Dynomite cluster name
 workflow.dynomite.cluster.name=dyno_cluster_name
 
-# Namespace for the keys stored in Dynomite/Redis 
+# Namespace for the keys stored in Dynomite/Redis
 workflow.namespace.prefix=conductor
 
 # Namespace prefix for the dyno queues
