@@ -428,7 +428,7 @@ public class WorkflowExecutor {
 			return;
 		}
 
-		task.setStatus(Status.valueOf(result.getTaskStatus().name()));
+		task.setStatus(Status.valueOf(result.getStatus().name()));
 		task.setOutputData(result.getOutputData());
 		task.setReasonForIncompletion(result.getReasonForIncompletion());
 		task.setWorkerId(result.getWorkerId());

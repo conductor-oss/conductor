@@ -20,7 +20,6 @@ import java.net.UnknownHostException;
 import java.util.function.Function;
 import java.util.function.Supplier;
 
-import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
