@@ -18,7 +18,6 @@ package com.netflix.conductor.client.worker;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -92,12 +91,8 @@ public interface Worker {
 	public default int getLongPollTimeoutInMS() {
 		return PropertyFactory.getInteger(getTaskDefName(), "longPollTimeout", 100);
 	}
-
-	public static Worker create(String taskType, Function<Task, TaskResult> executor){
-		return create(taskType, executor, ()->false);
-	}
 	
-	public static Worker create(String taskType, Function<Task, TaskResult> executor, Supplier<Boolean> paused){
+	public static Worker create(String taskType, Function<Task, TaskResult> executor){
 		return new Worker() {
 			
 			@Override
@@ -112,7 +107,7 @@ public interface Worker {
 			
 			@Override
 			public boolean paused() {
-				return paused.get();
+				return Worker.super.paused();
 			}
 		};
 	}

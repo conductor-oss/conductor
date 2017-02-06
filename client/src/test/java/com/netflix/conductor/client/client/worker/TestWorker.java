@@ -20,6 +20,7 @@ package com.netflix.conductor.client.client.worker;
 
 import static org.junit.Assert.*;
 
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.netflix.conductor.client.worker.Worker;
@@ -32,11 +33,27 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
  */
 public class TestWorker {
 
+	@BeforeClass
+	public static void init() {
+		System.setProperty("conductor.worker.Test.paused", "true");
+	}
+	
 	@Test
 	public void testIdentity(){
-		Worker worker = Worker.create("Test", (Task task)->{
+		Worker worker = Worker.create("Test2", (Task task)->{
 			return new TaskResult(task);
 		});
 		assertNotNull(worker.getIdentity());
+		boolean paused = worker.paused();
+		assertFalse("Paused? " + paused, paused);
+	}
+	
+	@Test
+	public void testProperty() {
+		Worker worker = Worker.create("Test", (Task task)->{
+			return new TaskResult(task);
+		});
+		boolean paused = worker.paused();
+		assertTrue("Paused? " + paused, paused);
 	}
 }
