@@ -35,6 +35,7 @@ import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.servo.monitor.Stopwatch;
@@ -248,11 +249,16 @@ public class WorkflowTaskCoordinator {
 			result = worker.execute(task);
 			
 		} catch (Exception e) {
+			logger.error("Unable to execute task {}", task, e);
 			
 			WorkflowTaskMetrics.executionException(worker.getTaskDefName(), e);
-			logger.error("Unable to execute task {}", task, e);
 			result.setStatus(TaskResult.Status.FAILED);
 			result.setReasonForIncompletion("Error while executing the task: " + e);
+			TaskExecLog execLog = result.getLog();
+			execLog.setError(e.getMessage());
+			for (StackTraceElement ste : e.getStackTrace()) {
+				execLog.getErrorTrace().add(ste.toString());
+			}
 			
 		} finally {
 			sw.stop();

@@ -41,6 +41,7 @@ public class TaskExecLog {
 	
 	private String error;
 
+	private long created;
 	
 	public TaskExecLog() {
 		
@@ -135,6 +136,22 @@ public class TaskExecLog {
 	public void setError(String error) {
 		this.error = error;
 	}
+
+	/**
+	 * @return the created
+	 */
+	public long getCreated() {
+		return created;
+	}
+
+	/**
+	 * @param created the created to set
+	 * 
+	 */
+	public void setCreated(long created) {
+		this.created = created;
+	}
+	
 	
 	
 }

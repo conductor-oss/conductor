@@ -85,6 +85,13 @@ public interface Worker {
 	
 	/**
 	 * 
+	 * @return Returns a comma separated list of environment variables that should be logged
+	 */
+	public default String getLoggingEnvProps() {
+		return PropertyFactory.getString(getTaskDefName(), "taskLogProps", "HOSTNAME,USER,EC2_INSTANCE_ID,@environment,@stack");
+	}
+	/**
+	 * 
 	 * @return Time to wait when making a poll to workflow server for tasks.  The client will wait for at-least specified seconds for task queue to be "filled".  
 	 * Use a higher number here as opposed to more frequent polls.  Helps reduce the excessive calls. 
 	 */
