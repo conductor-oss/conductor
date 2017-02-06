@@ -16,8 +16,8 @@ This builds the images:
 
 ## Running conductor
 Running the images:
-`docker run -d -t conductor:server`
-`docker run -d -t conductor:ui`
+`docker run -p 8080:8080 -d -t conductor:server`
+`docker run -p 5000:5000 -d -t conductor:ui`
 (requires elasticsearch running locally)
 
 Using compose:
@@ -31,5 +31,5 @@ To ensure images are stopped do:
 
 ## Running in Interactive Mode
 In interactive mode the default startup script for the container do not run
-`docker run -t -i conductor:server -`
-`docker run -t -i conductor:ui -`
+`docker run -p 8080:8080 -t -i conductor:server -`
+`docker run -p 5000:5000 -t -i conductor:ui -`
