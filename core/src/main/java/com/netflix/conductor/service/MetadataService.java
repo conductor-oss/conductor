@@ -99,6 +99,9 @@ public class MetadataService {
 	}
 
 	public void registerWorkflowDef(WorkflowDef def) throws Exception {
+		if(def.getName().contains(":")) {
+			throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
+		}
 		metadata.create(def);
 	}
 

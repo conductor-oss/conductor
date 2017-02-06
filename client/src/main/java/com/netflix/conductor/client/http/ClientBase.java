@@ -190,7 +190,7 @@ public abstract class ClientBase {
 	}	
 	
 	
-	protected ObjectMapper objectMapper() {
+	protected static ObjectMapper objectMapper() {
 	    final ObjectMapper om = new ObjectMapper();
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
