@@ -79,7 +79,7 @@ public class DynoQueueDAO implements QueueDAO {
 				List<Host> hosts = super.getHosts();
 				List<Host> updatedHosts = new ArrayList<>(hosts.size());
 				hosts.forEach(host -> {
-					updatedHosts.add(new Host(host.getHostName(), host.getIpAddress(), readConnPort, host.getRack(), host.getDatacenter(), Status.Up));
+					updatedHosts.add(new Host(host.getHostName(), host.getIpAddress(), readConnPort, host.getRack(), host.getDatacenter(), host.isUp() ? Status.Up : Status.Down));
 				});
 				return updatedHosts;
 			}
