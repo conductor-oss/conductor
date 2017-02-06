@@ -46,51 +46,6 @@ public class EmbeddedElasticSearch {
 	private static Client client;
 	private static File dataDir;
 
-	private static final String template = "{ " + 
-			"   " + 
-			"    \"order\": 0, " + 
-			"    \"template\": \"*\", " + 
-			"    \"settings\": {}, " + 
-			"    \"mappings\": { " + 
-			"      \"_default_\": { " + 
-			"        \"dynamic_templates\": [ " + 
-			"          { " + 
-			"            \"string_fields\": { " + 
-			"              \"mapping\": { " + 
-			"                \"index\": \"not_analyzed\", " + 
-			"                \"type\": \"string\", " + 
-			"                \"doc_values\": true " + 
-			"              }, " + 
-			"              \"match_mapping_type\": \"string\", " + 
-			"              \"match\": \"*\" " + 
-			"            } " + 
-			"          }, " + 
-			"          { " + 
-			"            \"long_fields\": { " + 
-			"              \"mapping\": { " + 
-			"                \"type\": \"long\", " + 
-			"                \"doc_values\": true " + 
-			"              }, " + 
-			"              \"match_mapping_type\": \"long\", " + 
-			"              \"match\": \"*\" " + 
-			"            } " + 
-			"          }, " + 
-			"          { " + 
-			"            \"double_fields\": { " + 
-			"              \"mapping\": { " + 
-			"                \"type\": \"double\", " + 
-			"                \"doc_values\": true " + 
-			"              }, " + 
-			"              \"match_mapping_type\": \"double\", " + 
-			"              \"match\": \"*\" " + 
-			"            } " + 
-			"          } " + 
-			"        ] " + 
-			"      } " + 
-			"    }, " + 
-			"    \"aliases\": {} " + 
-			"   " + 
-			"} ";
 	public static void start() throws Exception {
 		start(DEFAULT_CLUSTER_NAME, DEFAULT_HOST, DEFAULT_PORT, true);
 	}
@@ -116,8 +71,6 @@ public class EmbeddedElasticSearch {
 		});
 		logger.info("ElasticSearch cluster {} started in local mode on port {}", instance.settings().get("cluster.name"), getPort());
 		client = instance.client();
-		client.admin().indices().preparePutTemplate("conductor_template").setSource(template).get();
-		client.admin().indices().prepareCreate("conductor").execute().actionGet();
 	}
 
 	private static void setupDataDir(Settings settings) {

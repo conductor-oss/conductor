@@ -119,7 +119,7 @@ public class Task {
 	private String workerId;
 
 	private Map<String, Object> outputData = new HashMap<>();
-
+	
 	public Task(){
 		
 	}

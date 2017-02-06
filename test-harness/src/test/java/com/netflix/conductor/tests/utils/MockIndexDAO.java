@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.dao.IndexDAO;
@@ -52,5 +53,9 @@ public class MockIndexDAO implements IndexDAO {
 	@Override
 	public void index(Task task) {
 		
+	}
+	
+	@Override
+	public void add(TaskExecLog log) {
 	}
 }

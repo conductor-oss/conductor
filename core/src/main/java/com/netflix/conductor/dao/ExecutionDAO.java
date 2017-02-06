@@ -21,6 +21,7 @@ package com.netflix.conductor.dao;
 import java.util.List;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.Workflow;
 
 /**
@@ -75,6 +76,13 @@ public interface ExecutionDAO {
 	 */
 	public abstract void updateTasks(List<Task> tasks);
 
+	/**
+	 * 
+	 * @param log Task Execution Log to be added
+	 *  
+	 */
+	public abstract void addTaskExecLog(TaskExecLog log);
+	
 	/**
 	 * 
 	 * @param taskId id of the task to be removed.

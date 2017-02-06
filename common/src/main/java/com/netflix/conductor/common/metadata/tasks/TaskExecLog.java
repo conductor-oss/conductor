@@ -29,6 +29,8 @@ import java.util.Map;
  */
 public class TaskExecLog {
 
+	private String workflowId;
+	
 	private String taskId;
 	
 	private Map<String, Object> environment = new HashMap<>();
@@ -38,6 +40,26 @@ public class TaskExecLog {
 	private List<String> errorTrace = new LinkedList<>();
 	
 	private String error;
+
+	
+	public TaskExecLog() {
+		
+	}
+	
+	/**
+	 * @return the workflowId
+	 */
+	public String getWorkflowId() {
+		return workflowId;
+	}
+
+	/**
+	 * @param workflowId the workflowId to set
+	 * 
+	 */
+	public void setWorkflowId(String workflowId) {
+		this.workflowId = workflowId;
+	}
 
 	/**
 	 * @return the taskId

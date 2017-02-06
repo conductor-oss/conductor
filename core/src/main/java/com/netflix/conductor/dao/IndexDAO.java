@@ -18,6 +18,7 @@ package com.netflix.conductor.dao;
 import java.util.List;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 
@@ -64,6 +65,12 @@ public interface IndexDAO {
 	 * @param value value
 	 */
 	public void update(String workflowInstanceId, String key, Object value);
+
+	/**
+	 * 
+	 * @param log Task Execution log to be indexed
+	 */
+	public void add(TaskExecLog log);
 	
 
 }
