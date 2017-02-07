@@ -24,6 +24,7 @@ import java.util.Set;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.tasks.Decision;
+import com.netflix.conductor.core.execution.tasks.Event;
 import com.netflix.conductor.core.execution.tasks.Fork;
 import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
@@ -37,7 +38,7 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 public enum SystemTaskType {
 	
 	
-	DECISION(new Decision()), FORK(new Fork()), JOIN(new Join()), SUB_WORKFLOW(new SubWorkflow());
+	DECISION(new Decision()), FORK(new Fork()), JOIN(new Join()), SUB_WORKFLOW(new SubWorkflow()), EVENT(new Event());
 
 	private WorkflowSystemTask impl;
 	
