@@ -112,8 +112,9 @@ public class TaskResource {
 
 	@POST
 	@ApiOperation("Update a task")
-	public void updateTask(TaskResult task) throws Exception {
+	public String updateTask(TaskResult task) throws Exception {
 		taskService.updateTask(task);
+		return task.getTaskId();
 	}
 
 	@POST
