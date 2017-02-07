@@ -287,7 +287,7 @@ public class WorkflowTaskCoordinator {
 		String[] properties = props.split(",");
 		String workerName = worker.getTaskDefName();
 		for(String property : properties) {
-			String value = PropertyFactory.getString(workerName, property, null);
+			String value = PropertyFactory.getString(workerName, property, System.getenv(property));
 			data.put(property, value);
 		}
 		

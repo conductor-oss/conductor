@@ -32,15 +32,15 @@ public class Event extends WorkflowSystemTask {
 
 	private QueueDAO queues;
 	
+	private static final String EVENT_QUEUE_NAME = "_events";
+	
 	public Event() {
 		super("EVENT");
 	}
 	
 	@Override
 	public void start(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
-
-		String eventName = workflow.getWorkflowType() + "." + task.getReferenceTaskName();
-		queues.push(eventName, task.getTaskId(), 0);
+		queues.push(EVENT_QUEUE_NAME, task.getTaskId(), 0);
 		task.setStatus(Status.COMPLETED);
 	}
 	
