@@ -225,10 +225,13 @@ public class ElasticSearchDAO implements IndexDAO {
 		int retry = 3;
 		while(retry > 0) {
 			try {
+				
+				taskExecLog.setCreated(System.currentTimeMillis());
 				IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
 				request.source(om.writeValueAsBytes(taskExecLog));
 	 			client.index(request).actionGet();
-	 			break;				
+	 			break;
+	 			
 			} catch (Throwable e) {
 				log.error("Indexing failed {}", e.getMessage(), e);
 				retry--;

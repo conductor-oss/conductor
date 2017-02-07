@@ -16,8 +16,10 @@
 package com.netflix.conductor.client.task;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -33,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.conductor.client.http.TaskClient;
+import com.netflix.conductor.client.worker.PropertyFactory;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -228,6 +231,11 @@ public class WorkflowTaskCoordinator {
 		
 		try {
 			
+			if(!worker.preAck(task)) {
+				logger.debug("Worker {} decided not to ack the task {}", taskType, task.getTaskId());
+				return;
+			}
+			
 			if (!client.ack(task.getTaskId(), worker.getIdentity())) {
 				WorkflowTaskMetrics.ackFailed(worker.getTaskDefName());
 				logger.error("Ack failed for {}, id {}", taskType, task.getTaskId());
@@ -241,6 +249,7 @@ public class WorkflowTaskCoordinator {
 		}
 		
 		TaskResult result = new TaskResult(task);
+		result.getLog().getEnvironment().putAll(getEnvData(worker));
 		Stopwatch sw = WorkflowTaskMetrics.executionTimer(worker.getTaskDefName());
 		
 		try {
@@ -267,6 +276,22 @@ public class WorkflowTaskCoordinator {
 		logger.debug("Task {} executed by worker {} with status {}", task.getTaskId(), worker.getClass().getSimpleName(), task.getStatus());
 		updateWithRetry(updateRetryCount, task, result, worker);
 		
+	}
+	
+	private Map<String, Object> getEnvData(Worker worker) {
+		String props = worker.getLoggingEnvProps();
+		Map<String, Object> data = new HashMap<>();
+		if(props == null || props.trim().length() == 0) {
+			return data;
+		}
+		String[] properties = props.split(",");
+		String workerName = worker.getTaskDefName();
+		for(String property : properties) {
+			String value = PropertyFactory.getString(workerName, property, null);
+			data.put(property, value);
+		}
+		
+		return data;
 	}
 	
 	private void updateWithRetry(int count, Task task, TaskResult result, Worker worker) {

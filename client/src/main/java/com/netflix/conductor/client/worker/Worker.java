@@ -41,6 +41,16 @@ public interface Worker {
 	public TaskResult execute(Task task);
 	
 	/**
+	 * Callback used by the WorkflowTaskCoordinator before a task is acke'ed.  
+	 * Workers can implement the callback to get notified before the task is ack'ed.
+	 * @param task
+	 * @return True, if the task should be accepted and acknowledged.  execute() method is called ONLY when this method returns true.  Return false if the task cannot be accepted for whatever reason.  
+	 */
+	public default boolean preAck(Task task) {
+		return true;
+	}
+	
+	/**
 	 * Called when the task coordinator fails to update the task to the server.
 	 * Client should store the task id (in a database) and retry the update later
 	 * @param task Task which cannot be updated back to the server.

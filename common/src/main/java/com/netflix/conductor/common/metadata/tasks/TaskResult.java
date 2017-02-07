@@ -57,17 +57,11 @@ public class TaskResult {
 		this.status = Status.valueOf(task.getStatus().name());
 		this.workerId = task.getWorkerId();
 		this.outputData = task.getOutputData();
-		this.log.setWorkflowId(task.getWorkflowInstanceId());
-		this.log.setTaskId(task.getTaskId());
-		this.log.setCreated(System.currentTimeMillis());
 	}
 
 	public TaskResult(String workflowInstanceId, String taskId) {
 		this.workflowInstanceId = workflowInstanceId;
 		this.taskId = taskId;
-		this.log.setWorkflowId(workflowInstanceId);
-		this.log.setTaskId(taskId);
-		this.log.setCreated(System.currentTimeMillis());
 	}
 
 	public TaskResult() {

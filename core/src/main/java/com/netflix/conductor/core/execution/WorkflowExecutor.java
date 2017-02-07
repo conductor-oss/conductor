@@ -37,6 +37,7 @@ import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
@@ -409,7 +410,8 @@ public class WorkflowExecutor {
 		String workflowId = result.getWorkflowInstanceId();
 		Workflow wf = edao.getWorkflow(workflowId);
 		Task task = edao.getTask(result.getTaskId());
-
+		long cpuTime = System.currentTimeMillis() - task.getPolledTime();
+		
 		if (wf.getStatus().isTerminal()) {
 			// Workflow is in terminal state
 			queue.remove(task.getTaskType(), result.getTaskId());
@@ -438,6 +440,19 @@ public class WorkflowExecutor {
 			task.setEndTime(System.currentTimeMillis());
 		}
 		edao.updateTask(task);
+		
+		
+		TaskExecLog tlog = result.getLog();
+		tlog.setTaskId(task.getTaskId());
+		Map<String, Object> taskLogData = new HashMap<>();
+		taskLogData.put("status", task.getStatus().name());
+		taskLogData.put("cpuTime", cpuTime);
+		taskLogData.put("taskType", task.getTaskType());
+		taskLogData.put("taskDefName", task.getTaskDefName());
+		
+		tlog.getData().put("task", taskLogData);
+		
+		edao.addTaskExecLog(tlog);
 
 		switch (task.getStatus()) {
 

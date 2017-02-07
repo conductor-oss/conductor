@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.client.http;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -80,6 +81,11 @@ public class WorkflowClient extends ClientBase {
 	}
 
 	//Metadata Operations
+	
+	public List<WorkflowDef> getAllWorkflowDefs() {
+		WorkflowDef[] defs = getForEntity("metadata/workflow", null, WorkflowDef[].class);
+		return Arrays.asList(defs);
+	}
 	
 	public void registerWorkflow(WorkflowDef def) {
 		postForEntity("metadata/workflow", def);
@@ -149,5 +155,6 @@ public class WorkflowClient extends ClientBase {
 		SearchResult<WorkflowSummary> result = getForEntity("workflow/search", new Object[]{"query", query}, new GenericType<SearchResult<WorkflowSummary>>() {});
 		return result;
 	}
+
 	
 }
