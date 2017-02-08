@@ -344,7 +344,9 @@
 <li>We will use the REST endpoints directly to poll for tasks and updating the status.</li>
 </ol>
 <h4 id="poll-for-the-fist-task">Poll for the fist task:<a class="headerlink" href="#poll-for-the-fist-task" title="Permanent link">&para;</a></h4>
-<p><code>curl http://localhost:8080/api/tasks/poll/task_1</code></p>
+<pre><code class="shell">curl http://localhost:8080/api/tasks/poll/task_1
+</code></pre>
+
 <p>The response should look something like:</p>
 <pre><code class="json">{
     &quot;taskType&quot;: &quot;task_1&quot;,
