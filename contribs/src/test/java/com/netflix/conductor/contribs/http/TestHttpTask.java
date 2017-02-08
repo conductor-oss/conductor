@@ -19,6 +19,7 @@
 package com.netflix.conductor.contribs.http;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -134,6 +135,28 @@ public class TestHttpTask {
 		Set<String> responseKeys = map.keySet();
 		inputKeys.containsAll(responseKeys);
 		responseKeys.containsAll(inputKeys);
+	}
+	
+
+	@Test
+	public void testPostNoContent() throws Exception {
+
+		Task task = new Task();
+		Input input = new Input();
+		input.setUri("http://localhost:7009/post2");
+		Map<String, Object> body = new HashMap<>();
+		body.put("input_key1", "value1");
+		body.put("input_key2", 45.3d);
+		input.setBody(body);
+		input.setMethod("POST");
+		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+		
+		httpTask.start(workflow, task, executor);
+		assertEquals(task.getReasonForIncompletion(), Task.Status.COMPLETED, task.getStatus());
+		HttpResponse hr = (HttpResponse) task.getOutputData().get("response");
+		Object response = hr.body;
+		assertEquals(Task.Status.COMPLETED, task.getStatus());
+		assertNull("response is: " + response, response);
 	}
 	
 	@Test
@@ -274,6 +297,15 @@ public class TestHttpTask {
 				writer.print(om.writeValueAsString(input));
 				writer.flush();
 				writer.close();
+			} else if(request.getMethod().equals("POST") && request.getRequestURI().equals("/post2")) {
+				response.addHeader("Content-Type", "application/json");
+				response.setStatus(204);
+				BufferedReader reader = request.getReader();
+				Map<String, Object> input = om.readValue(reader, mapOfObj);
+				Set<String> keys = input.keySet();
+				System.out.println(keys);
+				response.getWriter().close();
+				
 			} else if(request.getMethod().equals("GET") && request.getRequestURI().equals("/numeric")) {
 				PrintWriter writer = response.getWriter();
 				writer.print(NUM_RESPONSE);
