@@ -154,7 +154,7 @@ public class HttpTask extends WorkflowSystemTask {
 		try {
 
 			ClientResponse cr = builder.accept(input.accept).method(input.method, ClientResponse.class);
-			if (cr.hasEntity()) {
+			if (cr.getStatus() != 204 && cr.hasEntity()) {
 				response.body = extractBody(cr);
 			}
 			response.statusCode = cr.getStatus();
@@ -167,7 +167,7 @@ public class HttpTask extends WorkflowSystemTask {
 			
 			if(cr.getStatus() > 199 && cr.getStatus() < 300) {
 				
-				if(cr.hasEntity()) {
+				if(cr.getStatus() != 204 && cr.hasEntity()) {
 					response.body = extractBody(cr);
 				}
 				response.headers = cr.getHeaders();
@@ -183,7 +183,7 @@ public class HttpTask extends WorkflowSystemTask {
 	}
 
 	private Object extractBody(ClientResponse cr) {
-		
+
 		String json = cr.getEntity(String.class);
 		logger.debug(json);
 		
