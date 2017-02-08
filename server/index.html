@@ -96,7 +96,7 @@
         
             <ul>
             
-                <li class="toctree-l3"><a href="#instaling">Instaling</a></li>
+                <li class="toctree-l3"><a href="#installing">Installing</a></li>
             
                 <li class="toctree-l3"><a href="#configuration">Configuration</a></li>
             
@@ -185,7 +185,7 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="instaling">Instaling<a class="headerlink" href="#instaling" title="Permanent link">&para;</a></h1>
+                <h1 id="installing">Installing<a class="headerlink" href="#installing" title="Permanent link">&para;</a></h1>
 <h3 id="requirements">Requirements<a class="headerlink" href="#requirements" title="Permanent link">&para;</a></h3>
 <ol>
 <li><strong>Database</strong>: <a href="https://github.com/Netflix/dynomite">Dynomite</a></li>
@@ -194,8 +194,8 @@
 </ol>
 <p>There are 3 ways in which you can install Conductor:</p>
 <h4 id="1-build-from-source">1. Build from source<a class="headerlink" href="#1-build-from-source" title="Permanent link">&para;</a></h4>
-<p>To build from source, checkout the code from github and build server module using <code>gradle build</code> command.  This should produce a conductor-server-all-VERSION.jar.
-The jar can be executed using:</p>
+<p>To build from source, checkout the code from github and build server module using <code>gradle build</code> command. If you do not have gradle installed, you can run the command <code>./gradlew build</code> from the project root. This produces <em>conductor-server-all-VERSION.jar</em> in the folder <em>./server/build/libs/</em></p>
+<p>The jar can be executed using:</p>
 <pre><code class="shell">java -jar conductor-server-VERSION-all.jar
 </code></pre>
 
@@ -218,7 +218,17 @@ The jar can be executed using:</p>
 </tbody>
 </table>
 <h4 id="3-use-the-pre-configured-docker-image">3. Use the pre-configured Docker image<a class="headerlink" href="#3-use-the-pre-configured-docker-image" title="Permanent link">&para;</a></h4>
-<p>Coming soon...</p>
+<p>To build the docker images for the conductor server and ui run the commands:</p>
+<pre><code class="shell">cd docker
+docker-compose build
+</code></pre>
+
+<p>After the docker images are built, run the following command to start the containers:</p>
+<pre><code class="shell">docker-compose up
+</code></pre>
+
+<p>This will create a docker container network that consists of the following images: conductor:server, conductor:ui, <a href="https://hub.docker.com/_/elasticsearch/">elasticsearch:2.4</a>, and (https://hub.docker.com/r/v1r3n/dynomite/)[v1r3n/dynomite:latest].</p>
+<p>To view the UI, navigate to <a href="http://localhost:5000/">localhost:5000</a>, to view the Swagger docs, navigate to <a href="http://localhost:8080/">localhost:8080</a>.</p>
 <h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
 <p>Conductor server uses a property file based configuration.  The property file is passed to the Main class as a command line argument.</p>
 <pre><code class="shell">java -jar conductor-server-all-VERSION.jar [PATH TO PROPERTY FILE] [log4j.properties file path]
@@ -236,13 +246,13 @@ The jar can be executed using:</p>
 db=dynomite
 
 # Dynomite Cluster details.
-# format is host:port:rack separated by semicolon  
+# format is host:port:rack separated by semicolon
 workflow.dynomite.cluster.hosts=host1:8102:us-east-1c;host2:8102:us-east-1d;host3:8102:us-east-1e
 
 # Dynomite cluster name
 workflow.dynomite.cluster.name=dyno_cluster_name
 
-# Namespace for the keys stored in Dynomite/Redis 
+# Namespace for the keys stored in Dynomite/Redis
 workflow.namespace.prefix=conductor
 
 # Namespace prefix for the dyno queues

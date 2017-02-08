@@ -74,7 +74,7 @@
             
                 <li class="toctree-l3"><a href="#system-tasks">System Tasks</a></li>
             
-                <li class="toctree-l3"><a href="#worker-taks">Worker Taks</a></li>
+                <li class="toctree-l3"><a href="#worker-tasks">Worker Tasks</a></li>
             
             </ul>
         
@@ -237,7 +237,7 @@ Worker tasks fall into two categories:<ul>
 </tbody>
 </table>
 <p>Conductor provides an API to create user defined tasks that are excuted in the same JVM as the engine.  see <a href="https://github.com/Netflix/conductor/blob/dev/core/src/main/java/com/netflix/conductor/core/execution/tasks/WorkflowSystemTask.java">WorkflowSystemTask</a> interface for details.</p>
-<h2 id="worker-taks">Worker Taks<a class="headerlink" href="#worker-taks" title="Permanent link">&para;</a></h2>
+<h2 id="worker-tasks">Worker Tasks<a class="headerlink" href="#worker-tasks" title="Permanent link">&para;</a></h2>
 <p>Worker tasks are implemented by application(s) and runs in a separate environment from Conductor.  The worker tasks can be implemented in any langugage.  These tasks talk to Conductor server via REST API endpionts to poll for tasks and update its status after execution.</p>
 <p>Worker tasks are identified by task type <strong>SIMPLE</strong> in the blueprint.</p>
 <p><a href="../../metadata/#task-definition">more details</a></p>

@@ -93,6 +93,8 @@
             
                 <li class="toctree-l3"><a href="#visual-flow">Visual Flow</a></li>
             
+                <li class="toctree-l3"><a href="#running-kitchensink-workflow">Running Kitchensink Workflow</a></li>
+            
             </ul>
         
     </li>
@@ -335,6 +337,86 @@
 
 <h3 id="visual-flow">Visual Flow<a class="headerlink" href="#visual-flow" title="Permanent link">&para;</a></h3>
 <p><img alt="img" src="../../img/kitchensink.png" /></p>
+<h3 id="running-kitchensink-workflow">Running Kitchensink Workflow<a class="headerlink" href="#running-kitchensink-workflow" title="Permanent link">&para;</a></h3>
+<ol>
+<li>Start the server as documented <a href="../../server">here</a>.  Use <code>-DloadSample=true</code> java system property when launching the server.  This will create a kitchensink workflow, related task definition and kick off an instance of kitchensink workflow.</li>
+<li>Once the workflow has started, the first task remains in the <code>SCHEDULED</code> state.  This is because no workers are currently polling for the task.</li>
+<li>We will use the REST endpoints directly to poll for tasks and updating the status.</li>
+</ol>
+<h4 id="poll-for-the-fist-task">Poll for the fist task:<a class="headerlink" href="#poll-for-the-fist-task" title="Permanent link">&para;</a></h4>
+<p><code>curl http://localhost:8080/api/tasks/poll/task_1</code></p>
+<p>The response should look something like:</p>
+<pre><code class="json">{
+    &quot;taskType&quot;: &quot;task_1&quot;,
+    &quot;status&quot;: &quot;IN_PROGRESS&quot;,
+    &quot;inputData&quot;: {
+        &quot;mod&quot;: null,
+        &quot;oddEven&quot;: null
+    },
+    &quot;referenceTaskName&quot;: &quot;task_1&quot;,
+    &quot;retryCount&quot;: 0,
+    &quot;seq&quot;: 1,
+    &quot;pollCount&quot;: 1,
+    &quot;taskDefName&quot;: &quot;task_1&quot;,
+    &quot;scheduledTime&quot;: 1486580932471,
+    &quot;startTime&quot;: 1486580933869,
+    &quot;endTime&quot;: 0,
+    &quot;updateTime&quot;: 1486580933902,
+    &quot;startDelayInSeconds&quot;: 0,
+    &quot;retried&quot;: false,
+    &quot;callbackFromWorker&quot;: true,
+    &quot;responseTimeoutSeconds&quot;: 3600,
+    &quot;workflowInstanceId&quot;: &quot;b0d1a935-3d74-46fd-92b2-0ca1e388659f&quot;,
+    &quot;taskId&quot;: &quot;b9eea7dd-3fbd-46b9-a9ff-b00279459476&quot;,
+    &quot;callbackAfterSeconds&quot;: 0,
+    &quot;polledTime&quot;: 1486580933902,
+    &quot;queueWaitTime&quot;: 1398
+}
+</code></pre>
+
+<h4 id="update-the-task-status">Update the task status<a class="headerlink" href="#update-the-task-status" title="Permanent link">&para;</a></h4>
+<ul>
+<li>Note the values for <code>taskId</code> and <code>workflowInstanceId</code> fields from the poll response</li>
+<li>Update the status of the task as <code>COMPLETED</code> as below:</li>
+</ul>
+<pre><code class="json">curl -H 'Content-Type:application/json' -H 'Accept:application/json' -X POST http://localhost:8080/api/tasks/ -d '
+{
+    &quot;taskId&quot;: &quot;b9eea7dd-3fbd-46b9-a9ff-b00279459476&quot;,
+    &quot;workflowInstanceId&quot;: &quot;b0d1a935-3d74-46fd-92b2-0ca1e388659f&quot;,
+    &quot;status&quot;: &quot;COMPLETED&quot;,
+    &quot;output&quot;: {
+        &quot;mod&quot;: 5,
+        &quot;taskToExecute&quot;: &quot;task_1&quot;,
+        &quot;oddEven&quot;: 0,
+        &quot;dynamicTasks&quot;: [
+            {
+                &quot;name&quot;: &quot;task_1&quot;,
+                &quot;taskReferenceName&quot;: &quot;task_1_1&quot;,
+                &quot;type&quot;: &quot;SIMPLE&quot;
+            },
+            {
+                &quot;name&quot;: &quot;sub_workflow_4&quot;,
+                &quot;taskReferenceName&quot;: &quot;wf_dyn&quot;,
+                &quot;type&quot;: &quot;SUB_WORKFLOW&quot;,
+                &quot;subWorkflowParam&quot;: {
+                    &quot;name&quot;: &quot;sub_flow_1&quot;
+                }
+            }
+        ],
+        &quot;inputs&quot;: {
+            &quot;task_1_1&quot;: {},
+            &quot;wf_dyn&quot;: {}
+        }
+    }
+}'
+</code></pre>
+
+<p>This will mark the task_1 as completed and schedule <code>task_5</code> as the next task.<br />
+Repeat the same process for the subsequently scheduled tasks until the completion.</p>
+<div class="admonition hint">
+<p class="admonition-title">Running in production</p>
+<p>For the production use, consider using the provided Java client (a Python client is in works) or wrap the REST calls into a library.</p>
+</div>
               
             </div>
           </div>
