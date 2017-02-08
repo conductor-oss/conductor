@@ -160,7 +160,9 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
 
 #### Poll for the fist task:
    
-   ```curl http://localhost:8080/api/tasks/poll/task_1```
+```shell
+curl http://localhost:8080/api/tasks/poll/task_1
+```
    
    The response should look something like:
    
