@@ -152,3 +152,87 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
 ```
 ### Visual Flow
 ![img](../img/kitchensink.png)
+
+### Running Kitchensink Workflow
+1. Start the server as documented [here](/server).  Use ```-DloadSample=true``` java system property when launching the server.  This will create a kitchensink workflow, related task definition and kick off an instance of kitchensink workflow.
+2. Once the workflow has started, the first task remains in the ```SCHEDULED``` state.  This is because no workers are currently polling for the task.
+3. We will use the REST endpoints directly to poll for tasks and updating the status.
+
+#### Poll for the fist task:
+   
+   ```curl http://localhost:8080/api/tasks/poll/task_1```
+   
+   The response should look something like:
+   
+```json
+{
+    "taskType": "task_1",
+    "status": "IN_PROGRESS",
+    "inputData": {
+        "mod": null,
+        "oddEven": null
+    },
+    "referenceTaskName": "task_1",
+    "retryCount": 0,
+    "seq": 1,
+    "pollCount": 1,
+    "taskDefName": "task_1",
+    "scheduledTime": 1486580932471,
+    "startTime": 1486580933869,
+    "endTime": 0,
+    "updateTime": 1486580933902,
+    "startDelayInSeconds": 0,
+    "retried": false,
+    "callbackFromWorker": true,
+    "responseTimeoutSeconds": 3600,
+    "workflowInstanceId": "b0d1a935-3d74-46fd-92b2-0ca1e388659f",
+    "taskId": "b9eea7dd-3fbd-46b9-a9ff-b00279459476",
+    "callbackAfterSeconds": 0,
+    "polledTime": 1486580933902,
+    "queueWaitTime": 1398
+}
+```
+#### Update the task status
+* Note the values for ```taskId``` and ```workflowInstanceId``` fields from the poll response
+* Update the status of the task as ```COMPLETED``` as below:
+
+```json
+curl -H 'Content-Type:application/json' -H 'Accept:application/json' -X POST http://localhost:8080/api/tasks/ -d '
+{
+	"taskId": "b9eea7dd-3fbd-46b9-a9ff-b00279459476",
+	"workflowInstanceId": "b0d1a935-3d74-46fd-92b2-0ca1e388659f",
+	"status": "COMPLETED",
+	"output": {
+	    "mod": 5,
+	    "taskToExecute": "task_1",
+	    "oddEven": 0,
+	    "dynamicTasks": [
+	        {
+	            "name": "task_1",
+	            "taskReferenceName": "task_1_1",
+	            "type": "SIMPLE"
+	        },
+	        {
+	            "name": "sub_workflow_4",
+	            "taskReferenceName": "wf_dyn",
+	            "type": "SUB_WORKFLOW",
+	            "subWorkflowParam": {
+	                "name": "sub_flow_1"
+	            }
+	        }
+	    ],
+	    "inputs": {
+	        "task_1_1": {},
+	        "wf_dyn": {}
+	    }
+	}
+}'
+```
+This will mark the task_1 as completed and schedule ```task_5``` as the next task.  
+Repeat the same process for the subsequently scheduled tasks until the completion.
+
+!!! hint "Running in production"
+	For the production use, consider using the provided Java client (a Python client is in works) or wrap the REST calls into a library.
+
+
+   
