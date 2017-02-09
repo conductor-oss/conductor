@@ -114,16 +114,15 @@ public class TaskResource {
 	@ApiOperation("Update a task")
 	public String updateTask(TaskResult task) throws Exception {
 		taskService.updateTask(task);
-		return task.getTaskId();
+		return "\"" + task.getTaskId() + "\"";
 	}
 
 	@POST
 	@Path("/{taskId}/ack")
 	@ApiOperation("Ack Task is recieved")
 	@Consumes({ MediaType.WILDCARD })
-	@Produces({ MediaType.TEXT_PLAIN })
 	public String ack(@PathParam("taskId") String taskId, @QueryParam("workerid") String workerId) throws Exception {
-		return "" + taskService.ackTaskRecieved(taskId, workerId);
+		return "\"" + taskService.ackTaskRecieved(taskId, workerId) + "\"";
 	}
 
 	@GET
