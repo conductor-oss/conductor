@@ -75,7 +75,7 @@ public class EventProcessor {
 	 */
 	public Map<String, String> getQueues() {
 		Map<String, String> queues = new HashMap<>();
-		queuesMap.entrySet().stream().forEach(q -> queues.put(q.getKey(), q.getValue().getURI()));
+		queuesMap.entrySet().stream().forEach(q -> queues.put(q.getKey(), q.getValue().getName()));
 		return queues;
 	}
 	
@@ -83,7 +83,7 @@ public class EventProcessor {
 		Map<String, Map<String, Long>> queues = new HashMap<>();
 		queuesMap.entrySet().stream().forEach(q -> {
 			Map<String, Long> size = new HashMap<>();
-			size.put(q.getValue().getURI(), q.getValue().size());
+			size.put(q.getValue().getName(), q.getValue().size());
 			queues.put(q.getKey(), size);
 		});
 		return queues;
@@ -114,7 +114,7 @@ public class EventProcessor {
 			logger.info("Got Message: " + msg.getPayload());
 			List<Message> messages = new LinkedList<>();
 			int i = 0;
-			String event = queue.getType() + ":" + queue.getURI();
+			String event = queue.getType() + ":" + queue.getName();
 			List<EventHandler> handlers = ms.getEventHandlersForEvent(event, true);
 			for(EventHandler handler : handlers) {
 				List<Action> actions = handler.getActions();
