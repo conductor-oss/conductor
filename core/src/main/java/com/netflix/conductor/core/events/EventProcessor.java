@@ -25,7 +25,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -35,12 +37,14 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.metadata.events.EventExecution.Status;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import com.netflix.conductor.core.events.queue.dyno.DynoEventQueueProvider;
+import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 
 /**
@@ -54,17 +58,23 @@ public class EventProcessor {
 	
 	private MetadataService ms;
 	
-	private ObservableQueue actionQueue;
+	private ExecutionService es;
 	
-	private ObjectMapper om;
+	private ActionProcessor ap;
 	
 	private Map<String, ObservableQueue> queuesMap = new ConcurrentHashMap<>();
 	
+	private ExecutorService executors;
+	
 	@Inject
-	public EventProcessor(DynoEventQueueProvider queueProvider, MetadataService ms, ObjectMapper om) {
-		this.actionQueue = queueProvider.getQueue(ActionProcessor.queueName);
+	public EventProcessor(ExecutionService es, MetadataService ms, ActionProcessor ap, Configuration config) {
+		this.es = es;
 		this.ms = ms;
-		this.om = om;
+		this.ap = ap;
+
+		int executorThreadCount = config.getIntProperty("workflow.event.processor.thread.count", 2);
+		this.executors = Executors.newFixedThreadPool(executorThreadCount);
+		
 		refresh();
 		Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> refresh(), 60, 60, TimeUnit.SECONDS);
 	}
@@ -107,31 +117,64 @@ public class EventProcessor {
 	}
 	
 	private void handle(ObservableQueue queue, Message msg) {
+		
 		try {
-			logger.info("Got Message: " + msg.getPayload());
-			List<Message> messages = new LinkedList<>();
+			
+			String payload = msg.getPayload();
+			logger.info("Got Message: " + payload);
+			
 			int i = 0;
 			String event = queue.getType() + ":" + queue.getName();
 			List<EventHandler> handlers = ms.getEventHandlersForEvent(event, true);
+			List<Future<Void>> futures = new LinkedList<>();
 			for(EventHandler handler : handlers) {
 				List<Action> actions = handler.getActions();
 				for(Action action : actions) {
-					String id = msg.getId() + ":" + i++;
-					action.setEvent(handler.getEvent());
-					action.setHandlerName(handler.getName());
-					String payload = om.writeValueAsString(action);
-					String receipt = id;
-					Message message = new Message(id, payload, receipt);
-					messages.add(message);
+					
+					String id = msg.getId() + "_" + i++;
+					
+					EventExecution ee = new EventExecution(id);
+					ee.setCreated(System.currentTimeMillis());
+					ee.setEvent(handler.getEvent());
+					ee.setName(handler.getName());
+					ee.setAction(action.getAction());
+					ee.setStatus(Status.IN_PROGRESS);
+					if (es.addEventExecution(ee)) {
+						Future<Void> future = execute(ee, action, payload);
+						futures.add(future);
+					}
 				}
 			}
-			logger.info("Publishing Actions: {}", messages);
-			actionQueue.publish(messages);
+			
+			for (Future<Void> future : futures) {
+				try {
+					future.get();
+				} catch (Exception e) {
+					logger.error(e.getMessage(), e);
+				}
+			}
+			
 			queue.ack(Arrays.asList(msg));
 			
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 		}
+	}
+
+	private Future<Void> execute(EventExecution ee, Action action, String payload) {
+		return executors.submit(()->{
+			try {
+				
+				ap.execute(action, payload);
+				ee.setStatus(Status.COMPLETED);
+				return null;
+			}catch(Exception e) {
+				logger.error(e.getMessage(), e);
+				ee.setStatus(Status.FAILED);
+				ee.getOutput().put("exception", e.getMessage());
+				return null;
+			}
+		});
 	}
 	
 }

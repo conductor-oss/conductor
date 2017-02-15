@@ -23,8 +23,9 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -416,15 +417,20 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		String key = nsKey(PENDING_WORKFLOWS, workflowName);
 		return dynoClient.scard(key);
 	}
-	
+
+
 	@Override
-	public void addEventExecution(EventExecution ee) {
+	public boolean addEventExecution(EventExecution ee) {
 		try {
 			
-			String json = om.writeValueAsString(ee);
 			String key = nsKey(EVENT_EXECUTION, ee.getName(), ee.getEvent());
-			double score = (double)System.currentTimeMillis();
-			dynoClient.zadd(key, score, json);
+			String json = om.writeValueAsString(ee);
+			logger.info("adding event execution {}", key);
+			if(dynoClient.hsetnx(key, ee.getId(), json) == 1L) {
+				indexer.add(ee);
+				return true;
+			}
+			return false;
 			
 		} catch (Exception e) {
 			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
@@ -432,15 +438,39 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 	
 	@Override
-	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, long startTime, long endTime, int count) {
-		String key = nsKey(EVENT_EXECUTION, eventHandlerName, eventName);
-		Set<String> members = dynoClient.zrangeByScore(key, startTime, endTime, count);
-		return members.stream().map(json -> {
-			try {
-				return om.readValue(json, EventExecution.class);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
+	public void updateEventExecution(EventExecution ee) {
+		try {
+			
+			String key = nsKey(EVENT_EXECUTION, ee.getName(), ee.getEvent());
+			String json = om.writeValueAsString(ee);
+			logger.info("adding event execution {}", key);
+			if(dynoClient.hset(key, ee.getId(), json) == 1L) {
+				indexer.add(ee);
 			}
-		}).collect(Collectors.toList());
+		} catch (Exception e) {
+			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
+		}
+	}
+	
+	
+	@Override
+	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max) {
+		try {
+			
+			String key = nsKey(EVENT_EXECUTION, eventHandlerName, eventName, messageId) + "_*";
+			logger.info("getting event execution {}", key);
+			Map<String, String> keys = dynoClient.hscan(key, max);
+			List<EventExecution> executions = new LinkedList<>();
+
+			for (Entry<String, String> e : keys.entrySet()) {
+				String json = e.getValue();
+				EventExecution ee = om.readValue(json, EventExecution.class);
+				executions.add(ee);
+			}
+
+			return executions;
+		} catch (Exception e) {
+			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
+		}
 	}
 }

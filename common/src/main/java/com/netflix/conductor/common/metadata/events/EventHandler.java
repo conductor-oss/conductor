@@ -126,10 +126,6 @@ public class EventHandler {
 		private Type action;
 		
 		private StartWorkflow start_workflow;
-		
-		private String handlerName;
-		
-		private String event;
 
 		/**
 		 * @return the action
@@ -160,38 +156,6 @@ public class EventHandler {
 		public void setStart_workflow(StartWorkflow start_workflow) {
 			this.start_workflow = start_workflow;
 		}
-
-		/**
-		 * @return the handlerName
-		 */
-		public String getHandlerName() {
-			return handlerName;
-		}
-
-		/**
-		 * @param handlerName the handlerName to set
-		 * 
-		 */
-		public void setHandlerName(String handlerName) {
-			this.handlerName = handlerName;
-		}
-
-		/**
-		 * @return the event
-		 */
-		public String getEvent() {
-			return event;
-		}
-
-		/**
-		 * @param event the event to set
-		 * 
-		 */
-		public void setEvent(String event) {
-			this.event = event;
-		}
-		
-		
 		
 	}
 	

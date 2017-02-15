@@ -304,12 +304,12 @@ public class ExecutionService {
 		return edao.getPendingTasksForTaskType(taskType);
 	}
 	
-	public void addEventExecution(EventExecution ee) {
-		edao.addEventExecution(ee);
+	public boolean addEventExecution(EventExecution ee) {
+		return edao.addEventExecution(ee);
 	}
 	
-	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, long startTime, long endTime, int count) {
-		return edao.getEventExecutions(eventHandlerName, eventName, startTime, endTime, count);
+	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max) {
+		return edao.getEventExecutions(eventHandlerName, eventName, messageId, max);
 	}
 
 }

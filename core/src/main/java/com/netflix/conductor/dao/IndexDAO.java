@@ -17,6 +17,7 @@ package com.netflix.conductor.dao;
 
 import java.util.List;
 
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
@@ -71,6 +72,13 @@ public interface IndexDAO {
 	 * @param log Task Execution log to be indexed
 	 */
 	public void add(TaskExecLog log);
+	
+	
+	/**
+	 * 
+	 * @param ee Event Execution to be indexed
+	 */
+	public void add(EventExecution ee);
 	
 
 }

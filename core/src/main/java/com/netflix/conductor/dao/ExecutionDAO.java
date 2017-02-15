@@ -217,18 +217,24 @@ public interface ExecutionDAO {
 	/**
 	 * 
 	 * @param ee Event Execution to be stored
+	 * @return true if the event was added.  false otherwise when the event by id is already already stored.
 	 */
-	public abstract void addEventExecution(EventExecution ee);
+	public abstract boolean addEventExecution(EventExecution ee);
 	
 	/**
 	 * 
-	 * @param eventHandlerName Name of the event handler
-	 * @param eventName event name
-	 * @param startTime Time from when the events should be returned
-	 * @param endTime End time
-	 * @param count max number of executions to return
-	 * @return List of event executions
+	 * @param ee Event execution to be updated
 	 */
-	public abstract List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, long startTime, long endTime, int count);
+	public abstract void updateEventExecution(EventExecution ee);
+
+	/**
+	 * 
+	 * @param eventHandlerName Name of the event handler
+	 * @param eventName Event Name
+	 * @param messageId ID of the message received
+	 * @param max max number of executions to return
+	 * @return list of matching events
+	 */
+	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max);
 
 }

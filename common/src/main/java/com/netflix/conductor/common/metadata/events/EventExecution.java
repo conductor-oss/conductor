@@ -33,6 +33,8 @@ public class EventExecution {
 		IN_PROGRESS, COMPLETED, FAILED
 	}
 	
+	private String id;
+	
 	private String name;
 	
 	private String event;
@@ -44,6 +46,29 @@ public class EventExecution {
 	private Action.Type action;
 	
 	private Map<String, Object> output = new HashMap<>();
+
+	public EventExecution() {
+		
+	}
+	
+	public EventExecution(String id) {
+		this.id = id;
+	}
+	
+	/**
+	 * @return the id
+	 */
+	public String getId() {
+		return id;
+	}
+
+	/**
+	 * @param id the id to set
+	 * 
+	 */
+	public void setId(String id) {
+		this.id = id;
+	}
 
 	/**
 	 * @return the name

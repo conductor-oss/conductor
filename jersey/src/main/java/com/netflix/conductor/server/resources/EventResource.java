@@ -118,15 +118,12 @@ public class EventResource {
 	}
 	
 	@GET
-	@Path("/executions/{eventHandlerName}/{eventName}")
+	@Path("/executions/{eventHandlerName}/{eventName}/{messageId}")
 	@ApiOperation("Get Event executions")
 	public List<EventExecution> getEventExecutions(
-			@PathParam("eventHandlerName") String eventHandlerName, @PathParam("eventName") String eventName, 
-			@QueryParam("startTime") @DefaultValue("0") long startTime, @QueryParam("endTime") @DefaultValue("-1") long endTime, @QueryParam("count") @DefaultValue("100") int count) {
-		if(endTime == -1) {
-			endTime = System.currentTimeMillis();
-		}
-		return es.getEventExecutions(eventHandlerName, eventName, startTime, endTime, count);
+			@PathParam("eventHandlerName") String eventHandlerName, @PathParam("eventName") String eventName, @PathParam("messageId") String messageId, 
+			@QueryParam("max") @DefaultValue("100") int max) {
+		return es.getEventExecutions(eventHandlerName, eventName, messageId, max);
 	}
 	
 }

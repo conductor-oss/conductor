@@ -56,6 +56,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
@@ -85,6 +86,8 @@ public class ElasticSearchDAO implements IndexDAO {
 	private static final String TASK_DOC_TYPE = "task";
 	
 	private static final String LOG_DOC_TYPE = "task";
+	
+	private static final String EVENT_DOC_TYPE = "event";
 	
 	private static final String className = ElasticSearchDAO.class.getSimpleName();
 	
@@ -236,10 +239,29 @@ public class ElasticSearchDAO implements IndexDAO {
 				log.error("Indexing failed {}", e.getMessage(), e);
 				retry--;
 				if(retry > 0) {
-					Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
+					Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
 				}
 			}
 		}
+		
+	}
+	
+	@Override
+	public void add(EventExecution ee) {
+
+		try {
+
+			byte[] doc = om.writeValueAsBytes(ee);
+			UpdateRequest req = new UpdateRequest(logIndexName, EVENT_DOC_TYPE, ee.getId());
+			req.doc(doc);
+			req.upsert(doc);
+			req.retryOnConflict(5);
+			updateWithRetry(req);
+ 			
+		} catch (Throwable e) {
+			log.error("Indexing failed {}", e.getMessage(), e);
+		}
+	
 		
 	}
 	

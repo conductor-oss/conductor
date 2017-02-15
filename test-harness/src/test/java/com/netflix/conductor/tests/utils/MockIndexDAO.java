@@ -21,6 +21,7 @@ package com.netflix.conductor.tests.utils;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
@@ -57,5 +58,10 @@ public class MockIndexDAO implements IndexDAO {
 	
 	@Override
 	public void add(TaskExecLog log) {
+	}
+	
+	@Override
+	public void add(EventExecution ee) {
+		
 	}
 }
