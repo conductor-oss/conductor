@@ -25,9 +25,6 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
@@ -44,9 +41,7 @@ import rx.Subscriber;
  */
 @Singleton
 public class DynoObservableQueue implements ObservableQueue {
-	
-	private static Logger logger = LoggerFactory.getLogger(DynoObservableQueue.class);
-	
+
 	public static final String TYPE = "conductor";
 	
 	private String queueName;
@@ -59,7 +54,7 @@ public class DynoObservableQueue implements ObservableQueue {
 	public DynoObservableQueue(String queueName, QueueDAO queueDAO, Configuration config) {
 		this.queueName = queueName;
 		this.queueDAO = queueDAO;
-		this.pollTimeInMS = config.getIntProperty("workflow.dyno.queues.pollingInterval", 100);
+		this.pollTimeInMS = config.getIntProperty("workflow.dyno.queues.pollingInterval", 500);
 	}
 	
 	@Override
@@ -78,7 +73,6 @@ public class DynoObservableQueue implements ObservableQueue {
 	
 	@Override
 	public void publish(List<Message> messages) {
-		logger.info("Publishing {} messages", messages);
 		queueDAO.push(queueName, messages);
 	}
 	
@@ -107,7 +101,6 @@ public class DynoObservableQueue implements ObservableQueue {
 	@VisibleForTesting
 	List<Message> receiveMessages() {
 		List<Message> messages = queueDAO.pollMessages(queueName, 10, 1000);
-		logger.info("Recieved {} messages", messages.size());
 		return messages;
     }
 	

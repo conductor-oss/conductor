@@ -98,11 +98,11 @@ public class ActionProcessor {
 				case start_workflow:					
 					Map<String, Object> op = startWorkflow(action);
 					ee.getOutput().putAll(op);
-					ee.setStatus(Status.IN_PROGRESS);
+					ee.setStatus(Status.COMPLETED);
 					break;
 			}
 			queue.ack(Arrays.asList(msg));
-			return;
+			
 		}catch(Exception e) {
 			ee.setStatus(Status.IN_PROGRESS);
 			logger.error(e.getMessage(), e);
