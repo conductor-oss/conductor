@@ -100,7 +100,7 @@ public class EventProcessor {
 			return q;
 		}));
 		if(!created.isEmpty()) {
-			created.forEach(queue -> listen(queue));	
+			created.stream().filter(q -> q != null).forEach(queue -> listen(queue));	
 		}
 	}
 	
