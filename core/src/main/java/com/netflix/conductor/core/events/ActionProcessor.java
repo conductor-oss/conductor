@@ -33,11 +33,13 @@ import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventExecution.Status;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.events.queue.dyno.DynoEventQueueProvider;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.service.ExecutionService;
+import com.netflix.conductor.service.MetadataService;
 
 import rx.annotations.Beta;
 
@@ -58,12 +60,15 @@ public class ActionProcessor {
 	
 	private ExecutionService executionService;
 	
+	private MetadataService metadata;
+	
 	static String queueName = "_eventActions";
 	
 	@Inject
-	public ActionProcessor(DynoEventQueueProvider queueProvider, WorkflowExecutor executor, ExecutionService executionService, ObjectMapper om) {
+	public ActionProcessor(DynoEventQueueProvider queueProvider, WorkflowExecutor executor, ExecutionService executionService, MetadataService metadata, ObjectMapper om) {
 		this.executor = executor;
 		this.executionService = executionService;
+		this.metadata = metadata;
 		this.om = om;
 		ObservableQueue actionQueue = queueProvider.getQueue(queueName);
 		actionQueue.observe().subscribe((Message msg) -> onMessage(actionQueue, msg));
@@ -111,7 +116,8 @@ public class ActionProcessor {
 		Map<String, Object> op = new HashMap<>();
 		try {
 			
-			String id = executor.startWorkflow(params.getName(), params.getVersion(), params.getCorrelationId(), params.getInput());
+			WorkflowDef def = metadata.getWorkflowDef(params.getName(), params.getVersion());
+			String id = executor.startWorkflow(def.getName(), def.getVersion(), params.getCorrelationId(), params.getInput());
 			op.put("workflowId", id);
 			
 		}catch(Exception e) {

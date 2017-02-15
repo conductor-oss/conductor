@@ -91,11 +91,9 @@ public class EventProcessor {
 	
 	private void refresh() {
 		Set<String> events = ms.getEventHandlers().stream().map(eh -> eh.getEvent()).collect(Collectors.toSet());
-		logger.info("Got events: {}", events);
 		List<ObservableQueue> created = new LinkedList<>();
 		events.stream().forEach(event -> queuesMap.computeIfAbsent(event, s -> {
 			ObservableQueue q = EventQueues.getQueue(event);
-			logger.info("Got the Queue {} for event {}", q, event);
 			created.add(q);
 			return q;
 		}));
@@ -110,7 +108,6 @@ public class EventProcessor {
 	
 	private void handle(ObservableQueue queue, Message msg) {
 		try {
-			
 			logger.info("Got Message: " + msg.getPayload());
 			List<Message> messages = new LinkedList<>();
 			int i = 0;

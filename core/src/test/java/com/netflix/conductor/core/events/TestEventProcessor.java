@@ -28,6 +28,7 @@ import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action.Type;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.events.EventQueues.QueueType;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
@@ -61,6 +62,7 @@ public class TestEventProcessor {
 		Observable<Message> msgObservable = Observable.from(messages);
 		when(queue.observe()).thenReturn(msgObservable);
 		when(queue.getURI()).thenReturn(queueURI);
+		when(queue.getName()).thenReturn(queueURI);
 		when(queue.getType()).thenReturn("sqs");
 		when(provider.getQueue(queueURI)).thenReturn(queue);
 		
@@ -132,7 +134,12 @@ public class TestEventProcessor {
 				return id;
 			}
 		}).when(executor).startWorkflow(action.getStart_workflow().getName(), 1, action.getStart_workflow().getCorrelationId(), action.getStart_workflow().getInput());
-		ActionProcessor ap = new ActionProcessor(queueProvider, executor, mock(ExecutionService.class), new ObjectMapper());
+		MetadataService metadata = mock(MetadataService.class);
+		WorkflowDef def = new WorkflowDef();
+		def.setVersion(1);
+		def.setName(action.getStart_workflow().getName());
+		when(metadata.getWorkflowDef(any(), any())).thenReturn(def);
+		new ActionProcessor(queueProvider, executor, mock(ExecutionService.class), metadata, new ObjectMapper());
 		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
 		assertTrue(started.get());
 	}

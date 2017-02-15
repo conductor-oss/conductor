@@ -53,7 +53,6 @@ public class DynoEventQueueProvider implements EventQueueProvider {
 	
 	@Override
 	public ObservableQueue getQueue(String queueURI) {
-		System.out.println("queueURI: " + queueURI);
 		return queues.computeIfAbsent(queueURI, q -> {
 			DynoObservableQueue queue = new DynoObservableQueue(queueURI, dao, config);
 			return queue;

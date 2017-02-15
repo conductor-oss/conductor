@@ -19,7 +19,9 @@
 package com.netflix.conductor.core.events;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,8 +50,8 @@ public class EventQueues {
 		providers.put(type, provider);
 	}
 	
-	public static Map<QueueType, EventQueueProvider> providers() {
-		return providers;
+	public static List<String> providers() {
+		return providers.values().stream().map(p -> p.getClass().getName()).collect(Collectors.toList());
 	}
 	
 	public static ObservableQueue getQueue(String event) {

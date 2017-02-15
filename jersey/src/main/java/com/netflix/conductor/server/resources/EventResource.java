@@ -38,9 +38,7 @@ import javax.ws.rs.core.MediaType;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.events.EventProcessor;
-import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.EventQueues;
-import com.netflix.conductor.core.events.EventQueues.QueueType;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 
@@ -115,7 +113,7 @@ public class EventResource {
 	@GET
 	@Path("/queues/providers")
 	@ApiOperation("Get registered queue providers")
-	public Map<QueueType, EventQueueProvider> getEventQueueProviders() {
+	public List<String> getEventQueueProviders() {
 		return EventQueues.providers();
 	}
 	
