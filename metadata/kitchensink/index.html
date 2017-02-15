@@ -109,6 +109,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../../worker/">Conductor Task Workers</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../../extend/">Extending Conductor</a>
         
     </li>
@@ -343,6 +350,16 @@
 <li>Once the workflow has started, the first task remains in the <code>SCHEDULED</code> state.  This is because no workers are currently polling for the task.</li>
 <li>We will use the REST endpoints directly to poll for tasks and updating the status.</li>
 </ol>
+<h4 id="start-workflow-execution">Start workflow execution<a class="headerlink" href="#start-workflow-execution" title="Permanent link">&para;</a></h4>
+<p>Start the execution of the kitchensink workflow by posting the following:</p>
+<pre><code class="shell">curl -X POST --header 'Content-Type: application/json' --header 'Accept: text/plain' 'http://localhost:8080/api/workflow/kitchensink' -d '
+{
+    &quot;task2Name&quot;: &quot;task_5&quot; 
+}
+'
+</code></pre>
+
+<p>The response is a text string identifyin the workflow instance id.</p>
 <h4 id="poll-for-the-fist-task">Poll for the fist task:<a class="headerlink" href="#poll-for-the-fist-task" title="Permanent link">&para;</a></h4>
 <pre><code class="shell">curl http://localhost:8080/api/tasks/poll/task_1
 </code></pre>
@@ -416,8 +433,8 @@
 <p>This will mark the task_1 as completed and schedule <code>task_5</code> as the next task.<br />
 Repeat the same process for the subsequently scheduled tasks until the completion.</p>
 <div class="admonition hint">
-<p class="admonition-title">Running in production</p>
-<p>For the production use, consider using the provided Java client (a Python client is in works) or wrap the REST calls into a library.</p>
+<p class="admonition-title">Using Client Libraries</p>
+<p>Conductor provides client libaraies in Java (a Python client is works) to simplify task polling and execution.  </p>
 </div>
               
             </div>
