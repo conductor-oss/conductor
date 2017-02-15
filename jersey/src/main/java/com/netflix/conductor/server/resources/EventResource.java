@@ -35,11 +35,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.events.EventProcessor;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.EventQueues.QueueType;
+import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 
 import io.swagger.annotations.Api;
@@ -61,10 +63,13 @@ public class EventResource {
 	
 	private EventProcessor ep;
 	
+	private ExecutionService es;
+	
 	@Inject
-	public EventResource(MetadataService service, EventProcessor ep) {
+	public EventResource(MetadataService service, EventProcessor ep, ExecutionService es) {
 		this.service = service;
 		this.ep = ep;
+		this.es = es;
 	}
 
 	@POST
@@ -102,16 +107,28 @@ public class EventResource {
 	
 	@GET
 	@Path("/queues")
-	@ApiOperation("Get Registered queues")
+	@ApiOperation("Get registered queues")
 	public Map<String, ?> getEventQueues(@QueryParam("verbose") @DefaultValue("false") boolean verbose) {
 		return (verbose ? ep.getQueueSizes() : ep.getQueues());
 	}
 
 	@GET
 	@Path("/queues/providers")
-	@ApiOperation("Get Registered queue providers")
+	@ApiOperation("Get registered queue providers")
 	public Map<QueueType, EventQueueProvider> getEventQueueProviders() {
 		return EventQueues.providers();
+	}
+	
+	@GET
+	@Path("/executions/{eventHandlerName}/{eventName}")
+	@ApiOperation("Get Event executions")
+	public List<EventExecution> getEventExecutions(
+			@PathParam("eventHandlerName") String eventHandlerName, @PathParam("eventName") String eventName, 
+			@QueryParam("startTime") @DefaultValue("0") long startTime, @QueryParam("endTime") @DefaultValue("-1") long endTime, @QueryParam("count") @DefaultValue("100") int count) {
+		if(endTime == -1) {
+			endTime = System.currentTimeMillis();
+		}
+		return es.getEventExecutions(eventHandlerName, eventName, startTime, endTime, count);
 	}
 	
 }
