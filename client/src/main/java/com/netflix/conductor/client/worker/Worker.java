@@ -43,7 +43,7 @@ public interface Worker {
 	/**
 	 * Callback used by the WorkflowTaskCoordinator before a task is acke'ed.  
 	 * Workers can implement the callback to get notified before the task is ack'ed.
-	 * @param task
+	 * @param task Task to be ack'ed before execution
 	 * @return True, if the task should be accepted and acknowledged.  execute() method is called ONLY when this method returns true.  Return false if the task cannot be accepted for whatever reason.  
 	 */
 	public default boolean preAck(Task task) {

@@ -37,7 +37,7 @@ public interface QueueDAO {
 	public void push(String queueName, String id, long offsetTimeInSecond);
 	
 	/**
-	 * 
+	 * @param queueName Name of the queue
 	 * @param messages messages to be pushed.
 	 */
 	public void push(String queueName, List<Message> messages);
