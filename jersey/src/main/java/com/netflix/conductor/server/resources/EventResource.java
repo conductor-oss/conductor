@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -36,6 +37,9 @@ import javax.ws.rs.core.MediaType;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.events.EventProcessor;
+import com.netflix.conductor.core.events.EventQueueProvider;
+import com.netflix.conductor.core.events.EventQueues;
+import com.netflix.conductor.core.events.EventQueues.QueueType;
 import com.netflix.conductor.service.MetadataService;
 
 import io.swagger.annotations.Api;
@@ -49,6 +53,7 @@ import io.swagger.annotations.Api;
 @Path("/event")
 @Produces({MediaType.APPLICATION_JSON})
 @Consumes({MediaType.APPLICATION_JSON})
+@Singleton
 public class EventResource {
 
 	private MetadataService service;
@@ -95,5 +100,10 @@ public class EventResource {
 		return (verbose ? ep.getQueueSizes() : ep.getQueues());
 	}
 
+	@GET
+	@Path("/queues/providers")
+	public Map<QueueType, EventQueueProvider> getEventQueueProviders() {
+		return EventQueues.providers();
+	}
 	
 }

@@ -43,6 +43,10 @@ public class EventQueues {
 		providers.put(type, provider);
 	}
 	
+	public static Map<QueueType, EventQueueProvider> providers() {
+		return providers;
+	}
+	
 	public static ObservableQueue getQueue(String event) {
 		String typeVal = event.substring(0, event.indexOf(':'));
 		String queueURI = event.substring(event.indexOf(':') + 1);
