@@ -21,6 +21,9 @@ package com.netflix.conductor.core.events;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 
 /**
@@ -28,6 +31,8 @@ import com.netflix.conductor.core.events.queue.ObservableQueue;
  * Static holders for internal event queues
  */
 public class EventQueues {
+	
+	private static Logger logger = LoggerFactory.getLogger(EventQueues.class);
 	
 	public enum QueueType {
 		sqs, conductor
@@ -53,7 +58,11 @@ public class EventQueues {
 		QueueType type = QueueType.valueOf(typeVal);
 		EventQueueProvider provider = providers.get(type);
 		if(provider != null) {
-			return provider.getQueue(queueURI);	
+			try {
+				return provider.getQueue(queueURI);
+			} catch(Exception e) {
+				logger.error(e.getMessage(), e);
+			}
 		}
 		return null;
 		
