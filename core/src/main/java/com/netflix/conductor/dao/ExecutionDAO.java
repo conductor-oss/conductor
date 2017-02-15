@@ -20,6 +20,7 @@ package com.netflix.conductor.dao;
 
 import java.util.List;
 
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.Workflow;
@@ -210,6 +211,24 @@ public interface ExecutionDAO {
 	 */
 	public abstract List<Workflow> getWorkflowsByCorrelationId(String correlationId);
 
+
+	//Events
 	
+	/**
+	 * 
+	 * @param ee Event Execution to be stored
+	 */
+	public abstract void addEventExecution(EventExecution ee);
+	
+	/**
+	 * 
+	 * @param eventHandlerName Name of the event handler
+	 * @param eventName event name
+	 * @param startTime Time from when the events should be returned
+	 * @param endTime End time
+	 * @param count max number of executions to return
+	 * @return List of event executions
+	 */
+	public abstract List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, long startTime, long endTime, int count);
 
 }

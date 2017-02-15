@@ -18,11 +18,18 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.util.Arrays;
+
+import javax.inject.Inject;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.events.queue.Message;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.core.events.queue.dyno.DynoEventQueueProvider;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.dao.QueueDAO;
 
 /**
  * @author Viren
@@ -30,17 +37,21 @@ import com.netflix.conductor.dao.QueueDAO;
  */
 public class Event extends WorkflowSystemTask {
 
-	private QueueDAO queues;
+	private ObservableQueue queue;
 	
-	private static final String EVENT_QUEUE_NAME = "_events";
+	private ObjectMapper om = new ObjectMapper();
 	
-	public Event() {
+	@Inject
+	public Event(DynoEventQueueProvider queueProvider) {
 		super("EVENT");
+		this.queue = queueProvider.getQueue("_events");
 	}
 	
 	@Override
 	public void start(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
-		queues.push(EVENT_QUEUE_NAME, task.getTaskId(), 0);
+		String payload = om.writeValueAsString(task.getInputData());
+		Message message = new Message(task.getTaskId(), payload, task.getTaskId());
+		queue.publish(Arrays.asList(message));
 		task.setStatus(Status.COMPLETED);
 	}
 	
@@ -62,8 +73,8 @@ public class Event extends WorkflowSystemTask {
 	
 	@Override
 	public void cancel(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
-		String queueName = workflow.getWorkflowType() + "." + task.getReferenceTaskName();
-		queues.remove(queueName, task.getTaskId());
+		Message message = new Message(task.getTaskId(), null, task.getTaskId());
+		queue.ack(Arrays.asList(message));
 	}
 
 }

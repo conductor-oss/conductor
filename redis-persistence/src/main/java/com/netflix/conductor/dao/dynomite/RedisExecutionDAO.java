@@ -24,6 +24,7 @@ import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -31,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.inject.Singleton;
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.Workflow;
@@ -54,6 +56,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	private final static String PENDING_WORKFLOWS = "PENDING_WORKFLOWS";
 	private final static String WORKFLOW_DEF_TO_WORKFLOWS = "WORKFLOW_DEF_TO_WORKFLOWS";
 	private final static String CORR_ID_TO_WORKFLOWS = "CORR_ID_TO_WORKFLOWS";
+	
+	private final static String EVENT_EXECUTION = "EVENT_EXECUTION";
 
 	private IndexDAO indexer;
 
@@ -411,5 +415,32 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	public long getPendingWorkflowCount(String workflowName) {
 		String key = nsKey(PENDING_WORKFLOWS, workflowName);
 		return dynoClient.scard(key);
+	}
+	
+	@Override
+	public void addEventExecution(EventExecution ee) {
+		try {
+			
+			String json = om.writeValueAsString(ee);
+			String key = nsKey(EVENT_EXECUTION, ee.getName(), ee.getEvent());
+			double score = (double)System.currentTimeMillis();
+			dynoClient.zadd(key, score, json);
+			
+		} catch (Exception e) {
+			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
+		}
+	}
+	
+	@Override
+	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, long startTime, long endTime, int count) {
+		String key = nsKey(EVENT_EXECUTION, eventHandlerName, eventName);
+		Set<String> members = dynoClient.zrangeByScore(key, startTime, endTime, count);
+		return members.stream().map(json -> {
+			try {
+				return om.readValue(json, EventExecution.class);
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+		}).collect(Collectors.toList());
 	}
 }

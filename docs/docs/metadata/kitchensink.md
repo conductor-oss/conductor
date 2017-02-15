@@ -158,8 +158,20 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
 2. Once the workflow has started, the first task remains in the ```SCHEDULED``` state.  This is because no workers are currently polling for the task.
 3. We will use the REST endpoints directly to poll for tasks and updating the status.
 
+#### Start workflow execution
+Start the execution of the kitchensink workflow by posting the following:
+
+```shell
+curl -X POST --header 'Content-Type: application/json' --header 'Accept: text/plain' 'http://localhost:8080/api/workflow/kitchensink' -d '
+{
+	"task2Name": "task_5" 
+}
+'
+```
+The response is a text string identifyin the workflow instance id.
+
 #### Poll for the fist task:
-   
+  
 ```shell
 curl http://localhost:8080/api/tasks/poll/task_1
 ```
@@ -233,8 +245,5 @@ curl -H 'Content-Type:application/json' -H 'Accept:application/json' -X POST htt
 This will mark the task_1 as completed and schedule ```task_5``` as the next task.  
 Repeat the same process for the subsequently scheduled tasks until the completion.
 
-!!! hint "Running in production"
-	For the production use, consider using the provided Java client (a Python client is in works) or wrap the REST calls into a library.
-
-
-   
+!!! hint "Using Client Libraries"
+	Conductor provides client libaraies in Java (a Python client is works) to simplify task polling and execution.  

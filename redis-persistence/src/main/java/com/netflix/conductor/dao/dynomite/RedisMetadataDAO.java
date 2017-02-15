@@ -29,6 +29,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.inject.Singleton;
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.Configuration;
@@ -44,6 +45,8 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 	private final static String ALL_TASK_DEFS = "TASK_DEFS";
 	private final static String WORKFLOW_DEF_NAMES = "WORKFLOW_DEF_NAMES";
 	private final static String WORKFLOW_DEF = "WORKFLOW_DEF";
+	private final static String EVENT_HANDLERS = "EVENT_HANDLERS";
+	private final static String EVENT_HANDLERS_BY_EVENT = "EVENT_HANDLERS_BY_EVENT";
 	private final static String LATEST = "latest";
 
 	@Inject
@@ -207,6 +210,95 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 		return workflows;
 	}
 
+	//Event Handler APIs
+
+	@Override
+	public void addEventHandler(EventHandler eventHandler) {
+		Preconditions.checkNotNull(eventHandler.getName(), "Missing Name");
+		if(getEventHandler(eventHandler.getName()) != null) {
+			throw new ApplicationException(Code.CONFLICT, "EventHandler with name " + eventHandler.getName() + " already exists!");
+		}
+		index(eventHandler);
+		dynoClient.hset(nsKey(EVENT_HANDLERS), eventHandler.getName(), toJson(eventHandler));
+		
+	}
+
+	@Override
+	public void updateEventHandler(EventHandler eventHandler) {
+		Preconditions.checkNotNull(eventHandler.getName(), "Missing Name");
+		EventHandler existing = getEventHandler(eventHandler.getName());
+		if(existing == null) {
+			throw new ApplicationException(Code.NOT_FOUND, "EventHandler with name " + eventHandler.getName() + " not found!");
+		}
+		index(eventHandler);
+		removeIndex(existing);
+		dynoClient.hset(nsKey(EVENT_HANDLERS), eventHandler.getName(), toJson(eventHandler));
+	}
+
+	@Override
+	public void removeEventHandlerStatus(String name) {
+		EventHandler existing = getEventHandler(name);
+		if(existing == null) {
+			throw new ApplicationException(Code.NOT_FOUND, "EventHandler with name " + name + " not found!");
+		}
+		dynoClient.hdel(nsKey(EVENT_HANDLERS), name);
+		removeIndex(existing);
+	}
+
+	@Override
+	public List<EventHandler> getEventHandlers() {
+		Map<String, String> all = dynoClient.hgetAll(nsKey(EVENT_HANDLERS));
+		List<EventHandler> handlers = new LinkedList<>();
+		all.entrySet().forEach(e -> {
+			String json = e.getValue();
+			EventHandler eh = readValue(json, EventHandler.class);
+			handlers.add(eh);
+		});
+		return handlers;
+	}
+	
+	private void index(EventHandler eh) {
+		String event = eh.getEvent();
+		String key = nsKey(EVENT_HANDLERS_BY_EVENT, event);
+		dynoClient.sadd(key, eh.getName());
+	}
+	
+	private void removeIndex(EventHandler eh) {
+		String event = eh.getEvent();
+		String key = nsKey(EVENT_HANDLERS_BY_EVENT, event);
+		dynoClient.srem(key, eh.getName());
+	}
+	
+	@Override
+	public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
+		String key = nsKey(EVENT_HANDLERS_BY_EVENT, event);
+		Set<String> names = dynoClient.smembers(key);
+		List<EventHandler> handlers = new LinkedList<>();
+		for(String name : names) {
+			try {
+				EventHandler eh = getEventHandler(name);
+				if(eh.getEvent().equals(event) && (!activeOnly || eh.isActive())) {
+					handlers.add(eh);
+				}
+			} catch (ApplicationException ae) {
+				if(ae.getCode() == Code.NOT_FOUND) {}
+				throw ae;
+			}
+		}
+		return handlers;
+	}
+	
+	private EventHandler getEventHandler(String name) {
+		EventHandler eh = null;
+		String json = dynoClient.hget(nsKey(EVENT_HANDLERS), name);
+		if (json != null) {
+			eh = readValue(json, EventHandler.class);
+		}
+		return eh;
+
+	}
+	
+	
 	private void _createOrUpdate(WorkflowDef def) {
 		Preconditions.checkNotNull(def, "WorkflowDef object cannot be null");
 		Preconditions.checkNotNull(def.getName(), "WorkflowDef name cannot be null");

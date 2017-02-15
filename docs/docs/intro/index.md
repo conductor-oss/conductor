@@ -87,7 +87,7 @@ POST /tasks
         "location": "http://cdn.example.com/file/location.png"
         //any task specific output
      },
-     "taskStatus": "COMPLETED"
+     "status": "COMPLETED"
 }
 ```
 	

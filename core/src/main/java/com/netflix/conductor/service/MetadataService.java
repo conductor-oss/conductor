@@ -24,6 +24,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.WorkflowContext;
@@ -105,6 +106,48 @@ public class MetadataService {
 		metadata.create(def);
 	}
 
+	/**
+	 * 
+	 * @param eventHandler Event handler to be added.  
+	 * Will throw an exception if an event handler already exists with the name
+	 */
+	public void addEventHandler(EventHandler eventHandler) {
+		metadata.addEventHandler(eventHandler);
+	}
+
+	/**
+	 * 
+	 * @param eventHandler Event handler to be updated.
+	 */
+	public void updateEventHandler(EventHandler eventHandler) {
+		metadata.updateEventHandler(eventHandler);
+	}
+	
+	/**
+	 * 
+	 * @param name Removes the event handler from the system
+	 */
+	public void removeEventHandlerStatus(String name) {
+		metadata.removeEventHandlerStatus(name);
+	}
+
+	/**
+	 * 
+	 * @return All the event handlers registered in the system
+	 */
+	public List<EventHandler> getEventHandlers() {
+		return metadata.getEventHandlers();
+	}
+	
+	/**
+	 * 
+	 * @param event name of the event
+	 * @param activeOnly if true, returns only the active handlers
+	 * @return Returns the list of all the event handlers for a given event
+	 */
+	public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
+		return metadata.getEventHandlersForEvent(event, activeOnly);
+	}
 	
 	
 }

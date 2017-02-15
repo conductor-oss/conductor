@@ -26,12 +26,12 @@ import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
-import com.netflix.conductor.contribs.queue.ObservableQueue;
 import com.netflix.conductor.contribs.queue.QueueManager;
 import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue;
 import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
-import com.netflix.conductor.contribs.tasks.Wait;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.core.events.sqs.SQSEventQueueProvider;
 
 
 /**
@@ -43,9 +43,14 @@ public class ContribsModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(QueueManager.class).asEagerSingleton();
-		bind(Wait.class).toInstance(new Wait());
+		bind(SQSEventQueueProvider.class).asEagerSingleton();
 	}
 
+	@Provides
+	public AmazonSQSClient getSQSClient(AWSCredentialsProvider acp) {
+		return new AmazonSQSClient(acp);
+	}
+	
 	@Provides
 	public Map<Status, ObservableQueue> getQueues(Configuration config, AWSCredentialsProvider acp) {
 		

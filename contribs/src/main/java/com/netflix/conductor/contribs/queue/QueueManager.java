@@ -38,9 +38,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.contribs.tasks.Wait;
+import com.netflix.conductor.core.events.queue.Message;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
+import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.service.ExecutionService;
 
 /**

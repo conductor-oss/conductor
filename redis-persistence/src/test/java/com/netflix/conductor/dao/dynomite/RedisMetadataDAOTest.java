@@ -35,6 +35,10 @@ import org.junit.Test;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.common.metadata.events.EventHandler;
+import com.netflix.conductor.common.metadata.events.EventHandler.Action;
+import com.netflix.conductor.common.metadata.events.EventHandler.Action.Type;
+import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
@@ -42,8 +46,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.dao.dynomite.DynoProxy;
-import com.netflix.conductor.dao.dynomite.RedisMetadataDAO;
 import com.netflix.conductor.dao.redis.JedisMock;
 
 import redis.clients.jedis.JedisCommands;
@@ -211,6 +213,50 @@ public class RedisMetadataDAOTest {
 	@Test(expected=ApplicationException.class)
 	public void testRemoveTaskDef() throws Exception {
 		dao.removeTaskDef("test" + UUID.randomUUID().toString());
+	}
+	
+	@Test
+	public void testEventHandlers() {
+		String event1 = "SQS::arn:account090:sqstest1";
+		String event2 = "SQS::arn:account090:sqstest2";
+		
+		EventHandler eh = new EventHandler();
+		eh.setName(UUID.randomUUID().toString());
+		eh.setActive(false);
+		Action action = new Action();
+		action.setAction(Type.start_workflow);
+		action.setStart_workflow(new StartWorkflow());
+		action.getStart_workflow().setName("workflow_x");
+		eh.getActions().add(action);
+		eh.setEvent(event1);
+		
+		dao.addEventHandler(eh);
+		List<EventHandler> all = dao.getEventHandlers();
+		assertNotNull(all);
+		assertEquals(1, all.size());
+		assertEquals(eh.getName(), all.get(0).getName());
+		assertEquals(eh.getEvent(), all.get(0).getEvent());
+
+		List<EventHandler> byEvents = dao.getEventHandlersForEvent(event1, true);
+		assertNotNull(byEvents);
+		assertEquals(0, byEvents.size());		//event is marked as in-active
+		
+		eh.setActive(true);
+		eh.setEvent(event2);
+		dao.updateEventHandler(eh);
+		
+		all = dao.getEventHandlers();
+		assertNotNull(all);
+		assertEquals(1, all.size());
+
+		byEvents = dao.getEventHandlersForEvent(event1, true);
+		assertNotNull(byEvents);
+		assertEquals(0, byEvents.size());
+		
+		byEvents = dao.getEventHandlersForEvent(event2, true);
+		assertNotNull(byEvents);
+		assertEquals(1, byEvents.size());
+		
 	}
 
 }

@@ -35,7 +35,7 @@ import java.util.Set;
 public class WorkflowTask {
 
 	public static enum Type {
-		SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, EVENT, USER_DEFINED;
+		SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, EVENT, WAIT, USER_DEFINED;
 		
 		private static Set<String> systemTasks = new HashSet<>();
 		static {
@@ -47,6 +47,7 @@ public class WorkflowTask {
 			systemTasks.add(Type.JOIN.name());
 			systemTasks.add(Type.SUB_WORKFLOW.name());
 			systemTasks.add(Type.EVENT.name());
+			systemTasks.add(Type.WAIT.name());
 			//Do NOT add USER_DEFINED here...
 		}
 		

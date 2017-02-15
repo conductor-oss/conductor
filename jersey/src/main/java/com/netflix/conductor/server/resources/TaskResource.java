@@ -40,6 +40,7 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
+import com.netflix.conductor.service.MetadataService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -59,6 +60,8 @@ public class TaskResource {
 	private ExecutionService taskService;
 
 	private QueueDAO queues;
+	
+	private MetadataService metadata;
 
 	@Inject
 	public TaskResource(ExecutionService taskService, QueueDAO queues) {

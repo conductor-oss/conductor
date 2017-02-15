@@ -49,7 +49,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.contribs.http.HttpTask.HttpResponse;
 import com.netflix.conductor.contribs.http.HttpTask.Input;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -111,7 +110,6 @@ public class TestHttpTask {
 		httpTask = new HttpTask(rcm, config);
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testPost() throws Exception {
 
@@ -213,7 +211,6 @@ public class TestHttpTask {
 		assertTrue(response instanceof Number);
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testJsonGET() throws Exception {
 
@@ -231,8 +228,7 @@ public class TestHttpTask {
 		Map<String, Object> map = (Map<String, Object>) response;
 		assertEquals(JSON_RESPONSE, om.writeValueAsString(map));
 	}
-	
-	@SuppressWarnings("unchecked")
+
 	@Test
 	public void testExecute() throws Exception {
 

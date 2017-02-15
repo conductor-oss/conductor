@@ -28,6 +28,7 @@ import java.util.stream.Collectors;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.config.CoreModule;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -82,6 +83,7 @@ public class TestModule extends AbstractModule {
 		
 		DynoProxy proxy = new DynoProxy(jedisMock);
 		bind(DynoProxy.class).toInstance(proxy);
+		install(new CoreModule());
 	}
 	
 	@Provides

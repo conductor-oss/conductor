@@ -16,7 +16,7 @@
 /**
  * 
  */
-package com.netflix.conductor.contribs.queue;
+package com.netflix.conductor.core.events.queue;
 
 /**
  * @author Viren

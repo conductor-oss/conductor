@@ -52,8 +52,8 @@ import com.amazonaws.services.sqs.model.SendMessageBatchRequestEntry;
 import com.amazonaws.services.sqs.model.SendMessageBatchResult;
 import com.amazonaws.services.sqs.model.SetQueueAttributesResult;
 import com.google.common.annotations.VisibleForTesting;
-import com.netflix.conductor.contribs.queue.Message;
-import com.netflix.conductor.contribs.queue.ObservableQueue;
+import com.netflix.conductor.core.events.queue.Message;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
 
 import rx.Observable;
 import rx.Observable.OnSubscribe;
@@ -81,7 +81,7 @@ public class SQSObservableQueue implements ObservableQueue {
 	
 	private String queueURL;
 	
-	private SQSObservableQueue(String queueName, AmazonSQSClient client, int visibilityTimeout, int batchSize, int threadPoolSize, int pollTimeInMS, List<String> accountsToAuthorize) {
+	private SQSObservableQueue(String queueName, AmazonSQSClient client, int visibilityTimeout, int batchSize, int pollTimeInMS, List<String> accountsToAuthorize) {
 		this.queueName = queueName;
 		this.client = client;
 		this.visibilityTimeout = visibilityTimeout;
@@ -141,8 +141,6 @@ public class SQSObservableQueue implements ObservableQueue {
 		
 		private int batchSize = 5;
 		
-		private int threadPoolSize = 5;
-		
 		private int pollTimeInMS = 100;
 		
 		private AmazonSQSClient client;
@@ -154,6 +152,11 @@ public class SQSObservableQueue implements ObservableQueue {
 			return this;
 		}
 		
+		/**
+		 * 
+		 * @param visibilityTimeout Visibility timeout for the message in SECONDS
+		 * @return builder instance
+		 */
 		public Builder withVisibilityTimeout(int visibilityTimeout) {
 			this.visibilityTimeout = visibilityTimeout;
 			return this;
@@ -166,11 +169,6 @@ public class SQSObservableQueue implements ObservableQueue {
 		
 		public Builder withClient(AmazonSQSClient client) {
 			this.client = client;
-			return this;
-		}
-		
-		public Builder withThreadPoolSize(int threadPoolSize) {
-			this.threadPoolSize = threadPoolSize;
 			return this;
 		}
 		
@@ -190,7 +188,7 @@ public class SQSObservableQueue implements ObservableQueue {
 		}
 		
 		public SQSObservableQueue build() {
-			return new SQSObservableQueue(queueName, client, visibilityTimeout, batchSize, threadPoolSize, pollTimeInMS, accountsToAuthorize);
+			return new SQSObservableQueue(queueName, client, visibilityTimeout, batchSize, pollTimeInMS, accountsToAuthorize);
 		}
 	}
 	

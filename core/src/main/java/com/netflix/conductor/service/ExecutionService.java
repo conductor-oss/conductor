@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -301,6 +302,14 @@ public class ExecutionService {
 
 	public List<Task> getPendingTasksForTaskType(String taskType) throws Exception {
 		return edao.getPendingTasksForTaskType(taskType);
+	}
+	
+	public void addEventExecution(EventExecution ee) {
+		edao.addEventExecution(ee);
+	}
+	
+	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, long startTime, long endTime, int count) {
+		return edao.getEventExecutions(eventHandlerName, eventName, startTime, endTime, count);
 	}
 
 }

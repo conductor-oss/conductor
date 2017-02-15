@@ -33,8 +33,8 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import com.google.common.util.concurrent.Uninterruptibles;
-import com.netflix.conductor.contribs.queue.Message;
 import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue;
+import com.netflix.conductor.core.events.queue.Message;
 
 import rx.Observable;
 
