@@ -252,7 +252,8 @@ public class ElasticSearchDAO implements IndexDAO {
 		try {
 
 			byte[] doc = om.writeValueAsBytes(ee);
-			UpdateRequest req = new UpdateRequest(logIndexName, EVENT_DOC_TYPE, ee.getId());
+			String id = ee.getName() + "." + ee.getEvent() + "." + ee.getMessageId() + "." + ee.getId();
+			UpdateRequest req = new UpdateRequest(logIndexName, EVENT_DOC_TYPE, id);
 			req.doc(doc);
 			req.upsert(doc);
 			req.retryOnConflict(5);

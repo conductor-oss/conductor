@@ -123,13 +123,14 @@ public class EventProcessor {
 			String payload = msg.getPayload();
 			logger.debug("Got Message: " + payload);
 			
-			int i = 0;
+			
 			String event = queue.getType() + ":" + queue.getName();
 			List<EventHandler> handlers = ms.getEventHandlersForEvent(event, true);
 			logger.debug("Handlers for the event {}, {}", handlers, event);
 			
 			List<Future<Void>> futures = new LinkedList<>();
 			for(EventHandler handler : handlers) {
+				int i = 0;
 				List<Action> actions = handler.getActions();
 				for(Action action : actions) {
 					String id = msg.getId() + "_" + i++;
@@ -167,9 +168,15 @@ public class EventProcessor {
 	private Future<Void> execute(EventExecution ee, Action action, String payload) {
 		return executors.submit(()->{
 			try {
+				
 				logger.debug("Executing {} with payload {}", action.getAction(), payload);
-				ap.execute(action, payload);
+				Map<String, Object> output = ap.execute(action, payload);
+				if(output != null) {
+					ee.getOutput().putAll(output);
+				}
 				ee.setStatus(Status.COMPLETED);
+				es.updateEventExecution(ee);
+				
 				return null;
 			}catch(Exception e) {
 				logger.error(e.getMessage(), e);

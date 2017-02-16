@@ -442,9 +442,9 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			String key = nsKey(EVENT_EXECUTION, ee.getName(), ee.getEvent(), ee.getMessageId());
 			String json = om.writeValueAsString(ee);
 			logger.info("updating event execution {}", key);
-			if(dynoClient.hset(key, ee.getId(), json) == 1L) {
-				indexer.add(ee);
-			}
+			dynoClient.hset(key, ee.getId(), json);
+			indexer.add(ee);
+			
 		} catch (Exception e) {
 			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
 		}
@@ -460,10 +460,12 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			for(int i = 0; i < max; i++) {
 				String field = messageId + "_" + i;
 				String value = dynoClient.hget(key, field);
-				if(value != null) {
-					EventExecution ee = om.readValue(value, EventExecution.class);
-					executions.add(ee);	
-				}
+				if(value == null) {
+					break;
+				}	
+				EventExecution ee = om.readValue(value, EventExecution.class);
+				executions.add(ee);	
+				
 			}
 			return executions;
 			

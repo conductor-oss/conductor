@@ -308,6 +308,10 @@ public class ExecutionService {
 		return edao.addEventExecution(ee);
 	}
 	
+	public void updateEventExecution(EventExecution ee) {
+		edao.updateEventExecution(ee);
+	}
+	
 	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max) {
 		return edao.getEventExecutions(eventHandlerName, eventName, messageId, max);
 	}
