@@ -37,24 +37,24 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
  */
 public class Event extends WorkflowSystemTask {
 
-	private ObservableQueue queue;
+	private DynoEventQueueProvider queueProvider;
 	
 	private ObjectMapper om = new ObjectMapper();
 	
 	@Inject
 	public Event(DynoEventQueueProvider queueProvider) {
 		super("EVENT");
-		this.queue = queueProvider.getQueue("_events");
+		this.queueProvider = queueProvider;
 	}
 	
 	@Override
 	public void start(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
 		String payload = om.writeValueAsString(task.getInputData());
 		Message message = new Message(task.getTaskId(), payload, task.getTaskId());
-		queue.publish(Arrays.asList(message));
+		getQueue(workflow, task).publish(Arrays.asList(message));
 		task.setStatus(Status.COMPLETED);
 	}
-	
+
 	@Override
 	public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
 		
@@ -74,7 +74,11 @@ public class Event extends WorkflowSystemTask {
 	@Override
 	public void cancel(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
 		Message message = new Message(task.getTaskId(), null, task.getTaskId());
-		queue.ack(Arrays.asList(message));
+		getQueue(workflow, task).ack(Arrays.asList(message));
 	}
 
+	private ObservableQueue getQueue(Workflow workflow, Task task) {
+		String queueName = workflow.getWorkflowType() + "_" + workflow.getVersion() + "_" + task.getReferenceTaskName();
+		return queueProvider.getQueue(queueName);
+	}
 }
