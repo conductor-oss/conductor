@@ -143,14 +143,10 @@ Consider a task with input configured to use input/output parameters from workfl
           "height": 100
         }
       },
-      "headers": [
-        {
-          "Accept": "application/json"
-        },
-        {
-          "Content-Type": "application/json"
-        }
-      ]
+      "headers": {
+        "Accept": "application/json",
+        "Content-Type": "application/json"
+      }
     }
   }
 }
@@ -191,14 +187,10 @@ When scheduling the task, Conductor will merge the values from workflow input an
         "height": 100
       }
     },
-    "headers": [
-      {
-        "Accept": "application/json"
-      },
-      {
-        "Content-Type": "application/json"
-      }
-    ]
+    "headers": {
+    	"Accept": "application/json",
+    	"Content-Type": "application/json"
+    }
   }
 }
 ```
