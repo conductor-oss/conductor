@@ -435,14 +435,10 @@ Workflow input is a JSON payload that is available via <code>${workflow.input...
           &quot;height&quot;: 100
         }
       },
-      &quot;headers&quot;: [
-        {
-          &quot;Accept&quot;: &quot;application/json&quot;
-        },
-        {
-          &quot;Content-Type&quot;: &quot;application/json&quot;
-        }
-      ]
+      &quot;headers&quot;: {
+        &quot;Accept&quot;: &quot;application/json&quot;,
+        &quot;Content-Type&quot;: &quot;application/json&quot;
+      }
     }
   }
 }
@@ -478,14 +474,10 @@ Workflow input is a JSON payload that is available via <code>${workflow.input...
         &quot;height&quot;: 100
       }
     },
-    &quot;headers&quot;: [
-      {
-        &quot;Accept&quot;: &quot;application/json&quot;
-      },
-      {
+    &quot;headers&quot;: {
+        &quot;Accept&quot;: &quot;application/json&quot;,
         &quot;Content-Type&quot;: &quot;application/json&quot;
-      }
-    ]
+    }
   }
 }
 </code></pre>
