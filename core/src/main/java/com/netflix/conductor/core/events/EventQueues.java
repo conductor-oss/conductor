@@ -54,7 +54,7 @@ public class EventQueues {
 		return providers.values().stream().map(p -> p.getClass().getName()).collect(Collectors.toList());
 	}
 	
-	public static ObservableQueue getQueue(String event) {
+	public static ObservableQueue getQueue(String event, boolean throwException) {
 		String typeVal = event.substring(0, event.indexOf(':'));
 		String queueURI = event.substring(event.indexOf(':') + 1);
 		QueueType type = QueueType.valueOf(typeVal);
@@ -64,6 +64,9 @@ public class EventQueues {
 				return provider.getQueue(queueURI);
 			} catch(Exception e) {
 				logger.error(e.getMessage(), e);
+				if(throwException) {
+					throw e;
+				}
 			}
 		}
 		return null;

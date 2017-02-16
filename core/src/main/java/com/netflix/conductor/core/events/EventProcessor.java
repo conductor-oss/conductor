@@ -103,7 +103,7 @@ public class EventProcessor {
 		Set<String> events = ms.getEventHandlers().stream().map(eh -> eh.getEvent()).collect(Collectors.toSet());
 		List<ObservableQueue> created = new LinkedList<>();
 		events.stream().forEach(event -> queuesMap.computeIfAbsent(event, s -> {
-			ObservableQueue q = EventQueues.getQueue(event);
+			ObservableQueue q = EventQueues.getQueue(event, false);
 			created.add(q);
 			return q;
 		}));
