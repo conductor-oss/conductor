@@ -24,6 +24,7 @@ import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.events.queue.Message;
 
 /**
  * @author Viren
@@ -236,5 +237,12 @@ public interface ExecutionDAO {
 	 * @return list of matching events
 	 */
 	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max);
+
+	/**
+	 * Adds an incoming external message into the store/index
+	 * @param queue Name of the registered queue
+	 * @param msg Message
+	 */
+	public abstract void addMessage(String queue, Message msg);
 
 }

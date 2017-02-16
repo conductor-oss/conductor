@@ -121,8 +121,8 @@ public class EventProcessor {
 		try {
 			
 			String payload = msg.getPayload();
+			es.addMessage(queue.getName(), msg);
 			logger.debug("Got Message: " + payload);
-			
 			
 			String event = queue.getType() + ":" + queue.getName();
 			List<EventHandler> handlers = ms.getEventHandlersForEvent(event, true);

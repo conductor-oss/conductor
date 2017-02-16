@@ -64,6 +64,7 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.IndexDAO;
@@ -88,6 +89,8 @@ public class ElasticSearchDAO implements IndexDAO {
 	private static final String LOG_DOC_TYPE = "task";
 	
 	private static final String EVENT_DOC_TYPE = "event";
+	
+	private static final String MSG_DOC_TYPE = "message";
 	
 	private static final String className = ElasticSearchDAO.class.getSimpleName();
 	
@@ -232,6 +235,34 @@ public class ElasticSearchDAO implements IndexDAO {
 				taskExecLog.setCreated(System.currentTimeMillis());
 				IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
 				request.source(om.writeValueAsBytes(taskExecLog));
+	 			client.index(request).actionGet();
+	 			break;
+	 			
+			} catch (Throwable e) {
+				log.error("Indexing failed {}", e.getMessage(), e);
+				retry--;
+				if(retry > 0) {
+					Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+				}
+			}
+		}
+		
+	}
+	
+	@Override
+	public void addMessage(String queue, Message msg) {
+		
+		int retry = 3;
+		while(retry > 0) {
+			try {
+				
+				Map<String, Object> doc = new HashMap<>();
+				doc.put("messageId", msg.getId());
+				doc.put("payload", msg.getPayload());
+				doc.put("queue", queue);
+				doc.put("created", System.currentTimeMillis());
+				IndexRequest request = new IndexRequest(logIndexName, MSG_DOC_TYPE);
+				request.source(doc);
 	 			client.index(request).actionGet();
 	 			break;
 	 			
