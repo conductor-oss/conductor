@@ -23,8 +23,6 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -423,7 +421,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	public boolean addEventExecution(EventExecution ee) {
 		try {
 			
-			String key = nsKey(EVENT_EXECUTION, ee.getName(), ee.getEvent());
+			String key = nsKey(EVENT_EXECUTION, ee.getName(), ee.getEvent(), ee.getMessageId());
 			String json = om.writeValueAsString(ee);
 			logger.info("adding event execution {}", key);
 			if(dynoClient.hsetnx(key, ee.getId(), json) == 1L) {
@@ -441,9 +439,9 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	public void updateEventExecution(EventExecution ee) {
 		try {
 			
-			String key = nsKey(EVENT_EXECUTION, ee.getName(), ee.getEvent());
+			String key = nsKey(EVENT_EXECUTION, ee.getName(), ee.getEvent(), ee.getMessageId());
 			String json = om.writeValueAsString(ee);
-			logger.info("adding event execution {}", key);
+			logger.info("updating event execution {}", key);
 			if(dynoClient.hset(key, ee.getId(), json) == 1L) {
 				indexer.add(ee);
 			}
@@ -452,25 +450,26 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		}
 	}
 	
-	
 	@Override
 	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max) {
 		try {
 			
-			String key = nsKey(EVENT_EXECUTION, eventHandlerName, eventName, messageId) + "_*";
+			String key = nsKey(EVENT_EXECUTION, eventHandlerName, eventName, messageId);
 			logger.info("getting event execution {}", key);
-			Map<String, String> keys = dynoClient.hscan(key, max);
 			List<EventExecution> executions = new LinkedList<>();
-
-			for (Entry<String, String> e : keys.entrySet()) {
-				String json = e.getValue();
-				EventExecution ee = om.readValue(json, EventExecution.class);
-				executions.add(ee);
+			for(int i = 0; i < max; i++) {
+				String field = messageId + "_" + i;
+				String value = dynoClient.hget(key, field);
+				if(value != null) {
+					EventExecution ee = om.readValue(value, EventExecution.class);
+					executions.add(ee);	
+				}
 			}
-
 			return executions;
+			
 		} catch (Exception e) {
 			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
 		}
 	}
+	
 }

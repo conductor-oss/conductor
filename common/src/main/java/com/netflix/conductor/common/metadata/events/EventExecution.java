@@ -35,6 +35,8 @@ public class EventExecution {
 	
 	private String id;
 	
+	private String messageId;
+	
 	private String name;
 	
 	private String event;
@@ -51,8 +53,9 @@ public class EventExecution {
 		
 	}
 	
-	public EventExecution(String id) {
+	public EventExecution(String id, String messageId) {
 		this.id = id;
+		this.messageId = messageId;
 	}
 	
 	/**
@@ -68,6 +71,22 @@ public class EventExecution {
 	 */
 	public void setId(String id) {
 		this.id = id;
+	}
+
+	
+	/**
+	 * @return the messageId
+	 */
+	public String getMessageId() {
+		return messageId;
+	}
+
+	/**
+	 * @param messageId the messageId to set
+	 * 
+	 */
+	public void setMessageId(String messageId) {
+		this.messageId = messageId;
 	}
 
 	/**

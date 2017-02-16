@@ -134,7 +134,7 @@ public class EventProcessor {
 				for(Action action : actions) {
 					String id = msg.getId() + "_" + i++;
 					
-					EventExecution ee = new EventExecution(id);
+					EventExecution ee = new EventExecution(id, msg.getId());
 					ee.setCreated(System.currentTimeMillis());
 					ee.setEvent(handler.getEvent());
 					ee.setName(handler.getName());

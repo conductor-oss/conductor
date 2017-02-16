@@ -257,7 +257,7 @@ public class WorkflowServiceTest {
 		templateWf.setName("template_workflow");
 		WorkflowTask wft = new WorkflowTask();
 		wft.setName(templatedTask.getName());
-		wft.setType(Type.SIMPLE);
+		wft.setWorkflowTaskType(Type.SIMPLE);
 		wft.setTaskReferenceName("t0");
 		templateWf.getTasks().add(wft);
 		templateWf.setSchemaVersion(2);

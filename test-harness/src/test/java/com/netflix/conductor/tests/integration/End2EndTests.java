@@ -95,12 +95,12 @@ public class End2EndTests {
 		def.setName("test");
 		WorkflowTask t0 = new WorkflowTask();
 		t0.setName("t0");
-		t0.setType(Type.SIMPLE);
+		t0.setWorkflowTaskType(Type.SIMPLE);
 		t0.setTaskReferenceName("t0");
 		
 		WorkflowTask t1 = new WorkflowTask();
 		t1.setName("t1");
-		t1.setType(Type.SIMPLE);
+		t1.setWorkflowTaskType(Type.SIMPLE);
 		t1.setTaskReferenceName("t1");
 		
 		

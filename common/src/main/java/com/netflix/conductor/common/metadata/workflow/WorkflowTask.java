@@ -139,7 +139,7 @@ public class WorkflowTask {
 		return type;
 	}
 
-	public void setType(Type type) {
+	public void setWorkflowTaskType(Type type) {
 		this.type = type.name();
 	}
 	
