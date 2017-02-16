@@ -121,16 +121,17 @@ public class EventProcessor {
 		try {
 			
 			String payload = msg.getPayload();
-			logger.info("Got Message: " + payload);
+			logger.debug("Got Message: " + payload);
 			
 			int i = 0;
 			String event = queue.getType() + ":" + queue.getName();
 			List<EventHandler> handlers = ms.getEventHandlersForEvent(event, true);
+			logger.debug("Handlers for the event {}, {}", handlers, event);
+			
 			List<Future<Void>> futures = new LinkedList<>();
 			for(EventHandler handler : handlers) {
 				List<Action> actions = handler.getActions();
 				for(Action action : actions) {
-					
 					String id = msg.getId() + "_" + i++;
 					
 					EventExecution ee = new EventExecution(id);
@@ -142,6 +143,8 @@ public class EventProcessor {
 					if (es.addEventExecution(ee)) {
 						Future<Void> future = execute(ee, action, payload);
 						futures.add(future);
+					} else {
+						logger.warn("Duplicate delivery/execution? {}", id);
 					}
 				}
 			}
@@ -164,7 +167,7 @@ public class EventProcessor {
 	private Future<Void> execute(EventExecution ee, Action action, String payload) {
 		return executors.submit(()->{
 			try {
-				
+				logger.debug("Executing {} with payload {}", action.getAction(), payload);
 				ap.execute(action, payload);
 				ee.setStatus(Status.COMPLETED);
 				return null;

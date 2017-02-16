@@ -1,6 +1,7 @@
 dependencies {
 
 	compile project(':conductor-core')
+	compile 'redis.clients:jedis:2.8.1'
 	compile 'com.google.inject:guice:3.0'
 	compile ('com.netflix.dyno:dyno-jedis:1.5.8-rc.1') { force = true}
  	compile ('com.netflix.dyno-queues:dyno-queues-redis:1.0.6') {

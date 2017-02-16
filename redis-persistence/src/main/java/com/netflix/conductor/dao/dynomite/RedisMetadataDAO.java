@@ -231,7 +231,6 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 			throw new ApplicationException(Code.NOT_FOUND, "EventHandler with name " + eventHandler.getName() + " not found!");
 		}
 		index(eventHandler);
-		removeIndex(existing);
 		dynoClient.hset(nsKey(EVENT_HANDLERS), eventHandler.getName(), toJson(eventHandler));
 	}
 
