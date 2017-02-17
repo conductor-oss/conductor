@@ -22,10 +22,6 @@ import com.google.inject.AbstractModule;
 import com.netflix.conductor.core.events.ActionProcessor;
 import com.netflix.conductor.core.events.EventProcessor;
 import com.netflix.conductor.core.events.queue.dyno.DynoEventQueueProvider;
-import com.netflix.conductor.core.execution.tasks.Event;
-import com.netflix.conductor.core.execution.tasks.Join;
-import com.netflix.conductor.core.execution.tasks.SubWorkflow;
-import com.netflix.conductor.core.execution.tasks.Wait;
 
 
 /**
@@ -38,11 +34,7 @@ public class CoreModule extends AbstractModule {
 	protected void configure() {
 		bind(DynoEventQueueProvider.class).asEagerSingleton();
 		bind(ActionProcessor.class).asEagerSingleton();
-		bind(EventProcessor.class).asEagerSingleton();
-		bind(SubWorkflow.class).toInstance(new SubWorkflow());
-		bind(Join.class).toInstance(new Join());
-		bind(Event.class).toInstance(new Event());
-		bind(Wait.class).toInstance(new Wait());
+		bind(EventProcessor.class).asEagerSingleton();		
 	}
 	
 }
