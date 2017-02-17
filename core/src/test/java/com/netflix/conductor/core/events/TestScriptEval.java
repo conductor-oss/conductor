@@ -38,7 +38,5 @@ public class TestScriptEval {
 		assertTrue(ScriptEvaluator.evalBool(script3, payload));
 		assertFalse(ScriptEvaluator.evalBool(script4, payload));
 		
-		payload.clear();
-		assertTrue(ScriptEvaluator.evalBool(script3, payload));
 	}
 }
