@@ -113,7 +113,9 @@ public class Event extends WorkflowSystemTask {
 		
 		String event = null;
 		if(sink == Sink.conductor) {
-			event = "conductor:" + workflow.getWorkflowType() + "_" + workflow.getVersion() + "_" + task.getReferenceTaskName();			
+			String cq = workflow.getWorkflowType() + "_" + workflow.getVersion() + "_" + task.getReferenceTaskName();
+			event = "conductor:" + cq;
+			task.getOutputData().put("conductor_queue", cq);
 		} else if(sink == Sink.sqs ) {
 			event = ""+task.getInputData().get("sink");
 		}
