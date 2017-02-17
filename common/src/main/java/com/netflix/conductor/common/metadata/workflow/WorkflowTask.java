@@ -90,6 +90,8 @@ public class WorkflowTask {
 	
 	private List<String> joinOn = new LinkedList<>();
 	
+	private String sink;
+	
 	/**
 	 * @return the name
 	 */
@@ -294,6 +296,22 @@ public class WorkflowTask {
 		this.joinOn = joinOn;
 	}
 
+	/**
+	 * 
+	 * @return Sink value for the EVENT type of task
+	 */
+	public String getSink() {
+		return sink;
+	}
+	
+	/**
+	 * 
+	 * @param sink Name of the sink
+	 */
+	public void setSink(String sink) {
+		this.sink = sink;
+	}
+	
 	private Collection<List<WorkflowTask>> children(){
 		Collection<List<WorkflowTask>> v1 = new LinkedList<>();
 		Type tt = Type.USER_DEFINED;

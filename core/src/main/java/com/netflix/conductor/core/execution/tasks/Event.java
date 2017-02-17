@@ -19,16 +19,19 @@
 package com.netflix.conductor.core.execution.tasks;
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
-import javax.inject.Inject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import com.netflix.conductor.core.events.queue.dyno.DynoEventQueueProvider;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 
 /**
@@ -36,23 +39,36 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
  *
  */
 public class Event extends WorkflowSystemTask {
-
-	private DynoEventQueueProvider queueProvider;
+	
+	private static Logger logger = LoggerFactory.getLogger(Event.class);
 	
 	private ObjectMapper om = new ObjectMapper();
 	
-	@Inject
-	public Event(DynoEventQueueProvider queueProvider) {
+	private enum Sink {
+		conductor, sqs
+	}
+	
+	public Event() {
 		super("EVENT");
-		this.queueProvider = queueProvider;
 	}
 	
 	@Override
 	public void start(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
-		String payload = om.writeValueAsString(task.getInputData());
-		Message message = new Message(task.getTaskId(), payload, task.getTaskId());
-		getQueue(workflow, task).publish(Arrays.asList(message));
-		task.setStatus(Status.COMPLETED);
+		
+		Map<String, Object> payload = new HashMap<>();
+		payload.putAll(task.getInputData());
+		payload.put("workflowInstanceId", workflow.getWorkflowId());
+		payload.put("workflowType", workflow.getWorkflowType());
+		payload.put("workflowVersion", workflow.getVersion());
+		payload.put("correlationId", workflow.getCorrelationId());
+		
+		String payloadJson = om.writeValueAsString(payload);
+		Message message = new Message(task.getTaskId(), payloadJson, task.getTaskId());
+		ObservableQueue queue = getQueue(workflow, task);
+		if(queue != null) {
+			queue.publish(Arrays.asList(message));
+			task.setStatus(Status.COMPLETED);
+		}
 	}
 
 	@Override
@@ -78,7 +94,38 @@ public class Event extends WorkflowSystemTask {
 	}
 
 	private ObservableQueue getQueue(Workflow workflow, Task task) {
-		String queueName = workflow.getWorkflowType() + "_" + workflow.getVersion() + "_" + task.getReferenceTaskName();
-		return queueProvider.getQueue(queueName);
+		String sinkValue = "" + task.getInputData().get("sink");
+		int indx = sinkValue.indexOf(':');
+		if(indx != -1) {
+			sinkValue = sinkValue.substring(0, indx);
+		}
+		Sink sink = null;
+		try {
+			sink = Sink.valueOf(sinkValue);
+		}catch(Exception e) {
+			logger.error(e.getMessage(), e);
+		}
+		if(sink == null) {
+			task.setStatus(Status.FAILED);
+			task.setReasonForIncompletion("Invalid sink specified: " + sinkValue);
+			return null;
+		}
+		
+		String event = null;
+		if(sink == Sink.conductor) {
+			event = "conductor:" + workflow.getWorkflowType() + "_" + workflow.getVersion() + "_" + task.getReferenceTaskName();			
+		} else if(sink == Sink.sqs ) {
+			event = ""+task.getInputData().get("sink");
+		}
+		
+		try {
+			return EventQueues.getQueue(event, true);
+		}catch(Exception e) {
+			logger.error(e.getMessage(), e);
+			task.setStatus(Status.FAILED);
+			task.setReasonForIncompletion("Error when trying to access the specified queue/topic: " + sinkValue + ", error: " + e.getMessage());
+			return null;			
+		}
+		
 	}
 }

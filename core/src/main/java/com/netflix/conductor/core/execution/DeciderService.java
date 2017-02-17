@@ -560,7 +560,7 @@ public class DeciderService {
 				if(taskId == null) taskId = IDGenerator.generate();
 				Map<String, Object> eventTaskInput = pu.getTaskInputV2(taskToSchedule.getInputParameters(), workflow, taskId, null);
 				Task eventTask = SystemTask.eventTask(workflow.getWorkflowId(), taskId, 
-						workflow.getCorrelationId(), taskToSchedule.getTaskReferenceName(), eventTaskInput);
+						workflow.getCorrelationId(), taskToSchedule.getTaskReferenceName(), taskToSchedule.getSink(), eventTaskInput);
 				tasks.add(eventTask);
 				break;
 			default:

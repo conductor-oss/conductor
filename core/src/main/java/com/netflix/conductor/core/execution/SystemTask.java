@@ -34,7 +34,7 @@ import com.netflix.conductor.common.run.Workflow;
  *
  */
 public class SystemTask extends Task {
-
+	
 	private SystemTask(){}
 
 	public static Task decisionTask(String workflowId, String taskId, String correlationId, String refName, Map<String, Object> input, String caseValue, List<String> caseOuput){
@@ -100,7 +100,7 @@ public class SystemTask extends Task {
 		return st;
 	}	
 	
-	public static Task eventTask(String workflowId, String taskId, String correlationId, String refName, Map<String, Object> input){
+	public static Task eventTask(String workflowId, String taskId, String correlationId, String refName, String sink, Map<String, Object> input){
 		SystemTask st = new SystemTask();
 		st.setTaskType(SystemTaskType.EVENT.name());
 		st.setTaskDefName(SystemTaskType.EVENT.name());
@@ -110,6 +110,7 @@ public class SystemTask extends Task {
 		st.setScheduledTime(System.currentTimeMillis());
 		st.setEndTime(System.currentTimeMillis());
 		st.setInputData(input);
+		st.getInputData().put("sink", sink);
 		st.setTaskId(taskId);
 		st.setStatus(Status.IN_PROGRESS);
 		return st;
