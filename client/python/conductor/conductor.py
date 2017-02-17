@@ -251,7 +251,7 @@ class WFClientMgr:
 
 def main():
     if len(sys.argv) < 3 :
-        print "Usage - pyhton conductor server_url command parameters..."
+        print "Usage - python conductor server_url command parameters..."
         return None
 
     server_url = sys.argv[1]
@@ -260,7 +260,7 @@ def main():
     wfc = wfcMgr.workflowClient
     if command == 'start':
         if len(sys.argv) < 7:
-            print 'pyhton conductor server_url start workflow_name input_json [version] [correlationId]'
+            print 'python conductor server_url start workflow_name input_json [version] [correlationId]'
             return None;
         wfName = sys.argv[3]
         version = sys.argv[4]
@@ -271,7 +271,7 @@ def main():
         return workflowId
     elif command == 'get':
         if len(sys.argv) < 4:
-            print 'pyhton conductor server_url get workflow_id'
+            print 'python conductor server_url get workflow_id'
             return None
         wfId = sys.argv[3]
         wfjson = wfc.getWorkflow(wfId)
@@ -279,7 +279,7 @@ def main():
         return wfjson
     elif command == 'terminate':
         if len(sys.argv) < 4:
-            print 'pyhton conductor server_url terminate workflow_id'
+            print 'python conductor server_url terminate workflow_id'
             return None
         wfId = sys.argv[3]
         wfjson = wfc.terminateWorkflow(wfId)

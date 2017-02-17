@@ -35,6 +35,9 @@ def getStatus(workflowId):
 Task worker execution APIs facilitates execution of a task worker using python client.
 The API provides necessary mechanism to poll for task work at regular interval and executing the python worker in a separate threads.
 
+### Example
+The following python script demonstrates workers for the kitchensink workflow.
+
 ```python
 from conductor.ConductorWorker import ConductorWorker
 
