@@ -30,7 +30,7 @@ import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 public class EventExecution {
 
 	public enum Status {
-		IN_PROGRESS, COMPLETED, FAILED
+		IN_PROGRESS, COMPLETED, FAILED, SKIPPED
 	}
 	
 	private String id;

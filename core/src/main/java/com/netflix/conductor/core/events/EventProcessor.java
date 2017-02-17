@@ -34,9 +34,11 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventExecution.Status;
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -66,12 +68,15 @@ public class EventProcessor {
 	
 	private ExecutorService executors;
 	
+	private ObjectMapper om;
+	
 	@Inject
-	public EventProcessor(ExecutionService es, MetadataService ms, ActionProcessor ap, Configuration config) {
+	public EventProcessor(ExecutionService es, MetadataService ms, ActionProcessor ap, Configuration config, ObjectMapper om) {
 		this.es = es;
 		this.ms = ms;
 		this.ap = ap;
-
+		this.om = om;
+		
 		int executorThreadCount = config.getIntProperty("workflow.event.processor.thread.count", 2);
 		this.executors = Executors.newFixedThreadPool(executorThreadCount);
 		
@@ -120,16 +125,43 @@ public class EventProcessor {
 		
 		try {
 			
+			List<Future<Void>> futures = new LinkedList<>();
+			
 			String payload = msg.getPayload();
+			Object payloadObj = null;
+			if(payload != null) {
+				try {
+					payloadObj = om.readValue(payload, Object.class);
+				}catch(Exception e) {
+					payloadObj = payload;
+				}
+			}
+			
 			es.addMessage(queue.getName(), msg);
-			logger.debug("Got Message: " + payload);
 			
 			String event = queue.getType() + ":" + queue.getName();
 			List<EventHandler> handlers = ms.getEventHandlersForEvent(event, true);
-			logger.debug("Handlers for the event {}, {}", handlers, event);
 			
-			List<Future<Void>> futures = new LinkedList<>();
 			for(EventHandler handler : handlers) {
+				
+				String condition = handler.getCondition();
+				logger.info("condition: {}", condition);
+				if(!StringUtils.isEmpty(condition)) {
+					Boolean success = ScriptEvaluator.evalBool(condition, payloadObj);
+					if(!success) {
+						logger.info("handler {} condition {} did not match payload {}", handler.getName(), condition, payloadObj);
+						EventExecution ee = new EventExecution(msg.getId() + "_0", msg.getId());
+						ee.setCreated(System.currentTimeMillis());
+						ee.setEvent(handler.getEvent());
+						ee.setName(handler.getName());
+						ee.setStatus(Status.SKIPPED);
+						ee.getOutput().put("msg", payload);
+						ee.getOutput().put("condition", condition);
+						es.addEventExecution(ee);
+						continue;
+					}
+				}
+				
 				int i = 0;
 				List<Action> actions = handler.getActions();
 				for(Action action : actions) {

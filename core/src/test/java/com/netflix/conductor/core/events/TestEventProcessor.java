@@ -20,6 +20,7 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
@@ -105,7 +106,7 @@ public class TestEventProcessor {
 		
 		ActionProcessor ap = new ActionProcessor(executor, metadata);
 		
-		EventProcessor ep = new EventProcessor(eservice, ms, ap, new TestConfiguration());
+		EventProcessor ep = new EventProcessor(eservice, ms, ap, new TestConfiguration(), new ObjectMapper());
 		assertNotNull(ep.getQueues());
 		assertEquals(1, ep.getQueues().size());
 		
