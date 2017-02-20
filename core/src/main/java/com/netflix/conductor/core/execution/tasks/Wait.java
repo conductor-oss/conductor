@@ -16,13 +16,12 @@
 /**
  * 
  */
-package com.netflix.conductor.contribs.tasks;
+package com.netflix.conductor.core.execution.tasks;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 
 /**
  * @author Viren

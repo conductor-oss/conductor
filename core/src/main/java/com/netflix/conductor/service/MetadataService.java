@@ -23,10 +23,13 @@ import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.WorkflowContext;
+import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -99,9 +102,63 @@ public class MetadataService {
 	}
 
 	public void registerWorkflowDef(WorkflowDef def) throws Exception {
+		if(def.getName().contains(":")) {
+			throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
+		}
 		metadata.create(def);
 	}
 
+	/**
+	 * 
+	 * @param eventHandler Event handler to be added.  
+	 * Will throw an exception if an event handler already exists with the name
+	 */
+	public void addEventHandler(EventHandler eventHandler) {
+		validateEvent(eventHandler);
+		metadata.addEventHandler(eventHandler);
+	}
+
+	/**
+	 * 
+	 * @param eventHandler Event handler to be updated.
+	 */
+	public void updateEventHandler(EventHandler eventHandler) {
+		validateEvent(eventHandler);
+		metadata.updateEventHandler(eventHandler);
+	}
 	
+	/**
+	 * 
+	 * @param name Removes the event handler from the system
+	 */
+	public void removeEventHandlerStatus(String name) {
+		metadata.removeEventHandlerStatus(name);
+	}
+
+	/**
+	 * 
+	 * @return All the event handlers registered in the system
+	 */
+	public List<EventHandler> getEventHandlers() {
+		return metadata.getEventHandlers();
+	}
+	
+	/**
+	 * 
+	 * @param event name of the event
+	 * @param activeOnly if true, returns only the active handlers
+	 * @return Returns the list of all the event handlers for a given event
+	 */
+	public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
+		return metadata.getEventHandlersForEvent(event, activeOnly);
+	}
+	
+	private void validateEvent(EventHandler eh) {
+		Preconditions.checkNotNull(eh.getName(), "Missing event handler name");
+		Preconditions.checkNotNull(eh.getEvent(), "Missing event location");
+		Preconditions.checkNotNull(eh.getActions().isEmpty(), "No actions specified.  Please specify at-least one action");
+		String event = eh.getEvent();
+		EventQueues.getQueue(event, true);
+	}
 	
 }

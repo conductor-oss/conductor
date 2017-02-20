@@ -17,9 +17,12 @@ package com.netflix.conductor.dao;
 
 import java.util.List;
 
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.events.queue.Message;
 
 /**
  * 
@@ -64,6 +67,26 @@ public interface IndexDAO {
 	 * @param value value
 	 */
 	public void update(String workflowInstanceId, String key, Object value);
+
+	/**
+	 * 
+	 * @param log Task Execution log to be indexed
+	 */
+	public void add(TaskExecLog log);
+	
+	
+	/**
+	 * 
+	 * @param ee Event Execution to be indexed
+	 */
+	public void add(EventExecution ee);
+
+	/**
+	 * Adds an incoming external message into the index
+	 * @param queue Name of the registered queue
+	 * @param msg Message
+	 */
+	public void addMessage(String queue, Message msg);
 	
 
 }

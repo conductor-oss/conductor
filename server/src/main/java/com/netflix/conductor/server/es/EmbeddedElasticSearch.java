@@ -17,11 +17,9 @@ package com.netflix.conductor.server.es;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 
 import org.apache.commons.io.FileUtils;
 import org.elasticsearch.client.Client;
@@ -73,11 +71,6 @@ public class EmbeddedElasticSearch {
 		});
 		logger.info("ElasticSearch cluster {} started in local mode on port {}", instance.settings().get("cluster.name"), getPort());
 		client = instance.client();
-		URL template = EmbeddedElasticSearch.class.getClassLoader().getResource("es_template.json");
-		byte[] source = Files.readAllBytes(Paths.get(template.getFile()));
-		
-		client.admin().indices().preparePutTemplate("conductor_template").setSource(source).get();
-		client.admin().indices().prepareCreate("conductor").execute().actionGet();
 	}
 
 	private static void setupDataDir(Settings settings) {

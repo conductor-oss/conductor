@@ -16,8 +16,10 @@
 package com.netflix.conductor.client.task;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -33,10 +35,11 @@ import org.slf4j.LoggerFactory;
 
 import com.netflix.appinfo.InstanceInfo.InstanceStatus;
 import com.netflix.conductor.client.http.TaskClient;
+import com.netflix.conductor.client.worker.PropertyFactory;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.servo.monitor.Stopwatch;
 
@@ -228,6 +231,11 @@ public class WorkflowTaskCoordinator {
 		
 		try {
 			
+			if(!worker.preAck(task)) {
+				logger.debug("Worker {} decided not to ack the task {}", taskType, task.getTaskId());
+				return;
+			}
+			
 			if (!client.ack(task.getTaskId(), worker.getIdentity())) {
 				WorkflowTaskMetrics.ackFailed(worker.getTaskDefName());
 				logger.error("Ack failed for {}, id {}", taskType, task.getTaskId());
@@ -240,32 +248,53 @@ public class WorkflowTaskCoordinator {
 			return;
 		}
 		
-		Task updatedTask = task;
+		TaskResult result = new TaskResult(task);
+		result.getLog().getEnvironment().putAll(getEnvData(worker));
 		Stopwatch sw = WorkflowTaskMetrics.executionTimer(worker.getTaskDefName());
 		
 		try {
 			
 			logger.debug("Executing task {} on worker {}", task, worker.getClass().getSimpleName());
-			updatedTask = worker.execute(task);
+			result = worker.execute(task);
 			
 		} catch (Exception e) {
+			logger.error("Unable to execute task {}", task, e);
 			
 			WorkflowTaskMetrics.executionException(worker.getTaskDefName(), e);
-			logger.error("Unable to execute task {}", task, e);
-			updatedTask.setStatus(TaskResult.Status.FAILED);
-			updatedTask.setStatus(Status.FAILED);
-			updatedTask.setReasonForIncompletion("Error while executing the task: " + e);
+			result.setStatus(TaskResult.Status.FAILED);
+			result.setReasonForIncompletion("Error while executing the task: " + e);
+			TaskExecLog execLog = result.getLog();
+			execLog.setError(e.getMessage());
+			for (StackTraceElement ste : e.getStackTrace()) {
+				execLog.getErrorTrace().add(ste.toString());
+			}
 			
 		} finally {
 			sw.stop();
 		}
 		
 		logger.debug("Task {} executed by worker {} with status {}", task.getTaskId(), worker.getClass().getSimpleName(), task.getStatus());
-		updateWithRetry(updateRetryCount, task, worker);
+		updateWithRetry(updateRetryCount, task, result, worker);
 		
 	}
 	
-	private void updateWithRetry(int count, Task task, Worker worker) {
+	private Map<String, Object> getEnvData(Worker worker) {
+		String props = worker.getLoggingEnvProps();
+		Map<String, Object> data = new HashMap<>();
+		if(props == null || props.trim().length() == 0) {
+			return data;
+		}
+		String[] properties = props.split(",");
+		String workerName = worker.getTaskDefName();
+		for(String property : properties) {
+			String value = PropertyFactory.getString(workerName, property, System.getenv(property));
+			data.put(property, value);
+		}
+		
+		return data;
+	}
+	
+	private void updateWithRetry(int count, Task task, TaskResult result, Worker worker) {
 		
 		if(count < 0) {
 			worker.onErrorUpdate(task);
@@ -273,14 +302,14 @@ public class WorkflowTaskCoordinator {
 		}
 		
 		try{
-			client.updateTask(task);
+			client.updateTask(result);
 			return;
 		}catch(Throwable t) {
 			WorkflowTaskMetrics.updateTaskError(worker.getTaskDefName(), t);
-			logger.error("Unable to update {} on count {}", task, count, t);
+			logger.error("Unable to update {} on count {}", result, count, t);
 			try {
 				Thread.sleep(sleepWhenRetry);
-				updateWithRetry(--count, task, worker);
+				updateWithRetry(--count, task, result, worker);
 			} catch (InterruptedException e) {
 				// exit retry loop and propagate
 				Thread.currentThread().interrupt();

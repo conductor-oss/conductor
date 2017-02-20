@@ -76,6 +76,11 @@ public class ParametersUtils {
 		return replaced;
 	}
 	
+	public Map<String, Object> replace(Map<String, Object> input, String json) {
+		DocumentContext io = JsonPath.parse(json, option);
+		return replace(input, io, null);
+	}
+	
 	@SuppressWarnings("unchecked")
 	private Map<String, Object> replace(Map<String, Object> input, DocumentContext io, String taskId) {
 		for (Entry<String, Object> e : input.entrySet()) {

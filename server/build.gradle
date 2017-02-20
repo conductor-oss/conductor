@@ -1,35 +1,12 @@
+plugins {
+	id 'com.github.johnrengelman.shadow' version '1.2.3'
+}
+
 configurations.all {
     resolutionStrategy {
 		force 'com.fasterxml.jackson.core:jackson-core:2.7.5'
     }
 }
-
-buildscript {
- 	repositories {
-        jcenter()
-    }
-    dependencies {
-        classpath 'com.github.jengelman.gradle.plugins:shadow:1.2.4'
-    }
-}
-
-publishing {
-  publications {
-    shadow(MavenPublication) {
-      from components.shadow
-    }
-  }
-}
-
-artifactory {
-	publish {
-		defaults {
-			publishArtifacts = true
-            publications('shadow')
-		}
-	}
-}
-apply plugin: 'com.github.johnrengelman.shadow'
 
 dependencies {
  
@@ -56,14 +33,23 @@ dependencies {
 }
 
 shadowJar {
+   mergeServiceFiles()
    configurations = [project.configurations.compile]
    manifest {
        attributes 'Description': 'Self contained Conductor server jar'
        attributes 'Main-Class' : 'com.netflix.conductor.server.Main'
    }
 }
+publishing {
+  publications {
+    nebula(MavenPublication) {
+      artifact shadowJar
+    }
+  }
+}
 
 build.dependsOn('shadowJar')
+
 task server(type: JavaExec) {
   systemProperty 'workflow.elasticsearch.url', 'localhost:9300'
   systemProperty 'loadSample', 'true'

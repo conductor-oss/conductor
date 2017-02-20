@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2017 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,26 +16,15 @@
 /**
  * 
  */
-package com.netflix.conductor.client.client.worker;
+package com.netflix.conductor.core.events;
 
-import static org.junit.Assert.*;
-
-import org.junit.Test;
-
-import com.netflix.conductor.client.worker.Worker;
-import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
 
 /**
  * @author Viren
  *
  */
-public class TestWorker {
+public interface EventQueueProvider {
 
-	@Test
-	public void testIdentity(){
-		Worker worker = Worker.create("Test", (Task task)->{
-			return task;
-		});
-		assertNotNull(worker.getIdentity());
-	}
+	public ObservableQueue getQueue(String queueURI);
 }

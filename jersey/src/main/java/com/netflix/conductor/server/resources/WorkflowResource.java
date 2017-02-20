@@ -78,7 +78,7 @@ public class WorkflowResource {
 		this.executor = executor;
 		this.service = service;
 		this.metadata = metadata;
-		this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 100);
+		this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
 	}
 
 	@POST

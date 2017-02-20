@@ -49,7 +49,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.contribs.http.HttpTask.HttpResponse;
 import com.netflix.conductor.contribs.http.HttpTask.Input;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -58,6 +57,7 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
  * @author Viren
  *
  */
+@SuppressWarnings("unchecked")
 public class TestHttpTask {
 
 	private static final String ERROR_RESPONSE = "Something went wrong!";
@@ -110,7 +110,6 @@ public class TestHttpTask {
 		httpTask = new HttpTask(rcm, config);
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testPost() throws Exception {
 
@@ -126,8 +125,8 @@ public class TestHttpTask {
 		
 		httpTask.start(workflow, task, executor);
 		assertEquals(task.getReasonForIncompletion(), Task.Status.COMPLETED, task.getStatus());
-		HttpResponse hr = (HttpResponse) task.getOutputData().get("response");
-		Object response = hr.body;
+		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
+		Object response = hr.get("body");
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
 		assertTrue("response is: " + response, response instanceof Map);
 		Map<String, Object> map = (Map<String, Object>) response;
@@ -153,8 +152,8 @@ public class TestHttpTask {
 		
 		httpTask.start(workflow, task, executor);
 		assertEquals(task.getReasonForIncompletion(), Task.Status.COMPLETED, task.getStatus());
-		HttpResponse hr = (HttpResponse) task.getOutputData().get("response");
-		Object response = hr.body;
+		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
+		Object response = hr.get("body");
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
 		assertNull("response is: " + response, response);
 	}
@@ -189,8 +188,8 @@ public class TestHttpTask {
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
 		httpTask.start(workflow, task, executor);
-		HttpResponse hr = (HttpResponse) task.getOutputData().get("response");
-		Object response = hr.body;
+		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
+		Object response = hr.get("body");
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
 		assertEquals(TEXT_RESPONSE, response);	
 	}
@@ -205,14 +204,13 @@ public class TestHttpTask {
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
 		httpTask.start(workflow, task, executor);
-		HttpResponse hr = (HttpResponse) task.getOutputData().get("response");
-		Object response = hr.body;
+		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
+		Object response = hr.get("body");
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
 		assertEquals(NUM_RESPONSE, response);
 		assertTrue(response instanceof Number);
 	}
 	
-	@SuppressWarnings("unchecked")
 	@Test
 	public void testJsonGET() throws Exception {
 
@@ -223,15 +221,14 @@ public class TestHttpTask {
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
 		httpTask.start(workflow, task, executor);
-		HttpResponse hr = (HttpResponse) task.getOutputData().get("response");
-		Object response = hr.body;
+		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
+		Object response = hr.get("body");
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
 		assertTrue(response instanceof Map);
 		Map<String, Object> map = (Map<String, Object>) response;
 		assertEquals(JSON_RESPONSE, om.writeValueAsString(map));
 	}
-	
-	@SuppressWarnings("unchecked")
+
 	@Test
 	public void testExecute() throws Exception {
 
@@ -244,8 +241,8 @@ public class TestHttpTask {
 		task.setScheduledTime(0);
 		httpTask.execute(workflow, task, executor);
 
-		HttpResponse hr = (HttpResponse) task.getOutputData().get("response");
-		Object response = hr.body;
+		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
+		Object response = hr.get("body");
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
 		assertTrue(response instanceof Map);
 		Map<String, Object> map = (Map<String, Object>) response;

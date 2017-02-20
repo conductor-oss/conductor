@@ -105,6 +105,11 @@ public class DynoProxy {
 		String retVal = dynoClient.set(key, value);
 		return retVal;
 	}
+	
+	public Long setnx(String key, String value) {
+		Long added = dynoClient.setnx(key, value);
+		return added;
+	}
 
 	public Long zadd(String key, double score, String member) {
 		Long retVal = dynoClient.zadd(key, score, member);
@@ -115,11 +120,33 @@ public class DynoProxy {
 		Long retVal = dynoClient.hset(key, field, value);
 		return retVal;
 	}
+	
+	public Long hsetnx(String key, String field, String value) {
+		Long retVal = dynoClient.hsetnx(key, field, value);
+		return retVal;
+	}
 
 	public String hget(String key, String field) {
 		return dynoClient.hget(key, field);
 	}
 
+	public Map<String, String> hscan(String key, int count) {
+		Map<String, String> m = new HashMap<>();
+		int cursor = 0;
+		do {
+			ScanResult<Entry<String, String>> sr = dynoClient.hscan(key, "" + cursor);
+			cursor = Integer.parseInt(sr.getStringCursor());
+			for (Entry<String, String> r : sr.getResult()) {
+				m.put(r.getKey(), r.getValue());
+			}
+			if(m.size() > count) {
+				break;
+			}
+		} while (cursor > 0);
+
+		return m;
+	}
+	
 	public Map<String, String> hgetAll(String key) {
 		Map<String, String> m = new HashMap<>();
 		JedisCommands dyno = dynoClient;

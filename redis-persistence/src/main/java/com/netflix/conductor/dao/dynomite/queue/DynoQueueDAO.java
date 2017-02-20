@@ -131,6 +131,12 @@ public class DynoQueueDAO implements QueueDAO {
 	}
 
 	@Override
+	public void push(String queueName, List<com.netflix.conductor.core.events.queue.Message> messages) {
+		List<Message> msgs = messages.stream().map(msg -> new Message(msg.getId(), msg.getPayload())).collect(Collectors.toList());
+		queues.get(queueName).push(msgs);
+	}
+	
+	@Override
 	public boolean pushIfNotExists(String queueName, String id, long offsetTimeInSecond) {
 		DynoQueue queue = queues.get(queueName);
 		if (queue.get(id) != null) {
@@ -148,6 +154,12 @@ public class DynoQueueDAO implements QueueDAO {
 		return msg.stream().map(m -> m.getId()).collect(Collectors.toList());
 	}
 
+	@Override
+	public List<com.netflix.conductor.core.events.queue.Message> pollMessages(String queueName, int count, int timeout) {
+		List<Message> msgs = queues.get(queueName).pop(count, timeout, TimeUnit.MILLISECONDS);
+		return msgs.stream().map(msg -> new com.netflix.conductor.core.events.queue.Message(msg.getId(), msg.getPayload(), null)).collect(Collectors.toList());
+	}
+	
 	@Override
 	public void remove(String queueName, String messageId) {
 		queues.get(queueName).remove(messageId);

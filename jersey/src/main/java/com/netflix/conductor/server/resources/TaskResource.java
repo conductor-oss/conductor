@@ -37,8 +37,10 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
+import com.netflix.conductor.service.MetadataService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -58,6 +60,8 @@ public class TaskResource {
 	private ExecutionService taskService;
 
 	private QueueDAO queues;
+	
+	private MetadataService metadata;
 
 	@Inject
 	public TaskResource(ExecutionService taskService, QueueDAO queues) {
@@ -111,15 +115,15 @@ public class TaskResource {
 
 	@POST
 	@ApiOperation("Update a task")
-	public void updateTask(Task task) throws Exception {
+	public String updateTask(TaskResult task) throws Exception {
 		taskService.updateTask(task);
+		return "\"" + task.getTaskId() + "\"";
 	}
 
 	@POST
 	@Path("/{taskId}/ack")
 	@ApiOperation("Ack Task is recieved")
 	@Consumes({ MediaType.WILDCARD })
-	@Produces({ MediaType.TEXT_PLAIN })
 	public String ack(@PathParam("taskId") String taskId, @QueryParam("workerid") String workerId) throws Exception {
 		return "" + taskService.ackTaskRecieved(taskId, workerId);
 	}

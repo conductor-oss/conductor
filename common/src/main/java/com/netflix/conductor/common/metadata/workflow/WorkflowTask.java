@@ -35,7 +35,7 @@ import java.util.Set;
 public class WorkflowTask {
 
 	public static enum Type {
-		SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, USER_DEFINED;
+		SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, EVENT, WAIT, USER_DEFINED;
 		
 		private static Set<String> systemTasks = new HashSet<>();
 		static {
@@ -46,6 +46,8 @@ public class WorkflowTask {
 			systemTasks.add(Type.DECISION.name());
 			systemTasks.add(Type.JOIN.name());
 			systemTasks.add(Type.SUB_WORKFLOW.name());
+			systemTasks.add(Type.EVENT.name());
+			systemTasks.add(Type.WAIT.name());
 			//Do NOT add USER_DEFINED here...
 		}
 		
@@ -87,6 +89,8 @@ public class WorkflowTask {
 	private SubWorkflowParams subWorkflow;
 	
 	private List<String> joinOn = new LinkedList<>();
+	
+	private String sink;
 	
 	/**
 	 * @return the name
@@ -137,7 +141,7 @@ public class WorkflowTask {
 		return type;
 	}
 
-	public void setType(Type type) {
+	public void setWorkflowTaskType(Type type) {
 		this.type = type.name();
 	}
 	
@@ -292,6 +296,22 @@ public class WorkflowTask {
 		this.joinOn = joinOn;
 	}
 
+	/**
+	 * 
+	 * @return Sink value for the EVENT type of task
+	 */
+	public String getSink() {
+		return sink;
+	}
+	
+	/**
+	 * 
+	 * @param sink Name of the sink
+	 */
+	public void setSink(String sink) {
+		this.sink = sink;
+	}
+	
 	private Collection<List<WorkflowTask>> children(){
 		Collection<List<WorkflowTask>> v1 = new LinkedList<>();
 		Type tt = Type.USER_DEFINED;

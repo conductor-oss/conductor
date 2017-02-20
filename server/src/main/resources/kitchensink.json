@@ -133,7 +133,7 @@
       "taskReferenceName": "task_30",
       "inputParameters": {
         "statuses": "${get_es_1.output..status}",
-        "fistWorkflowId": "${get_es_1.output.workflowId[0]}"
+        "workflowIds": "${get_es_1.output..workflowId}"
       },
       "type": "SIMPLE"
     }

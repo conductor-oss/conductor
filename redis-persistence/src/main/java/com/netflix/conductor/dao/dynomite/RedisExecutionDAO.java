@@ -31,9 +31,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.inject.Singleton;
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -53,6 +56,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	private final static String PENDING_WORKFLOWS = "PENDING_WORKFLOWS";
 	private final static String WORKFLOW_DEF_TO_WORKFLOWS = "WORKFLOW_DEF_TO_WORKFLOWS";
 	private final static String CORR_ID_TO_WORKFLOWS = "CORR_ID_TO_WORKFLOWS";
+	
+	private final static String EVENT_EXECUTION = "EVENT_EXECUTION";
 
 	private IndexDAO indexer;
 
@@ -155,6 +160,11 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		indexer.index(task);
 	}
 
+	@Override
+	public void addTaskExecLog(TaskExecLog log) {
+		indexer.add(log);		
+	}
+	
 	@Override
 	public void removeTask(String taskId) {
 
@@ -406,4 +416,68 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		String key = nsKey(PENDING_WORKFLOWS, workflowName);
 		return dynoClient.scard(key);
 	}
+
+
+	@Override
+	public boolean addEventExecution(EventExecution ee) {
+		try {
+			
+			String key = nsKey(EVENT_EXECUTION, ee.getName(), ee.getEvent(), ee.getMessageId());
+			String json = om.writeValueAsString(ee);
+			logger.info("adding event execution {}", key);
+			if(dynoClient.hsetnx(key, ee.getId(), json) == 1L) {
+				indexer.add(ee);
+				return true;
+			}
+			return false;
+			
+		} catch (Exception e) {
+			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
+		}
+	}
+	
+	@Override
+	public void updateEventExecution(EventExecution ee) {
+		try {
+			
+			String key = nsKey(EVENT_EXECUTION, ee.getName(), ee.getEvent(), ee.getMessageId());
+			String json = om.writeValueAsString(ee);
+			logger.info("updating event execution {}", key);
+			dynoClient.hset(key, ee.getId(), json);
+			indexer.add(ee);
+			
+		} catch (Exception e) {
+			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
+		}
+	}
+	
+	@Override
+	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max) {
+		try {
+			
+			String key = nsKey(EVENT_EXECUTION, eventHandlerName, eventName, messageId);
+			logger.info("getting event execution {}", key);
+			List<EventExecution> executions = new LinkedList<>();
+			for(int i = 0; i < max; i++) {
+				String field = messageId + "_" + i;
+				String value = dynoClient.hget(key, field);
+				if(value == null) {
+					break;
+				}	
+				EventExecution ee = om.readValue(value, EventExecution.class);
+				executions.add(ee);	
+				
+			}
+			return executions;
+			
+		} catch (Exception e) {
+			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
+		}
+	}
+	
+	@Override
+	public void addMessage(String queue, Message msg) {
+		indexer.addMessage(queue, msg);		
+	}
+	
 }

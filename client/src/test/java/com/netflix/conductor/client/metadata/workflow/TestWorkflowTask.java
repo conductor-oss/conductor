@@ -45,7 +45,7 @@ public class TestWorkflowTask {
 		assertEquals(task.getType(), read.getType());
 		
 		task = new WorkflowTask();
-		task.setType(Type.SUB_WORKFLOW);
+		task.setWorkflowTaskType(Type.SUB_WORKFLOW);
 		task.setName("name");
 		
 		json = om.writeValueAsString(task);

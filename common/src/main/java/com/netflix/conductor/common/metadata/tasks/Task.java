@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
 package com.netflix.conductor.common.metadata.tasks;
 
 import java.util.HashMap;
@@ -23,12 +20,7 @@ import java.util.Map;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
-/**
- * 
- * 
- *
- */
-public class Task extends TaskResult {
+public class Task {
 	
 	public enum Status {
 		
@@ -116,6 +108,20 @@ public class Task extends TaskResult {
 	
 	private int responseTimeoutSeconds;
 	
+	private String workflowInstanceId;
+	
+	private String taskId;
+	
+	private String reasonForIncompletion;
+	
+	private long callbackAfterSeconds;
+	
+	private String workerId;
+
+	private Map<String, Object> outputData = new HashMap<>();
+	
+	private long polledTime;
+	
 	public Task(){
 		
 	}
@@ -139,9 +145,6 @@ public class Task extends TaskResult {
 
 	public void setStatus(Status status) {
 		this.status = status;
-		if(TaskResult.isValidStatus(status.name())) {
-			super.setStatus(TaskResult.Status.valueOf(status.name()));
-		}
 	}
 	
 	public Map<String, Object> getInputData() {
@@ -387,6 +390,112 @@ public class Task extends TaskResult {
 	}
 
 	
+	/**
+	 * @return the workflowInstanceId
+	 */
+	public String getWorkflowInstanceId() {
+		return workflowInstanceId;
+	}
+
+	/**
+	 * @param workflowInstanceId the workflowInstanceId to set
+	 * 
+	 */
+	public void setWorkflowInstanceId(String workflowInstanceId) {
+		this.workflowInstanceId = workflowInstanceId;
+	}
+
+	/**
+	 * @return the taskId
+	 */
+	public String getTaskId() {
+		return taskId;
+	}
+
+	/**
+	 * @param taskId the taskId to set
+	 * 
+	 */
+	public void setTaskId(String taskId) {
+		this.taskId = taskId;
+	}
+
+	/**
+	 * @return the reasonForIncompletion
+	 */
+	public String getReasonForIncompletion() {
+		return reasonForIncompletion;
+	}
+
+	/**
+	 * @param reasonForIncompletion the reasonForIncompletion to set
+	 * 
+	 */
+	public void setReasonForIncompletion(String reasonForIncompletion) {
+		this.reasonForIncompletion = reasonForIncompletion;
+	}
+
+	/**
+	 * @return the callbackAfterSeconds
+	 */
+	public long getCallbackAfterSeconds() {
+		return callbackAfterSeconds;
+	}
+
+	/**
+	 * @param callbackAfterSeconds the callbackAfterSeconds to set
+	 * 
+	 */
+	public void setCallbackAfterSeconds(long callbackAfterSeconds) {
+		this.callbackAfterSeconds = callbackAfterSeconds;
+	}
+
+	/**
+	 * @return the workerId
+	 */
+	public String getWorkerId() {
+		return workerId;
+	}
+
+	/**
+	 * @param workerId the workerId to set
+	 * 
+	 */
+	public void setWorkerId(String workerId) {
+		this.workerId = workerId;
+	}
+
+	/**
+	 * @return the outputData
+	 */
+	public Map<String, Object> getOutputData() {
+		return outputData;
+	}
+
+	/**
+	 * @param outputData the outputData to set
+	 * 
+	 */
+	public void setOutputData(Map<String, Object> outputData) {
+		this.outputData = outputData;
+	}
+
+	
+	/**
+	 * @return the polledTime Epoch time when the task was polled out of the queue
+	 */
+	public long getPolledTime() {
+		return polledTime;
+	}
+
+	/**
+	 * @param polledTime the polledTime to set
+	 * 
+	 */
+	public void setPolledTime(long polledTime) {
+		this.polledTime = polledTime;
+	}
+
 	public Task copy() {
 		
 		Task copy = new Task();

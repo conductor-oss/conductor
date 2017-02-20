@@ -18,13 +18,13 @@
  */
 package com.netflix.conductor.server;
 
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.io.InputStream;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.ws.rs.core.MediaType;
@@ -45,6 +45,9 @@ import com.netflix.conductor.server.es.EmbeddedElasticSearch;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.Host.Status;
 import com.netflix.dyno.connectionpool.HostSupplier;
+import com.netflix.dyno.connectionpool.TokenMapSupplier;
+import com.netflix.dyno.connectionpool.impl.ConnectionPoolConfigurationImpl;
+import com.netflix.dyno.connectionpool.impl.lb.HostToken;
 import com.netflix.dyno.jedis.DynoJedisClient;
 import com.sun.jersey.api.client.Client;
 
@@ -131,12 +134,30 @@ public class ConductorServer {
 			
 		case dynomite:
 			
+			ConnectionPoolConfigurationImpl cp = new ConnectionPoolConfigurationImpl(dynoClusterName).withTokenSupplier(new TokenMapSupplier() {
+				
+				HostToken token = new HostToken(1L, dynoHosts.get(0));
+				
+				@Override
+				public List<HostToken> getTokens(Set<Host> activeHosts) {
+					return Arrays.asList(token);
+				}
+				
+				@Override
+				public HostToken getTokenForHost(Host host, Set<Host> activeHosts) {
+					return token;
+				}
+			}).setLocalRack(cc.getAvailabilityZone()).setLocalDataCenter(cc.getRegion());
+			
 			jedis = new DynoJedisClient.Builder()
 				.withHostSupplier(hs)
 				.withApplicationName(cc.getAppId())
 				.withDynomiteClusterName(dynoClusterName)
+				.withCPConfig(cp)
 				.build();
+			
 			logger.info("Starting conductor server using dynomite cluster " + dynoClusterName);
+			
 			break;
 			
 		case memory:
@@ -221,15 +242,14 @@ public class ConductorServer {
 		ObjectMapper om = new ObjectMapper();
 		client.resource("http://localhost:" + port + "/api/metadata/taskdefs").type(MediaType.APPLICATION_JSON).post(om.writeValueAsString(taskDefs));
 		
-		URL template = Main.class.getClassLoader().getResource("kitchensink.json");
-		byte[] source = Files.readAllBytes(Paths.get(template.getFile()));
-		String json = new String(source);
-		client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(json);
+		InputStream stream = Main.class.getResourceAsStream("/kitchensink.json");
+		client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(stream);
 		
-		template = Main.class.getClassLoader().getResource("sub_flow_1.json");
-		source = Files.readAllBytes(Paths.get(template.getFile()));
-		json = new String(source);
-		client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(json);
+		stream = Main.class.getResourceAsStream("/sub_flow_1.json");
+		client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(stream);
+		
+		String input = "{\"task2Name\":\"task_5\"}";
+		client.resource("http://localhost:" + port + "/api/workflow/kitchensink").type(MediaType.APPLICATION_JSON).post(input);
 		
 		logger.info("Kitchen sink workflows are created!");
 	}

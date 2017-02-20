@@ -19,9 +19,7 @@
 package com.netflix.conductor.common.metadata.tasks;
 
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * @author Viren
@@ -48,10 +46,17 @@ public class TaskResult {
 	private Status status;
 
 	private Map<String, Object> outputData = new HashMap<>();
+	
+	private TaskExecLog log = new TaskExecLog();
 
 	public TaskResult(Task task) {
 		this.workflowInstanceId = task.getWorkflowInstanceId();
 		this.taskId = task.getTaskId();
+		this.reasonForIncompletion = task.getReasonForIncompletion();
+		this.callbackAfterSeconds = task.getCallbackAfterSeconds();
+		this.status = Status.valueOf(task.getStatus().name());
+		this.workerId = task.getWorkerId();
+		this.outputData = task.getOutputData();
 	}
 
 	public TaskResult(String workflowInstanceId, String taskId) {
@@ -95,6 +100,11 @@ public class TaskResult {
 		return callbackAfterSeconds;
 	}
 
+	/**
+	 * When set to non-zero values, the task remains in the queue for the specified seconds before sent back to the worker when polled. 
+	 * Useful for the long running task, where the task is updated as IN_PROGRESS and should not be polled out of the queue for a specified amount of time.  (delayed queue implementation)
+	 * @param callbackAfterSeconds.   Amount of time in seconds the task should be held in the queue before giving it to a polling worker.
+	 */
 	public void setCallbackAfterSeconds(long callbackAfterSeconds) {
 		this.callbackAfterSeconds = callbackAfterSeconds;
 	}
@@ -103,21 +113,32 @@ public class TaskResult {
 		return workerId;
 	}
 
+	/**
+	 * 
+	 * @param workerId a free form string identifying the worker host.  
+	 * Could be hostname, IP Address or any other meaningful identifier that can help identify the host/process which executed the task, in case of troubleshooting.
+	 */
 	public void setWorkerId(String workerId) {
 		this.workerId = workerId;
 	}
-
-	public Status getTaskStatus() {
-		return status;
-	}
 	
-	public void setTaskStatus(Status status) {
-		this.status = status;
+	/**
+	 * @return the status
+	 */
+	public Status getStatus() {
+		return status;
 	}
 
 	/**
 	 * 
-	 * @param status DO NOT use from the client.  Internal use only!
+	 * @param status Status of the task
+	 * <p>
+	 * <b>IN_PROGRESS</b>: Use this for long running tasks, indicating the task is still in progress and should be checked again at a later time.  e.g. the worker checks the status of the job in the DB, while the job is being executed by another process.
+	 * </p><p>
+	 * <b>FAILED, COMPLETED</b>: Terminal statuses for the task.
+	 * </p>
+	 * 
+	 * @see #setCallbackAfterSeconds(long)
 	 */
 	public void setStatus(Status status) {
 		this.status = status;
@@ -127,21 +148,29 @@ public class TaskResult {
 		return outputData;
 	}
 
+	/**
+	 * 
+	 * @param outputData output data to be set for the task execution result
+	 */
 	public void setOutputData(Map<String, Object> outputData) {
 		this.outputData = outputData;
 	}
 
-	private static final Set<String> statuses = new HashSet<>();
-	static {
-		for(Status status : Status.values()) {
-			statuses.add(status.name());
-		}
+	/**
+	 * @return the task execution log
+	 */
+	public TaskExecLog getLog() {
+		return log;
 	}
-	
-	public static boolean isValidStatus(String status) {
-		return statuses.contains(status);
+
+	/**
+	 * @param log task execution log
+	 * 
+	 */
+	public void setLog(TaskExecLog log) {
+		this.log = log;
 	}
-	
+
 	@Override
 	public String toString() {
 		return "TaskResult [workflowInstanceId=" + workflowInstanceId + ", taskId=" + taskId + ", status=" + status + "]";

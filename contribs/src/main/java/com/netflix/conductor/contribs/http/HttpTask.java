@@ -124,7 +124,7 @@ public class HttpTask extends WorkflowSystemTask {
 				task.setStatus(Status.FAILED);
 			}
 			if(response != null) {
-				task.getOutputData().put("response", response);
+				task.getOutputData().put("response", response.asMap());
 			}
 			
 		}catch(Exception e) {
@@ -246,6 +246,16 @@ public class HttpTask extends WorkflowSystemTask {
 		@Override
 		public String toString() {
 			return "HttpResponse [body=" + body + ", headers=" + headers + ", statusCode=" + statusCode + "]";
+		}
+		
+		public Map<String, Object> asMap() {
+			
+			Map<String, Object> map = new HashMap<>();
+			map.put("body", body);
+			map.put("headers", headers);
+			map.put("statusCode", statusCode);
+			
+			return map;
 		}
 	}
 	

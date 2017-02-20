@@ -1,0 +1,61 @@
+/**
+ * Copyright 2017 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/**
+ * 
+ */
+package com.netflix.conductor.core.events.sqs;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue;
+import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
+import com.netflix.conductor.core.events.EventQueueProvider;
+import com.netflix.conductor.core.events.EventQueues;
+import com.netflix.conductor.core.events.EventQueues.QueueType;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
+
+/**
+ * @author Viren
+ *
+ */
+@Singleton
+public class SQSEventQueueProvider implements EventQueueProvider {
+
+	private Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
+	
+	private AmazonSQSClient client;
+	
+	@Inject
+	public SQSEventQueueProvider(AmazonSQSClient client) {
+		this.client = client;
+		EventQueues.registerProvider(QueueType.sqs, this);
+	}
+	
+	@Override
+	public ObservableQueue getQueue(String queueURI) {
+		return queues.computeIfAbsent(queueURI, q -> {
+			Builder builder = new SQSObservableQueue.Builder();
+			SQSObservableQueue queue = builder.withBatchSize(1).withClient(client).withPollTimeInMS(100).withQueueName(queueURI).withVisibilityTimeout(60).build();
+			return queue;
+		});
+	}
+
+}

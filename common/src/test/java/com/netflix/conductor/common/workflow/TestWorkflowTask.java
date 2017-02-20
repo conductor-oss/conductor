@@ -35,7 +35,7 @@ public class TestWorkflowTask {
 	@Test
 	public void test() {
 		WorkflowTask wt = new WorkflowTask();
-		wt.setType(Type.DECISION);
+		wt.setWorkflowTaskType(Type.DECISION);
 		
 		assertNotNull(wt.getType());
 		assertEquals(Type.DECISION.name(), wt.getType());

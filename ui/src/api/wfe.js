@@ -14,8 +14,6 @@ const baseURLMeta = baseURL + 'metadata/';
 router.get('/', async (req, res, next) => {
   try {
 
-    console.log('baseURL is : ' + baseURL);
-
     let freeText = [];
     if(req.query.freeText != '') {
       freeText.push(req.query.freeText);

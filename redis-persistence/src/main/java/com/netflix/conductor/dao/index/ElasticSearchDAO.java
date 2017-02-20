@@ -18,39 +18,53 @@
  */
 package com.netflix.conductor.dao.index;
 
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
+import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
+import org.elasticsearch.indices.IndexAlreadyExistsException;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.IndexDAO;
@@ -72,19 +86,106 @@ public class ElasticSearchDAO implements IndexDAO {
 	
 	private static final String TASK_DOC_TYPE = "task";
 	
+	private static final String LOG_DOC_TYPE = "task";
+	
+	private static final String EVENT_DOC_TYPE = "event";
+	
+	private static final String MSG_DOC_TYPE = "message";
+	
 	private static final String className = ElasticSearchDAO.class.getSimpleName();
 	
 	private String indexName;
+	
+	private String logIndexName;
 
 	private ObjectMapper om;
 	
 	private Client client;
+	
+	
+	private static final TimeZone gmt = TimeZone.getTimeZone("GMT");
+	    
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMww");
+
+    static {
+    	sdf.setTimeZone(gmt);
+    }
 	
 	@Inject
 	public ElasticSearchDAO(Client client, Configuration config, ObjectMapper om) {
 		this.om = om;
 		this.client = client;
 		this.indexName = config.getProperty("workflow.elasticsearch.index.name", null);
+		
+		try {
+			
+			initIndex();
+			updateIndexName(config);
+			Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> updateIndexName(config), 0, 1, TimeUnit.HOURS);
+			
+		} catch (Exception e) {
+			log.error(e.getMessage(), e);
+		}
+	}
+	
+	private void updateIndexName(Configuration config) {
+		String prefix = config.getProperty("workflow.elasticsearch.tasklog.index.name", "task_log");
+		this.logIndexName = prefix + "_" + sdf.format(new Date());
+
+		try {
+			client.admin().indices().prepareGetIndex().addIndices(logIndexName).execute().actionGet();
+		} catch (IndexNotFoundException infe) {
+			try {
+				client.admin().indices().prepareCreate(logIndexName).execute().actionGet();
+			} catch (IndexAlreadyExistsException ilee) {
+
+			} catch (Exception e) {
+				log.error(e.getMessage(), e);
+			}
+		}
+	}
+	
+	/**
+	 * Initializes the index with required templates and mappings.
+	 */
+	private void initIndex() throws Exception {
+
+		//0. Add the index template
+		GetIndexTemplatesResponse result = client.admin().indices().prepareGetTemplates("wfe_template").execute().actionGet();
+		if(result.getIndexTemplates().isEmpty()) {
+			log.info("Creating the index template 'wfe_template'");
+			InputStream stream = ElasticSearchDAO.class.getResourceAsStream("/template.json");
+			byte[] templateSource = IOUtils.toByteArray(stream);
+			
+			try {
+				client.admin().indices().preparePutTemplate("wfe_template").setSource(templateSource).execute().actionGet();
+			}catch(Exception e) {
+				log.error(e.getMessage(), e);
+			}
+		}
+	
+		//1. Create the required index
+		try {
+			client.admin().indices().prepareGetIndex().addIndices(indexName).execute().actionGet();
+		}catch(IndexNotFoundException infe) {
+			try {
+				client.admin().indices().prepareCreate(indexName).execute().actionGet();
+			}catch(IndexAlreadyExistsException done) {}
+		}
+				
+		//2. Mapping for the workflow document type
+		GetMappingsResponse response = client.admin().indices().prepareGetMappings(indexName).addTypes(WORKFLOW_DOC_TYPE).execute().actionGet();
+		if(response.mappings().isEmpty()) {
+			log.info("Adding the workflow type mappings");
+			InputStream stream = ElasticSearchDAO.class.getResourceAsStream("/wfe_type.json");
+			byte[] bytes = IOUtils.toByteArray(stream);
+			String source = new String(bytes);
+			try {
+				client.admin().indices().preparePutMapping(indexName).setType(WORKFLOW_DOC_TYPE).setSource(source).execute().actionGet();
+			}catch(Exception e) {
+				log.error(e.getMessage(), e);
+			}
+		}
 	}
 	
 	@Override
@@ -99,18 +200,10 @@ public class ElasticSearchDAO implements IndexDAO {
 			req.doc(doc);
 			req.upsert(doc);
 			req.retryOnConflict(5);
-			
-			BulkResponse response = client.prepareBulk().add(req).execute().actionGet();
-			BulkItemResponse[] indexedItems = response.getItems();
-			for(BulkItemResponse indexedItem : indexedItems) {
-				if(indexedItem.isFailed()) {
-					log.error("Indexing failed for {}, {}", indexedItem.getType(), indexedItem.getFailureMessage());
-				}
-			}
+			updateWithRetry(req);
  			
 		} catch (Throwable e) {
 			log.error("Indexing failed {}", e.getMessage(), e);
-			Monitors.error(className, "index");
 		}
 	}
 	
@@ -125,18 +218,101 @@ public class ElasticSearchDAO implements IndexDAO {
 			UpdateRequest req = new UpdateRequest(indexName, TASK_DOC_TYPE, id);
 			req.doc(doc);
 			req.upsert(doc);
-			
-			BulkResponse response = client.prepareBulk().add(req).execute().actionGet();
-			BulkItemResponse[] indexedItems = response.getItems();
-			for(BulkItemResponse indexedItem : indexedItems) {
-				if(indexedItem.isFailed()) {
-					log.error("Indexing failed for {}, {}", indexedItem.getType(), indexedItem.getFailureMessage());
-				}
-			}
+			updateWithRetry(req);
  			
 		} catch (Throwable e) {
 			log.error("Indexing failed {}", e.getMessage(), e);
-			Monitors.error(className, "index");
+		}
+	}
+	
+	@Override
+	public void add(TaskExecLog taskExecLog) {
+		
+		int retry = 3;
+		while(retry > 0) {
+			try {
+				
+				taskExecLog.setCreated(System.currentTimeMillis());
+				IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
+				request.source(om.writeValueAsBytes(taskExecLog));
+	 			client.index(request).actionGet();
+	 			break;
+	 			
+			} catch (Throwable e) {
+				log.error("Indexing failed {}", e.getMessage(), e);
+				retry--;
+				if(retry > 0) {
+					Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+				}
+			}
+		}
+		
+	}
+	
+	@Override
+	public void addMessage(String queue, Message msg) {
+		
+		int retry = 3;
+		while(retry > 0) {
+			try {
+				
+				Map<String, Object> doc = new HashMap<>();
+				doc.put("messageId", msg.getId());
+				doc.put("payload", msg.getPayload());
+				doc.put("queue", queue);
+				doc.put("created", System.currentTimeMillis());
+				IndexRequest request = new IndexRequest(logIndexName, MSG_DOC_TYPE);
+				request.source(doc);
+	 			client.index(request).actionGet();
+	 			break;
+	 			
+			} catch (Throwable e) {
+				log.error("Indexing failed {}", e.getMessage(), e);
+				retry--;
+				if(retry > 0) {
+					Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+				}
+			}
+		}
+		
+	}
+	
+	@Override
+	public void add(EventExecution ee) {
+
+		try {
+
+			byte[] doc = om.writeValueAsBytes(ee);
+			String id = ee.getName() + "." + ee.getEvent() + "." + ee.getMessageId() + "." + ee.getId();
+			UpdateRequest req = new UpdateRequest(logIndexName, EVENT_DOC_TYPE, id);
+			req.doc(doc);
+			req.upsert(doc);
+			req.retryOnConflict(5);
+			updateWithRetry(req);
+ 			
+		} catch (Throwable e) {
+			log.error("Indexing failed {}", e.getMessage(), e);
+		}
+	
+		
+	}
+	
+	private void updateWithRetry(UpdateRequest request) {
+		int retry = 3;
+		while(retry > 0) {
+			try {
+				
+				client.update(request).actionGet();
+				return;
+				
+			}catch(Exception e) {
+				Monitors.error(className, "index");
+				log.error("Indexing failed for {}, {}", request.index(), request.type(), e.getMessage());
+				retry--;
+				if(retry > 0) {
+					Uninterruptibles.sleepUninterruptibly(10, TimeUnit.MILLISECONDS);
+				}
+			}
 		}
 	}
 	

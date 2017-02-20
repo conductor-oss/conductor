@@ -90,7 +90,6 @@ public class NameValue extends AbstractNode implements FilterProvider {
 		return value;
 	}
 	
-	@SuppressWarnings("deprecation")
 	@Override
 	public QueryBuilder getFilterBuilder(){
 		if(op.getOperator().equals(Operators.EQUALS.value())){

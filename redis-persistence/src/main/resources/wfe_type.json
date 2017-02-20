@@ -1,0 +1,77 @@
+/**
+ * Copyright 2017 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+{
+  "workflow": {
+    "properties": {
+      "correlationId": {
+        "type": "string",
+        "index": "not_analyzed",
+        "doc_values": true
+      },
+      "endTime": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis",
+        "doc_values": true
+      },
+      "executionTime": {
+        "type": "long",
+        "doc_values": true
+      },
+      "input": {
+        "type": "string",
+        "index": "analyzed"
+      },
+      "output": {
+        "type": "string",
+        "index": "analyzed"
+      },
+      "reasonForIncompletion": {
+        "type": "string",
+        "index": "not_analyzed",
+        "doc_values": true
+      },
+      "startTime": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis",
+        "doc_values": true
+      },
+      "status": {
+        "type": "string",
+        "index": "not_analyzed",
+        "doc_values": true
+      },
+      "updateTime": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis",
+        "doc_values": true
+      },
+      "version": {
+        "type": "long",
+        "doc_values": true
+      },
+      "workflowId": {
+        "type": "string",
+        "index": "not_analyzed",
+        "doc_values": true
+      },
+      "workflowType": {
+        "type": "string",
+        "index": "not_analyzed",
+        "doc_values": true
+      }
+    }
+  }
+}

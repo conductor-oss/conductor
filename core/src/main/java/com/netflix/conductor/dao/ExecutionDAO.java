@@ -20,8 +20,11 @@ package com.netflix.conductor.dao;
 
 import java.util.List;
 
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.events.queue.Message;
 
 /**
  * @author Viren
@@ -75,6 +78,13 @@ public interface ExecutionDAO {
 	 */
 	public abstract void updateTasks(List<Task> tasks);
 
+	/**
+	 * 
+	 * @param log Task Execution Log to be added
+	 *  
+	 */
+	public abstract void addTaskExecLog(TaskExecLog log);
+	
 	/**
 	 * 
 	 * @param taskId id of the task to be removed.
@@ -202,6 +212,37 @@ public interface ExecutionDAO {
 	 */
 	public abstract List<Workflow> getWorkflowsByCorrelationId(String correlationId);
 
+
+	//Events
 	
+	/**
+	 * 
+	 * @param ee Event Execution to be stored
+	 * @return true if the event was added.  false otherwise when the event by id is already already stored.
+	 */
+	public abstract boolean addEventExecution(EventExecution ee);
+	
+	/**
+	 * 
+	 * @param ee Event execution to be updated
+	 */
+	public abstract void updateEventExecution(EventExecution ee);
+
+	/**
+	 * 
+	 * @param eventHandlerName Name of the event handler
+	 * @param eventName Event Name
+	 * @param messageId ID of the message received
+	 * @param max max number of executions to return
+	 * @return list of matching events
+	 */
+	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max);
+
+	/**
+	 * Adds an incoming external message into the store/index
+	 * @param queue Name of the registered queue
+	 * @param msg Message
+	 */
+	public abstract void addMessage(String queue, Message msg);
 
 }

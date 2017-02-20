@@ -19,6 +19,7 @@ import java.util.List;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.config.ClientConfig;
@@ -33,6 +34,8 @@ import com.sun.jersey.api.client.filter.ClientFilter;
 public class TaskClient extends ClientBase {
 
 	private static GenericType<List<Task>> tasks = new GenericType<List<Task>>() {};
+	
+	private static GenericType<List<TaskDef>> task_def_types = new GenericType<List<TaskDef>>(){};
 
 	/**
 	 * Creates a default task client
@@ -85,45 +88,89 @@ public class TaskClient extends ClientBase {
 		return getForEntity("tasks/poll/batch/{taskType}", params, tasks, taskType);
 	}
 
+	/**
+	 * 
+	 * @param taskId ID of the task
+	 * @return Task details
+	 */
 	public Task get(String taskId) {
 		Task task = getForEntity("tasks/{taskId}", null, Task.class, taskId);
 		return task;
 	}
-	
+
+	/**
+	 *  
+	 * @param taskType Type of task
+	 * @param startKey id of the task from where to return the results.  NULL to start from the begining.
+	 * @param count number of tasks to retrieve
+	 * @return  Returns the list of PENDING tasks by type, starting with a given task Id.
+	 */
 	public List<Task> getTasks(String taskType, String startKey, Integer count) {
 		Object[] params = new Object[]{"startKey", startKey, "count", count};
 		 return getForEntity("tasks/in_progress/{taskType}", params, tasks, taskType);
 	}
-
+	
+	/**
+	 * 
+	 * @param workflowId Workflow instance id
+	 * @param taskReferenceName reference name of the task
+	 * @return Returns the pending workflow task identified by the reference name
+	 */
 	public Task getPendingTaskForWorkflow(String workflowId, String taskReferenceName) {
 		return getForEntity("tasks/in_progress/{workflowId}/{taskRefName}", null, Task.class, workflowId, taskReferenceName);
 	}
-	
-	public void updateTask(Task task)  {
+
+
+	/**
+	 * Updates the result of a task execution
+	 * @param task TaskResults to be updated.
+	 */
+	public void updateTask(TaskResult task)  {
 		postForEntity("tasks", task);
 	}
 	
+	/**
+	 * Ack for the task poll
+	 * @param taskId Id of the task to be polled
+	 * @param workerId user identified worker.
+	 * @return true if the task was found with the given ID and acknowledged.  False otherwise.  If the server returns false, the client should NOT attempt to ack again.
+	 */
 	public Boolean ack(String taskId, String workerId) {
 		Object[] params = new Object[]{"workerid", workerId};
 		String response = postForEntity("tasks/{taskId}/ack", null, params, String.class, taskId);
 		return Boolean.valueOf(response);
 	}	
 	
-	GenericType<List<TaskDef>> task_def_types = new GenericType<List<TaskDef>>(){};
 	
-	//Metadata APIs
+	/**
+	 * 
+	 * @return List of all the task definitions registered with the server
+	 */
 	public List<TaskDef> getTaskDef() {
 		return getForEntity("metadata/taskdefs", null, task_def_types);	
 	}
 	
+	/**
+	 * 
+	 * @param taskType type of task for which to retrieve the definition
+	 * @return Task Definition for the given task type
+	 */
 	public TaskDef getTaskDef(String taskType) {
 		 return getForEntity("metadata/taskdefs/{tasktype}", null, TaskDef.class, taskType);	
 	}
 	
+	/**
+	 * 
+	 * @param taskType Task type to be unregistered.  Use with caution. 
+	 */
 	public void unregisterTaskDef(String taskType) {
 		delete("metadata/taskdefs/{tasktype}", taskType);
 	}
-	
+
+	/**
+	 * Registers a set of task types with the conductor server
+	 * @param taskDefs List of task types to be registered.
+	 */
 	public void registerTaskDefs(List<TaskDef> taskDefs) {
 		postForEntity("metadata/taskdefs", taskDefs);	
 	}

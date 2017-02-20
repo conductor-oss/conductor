@@ -18,6 +18,8 @@ package com.netflix.conductor.dao;
 import java.util.List;
 import java.util.Map;
 
+import com.netflix.conductor.core.events.queue.Message;
+
 /**
  * 
  * @author Viren
@@ -33,6 +35,12 @@ public interface QueueDAO {
 	 * @param offsetTimeInSecond time in seconds, after which the message should be marked visible.  (for timed queues)
 	 */
 	public void push(String queueName, String id, long offsetTimeInSecond);
+	
+	/**
+	 * @param queueName Name of the queue
+	 * @param messages messages to be pushed.
+	 */
+	public void push(String queueName, List<Message> messages);
 
 	/**
 	 * 
@@ -52,6 +60,16 @@ public interface QueueDAO {
 	 */
 	public List<String> pop(String queueName, int count, int timeout);
 
+	
+	/**
+	 * 
+	 * @param queueName Name of the queue
+	 * @param count number of messages to be read from the queue
+	 * @param timeout timeout in milliseconds
+	 * @return list of elements from the named queue
+	 */
+	public List<Message> pollMessages(String queueName, int count, int timeout);
+	
 	/**
 	 * 
 	 * @param queueName Name of the queue

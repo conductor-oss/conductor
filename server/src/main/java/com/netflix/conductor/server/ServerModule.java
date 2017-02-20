@@ -29,6 +29,7 @@ import com.netflix.conductor.contribs.ContribsModule;
 import com.netflix.conductor.contribs.http.HttpTask;
 import com.netflix.conductor.contribs.http.RestClientManager;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.config.CoreModule;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -94,6 +95,7 @@ public class ServerModule extends AbstractModule {
 		DynoProxy proxy = new DynoProxy(dynoConn);
 		bind(DynoProxy.class).toInstance(proxy);
 		
+		install(new CoreModule());
 		install(new JerseyModule());
 		new HttpTask(new RestClientManager(), config);
 		List<AbstractModule> additionalModules = config.getAdditionalModules();

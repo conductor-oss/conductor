@@ -52,7 +52,6 @@ public class MetadataResource {
 
 	private MetadataService service;
 	
-	
 	@Inject
 	public MetadataResource(MetadataService service) {
 		this.service = service;
