@@ -78,7 +78,7 @@ public class Event extends WorkflowSystemTask {
 			long timeSince = System.currentTimeMillis() - task.getScheduledTime();
 			if(timeSince > 600_000) {
 				start(workflow, task, provider);
-				return true;	
+				return true;
 			}else {
 				return false;
 			}				
@@ -113,12 +113,13 @@ public class Event extends WorkflowSystemTask {
 		
 		String event = null;
 		if(sink == Sink.conductor) {
-			String cq = workflow.getWorkflowType() + "_" + workflow.getVersion() + "_" + task.getReferenceTaskName();
+			String cq = workflow.getWorkflowType() + ":" + task.getReferenceTaskName();
 			event = "conductor:" + cq;
-			task.getOutputData().put("conductor_queue", cq);
 		} else if(sink == Sink.sqs ) {
 			event = ""+task.getInputData().get("sink");
 		}
+		
+		task.getOutputData().put("event_produced", event);
 		
 		try {
 			return EventQueues.getQueue(event, true);
