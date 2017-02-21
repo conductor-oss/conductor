@@ -18,6 +18,7 @@ ext.githubProjectName = rootProject.name // Change if github project name is not
 
 apply plugin: 'project-report'
 
+
 subprojects {
 
     apply plugin: 'nebula.netflixoss'
@@ -30,7 +31,7 @@ subprojects {
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
-	repositories {
+    repositories {
       jcenter()
       maven { url 'https://dl.bintray.com/netflixoss/oss-candidate/' }
     }
@@ -43,6 +44,16 @@ subprojects {
     group = "com.netflix.${githubProjectName}"
     
     tasks.withType(Test)  {
-  		maxParallelForks = 1
+        maxParallelForks = 1
+    }
+    
+    license {
+		excludes(['**/*.txt', '**/*.conf', '**/*.properties', '**/*.json', '**/swagger-ui/*'])
 	}
+	
+	task licenseFormatTests (type:nl.javadude.gradle.plugins.license.License) {
+    	source = fileTree(dir: "src/test").include("**/*")
+	}
+	licenseFormat.dependsOn licenseFormatTests
+
 }

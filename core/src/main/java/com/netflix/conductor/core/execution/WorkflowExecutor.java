@@ -410,7 +410,7 @@ public class WorkflowExecutor {
 		String workflowId = result.getWorkflowInstanceId();
 		Workflow wf = edao.getWorkflow(workflowId);
 		Task task = edao.getTask(result.getTaskId());
-		long cpuTime = System.currentTimeMillis() - task.getPolledTime();
+		long cpuTime = System.currentTimeMillis() - task.getUpdateTime();
 		
 		if (wf.getStatus().isTerminal()) {
 			// Workflow is in terminal state

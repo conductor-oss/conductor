@@ -120,8 +120,6 @@ public class Task {
 
 	private Map<String, Object> outputData = new HashMap<>();
 	
-	private long polledTime;
-	
 	public Task(){
 		
 	}
@@ -478,22 +476,6 @@ public class Task {
 	 */
 	public void setOutputData(Map<String, Object> outputData) {
 		this.outputData = outputData;
-	}
-
-	
-	/**
-	 * @return the polledTime Epoch time when the task was polled out of the queue
-	 */
-	public long getPolledTime() {
-		return polledTime;
-	}
-
-	/**
-	 * @param polledTime the polledTime to set
-	 * 
-	 */
-	public void setPolledTime(long polledTime) {
-		this.polledTime = polledTime;
 	}
 
 	public Task copy() {

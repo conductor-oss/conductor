@@ -117,7 +117,6 @@ public class ExecutionService {
 			}
 			task.setWorkerId(workerId);
 			task.setPollCount(task.getPollCount() + 1);
-			task.setPolledTime(System.currentTimeMillis());
 			
 			edao.updateTask(task);
 			tasks.add(task);
