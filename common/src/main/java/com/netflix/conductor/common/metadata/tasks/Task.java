@@ -61,7 +61,7 @@ public class Task {
 	private String taskType;
 
 	private Status status;
-
+	
 	private Map<String, Object> inputData = new HashMap<>();;
 
 	private String referenceTaskName;
@@ -137,12 +137,30 @@ public class Task {
 		this.taskType = taskType;
 	}
 
+	/**
+	 * 
+	 * @return Status of the task
+	 */
 	public Status getStatus() {
 		return status;
 	}
 
+	/**
+	 * 
+	 * @param status Status of the task
+	 */
 	public void setStatus(Status status) {
 		this.status = status;
+	}
+	
+	@Deprecated
+	public Status getTaskStatus() {
+		return status;
+	}
+	
+	@Deprecated
+	public void setTaskStatus(Status taskStatus) {
+		this.status = taskStatus;
 	}
 	
 	public Map<String, Object> getInputData() {

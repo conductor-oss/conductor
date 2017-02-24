@@ -19,6 +19,7 @@
 package com.netflix.conductor.core.events;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -27,9 +28,16 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
+import com.netflix.conductor.common.metadata.events.EventHandler.TaskDetails;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.service.MetadataService;
@@ -48,6 +56,8 @@ public class ActionProcessor {
 
 	private MetadataService metadata;
 	
+	private static final ObjectMapper om = new ObjectMapper();
+	
 	private ParametersUtils pu = new ParametersUtils();
 	
 	@Inject
@@ -58,18 +68,63 @@ public class ActionProcessor {
 
 	public Map<String, Object> execute(Action action, String payload) throws Exception {
 
-		logger.info("Executing {}", action.getAction());
+		logger.debug("Executing {}", action.getAction());
+		Object jsonObj = payload;
+		if(action.isExpandInlineJSON()) {
+			jsonObj = om.readValue(payload, Object.class);
+			jsonObj = expand(jsonObj);
+		}
 
 		switch (action.getAction()) {
-		case start_workflow:
-			Map<String, Object> op = startWorkflow(action, payload);
-			return op;
+			case start_workflow:
+				Map<String, Object> op = startWorkflow(action, jsonObj);
+				return op;
+			case complete_task:
+				op = completeTask(action, jsonObj, action.getComplete_task(), Status.COMPLETED);
+				return op;
+			case fail_task:
+				op = completeTask(action, jsonObj, action.getFail_task(), Status.FAILED);
+				return op;
+			default:
+				break;
 		}
 		throw new UnsupportedOperationException("Action not supported " + action.getAction());
 
 	}
 
-	private Map<String, Object> startWorkflow(Action action, String payload) throws Exception {
+	private Map<String, Object> completeTask(Action action, Object payload, TaskDetails taskDetails, Status status) {
+		
+		Map<String, Object> input = new HashMap<>();
+		input.put("workflowId", taskDetails.getWorkflowId());
+		input.put("taskRefName", taskDetails.getTaskRefName());
+		input.putAll(taskDetails.getOutput());
+		
+		Map<String, Object> replaced = pu.replace(input, payload);
+		String workflowId = "" + replaced.get("workflowId");
+		String taskRefName = "" + replaced.get("taskRefName");
+		Workflow found = executor.getWorkflow(workflowId, true);
+		if(found == null) {
+			replaced.put("error", "No workflow found with ID: " + workflowId);
+			return replaced;
+		}
+		Task task = found.getTaskByRefName(taskRefName);
+		if(task == null) {
+			replaced.put("error", "No task found with reference name: " + taskRefName + ", workflowId: " + workflowId);
+			return replaced;
+		}
+		
+		task.setStatus(status);
+		task.setOutputData(replaced);
+		try {
+			executor.updateTask(new TaskResult(task));
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+			replaced.put("error", e.getMessage());
+		}
+		return replaced;
+	}
+
+	private Map<String, Object> startWorkflow(Action action, Object payload) throws Exception {
 		StartWorkflow params = action.getStart_workflow();
 		Map<String, Object> op = new HashMap<>();
 		try {
@@ -87,4 +142,60 @@ public class ActionProcessor {
 		
 		return op;
 	}
+	
+	private Object getJson(String jsonAsString) {
+		try {
+			Object value =  om.readValue(jsonAsString, Object.class);
+			return value;
+		} catch (Exception e) {
+			return jsonAsString;
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	@VisibleForTesting
+	Object expand(Object input) {
+		if(input instanceof List) {
+			expandList((List<Object>)input);
+			return input;
+		}else if(input instanceof Map) {
+			expandMap((Map<String, Object>)input);
+			return input;
+		}else if(input instanceof String) {
+			return getJson((String)input);
+		}else {
+			return input;
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void expandList(List<Object> input) {
+		for(Object value : input) {
+			if(value instanceof String) {
+				value = getJson(value.toString());				
+			} else if (value instanceof Map) {
+				expandMap((Map<String, Object>) value);
+			} else if (value instanceof List) {
+				expandList((List<Object>)value); 
+			}
+		}
+	}
+	
+	@SuppressWarnings("unchecked")
+	private void expandMap(Map<String, Object> input) {
+		for(Map.Entry<String, Object> e: input.entrySet()) {
+			Object value = e.getValue();
+			if(value instanceof String) {
+				value = getJson(value.toString());
+				e.setValue(value);
+			} else if (value instanceof Map) {
+				expandMap((Map<String, Object>) value);
+			} else if (value instanceof List) {
+				expandList((List<Object>)value); 
+			}
+		}
+	}
+
+	
+
 }

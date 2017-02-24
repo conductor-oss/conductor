@@ -121,11 +121,17 @@ public class EventHandler {
 
 	public static class Action {
 		
-		public enum Type { start_workflow }
+		public enum Type { start_workflow, complete_task, fail_task }
 		
 		private Type action;
 		
 		private StartWorkflow start_workflow;
+		
+		private TaskDetails complete_task;
+		
+		private TaskDetails fail_task;
+		
+		private boolean expandInlineJSON;
 
 		/**
 		 * @return the action
@@ -156,6 +162,108 @@ public class EventHandler {
 		public void setStart_workflow(StartWorkflow start_workflow) {
 			this.start_workflow = start_workflow;
 		}
+
+		/**
+		 * @return the complete_task
+		 */
+		public TaskDetails getComplete_task() {
+			return complete_task;
+		}
+
+		/**
+		 * @param complete_task the complete_task to set
+		 * 
+		 */
+		public void setComplete_task(TaskDetails complete_task) {
+			this.complete_task = complete_task;
+		}
+
+		/**
+		 * @return the fail_task
+		 */
+		public TaskDetails getFail_task() {
+			return fail_task;
+		}
+
+		/**
+		 * @param fail_task the fail_task to set
+		 * 
+		 */
+		public void setFail_task(TaskDetails fail_task) {
+			this.fail_task = fail_task;
+		}
+		
+		/**
+		 * 
+		 * @param expandInlineJSON when set to true, the in-lined JSON strings are expanded to a full json document 
+		 */
+		public void setExpandInlineJSON(boolean expandInlineJSON) {
+			this.expandInlineJSON = expandInlineJSON;
+		}
+		
+		/**
+		 * 
+		 * @return true if the json strings within the payload should be expanded.
+		 */
+		public boolean isExpandInlineJSON() {
+			return expandInlineJSON;
+		}
+	}
+	
+	public static class TaskDetails {
+		
+		private String workflowId;
+		
+		private String taskRefName;
+		
+		private Map<String, Object> output = new HashMap<>();
+
+		/**
+		 * @return the workflowId
+		 */
+		public String getWorkflowId() {
+			return workflowId;
+		}
+
+		/**
+		 * @param workflowId the workflowId to set
+		 * 
+		 */
+		public void setWorkflowId(String workflowId) {
+			this.workflowId = workflowId;
+		}
+
+		/**
+		 * @return the taskRefName
+		 */
+		public String getTaskRefName() {
+			return taskRefName;
+		}
+
+		/**
+		 * @param taskRefName the taskRefName to set
+		 * 
+		 */
+		public void setTaskRefName(String taskRefName) {
+			this.taskRefName = taskRefName;
+		}
+
+		/**
+		 * @return the output
+		 */
+		public Map<String, Object> getOutput() {
+			return output;
+		}
+
+		/**
+		 * @param output the output to set
+		 * 
+		 */
+		public void setOutput(Map<String, Object> output) {
+			this.output = output;
+		}
+		
+		
 		
 	}
 	

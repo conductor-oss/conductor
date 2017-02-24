@@ -39,7 +39,7 @@ public class TaskExecLog {
 	
 	private String taskId;
 	
-	private long created;
+	private String createdTime;
 	
 	public TaskExecLog() {
 		
@@ -121,18 +121,19 @@ public class TaskExecLog {
 	}
 
 	/**
-	 * @return the created
-	 */
-	public long getCreated() {
-		return created;
-	}
-
-	/**
-	 * @param created the created to set
 	 * 
+	 * @return Creation time (server side) when the log was added
 	 */
-	public void setCreated(long created) {
-		this.created = created;
+	public String getCreatedTime() {
+		return createdTime;
+	}
+	
+	/**
+	 * 
+	 * @param createdTime creation time to set
+	 */
+	public void setCreatedTime(String createdTime) {
+		this.createdTime = createdTime;
 	}
 	
 	

@@ -563,6 +563,12 @@ public class DeciderService {
 						workflow.getCorrelationId(), taskToSchedule.getTaskReferenceName(), taskToSchedule.getSink(), eventTaskInput);
 				tasks.add(eventTask);
 				break;
+			case WAIT:
+				if(taskId == null) taskId = IDGenerator.generate();
+				Map<String, Object> waitTaskInput = pu.getTaskInputV2(taskToSchedule.getInputParameters(), workflow, taskId, null);
+				Task waitTask = SystemTask.waitTask(workflow.getWorkflowId(), taskId,  workflow.getCorrelationId(), taskToSchedule.getTaskReferenceName(), waitTaskInput);
+				tasks.add(waitTask);
+				break;
 			default:
 				break;
 		}

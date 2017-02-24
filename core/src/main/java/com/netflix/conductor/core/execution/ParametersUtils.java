@@ -46,7 +46,7 @@ public class ParametersUtils {
 	}
 	
 	public ParametersUtils() {
-		
+
 	}
 	
 	public Map<String, Object> getTaskInputV2(Map<String, Object> input, Workflow workflow, String taskId, TaskDef taskDef) {
@@ -76,7 +76,7 @@ public class ParametersUtils {
 		return replaced;
 	}
 	
-	public Map<String, Object> replace(Map<String, Object> input, String json) {
+	public Map<String, Object> replace(Map<String, Object> input, Object json) {
 		DocumentContext io = JsonPath.parse(json, option);
 		return replace(input, io, null);
 	}

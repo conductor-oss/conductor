@@ -24,6 +24,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -99,6 +100,13 @@ public class WorkflowExecutor {
 			WorkflowDef exists = metadata.get(name, version);
 			if (exists == null) {
 				throw new ApplicationException(Code.NOT_FOUND, "No such workflow defined. name=" + name + ", version=" + version);
+			}
+			Set<String> missingTaskDefs = exists.all().stream()
+													.filter(wft -> wft.getType().equals(WorkflowTask.Type.SIMPLE.name()))
+													.map(wft2 -> wft2.getName()).filter(task -> metadata.getTaskDef(task) == null)
+													.collect(Collectors.toSet());
+			if(!missingTaskDefs.isEmpty()) {
+				throw new ApplicationException(Code.INVALID_INPUT, "Cannot find the task definitions for the following tasks used in workflow: " + missingTaskDefs);
 			}
 			String workflowId = IDGenerator.generate();
 	
