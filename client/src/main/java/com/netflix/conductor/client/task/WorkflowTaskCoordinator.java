@@ -217,7 +217,7 @@ public class WorkflowTaskCoordinator {
 			logger.error("Execution queue is full", qfe);
 		} catch (Exception e) {
 			WorkflowTaskMetrics.pollingException(worker.getTaskDefName(), e);
-			logger.error("Error when pollig for task", e);
+			logger.error("Error when polling for task " + e.getMessage(), e);
 		}
 	}
 	

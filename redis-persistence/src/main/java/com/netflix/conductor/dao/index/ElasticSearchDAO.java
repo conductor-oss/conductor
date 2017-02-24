@@ -106,7 +106,7 @@ public class ElasticSearchDAO implements IndexDAO {
 	private static final TimeZone gmt = TimeZone.getTimeZone("GMT");
 	    
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMww");
-
+	
     static {
     	sdf.setTimeZone(gmt);
     }
@@ -227,12 +227,15 @@ public class ElasticSearchDAO implements IndexDAO {
 	
 	@Override
 	public void add(TaskExecLog taskExecLog) {
-		
+		SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+		sdf2.setTimeZone(gmt);
+		String created = sdf2.format(new Date());
 		int retry = 3;
 		while(retry > 0) {
 			try {
 				
-				taskExecLog.setCreated(System.currentTimeMillis());
+				
+				taskExecLog.setCreatedTime(created);
 				IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
 				request.source(om.writeValueAsBytes(taskExecLog));
 	 			client.index(request).actionGet();
