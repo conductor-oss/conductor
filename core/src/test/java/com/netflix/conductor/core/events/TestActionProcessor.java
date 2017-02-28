@@ -91,12 +91,37 @@ public class TestActionProcessor {
 		input.put("k4", "${name}");
 		input.put("k5", "${version}");
 		
+		//Map<String, Object> replaced = pu.replace(input, new ObjectMapper().writeValueAsString(map));
 		Map<String, Object> replaced = pu.replace(input, map);
 		assertNotNull(replaced);
 		System.out.println("testMap(): " + replaced);
 
 		assertEquals("t001", replaced.get("k2"));
 		assertNull(replaced.get("k3"));
+		assertEquals("conductor", replaced.get("k4"));
+		assertEquals(2, replaced.get("k5"));
+	}
+	
+	@Test
+	public void testNoExpand() throws Exception {
+		ParametersUtils pu = new ParametersUtils();
+
+		
+		Map<String, Object> map = new HashMap<>();
+		map.put("name", "conductor");
+		map.put("version", 2);
+		map.put("externalId", "{\"taskRefName\":\"t001\",\"workflowId\":\"w002\"}");
+		
+		Map<String, Object> input = new HashMap<>();
+		input.put("k1", "${$.externalId}");
+		input.put("k4", "${name}");
+		input.put("k5", "${version}");
+		
+		Map<String, Object> replaced = pu.replace(input, map);
+		assertNotNull(replaced);
+		System.out.println("testNoExpand(): " + replaced);
+
+		assertEquals("{\"taskRefName\":\"t001\",\"workflowId\":\"w002\"}", replaced.get("k1"));
 		assertEquals("conductor", replaced.get("k4"));
 		assertEquals(2, replaced.get("k5"));
 	}
