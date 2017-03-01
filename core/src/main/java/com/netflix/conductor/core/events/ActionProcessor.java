@@ -69,9 +69,8 @@ public class ActionProcessor {
 	public Map<String, Object> execute(Action action, String payload) throws Exception {
 
 		logger.debug("Executing {}", action.getAction());
-		Object jsonObj = payload;
+		Object jsonObj = om.readValue(payload, Object.class);
 		if(action.isExpandInlineJSON()) {
-			jsonObj = om.readValue(payload, Object.class);
 			jsonObj = expand(jsonObj);
 		}
 

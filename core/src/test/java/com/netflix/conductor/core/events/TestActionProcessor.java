@@ -29,6 +29,7 @@ import java.util.Map;
 
 import org.junit.Test;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.core.execution.ParametersUtils;
 
 /**
@@ -117,7 +118,10 @@ public class TestActionProcessor {
 		input.put("k4", "${name}");
 		input.put("k5", "${version}");
 		
-		Map<String, Object> replaced = pu.replace(input, map);
+		ObjectMapper om = new ObjectMapper();
+		Object jsonObj = om.readValue(om.writeValueAsString(map), Object.class);
+		
+		Map<String, Object> replaced = pu.replace(input, jsonObj);
 		assertNotNull(replaced);
 		System.out.println("testNoExpand(): " + replaced);
 
