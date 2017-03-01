@@ -37,7 +37,7 @@ After the docker images are built, run the following command to start the contai
 docker-compose up
 ```
 
-This will create a docker container network that consists of the following images: conductor:server, conductor:ui, [elasticsearch:2.4](https://hub.docker.com/_/elasticsearch/), and (https://hub.docker.com/r/v1r3n/dynomite/)[v1r3n/dynomite:latest].
+This will create a docker container network that consists of the following images: conductor:server, conductor:ui, [elasticsearch:2.4](https://hub.docker.com/_/elasticsearch/), and [v1r3n/dynomite:latest](https://hub.docker.com/r/v1r3n/dynomite/).
 
 To view the UI, navigate to [localhost:5000](http://localhost:5000/), to view the Swagger docs, navigate to [localhost:8080](http://localhost:8080/).
 
