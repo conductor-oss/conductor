@@ -202,6 +202,16 @@ class Workflow2Graph {
       }
       nodes.push({type: 'simple', from: t1.taskReferenceName, to: t2.taskReferenceName, label: '', style: style});
 
+    } else if(t1.type == 'EVENT') {
+
+      vertices[t1.taskReferenceName] = {name: t1.name, ref: t1.taskReferenceName, type: 'simple', style: 'fill:#ff0', shape: 'star', system:true};
+
+      let style = defstyle;
+      if(this.executedTasks[t2.taskReferenceName] != null && this.executedTasks[t1.taskReferenceName] != null){
+        style = executed;
+      }
+      nodes.push({type: 'simple', from: t1.taskReferenceName, to: t2.taskReferenceName, label: '', style: style});
+
     } else if(t1.type == 'SUB_WORKFLOW') {
           vertices[t1.taskReferenceName] = {name: t1.name, ref: t1.taskReferenceName, type: 'simple', style: 'fill:#efefef', shape: 'rect', system:true};
 

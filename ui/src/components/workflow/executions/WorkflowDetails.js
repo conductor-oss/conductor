@@ -7,12 +7,24 @@ import { getWorkflowDetails } from '../../../actions/WorkflowActions';
 import WorkflowAction  from './WorkflowAction';
 import WorkflowMetaDia from '../WorkflowMetaDia';
 import moment from 'moment';
-
+import http from '../../../core/HttpClient';
+import Clipboard from 'Clipboard';
+new Clipboard('.btn');
 
 class WorkflowDetails extends Component {
 
   constructor(props) {
     super(props);
+    this.state = {
+      sys: {}
+    };
+
+    http.get('/api/sys/').then((data) => {
+      this.state = {
+        sys: data.sys
+      };
+      window.sys = this.state.sys;
+    });
   }
 
   componentWillReceiveProps(nextProps) {
@@ -31,6 +43,7 @@ class WorkflowDetails extends Component {
 
   render() {
     var wf = this.props.data;
+    let sys = this.state.sys;
     if(wf == null) {
       wf = {};
     }
@@ -67,22 +80,30 @@ class WorkflowDetails extends Component {
         return 'N/A';
       }
     }
-    function workerLink(type, cell){
+    function workerLink(type, cell) {
       if(cell == null){
         return "";
       }
-      let href = "#";
+      let href = sys['env'][type] || '#';
+      if(href != '#') {
+        href = href.replace('%s', cell);
+      } else {
+        href = sys['env']['WORKER_LINK'];
+        href = href || '#';
+        href = href.replace('%s', cell);
+      }
       return <a target="_new" href={href}>{cell}</a>;
     }
     function popoverLink(cell, row){
       return (<OverlayTrigger trigger="click" rootClose placement="left" overlay={
 
-        <Popover title="Task Details" width={400}>
-          <Panel header="Task Input">
-            <span className="small">{JSON.stringify(row.inputData, null, 2)}</span>
+        <Popover title="Task Details" style={{ width: '800px'}}>
+          <Panel header={<span><span>Task Input</span> <i title="copy to clipboard" className="btn fa fa-clipboard" data-clipboard-target="#input"></i></span>}>
+
+            <span className="small"><pre id="input">{JSON.stringify(row.inputData, null, 2)}</pre></span>
           </Panel>
-          <Panel header="Task Output">
-            <span className="small">{JSON.stringify(row.outputData, null, 2)}</span>
+          <Panel header={<span><span>Task Output</span> <i title="copy to clipboard" className="btn fa fa-clipboard" data-clipboard-target="#output"></i></span>}>
+            <span className="small"><pre id="output">{JSON.stringify(row.outputData, null, 2)}</pre></span>
           </Panel>
           <Panel header="Task Failure Reason (if any)">
             <span className="small">{JSON.stringify(row.reasonForIncompletion, null, 2)}</span>
@@ -173,10 +194,10 @@ class WorkflowDetails extends Component {
           </Tab>
           <Tab eventKey={3} title="Input/Output">
           <div>
-            <strong>Workflow Input</strong>
-            <pre style={{height:'200px'}}>{JSON.stringify(wf.input, null, 3)}</pre>
-            <strong>Workflow Output</strong>
-            <pre style={{height:'200px'}}>{JSON.stringify(wf.output==null?{}:wf.output, null, 3)}</pre>
+            <strong>Workflow Input <i title="copy to clipboard" className="btn fa fa-clipboard" data-clipboard-target="#wfinput"></i></strong>
+            <pre style={{height:'200px'}} id="wfinput">{JSON.stringify(wf.input, null, 3)}</pre>
+            <strong>Workflow Output <i title="copy to clipboard" className="btn fa fa-clipboard" data-clipboard-target="#wfoutput"></i></strong>
+            <pre style={{height:'200px'}} id="wfoutput">{JSON.stringify(wf.output==null?{}:wf.output, null, 3)}</pre>
             {wf.status == 'FAILED'?<div><strong>Workflow Faiure Reason (if any)</strong><pre>{wf.reasonForIncompletion?JSON.stringify(wf.reasonForIncompletion, null, 3):''}</pre></div>:''}
           </div>
           </Tab>

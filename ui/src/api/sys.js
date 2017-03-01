@@ -11,7 +11,8 @@ router.get('/', async (req, res, next) => {
   try {
     const result = {
       server: wfServer,
-      version: '1.0'
+      version: '1.0',
+      env: process.env
     };
 
     res.status(200).send({sys: result});

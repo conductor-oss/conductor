@@ -25,6 +25,7 @@
     "babel-polyfill": "^6.3.14",
     "babel-register": "^6.18.0",
     "bunyan": "^1.7.1",
+    "clipboard": "^1.6.1",
     "d3": "^3.5.16",
     "dagre-d3": "^0.4.17",
     "express": "^4.13.3",

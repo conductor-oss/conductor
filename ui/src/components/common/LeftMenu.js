@@ -4,6 +4,11 @@ import { connect } from 'react-redux';
 
 const menuPaths = {
   Workflow: [{
+    header: true,
+    label: 'Executions',
+    href: '/events',
+    icon: 'fa-star'
+  },{
     label: 'All',
     href: '/workflow',
     icon: 'fa-circle-thin'
@@ -28,6 +33,11 @@ const menuPaths = {
     href: '/workflow?status=COMPLETED&h=48',
     icon: 'fa-bullseye'
   },{
+    header: true,
+    label: 'Metadata',
+    href: '/events',
+    icon: 'fa-star'
+  },{
     label: 'Workflow Defs',
     href: '/workflow/metadata',
     icon: 'fa-code-fork'
@@ -35,6 +45,15 @@ const menuPaths = {
     label: 'Tasks',
     href: '/workflow/metadata/tasks',
     icon: 'fa-tasks'
+  },{
+    header: true,
+    label: 'Workflow Events',
+    href: '/events',
+    icon: 'fa-star'
+  },{
+    label: 'Event Handlers',
+    href: '/events',
+    icon: 'fa-star'
   }]
 };
 
@@ -75,23 +94,31 @@ const LeftMenu = React.createClass({
     let menuItems = [];
     menuPaths[appName].map((cv, i, arr) => {
       let iconClass = 'fa ' + cv['icon'];
-      menuItems.push((
-        <Link to={cv['href']}>
-            <div className='menuItem'>
-            <i className={iconClass} style={{width: '20px'}}></i>
-            <span style={{ marginLeft: '10px', display: display}}>
-              {cv['label']}
-            </span>
-            </div>
-        </Link>
-      ));
+      if(cv['header'] == true) {
+        menuItems.push((
+          <div className="">
+            <div className='menuHeader'><i className='fa fa-angle-right'></i>&nbsp;{cv['label']}</div>
+          </div>
+        ));
+      } else {
+        menuItems.push((
+          <Link to={cv['href']}>
+              <div className='menuItem'>
+              <i className={iconClass} style={{width: '20px'}}></i>
+              <span style={{ marginLeft: '10px', display: display}}>
+                {cv['label']}
+              </span>
+              </div>
+          </Link>
+        ));
+      }
     });
 
     return (
       <div className="left-menu" style={{width:width}}>
         <div className="logo textual pull-left">
-          <a href="/" title="Workflow">
-            <h4><i className={this.state.loading?"fa fa-bars fa-spin fa-1x":"fa fa-bars"}></i> {this.state.loading || minimize?'':appName}</h4>
+          <a href="/" title="Conductor">
+            <h4><i className={this.state.loading?"fa fa-bars fa-spin fa-1x":"fa fa-bars"}></i> {this.state.loading || minimize?'':'Conductor'}</h4>
           </a>
         </div>
         <div className="menuList">
