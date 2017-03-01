@@ -1,9 +1,6 @@
 import { join } from 'path';
 import { Router } from 'express';
-import Bunyan from 'bunyan';
 import http from '../core/HttpClient';
-
-var log = Bunyan.createLogger({src : true, name: 'wfe-api'});
 
 const router = new Router();
 const baseURL = process.env.WF_SERVER;
