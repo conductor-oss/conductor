@@ -152,6 +152,20 @@ export default function workflows(state = initialState, action) {
         fetching: false,
         refetch: false
       };
+    case 'LIST_EVENT_HANDLERS':
+      return {
+        ...state,
+        error: false,
+        fetching: true
+      };
+    case 'RECEIVED_LIST_EVENT_HANDLERS':
+      return {
+        ...state,
+        events: action.events,
+        error: false,
+        fetching: false,
+        refetch: false
+      };
     case 'GET_WORKFLOW_DEF':
       return {
         ...state,

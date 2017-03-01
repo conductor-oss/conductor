@@ -11,16 +11,10 @@ class Introduction extends Component {
   render() {
     return (
         <Jumbotron className="jumbotron">
-        <header className="codrops-header">
-            <h1>Conductor User Interface</h1>
-          </header>
-          <div className="column">
-            <info>Conductor User Interface</info>
+          <div className="row">
+            <img src="/images/conductor.png"></img>
           </div>
-          <div className="column">
-            <button className="button-pill">Conductor</button>
-          </div>
-
+          <div className="row">&nbsp;</div>
         </Jumbotron>
     );
   }

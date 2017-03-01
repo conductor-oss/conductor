@@ -45,6 +45,7 @@ const WorkflowMetaList = React.createClass({
 
     return (
       <div className="ui-content">
+        <h1>Workflows</h1>
         <BootstrapTable data={wfs} striped={true} hover={true} search={true} exportCSV={false} pagination={false}>
           <TableHeaderColumn dataField="name" isKey={true} dataAlign="left" dataSort={true} dataFormat={nameMaker}>Name/Version</TableHeaderColumn>
           <TableHeaderColumn dataField="inputParameters" dataSort={true} dataFormat={jsonMaker}>Input Parameters</TableHeaderColumn>

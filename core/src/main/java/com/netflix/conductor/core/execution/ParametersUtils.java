@@ -77,7 +77,13 @@ public class ParametersUtils {
 	}
 	
 	public Map<String, Object> replace(Map<String, Object> input, Object json) {
-		DocumentContext io = JsonPath.parse(json, option);
+		Object doc = null;
+		if(json instanceof String) {
+			doc = JsonPath.parse(json.toString());
+		} else {
+			doc = json;
+		}
+		DocumentContext io = JsonPath.parse(doc, option);
 		return replace(input, io, null);
 	}
 	

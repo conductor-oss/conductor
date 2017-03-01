@@ -257,7 +257,7 @@ h1 {
   font-size: 2em;
   display: block;
   padding: 0 0 0.6em 0.1em;
-  color: #aca89a;
+  color: #000000;
 }
 h3 {
   font-size: 1.6em;
@@ -272,7 +272,7 @@ h4 {
 }
 .info {
   color: #48a770;
-  font-size: 1.1em;
+  font-size: 1.0em;
 }
 .info-table {
   width: 99%;
@@ -487,6 +487,17 @@ a:hover {
 .menuList {
   margin-top: 100px;
 }
+
+.menuHeader {
+  x-background-color: #062f4f;
+  height: 42px;
+  display: block;
+  line-height: 45px;
+  padding: 0 10px;
+  letter-spacing: 1px;
+  color: #fff;
+}
+
 
 .menuItem {
   x-background-color: #fff;

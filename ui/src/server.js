@@ -8,6 +8,7 @@ let log = Bunyan.createLogger({src : true, name: 'Conductor UI'});
 
 const wfeAPI = require('./api/wfe');
 const sysAPI = require('./api/sys');
+const eventsAPI = require('./api/events');
 
 let app = express();
 log.info('Serving static ' + process.cwd());
@@ -15,6 +16,7 @@ app.use(express.static('public'));
 
 app.use('/api/wfe', wfeAPI);
 app.use('/api/sys', sysAPI);
+app.use('/api/events', eventsAPI);
 
 let server = app.listen(5000, function () {
   var host = server.address().address;

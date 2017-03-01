@@ -247,3 +247,47 @@ export function updateWorkflow(workflow){
     });
   }
 }
+
+export function getEventHandlers() {
+
+  return function (dispatch) {
+    dispatch({
+      type: 'LIST_EVENT_HANDLERS'
+    });
+
+
+    return http.get('/api/events').then((data) => {
+      dispatch({
+        type: 'RECEIVED_LIST_EVENT_HANDLERS',
+        events : data
+      });
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}
+
+export function getEvents(event, time, query) {
+
+  return function (dispatch) {
+    dispatch({
+      type: 'LIST_EVENT'
+    });
+
+
+    return http.get('/api/events/executions').then((data) => {
+      dispatch({
+        type: 'RECEIVED_LIST_EVENT',
+        events : data
+      });
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}

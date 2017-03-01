@@ -7,6 +7,8 @@ import d3 from 'd3'
 import { Breadcrumb, BreadcrumbItem, Grid, Row, Col, Well, OverlayTrigger,Button,Popover, Panel, Tabs, Tab, Table, ButtonToolbar, Modal } from 'react-bootstrap';
 import  WorkflowDetails  from '../workflow/executions/WorkflowDetails';
 import { Provider } from 'react-redux'
+import Clipboard from 'Clipboard';
+new Clipboard('.btn');
 
 class Grapher extends Component {
 
@@ -20,6 +22,22 @@ class Grapher extends Component {
     this.state.layout = 'TD';
     this.state.parentElem = props.parentElem;
     this.grapher = new dagreD3.render();
+    let starPoints = function (outerRadius, innerRadius) {
+       var results = "";
+       var angle = Math.PI / 8;
+       for (var i = 0; i < 2 * 8; i++) {
+          // Use outer or inner radius depending on what iteration we are in.
+          var r = (i & 1) == 0 ? outerRadius : innerRadius;
+          var currX = 0 + Math.cos(i * angle) * r;
+          var currY = 0 + Math.sin(i * angle) * r;
+          if (i == 0) {
+             results = currX + "," + currY;
+          } else {
+             results += ", " + currX + "," + currY;
+          }
+       }
+       return results;
+    };
     this.grapher.shapes().house = function(parent, bbox, node) {
       var w = bbox.width,
           h = bbox.height,
@@ -40,6 +58,25 @@ class Grapher extends Component {
 
             return shapeSvg;
     };
+
+    this.grapher.shapes().star = function(parent, bbox, node) {
+      var w = bbox.width,
+          h = bbox.height,
+          points = [
+            { x:   0, y:        0 },
+            { x:   w, y:        0 },
+            { x:   w, y:       -h },
+            { x: w/2, y: -h * 3/2 },
+            { x:   0, y:       -h }
+          ];
+          let shapeSvg = parent.insert("polygon", ":first-child").attr("points", starPoints(w, h))
+            node.intersect = function(point) {
+              return dagreD3.intersect.polygon(node, points, point);
+            };
+
+            return shapeSvg;
+    };
+
     this.state.rendered = false;
   }
 
@@ -132,14 +169,14 @@ class Grapher extends Component {
           let vx = innerGraph[v].vertices;
           let subg = {n : n, vx: vx, layout: layout};
 
-          d3.select("#propsdiv").style("left", (screen.width-600) + 'px');
-          div.style.left = (screen.width-600) + "px";
+          d3.select("#propsdiv").style("left", (window.outerWidth-600) + 'px');
+          div.style.left = (window.outerWidth-600) + "px";
           p.setState({selectedTask: data.task, showSubGraph:true, showSideBar: false, subGraph: subg, subGraphId: innerGraph[v].id});
           p.setState({showSubGraph: true});
 
         } else if(vertices[v].tooltip != null){
             let data = vertices[v].data;
-            d3.select("#propsdiv").style("left", (screen.width-600) + 'px');
+            d3.select("#propsdiv").style("left", (window.outerWidth-600) + 'px');
             p.setState({selectedTask: data.task, showSideBar:true, subGraph: null, showSubGraph: false});
         }
       });
@@ -157,14 +194,15 @@ class Grapher extends Component {
                 <Table responsive={true} striped={false} hover={false} condensed={false} bordered={true}><tbody>
                   <tr><th>Task Ref. Name</th><td colSpan="3" style={{colSpan:3}}>{this.state.selectedTask.referenceTaskName}</td></tr>
                   <tr><th>Poll Count</th><td>{this.state.selectedTask.pollCount}</td><th>Callback After</th><td>{this.state.selectedTask.callbackAfterSeconds?this.state.selectedTask.callbackAfterSeconds:0} (second)</td></tr>
-                  <tr><th colSpan="4">Input</th></tr>
-                  <tr><td colSpan="4"><pre>{JSON.stringify(this.state.selectedTask.inputData, null, 3)}</pre></td></tr>
-                  <tr><th colSpan="4">Output</th></tr>
-                  <tr><td colSpan="4"><pre>{JSON.stringify(this.state.selectedTask.outputData, null, 3)}</pre></td></tr>
+                  <tr><th colSpan="4">Input <i title="copy to clipboard" className="btn fa fa-clipboard" data-clipboard-target="#t_input"></i></th></tr>
+                  <tr><td colSpan="4"><pre id="t_input">{JSON.stringify(this.state.selectedTask.inputData, null, 3)}</pre></td></tr>
+                  <tr><th colSpan="4">Output <i title="copy to clipboard" className="btn fa fa-clipboard" data-clipboard-target="#t_output"></i></th></tr>
+                  <tr><td colSpan="4"><pre id="t_output">{JSON.stringify(this.state.selectedTask.outputData, null, 3)}</pre></td></tr>
                 </tbody></Table>
               </Tab>
               <Tab eventKey={2} title="JSON"><br/>
-                <pre>{JSON.stringify(this.state.selectedTask, null, 3)}</pre>
+                <i title="copy to clipboard" className="btn fa fa-clipboard" data-clipboard-target="#t_json"></i>
+                <pre id="t_json">{JSON.stringify(this.state.selectedTask, null, 3)}</pre>
               </Tab>
             </Tabs>
           </div>

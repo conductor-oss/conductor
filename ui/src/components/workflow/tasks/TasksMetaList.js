@@ -57,6 +57,7 @@ const TaskMetaList = React.createClass({
 
     return (
       <div className="ui-content">
+        <h1>Task Definitions</h1>
         <BootstrapTable data={wfs} striped={true} hover={true} search={true} exportCSV={false} pagination={false}>
           <TableHeaderColumn dataField="name" isKey={true} dataAlign="left" dataSort={true} dataFormat={editor}>Name/Version</TableHeaderColumn>
           <TableHeaderColumn dataField="ownerApp" dataSort={true} >Owner App</TableHeaderColumn>
