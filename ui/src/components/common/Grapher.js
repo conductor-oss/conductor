@@ -7,7 +7,7 @@ import d3 from 'd3'
 import { Breadcrumb, BreadcrumbItem, Grid, Row, Col, Well, OverlayTrigger,Button,Popover, Panel, Tabs, Tab, Table, ButtonToolbar, Modal } from 'react-bootstrap';
 import  WorkflowDetails  from '../workflow/executions/WorkflowDetails';
 import { Provider } from 'react-redux'
-import Clipboard from 'Clipboard';
+import Clipboard from 'clipboard';
 new Clipboard('.btn');
 
 class Grapher extends Component {

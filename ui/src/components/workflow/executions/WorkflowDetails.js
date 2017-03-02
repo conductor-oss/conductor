@@ -8,7 +8,7 @@ import WorkflowAction  from './WorkflowAction';
 import WorkflowMetaDia from '../WorkflowMetaDia';
 import moment from 'moment';
 import http from '../../../core/HttpClient';
-import Clipboard from 'Clipboard';
+import Clipboard from 'clipboard';
 new Clipboard('.btn');
 
 class WorkflowDetails extends Component {
