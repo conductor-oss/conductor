@@ -1,14 +1,7 @@
 import gulp from 'gulp';
 import autoprefixer from 'autoprefixer';
-import browserify from 'browserify';
-import watchify from 'watchify';
-import source from 'vinyl-source-stream';
-import buffer from 'vinyl-buffer';
 import eslint from 'gulp-eslint';
-import babelify from 'babelify';
-import uglify from 'gulp-uglify';
 import rimraf from 'rimraf';
-import notify from 'gulp-notify';
 import browserSync, { reload } from 'browser-sync';
 import sourcemaps from 'gulp-sourcemaps';
 import postcss from 'gulp-postcss';
@@ -16,12 +9,10 @@ import nested from 'postcss-nested';
 import vars from 'postcss-simple-vars';
 import extend from 'postcss-simple-extend';
 import cssnano from 'cssnano';
-import htmlReplace from 'gulp-html-replace';
 import imagemin from 'gulp-imagemin';
 import pngquant from 'imagemin-pngquant';
 import runSequence from 'run-sequence';
 import ghPages from 'gulp-gh-pages';
-import babel from 'gulp-babel';
 import path from 'path';
 import cp from 'child_process';
 import webpack from 'webpack';
@@ -170,7 +161,6 @@ gulp.task('deploy', function () {
 });
 
 gulp.task('watch', cb => {
-  global.WATCH = true;
   runSequence('clean', ['set-env','browserSync', 'watchTask', 'public', 'styles', 'fonts','lint', 'images'], cb);
 });
 
@@ -185,7 +175,6 @@ gulp.task('set-env', function () {
 });
 
 gulp.task('build', cb => {
-  global.WATCH = false;
   process.env.DEBUG = false;
   runSequence('clean', ['server-bundle', 'styles', 'fonts','public', 'images'], cb);
 });

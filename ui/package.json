@@ -6,8 +6,8 @@
   "scripts": {
     "test": "mocha --reporter nyan --compilers js:babel-core/register --recursive",
     "watch": "gulp watch",
-    "build": "gulp build",
-    "deploy": "gulp deploy"
+    "build": "gulp build --release",
+    "deploy": "gulp deploy --release"
   },
   "repository": {
     "type": "git",

@@ -92,17 +92,18 @@ const LeftMenu = React.createClass({
     }
     let display = minimize?'none':'';
     let menuItems = [];
+    let keyVal = 0;
     menuPaths[appName].map((cv, i, arr) => {
       let iconClass = 'fa ' + cv['icon'];
       if(cv['header'] == true) {
         menuItems.push((
-          <div className="">
+          <div className="" key={`key-${(keyVal += 1)}`}>
             <div className='menuHeader'><i className='fa fa-angle-right'></i>&nbsp;{cv['label']}</div>
           </div>
         ));
       } else {
         menuItems.push((
-          <Link to={cv['href']}>
+          <Link to={cv['href']} key={`key-${(keyVal += 1)}`}>
               <div className='menuItem'>
               <i className={iconClass} style={{width: '20px'}}></i>
               <span style={{ marginLeft: '10px', display: display}}>
