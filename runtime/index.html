@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Workflow Management - Conductor</title>
+  <title>APIs - Conductor</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -18,7 +18,7 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Workflow Management";
+    var mkdocs_page_name = "APIs";
     var mkdocs_page_input_path = "runtime/index.md";
     var mkdocs_page_url = "/runtime/";
   </script>
@@ -85,6 +85,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../events/">Event Handlers</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
         
     </li>
@@ -113,13 +120,23 @@
           
             <li>
     <li class="toctree-l1 current">
-        <a class="current" href="./">Workflow Management</a>
+        <a class="current" href="./">APIs</a>
         
             <ul>
             
-                <li class="toctree-l3"><a href="#metadata">Metadata</a></li>
+                <li class="toctree-l3"><a href="#task-workflow-metadata">Task &amp; Workflow Metadata</a></li>
             
-                <li class="toctree-l3"><a href="#instances">Instances</a></li>
+                <li class="toctree-l3"><a href="#start-a-workflow">Start A Workflow</a></li>
+            
+                <li class="toctree-l3"><a href="#retrieve-workflows">Retrieve Workflows</a></li>
+            
+                <li class="toctree-l3"><a href="#search-for-workflows">Search for Workflows</a></li>
+            
+                <li class="toctree-l3"><a href="#manage-workflows">Manage Workflows</a></li>
+            
+                <li class="toctree-l3"><a href="#manage-tasks">Manage Tasks</a></li>
+            
+                <li class="toctree-l3"><a href="#polling-ack-and-update-task">Polling, Ack and Update Task</a></li>
             
             </ul>
         
@@ -146,6 +163,13 @@
 
         
     </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../faq/">FAQ</a>
+        
+    </li>
 <li>
           
             <li>
@@ -177,7 +201,7 @@
     
       
     
-    <li>Workflow Management</li>
+    <li>APIs</li>
     <li class="wy-breadcrumbs-aside">
       
         <a href="https://github.com/Netflix/conductor/edit/master/docs/runtime/index.md"
@@ -190,19 +214,331 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="metadata">Metadata<a class="headerlink" href="#metadata" title="Permanent link">&para;</a></h1>
-<p>Workflow blueprints are managed via <code>/metadata</code> resource endpoints.</p>
-<h1 id="instances">Instances<a class="headerlink" href="#instances" title="Permanent link">&para;</a></h1>
-<p>Each running workflow instance is identified by a unique instance id.  This id is used for managing the lifecycle of workflow instance.  The following operations are possible:</p>
-<ol>
-<li>Start a workflow</li>
-<li>Terminate</li>
-<li>Restart</li>
-<li>Pause</li>
-<li>Resume</li>
-<li>Rerun</li>
-<li>Search for workflows</li>
-</ol>
+                <h2 id="task-workflow-metadata">Task &amp; Workflow Metadata<a class="headerlink" href="#task-workflow-metadata" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th align="left">Description</th>
+<th>Input</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /metadata/taskdefs</code></td>
+<td align="left">Get all the task definitions</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>GET /metadata/taskdefs/{taskType}</code></td>
+<td align="left">Retrieve task definition</td>
+<td>Task Name</td>
+</tr>
+<tr>
+<td><code>POST /metadata/taskdefs</code></td>
+<td align="left">Register new task definitions</td>
+<td>List of <a href="../metadata/#task-definition">Task Definitions</a></td>
+</tr>
+<tr>
+<td><code>PUT /metadata/taskdefs</code></td>
+<td align="left">Update a task definition</td>
+<td>A <a href="../metadata/#task-definition">Task Definition</a></td>
+</tr>
+<tr>
+<td><code>DELETE /metadata/taskdefs/{taskType}</code></td>
+<td align="left">Delete a task definition</td>
+<td>Task Name</td>
+</tr>
+<tr>
+<td></td>
+<td align="left"></td>
+<td></td>
+</tr>
+<tr>
+<td><code>GET /metadata/workflow</code></td>
+<td align="left">Get all the workflow definitions</td>
+<td>n/a</td>
+</tr>
+<tr>
+<td><code>POST /metadata/workflow</code></td>
+<td align="left">Register new workflow</td>
+<td><a href="../metadata/#workflow-definition">Workflow Definition</a></td>
+</tr>
+<tr>
+<td><code>PUT /metadata/workflow</code></td>
+<td align="left">Register/Update new workflows</td>
+<td>List of <a href="../metadata/#workflow-definition">Workflow Definition</a></td>
+</tr>
+<tr>
+<td><code>GET /metadata/workflow/{name}?version=</code></td>
+<td align="left">Get the workflow definitions</td>
+<td>workflow name, version (optional)</td>
+</tr>
+<tr>
+<td></td>
+<td align="left"></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="start-a-workflow">Start A Workflow<a class="headerlink" href="#start-a-workflow" title="Permanent link">&para;</a></h2>
+<pre><code>POST /workflow/{name}?version=&amp;correlationId=
+{
+   //JSON payload for workflow
+}
+</code></pre>
+
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>version</td>
+<td>Optional.  If not specified uses the latest version of the workflow</td>
+</tr>
+<tr>
+<td>correlationId</td>
+<td>User supplied Id that can be used to retrieve workflows</td>
+</tr>
+</tbody>
+</table>
+<h4 id="input">Input<a class="headerlink" href="#input" title="Permanent link">&para;</a></h4>
+<p>JSON Payload to start the workflow.  Mandatory.  If workflow does not expect any input MUST pass an empty JSON like <code>{}</code></p>
+<h4 id="output">Output<a class="headerlink" href="#output" title="Permanent link">&para;</a></h4>
+<p>Id of the workflow (GUID)</p>
+<h2 id="retrieve-workflows">Retrieve Workflows<a class="headerlink" href="#retrieve-workflows" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /workflow/{workflowId}?includeTasks=true|false</code></td>
+<td>Get Workflow State by workflow Id.  If includeTasks is set, then also includes all the tasks executed and scheduled.</td>
+</tr>
+<tr>
+<td><code>GET /workflow/running/{name}</code></td>
+<td>Get all the running workflows of a given type</td>
+</tr>
+<tr>
+<td><code>GET /workflow/running/{name}/correlated/{correlationId}?includeClosed=true|false&amp;includeTasks=true|false</code></td>
+<td>Get all the running workflows filtered by correlation Id.  If includeClosed is set, also includes workflows that have completed running.</td>
+</tr>
+<tr>
+<td><code>GET /workflow/search</code></td>
+<td>Search for workflows.  See Below.</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="search-for-workflows">Search for Workflows<a class="headerlink" href="#search-for-workflows" title="Permanent link">&para;</a></h2>
+<p>Conductor uses Elasticsearch for indexing workflow execution and is used by search APIs.</p>
+<p><code>GET /workflow/search?start=&amp;size=&amp;sort=&amp;freeText=&amp;query=</code></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>start</td>
+<td>Page number.  Defaults to 0</td>
+</tr>
+<tr>
+<td>size</td>
+<td>Number of results to return</td>
+</tr>
+<tr>
+<td>sort</td>
+<td>Sorting.  Format is: <code>ASC:&lt;fieldname&gt;</code> or <code>DESC:&lt;fieldname&gt;</code> to sort in ascending or descending order by a field</td>
+</tr>
+<tr>
+<td>freeText</td>
+<td>Elasticsearch supported query. e.g. workflowType:"name_of_workflow"</td>
+</tr>
+<tr>
+<td>query</td>
+<td>SQL like where clause.  e.g. workflowType = 'name_of_workflow'.  Optional if freeText is provided.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="output_1">Output<a class="headerlink" href="#output_1" title="Permanent link">&para;</a></h3>
+<p>Search result as described below:</p>
+<pre><code class="json">{
+  &quot;totalHits&quot;: 0,
+  &quot;results&quot;: [
+    {
+      &quot;workflowType&quot;: &quot;string&quot;,
+      &quot;version&quot;: 0,
+      &quot;workflowId&quot;: &quot;string&quot;,
+      &quot;correlationId&quot;: &quot;string&quot;,
+      &quot;startTime&quot;: &quot;string&quot;,
+      &quot;updateTime&quot;: &quot;string&quot;,
+      &quot;endTime&quot;: &quot;string&quot;,
+      &quot;status&quot;: &quot;RUNNING&quot;,
+      &quot;input&quot;: &quot;string&quot;,
+      &quot;output&quot;: &quot;string&quot;,
+      &quot;reasonForIncompletion&quot;: &quot;string&quot;,
+      &quot;executionTime&quot;: 0,
+      &quot;event&quot;: &quot;string&quot;
+    }
+  ]
+}
+</code></pre>
+
+<h2 id="manage-workflows">Manage Workflows<a class="headerlink" href="#manage-workflows" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>PUT /workflow/{workflowId}/pause</code></td>
+<td>Pause.  No further tasks will be scheduled until resumed.  Currently running tasks are not paused.</td>
+</tr>
+<tr>
+<td><code>PUT /workflow/{workflowId}/resume</code></td>
+<td>Resume normal operations after a pause.</td>
+</tr>
+<tr>
+<td><code>POST /workflow/{workflowId}/rerun</code></td>
+<td>See Below.</td>
+</tr>
+<tr>
+<td><code>POST /workflow/{workflowId}/restart</code></td>
+<td>Restart workflow execution from the start.  Current execution history is wiped out.</td>
+</tr>
+<tr>
+<td><code>POST /workflow/{workflowId}/retry</code></td>
+<td>Retry the last failed task.</td>
+</tr>
+<tr>
+<td><code>PUT /workflow/{workflowId}/skiptask/{taskReferenceName}</code></td>
+<td>See below.</td>
+</tr>
+<tr>
+<td><code>DELETE /workflow/{workflowId}</code></td>
+<td>Terminates the running workflow.</td>
+</tr>
+<tr>
+<td><code>DELETE /workflow/{workflowId}/remove</code></td>
+<td>Deletes the workflow from system.  Use with caution.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="rerun">Rerun<a class="headerlink" href="#rerun" title="Permanent link">&para;</a></h3>
+<p>Re-runs a completed workflow from a specific task. </p>
+<p><code>POST /workflow/{workflowId}/rerun</code></p>
+<pre><code class="json">{
+  &quot;reRunFromWorkflowId&quot;: &quot;string&quot;,
+  &quot;workflowInput&quot;: {},
+  &quot;reRunFromTaskId&quot;: &quot;string&quot;,
+  &quot;taskInput&quot;: {}
+}
+</code></pre>
+
+<h3 id="skip-task">Skip Task<a class="headerlink" href="#skip-task" title="Permanent link">&para;</a></h3>
+<p>Skips a task execution (specified as <code>taskReferenceName</code> parameter) in a running workflow and continues forward.
+Optionally updating task's input and output as specified in the payload.
+<code>PUT /workflow/{workflowId}/skiptask/{taskReferenceName}?workflowId=&amp;taskReferenceName=</code></p>
+<pre><code class="json">{
+  &quot;taskInput&quot;: {},
+  &quot;taskOutput&quot;: {}
+}
+</code></pre>
+
+<h2 id="manage-tasks">Manage Tasks<a class="headerlink" href="#manage-tasks" title="Permanent link">&para;</a></h2>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /tasks/{taskId}</code></td>
+<td>Get task details.</td>
+</tr>
+<tr>
+<td><code>GET /tasks/queue/all</code></td>
+<td>List the pending task sizes.</td>
+</tr>
+<tr>
+<td><code>GET /tasks/queue/all/verbose</code></td>
+<td>Same as above, includes the size per shard</td>
+</tr>
+<tr>
+<td><code>GET /tasks/queue/sizes?taskType=&amp;taskType=&amp;taskType</code></td>
+<td>Return the size of pending tasks for given task types</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="polling-ack-and-update-task">Polling, Ack and Update Task<a class="headerlink" href="#polling-ack-and-update-task" title="Permanent link">&para;</a></h2>
+<p>These are critical endpoints used to poll for task, send ack (after polling) and finally updating the task result by worker.</p>
+<table>
+<thead>
+<tr>
+<th>Endpoint</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>GET /tasks/poll/{taskType}</code></td>
+<td>Poll for a task</td>
+</tr>
+<tr>
+<td><code>GET /tasks/poll/batch/{taskType}?count=&amp;timeout=</code></td>
+<td>Poll for a task in a batch specified by <code>count</code>.  This is a long poll and the connection will wait until <code>timeout</code> or if there is at-least 1 item available, whichever comes first.</td>
+</tr>
+<tr>
+<td><code>POST /tasks</code></td>
+<td>Update the result of task execution.  See the schema below.</td>
+</tr>
+<tr>
+<td><code>POST /tasks/{taskId}/ack</code></td>
+<td>Acknowledges the task received AFTER poll by worker.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="schema-for-updating-task-result">Schema for updating Task Result<a class="headerlink" href="#schema-for-updating-task-result" title="Permanent link">&para;</a></h3>
+<pre><code class="json">{
+    &quot;workflowInstanceId&quot;: &quot;Workflow Instance Id&quot;,
+    &quot;taskId&quot;: &quot;ID of the task to be updated&quot;,
+    &quot;reasonForIncompletion&quot; : &quot;If failed, reason for failure&quot;,
+    &quot;callbackAfterSeconds&quot;: 0,
+    &quot;status&quot;: &quot;IN_PROGRESS|FAILED|COMPLETED&quot;,
+    &quot;outputData&quot;: {
+        //JSON document representing Task execution output     
+    }
+
+}
+</code></pre>
+
+<div class="admonition info">
+<p class="admonition-title">Acknowledging tasks after poll</p>
+<p>If the worker fails to ack the task after polling, the task is re-queued and put back in queue and is made available during subsequent poll.</p>
+</div>
               
             </div>
           </div>

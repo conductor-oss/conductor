@@ -85,6 +85,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../events/">Event Handlers</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
         
     </li>
@@ -123,7 +130,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../runtime/">Workflow Management</a>
+        <a class="" href="../runtime/">APIs</a>
         
     </li>
 <li>
@@ -148,6 +155,13 @@
 
         
     </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../faq/">FAQ</a>
+        
+    </li>
 <li>
           
             <li>
@@ -207,7 +221,7 @@
 </code></pre>
 
 <h4 id="2-download-pre-built-binaries-from-jcenter-or-maven-central">2. Download pre-built binaries from jcenter or maven central<a class="headerlink" href="#2-download-pre-built-binaries-from-jcenter-or-maven-central" title="Permanent link">&para;</a></h4>
-<p>Use the following coordiates:</p>
+<p>Use the following coordinates:</p>
 <table>
 <thead>
 <tr>
@@ -234,7 +248,7 @@ docker-compose build
 <pre><code class="shell">docker-compose up
 </code></pre>
 
-<p>This will create a docker container network that consists of the following images: conductor:server, conductor:ui, <a href="https://hub.docker.com/_/elasticsearch/">elasticsearch:2.4</a>, and (https://hub.docker.com/r/v1r3n/dynomite/)[v1r3n/dynomite:latest].</p>
+<p>This will create a docker container network that consists of the following images: conductor:server, conductor:ui, <a href="https://hub.docker.com/_/elasticsearch/">elasticsearch:2.4</a>, and dynomite.</p>
 <p>To view the UI, navigate to <a href="http://localhost:5000/">localhost:5000</a>, to view the Swagger docs, navigate to <a href="http://localhost:8080/">localhost:8080</a>.</p>
 <h1 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h1>
 <p>Conductor server uses a property file based configuration.  The property file is passed to the Main class as a command line argument.</p>
@@ -245,7 +259,7 @@ docker-compose build
 <h3 id="configuration-parameters">Configuration Parameters<a class="headerlink" href="#configuration-parameters" title="Permanent link">&para;</a></h3>
 <pre><code class="properties">
 # Database persistence model.  Possible values are memory, redis, and dynomite.
-# If ommitted, the persistence used is memory
+# If omitted, the persistence used is memory
 #
 # memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo
 # redis : non-Dynomite based redis instance

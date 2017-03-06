@@ -85,6 +85,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../events/">Event Handlers</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
         
     </li>
@@ -121,7 +128,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../runtime/">Workflow Management</a>
+        <a class="" href="../runtime/">APIs</a>
         
     </li>
 <li>
@@ -146,6 +153,13 @@
 
         
     </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../faq/">FAQ</a>
+        
+    </li>
 <li>
           
             <li>
@@ -193,7 +207,7 @@
                 <h1 id="backend">Backend<a class="headerlink" href="#backend" title="Permanent link">&para;</a></h1>
 <p>Conductor provides a pluggable backend.  The current implementation uses Dynomite.</p>
 <p>There are 4 interfaces that needs to be implemented for each backend:</p>
-<pre><code class="java">//Store for workfow and task definitions
+<pre><code class="java">//Store for workflow and task definitions
 com.netflix.conductor.dao.MetadataDAO
 </code></pre>
 
@@ -215,7 +229,7 @@ e.g. SQS for queueing and a relational store for others.</p>
 <p>To create system tasks follow the steps below:</p>
 <ul>
 <li>Extend <code>com.netflix.conductor.core.execution.tasks.WorkflowSystemTask</code></li>
-<li>Instantiate the new classs as part of the statup (eager singleton)</li>
+<li>Instantiate the new class as part of the startup (eager singleton)</li>
 </ul>
               
             </div>
@@ -224,7 +238,7 @@ e.g. SQS for queueing and a relational store for others.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../runtime/" class="btn btn-neutral float-right" title="Workflow Management">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../runtime/" class="btn btn-neutral float-right" title="APIs">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../worker/" class="btn btn-neutral" title="Conductor Task Workers"><span class="icon icon-circle-arrow-left"></span> Previous</a>

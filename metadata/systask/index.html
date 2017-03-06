@@ -98,7 +98,16 @@
             
                 <li class="toctree-l3"><a href="#http">HTTP</a></li>
             
+                <li class="toctree-l3"><a href="#event">Event</a></li>
+            
             </ul>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../events/">Event Handlers</a>
         
     </li>
 <li>
@@ -133,7 +142,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../runtime/">Workflow Management</a>
+        <a class="" href="../../runtime/">APIs</a>
         
     </li>
 <li>
@@ -158,6 +167,13 @@
 
         
     </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../faq/">FAQ</a>
+        
+    </li>
 <li>
           
             <li>
@@ -233,7 +249,7 @@
 
 <p>If the workflow is started with input parameter user_supplied_task's value as <strong>user_task_2</strong>, Conductor will schedule <strong>user_task_2</strong> when scheduling this dynamic task.</p>
 <h1 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h1>
-<p>A decision task is similar to <code>case...switch</code> statement in a programming langugage.
+<p>A decision task is similar to <code>case...switch</code> statement in a programming language.
 The task takes 3 parameters:</p>
 <h3 id="parameters_1">Parameters:<a class="headerlink" href="#parameters_1" title="Permanent link">&para;</a></h3>
 <table>
@@ -369,7 +385,7 @@ The task takes 3 parameters:</p>
 </tr>
 <tr>
 <td>dynamicForkTasksInputParamName</td>
-<td>Name of the parameter whose value should be a map with key as forked task's referece name and value as input the forked task</td>
+<td>Name of the parameter whose value should be a map with key as forked task's reference name and value as input the forked task</td>
 </tr>
 </tbody>
 </table>
@@ -418,7 +434,7 @@ The task takes 3 parameters:</p>
 
 <p>When executed, the dynamic fork task will schedule two parallel task of type "encode_task" with reference names "forkedTask1" and "forkedTask2" and inputs as specified by _ dynamicTasksInputJSON_</p>
 <div class="admonition warning">
-<p class="admonition-title">Dyanmic Fork and Join</p>
+<p class="admonition-title">Dynamic Fork and Join</p>
 <p><strong>A Join task MUST follow FORK_JOIN_DYNAMIC</strong></p>
 <p>Workflow definition MUST include a Join task definition followed by FORK_JOIN_DYNAMIC task.  However, given the dynamic nature of the task, no joinOn parameters are required for this Join.  The join will wait for ALL the forked branches to complete before completing.</p>
 <p>Unlike FORK, which can execute parallel flows with each fork executing a series of tasks in  sequence, FORK_JOIN_DYNAMIC is limited to only one task per fork.  However, forked task can be a Sub Workflow, allowing for more complex execution flows.</p>
@@ -487,7 +503,7 @@ The task takes 3 parameters:</p>
 To use a wait task, set the task type as <code>WAIT</code></p>
 <h3 id="parameters_5">Parameters<a class="headerlink" href="#parameters_5" title="Permanent link">&para;</a></h3>
 <p>None required.</p>
-<h3 id="exernal-triggers-for-wait-task">Exernal Triggers for Wait Task<a class="headerlink" href="#exernal-triggers-for-wait-task" title="Permanent link">&para;</a></h3>
+<h3 id="external-triggers-for-wait-task">External Triggers for Wait Task<a class="headerlink" href="#external-triggers-for-wait-task" title="Permanent link">&para;</a></h3>
 <p>Task Resource endpoint can be used to update the status of a task to a terminate state. </p>
 <p>Contrib module provides SQS integration where an external system can place a message in a pre-configured queue that the server listens on.  As the messages arrive, they are marked as <code>COMPLETED</code> or <code>FAILED</code>.  </p>
 <h4 id="sqs-queues">SQS Queues<a class="headerlink" href="#sqs-queues" title="Permanent link">&para;</a></h4>
@@ -539,7 +555,7 @@ To use a wait task, set the task type as <code>WAIT</code></p>
 </tr>
 <tr>
 <td>accept</td>
-<td>Accpet header as required by server.</td>
+<td>Accept header as required by server.</td>
 </tr>
 <tr>
 <td>contentType</td>
@@ -609,6 +625,45 @@ To use a wait task, set the task type as <code>WAIT</code></p>
 <p class="admonition-title">Note</p>
 <p>HTTP task currently only supports Content-Type as application/json and is able to parse the text as well as JSON response.  XML input/output is currently not supported.  However, if the response cannot be parsed as JSON or Text, a string representation is stored as a text value.</p>
 </div>
+<h1 id="event">Event<a class="headerlink" href="#event" title="Permanent link">&para;</a></h1>
+<p>Event task provides ability to publish an event (message) to either Conductor or an external eventing system like SQS.  Event tasks are useful for creating event based dependencies for workflows and tasks.</p>
+<h3 id="parameters_7">Parameters<a class="headerlink" href="#parameters_7" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sink</td>
+<td>Qualified name of the event that is produced.  e.g. conductor or sqs:sqs_queue_name</td>
+</tr>
+</tbody>
+</table>
+<h3 id="example_7">Example<a class="headerlink" href="#example_7" title="Permanent link">&para;</a></h3>
+<pre><code class="json">{
+    &quot;sink&quot;: 'sqs:example_sqs_queue_name'
+}
+</code></pre>
+
+<p>When producing an event with Conductor as sink, the event name follows the structure:
+<code>conductor:&lt;workflow_name&gt;:&lt;task_reference_name&gt;</code></p>
+<p>For SQS, use the <strong>name</strong> of the queue and NOT the URI.  Conductor looks up the URI based on the name.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>When using SQS add the <a href="https://github.com/Netflix/conductor/blob/master/contribs/src/main/java/com/netflix/conductor/contribs/ContribsModule.java">ContribsModule</a> to the deployment.  The module needs to be configured with AWSCredentialsProvider for Conductor to be able to use AWS APIs.</p>
+</div>
+<h3 id="supported-sinks">Supported Sinks<a class="headerlink" href="#supported-sinks" title="Permanent link">&para;</a></h3>
+<ul>
+<li>Conductor</li>
+<li>SQS</li>
+</ul>
+<h3 id="event-task-input">Event Task Input<a class="headerlink" href="#event-task-input" title="Permanent link">&para;</a></h3>
+<p>The input given to the event task is made available to the published message as payload.  e.g. if a message is put into SQS queue (sink is sqs) then the message payload will be the input to the task.</p>
+<h3 id="event-task-output">Event Task Output<a class="headerlink" href="#event-task-output" title="Permanent link">&para;</a></h3>
+<p><code>event_produced</code> Name of the event produced.    </p>
               
             </div>
           </div>
@@ -616,7 +671,7 @@ To use a wait task, set the task type as <code>WAIT</code></p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../kitchensink/" class="btn btn-neutral float-right" title="Kitchensink Example">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../../events/" class="btn btn-neutral float-right" title="Event Handlers">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
         <a href="../" class="btn btn-neutral" title="Metadata Definitions"><span class="icon icon-circle-arrow-left"></span> Previous</a>
@@ -649,7 +704,7 @@ To use a wait task, set the task type as <code>WAIT</code></p>
         <span><a href="../" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../kitchensink/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../../events/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

@@ -95,6 +95,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../events/">Event Handlers</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="kitchensink/">Kitchensink Example</a>
         
     </li>
@@ -123,7 +130,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../runtime/">Workflow Management</a>
+        <a class="" href="../runtime/">APIs</a>
         
     </li>
 <li>
@@ -148,6 +155,13 @@
 
         
     </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../faq/">FAQ</a>
+        
+    </li>
 <li>
           
             <li>
@@ -268,7 +282,7 @@
 </table>
 <p><strong>Retry Logic</strong></p>
 <ul>
-<li>FIXED : Reschedule the task afer the <code>retryDelaySeconds</code></li>
+<li>FIXED : Reschedule the task after the <code>retryDelaySeconds</code></li>
 <li>EXPONENTIAL_BACKOFF : reschedule after <code>retryDelaySeconds  * attempNo</code></li>
 </ul>
 <p><strong>Timeout Policy</strong></p>
@@ -278,7 +292,7 @@
 <li>ALERT_ONLY : Registers a counter (task_timeout)</li>
 </ul>
 <h1 id="workflow-definition">Workflow Definition<a class="headerlink" href="#workflow-definition" title="Permanent link">&para;</a></h1>
-<p>Workflows are define using a JSON based DSL.</p>
+<p>Workflows are defined using a JSON based DSL.</p>
 <p><strong>Example</strong></p>
 <pre><code class="json">{
   &quot;name&quot;: &quot;encode_and_deploy&quot;,
@@ -336,7 +350,7 @@
 </tr>
 <tr>
 <td align="left">tasks</td>
-<td align="left">An array of task defintions as described below.</td>
+<td align="left">An array of task definitions as described below.</td>
 <td align="left"></td>
 </tr>
 <tr>
@@ -385,7 +399,7 @@ Below are the mandatory minimum parameters required for each task:</p>
 </tr>
 </tbody>
 </table>
-<p>In addition to these paramters, additional parameters speciific to the task type are required as documented <a href="../metadata/systask/">here</a></p>
+<p>In addition to these parameters, additional parameters specific to the task type are required as documented <a href="../metadata/systask/">here</a></p>
 <h1 id="wiring-inputs-and-outputs">Wiring Inputs and Outputs<a class="headerlink" href="#wiring-inputs-and-outputs" title="Permanent link">&para;</a></h1>
 <p>Workflows are supplied inputs by client when a new execution is triggered. 
 Workflow input is a JSON payload that is available via <code>${workflow.input...}</code> expressions.</p>
@@ -416,7 +430,7 @@ Workflow input is a JSON payload that is available via <code>${workflow.input...
 </table>
 <div class="admonition note">
 <p class="admonition-title">JSON Path Support</p>
-<p>Conductor supports <a href="http://goessner.net/articles/JsonPath/">JSONPath</a> specification and uses Java implementaion from <a href="https://github.com/jayway/JsonPath">here</a>.</p>
+<p>Conductor supports <a href="http://goessner.net/articles/JsonPath/">JSONPath</a> specification and uses Java implementation from <a href="https://github.com/jayway/JsonPath">here</a>.</p>
 </div>
 <p><strong>Example</strong></p>
 <p>Consider a task with input configured to use input/output parameters from workflow and a task named <strong>loc_task</strong>.</p>

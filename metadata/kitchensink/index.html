@@ -84,6 +84,13 @@
 <li>
           
             <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../events/">Event Handlers</a>
+        
+    </li>
+<li>
+          
+            <li>
     <li class="toctree-l1 current">
         <a class="current" href="./">Kitchensink Example</a>
         
@@ -123,7 +130,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../runtime/">Workflow Management</a>
+        <a class="" href="../../runtime/">APIs</a>
         
     </li>
 <li>
@@ -148,6 +155,13 @@
 
         
     </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../faq/">FAQ</a>
+        
+    </li>
 <li>
           
             <li>
@@ -200,8 +214,8 @@
   &quot;version&quot;: 1,
   &quot;tasks&quot;: [
     {
-      &quot;name&quot;: &quot;perf_ task_1&quot;,
-      &quot;taskReferenceName&quot;: &quot;perf_ task_1&quot;,
+      &quot;name&quot;: &quot;task_1&quot;,
+      &quot;taskReferenceName&quot;: &quot;task_1&quot;,
       &quot;inputParameters&quot;: {
         &quot;mod&quot;: &quot;${workflow.input.mod}&quot;,
         &quot;oddEven&quot;: &quot;${workflow.input.oddEven}&quot;
@@ -209,8 +223,18 @@
       &quot;type&quot;: &quot;SIMPLE&quot;
     },
     {
+      &quot;name&quot;: &quot;event_task&quot;,
+      &quot;taskReferenceName&quot;: &quot;event_0&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;mod&quot;: &quot;${workflow.input.mod}&quot;,
+        &quot;oddEven&quot;: &quot;${workflow.input.oddEven}&quot;
+      },
+      &quot;type&quot;: &quot;EVENT&quot;,
+      &quot;sink&quot;: &quot;conductor&quot;
+    },
+    {
       &quot;name&quot;: &quot;dyntask&quot;,
-      &quot;taskReferenceName&quot;: &quot;perf_ task_2&quot;,
+      &quot;taskReferenceName&quot;: &quot;task_2&quot;,
       &quot;inputParameters&quot;: {
         &quot;taskToExecute&quot;: &quot;${workflow.input.task2Name}&quot;
       },
@@ -221,18 +245,18 @@
       &quot;name&quot;: &quot;oddEvenDecision&quot;,
       &quot;taskReferenceName&quot;: &quot;oddEvenDecision&quot;,
       &quot;inputParameters&quot;: {
-        &quot;oddEven&quot;: &quot;${perf_ task_2.output.oddEven}&quot;
+        &quot;oddEven&quot;: &quot;${task_2.output.oddEven}&quot;
       },
       &quot;type&quot;: &quot;DECISION&quot;,
       &quot;caseValueParam&quot;: &quot;oddEven&quot;,
       &quot;decisionCases&quot;: {
         &quot;0&quot;: [
           {
-            &quot;name&quot;: &quot;perf_ task_4&quot;,
-            &quot;taskReferenceName&quot;: &quot;perf_ task_4&quot;,
+            &quot;name&quot;: &quot;task_4&quot;,
+            &quot;taskReferenceName&quot;: &quot;task_4&quot;,
             &quot;inputParameters&quot;: {
-              &quot;mod&quot;: &quot;${perf_ task_2.output.mod}&quot;,
-              &quot;oddEven&quot;: &quot;${perf_ task_2.output.oddEven}&quot;
+              &quot;mod&quot;: &quot;${task_2.output.mod}&quot;,
+              &quot;oddEven&quot;: &quot;${task_2.output.oddEven}&quot;
             },
             &quot;type&quot;: &quot;SIMPLE&quot;
           },
@@ -240,8 +264,8 @@
             &quot;name&quot;: &quot;dynamic_fanout&quot;,
             &quot;taskReferenceName&quot;: &quot;fanout1&quot;,
             &quot;inputParameters&quot;: {
-              &quot;dynamicTasks&quot;: &quot;${perf_ task_4.output.dynamicTasks}&quot;,
-              &quot;input&quot;: &quot;${perf_ task_4.output.inputs}&quot;
+              &quot;dynamicTasks&quot;: &quot;${task_4.output.dynamicTasks}&quot;,
+              &quot;input&quot;: &quot;${task_4.output.inputs}&quot;
             },
             &quot;type&quot;: &quot;FORK_JOIN_DYNAMIC&quot;,
             &quot;dynamicForkTasksParam&quot;: &quot;dynamicTasks&quot;,
@@ -261,16 +285,16 @@
             &quot;forkTasks&quot;: [
               [
                 {
-                  &quot;name&quot;: &quot;perf_ task_10&quot;,
-                  &quot;taskReferenceName&quot;: &quot;perf_ task_10&quot;,
+                  &quot;name&quot;: &quot;task_10&quot;,
+                  &quot;taskReferenceName&quot;: &quot;task_10&quot;,
                   &quot;type&quot;: &quot;SIMPLE&quot;
                 },
                 {
                   &quot;name&quot;: &quot;sub_workflow_x&quot;,
                   &quot;taskReferenceName&quot;: &quot;wf3&quot;,
                   &quot;inputParameters&quot;: {
-                    &quot;mod&quot;: &quot;${perf_ task_1.output.mod}&quot;,
-                    &quot;oddEven&quot;: &quot;${perf_ task_1.output.oddEven}&quot;
+                    &quot;mod&quot;: &quot;${task_1.output.mod}&quot;,
+                    &quot;oddEven&quot;: &quot;${task_1.output.oddEven}&quot;
                   },
                   &quot;type&quot;: &quot;SUB_WORKFLOW&quot;,
                   &quot;subWorkflowParam&quot;: {
@@ -281,16 +305,16 @@
               ],
               [
                 {
-                  &quot;name&quot;: &quot;perf_ task_11&quot;,
-                  &quot;taskReferenceName&quot;: &quot;perf_ task_11&quot;,
+                  &quot;name&quot;: &quot;task_11&quot;,
+                  &quot;taskReferenceName&quot;: &quot;task_11&quot;,
                   &quot;type&quot;: &quot;SIMPLE&quot;
                 },
                 {
                   &quot;name&quot;: &quot;sub_workflow_x&quot;,
                   &quot;taskReferenceName&quot;: &quot;wf4&quot;,
                   &quot;inputParameters&quot;: {
-                    &quot;mod&quot;: &quot;${perf_ task_1.output.mod}&quot;,
-                    &quot;oddEven&quot;: &quot;${perf_ task_1.output.oddEven}&quot;
+                    &quot;mod&quot;: &quot;${task_1.output.mod}&quot;,
+                    &quot;oddEven&quot;: &quot;${task_1.output.oddEven}&quot;
                   },
                   &quot;type&quot;: &quot;SUB_WORKFLOW&quot;,
                   &quot;subWorkflowParam&quot;: {
@@ -318,18 +342,18 @@
       &quot;taskReferenceName&quot;: &quot;get_es_1&quot;,
       &quot;inputParameters&quot;: {
         &quot;http_request&quot;: {
-          &quot;uri&quot;: &quot;http://localhost:9200/wfe/workflow/_search?size=10&quot;,
+          &quot;uri&quot;: &quot;http://localhost:9200/conductor/_search?size=10&quot;,
           &quot;method&quot;: &quot;GET&quot;
         }
       },
       &quot;type&quot;: &quot;HTTP&quot;
     },
     {
-      &quot;name&quot;: &quot;perf_task_30&quot;,
-      &quot;taskReferenceName&quot;: &quot;perf_task_30&quot;,
+      &quot;name&quot;: &quot;task_30&quot;,
+      &quot;taskReferenceName&quot;: &quot;task_30&quot;,
       &quot;inputParameters&quot;: {
         &quot;statuses&quot;: &quot;${get_es_1.output..status}&quot;,
-        &quot;fistWorkflowId&quot;: &quot;${get_es_1.output.workflowId[0]}&quot;
+        &quot;workflowIds&quot;: &quot;${get_es_1.output..workflowId}&quot;
       },
       &quot;type&quot;: &quot;SIMPLE&quot;
     }
@@ -359,8 +383,8 @@
 '
 </code></pre>
 
-<p>The response is a text string identifyin the workflow instance id.</p>
-<h4 id="poll-for-the-fist-task">Poll for the fist task:<a class="headerlink" href="#poll-for-the-fist-task" title="Permanent link">&para;</a></h4>
+<p>The response is a text string identifying the workflow instance id.</p>
+<h4 id="poll-for-the-first-task">Poll for the first task:<a class="headerlink" href="#poll-for-the-first-task" title="Permanent link">&para;</a></h4>
 <pre><code class="shell">curl http://localhost:8080/api/tasks/poll/task_1
 </code></pre>
 
@@ -434,7 +458,7 @@
 Repeat the same process for the subsequently scheduled tasks until the completion.</p>
 <div class="admonition hint">
 <p class="admonition-title">Using Client Libraries</p>
-<p>Conductor provides client libaraies in Java (a Python client is works) to simplify task polling and execution.  </p>
+<p>Conductor provides client libraries in Java (a Python client is works) to simplify task polling and execution.  </p>
 </div>
               
             </div>
@@ -446,7 +470,7 @@ Repeat the same process for the subsequently scheduled tasks until the completio
         <a href="../../server/" class="btn btn-neutral float-right" title="Conductor Server">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../systask/" class="btn btn-neutral" title="System Tasks"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../events/" class="btn btn-neutral" title="Event Handlers"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -473,7 +497,7 @@ Repeat the same process for the subsequently scheduled tasks until the completio
           <a href="https://github.com/Netflix/conductor" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../systask/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../../events/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../../server/" style="color: #fcfcfc">Next &raquo;</a></span>

@@ -76,6 +76,8 @@
             
                 <li class="toctree-l3"><a href="#worker-tasks">Worker Tasks</a></li>
             
+                <li class="toctree-l3"><a href="#lifecycle-of-a-workflow-task">Lifecycle of a Workflow Task</a></li>
+            
             </ul>
         
     </li>
@@ -91,6 +93,13 @@
             <li>
     <li class="toctree-l1 ">
         <a class="" href="../../metadata/systask/">System Tasks</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../events/">Event Handlers</a>
         
     </li>
 <li>
@@ -125,7 +134,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../../runtime/">Workflow Management</a>
+        <a class="" href="../../runtime/">APIs</a>
         
     </li>
 <li>
@@ -150,6 +159,13 @@
 
         
     </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../../faq/">FAQ</a>
+        
+    </li>
 <li>
           
             <li>
@@ -241,12 +257,18 @@ Worker tasks fall into two categories:<ul>
 <td><a href="../../metadata/systask/#sub-workflow">SUB_WORKFLOW</a></td>
 <td align="left">Nest another workflow as a sub workflow task.  Upon execution it instantiates the sub workflow and awaits it completion</td>
 </tr>
+<tr>
+<td><a href="../../metadata/systask/#event">EVENT</a></td>
+<td align="left">Produces an event in a supported eventing system (e.g. Conductor, SQS)</td>
+</tr>
 </tbody>
 </table>
-<p>Conductor provides an API to create user defined tasks that are excuted in the same JVM as the engine.  see <a href="https://github.com/Netflix/conductor/blob/dev/core/src/main/java/com/netflix/conductor/core/execution/tasks/WorkflowSystemTask.java">WorkflowSystemTask</a> interface for details.</p>
+<p>Conductor provides an API to create user defined tasks that are executed in the same JVM as the engine.  see <a href="https://github.com/Netflix/conductor/blob/dev/core/src/main/java/com/netflix/conductor/core/execution/tasks/WorkflowSystemTask.java">WorkflowSystemTask</a> interface for details.</p>
 <h2 id="worker-tasks">Worker Tasks<a class="headerlink" href="#worker-tasks" title="Permanent link">&para;</a></h2>
-<p>Worker tasks are implemented by application(s) and runs in a separate environment from Conductor.  The worker tasks can be implemented in any langugage.  These tasks talk to Conductor server via REST API endpionts to poll for tasks and update its status after execution.</p>
+<p>Worker tasks are implemented by application(s) and runs in a separate environment from Conductor.  The worker tasks can be implemented in any language.  These tasks talk to Conductor server via REST API endpoints to poll for tasks and update its status after execution.</p>
 <p>Worker tasks are identified by task type <strong>SIMPLE</strong> in the blueprint.</p>
+<h2 id="lifecycle-of-a-workflow-task">Lifecycle of a Workflow Task<a class="headerlink" href="#lifecycle-of-a-workflow-task" title="Permanent link">&para;</a></h2>
+<p><img alt="Task_States" src="../../img/task_states.png" /></p>
 <p><a href="../../metadata/#task-definition">more details</a></p>
               
             </div>

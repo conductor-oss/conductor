@@ -85,6 +85,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../events/">Event Handlers</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
         
     </li>
@@ -121,7 +128,7 @@
           
             <li>
     <li class="toctree-l1 ">
-        <a class="" href="../runtime/">Workflow Management</a>
+        <a class="" href="../runtime/">APIs</a>
         
     </li>
 <li>
@@ -146,6 +153,13 @@
 
         
     </ul>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
+        <a class="" href="../faq/">FAQ</a>
+        
+    </li>
 <li>
           
             <li>
@@ -191,8 +205,8 @@
             <div class="section">
               
                 <p>Conductor tasks executed by remote workers communicates over HTTP endpoints to poll for the task and updates the status of the execution.</p>
-<p>Conductor provides a framework to poll for tasks, manage the execution thread and update the status of the execution back to the server.  The framework provides libraries in Java and Python.  Other langugage support can be added by using the HTTP endpoints for task management.</p>
-<h3 id="java">Java<a class="headerlink" href="#java" title="Permanent link">&para;</a></h3>
+<p>Conductor provides a framework to poll for tasks, manage the execution thread and update the status of the execution back to the server.  The framework provides libraries in Java and Python.  Other language support can be added by using the HTTP endpoints for task management.</p>
+<h2 id="java">Java<a class="headerlink" href="#java" title="Permanent link">&para;</a></h2>
 <ol>
 <li>Implement <a href="https://github.com/Netflix/conductor/blob/dev/client/src/main/java/com/netflix/conductor/client/worker/Worker.java">Worker</a> interface to implement the task.</li>
 <li>
@@ -203,7 +217,55 @@
 </ul>
 </li>
 </ol>
-<h3 id="python">Python<a class="headerlink" href="#python" title="Permanent link">&para;</a></h3>
+<h3 id="workflowtaskcoordinator">WorkflowTaskCoordinator<a class="headerlink" href="#workflowtaskcoordinator" title="Permanent link">&para;</a></h3>
+<p>Manages the Task workers thread pool and server communication (poll, task update and ack).</p>
+<h3 id="worker">Worker<a class="headerlink" href="#worker" title="Permanent link">&para;</a></h3>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>paused</td>
+<td>boolean.  If set to true, the worker stops polling.</td>
+</tr>
+<tr>
+<td>pollCount</td>
+<td>No. of tasks to poll for.  Used for batched polling.  Each task is executed in a separate thread.</td>
+</tr>
+<tr>
+<td>longPollTimeout</td>
+<td>Time in millisecond for long polling to Conductor server for tasks</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<p>These properties can be set either by Worker implementation or by setting the following system properties in the JVM:</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>conductor.worker.&lt;property&gt;</code></td>
+<td>Applies to ALL the workers in the JVM</td>
+</tr>
+<tr>
+<td><code>conductor.worker.&lt;taskDefName&gt;.&lt;property&gt;</code></td>
+<td>Applies to the specified worker.  Overrides the global property.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="python">Python<a class="headerlink" href="#python" title="Permanent link">&para;</a></h2>
 <p><a href="https://github.com/Netflix/conductor/tree/dev/client/python">https://github.com/Netflix/conductor/tree/dev/client/python</a></p>
 <p>Follow the example as documented in the readme or take a look at <a href="https://github.com/Netflix/conductor/blob/dev/client/python/kitchensink_workers.py">kitchensink_workers.py</a></p>
 <div class="admonition warning">
