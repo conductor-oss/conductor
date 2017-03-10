@@ -18,7 +18,13 @@
  */
 package com.netflix.conductor.core.events;
 
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
@@ -31,45 +37,59 @@ import rx.Observable;
  */
 public class MockObservableQueue implements ObservableQueue {
 
-	public MockObservableQueue() {
-		
+	private String uri;
+	
+	private String name;
+	
+	private String type;
+	
+	private Set<Message> messages = new TreeSet<>(Comparator.comparing(Message::getId));
+	
+	public MockObservableQueue(String uri, String name, String type) {
+		this.uri = uri;
+		this.name = name;
+		this.type = type;
 	}
 	
 	@Override
 	public Observable<Message> observe() {
-		return null;
+		return Observable.from(messages);
 	}
 
 	public String getType() {
-		return null;
+		return type;
 	}
 
 	@Override
 	public String getName() {
-		// TODO Auto-generated method stub
-		return null;
+		return name;
 	}
 
 	@Override
 	public String getURI() {
-		// TODO Auto-generated method stub
-		return null;
+		return uri;
 	}
 
 	@Override
 	public List<String> ack(List<Message> messages) {
-		return null;
+		messages.removeAll(messages);
+		return messages.stream().map(Message::getId).collect(Collectors.toList());
 	}
 
 	@Override
 	public void publish(List<Message> messages) {
-		// TODO Auto-generated method stub
-
+		this.messages.addAll(messages);
 	}
 
 	@Override
 	public long size() {
-		return 0;
+		return messages.size();
 	}
 
+	@Override
+	public String toString() {
+		return "MockObservableQueue [uri=" + uri + ", name=" + name + ", type=" + type + "]";
+	}
+
+	
 }

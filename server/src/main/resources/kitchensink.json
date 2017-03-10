@@ -13,6 +13,16 @@
       "type": "SIMPLE"
     },
     {
+      "name": "event_task",
+      "taskReferenceName": "event_0",
+      "inputParameters": {
+        "mod": "${workflow.input.mod}",
+        "oddEven": "${workflow.input.oddEven}"
+      },
+      "type": "EVENT",
+      "sink": "conductor"
+    },
+    {
       "name": "dyntask",
       "taskReferenceName": "task_2",
       "inputParameters": {

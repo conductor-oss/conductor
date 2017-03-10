@@ -30,7 +30,6 @@ const Events = React.createClass({
       return cell?'Yes':'No';
     };
     function helpName() {
-      //<i className="fa fa-question-circle"></i>
       return (<OverlayTrigger trigger="click" rootClose placement="bottom" overlay={
         <Popover title='Event Handler Name' style={{ width: '300px'}}>
           <div className="info">

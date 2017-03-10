@@ -8,7 +8,7 @@ The API and storage layers are pluggable and provide ability to work with differ
 !!! hint "Running in production"
 	For a detailed configuration guide on installing and running Conductor server in production visit [Conductor Server](/server) documentation.
 
-## Runnin In-Memory Server
+## Running In-Memory Server
 
 Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.
 

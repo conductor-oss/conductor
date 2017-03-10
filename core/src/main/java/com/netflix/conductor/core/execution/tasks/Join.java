@@ -41,7 +41,7 @@ public class Join extends WorkflowSystemTask {
 		
 		boolean allDone = true;
 		boolean hasFailures = false;
-		String failureReason = null;
+		String failureReason = "";
 		List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
 		for(String joinOnRef : joinOn){
 			Task forkedTask = workflow.getTaskByRefName(joinOnRef);

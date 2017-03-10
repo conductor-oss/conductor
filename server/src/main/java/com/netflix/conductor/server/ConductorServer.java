@@ -181,6 +181,10 @@ public class ConductorServer {
 		this.sm = new ServerModule(jedis, hs, cc);
 	}
 	
+	public ServerModule getGuiceModule() {
+		return sm;
+	}
+	
 	public synchronized void start(int port, boolean join) throws Exception {
 		
 		if(server != null) {

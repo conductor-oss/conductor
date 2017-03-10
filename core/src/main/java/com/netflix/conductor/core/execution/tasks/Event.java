@@ -26,12 +26,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 
 /**
@@ -43,6 +45,8 @@ public class Event extends WorkflowSystemTask {
 	private static Logger logger = LoggerFactory.getLogger(Event.class);
 	
 	private ObjectMapper om = new ObjectMapper();
+	
+	private ParametersUtils pu = new ParametersUtils();
 	
 	private enum Sink {
 		conductor, sqs
@@ -93,36 +97,37 @@ public class Event extends WorkflowSystemTask {
 		getQueue(workflow, task).ack(Arrays.asList(message));
 	}
 
-	private ObservableQueue getQueue(Workflow workflow, Task task) {
-		String sinkValue = "" + task.getInputData().get("sink");
-		int indx = sinkValue.indexOf(':');
-		if(indx != -1) {
-			sinkValue = sinkValue.substring(0, indx);
-		}
+	@VisibleForTesting
+	ObservableQueue getQueue(Workflow workflow, Task task) {
+		
+		String sinkValueRaw = "" + task.getInputData().get("sink");
+		Map<String, Object> input = new HashMap<>();
+		input.put("sink", sinkValueRaw);
+		Map<String, Object> replaced = pu.getTaskInputV2(input, workflow, task.getTaskId(), null);
+		String sinkValue = (String)replaced.get("sink");
+		
+		String queueName = null;
 		Sink sink = null;
-		try {
-			sink = Sink.valueOf(sinkValue);
-		}catch(Exception e) {
-			logger.error(e.getMessage(), e);
-		}
-		if(sink == null) {
+		
+		if("conductor".equals(sinkValue)) {
+			sink = Sink.conductor;
+			queueName = workflow.getWorkflowType() + ":" + task.getReferenceTaskName();
+			
+		} else if(sinkValue.startsWith("sqs:")) {
+			sink = Sink.sqs;
+			queueName = sinkValue.substring(4);
+			
+		} else {
 			task.setStatus(Status.FAILED);
-			task.setReasonForIncompletion("Invalid sink specified: " + sinkValue);
+			task.setReasonForIncompletion("Invalid / Unsupported sink specified: " + sinkValue);
 			return null;
 		}
 		
-		String event = null;
-		if(sink == Sink.conductor) {
-			String cq = workflow.getWorkflowType() + ":" + task.getReferenceTaskName();
-			event = "conductor:" + cq;
-		} else if(sink == Sink.sqs ) {
-			event = ""+task.getInputData().get("sink");
-		}
-		
-		task.getOutputData().put("event_produced", event);
+		String eventProduced = sink.name() + ":" + queueName;
+		task.getOutputData().put("event_produced", eventProduced);
 		
 		try {
-			return EventQueues.getQueue(event, true);
+			return EventQueues.getQueue(eventProduced, true);
 		}catch(Exception e) {
 			logger.error(e.getMessage(), e);
 			task.setStatus(Status.FAILED);

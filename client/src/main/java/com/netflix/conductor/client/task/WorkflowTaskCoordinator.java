@@ -15,6 +15,8 @@
  */
 package com.netflix.conductor.client.task;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -46,13 +48,11 @@ import com.netflix.servo.monitor.Stopwatch;
 /**
  * 
  * @author Viren
- * 
+ * Manages the Task workers thread pool and server communication (poll, task update and acknowledgement).
  */
 public class WorkflowTaskCoordinator {
 	
 	private static final Logger logger = LoggerFactory.getLogger(WorkflowTaskCoordinator.class);
-
-	private int threadCount;
     
 	private TaskClient client;
 	
@@ -63,47 +63,38 @@ public class WorkflowTaskCoordinator {
 	private EurekaClient ec;
 
 	private List<Worker> workers = new LinkedList<>();	
+
+	private int sleepWhenRetry;
 	
-	/**
-	 * 1 second
-	 */
-	private int pollInterval = 1000;
+	private int updateRetryCount;
 	
-	/**
-	 * 500 ms
-	 */
-	private int sleepWhenRetry = 500;
+	private int workerQueueSize;
 	
-	private int updateRetryCount = 3;
+	private int threadCount;
 	
-	private int workerQueueSize = 100;
-	
-	/**
-	 * 
-	 * @param ec Eureka client - used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is terminated.  If passed null, discovery check is not done.
-	 * @param client Task client used to communicate to conductor server. 
-	 * @param threadCount # of threads assigned to the workers.  Should be at-least the size of taskWorkers to avoid starvation in a busy system.
-	 * @param taskWorkers workers that will be used for polling work and task execution.
-	 * Please see {@link #init()} method.  The method must be called after this constructor for the polling to start.  
-	 */
-	public WorkflowTaskCoordinator(EurekaClient ec, TaskClient client, int threadCount, Worker...taskWorkers) {
-		this(ec, client, threadCount, Arrays.asList(taskWorkers));
-	}
-	
+	private static Map<Worker, Map<String, Object>> environmentData = new HashMap<>();
 	
 	/**
 	 *
 	 * @param ec Eureka client - used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is terminated.  If passed null, discovery check is not done.
-	 * @param client TaskClient used to communicate to the conductor server
+	 * @param client TaskClient used to communicate to the Conductor server
 	 * @param threadCount # of threads assigned to the workers.  Should be at-least the size of taskWorkers to avoid starvation in a busy system.
+	 * @param sleepWhenRetry sleep time in millisecond for Conductor server retries (poll, ack, update task)
+	 * @param updateRetryCount number of times to retry the failed updateTask operation
+	 * @param workerQueueSize queue size for the polled task.  
 	 * @param taskWorkers workers that will be used for polling work and task execution.
-	 * 
+	 * <p>
 	 * Please see {@link #init()} method.  The method must be called after this constructor for the polling to start.
+	 * </p>
+	 * @see Builder
 	 */
-	public WorkflowTaskCoordinator(EurekaClient ec, TaskClient client, int threadCount, Iterable<Worker> taskWorkers) {
+	public WorkflowTaskCoordinator(EurekaClient ec, TaskClient client, int threadCount, int sleepWhenRetry, int updateRetryCount, int workerQueueSize, Iterable<Worker> taskWorkers) {
 		this.ec = ec;
 		this.client = client;
 		this.threadCount = threadCount;
+		this.sleepWhenRetry = sleepWhenRetry;
+		this.updateRetryCount = updateRetryCount;
+		this.workerQueueSize = workerQueueSize;
 		for (Worker worker : taskWorkers) {
 			registerWorker(worker);
 		}
@@ -111,49 +102,135 @@ public class WorkflowTaskCoordinator {
 	
 	/**
 	 * 
-	 * @param pollInterval polling interval in <b>millisecond</b>.
-	 * @return Returns the current instance.
+	 * Builder used to create the instances of WorkflowTaskCoordinator
+	 *
 	 */
-	public WorkflowTaskCoordinator withPollInterval(int pollInterval) {
-		this.pollInterval = pollInterval;
-		return this;
+	public static class Builder {
+	
+		private int sleepWhenRetry = 500;
+		
+		private int updateRetryCount = 3;
+		
+		private int workerQueueSize = 100;
+		
+		private int threadCount = -1;
+		
+		private Iterable<Worker> taskWorkers;
+		
+		private EurekaClient ec;
+		
+		private TaskClient client;
+		
+		/**
+		 * 
+		 * @param sleepWhenRetry time in millisecond, for which the thread should sleep when task update call fails, before retrying the operation.
+		 * @return Returns the current instance.
+		 */
+		public Builder withSleepWhenRetry(int sleepWhenRetry) {
+			this.sleepWhenRetry = sleepWhenRetry;
+			return this;
+		}
+		
+		/**
+		 * 
+		 * @param updateRetryCount # of attempts to be made when updating task status when update status call fails.
+		 * @return Builder instance
+		 * @see #withSleepWhenRetry(int)
+		 */
+		public Builder withUpdateRetryCount(int updateRetryCount) {
+			this.updateRetryCount = updateRetryCount;
+			return this;
+		}
+		
+		/**
+		 * 
+		 * @param workerQueueSize Worker queue size.  
+		 * @return Builder instance
+		 */
+		public Builder withWorkerQueueSize(int workerQueueSize) {
+			this.workerQueueSize = workerQueueSize;
+			return this;
+		}
+		
+		/**
+		 * 
+		 * @param threadCount # of threads assigned to the workers.  Should be at-least the size of taskWorkers to avoid starvation in a busy system.
+		 * @return Builder instance
+		 */
+		public Builder withThreadCount(int threadCount) {
+			this.threadCount = threadCount;
+			return this;
+		}
+		
+		/**
+		 * 
+		 * @param client Task Client used to communicate to Conductor server
+		 * @return Builder instance
+		 */
+		public Builder withTaskClient(TaskClient client) {
+			this.client = client;
+			return this;
+		}
+		
+		/**
+		 * 
+		 * @param ec Eureka client
+		 * @return Builder instance
+		 */
+		public Builder withEurekaClient(EurekaClient ec) {
+			this.ec = ec;
+			return this;
+		}
+		
+		/**
+		 * 
+		 * @param taskWorkers workers that will be used for polling work and task execution.
+		 * @return Builder instance
+		 */
+		public Builder withWorkers(Iterable<Worker> taskWorkers) {
+			this.taskWorkers = taskWorkers;
+			return this;
+		}
+		
+		/**
+		 * 
+		 * @param taskWorkers workers that will be used for polling work and task execution.
+		 * @return Builder instance
+		 */
+		public Builder withWorkers(Worker... taskWorkers) {
+			this.taskWorkers = Arrays.asList(taskWorkers);
+			return this;
+		}
+		
+		/**
+		 * 
+		 * @return Builds an instance of WorkflowTaskCoordinator and returns.
+		 * <p>
+		 * Please see {@link WorkflowTaskCoordinator#init()} method.  The method must be called after this constructor for the polling to start.
+		 * </p>
+		 */
+		public WorkflowTaskCoordinator build() {
+			if(taskWorkers == null) {
+				throw new IllegalArgumentException("No task workers are specified.  use withWorkers() to add one mor more task workers"); 
+			}
+			
+			if(client == null) {
+				throw new IllegalArgumentException("No TaskClient provided.  use withTaskClient() to provide one"); 
+			}
+			return new WorkflowTaskCoordinator(ec, client, threadCount, sleepWhenRetry, updateRetryCount, workerQueueSize, taskWorkers);
+		}
 	}
 	
-	/**
-	 * 
-	 * @param sleepWhenRetry time in millisecond, for which the thread should sleep when task update call fails, before retrying the operation.
-	 * @return Returns the current instance.
-	 */
-	public WorkflowTaskCoordinator withSleepWhenRetry(int sleepWhenRetry) {
-		this.sleepWhenRetry = sleepWhenRetry;
-		return this;
-	}
-	
-	/**
-	 * 
-	 * @param updateRetryCount # of attempts to be made when updating task status when update status call fails.
-	 * @return Returns the current instance.
-	 * @see #withSleepWhenRetry(int)
-	 */
-	public WorkflowTaskCoordinator withUpdateRetryCount(int updateRetryCount) {
-		this.updateRetryCount = updateRetryCount;
-		return this;
-	}
-	
-	/**
-	 * 
-	 * @param workerQueueSize Worker queue size.  
-	 * @return Returns the current instance.
-	 */
-	public WorkflowTaskCoordinator withWorkerQueueSize(int workerQueueSize) {
-		this.workerQueueSize = workerQueueSize;
-		return this;
-	}
-
 	/**
 	 * Starts the polling
 	 */
 	public synchronized void init() {
+		
+		if(threadCount == -1) {
+			threadCount = workers.size();
+		}
+		
+		logger.info("Initialized the worker with {} threads", threadCount);
 		
 		AtomicInteger count = new AtomicInteger(0);
 		this.es = new ThreadPoolExecutor(threadCount, threadCount,
@@ -170,7 +247,8 @@ public class WorkflowTaskCoordinator {
 		});
 		this.ses = Executors.newScheduledThreadPool(workers.size());
 		workers.forEach(worker -> {
-			ses.scheduleWithFixedDelay(()->pollForTask(worker), pollInterval, pollInterval, TimeUnit.MILLISECONDS);	
+			environmentData.put(worker, getEnvData(worker));
+			ses.scheduleWithFixedDelay(()->pollForTask(worker), worker.getPollingInterval(), worker.getPollingInterval(), TimeUnit.MILLISECONDS);	
 		});
 		
 	}
@@ -183,7 +261,6 @@ public class WorkflowTaskCoordinator {
 	 */
 	public void registerWorker(Worker worker) {
 		workers.add(worker);
-		this.threadCount++;
 	}
 	
 	private void pollForTask(Worker worker) {
@@ -249,12 +326,12 @@ public class WorkflowTaskCoordinator {
 		}
 		
 		TaskResult result = new TaskResult(task);
-		result.getLog().getEnvironment().putAll(getEnvData(worker));
+		result.getLog().getEnvironment().putAll(environmentData.get(worker));
 		Stopwatch sw = WorkflowTaskMetrics.executionTimer(worker.getTaskDefName());
 		
 		try {
 			
-			logger.debug("Executing task {} on worker {}", task, worker.getClass().getSimpleName());
+			logger.debug("Executing task {} on worker {}", task, worker.getClass().getSimpleName());			
 			result = worker.execute(task);
 			
 		} catch (Exception e) {
@@ -278,19 +355,57 @@ public class WorkflowTaskCoordinator {
 		
 	}
 	
-	private Map<String, Object> getEnvData(Worker worker) {
-		String props = worker.getLoggingEnvProps();
+	/**
+	 * 
+	 * @return Thread Count for the executor pool
+	 */
+	public int getThreadCount() {
+		return threadCount;
+	}
+	
+	/**
+	 * 
+	 * @return Size of the queue used by the executor pool
+	 */
+	public int getWorkerQueueSize() {
+		return workerQueueSize;
+	}
+	
+	/**
+	 * 
+	 * @return sleep time in millisecond before task update retry is done when receiving error from the Conductor server
+	 */
+	public int getSleepWhenRetry() {
+		return sleepWhenRetry;
+	}
+	
+	/**
+	 * 
+	 * @return Number of times updateTask should be retried when receiving error from Conductor server
+	 */
+	public int getUpdateRetryCount() {
+		return updateRetryCount;
+	}
+	
+	static Map<String, Object> getEnvData(Worker worker) {
+		List<String> props = worker.getLoggingEnvProps();
 		Map<String, Object> data = new HashMap<>();
-		if(props == null || props.trim().length() == 0) {
+		if(props == null || props.isEmpty()) {
 			return data;
-		}
-		String[] properties = props.split(",");
+		}		
 		String workerName = worker.getTaskDefName();
-		for(String property : properties) {
-			String value = PropertyFactory.getString(workerName, property, System.getenv(property));
+		for(String property : props) {
+			property = property.trim();
+			String defaultValue = System.getenv(property);
+			String value = PropertyFactory.getString(workerName, property, defaultValue);
 			data.put(property, value);
 		}
 		
+		try {
+			data.put("HOSTNAME", InetAddress.getLocalHost().getHostName());
+		} catch (UnknownHostException e) {
+			
+		}
 		return data;
 	}
 	
@@ -316,7 +431,4 @@ public class WorkflowTaskCoordinator {
 			}
 		}
 	}
-
-		
-
 }

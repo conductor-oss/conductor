@@ -1,0 +1,108 @@
+{
+    "name": "ConditionalTaskWF",
+    "description": "ConditionalTaskWF",
+    "version": 1,
+    "tasks": [
+        {
+            "name": "conditional",
+            "taskReferenceName": "conditional",
+            "inputParameters": {
+                "case": "workflow.input.param1"
+            },
+            "type": "DECISION",
+            "caseValueParam": "case",
+            "decisionCases": {
+                "nested": [
+                    {
+                        "name": "conditional2",
+                        "taskReferenceName": "conditional2",
+                        "inputParameters": {
+                            "case": "workflow.input.param2"
+                        },
+                        "type": "DECISION",
+                        "caseValueParam": "case",
+                        "decisionCases": {
+                            "one": [
+                                {
+                                    "name": "junit_task_1",
+                                    "taskReferenceName": "t1",
+                                    "inputParameters": {
+                                        "p1": "workflow.input.param1",
+                                        "p2": "workflow.input.param2"
+                                    },
+                                    "type": "SIMPLE",
+                                    "startDelay": 0
+                                },
+                                {
+                                    "name": "junit_task_3",
+                                    "taskReferenceName": "t3",
+                                    "type": "SIMPLE",
+                                    "startDelay": 0
+                                }
+                            ],
+                            "two": [
+                                {
+                                    "name": "junit_task_2",
+                                    "taskReferenceName": "t2",
+                                    "inputParameters": {
+                                        "tp1": "workflow.input.param1",
+                                        "tp3": "workflow.input.param2"
+                                    },
+                                    "type": "SIMPLE",
+                                    "startDelay": 0
+                                }
+                            ]
+                        },
+                        "startDelay": 0
+                    }
+                ],
+                "three": [
+                    {
+                        "name": "junit_task_3",
+                        "taskReferenceName": "t3",
+                        "type": "SIMPLE",
+                        "startDelay": 0
+                    }
+                ]
+            },
+            "defaultCase": [
+                {
+                    "name": "junit_task_2",
+                    "taskReferenceName": "t2",
+                    "inputParameters": {
+                        "tp1": "workflow.input.param1",
+                        "tp3": "workflow.input.param2"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0
+                }
+            ],
+            "startDelay": 0
+        },
+        {
+            "name": "finalcondition",
+            "taskReferenceName": "tf",
+            "inputParameters": {
+                "finalCase": "workflow.input.finalCase"
+            },
+            "type": "DECISION",
+            "caseValueParam": "finalCase",
+            "decisionCases": {
+                "notify": [
+                    {
+                        "name": "junit_task_4",
+                        "taskReferenceName": "junit_task_4",
+                        "type": "SIMPLE",
+                        "startDelay": 0
+                    }
+                ]
+            },
+            "startDelay": 0
+        }
+    ],
+    "inputParameters": [
+        "param1",
+        "param2"
+    ],
+    "schemaVersion": 1
+}

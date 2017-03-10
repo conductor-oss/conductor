@@ -25,7 +25,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.netflix.conductor.contribs.ContribsModule;
 import com.netflix.conductor.contribs.http.HttpTask;
 import com.netflix.conductor.contribs.http.RestClientManager;
 import com.netflix.conductor.core.config.Configuration;

@@ -499,18 +499,24 @@ public class Task {
 	public Task copy() {
 		
 		Task copy = new Task();
-		copy.setCallbackAfterSeconds(getCallbackAfterSeconds());
+		copy.setCallbackAfterSeconds(callbackAfterSeconds);
 		copy.setCallbackFromWorker(callbackFromWorker);
 		copy.setCorrelationId(correlationId);
 		copy.setDynamicWorkflowTask(dynamicWorkflowTask);
 		copy.setInputData(inputData);
-		copy.setOutputData(getOutputData());
+		copy.setOutputData(outputData);
 		copy.setReferenceTaskName(referenceTaskName);
 		copy.setStartDelayInSeconds(startDelayInSeconds);
 		copy.setTaskDefName(taskDefName);
 		copy.setTaskType(taskType);
-		copy.setWorkflowInstanceId(getWorkflowInstanceId());
+		copy.setWorkflowInstanceId(workflowInstanceId);
 		copy.setResponseTimeoutSeconds(responseTimeoutSeconds);
+		copy.setStatus(status);
+		copy.setRetryCount(retryCount);
+		copy.setPollCount(pollCount);
+		copy.setTaskId(taskId);
+		copy.setReasonForIncompletion(reasonForIncompletion);
+		copy.setWorkerId(workerId);
 		
 		return copy;
 	}

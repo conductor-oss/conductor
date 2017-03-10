@@ -59,6 +59,8 @@ public class WorkflowSummary {
 	
 	private long executionTime;
 	
+	private String event;
+	
 	public WorkflowSummary() {
 		
 	}
@@ -87,6 +89,7 @@ public class WorkflowSummary {
 		if(workflow.getEndTime() > 0){
 			this.executionTime = workflow.getEndTime() - workflow.getStartTime();
 		}
+		this.event = workflow.getEvent();
 	}
 
 	/**
@@ -173,5 +176,21 @@ public class WorkflowSummary {
 	 */
 	public String getUpdateTime() {
 		return updateTime;
+	}
+	
+	/**
+	 * 
+	 * @return The event
+	 */
+	public String getEvent() {
+		return event;
+	}
+	
+	/**
+	 * 
+	 * @param event The event
+	 */
+	public void setEvent(String event) {
+		this.event = event;
 	}
 }

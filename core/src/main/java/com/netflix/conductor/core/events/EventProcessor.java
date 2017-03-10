@@ -202,7 +202,7 @@ public class EventProcessor {
 			try {
 				
 				logger.debug("Executing {} with payload {}", action.getAction(), payload);
-				Map<String, Object> output = ap.execute(action, payload);
+				Map<String, Object> output = ap.execute(action, payload, ee.getEvent(), ee.getMessageId());
 				if(output != null) {
 					ee.getOutput().putAll(output);
 				}

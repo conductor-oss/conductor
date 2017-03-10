@@ -1,3 +1,9 @@
+buildscript {
+    dependencies {
+        classpath "org.akhikhl.gretty:gretty:1.2.4"
+    }
+}
+
 plugins {
 	id 'com.github.johnrengelman.shadow' version '1.2.3'
 }
@@ -7,6 +13,9 @@ configurations.all {
 		force 'com.fasterxml.jackson.core:jackson-core:2.7.5'
     }
 }
+
+apply plugin: 'war'
+apply plugin: "org.akhikhl.gretty"
 
 dependencies {
  
@@ -23,7 +32,7 @@ dependencies {
 	//Guice
 	compile 'com.sun.jersey.contribs:jersey-guice:1.19.+'	
 	compile 'com.google.inject:guice:4.+'
-	compile 'com.google.inject.extensions:guice-servlet:4.+'
+	compile 'com.google.inject.extensions:guice-servlet:4.1.+'
 	
 	//Swagger
 	compile 'io.swagger:swagger-jersey-jaxrs:1.5.0'
@@ -47,6 +56,20 @@ publishing {
     }
   }
 }
+
+gretty {
+    contextPath = '/'
+    servletContainer = 'tomcat8'
+    scanDirs = ['**/src/main/resources/**']
+    scanDependencies = true
+    port = 8080
+    // More properties can be found here:
+    // http://akhikhl.github.io/gretty-doc/Gretty-configuration.html
+}
+configurations.grettyRunnerTomcat8 {
+    exclude group: 'org.slf4j', module: 'log4j-over-slf4j'
+}
+
 
 build.dependsOn('shadowJar')
 

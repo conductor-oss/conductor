@@ -70,4 +70,5 @@ public class MockIndexDAO implements IndexDAO {
 	public void addMessage(String queue, Message msg) {
 		
 	}
+	
 }

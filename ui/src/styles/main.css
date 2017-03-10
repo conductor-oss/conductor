@@ -102,7 +102,9 @@ body {
 }
 
 .Footer-text {
-  color: rgba(255, 255, 255, .7);
+  color: rgba(255, 255, 255, 255);
+  font-size: 0.9em;
+  letter-spacing: 1px;
 }
 
 .Footer-text--muted {

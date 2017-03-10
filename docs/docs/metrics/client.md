@@ -6,7 +6,7 @@ When using the Java client, the following metrics are published:
 | ------------- |:-------------| -----|
 | task_execution_queue_full | Counter to record execution queue has saturated | taskType|
 | task_poll_error | Client error when polling for a task queue | taskType, includeRetries, status |
-| task_execute_error | Excution error | taskType|
+| task_execute_error | Execution error | taskType|
 | task_ack_failed | Task ack failed | taskType |
 | task_ack_error | Task ack has encountered an exception | taskType |
 | task_update_error | Task status cannot be updated back to server  | taskType |

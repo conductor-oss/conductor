@@ -25,9 +25,13 @@ router.get('/', async (req, res, next) => {
     if(h != '-1'){
       freeText.push('startTime:[now-' + h + 'h TO now]');
     }
+    let start = 0;
+    if(!isNaN(req.query.start)){
+      start = req.query.start;
+    }
 
     let query = req.query.q;
-    const url = baseURL2 + 'search?start=0&size=100&sort=startTime:DESC&freeText=' + freeText.join(' AND ') + '&query=' + query;
+    const url = baseURL2 + 'search?size=100&sort=startTime:DESC&freeText=' + freeText.join(' AND ') + '&start=' + start + '&query=' + query;
     const result = await http.get(url);
     const hits = result.results;
     res.status(200).send({result: {hits:hits, totalHits: result.totalHits}});

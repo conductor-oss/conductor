@@ -35,7 +35,8 @@ import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
 
 /**
- * @author Viren Workflow Manager
+ * @author Viren 
+ * 
  */
 @Singleton
 @Trace
@@ -105,6 +106,9 @@ public class MetadataService {
 		if(def.getName().contains(":")) {
 			throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
 		}
+		if(def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
+			def.setSchemaVersion(2);
+		}
 		metadata.create(def);
 	}
 
@@ -160,5 +164,4 @@ public class MetadataService {
 		String event = eh.getEvent();
 		EventQueues.getQueue(event, true);
 	}
-	
 }

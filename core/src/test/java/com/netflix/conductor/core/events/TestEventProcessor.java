@@ -110,7 +110,7 @@ public class TestEventProcessor {
 				started.set(true);
 				return id;
 			}
-		}).when(executor).startWorkflow(action.getStart_workflow().getName(), 1, action.getStart_workflow().getCorrelationId(), action.getStart_workflow().getInput());
+		}).when(executor).startWorkflow(action.getStart_workflow().getName(), 1, action.getStart_workflow().getCorrelationId(), action.getStart_workflow().getInput(), event);
 
 		//Metadata Service Mock
 		MetadataService metadata = mock(MetadataService.class);

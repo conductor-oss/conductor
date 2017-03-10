@@ -4,7 +4,7 @@ Conductor provides a pluggable backend.  The current implementation uses Dynomit
 There are 4 interfaces that needs to be implemented for each backend:
 
 ```java
-//Store for workfow and task definitions
+//Store for workflow and task definitions
 com.netflix.conductor.dao.MetadataDAO
 ```
 
@@ -31,4 +31,4 @@ e.g. SQS for queueing and a relational store for others.
 To create system tasks follow the steps below:
 
 * Extend ```com.netflix.conductor.core.execution.tasks.WorkflowSystemTask```
-* Instantiate the new classs as part of the statup (eager singleton)
+* Instantiate the new class as part of the startup (eager singleton)

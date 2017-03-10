@@ -1,3 +1,15 @@
 **/node_modules
 **/npm-debug.log
 ui/dist
+.gradle
+.project
+bin
+build
+client/python/conductor.egg-info
+*.pyc
+.classpath
+docs/site
+site
+ui/.settings
+.settings
+dump.rdb

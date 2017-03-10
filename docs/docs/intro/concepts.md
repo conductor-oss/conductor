@@ -20,13 +20,17 @@ System tasks are executed within the JVM of the Conductor server and managed by 
 | [FORK_JOIN_DYNAMIC](/metadata/systask/#dynamic-fork) | Similar to FORK, but rather than the set of tasks defined in the blueprint for parallel execution, FORK_JOIN_DYNAMIC spawns the parallel tasks based on the input expression to this task |
 | [JOIN](/metadata/systask/#join) | Complements FORK and FORK_JOIN_DYNAMIC.  Used to merge one of more parallel branches*
 | [SUB_WORKFLOW](/metadata/systask/#sub-workflow) | Nest another workflow as a sub workflow task.  Upon execution it instantiates the sub workflow and awaits it completion|
+| [EVENT](/metadata/systask/#event ) | Produces an event in a supported eventing system (e.g. Conductor, SQS)|
 
-Conductor provides an API to create user defined tasks that are excuted in the same JVM as the engine.  see [WorkflowSystemTask](https://github.com/Netflix/conductor/blob/dev/core/src/main/java/com/netflix/conductor/core/execution/tasks/WorkflowSystemTask.java) interface for details.
+
+Conductor provides an API to create user defined tasks that are executed in the same JVM as the engine.  see [WorkflowSystemTask](https://github.com/Netflix/conductor/blob/dev/core/src/main/java/com/netflix/conductor/core/execution/tasks/WorkflowSystemTask.java) interface for details.
 
 ## Worker Tasks
-Worker tasks are implemented by application(s) and runs in a separate environment from Conductor.  The worker tasks can be implemented in any langugage.  These tasks talk to Conductor server via REST API endpionts to poll for tasks and update its status after execution.
+Worker tasks are implemented by application(s) and runs in a separate environment from Conductor.  The worker tasks can be implemented in any language.  These tasks talk to Conductor server via REST API endpoints to poll for tasks and update its status after execution.
 
 Worker tasks are identified by task type __SIMPLE__ in the blueprint.
 
+## Lifecycle of a Workflow Task
+![Task_States](/img/task_states.png)
 
 [more details](/metadata/#task-definition)

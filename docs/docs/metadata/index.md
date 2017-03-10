@@ -36,7 +36,7 @@ Conductor maintains a registry of worker task types.  A task type MUST be regist
 
 **Retry Logic**
 
-* FIXED : Reschedule the task afer the ```retryDelaySeconds```
+* FIXED : Reschedule the task after the ```retryDelaySeconds```
 * EXPONENTIAL_BACKOFF : reschedule after ```retryDelaySeconds  * attempNo```
  
 **Timeout Policy**
@@ -46,7 +46,7 @@ Conductor maintains a registry of worker task types.  A task type MUST be regist
 * ALERT_ONLY : Registers a counter (task_timeout)
 
 # Workflow Definition
-Workflows are define using a JSON based DSL.
+Workflows are defined using a JSON based DSL.
 
 **Example**
 ```json
@@ -85,7 +85,7 @@ Workflows are define using a JSON based DSL.
 |name|Name of the workflow||
 |description|Descriptive name of the workflow||
 |version|Numeric field used to identify the version of the schema.  Use incrementing numbers|When starting a workflow execution, if not specified, the definition with highest version is used|
-|tasks|An array of task defintions as described below.||
+|tasks|An array of task definitions as described below.||
 |outputParameters|JSON template used to generate the output of the workflow|If not specified, the output is defined as the output of the _last_ executed task|
 |inputParameters|List of input parameters.  Used for documenting the required inputs to workflow|optional|
 
@@ -100,7 +100,7 @@ Below are the mandatory minimum parameters required for each task:
 |type|Type of task. SIMPLE for tasks executed by remote workers, or one of the system task types||
 |inputParameters|JSON template that defines the input given to the task|See "wiring inputs and outputs" for details|
 
-In addition to these paramters, additional parameters speciific to the task type are required as documented [here](/metadata/systask/)
+In addition to these parameters, additional parameters specific to the task type are required as documented [here](/metadata/systask/)
 
 # Wiring Inputs and Outputs
 
@@ -121,7 +121,7 @@ __${SOURCE.input/output.JSONPath}__
 
 
 !!! note "JSON Path Support"
-	Conductor supports [JSONPath](http://goessner.net/articles/JsonPath/) specification and uses Java implementaion from [here](https://github.com/jayway/JsonPath).
+	Conductor supports [JSONPath](http://goessner.net/articles/JsonPath/) specification and uses Java implementation from [here](https://github.com/jayway/JsonPath).
 
 **Example**
 

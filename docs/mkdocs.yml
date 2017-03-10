@@ -9,14 +9,16 @@ pages:
 - 'Basic Concepts': intro/concepts.md
 - 'Metadata Definitions': metadata/index.md
 - 'System Tasks': metadata/systask.md
+- 'Event Handlers': events/index.md
 - 'Kitchensink Example': metadata/kitchensink.md
 - 'Conductor Server': server/index.md
 - 'Conductor Task Workers': worker/index.md
 - 'Extending Conductor': extend/index.md
-- 'Workflow Management': runtime/index.md
+- 'APIs': runtime/index.md
 - 'Workflow Metrics':
    - 'Server Metrics': metrics/index.md
    - 'Worker Metrics': metrics/client.md
+- 'FAQ': faq.md
 - License: 'license.md'
 theme: readthedocs
 extra_css:

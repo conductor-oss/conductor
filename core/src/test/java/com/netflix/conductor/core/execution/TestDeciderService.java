@@ -47,6 +47,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.dao.MetadataDAO;
 
 
@@ -62,7 +63,11 @@ public class TestDeciderService {
 	
 	@Before
 	public void setup(){
-		ds = new DeciderService();
+		MetadataDAO mdao = mock(MetadataDAO.class);
+		TaskDef taskDef = new TaskDef();
+		when(mdao.getTaskDef(any())).thenReturn(taskDef);
+		
+		ds = new DeciderService(mdao, new ObjectMapper());
 		
 		workflow = new Workflow();
 		workflow.getInput().put("requestId", "request id 001");
@@ -92,11 +97,7 @@ public class TestDeciderService {
 		
 		workflow.getTasks().add(task);
 		workflow.getTasks().add(task2);
-
-		MetadataDAO mdao = mock(MetadataDAO.class);
-		TaskDef taskDef = new TaskDef();
-		when(mdao.getTaskDef(any())).thenReturn(taskDef);
-		ds.setMetadata(mdao);
+		
 		
 	}
 	
@@ -435,8 +436,8 @@ public class TestDeciderService {
 		wf.setVersion(def.getVersion());
 		wf.setStatus(WorkflowStatus.RUNNING);
 		
-		
-		List<Task> scheduledTasks = ds.startWorkflow(wf, def);
+		DeciderOutcome outcome = ds.decide(wf, def);
+		List<Task> scheduledTasks = outcome.tasksToBeScheduled;
 		assertNotNull(scheduledTasks);
 		assertEquals(2, scheduledTasks.size());
 		assertEquals(Status.IN_PROGRESS, scheduledTasks.get(0).getStatus());

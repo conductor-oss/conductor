@@ -238,7 +238,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		workflow.setUpdateTime(System.currentTimeMillis());
 		return insertOrUpdateWorkflow(workflow, true);
 	}
-
+	
 	@Override
 	public void removeWorkflow(String workflowId) {
 
