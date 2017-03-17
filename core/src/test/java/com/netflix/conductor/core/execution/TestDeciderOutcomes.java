@@ -21,6 +21,7 @@ package com.netflix.conductor.core.execution;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
@@ -35,6 +36,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -88,6 +90,45 @@ public class TestDeciderOutcomes {
 	}
 	
 	
-	
+	@Test
+	public void testRetries() {
+		WorkflowDef def = new WorkflowDef();
+		def.setName("test");
+		
+		WorkflowTask task = new WorkflowTask();
+		task.setName("test_task");
+		task.setType("USER_TASK");
+		task.setTaskReferenceName("t0");
+		task.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
+		
+		def.getTasks().add(task);
+		def.setSchemaVersion(2);
+		
+		
+		Workflow workflow = new Workflow();
+		workflow.setStartTime(System.currentTimeMillis());
+		DeciderOutcome outcome = ds.decide(workflow, def);
+		assertNotNull(outcome);
+		
+		System.out.println(outcome.tasksToBeScheduled);
+		assertEquals(1, outcome.tasksToBeScheduled.size());
+		assertEquals(task.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+		System.out.println(outcome.tasksToBeScheduled.get(0).getInputData());
+		String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
+		assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
+		
+		outcome.tasksToBeScheduled.get(0).setStatus(Status.FAILED);
+		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+
+		outcome = ds.decide(workflow, def);
+		assertNotNull(outcome);
+		System.out.println(outcome.tasksToBeScheduled);
+		System.out.println(outcome.tasksToBeUpdated);
+		
+		assertEquals(1, outcome.tasksToBeUpdated.size());
+		assertEquals(task1Id, outcome.tasksToBeUpdated.get(0).getTaskId());
+		assertNotSame(task1Id, outcome.tasksToBeScheduled.get(0).getTaskId());
+		assertEquals(outcome.tasksToBeScheduled.get(0).getTaskId(), outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
+	}
 	
 }

@@ -131,7 +131,8 @@ public class DeciderService {
 			}
 
 			if (!task.getStatus().isSuccessful()) {
-				Task rt = retry(taskDef, task);
+				WorkflowTask workflowTask = def.getTaskByRefName(task.getReferenceTaskName());
+				Task rt = retry(taskDef, workflowTask, task, workflow);
 				tasksToBeScheduled.put(rt.getReferenceTaskName(), rt);
 				executedTaskRefNames.remove(rt.getReferenceTaskName());
 				outcome.tasksToBeUpdated.add(task);
@@ -273,7 +274,7 @@ public class DeciderService {
 		
 	}
 
-	private Task retry(TaskDef taskDef, Task task) throws TerminateWorkflow {
+	private Task retry(TaskDef taskDef, WorkflowTask workflowTask, Task task, Workflow workflow) throws TerminateWorkflow {
 
 		int retryCount = task.getRetryCount();
 		if (!task.getStatus().isRetriable() || SystemTaskType.isBuiltIn(task.getTaskType()) || taskDef.getRetryCount() <= retryCount) {
@@ -302,7 +303,12 @@ public class DeciderService {
 		rescheduled.setRetried(false);
 		rescheduled.setTaskId(IDGenerator.generate());
 		rescheduled.setRetriedTaskId(task.getTaskId());
-		rescheduled.setStatus(Status.SCHEDULED);		
+		rescheduled.setStatus(Status.SCHEDULED);
+		
+		if(workflowTask != null && workflow.getSchemaVersion() > 1) {		//This is a valid case, for the dynamic fork/join
+			Map<String, Object> taskInput = pu.getTaskInputV2(workflowTask.getInputParameters(), workflow, rescheduled.getTaskId(), taskDef);
+			rescheduled.setInputData(taskInput);
+		}		
 		return rescheduled;
 
 	}
