@@ -27,6 +27,11 @@ const Workflow = React.createClass({
     if(search == null || search == 'undefined' || search == '') {
       search = '';
     }
+    let st = this.props.location.query.start;
+    let start = 0;
+    if(!isNaN(st)) {
+      start = parseInt(st);
+    }
 
     return {
       search: search,
@@ -35,7 +40,8 @@ const Workflow = React.createClass({
       h: this.props.location.query.h,
       workflows: [],
       update: true,
-      fullstr: true
+      fullstr: true,
+      start: start
     }
   },
   componentWillMount(){
@@ -56,6 +62,10 @@ const Workflow = React.createClass({
     if(isNaN(h)) {
       h = '';
     }
+    let start = nextProps.location.query.start;
+    if(isNaN(start)) {
+      start = 0;
+    }
     let status = nextProps.location.query.status;
     if(status != null && status != '') {
       status = status.split(',');
@@ -66,6 +76,7 @@ const Workflow = React.createClass({
     let update = true;
     update = this.state.search != search;
     update = update || (this.state.h != h);
+    update = update || (this.state.start != start);
     update = update || (this.state.status.join(',') != status.join(','));
 
     this.setState({
@@ -73,7 +84,8 @@ const Workflow = React.createClass({
       h : h,
       update : update,
       status : status,
-      workflows : workflowDefs
+      workflows : workflowDefs,
+      start : start
     });
 
     this.refreshResults();
@@ -94,7 +106,8 @@ const Workflow = React.createClass({
     let h = this.state.h;
     let workflowTypes = this.state.workflowTypes;
     let status = this.state.status;
-    this.props.history.pushState(null, "/workflow?q=" + q + "&h=" + h + "&workflowTypes=" + workflowTypes + "&status=" + status);
+    let start = this.state.start;
+    this.props.history.pushState(null, "/workflow?q=" + q + "&h=" + h + "&workflowTypes=" + workflowTypes + "&status=" + status + "&start=" + start);
   },
   doDispatch() {
 
@@ -111,7 +124,7 @@ const Workflow = React.createClass({
     if(this.state.status.length > 0) {
       query.push('status IN (' + this.state.status.join(',') + ') ');
     }
-    this.props.dispatch(searchWorkflows(query.join(' AND '), search, this.state.h, this.state.fullstr));
+    this.props.dispatch(searchWorkflows(query.join(' AND '), search, this.state.h, this.state.fullstr, this.state.start));
   },
   workflowTypeChange(workflowTypes) {
     this.state.update = true;
@@ -121,6 +134,19 @@ const Workflow = React.createClass({
   statusChange(status) {
     this.state.update = true;
     this.state.status = status;
+    this.refreshResults();
+  },
+  nextPage() {
+    this.state.start = 100 + parseInt(this.state.start);
+    this.state.update = true;
+    this.refreshResults();
+  },
+  prevPage() {
+    this.state.start = parseInt(this.state.start) - 100;
+    if(this.state.start < 0) {
+        this.state.start = 0;
+    }
+    this.state.update = true;
     this.refreshResults();
   },
   searchChange(e){
@@ -155,6 +181,11 @@ const Workflow = React.createClass({
       wfs = this.props.data.hits;
       totalHits = this.props.data.totalHits;
       found = wfs.length;
+    }
+    let start = parseInt(this.state.start);
+    let max = start + 100;
+    if(found < 100) {
+      max = start + found;
     }
     const workflowNames = this.state.workflows?this.state.workflows:[];
     const statusList = ['RUNNING','COMPLETED','FAILED','TIMED_OUT','TERMINATED','PAUSED'];
@@ -230,7 +261,11 @@ const Workflow = React.createClass({
           </form>
           </Panel>
         </div>
-        <span>Displaying <b>{found}</b> of <b>{totalHits}</b> Workflows Found.</span>
+        <span>Total Workflows Found: <b>{totalHits}</b>, Displaying {this.state.start} <b>to</b> {max}</span>
+        <span style={{float:'right'}}>
+          {parseInt(this.state.start) >= 100?<a onClick={this.prevPage}><i className="fa fa-backward"></i>&nbsp;Previous Page</a>:''}
+          {parseInt(this.state.start) + 100 <= totalHits?<a onClick={this.nextPage}>&nbsp;&nbsp;Next Page&nbsp;<i className="fa fa-forward"></i></a>:''}
+        </span>
         <BootstrapTable data={wfs} striped={true} hover={true} search={false} exportCSV={false} pagination={false} options={{sizePerPage:100}}>
           <TableHeaderColumn dataField="workflowType" isKey={true} dataAlign="left" dataSort={true}>Workflow</TableHeaderColumn>
           <TableHeaderColumn dataField="workflowId" dataSort={true} dataFormat={linkMaker}>Workflow ID</TableHeaderColumn>

@@ -15,6 +15,7 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -85,6 +86,11 @@ public class ParametersUtils {
 		}
 		DocumentContext io = JsonPath.parse(doc, option);
 		return replace(input, io, null);
+	}
+	
+	public Object replace(String paramString){
+		DocumentContext io = JsonPath.parse(Collections.emptyMap(), option);
+		return replaceVariables(paramString, io, null);
 	}
 	
 	@SuppressWarnings("unchecked")

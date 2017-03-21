@@ -21,7 +21,7 @@
 If the workflow is started with input parameter user_supplied_task's value as __user_task_2__, Conductor will schedule __user_task_2__ when scheduling this dynamic task.
 
 # Decision
-A decision task is similar to ```case...switch``` statement in a programming langugage.
+A decision task is similar to ```case...switch``` statement in a programming language.
 The task takes 3 parameters:
 
 ### Parameters:
@@ -128,7 +128,7 @@ A dynamic fork is same as FORK_JOIN task.  Except that the list of tasks to be f
 |name|description|
 |---|---|
 | dynamicForkTasksParam |Name of the parameter that contains list of workflow task configuration to be executed in parallel|
-|dynamicForkTasksInputParamName|Name of the parameter whose value should be a map with key as forked task's referece name and value as input the forked task|
+|dynamicForkTasksInputParamName|Name of the parameter whose value should be a map with key as forked task's reference name and value as input the forked task|
 
 ###Example
 
@@ -177,7 +177,7 @@ Consider **taskA**'s output as:
 ```
 When executed, the dynamic fork task will schedule two parallel task of type "encode_task" with reference names "forkedTask1" and "forkedTask2" and inputs as specified by _ dynamicTasksInputJSON_
 
-!!!warning "Dyanmic Fork and Join"
+!!!warning "Dynamic Fork and Join"
 	**A Join task MUST follow FORK_JOIN_DYNAMIC**
 	
 	Workflow definition MUST include a Join task definition followed by FORK_JOIN_DYNAMIC task.  However, given the dynamic nature of the task, no joinOn parameters are required for this Join.  The join will wait for ALL the forked branches to complete before completing.
@@ -238,7 +238,7 @@ To use a wait task, set the task type as ```WAIT```
 ### Parameters
 None required.
 
-### Exernal Triggers for Wait Task
+### External Triggers for Wait Task
 
 Task Resource endpoint can be used to update the status of a task to a terminate state. 
 
@@ -277,7 +277,7 @@ The task expects an input parameter named ```http_request``` as part of the task
 |---|---|
 | uri |URI for the service.  Can be a partial when using vipAddress or includes the server address.|
 |method|HTTP method.  One of the GET, PUT, POST, DELETE, OPTIONS, HEAD|
-|accept|Accpet header as required by server.|
+|accept|Accept header as required by server.|
 |contentType|Content Type - supported types are text/plain, text/html and, application/json|
 |headers|A map of additional http headers to be sent along with the request.|
 |body|Request body|
@@ -320,3 +320,40 @@ The task is marked as ```FAILED``` if the request cannot be completed or the rem
 
 !!!note
 	HTTP task currently only supports Content-Type as application/json and is able to parse the text as well as JSON response.  XML input/output is currently not supported.  However, if the response cannot be parsed as JSON or Text, a string representation is stored as a text value.
+	
+# Event
+Event task provides ability to publish an event (message) to either Conductor or an external eventing system like SQS.  Event tasks are useful for creating event based dependencies for workflows and tasks.
+
+### Parameters
+|name|description|
+|---|---|
+| sink |Qualified name of the event that is produced.  e.g. conductor or sqs:sqs_queue_name|
+
+
+### Example
+
+``` json
+{
+	"sink": 'sqs:example_sqs_queue_name'
+}
+```
+
+When producing an event with Conductor as sink, the event name follows the structure:
+```conductor:<workflow_name>:<task_reference_name>```
+
+For SQS, use the **name** of the queue and NOT the URI.  Conductor looks up the URI based on the name.
+
+!!!warning
+	When using SQS add the [ContribsModule](https://github.com/Netflix/conductor/blob/master/contribs/src/main/java/com/netflix/conductor/contribs/ContribsModule.java) to the deployment.  The module needs to be configured with AWSCredentialsProvider for Conductor to be able to use AWS APIs.
+
+### Supported Sinks
+* Conductor
+* SQS
+
+
+### Event Task Input
+The input given to the event task is made available to the published message as payload.  e.g. if a message is put into SQS queue (sink is sqs) then the message payload will be the input to the task.
+
+
+### Event Task Output
+`event_produced` Name of the event produced.	

@@ -21,8 +21,11 @@ class Footer extends Component {
   render() {
     return (
       <div className="Footer navbar-fixed-bottom">
-        <div className="Footer-container">
-          <span className="Footer-text">Workflow Server: </span><a href={this.state.sys.server} target="_new" className="small" style={{color:'white'}}>{this.state.sys.server}</a>
+        <div className="Footer-container left">
+          <span className="Footer-text">Server: </span><a href={this.state.sys.server} target="_new" className="small" style={{color:'white'}}>{this.state.sys.server}</a>
+          <span style={{float:'right'}}>
+          <span className="Footer-text">Version: {this.state.sys.version} | Build Date: {this.state.sys.buildDate}</span>
+          </span>
         </div>
       </div>
     );

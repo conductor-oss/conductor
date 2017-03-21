@@ -23,7 +23,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -34,20 +33,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
  *
  */
 public class TestPropertyFactory {
-
-	@BeforeClass
-	public static void init() {
-		
-		//Polling interval for all the workers is 2 second
-		System.setProperty("conductor.worker.pollingInterval", "2");
-		
-		System.setProperty("conductor.worker.paused", "false");
-		System.setProperty("conductor.worker.workerA.paused", "true");
-		
-		System.setProperty("conductor.worker.workerB.batchSize", "84");
-		
-		System.setProperty("conductor.worker.Test.paused", "true");
-	}
 	
 	@Test
 	public void testIdentity(){

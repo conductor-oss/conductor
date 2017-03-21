@@ -141,10 +141,11 @@ public class TaskResource {
 		taskService.removeTaskfromQueue(taskType, taskId);
 	}
 
-	@POST
+	@GET
 	@Path("/queue/sizes")
 	@ApiOperation("Get Task type queue sizes")
-	public Map<String, Integer> size(List<String> taskTypes) throws Exception {
+	@Consumes({ MediaType.WILDCARD })
+	public Map<String, Integer> size(@QueryParam("taskType") List<String> taskTypes) throws Exception {
 		return taskService.getTaskQueueSizes(taskTypes);
 	}
 

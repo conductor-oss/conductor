@@ -8,9 +8,8 @@
       "taskReferenceName": "get_es_0",
       "inputParameters": {
         "http_request": {
-          "uri": "http://localhost:9200/wfe_perf/workflow/_search?q=status:COMPLETED&size=10",
-          "method": "GET",
-          "vipAddress": "es_cpe_wfe.us-east-1.cloud.netflix.com"
+          "uri": "http://localhost:9200/conductor/workflow/_search?q=status:COMPLETED&size=10",
+          "method": "GET"
         }
       },
       "type": "HTTP"
@@ -134,7 +133,7 @@
       "taskReferenceName": "get_es_1",
       "inputParameters": {
         "http_request": {
-          "uri": "http://es_cpe_wfe.us-east-1.dyntest.netflix.net:7104/wfe_perf/workflow/_search?q=status:COMPLETED&size=10",
+          "uri": "http://localhost:9200/conductor/workflow/_search?q=status:COMPLETED&size=10",
           "method": "GET"
         }
       },

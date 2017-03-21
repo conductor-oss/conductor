@@ -32,12 +32,9 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
-import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -53,10 +50,6 @@ public class WorkflowSweeper {
 
 	private ExecutorService es;
 	
-	protected ObjectMapper om;
-	
-	private DeciderService ds;
-	
 	private Configuration config;
 	
 	private QueueDAO queues;
@@ -66,31 +59,30 @@ public class WorkflowSweeper {
 	private static final String className = WorkflowSweeper.class.getSimpleName();
 		
 	@Inject
-	public WorkflowSweeper(ExecutionDAO edao, MetadataDAO metadata, ObjectMapper om, WorkflowExecutor workflowProvider, Configuration config, QueueDAO queues) {
-		this.om = om;
-		this.ds = new DeciderService(metadata, edao, om);
+	public WorkflowSweeper(WorkflowExecutor executor, Configuration config, QueueDAO queues) {
 		this.config = config;
 		this.queues = queues;
 		this.executorThreadPoolSize = config.getIntProperty("workflow.sweeper.thread.count", 5);
 		this.es = Executors.newFixedThreadPool(executorThreadPoolSize);
-		init(workflowProvider);
+		init(executor);
 		logger.info("Workflow Sweeper Initialized");
 	}
 
-	public void init(WorkflowExecutor workflowProvider) {
+	public void init(WorkflowExecutor executor) {
 		
 		ScheduledExecutorService deciderPool = Executors.newScheduledThreadPool(1);
 		
 		deciderPool.scheduleWithFixedDelay(() -> {
 
 			try{
-
-				if(config.disableSweep()){
+				boolean disable = config.disableSweep();
+				logger.debug("Workflow Sweep disabled? {}", disable);
+				if (disable) {
 					logger.info("Workflow sweep is disabled.");
 					return;
 				}
 				List<String> workflowIds = queues.pop(WorkflowExecutor.deciderQueue, 2 * executorThreadPoolSize, 2000);
-				sweep(workflowIds, workflowProvider);
+				sweep(workflowIds, executor);
 				
 			}catch(Exception e){
 				Monitors.error(className, "sweep");
@@ -102,7 +94,7 @@ public class WorkflowSweeper {
 		}, 500, 500, TimeUnit.MILLISECONDS);
 	}
 
-	public void sweep(List<String> workflowIds, WorkflowExecutor workflowProvider) throws Exception {
+	public void sweep(List<String> workflowIds, WorkflowExecutor executor) throws Exception {
 		
 		List<Future<?>> futures = new LinkedList<>();
 		for (String workflowId : workflowIds) {
@@ -114,7 +106,7 @@ public class WorkflowSweeper {
 					if(logger.isDebugEnabled()) {
 						logger.debug("Running sweeper for workflow {}", workflowId);
 					}
-					boolean done = ds.decide(workflowId, workflowProvider);
+					boolean done = executor.decide(workflowId);
 					if(!done) {
 						queues.setUnackTimeout(WorkflowExecutor.deciderQueue, workflowId, config.getSweepFrequency() * 1000);
 					} else {
@@ -123,7 +115,7 @@ public class WorkflowSweeper {
 					
 				} catch (ApplicationException e) {
 					if(e.getCode().equals(Code.NOT_FOUND)) {
-						logger.error("Workflow NOT found id=" + workflowId, e);
+						logger.error("Workflow NOT found for id: " + workflowId, e);
 						queues.remove(WorkflowExecutor.deciderQueue, workflowId);
 					}
 					

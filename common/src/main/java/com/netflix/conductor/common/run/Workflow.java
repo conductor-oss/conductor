@@ -74,6 +74,8 @@ public class Workflow extends Auditable{
 	private String reasonForIncompletion;
 	
 	private int schemaVersion;
+	
+	private String event;
 
 	public Workflow(){
 		
@@ -269,6 +271,23 @@ public class Workflow extends Auditable{
 	public void setSchemaVersion(int schemaVersion) {
 		this.schemaVersion = schemaVersion;
 	}
+	
+	/**
+	 * 
+	 * @return Name of the event that started the workflow
+	 */
+	public String getEvent() {
+		return event;
+	}
+	
+	/**
+	 * 
+	 * @param event Name of the event that started the workflow
+	 */
+	public void setEvent(String event) {
+		this.event = event;
+	}
+	
 	@Override
 	public String toString() {
 		return workflowType + "." + version + "/" + workflowId + "." + status; 

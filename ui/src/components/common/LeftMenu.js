@@ -125,9 +125,6 @@ const LeftMenu = React.createClass({
         <div className="menuList">
           {menuItems}
         </div>
-        <div className="menu-footer">
-          {this.state.version}
-        </div>
       </div>
     );
   }

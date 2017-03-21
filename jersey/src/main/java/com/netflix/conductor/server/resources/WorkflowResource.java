@@ -93,7 +93,7 @@ public class WorkflowResource {
 		if(def == null){
 			throw new ApplicationException(Code.NOT_FOUND, "No such workflow found by name=" + name + ", version=" + version);
 		}
-		return executor.startWorkflow(def.getName(), def.getVersion(), correlationId, input);
+		return executor.startWorkflow(def.getName(), def.getVersion(), correlationId, input, null);
 	}
 	
 	@GET

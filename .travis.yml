@@ -3,6 +3,10 @@ jdk:
 - oraclejdk8
 install: true
 script: "./buildViaTravis.sh"
+addons:
+  apt:
+    packages:
+      - redis-server
 cache:
   directories:
   - "$HOME/.gradle/caches"

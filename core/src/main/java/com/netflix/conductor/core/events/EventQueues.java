@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.core.execution.ParametersUtils;
 
 /**
  * @author Viren
@@ -35,6 +36,8 @@ import com.netflix.conductor.core.events.queue.ObservableQueue;
 public class EventQueues {
 	
 	private static Logger logger = LoggerFactory.getLogger(EventQueues.class);
+	
+	private static ParametersUtils pu = new ParametersUtils();
 	
 	public enum QueueType {
 		sqs, conductor
@@ -54,7 +57,8 @@ public class EventQueues {
 		return providers.values().stream().map(p -> p.getClass().getName()).collect(Collectors.toList());
 	}
 	
-	public static ObservableQueue getQueue(String event, boolean throwException) {
+	public static ObservableQueue getQueue(String eventt, boolean throwException) {
+		String event = pu.replace(eventt).toString();
 		String typeVal = event.substring(0, event.indexOf(':'));
 		String queueURI = event.substring(event.indexOf(':') + 1);
 		QueueType type = QueueType.valueOf(typeVal);

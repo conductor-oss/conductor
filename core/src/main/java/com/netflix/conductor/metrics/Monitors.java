@@ -195,4 +195,8 @@ public class Monitors {
 	public static void recordUpdateConflict(String taskType, String workflowType, Status status) {
 		counter(classQualifier, "task_update_conflict", "workflowName", workflowType, "taskType", taskType, "workflowStatus", status.name());
 	}
+
+	public static void recordWorkflowCompletion(String workflowType, long duration) {
+		getTimer(classQualifier, "workflow_execution", "workflowName", workflowType).record(duration, TimeUnit.MILLISECONDS);
+	}
 }

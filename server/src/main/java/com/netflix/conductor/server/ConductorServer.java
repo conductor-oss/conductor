@@ -51,7 +51,6 @@ import com.netflix.dyno.connectionpool.impl.lb.HostToken;
 import com.netflix.dyno.jedis.DynoJedisClient;
 import com.sun.jersey.api.client.Client;
 
-import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisCommands;
 
 /**
@@ -124,14 +123,7 @@ public class ConductorServer {
 		
 		JedisCommands jedis = null;
 		switch(db) {
-		case redis:
-			
-			String host = dynoHosts.get(0).getHostName();
-			int port = dynoHosts.get(0).getPort();
-			jedis = new Jedis(host, port);
-			logger.info("Starting conductor server using standalone redis on " + host + ":" + port);
-			break;
-			
+		case redis:	
 		case dynomite:
 			
 			ConnectionPoolConfigurationImpl cp = new ConnectionPoolConfigurationImpl(dynoClusterName).withTokenSupplier(new TokenMapSupplier() {
@@ -161,7 +153,6 @@ public class ConductorServer {
 			break;
 			
 		case memory:
-			
 			jedis = new JedisMock();
 			try {
 				EmbeddedElasticSearch.start();
@@ -179,6 +170,10 @@ public class ConductorServer {
 		}
 		
 		this.sm = new ServerModule(jedis, hs, cc);
+	}
+	
+	public ServerModule getGuiceModule() {
+		return sm;
 	}
 	
 	public synchronized void start(int port, boolean join) throws Exception {

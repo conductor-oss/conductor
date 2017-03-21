@@ -17,7 +17,7 @@ java -jar conductor-server-VERSION-all.jar
 ```
 
 #### 2. Download pre-built binaries from jcenter or maven central
-Use the following coordiates:
+Use the following coordinates:
 
 |group|artifact|version
 |---|---|---|
@@ -37,7 +37,7 @@ After the docker images are built, run the following command to start the contai
 docker-compose up
 ```
 
-This will create a docker container network that consists of the following images: conductor:server, conductor:ui, [elasticsearch:2.4](https://hub.docker.com/_/elasticsearch/), and [v1r3n/dynomite:latest](https://hub.docker.com/r/v1r3n/dynomite/).
+This will create a docker container network that consists of the following images: conductor:server, conductor:ui, [elasticsearch:2.4](https://hub.docker.com/_/elasticsearch/), and dynomite.
 
 To view the UI, navigate to [localhost:5000](http://localhost:5000/), to view the Swagger docs, navigate to [localhost:8080](http://localhost:8080/).
 
@@ -53,7 +53,7 @@ log4j.properties file path is optional and allows finer control over the logging
 ```properties
 
 # Database persistence model.  Possible values are memory, redis, and dynomite.
-# If ommitted, the persistence used is memory
+# If omitted, the persistence used is memory
 #
 # memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo
 # redis : non-Dynomite based redis instance

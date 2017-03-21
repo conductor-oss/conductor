@@ -35,7 +35,8 @@ import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
 
 /**
- * @author Viren Workflow Manager
+ * @author Viren 
+ * 
  */
 @Singleton
 @Trace
@@ -48,7 +49,11 @@ public class MetadataService {
 		this.metadata = metadata;
 	}
 
-	public void registerTaskDef(List<TaskDef> taskDefs) throws Exception {
+	/**
+	 * 
+	 * @param taskDefs Task Definitions to register
+	 */
+	public void registerTaskDef(List<TaskDef> taskDefs) {
 		for (TaskDef taskDef : taskDefs) {
 			taskDef.setCreatedBy(WorkflowContext.get().getClientApp());
 	   		taskDef.setCreateTime(System.currentTimeMillis());
@@ -58,7 +63,11 @@ public class MetadataService {
 		}
 	}
 
-	public void updateTaskDef(TaskDef taskDef) throws Exception {
+	/**
+	 * 
+	 * @param taskDef Task Definition to be updated
+	 */
+	public void updateTaskDef(TaskDef taskDef) {
 		TaskDef existing = metadata.getTaskDef(taskDef.getName());
 		if (existing == null) {
 			throw new ApplicationException(Code.NOT_FOUND, "No such task by name " + taskDef.getName());
@@ -68,42 +77,81 @@ public class MetadataService {
 		metadata.updateTaskDef(taskDef);
 	}
 
+	/**
+	 * 
+	 * @param taskType Remove task definition
+	 */
 	public void unregisterTaskDef(String taskType) {
 		metadata.removeTaskDef(taskType);
 	}
 
-	public List<TaskDef> getTaskDefs() throws Exception {
+	/**
+	 * 
+	 * @return List of all the registered tasks
+	 */
+	public List<TaskDef> getTaskDefs() {
 		return metadata.getAllTaskDefs();
 	}
 
-	public TaskDef getTaskDef(String taskType) throws Exception {
+	/**
+	 * 
+	 * @param taskType Task to retrieve
+	 * @return Task Definition
+	 */
+	public TaskDef getTaskDef(String taskType) {
 		return metadata.getTaskDef(taskType);
 	}
 
-	public void updateWorkflowDef(WorkflowDef def) throws Exception {
+	/**
+	 * 
+	 * @param def Workflow definition to be updated
+	 */
+	public void updateWorkflowDef(WorkflowDef def) {
 		metadata.update(def);		
 	}
 	
-	public void updateWorkflowDef(List<WorkflowDef> wfs) throws Exception {
+	/**
+	 * 
+	 * @param wfs Workflow definitions to be updated.
+	 */
+	public void updateWorkflowDef(List<WorkflowDef> wfs) {
 		for (WorkflowDef wf : wfs) {
 			metadata.update(wf);
 		}
 	}
 
-	public WorkflowDef getWorkflowDef(String name, Integer version) throws Exception {
+	/**
+	 * 
+	 * @param name Name of the workflow to retrieve
+	 * @param version Optional.  Version.  If null, then retrieves the latest
+	 * @return Workflow definition
+	 */
+	public WorkflowDef getWorkflowDef(String name, Integer version) {
 		if (version == null) {
 			return metadata.getLatest(name);
 		}
 		return metadata.get(name, version);
 	}
+	
+	/**
+	 * 
+	 * @param name Name of the workflow to retrieve
+	 * @return Latest version of the workflow definition
+	 */
+	public WorkflowDef getLatestWorkflow(String name) {
+		return metadata.getLatest(name);
+	}
 
-	public List<WorkflowDef> getWorkflowDefs() throws Exception {
+	public List<WorkflowDef> getWorkflowDefs() {
 		return metadata.getAll();
 	}
 
-	public void registerWorkflowDef(WorkflowDef def) throws Exception {
+	public void registerWorkflowDef(WorkflowDef def) {
 		if(def.getName().contains(":")) {
 			throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
+		}
+		if(def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
+			def.setSchemaVersion(2);
 		}
 		metadata.create(def);
 	}
@@ -160,5 +208,4 @@ public class MetadataService {
 		String event = eh.getEvent();
 		EventQueues.getQueue(event, true);
 	}
-	
 }

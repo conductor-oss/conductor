@@ -52,6 +52,7 @@ import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.DynamicForkJoinTaskList;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
@@ -62,7 +63,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.WorkflowSweeper;
@@ -96,8 +96,6 @@ public class WorkflowServiceTest {
 	@Inject
 	private MetadataService ms;
 	
-	@Inject
-	private DeciderService ds;
 	
 	@Inject
 	private WorkflowSweeper sweeper;
@@ -382,12 +380,12 @@ public class WorkflowServiceTest {
 		wf = ess.getExecutionStatus(wfid, true);
 		assertNotNull(wf);
 		assertEquals("Found " + wf.getTasks(), WorkflowStatus.RUNNING, wf.getStatus());
-		if(!wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t3"))){
-			ds.decide(wfid, provider);
+		if (!wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t3"))) {
+			provider.decide(wfid);
 			wf = ess.getExecutionStatus(wfid, true);
 			assertNotNull(wf);
 		}else {
-			ds.decide(wfid, provider);
+			provider.decide(wfid);
 		}
 		assertTrue("Found " + wf.getTasks().stream().map(t -> t.getTaskType()).collect(Collectors.toList()), wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t3")));
 		
@@ -397,8 +395,8 @@ public class WorkflowServiceTest {
 		assertTrue("Found  " + wf.getTasks().stream().map(t -> t.getReferenceTaskName() + "." + t.getStatus()).collect(Collectors.toList()), wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t4")));		
 		assertEquals("Found " + wf.getTasks().stream().map(t -> t.getTaskType()).collect(Collectors.toList()), 6, wf.getTasks().size());
 		
-		ds.decide(wfid, provider);
-		ds.decide(wfid, provider);
+		provider.decide(wfid);
+		provider.decide(wfid);
 		
 		wf = ess.getExecutionStatus(wfid, true);
 		assertNotNull(wf);
@@ -696,7 +694,7 @@ public class WorkflowServiceTest {
 		
 		es = ess.getExecutionStatus(wfid, true);
 		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+		assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
 		assertEquals(2, es.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_2")).count());
 		assertTrue(es.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_2")).allMatch(t -> t.getDynamicWorkflowTask() != null));
 		
@@ -1011,7 +1009,6 @@ public class WorkflowServiceTest {
 		finalTask.getDecisionCases().put("notify", Arrays.asList(notifyTask));
 		
 		def2.getTasks().add(finalTask );
-		System.out.println(new ObjectMapper().writeValueAsString(def2));
 		ms.updateWorkflowDef(def2);
 		
 	}
@@ -1145,7 +1142,7 @@ public class WorkflowServiceTest {
 		String inputParam1 = "p1 value";
 		input.put("param1", inputParam1);
 		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
+		String wfid = provider.startWorkflow(LONG_RUNNING, 1, correlationId , input);
 		System.out.println("testLongRunning.wfid=" + wfid);
 		assertNotNull(wfid);
 		
@@ -1414,7 +1411,7 @@ public class WorkflowServiceTest {
 				List<Task> workflowTasks = workflow.getTasks();
 				assertEquals(workflowTasks.toString(), 	executedTasks.length, workflowTasks.size());
 				for(int k = 0; k < executedTasks.length; k++){
-					assertEquals(workflowTasks.toString(), executedTasks[k], workflowTasks.get(k).getTaskType());
+					assertEquals("Tasks: " + workflowTasks.toString() + "\n", executedTasks[k], workflowTasks.get(k).getTaskType());
 				}
 				
 				assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
@@ -1640,12 +1637,17 @@ public class WorkflowServiceTest {
 		Workflow workflow = provider.getWorkflow(wfid, false);
 		long updated1 = workflow.getUpdateTime();
 		Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
-		ds.decide(wfid, provider);
+		provider.decide(wfid);
 		workflow = provider.getWorkflow(wfid, false);
 		long updated2 = workflow.getUpdateTime();
-		assertTrue(updated2 > updated1);
+		assertEquals(updated1, updated2);
 		
+		Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
 		provider.terminateWorkflow(wfid, "done");
+		workflow = provider.getWorkflow(wfid, false);
+		updated2 = workflow.getUpdateTime();
+		assertTrue("updated1[" + updated1 + "] >? updated2[" + updated2 + "]", updated2 > updated1);
+		
 	}
 	
 	@Test
@@ -1765,7 +1767,7 @@ public class WorkflowServiceTest {
 		List<Future<Void>> futures = new LinkedList<>();
 		for(int i = 0; i < 10; i++){
 			futures.add(executors.submit(()->{
-				ds.decide(wfid, provider);
+				provider.decide(wfid);
 				return null;
 			}));
 		}
@@ -1783,7 +1785,7 @@ public class WorkflowServiceTest {
 		
 
 		// decideNow should be idempotent if re-run on the same state!
-		ds.decide(wfid, provider);
+		provider.decide(wfid);
 		es = ess.getExecutionStatus(wfid, true);
 		assertNotNull(es);
 		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
@@ -1828,7 +1830,7 @@ public class WorkflowServiceTest {
 		for(int i = 0; i < 10; i++){
 			futures.add(executors.submit(()->{
 				long s = System.currentTimeMillis();
-				ds.decide(wfid, provider);				
+				provider.decide(wfid);				
 				System.out.println("Took " + (System.currentTimeMillis()-s) + " ms to run decider");
 				return null;
 			}));
@@ -2113,7 +2115,7 @@ public class WorkflowServiceTest {
 		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
 		
 		Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
-		ds.decide(wfid, provider);
+		provider.decide(wfid);
 		
 		es = ess.getExecutionStatus(wfid, true);
 		assertNotNull(es);
@@ -2437,7 +2439,7 @@ public class WorkflowServiceTest {
 		assertNull("Found: " + task, task);
 
 		// Even if decide is run again the next task will not be scheduled as the workflow is still paused--
-		ds.decide(wfid, provider);
+		provider.decide(wfid);
 		
 		task = ess.poll("junit_task_2", "task2.junit.worker");
 		assertTrue(task == null);
@@ -2647,6 +2649,34 @@ public class WorkflowServiceTest {
 		es = ess.getExecutionStatus(subWorkflowId, true);
 		assertEquals(WorkflowStatus.TERMINATED, es.getStatus());
 
+	}
+	
+	@Test
+	public void testWait() throws Exception {
+
+		
+		WorkflowDef def = new WorkflowDef();
+		def.setName("test_wait");
+		def.setSchemaVersion(2);
+		WorkflowTask wait = new WorkflowTask();
+		wait.setWorkflowTaskType(Type.WAIT);
+		wait.setName("wait");
+		wait.setTaskReferenceName("wait0");
+		def.getTasks().add(wait);
+		ms.registerWorkflowDef(def);
+		
+		String id = provider.startWorkflow(def.getName(), def.getVersion(), "", new HashMap<>());
+		Workflow workflow = provider.getWorkflow(id, true);
+		assertNotNull(workflow);
+		assertEquals(1, workflow.getTasks().size());
+		assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+		Task waitTask = workflow.getTasks().get(0);
+		assertEquals(WorkflowTask.Type.WAIT.name(), waitTask.getTaskType());
+		waitTask.setStatus(Status.COMPLETED);
+		provider.updateTask(new TaskResult(waitTask));
+		
+		workflow = provider.getWorkflow(id, true);
+		assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
 	}
 	
 	private void createSubWorkflow() throws Exception {

@@ -87,6 +87,5 @@ public interface IndexDAO {
 	 * @param msg Message
 	 */
 	public void addMessage(String queue, Message msg);
-	
 
 }
