@@ -1142,7 +1142,7 @@ public class WorkflowServiceTest {
 		String inputParam1 = "p1 value";
 		input.put("param1", inputParam1);
 		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
+		String wfid = provider.startWorkflow(LONG_RUNNING, 1, correlationId , input);
 		System.out.println("testLongRunning.wfid=" + wfid);
 		assertNotNull(wfid);
 		
