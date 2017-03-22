@@ -2,7 +2,7 @@
 package task
 
 import (
-	"fmt"
+	"log"
 )
 
 /* Format for functions must be:
@@ -13,8 +13,8 @@ import (
 */
 
 func ExampleTaskExecutionFunction(t *Task) (resultStatus TaskStatus, outputData string, err error) {
-	fmt.Println("Executing Example Function for", t.TaskType)
-	fmt.Println(t)
+	log.Println("Executing Example Function for", t.TaskType)
+	log.Println(t)
 
 	//Do some logic
 	resultStatus = COMPLETED

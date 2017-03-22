@@ -1,12 +1,12 @@
 package task
 
 import (
-	"fmt"
+	"log"
 )
 
 // Implementation for "task_2"
 func Task_2_Execution_Function(t *Task) (resultStatus TaskStatus, outputData string, err error) {
-	fmt.Println("Executing Task_2_Execution_Function for", t.TaskType)
+	log.Println("Executing Task_2_Execution_Function for", t.TaskType)
 
 	//Do some logic
 	resultStatus = COMPLETED

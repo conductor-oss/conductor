@@ -1,7 +1,6 @@
 package conductor
 
 import (
-	"fmt"
 	"os"
 	"time"
 	"log"
@@ -38,28 +37,28 @@ func NewConductorWorker(baseUrl string, threadCount int, pollingInterval int) *C
 func (c *ConductorWorker) Execute(taskData string, executeFunction func(t *task.Task) (task.TaskStatus, string, error)) {
 	t, err := task.ParseTask(taskData)
 	if err != nil {
-		fmt.Println("Error Parsing task")
+		log.Println("Error Parsing task")
 		return
 	}
 
 	taskResultStatus, outputData, err := executeFunction(t)
 	if err != nil {
-		fmt.Println("Error Executing task")
+		log.Println("Error Executing task")
 		return
 	}
 
 	t.Status = taskResultStatus
 	err = json.Unmarshal([]byte(outputData), &t.OutputData)
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println("Error Parsing outputData")
+		log.Println(err)
+		log.Println("Error Parsing outputData")
 		return
 	}
 
 	jsonString, err := t.ToJSONString()
 	if err != nil {
-		fmt.Println(err)
-		fmt.Println("Error Forming Task JSON body")
+		log.Println(err)
+		log.Println("Error Forming Task JSON body")
 		return
 	}
 	c.ConductorHttpClient.UpdateTask(jsonString)
@@ -76,7 +75,7 @@ func (c *ConductorWorker) PollAndExecute(taskType string, executeFunction func(t
 }
 
 func (c *ConductorWorker) Start(taskType string, executeFunction func(t *task.Task) (task.TaskStatus, string, error), wait bool) {
-	fmt.Println("Polling for task:", taskType, "with a:", c.PollingInterval, "(ms) polling interval with", c.ThreadCount, "goroutines for task execution, with workerid as", hostname)
+	log.Println("Polling for task:", taskType, "with a:", c.PollingInterval, "(ms) polling interval with", c.ThreadCount, "goroutines for task execution, with workerid as", hostname)
 	for i := 1; i <= c.ThreadCount; i++ {
 		go c.PollAndExecute(taskType, executeFunction)
 	}

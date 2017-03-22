@@ -3,7 +3,7 @@ package conductor
 import (
     "github.com/cquon/httpclient"
     "strconv"
-    "fmt"
+    "log"
 )
 
 type ConductorHttpClient struct {
@@ -34,7 +34,7 @@ func (c *ConductorHttpClient) GetWorkflowDef(workflowName string, version int) (
 	params := map[string]string{"version":versionString}
 	outputString, err := c.httpClient.Get(url, params, nil)
 	if err != nil {
-		fmt.Println("Error while trying to Get Workflow Definition", err)
+		log.Println("Error while trying to Get Workflow Definition", err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -45,7 +45,7 @@ func (c *ConductorHttpClient) CreateWorkflowDef(workflowDefBody string) (string,
 	url := c.httpClient.MakeUrl("/api/metadata/workflow")
 	outputString, err := c.httpClient.Post(url, nil, nil, workflowDefBody)
 	if err != nil {
-		fmt.Println("Error while trying to Create Workflow Definition", err)
+		log.Println("Error while trying to Create Workflow Definition", err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -56,7 +56,7 @@ func (c *ConductorHttpClient) UpdateWorkflowDefs(workflowDefsBody string) (strin
 	url := c.httpClient.MakeUrl("/api/metadata/workflow")
 	outputString, err := c.httpClient.Put(url, nil, nil, workflowDefsBody)
 	if err != nil {
-		fmt.Println("Error while trying to Update Workflow Definitions", err)
+		log.Println("Error while trying to Update Workflow Definitions", err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -67,7 +67,7 @@ func (c *ConductorHttpClient) GetAllWorkflowDefs() (string, error) {
 	url := c.httpClient.MakeUrl("/api/metadata/workflow")
 	outputString, err := c.httpClient.Get(url, nil, nil)
 	if err != nil {
-		fmt.Println("Error while trying to Get All Workflow Definitions", err)
+		log.Println("Error while trying to Get All Workflow Definitions", err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -78,7 +78,7 @@ func (c *ConductorHttpClient) GetTaskDef(taskDefName string) (string, error) {
 	url := c.httpClient.MakeUrl("/api/metadata/taskdefs/{taskDefName}", "{taskDefName}", taskDefName)
 	outputString, err := c.httpClient.Get(url, nil, nil)
 	if err != nil {
-		fmt.Println("Error while trying to Get Task Definition", err)
+		log.Println("Error while trying to Get Task Definition", err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -89,7 +89,7 @@ func (c *ConductorHttpClient) RegisterTaskDefs(taskDefsMeta string) (string, err
 	url := c.httpClient.MakeUrl("/api/metadata/taskdefs")
 	outputString, err := c.httpClient.Post(url, nil, nil, taskDefsMeta)
 	if err != nil {
-		fmt.Println("Error while trying to Register Task Definitions", err)
+		log.Println("Error while trying to Register Task Definitions", err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -100,7 +100,7 @@ func (c *ConductorHttpClient) UpdateTaskDef(taskDefMeta string) (string, error) 
 	url := c.httpClient.MakeUrl("/api/metadata/taskdefs")
 	outputString, err := c.httpClient.Put(url, nil, nil, taskDefMeta)
 	if err != nil {
-		fmt.Println("Error while trying to Update Task Definition", err)
+		log.Println("Error while trying to Update Task Definition", err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -111,7 +111,7 @@ func (c *ConductorHttpClient) UnRegisterTaskDef(taskDefName string) (string, err
 	url := c.httpClient.MakeUrl("/api/metadata/taskdefs/{taskDefName}", "{taskDefName}", taskDefName)
 	outputString, err := c.httpClient.Delete(url, nil, nil, "")
 	if err != nil {
-		fmt.Println("Error while trying to Unregister Task Definition", taskDefName, err)
+		log.Println("Error while trying to Unregister Task Definition", taskDefName, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -122,7 +122,7 @@ func (c *ConductorHttpClient) GetAllTaskDefs() (string, error) {
 	url := c.httpClient.MakeUrl("/api/metadata/taskdefs")
 	outputString, err := c.httpClient.Get(url, nil, nil)
 	if err != nil {
-		fmt.Println("Error while trying to Get All Task Definitions", err)
+		log.Println("Error while trying to Get All Task Definitions", err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -138,7 +138,7 @@ func (c *ConductorHttpClient) GetTask(taskId string) (string, error) {
 	url := c.httpClient.MakeUrl("/api/tasks/{taskId}", "{taskId}", taskId)
 	outputString, err := c.httpClient.Get(url, nil, nil)
 	if err != nil {
-		fmt.Println("Error while trying to Get Task", taskId, err)
+		log.Println("Error while trying to Get Task", taskId, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -149,7 +149,7 @@ func (c *ConductorHttpClient) UpdateTask(taskBody string) (string, error) {
 	url := c.httpClient.MakeUrl("/api/tasks")
 	outputString, err := c.httpClient.Post(url, nil, nil, taskBody)
 	if err != nil {
-		fmt.Println("Error while trying to Update Task", err)
+		log.Println("Error while trying to Update Task", err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -161,7 +161,7 @@ func (c *ConductorHttpClient) PollForTask(taskType string, workerid string) (str
 	params := map[string]string{"workerid":workerid}
 	outputString, err := c.httpClient.Get(url, params, nil)
 	if err != nil {
-		fmt.Println("Error while trying to Poll For Task taskType:", taskType, ",workerid:", workerid, err)
+		log.Println("Error while trying to Poll For Task taskType:", taskType, ",workerid:", workerid, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -174,7 +174,7 @@ func (c *ConductorHttpClient) AckTask(taskType string, workerid string) (string,
 	headers := map[string]string{"Accept":"text/plain"}
 	outputString, err := c.httpClient.Post(url, params, headers, "")
 	if err != nil {
-		fmt.Println("Error while trying to Ack Task taskType:", taskType, ",workerid:", workerid, err)
+		log.Println("Error while trying to Ack Task taskType:", taskType, ",workerid:", workerid, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -185,7 +185,7 @@ func (c *ConductorHttpClient) GetAllTasksInQueue() (string, error) {
 	url := c.httpClient.MakeUrl("/api/tasks/queue/all")
 	outputString, err := c.httpClient.Get(url, nil, nil)
 	if err != nil {
-		fmt.Println("Error while trying to Get All Tasks in Queue", err)
+		log.Println("Error while trying to Get All Tasks in Queue", err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -196,7 +196,7 @@ func (c *ConductorHttpClient) RemoveTaskFromQueue(taskType string, taskId string
 	url := c.httpClient.MakeUrl("/api/tasks/queue/{taskType}/{taskId}", "{taskType}", taskType, "{taskId}", taskId)
 	outputString, err := c.httpClient.Delete(url, nil, nil, "")
 	if err != nil {
-		fmt.Println("Error while trying to Delete Task taskType:", taskType, ",taskId:", taskId, err)
+		log.Println("Error while trying to Delete Task taskType:", taskType, ",taskId:", taskId, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -207,7 +207,7 @@ func (c *ConductorHttpClient) GetTaskQueueSizes(taskNames string) (string, error
 	url := c.httpClient.MakeUrl("/api/tasks/queue/sizes")
 	outputString, err := c.httpClient.Post(url, nil, nil, taskNames)
 	if err != nil {
-		fmt.Println("Error while trying to Get Task Queue Sizes", err)
+		log.Println("Error while trying to Get Task Queue Sizes", err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -228,7 +228,7 @@ func (c *ConductorHttpClient) GetWorkflow(workflowId string, includeTasks bool) 
 	params := map[string]string{"includeTasks":includeTasksString}
 	outputString, err := c.httpClient.Get(url, params, nil)
 	if err != nil {
-		fmt.Println("Error while trying to Get Workflow", workflowId, err)
+		log.Println("Error while trying to Get Workflow", workflowId, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -252,7 +252,7 @@ func (c *ConductorHttpClient) GetRunningWorkflows(workflowName string, version i
 	
 	outputString, err := c.httpClient.Get(url, params, nil)
 	if err != nil {
-		fmt.Println("Error while trying to Get Running Workflows", workflowName, err)
+		log.Println("Error while trying to Get Running Workflows", workflowName, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -279,7 +279,7 @@ func (c *ConductorHttpClient) StartWorkflow(workflowName string, version int, co
 
 	outputString, err := c.httpClient.Post(url, params, headers, inputJson)
 	if err != nil {
-		fmt.Println("Error while trying to Start Workflow", workflowName, err)
+		log.Println("Error while trying to Start Workflow", workflowName, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -297,7 +297,7 @@ func (c *ConductorHttpClient) TerminateWorkflow(workflowId string, reason string
 	
 	outputString, err := c.httpClient.Delete(url, params, nil, "")
 	if err != nil {
-		fmt.Println("Error while trying to Terminate Workflow", workflowId, err)
+		log.Println("Error while trying to Terminate Workflow", workflowId, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -308,7 +308,7 @@ func (c *ConductorHttpClient) PauseWorkflow(workflowId string) (string, error) {
 	url := c.httpClient.MakeUrl("/api/workflow/{workflowId}/pause", "{workflowId}", workflowId)
 	outputString, err := c.httpClient.Put(url, nil, nil, "")
 	if err != nil {
-		fmt.Println("Error while trying to Pause Workflow", workflowId, err)
+		log.Println("Error while trying to Pause Workflow", workflowId, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -319,7 +319,7 @@ func (c *ConductorHttpClient) ResumeWorkflow(workflowId string) (string, error) 
 	url := c.httpClient.MakeUrl("/api/workflow/{workflowId}/resume", "{workflowId}", workflowId)
 	outputString, err := c.httpClient.Put(url, nil, nil, "")
 	if err != nil {
-		fmt.Println("Error while trying to Resume Workflow", workflowId, err)
+		log.Println("Error while trying to Resume Workflow", workflowId, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -331,7 +331,7 @@ func (c *ConductorHttpClient) SkipTaskFromWorkflow(workflowId string, taskRefere
 	
 	outputString, err := c.httpClient.Put(url, nil, nil, skipTaskRequestBody)
 	if err != nil {
-		fmt.Println("Error while trying to Skip Task From Workflow", workflowId, err)
+		log.Println("Error while trying to Skip Task From Workflow", workflowId, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -346,7 +346,7 @@ func (c *ConductorHttpClient) RerunWorkflow(workflowId string, rerunWorkflowRequ
 
 	outputString, err := c.httpClient.Post(url, nil, nil, rerunWorkflowRequest)
 	if err != nil {
-		fmt.Println("Error while trying to Rerun Workflow", workflowId, err)
+		log.Println("Error while trying to Rerun Workflow", workflowId, err)
 		return "", nil
 	} else {
 		return outputString, nil
@@ -358,7 +358,7 @@ func (c *ConductorHttpClient) RestartWorkflow(workflowId string) (string, error)
 	
 	outputString, err := c.httpClient.Post(url, nil, nil, "")
 	if err != nil {
-		fmt.Println("Error while trying to Restart Completed Workflow", workflowId, err)
+		log.Println("Error while trying to Restart Completed Workflow", workflowId, err)
 		return "", nil
 	} else {
 		return outputString, nil
