@@ -2,7 +2,7 @@
 Go client for Conductor provides two sets of functions:
 
 1. Workflow Management APIs (start, terminate, get workflow status etc.)
-2. Worker execution framework:
+2. Worker execution framework
 
 ## Prerequisites
 Go must be installed and GOPATH env variable set.  Directory $GOPATH/src/conductor must not be in use.
@@ -16,6 +16,7 @@ This will create a Go project under $GOPATH/src/conductor and download any depen
 It can then be ran:
 ```shell
 go run $GOPATH/src/conductor/startclient/startclient.go
+```
 
 ## Install and Run
 
