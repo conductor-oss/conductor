@@ -66,27 +66,33 @@ import (
 )
 
 // Implementation for "task_1"
-func Task_1_Execution_Function(t *Task) (resultStatus TaskStatus, outputData string, err error) {
-    fmt.Println("Executing Task_1_Execution_Function for", t.TaskType)
+func Task_1_Execution_Function(t *task.Task) (taskResult *task.TaskResult, err error) {
+    log.Println("Executing Task_1_Execution_Function for", t.TaskType)
 
     //Do some logic
-    resultStatus = COMPLETED
-    outputData = `{"key1":"value1", "key2":"value2", "key3":3, "key4":false}`
+    taskResult = task.NewTaskResult(t)
+    
+    output := map[string]interface{}{"task":"task_1", "key2":"value2", "key3":3, "key4":false}
+    taskResult.OutputData = output
+    taskResult.Status = "COMPLETED"
     err = nil
 
-    return resultStatus, outputData, err
+    return taskResult, err
 }
 
 // Implementation for "task_2"
-func Task_2_Execution_Function(t *Task) (resultStatus TaskStatus, outputData string, err error) {
-    fmt.Println("Executing Task_2_Execution_Function for", t.TaskType)
+func Task_2_Execution_Function(t *task.Task) (taskResult *task.TaskResult, err error) {
+    log.Println("Executing Task_2_Execution_Function for", t.TaskType)
 
     //Do some logic
-    resultStatus = COMPLETED
-    outputData = `{"key1":"value1", "key2":"value2", "key3":3, "key4":false}`
+    taskResult = task.NewTaskResult(t)
+    
+    output := map[string]interface{}{"task":"task_2", "key2":"value2", "key3":3, "key4":false}
+    taskResult.OutputData = output
+    taskResult.Status = "COMPLETED"
     err = nil
 
-    return resultStatus, outputData, err
+    return taskResult, err
 }
 
 ```
@@ -99,14 +105,17 @@ package main
 
 import (
     "conductor"
-    "conductor/task"
+    "conductor/task/sample"
 )
 
 func main() {
     c := conductor.NewConductorWorker("http://localhost:8080", 1, 10000)
 
-    c.Start("task_1", task.Task_1_Execution_Function, false)
-    c.Start("task_2", task.Task_2_Execution_Function, true)
+    c.Start("task_1", sample.Task_1_Execution_Function, false)
+    c.Start("task_2", sample.Task_2_Execution_Function, true)
 }
 
 ```
+
+Note: For the example listed above the example task implementations are in conductor/task/sample package.  Real task implementations can be placed in conductor/task directory or new subdirectory.
+
