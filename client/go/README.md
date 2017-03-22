@@ -16,6 +16,7 @@ This will create a Go project under $GOPATH/src/conductor and download any depen
 It can then be ran:
 ```shell
 go run $GOPATH/src/conductor/startclient/startclient.go
+```
 
 ## Install and Run
 
