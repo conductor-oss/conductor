@@ -1,15 +1,16 @@
-package task
+package sample
 
 import (
 	"log"
+	"conductor/task"
 )
 
 // Implementation for "task_2"
-func Task_2_Execution_Function(t *Task) (resultStatus TaskStatus, outputData string, err error) {
+func Task_2_Execution_Function(t *task.Task) (resultStatus task.TaskStatus, outputData string, err error) {
 	log.Println("Executing Task_2_Execution_Function for", t.TaskType)
 
 	//Do some logic
-	resultStatus = COMPLETED
+	resultStatus = task.COMPLETED
 	outputData = `{"key1":"value1", "key2":"value2", "key3":3, "key4":false}`
 	err = nil
 
