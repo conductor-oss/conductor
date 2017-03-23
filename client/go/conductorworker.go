@@ -73,7 +73,6 @@ func (c *ConductorWorker) Start(taskType string, executeFunction func(t *task.Ta
 
 	// wait infinitely while the go routines are running
 	if wait {
-		for {
-		}
+		select{}
 	}
 }
