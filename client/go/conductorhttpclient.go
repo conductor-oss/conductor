@@ -1,7 +1,7 @@
 package conductor
 
 import (
-    "github.com/cquon/httpclient"
+    "conductor/httpclient"
     "strconv"
     "log"
 )
