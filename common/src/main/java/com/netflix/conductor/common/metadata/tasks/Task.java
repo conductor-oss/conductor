@@ -28,6 +28,7 @@ public class Task {
 		CANCELED(true, false, false), 
 		FAILED(true, false, true), 
 		COMPLETED(true, true, true), 
+		COMPLETED_WITH_ERRORS(true, true, true), 
 		SCHEDULED(false, true, true), 
 		TIMED_OUT(true, false, true),
 		READY_FOR_RERUN(false, true, true),

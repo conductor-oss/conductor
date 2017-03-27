@@ -1,3 +1,16 @@
+// Copyright 2017 Netflix, Inc.
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
 package conductor
 
 import (
@@ -15,7 +28,7 @@ func NewConductorHttpClient(baseUrl string) *ConductorHttpClient {
 	headers := map[string]string{"Content-Type": "application/json", "Accept": "application/json"}
 	httpClient := httpclient.NewHttpClient(baseUrl, headers, true)
 	conductorClient.httpClient = httpClient
-	return conductorClient	
+	return conductorClient
 }
 
 
@@ -26,7 +39,7 @@ func NewConductorHttpClient(baseUrl string) *ConductorHttpClient {
 func (c *ConductorHttpClient) GetWorkflowDef(workflowName string, version int) (string, error) {
 	url := c.httpClient.MakeUrl("/metadata/workflow/{workflowName}", "{workflowName}", workflowName)
 	versionString := "1"
-	
+
 	// Set default version as 1
 	if version > 0 {
 		versionString = strconv.Itoa(version)
@@ -249,7 +262,7 @@ func (c *ConductorHttpClient) GetRunningWorkflows(workflowName string, version i
 	if endTime != 0 {
 		params["endTime"] = strconv.FormatFloat(endTime, 'f', -1, 64)
 	}
-	
+
 	outputString, err := c.httpClient.Get(url, params, nil)
 	if err != nil {
 		log.Println("Error while trying to Get Running Workflows", workflowName, err)
@@ -274,7 +287,7 @@ func (c *ConductorHttpClient) StartWorkflow(workflowName string, version int, co
 	if inputJson == "" {
 		inputJson = "{}"
 	}
-	
+
 	headers := map[string]string{"Accept":"text/plain"}
 
 	outputString, err := c.httpClient.Post(url, params, headers, inputJson)
@@ -290,11 +303,11 @@ func (c *ConductorHttpClient) TerminateWorkflow(workflowId string, reason string
 	url := c.httpClient.MakeUrl("/workflow/{workflowId}", "{workflowId}", workflowId)
 
 	params := make(map[string]string)
-	
+
 	if reason != "" {
 		params["reason"] = reason
 	}
-	
+
 	outputString, err := c.httpClient.Delete(url, params, nil, "")
 	if err != nil {
 		log.Println("Error while trying to Terminate Workflow", workflowId, err)
@@ -328,7 +341,7 @@ func (c *ConductorHttpClient) ResumeWorkflow(workflowId string) (string, error) 
 
 func (c *ConductorHttpClient) SkipTaskFromWorkflow(workflowId string, taskReferenceName string, skipTaskRequestBody string) (string, error) {
 	url := c.httpClient.MakeUrl("/workflow/{workflowId}/skiptask/{taskReferenceName}", "{workflowId}", workflowId, "{taskReferenceName}", taskReferenceName)
-	
+
 	outputString, err := c.httpClient.Put(url, nil, nil, skipTaskRequestBody)
 	if err != nil {
 		log.Println("Error while trying to Skip Task From Workflow", workflowId, err)
@@ -355,7 +368,7 @@ func (c *ConductorHttpClient) RerunWorkflow(workflowId string, rerunWorkflowRequ
 
 func (c *ConductorHttpClient) RestartWorkflow(workflowId string) (string, error) {
 	url := c.httpClient.MakeUrl("/workflow/{workflowId}/restart", "{workflowId}", workflowId)
-	
+
 	outputString, err := c.httpClient.Post(url, nil, nil, "")
 	if err != nil {
 		log.Println("Error while trying to Restart Completed Workflow", workflowId, err)

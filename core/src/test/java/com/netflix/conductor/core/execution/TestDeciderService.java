@@ -113,7 +113,7 @@ public class TestDeciderService {
 		ip.put("constParam", "Some String value");
 		ip.put("nullValue", null);
 		ip.put(null, null);
-		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null);
+		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null, null);
 		
 		assertNotNull(taskInput);
 		assertTrue(taskInput.containsKey("workflowInputParam"));
@@ -175,7 +175,7 @@ public class TestDeciderService {
 		taskDef.getInputTemplate().put("listValues", listParams);
 		
 		
-		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, taskDef);
+		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, taskDef, null);
 		
 		assertNotNull(taskInput);
 		assertTrue(taskInput.containsKey("workflowInputParam"));
@@ -230,7 +230,7 @@ public class TestDeciderService {
 		task.getOutputData().put("isPersonActive", true);
 		workflow.getTasks().add(task);
 		workflow.setSchemaVersion(2);
-		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null);
+		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null, null);
 		System.out.println(taskInput.get("complexJson"));
 		assertNotNull(taskInput);
 		assertTrue(taskInput.containsKey("workflowInputParam"));
@@ -258,7 +258,7 @@ public class TestDeciderService {
 		task.getOutputData().put("isPersonActive", true);
 		workflow.getTasks().add(task);
 		workflow.setSchemaVersion(1);
-		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null);
+		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null, null);
 		
 		assertNotNull(taskInput);
 		assertTrue(taskInput.containsKey("workflowInputParam"));

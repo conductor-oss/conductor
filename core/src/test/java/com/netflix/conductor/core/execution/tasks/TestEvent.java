@@ -236,4 +236,33 @@ public class TestEvent {
 		event.execute(workflow, task, null);
 		assertEquals(Task.Status.FAILED, task.getStatus());
 	}
+	
+	@Test
+	public void testDynamicSinks() {
+
+		Event event = new Event();
+		Workflow workflow = new Workflow();
+		workflow.setWorkflowType("testWorkflow");
+		workflow.setVersion(2);
+		
+		Task task = new Task();
+		task.setReferenceTaskName("task0");
+		task.setTaskId("task_id_0");
+		task.setStatus(Status.IN_PROGRESS);
+		task.getInputData().put("sink", "conductor:some_arbitary_queue");
+		
+		
+		ObservableQueue queue = event.getQueue(workflow, task);
+		assertEquals(Task.Status.IN_PROGRESS, task.getStatus());
+		assertNotNull(queue);
+		assertEquals("conductor:some_arbitary_queue", queue.getName());
+		
+		task.getInputData().put("sink", "conductor");
+		queue = event.getQueue(workflow, task);
+		assertEquals(Task.Status.IN_PROGRESS, task.getStatus());
+		assertNotNull(queue);
+		assertEquals("conductor:testWorkflow:task0", queue.getName());
+		
+	}
+	
 }

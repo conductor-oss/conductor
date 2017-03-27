@@ -132,10 +132,16 @@ public class DeciderService {
 
 			if (!task.getStatus().isSuccessful()) {
 				WorkflowTask workflowTask = def.getTaskByRefName(task.getReferenceTaskName());
-				Task rt = retry(taskDef, workflowTask, task, workflow);
-				tasksToBeScheduled.put(rt.getReferenceTaskName(), rt);
-				executedTaskRefNames.remove(rt.getReferenceTaskName());
-				outcome.tasksToBeUpdated.add(task);
+				//workflowTask can be null for dynamic forks where the task definition is not present in workflow.
+				if (workflowTask != null && workflowTask.isOptional()) {					
+					task.setStatus(Status.COMPLETED_WITH_ERRORS);
+					outcome.tasksToBeUpdated.add(task);	
+				} else {
+					Task rt = retry(taskDef, workflowTask, task, workflow);
+					tasksToBeScheduled.put(rt.getReferenceTaskName(), rt);
+					executedTaskRefNames.remove(rt.getReferenceTaskName());
+					outcome.tasksToBeUpdated.add(task);	
+				}				
 			}
 
 			if (!task.isRetried() && task.getStatus().isTerminal()) {
@@ -213,7 +219,7 @@ public class DeciderService {
 			output = last.getOutputData();
 		}
 		if (!def.getOutputParameters().isEmpty()) {
-			output = getTaskInput(def.getOutputParameters(), workflow, null);
+			output = getTaskInput(def.getOutputParameters(), workflow, null, null);
 		}
 		workflow.setOutput(output);
 
@@ -308,7 +314,8 @@ public class DeciderService {
 		if(workflowTask != null && workflow.getSchemaVersion() > 1) {		//This is a valid case, for the dynamic fork/join
 			Map<String, Object> taskInput = pu.getTaskInputV2(workflowTask.getInputParameters(), workflow, rescheduled.getTaskId(), taskDef);
 			rescheduled.setInputData(taskInput);
-		}		
+		}	
+		//for the schema version 1, we do not have to recompute the inputs
 		return rescheduled;
 
 	}
@@ -360,7 +367,7 @@ public class DeciderService {
 		List<Task> tasks = new LinkedList<>();
 		
 		Task task = null;
-		Map<String, Object> input = getTaskInput(taskToSchedule.getInputParameters(), workflow, null);
+		Map<String, Object> input = getTaskInput(taskToSchedule.getInputParameters(), workflow, null, taskId);
 		Type tt = Type.USER_DEFINED;
 		String type = taskToSchedule.getType();
 		if(Type.is(type)) {
@@ -514,7 +521,7 @@ public class DeciderService {
 		
 		if(paramName != null){
 			
-			Map<String, Object> input = getTaskInput(taskToSchedule.getInputParameters(), workflow, null);
+			Map<String, Object> input = getTaskInput(taskToSchedule.getInputParameters(), workflow, null, null);
 			Object paramValue = input.get(paramName);
 			dynForkTasks = om.convertValue(paramValue, ListOfWorkflowTasks);
 			Object tasksInputO = input.get(taskToSchedule.getDynamicForkTasksInputParamName());
@@ -525,7 +532,7 @@ public class DeciderService {
 			
 		}else {
 			paramName = taskToSchedule.getDynamicForkJoinTasksParam();
-			Map<String, Object> input = getTaskInput(taskToSchedule.getInputParameters(), workflow, null);
+			Map<String, Object> input = getTaskInput(taskToSchedule.getInputParameters(), workflow, null, null);
 			Object paramValue = input.get(paramName);
 			DynamicForkJoinTaskList dynForkTasks0 = om.convertValue(paramValue, DynamicForkJoinTaskList.class);
 			for( DynamicForkJoinTask dt : dynForkTasks0.getDynamicTasks()) {
@@ -587,7 +594,7 @@ public class DeciderService {
 		}
 	    theTask.setTaskId(taskId);
 	    theTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-	    theTask.setInputData(getTaskInput(taskToSchedule.getInputParameters(), workflow, taskDef));
+	    theTask.setInputData(getTaskInput(taskToSchedule.getInputParameters(), workflow, taskDef, taskId));
 	    theTask.setWorkflowInstanceId(workflow.getWorkflowId());
 	    theTask.setStatus(Status.SCHEDULED);
 	    theTask.setTaskType(taskToSchedule.getName());
@@ -602,9 +609,9 @@ public class DeciderService {
 	}
 	
 	@VisibleForTesting
-	Map<String, Object> getTaskInput(Map<String, Object> inputParams, Workflow workflow, TaskDef taskDef)  {
+	Map<String, Object> getTaskInput(Map<String, Object> inputParams, Workflow workflow, TaskDef taskDef, String taskId)  {
 		if(workflow.getSchemaVersion() > 1){
-			return pu.getTaskInputV2(inputParams, workflow, null, taskDef);
+			return pu.getTaskInputV2(inputParams, workflow, taskId, taskDef);
 		}
 		return getTaskInputV1(workflow, inputParams);
 	}
