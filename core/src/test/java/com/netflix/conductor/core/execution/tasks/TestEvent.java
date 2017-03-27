@@ -261,7 +261,7 @@ public class TestEvent {
 		queue = event.getQueue(workflow, task);
 		assertEquals(Task.Status.IN_PROGRESS, task.getStatus());
 		assertNotNull(queue);
-		assertEquals("conductor:testWorkflow:task0", queue.getName());
+		assertEquals("testWorkflow:task0", queue.getName());
 		
 	}
 	

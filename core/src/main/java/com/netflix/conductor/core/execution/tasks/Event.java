@@ -113,7 +113,7 @@ public class Event extends WorkflowSystemTask {
 			
 			sink = Sink.conductor;			
 			if("conductor".equals(sinkValue)) {
-				queueName = "conductor:" + workflow.getWorkflowType() + ":" + task.getReferenceTaskName();	
+				queueName = workflow.getWorkflowType() + ":" + task.getReferenceTaskName();	
 			} else {
 				queueName = sinkValue;
 			}
