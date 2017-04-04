@@ -369,9 +369,14 @@ public class WorkflowExecutor {
 			input.put("failureStatus", workflow.getStatus().toString());
 
 			try {
-				startWorkflow(failureWorkflow, 1, input, workflowId, null, null, null);
+				
+				WorkflowDef latestFailureWorkflow = metadata.getLatest(failureWorkflow);
+				String failureWFId = startWorkflow(failureWorkflow, latestFailureWorkflow.getVersion(), input, workflowId, null, null, null);
+				workflow.getOutput().put("conductor.failure_workflow", failureWFId);
+				
 			} catch (Exception e) {
 				logger.error("Failed to start error workflow", e);
+				workflow.getOutput().put("conductor.failure_workflow", "Error workflow " + failureWorkflow + " failed to start.  reason: " + e.getMessage());
 				Monitors.recordWorkflowStartError(failureWorkflow);
 			}
 		}

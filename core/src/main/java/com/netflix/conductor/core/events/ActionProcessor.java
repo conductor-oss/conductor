@@ -114,8 +114,8 @@ public class ActionProcessor {
 		
 		task.setStatus(status);
 		task.setOutputData(replaced);
-		task.getOutputData().put("__event", event);
-		task.getOutputData().put("__messageId", messageId);
+		task.getOutputData().put("conductor.event.messageId", messageId);
+		task.getOutputData().put("conductor.event.name", event);
 		
 		try {
 			executor.updateTask(new TaskResult(task));
@@ -134,7 +134,9 @@ public class ActionProcessor {
 			WorkflowDef def = metadata.getWorkflowDef(params.getName(), params.getVersion());
 			Map<String, Object> inputParams = params.getInput();
 			Map<String, Object> workflowInput = pu.replace(inputParams, payload);
-			workflowInput.put("__messageId", messageId);
+			workflowInput.put("conductor.event.messageId", messageId);
+			workflowInput.put("conductor.event.name", event);
+			
 			String id = executor.startWorkflow(def.getName(), def.getVersion(), params.getCorrelationId(), workflowInput, event);
 			op.put("workflowId", id);
 			

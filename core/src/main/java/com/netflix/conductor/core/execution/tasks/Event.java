@@ -48,10 +48,6 @@ public class Event extends WorkflowSystemTask {
 	
 	private ParametersUtils pu = new ParametersUtils();
 	
-	private enum Sink {
-		conductor, sqs
-	}
-	
 	public Event() {
 		super("EVENT");
 	}
@@ -71,6 +67,7 @@ public class Event extends WorkflowSystemTask {
 		ObservableQueue queue = getQueue(workflow, task);
 		if(queue != null) {
 			queue.publish(Arrays.asList(message));
+			task.getOutputData().putAll(payload);
 			task.setStatus(Status.COMPLETED);
 		}
 	}
@@ -106,33 +103,31 @@ public class Event extends WorkflowSystemTask {
 		Map<String, Object> replaced = pu.getTaskInputV2(input, workflow, task.getTaskId(), null);
 		String sinkValue = (String)replaced.get("sink");
 		
-		String queueName = null;
-		Sink sink = null;
-		
+		String queueName = sinkValue;
+
 		if(sinkValue.startsWith("conductor")) {
 			
-			sink = Sink.conductor;			
 			if("conductor".equals(sinkValue)) {
-				queueName = workflow.getWorkflowType() + ":" + task.getReferenceTaskName();	
+				
+				queueName = sinkValue + ":" + workflow.getWorkflowType() + ":" + task.getReferenceTaskName();
+				
+			} else if(sinkValue.startsWith("conductor:")) {
+				
+				queueName = sinkValue.replaceAll("conductor:", "");
+				queueName = "conductor:" + workflow.getWorkflowType() + ":" + queueName;
+				
 			} else {
-				queueName = sinkValue;
+				task.setStatus(Status.FAILED);
+				task.setReasonForIncompletion("Invalid / Unsupported sink specified: " + sinkValue);
+				return null;
 			}
 			
-		} else if(sinkValue.startsWith("sqs:")) {
-			sink = Sink.sqs;
-			queueName = sinkValue.substring(4);
-			
-		} else {
-			task.setStatus(Status.FAILED);
-			task.setReasonForIncompletion("Invalid / Unsupported sink specified: " + sinkValue);
-			return null;
 		}
-		
-		String eventProduced = sink.name() + ":" + queueName;
-		task.getOutputData().put("event_produced", eventProduced);
+
+		task.getOutputData().put("event_produced", queueName);
 		
 		try {
-			return EventQueues.getQueue(eventProduced, true);
+			return EventQueues.getQueue(queueName, true);
 		}catch(Exception e) {
 			logger.error(e.getMessage(), e);
 			task.setStatus(Status.FAILED);
