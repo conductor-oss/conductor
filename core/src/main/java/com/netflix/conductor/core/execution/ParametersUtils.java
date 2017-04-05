@@ -81,7 +81,9 @@ public class ParametersUtils {
 			taskIO.put("input", task.getInputData());
 			taskIO.put("output", task.getOutputData());
 			taskIO.put("taskType", task.getTaskType());
-			taskIO.put("status", task.getStatus().toString());			
+			if(task.getStatus() != null) {
+				taskIO.put("status", task.getStatus().toString());
+			}
 			taskIO.put("referenceTaskName", task.getReferenceTaskName());
 			taskIO.put("retryCount", task.getRetryCount());
 			taskIO.put("correlationId", task.getCorrelationId());
