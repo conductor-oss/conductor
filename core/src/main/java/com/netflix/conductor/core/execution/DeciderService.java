@@ -310,6 +310,7 @@ public class DeciderService {
 		rescheduled.setTaskId(IDGenerator.generate());
 		rescheduled.setRetriedTaskId(task.getTaskId());
 		rescheduled.setStatus(Status.SCHEDULED);
+		rescheduled.setPollCount(0);
 		
 		if(workflowTask != null && workflow.getSchemaVersion() > 1) {		//This is a valid case, for the dynamic fork/join
 			Map<String, Object> taskInput = pu.getTaskInputV2(workflowTask.getInputParameters(), workflow, rescheduled.getTaskId(), taskDef);
@@ -320,7 +321,8 @@ public class DeciderService {
 
 	}
 	
-	private void checkForTimeout(TaskDef taskType, Task task) {
+	@VisibleForTesting
+	void checkForTimeout(TaskDef taskType, Task task) {
 		
 		if(taskType == null){
 			logger.warn("missing task type " + task.getTaskDefName() + ", workflowId=" + task.getWorkflowInstanceId());
@@ -339,15 +341,14 @@ public class DeciderService {
 		}
 
 		String reason = "Task timed out after " + elapsedTime + " millisecond.  Timeout configured as " + timeout;
+		Monitors.recordTaskTimeout(task.getTaskDefName());
 		
 		switch (taskType.getTimeoutPolicy()) {
-		case ALERT_ONLY:
-			Monitors.recordTaskTimeout(task.getTaskDefName());			
+		case ALERT_ONLY:						
 			return;
 		case RETRY:
 			task.setStatus(Status.TIMED_OUT);
 			task.setReasonForIncompletion(reason);
-			Monitors.recordTaskTimeout(task.getTaskDefName());
 			return;
 		case TIME_OUT_WF:
 			task.setStatus(Status.TIMED_OUT);

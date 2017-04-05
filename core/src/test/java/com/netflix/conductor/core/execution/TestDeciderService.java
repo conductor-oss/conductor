@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -41,6 +42,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -49,6 +51,10 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.DefaultRegistry;
+import com.netflix.spectator.api.Registry;
+import com.netflix.spectator.api.Spectator;
 
 
 /**
@@ -60,6 +66,14 @@ public class TestDeciderService {
 	private Workflow workflow;
 	
 	private DeciderService ds;
+	
+	private static Registry registry;
+	
+	@BeforeClass
+	public static void init() {
+		registry = new DefaultRegistry();
+		Spectator.globalRegistry().add(registry);
+	}
 	
 	@Before
 	public void setup(){
@@ -90,10 +104,12 @@ public class TestDeciderService {
 		Task task = new Task();
 		task.setReferenceTaskName("task2");
 		task.getOutputData().put("location", "http://location");
+		task.setStatus(Status.COMPLETED);
 		
 		Task task2 = new Task();
 		task2.setReferenceTaskName("task3");
 		task2.getOutputData().put("refId", "abcddef_1234_7890_aaffcc");
+		task2.setStatus(Status.SCHEDULED);
 		
 		workflow.getTasks().add(task);
 		workflow.getTasks().add(task2);
@@ -112,6 +128,7 @@ public class TestDeciderService {
 		ip.put("taskOutputParam3", "${task3.output.location}");
 		ip.put("constParam", "Some String value");
 		ip.put("nullValue", null);
+		ip.put("task2Status", "${task2.status}");
 		ip.put(null, null);
 		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null, null);
 		
@@ -126,6 +143,7 @@ public class TestDeciderService {
 		assertEquals("http://location", taskInput.get("taskOutputParam"));
 		assertNull(taskInput.get("taskOutputParam3"));
 		assertNull(taskInput.get("nullValue"));
+		assertEquals(workflow.getTasks().get(0).getStatus().name(), taskInput.get("task2Status"));	//task2 and task3 are the tasks respectively
 		System.out.println(taskInput);
 		workflow.setSchemaVersion(1);
 	}
@@ -544,6 +562,64 @@ public class TestDeciderService {
 		assertNotNull(task);
 		assertEquals(Status.COMPLETED, task.getStatus());
 		assertEquals(t3.getSeq(), task.getSeq());
+		
+	}
+	
+	@Test
+	public void testTaskTimeout() {
+		
+		Counter counter = registry.counter("task_timeout", "class", "WorkflowMonitor", "taskType", "test");
+		assertEquals(0, counter.count());
+		
+		TaskDef taskType = new TaskDef();
+		taskType.setName("test");
+		taskType.setTimeoutPolicy(TimeoutPolicy.RETRY);
+		taskType.setTimeoutSeconds(1);
+		
+		Task task = new Task();
+		task.setTaskType(taskType.getName());
+		task.setStartTime(System.currentTimeMillis() - 2_000);		//2 seconds ago!
+		task.setStatus(Status.IN_PROGRESS);
+		ds.checkForTimeout(taskType, task);
+		
+		//Task should be marked as timed out
+		assertEquals(Status.TIMED_OUT, task.getStatus());
+		assertTrue(task.getReasonForIncompletion() != null);
+		assertEquals(1, counter.count());
+		
+		taskType.setTimeoutPolicy(TimeoutPolicy.ALERT_ONLY);
+		task.setStatus(Status.IN_PROGRESS);
+		task.setReasonForIncompletion(null);
+		ds.checkForTimeout(taskType, task);
+		
+		//Nothing will happen
+		assertEquals(Status.IN_PROGRESS, task.getStatus());
+		assertNull(task.getReasonForIncompletion());
+		assertEquals(2, counter.count());
+		
+		boolean exception = false;
+		taskType.setTimeoutPolicy(TimeoutPolicy.TIME_OUT_WF);
+		task.setStatus(Status.IN_PROGRESS);
+		task.setReasonForIncompletion(null);
+		
+		try {
+			ds.checkForTimeout(taskType, task);	
+		}catch(TerminateWorkflow tw) {
+			exception = true;
+		}
+		assertTrue(exception);
+		assertEquals(Status.TIMED_OUT, task.getStatus());
+		assertNotNull(task.getReasonForIncompletion());
+		assertEquals(3, counter.count());
+		
+		taskType.setTimeoutPolicy(TimeoutPolicy.TIME_OUT_WF);
+		task.setStatus(Status.IN_PROGRESS);
+		task.setReasonForIncompletion(null);
+		ds.checkForTimeout(null, task);	//this will be a no-op
+		
+		assertEquals(Status.IN_PROGRESS, task.getStatus());
+		assertNull(task.getReasonForIncompletion());
+		assertEquals(3, counter.count());
 		
 	}
 	

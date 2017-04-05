@@ -63,7 +63,7 @@ public class Task {
 
 	private Status status;
 	
-	private Map<String, Object> inputData = new HashMap<>();;
+	private Map<String, Object> inputData = new HashMap<>();
 
 	private String referenceTaskName;
 
