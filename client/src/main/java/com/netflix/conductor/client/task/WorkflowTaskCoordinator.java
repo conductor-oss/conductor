@@ -96,7 +96,7 @@ public class WorkflowTaskCoordinator {
 		this.updateRetryCount = updateRetryCount;
 		this.workerQueueSize = workerQueueSize;
 		for (Worker worker : taskWorkers) {
-			registerWorker(worker);
+			workers.add(worker);
 		}
 	}
 	
@@ -158,6 +158,9 @@ public class WorkflowTaskCoordinator {
 		 * @return Builder instance
 		 */
 		public Builder withThreadCount(int threadCount) {
+			if(threadCount < 1) {
+				throw new IllegalArgumentException("No. of threads cannot be less than 1");
+			}
 			this.threadCount = threadCount;
 			return this;
 		}
@@ -253,16 +256,6 @@ public class WorkflowTaskCoordinator {
 		
 	}
 
-	/**
-	 * 
-	 * @param worker Adds a new worker.
-	 * If you register a worker after doing {@link #init()}, the no. of threads assigned to the poller will be less than the actual number of workers causing starvation.  
-	 *  
-	 */
-	public void registerWorker(Worker worker) {
-		workers.add(worker);
-	}
-	
 	private void pollForTask(Worker worker) {
 		
 		if(ec != null && !ec.getInstanceRemoteStatus().equals(InstanceStatus.UP)) {
@@ -301,10 +294,6 @@ public class WorkflowTaskCoordinator {
 	private void execute(Worker worker, Task task) {
 		
 		String taskType = task.getTaskDefName();
-		if (!taskType.equals(task.getTaskType())) {
-			logger.error("Queue name '{}' did not match type of task retrieved '{}' for task id '{}'.", taskType, task.getTaskType(),task.getTaskId());
-			return;
-		}
 		
 		try {
 			
@@ -325,21 +314,24 @@ public class WorkflowTaskCoordinator {
 			return;
 		}
 		
-		TaskResult result = new TaskResult(task);
-		result.getLog().getEnvironment().putAll(environmentData.get(worker));
 		Stopwatch sw = WorkflowTaskMetrics.executionTimer(worker.getTaskDefName());
 		
+		TaskResult result = null;
 		try {
 			
 			logger.debug("Executing task {} on worker {}", task, worker.getClass().getSimpleName());			
 			result = worker.execute(task);
+			result.setWorkflowInstanceId(task.getWorkflowInstanceId());
+			result.setTaskId(task.getTaskId());
+			
 			
 		} catch (Exception e) {
 			logger.error("Unable to execute task {}", task, e);
 			
 			WorkflowTaskMetrics.executionException(worker.getTaskDefName(), e);
+			result = new TaskResult(task);
 			result.setStatus(TaskResult.Status.FAILED);
-			result.setReasonForIncompletion("Error while executing the task: " + e);
+			result.setReasonForIncompletion("Error while executing the task: " + e.getMessage());
 			TaskExecLog execLog = result.getLog();
 			execLog.setError(e.getMessage());
 			for (StackTraceElement ste : e.getStackTrace()) {
@@ -351,6 +343,7 @@ public class WorkflowTaskCoordinator {
 		}
 		
 		logger.debug("Task {} executed by worker {} with status {}", task.getTaskId(), worker.getClass().getSimpleName(), task.getStatus());
+		result.getLog().getEnvironment().putAll(environmentData.get(worker));
 		updateWithRetry(updateRetryCount, task, result, worker);
 		
 	}
@@ -402,7 +395,7 @@ public class WorkflowTaskCoordinator {
 		}
 		
 		try {
-			data.put("HOSTNAME", InetAddress.getLocalHost().getHostName());
+			data.put("HOSTNAME", InetAddress.getLocalHost().getHostName());			
 		} catch (UnknownHostException e) {
 			
 		}
@@ -419,7 +412,7 @@ public class WorkflowTaskCoordinator {
 		try{
 			client.updateTask(result);
 			return;
-		}catch(Throwable t) {
+		}catch(Exception t) {
 			WorkflowTaskMetrics.updateTaskError(worker.getTaskDefName(), t);
 			logger.error("Unable to update {} on count {}", result, count, t);
 			try {
