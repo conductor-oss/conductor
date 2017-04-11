@@ -34,6 +34,7 @@ import org.junit.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -129,6 +130,57 @@ public class TestDeciderOutcomes {
 		assertEquals(task1Id, outcome.tasksToBeUpdated.get(0).getTaskId());
 		assertNotSame(task1Id, outcome.tasksToBeScheduled.get(0).getTaskId());
 		assertEquals(outcome.tasksToBeScheduled.get(0).getTaskId(), outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
+	}
+	
+	@Test
+	public void testOptional() {
+		WorkflowDef def = new WorkflowDef();
+		def.setName("test");
+		
+		WorkflowTask task1 = new WorkflowTask();
+		task1.setName("test_task");
+		task1.setType("SIMPLE");
+		task1.setTaskReferenceName("t0");
+		task1.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
+		task1.setOptional(true);
+		
+		WorkflowTask task2 = new WorkflowTask();
+		task2.setName("test_task2");
+		task2.setType("SIMPLE");
+		task2.setTaskReferenceName("t1");
+		
+		def.getTasks().add(task1);
+		def.getTasks().add(task2);
+		def.setSchemaVersion(2);
+		
+		
+		Workflow workflow = new Workflow();
+		workflow.setStartTime(System.currentTimeMillis());
+		DeciderOutcome outcome = ds.decide(workflow, def);
+		assertNotNull(outcome);
+		
+		System.out.println(outcome.tasksToBeScheduled);
+		assertEquals(1, outcome.tasksToBeScheduled.size());
+		assertEquals(task1.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+		System.out.println(outcome.tasksToBeScheduled.get(0).getInputData());
+		String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
+		assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
+		
+		workflow.getTasks().addAll(outcome.tasksToBeScheduled);		
+		workflow.getTasks().get(0).setStatus(Status.FAILED);
+		
+		outcome = ds.decide(workflow, def);
+		
+		assertNotNull(outcome);
+		System.out.println(outcome.tasksToBeScheduled);
+		System.out.println(outcome.tasksToBeUpdated);
+		
+		assertEquals(2, outcome.tasksToBeUpdated.size());
+		
+		assertEquals(Task.Status.COMPLETED_WITH_ERRORS, workflow.getTasks().get(0).getStatus());
+		assertEquals(task1Id, outcome.tasksToBeUpdated.get(0).getTaskId());
+		assertEquals(task2.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+		
 	}
 	
 }

@@ -92,6 +92,8 @@ public class WorkflowTask {
 	
 	private String sink;
 	
+	private Boolean optional;
+	
 	/**
 	 * @return the name
 	 */
@@ -310,6 +312,30 @@ public class WorkflowTask {
 	 */
 	public void setSink(String sink) {
 		this.sink = sink;
+	}
+	
+	/**
+	 * 
+	 * @return If the task is optional.  When set to true, the workflow execution continues even when the task is in failed status.
+	 */
+	public Boolean getOptional() {
+		return optional;
+	}
+	
+	/**
+	 * 
+	 * @return true if the task is optional.  False otherwise.
+	 */
+	public boolean isOptional() {
+		return (optional != null && optional.booleanValue()); 
+	}
+	
+	/**
+	 * 
+	 * @param optional when set to true, the task is marked as optional
+	 */
+	public void setOptional(Boolean optional) {
+		this.optional = optional;
 	}
 	
 	private Collection<List<WorkflowTask>> children(){

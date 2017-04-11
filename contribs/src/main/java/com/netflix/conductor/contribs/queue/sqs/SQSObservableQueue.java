@@ -211,6 +211,10 @@ public class SQSObservableQueue implements ObservableQueue {
 	}
 	
 	private void addPolicy(List<String> accountsToAuthorize) {
+		if(accountsToAuthorize == null || accountsToAuthorize.isEmpty()) {
+			logger.info("No additional security policies attached for the queue " + queueName);
+			return;
+		}
 		logger.info("Authorizing " + accountsToAuthorize + " to the queue " + queueName);
 		Map<String, String> attributes = new HashMap<>();
 		attributes.put("Policy", getPolicy(accountsToAuthorize));

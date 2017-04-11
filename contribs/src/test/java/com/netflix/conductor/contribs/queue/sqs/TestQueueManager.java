@@ -84,6 +84,7 @@ public class TestQueueManager {
 		
 		doAnswer(new Answer<Void>() {
 
+			@SuppressWarnings("unchecked")
 			@Override
 			public Void answer(InvocationOnMock invocation) throws Throwable {
 				List<Message> msgs = invocation.getArgumentAt(0, List.class);
