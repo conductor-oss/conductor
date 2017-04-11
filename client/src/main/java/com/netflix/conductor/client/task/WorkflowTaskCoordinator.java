@@ -302,7 +302,6 @@ public class WorkflowTaskCoordinator {
 	private void execute(Worker worker, Task task) {
 		
 		String taskType = task.getTaskDefName();
-
 		try {
 			
 			if(!worker.preAck(task)) {
@@ -335,9 +334,7 @@ public class WorkflowTaskCoordinator {
 			
 		} catch (Exception e) {
 			logger.error("Unable to execute task {}", task, e);
-
 			handleException(e, result, worker, false, task);
-
 		} finally {
 			sw.stop();
 		}
