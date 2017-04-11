@@ -279,7 +279,15 @@ public class WorkflowTaskCoordinator {
 			sw.stop();
 			logger.debug("Polled {} and receivd {} tasks", worker.getTaskDefName(), tasks.size());
 			for(Task task : tasks) {
-				es.submit(()->execute(worker, task));	
+				es.submit(() -> {
+					try {
+						execute(worker, task);
+					} catch (Throwable t) {
+						task.setStatus(Task.Status.FAILED);
+						TaskResult result = new TaskResult(task);
+						handleException(t, result, worker, true, task);
+					}
+				});
 			}
 			
 		}catch(RejectedExecutionException qfe) {
@@ -290,11 +298,11 @@ public class WorkflowTaskCoordinator {
 			logger.error("Error when polling for task " + e.getMessage(), e);
 		}
 	}
-	
+
 	private void execute(Worker worker, Task task) {
 		
 		String taskType = task.getTaskDefName();
-		
+
 		try {
 			
 			if(!worker.preAck(task)) {
@@ -327,17 +335,9 @@ public class WorkflowTaskCoordinator {
 			
 		} catch (Exception e) {
 			logger.error("Unable to execute task {}", task, e);
-			
-			WorkflowTaskMetrics.executionException(worker.getTaskDefName(), e);
-			result = new TaskResult(task);
-			result.setStatus(TaskResult.Status.FAILED);
-			result.setReasonForIncompletion("Error while executing the task: " + e.getMessage());
-			TaskExecLog execLog = result.getLog();
-			execLog.setError(e.getMessage());
-			for (StackTraceElement ste : e.getStackTrace()) {
-				execLog.getErrorTrace().add(ste.toString());
-			}
-			
+
+			handleException(e, result, worker, false, task);
+
 		} finally {
 			sw.stop();
 		}
@@ -345,7 +345,7 @@ public class WorkflowTaskCoordinator {
 		logger.debug("Task {} executed by worker {} with status {}", task.getTaskId(), worker.getClass().getSimpleName(), task.getStatus());
 		result.getLog().getEnvironment().putAll(environmentData.get(worker));
 		updateWithRetry(updateRetryCount, task, result, worker);
-		
+
 	}
 	
 	/**
@@ -423,5 +423,17 @@ public class WorkflowTaskCoordinator {
 				Thread.currentThread().interrupt();
 			}
 		}
+	}
+
+	private void handleException(Throwable t, TaskResult result, Worker worker, boolean updateTask, Task task) {
+		WorkflowTaskMetrics.executionException(worker.getTaskDefName(), t);
+		result.setStatus(TaskResult.Status.FAILED);
+		result.setReasonForIncompletion("Error while executing the task: " + t);
+		TaskExecLog execLog = result.getLog();
+		execLog.setError(t.getMessage());
+		for (StackTraceElement ste : t.getStackTrace()) {
+			execLog.getErrorTrace().add(ste.toString());
+		}
+		updateWithRetry(updateRetryCount, task, result, worker);
 	}
 }
