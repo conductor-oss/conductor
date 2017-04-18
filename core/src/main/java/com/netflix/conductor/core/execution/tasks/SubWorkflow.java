@@ -20,6 +20,7 @@ package com.netflix.conductor.core.execution.tasks;
 
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -106,6 +107,11 @@ public class SubWorkflow extends WorkflowSystemTask {
 		if(workflowId == null){
 			workflowId = (String) task.getOutputData().get("subWorkflowId");	//TODO: Remove in the next release.  Only for the backward compatibility
 		}
+		
+		if(StringUtils.isEmpty(workflowId)) {
+			return;
+		}
+		
 		Workflow subWorkflow = provider.getWorkflow(workflowId, false);
 		subWorkflow.setStatus(WorkflowStatus.TERMINATED);
 		provider.terminateWorkflow(subWorkflow, "Parent workflow has been terminated with status " + workflow.getStatus(), null);
