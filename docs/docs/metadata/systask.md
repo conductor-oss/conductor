@@ -153,7 +153,7 @@ Consider **taskA**'s output as:
         "recipe": "jpg"
       }
     },
-    "forkedTask12": {
+    "forkedTask2": {
       "width": 200,
       "height": 200,
       "params": {
@@ -356,4 +356,4 @@ The input given to the event task is made available to the published message as 
 
 
 ### Event Task Output
-`event_produced` Name of the event produced.	
+`event_produced` Name of the event produced.
