@@ -170,7 +170,7 @@ And the output of the _loc_task_ as the following;
 }
 ```
 
-When scheduling the task, Conductor will merge the values from workflow input and loc_tak's output and create the input to the task as follows:
+When scheduling the task, Conductor will merge the values from workflow input and loc_task's output and create the input to the task as follows:
 
 ```json
 {
