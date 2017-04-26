@@ -48,8 +48,10 @@ public class Event extends WorkflowSystemTask {
 	
 	private ParametersUtils pu = new ParametersUtils();
 	
+	public static final String NAME = "EVENT";
+	
 	public Event() {
-		super("EVENT");
+		super(NAME);
 	}
 	
 	@Override
@@ -69,22 +71,14 @@ public class Event extends WorkflowSystemTask {
 			queue.publish(Arrays.asList(message));
 			task.getOutputData().putAll(payload);
 			task.setStatus(Status.COMPLETED);
+		} else {
+			task.setReasonForIncompletion("No queue found to publish.");
+			task.setStatus(Status.FAILED);
 		}
 	}
 
 	@Override
 	public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
-		
-		if (task.getStatus().equals(Status.SCHEDULED)) {
-			long timeSince = System.currentTimeMillis() - task.getScheduledTime();
-			if(timeSince > 600_000) {
-				start(workflow, task, provider);
-				return true;
-			}else {
-				return false;
-			}				
-		}
-
 		return false;
 	}
 	
@@ -135,5 +129,10 @@ public class Event extends WorkflowSystemTask {
 			return null;			
 		}
 		
+	}
+	
+	@Override
+	public boolean isAsync() {
+		return true;
 	}
 }

@@ -137,7 +137,7 @@ public class TestQueueManager {
 		queues.put(Status.COMPLETED, queue);
 		QueueManager qm = new QueueManager(queues, es);
 		qm.update("v_0", "t0", new HashMap<>(), Status.COMPLETED);
-		Uninterruptibles.sleepUninterruptibly(1_00, TimeUnit.MILLISECONDS);
+		Uninterruptibles.sleepUninterruptibly(1_000, TimeUnit.MILLISECONDS);
 		assertEquals("updatedTasks are: " + updatedTasks.toString(), 1, updatedTasks.size());
 	}
 	

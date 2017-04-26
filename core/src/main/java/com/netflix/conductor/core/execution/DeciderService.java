@@ -283,7 +283,7 @@ public class DeciderService {
 	private Task retry(TaskDef taskDef, WorkflowTask workflowTask, Task task, Workflow workflow) throws TerminateWorkflow {
 
 		int retryCount = task.getRetryCount();
-		if (!task.getStatus().isRetriable() || SystemTaskType.isBuiltIn(task.getTaskType()) || taskDef.getRetryCount() <= retryCount) {
+		if (!task.getStatus().isRetriable() || SystemTaskType.isBuiltIn(task.getTaskType()) || taskDef == null || taskDef.getRetryCount() <= retryCount) {
 			WorkflowStatus status = task.getStatus().equals(Status.TIMED_OUT) ? WorkflowStatus.TIMED_OUT : WorkflowStatus.FAILED;
 			task.setRetried(true);
 			throw new TerminateWorkflow(task.getReasonForIncompletion(), status, task);
@@ -476,7 +476,7 @@ public class DeciderService {
 					workflowVersion = Integer.parseInt(version.toString());
 				}
 				task = SystemTask.subWorkflowTask(
-						workflow.getWorkflowId(), IDGenerator.generate(), workflow.getCorrelationId(), taskToSchedule.getTaskReferenceName(), 
+						workflow.getWorkflowId(), IDGenerator.generate(), workflow.getCorrelationId(), taskToSchedule, 
 						workflowName, workflowVersion, input);
 				tasks.add(task);
 				break;
@@ -485,13 +485,13 @@ public class DeciderService {
 				taskToSchedule.getInputParameters().put("sink", taskToSchedule.getSink());
 				Map<String, Object> eventTaskInput = pu.getTaskInputV2(taskToSchedule.getInputParameters(), workflow, taskId, null);
 				String sink = (String)eventTaskInput.get("sink");				
-				Task eventTask = SystemTask.eventTask(workflow.getWorkflowId(), taskId, workflow.getCorrelationId(), taskToSchedule.getTaskReferenceName(), sink, eventTaskInput);
+				Task eventTask = SystemTask.eventTask(workflow.getWorkflowId(), taskId, workflow.getCorrelationId(), taskToSchedule, sink, eventTaskInput);
 				tasks.add(eventTask);
 				break;
 			case WAIT:
 				if(taskId == null) taskId = IDGenerator.generate();
 				Map<String, Object> waitTaskInput = pu.getTaskInputV2(taskToSchedule.getInputParameters(), workflow, taskId, null);
-				Task waitTask = SystemTask.waitTask(workflow.getWorkflowId(), taskId,  workflow.getCorrelationId(), taskToSchedule.getTaskReferenceName(), waitTaskInput);
+				Task waitTask = SystemTask.waitTask(workflow.getWorkflowId(), taskId,  workflow.getCorrelationId(), taskToSchedule, waitTaskInput);
 				tasks.add(waitTask);
 				break;
 			default:

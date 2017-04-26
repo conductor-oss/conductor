@@ -66,6 +66,7 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.WorkflowSweeper;
+import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
@@ -92,6 +93,9 @@ public class WorkflowServiceTest {
 
 	@Inject
 	private ExecutionService ess;
+	
+	@Inject
+	private SubWorkflow subworkflow;
 	
 	@Inject
 	private MetadataService ms;
@@ -460,7 +464,8 @@ public class WorkflowServiceTest {
 		ess.updateTask(t1);
 		ess.updateTask(t2);
 		ess.updateTask(t3);
-
+		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+		
 		wf = ess.getExecutionStatus(wfid, true);
 		
 		assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t16")));
@@ -469,7 +474,7 @@ public class WorkflowServiceTest {
 		String[] tasks = new String[]{"junit_task_1","junit_task_2","junit_task_14","junit_task_16"};
 		for(String tt : tasks){
 			Task polled = ess.poll(tt, "test");
-			assertNotNull(polled);
+			assertNotNull("poll resulted empty for task: " + tt, polled);
 			polled.setStatus(Status.COMPLETED);
 			ess.updateTask(polled);
 		}
@@ -491,7 +496,7 @@ public class WorkflowServiceTest {
 		assertNotNull(task20);
 		task20.setStatus(Status.COMPLETED);
 		ess.updateTask(task20);
-		
+		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
 		wf = ess.getExecutionStatus(wfid, true);
 		assertNotNull(wf);
 		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
@@ -2496,15 +2501,17 @@ public class WorkflowServiceTest {
 		assertNotNull(task);
 		task.setStatus(Status.COMPLETED);
 		ess.updateTask(task);
+		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
 		
 		es = ess.getExecutionStatus(wfId, true);
 		assertNotNull(es);
 		assertNotNull(es.getTasks());
+		
 		task = es.getTasks().stream().filter(t -> t.getTaskType().equals(Type.SUB_WORKFLOW.name().toString())).findAny().get();
 		assertNotNull(task);
 		assertNotNull(task.getOutputData());
-		assertNotNull("Input: " + task.getInputData().toString(), task.getInputData().get("subWorkflowId"));
-		String subWorkflowId = task.getInputData().get("subWorkflowId").toString();
+		assertNotNull("Output: " + task.getOutputData().toString() + ", status: " + task.getStatus(), task.getOutputData().get("subWorkflowId"));
+		String subWorkflowId = task.getOutputData().get("subWorkflowId").toString();
 		
 		es = ess.getExecutionStatus(subWorkflowId, true);
 		assertNotNull(es);
@@ -2517,6 +2524,7 @@ public class WorkflowServiceTest {
 		ess.updateTask(task);
 		
 		task = ess.poll("junit_task_2", "test");
+		assertEquals(subWorkflowId, task.getWorkflowInstanceId());
 		String uuid = UUID.randomUUID().toString();
 		task.getOutputData().put("uuid", uuid);
 		task.setStatus(Status.COMPLETED);
@@ -2530,10 +2538,7 @@ public class WorkflowServiceTest {
 		assertTrue(es.getOutput().containsKey("o2"));
 		assertEquals("sub workflow input param1", es.getOutput().get("o1"));
 		assertEquals(uuid, es.getOutput().get("o2"));
-		
 		es = ess.getExecutionStatus(wfId, true);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-
 	}
 	
 	@Test
@@ -2564,6 +2569,7 @@ public class WorkflowServiceTest {
 		assertNotNull(task);
 		task.setStatus(Status.COMPLETED);
 		ess.updateTask(task);
+		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
 		
 		es = ess.getExecutionStatus(wfId, true);
 		assertNotNull(es);
@@ -2577,6 +2583,7 @@ public class WorkflowServiceTest {
 		es = ess.getExecutionStatus(subWorkflowId, true);
 		assertNotNull(es);
 		assertNotNull(es.getTasks());
+		
 		assertEquals(wfId, es.getParentWorkflowId());
 		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
 		
@@ -2588,7 +2595,7 @@ public class WorkflowServiceTest {
 		es = ess.getExecutionStatus(subWorkflowId, true);
 		assertNotNull(es);
 		assertEquals(WorkflowStatus.FAILED, es.getStatus());
-		
+		provider.executeSystemTask(subworkflow, es.getParentWorkflowTaskId(), "test", 1);
 		es = ess.getExecutionStatus(wfId, true);
 		assertEquals(WorkflowStatus.FAILED, es.getStatus());
 		
@@ -2626,6 +2633,7 @@ public class WorkflowServiceTest {
 		assertNotNull(task);
 		task.setStatus(Status.COMPLETED);
 		ess.updateTask(task);
+		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
 		
 		es = ess.getExecutionStatus(wfId, true);
 		assertNotNull(es);
@@ -2679,9 +2687,98 @@ public class WorkflowServiceTest {
 		assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
 	}
 	
+	@Test
+	public void testEvent() throws Exception {
+
+		TaskDef td = new TaskDef();
+		td.setName("eventX");
+		td.setTimeoutSeconds(1);
+		
+		ms.registerTaskDef(Arrays.asList(td));
+		
+		WorkflowDef def = new WorkflowDef();
+		def.setName("test_event");
+		def.setSchemaVersion(2);
+		WorkflowTask event = new WorkflowTask();
+		event.setWorkflowTaskType(Type.EVENT);
+		event.setName("eventX");
+		event.setTaskReferenceName("wait0");
+		event.setSink("conductor");
+		def.getTasks().add(event);
+		ms.registerWorkflowDef(def);
+		
+		String id = provider.startWorkflow(def.getName(), def.getVersion(), "", new HashMap<>());
+		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+		Workflow workflow = provider.getWorkflow(id, true);
+		assertNotNull(workflow);
+		assertEquals(1, workflow.getTasks().size());
+		
+		Task eventTask = workflow.getTasks().get(0);
+		assertEquals(WorkflowTask.Type.EVENT.name(), eventTask.getTaskType());
+		assertEquals(Task.Status.COMPLETED, eventTask.getStatus());
+		assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+		assertTrue(!eventTask.getOutputData().isEmpty());
+		assertNotNull(eventTask.getOutputData().get("event_produced"));
+	}
+	
+	
+	//@Test
+	public void testRateLimiting() throws Exception {
+		
+		TaskDef td = new TaskDef();
+		td.setName("eventX1");
+		td.setTimeoutSeconds(1);
+		td.setConcurrentExecLimit(1);
+		
+		ms.registerTaskDef(Arrays.asList(td));
+		
+		WorkflowDef def = new WorkflowDef();
+		def.setName("test_rate_limit");
+		def.setSchemaVersion(2);
+		
+		WorkflowTask event = new WorkflowTask();
+		event.setType("USER_TASK");
+		event.setName("eventX1");
+		event.setTaskReferenceName("event0");
+		event.setSink("conductor");
+		
+		def.getTasks().add(event);
+		ms.registerWorkflowDef(def);
+		
+		Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
+			queue.processUnacks("USER_TASK");	
+		}, 2, 2, TimeUnit.SECONDS);
+		
+		String[] ids = new String[100];
+		ExecutorService es = Executors.newFixedThreadPool(10);
+		for(int i = 0; i < 10; i++) {
+			final int index = i;
+			es.submit(()->{
+				try {
+					String id = provider.startWorkflow(def.getName(), def.getVersion(), "", new HashMap<>());
+					ids[index] = id;
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			});
+		}		
+		Uninterruptibles.sleepUninterruptibly(20, TimeUnit.SECONDS);
+		for(int i = 0; i < 10; i++) {
+			String id = ids[i];
+			Workflow workflow = provider.getWorkflow(id, true);
+			assertNotNull(workflow);
+			assertEquals(1, workflow.getTasks().size());
+			
+			Task eventTask = workflow.getTasks().get(0);
+			assertEquals(Task.Status.COMPLETED, eventTask.getStatus());
+			assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+			assertTrue(!eventTask.getOutputData().isEmpty());
+			assertNotNull(eventTask.getOutputData().get("event_produced"));
+		}
+	}
+	
 	private void createSubWorkflow() throws Exception {
-		
-		
 		
 		WorkflowTask wft1 = new WorkflowTask();
 		wft1.setName("junit_task_5");

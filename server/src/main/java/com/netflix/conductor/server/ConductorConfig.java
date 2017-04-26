@@ -54,6 +54,12 @@ public class ConductorConfig implements Configuration {
 	}
 
 	@Override
+	public boolean disableAsyncWorkers() {
+		String disable = getProperty("conductor.disable.async.workers", "false");
+		return Boolean.getBoolean(disable);
+	}
+	
+	@Override
 	public String getServerId() {
 		try {
 			return InetAddress.getLocalHost().getHostName();

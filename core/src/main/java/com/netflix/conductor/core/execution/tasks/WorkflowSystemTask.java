@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,6 +39,7 @@ public class WorkflowSystemTask {
 	public WorkflowSystemTask(String name) {
 		this.name = name;
 		registry.put(name, this);
+		SystemTaskWorkerCoordinator.add(this);
 	}
 
 	/**
@@ -75,6 +77,21 @@ public class WorkflowSystemTask {
 	
 	/**
 	 * 
+	 * @return True if the task is supposed to be started asynchronously using internal queues.
+	 */
+	public boolean isAsync() {
+		return false;
+	}
+	
+	/**
+	 * 
+	 * @return Time in seconds after which the task should be retried if rate limited or remains in in_progress after start method execution. 
+	 */
+	public int getRetryTimeInSecond() {
+		return 30;
+	}
+	/**
+	 * 
 	 * @return name of the system task
 	 */
 	public String getName(){
@@ -82,10 +99,9 @@ public class WorkflowSystemTask {
 	}
 	
 	@Override
-	public String toString(){
+	public String toString() {
 		return name;
 	}
-	
 	
 	public static boolean is(String type){
 		return registry.containsKey(type);
@@ -94,6 +110,9 @@ public class WorkflowSystemTask {
 	public static WorkflowSystemTask get(String type) {
 		return registry.get(type);
 	}
-
+	
+	public static Collection<WorkflowSystemTask> all() {
+		return registry.values();
+	}
 	
 }

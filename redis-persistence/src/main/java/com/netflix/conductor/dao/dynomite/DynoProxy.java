@@ -38,6 +38,7 @@ import redis.clients.jedis.JedisCommands;
 import redis.clients.jedis.ScanParams;
 import redis.clients.jedis.ScanResult;
 import redis.clients.jedis.Tuple;
+import redis.clients.jedis.params.sortedset.ZAddParams;
 
 /**
  * 
@@ -116,6 +117,12 @@ public class DynoProxy {
 		return retVal;
 	}
 
+	public Long zaddnx(String key, double score, String member) {
+		ZAddParams params = ZAddParams.zAddParams().nx();
+		Long retVal = dynoClient.zadd(key, score, member, params);
+		return retVal;
+	}
+
 	public Long hset(String key, String field, String value) {
 		Long retVal = dynoClient.hset(key, field, value);
 		return retVal;
@@ -123,6 +130,11 @@ public class DynoProxy {
 	
 	public Long hsetnx(String key, String field, String value) {
 		Long retVal = dynoClient.hsetnx(key, field, value);
+		return retVal;
+	}
+	
+	public Long hlen(String key) {
+		Long retVal = dynoClient.hlen(key);
 		return retVal;
 	}
 
@@ -207,6 +219,10 @@ public class DynoProxy {
 		logger.trace("srem {} {}", key, member);
 		Long retVal = dynoClient.srem(key, member);
 		return retVal;
+	}
+	
+	public boolean sismember(String key, String member) {
+		return dynoClient.sismember(key, member);
 	}
 
 	public Set<String> smembers(String key) {

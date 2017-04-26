@@ -208,21 +208,22 @@ public class HttpTask extends WorkflowSystemTask {
 
 	@Override
 	public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
-		if (task.getStatus().equals(Status.SCHEDULED)) {
-			long timeSince = System.currentTimeMillis() - task.getScheduledTime();
-			if(timeSince > 600_000) {
-				start(workflow, task, executor);
-				return true;	
-			}else {
-				return false;
-			}				
-		}
 		return false;
 	}
 	
 	@Override
 	public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
 		task.setStatus(Status.CANCELED);
+	}
+	
+	@Override
+	public boolean isAsync() {
+		return true;
+	}
+	
+	@Override
+	public int getRetryTimeInSecond() {
+		return 60;
 	}
 	
 	private static ObjectMapper objectMapper() {

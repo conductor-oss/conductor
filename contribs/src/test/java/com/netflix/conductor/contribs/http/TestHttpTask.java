@@ -19,6 +19,7 @@
 package com.netflix.conductor.contribs.http;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -48,10 +49,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.contribs.http.HttpTask.Input;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.dao.MetadataDAO;
 
 /**
  * @author Viren
@@ -80,6 +86,7 @@ public class TestHttpTask {
 	
 	@BeforeClass
 	public static void init() throws Exception {
+		
 		Map<String, Object> map = new HashMap<>();
 		map.put("key", "value1");
 		map.put("num", 42);
@@ -239,22 +246,48 @@ public class TestHttpTask {
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		task.setStatus(Status.SCHEDULED);
 		task.setScheduledTime(0);
-		httpTask.execute(workflow, task, executor);
-
-		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
-		Object response = hr.get("body");
-		assertEquals(Task.Status.COMPLETED, task.getStatus());
-		assertTrue(response instanceof Map);
-		Map<String, Object> map = (Map<String, Object>) response;
-		assertEquals(JSON_RESPONSE, om.writeValueAsString(map));
-		
-		task.setStatus(Status.SCHEDULED);
-		task.setScheduledTime(System.currentTimeMillis()-100);
-		//For a recently scheduled task, execute does NOP
-		httpTask.execute(workflow, task, executor);
-		assertEquals(Task.Status.SCHEDULED, task.getStatus());
+		boolean executed = httpTask.execute(workflow, task, executor);
+		assertFalse(executed);
 
 	}
+	
+	@Test
+	public void testOptional() throws Exception {
+ 		Task task = new Task();
+ 		Input input = new Input();
+ 		input.setUri("http://localhost:7009/failure");
+ 		input.setMethod("GET");
+ 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+ 		
+ 		httpTask.start(workflow, task, executor);
+ 		assertEquals("Task output: " + task.getOutputData(), Task.Status.FAILED, task.getStatus());
+ 		assertEquals(ERROR_RESPONSE, task.getReasonForIncompletion());
+ 		assertTrue(!task.getStatus().isSuccessful());
+ 		
+ 		task.setStatus(Status.SCHEDULED);
+ 		task.getInputData().remove(HttpTask.REQUEST_PARAMETER_NAME);
+ 		task.setReferenceTaskName("t1");
+ 		httpTask.start(workflow, task, executor);
+ 		assertEquals(Task.Status.FAILED, task.getStatus());
+ 		assertEquals(HttpTask.MISSING_REQUEST, task.getReasonForIncompletion());
+ 		assertTrue(!task.getStatus().isSuccessful());
+ 		
+ 		Workflow workflow = new Workflow();
+ 		workflow.getTasks().add(task);
+ 		
+ 		WorkflowDef def = new WorkflowDef();
+ 		WorkflowTask wft = new WorkflowTask();
+ 		wft.setOptional(true);
+ 		wft.setName("HTTP");
+ 		wft.setWorkflowTaskType(Type.USER_DEFINED);
+ 		wft.setTaskReferenceName("t1");
+		def.getTasks().add(wft);
+ 		MetadataDAO metadata = mock(MetadataDAO.class);
+ 		new DeciderService(metadata, null).decide(workflow, def);
+ 		
+ 		System.out.println(workflow.getTasks());
+ 		System.out.println(workflow.getStatus());
+ 	}
 	
 	private static class EchoHandler extends AbstractHandler {
 
