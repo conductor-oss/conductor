@@ -133,6 +133,6 @@ public class Event extends WorkflowSystemTask {
 	
 	@Override
 	public boolean isAsync() {
-		return true;
+		return false;
 	}
 }

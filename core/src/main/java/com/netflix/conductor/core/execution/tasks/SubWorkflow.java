@@ -112,7 +112,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 	
 	@Override
 	public boolean isAsync() {
-		return true;
+		return false;
 	}
 
 }
