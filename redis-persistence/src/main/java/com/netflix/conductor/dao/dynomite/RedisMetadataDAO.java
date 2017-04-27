@@ -89,7 +89,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 		Map<String, TaskDef> map = new HashMap<>();
 		getAllTaskDefs().forEach(taskDef -> map.put(taskDef.getName(), taskDef));
 		this.taskDefCache = map;
-		logger.info("Refreshed task defs " + this.taskDefCache.size());
+		logger.debug("Refreshed task defs " + this.taskDefCache.size());
 	}
 	
 	@Override

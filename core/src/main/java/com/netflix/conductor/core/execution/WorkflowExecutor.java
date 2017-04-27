@@ -531,11 +531,14 @@ public class WorkflowExecutor {
 				}
 			}
 			stateChanged = scheduleTask(workflow, tasksToBeScheduled) || stateChanged;
-
-			edao.updateTasks(tasksToBeUpdated);
-			if(stateChanged) {
+			
+			if(!outcome.tasksToBeUpdated.isEmpty() || !outcome.tasksToBeScheduled.isEmpty()) {
+				edao.updateTasks(tasksToBeUpdated);
 				edao.updateWorkflow(workflow);
-				queue.push(deciderQueue, workflow.getWorkflowId(), config.getSweepFrequency());
+				queue.push(deciderQueue, workflow.getWorkflowId(), config.getSweepFrequency());	
+			}
+
+			if(stateChanged) {				
 				decide(workflowId);
 			}
 			
@@ -742,7 +745,7 @@ public class WorkflowExecutor {
 			}
 		}
 		addTaskToQueue(toBeQueued);
-		return !toBeQueued.isEmpty() || startedSystemTasks;
+		return startedSystemTasks;
 	}
 
 	private void addTaskToQueue(final List<Task> tasks) throws Exception {
