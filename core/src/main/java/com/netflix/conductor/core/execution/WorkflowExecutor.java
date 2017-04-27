@@ -20,7 +20,6 @@ package com.netflix.conductor.core.execution;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -726,8 +725,7 @@ public class WorkflowExecutor {
 		List<Task> created = edao.createTasks(tasks);
 		List<Task> createdSystemTasks = created.stream().filter(task -> SystemTaskType.is(task.getTaskType())).collect(Collectors.toList());
 		List<Task> toBeQueued = created.stream().filter(task -> !SystemTaskType.is(task.getTaskType())).collect(Collectors.toList());
-		boolean startedSystemTasks = false;
-		Set<String> startedSystemTaks = new HashSet<>();
+		boolean startedSystemTasks = false;		
 		for(Task task : createdSystemTasks) {
 
 			WorkflowSystemTask stt = WorkflowSystemTask.get(task.getTaskType());
@@ -738,7 +736,6 @@ public class WorkflowExecutor {
 			if(!stt.isAsync()) {
 				stt.start(workflow, task, this);
 				startedSystemTasks = true;
-				startedSystemTaks.add(task.getTaskId());
 				edao.updateTask(task);
 			} else {
 				toBeQueued.add(task);
