@@ -49,7 +49,7 @@ router.get('/id/:workflowId', async (req, res, next) => {
     const subworkflows = {};
     result.tasks.forEach(task=>{
       if(task.taskType == 'SUB_WORKFLOW'){
-        subs.push({name: task.inputData.subWorkflowName, version: task.inputData.subWorkflowVersion, referenceTaskName: task.referenceTaskName, subWorkflowId: task.inputData.subWorkflowId});
+        subs.push({name: task.inputData.subWorkflowName, version: task.inputData.subWorkflowVersion, referenceTaskName: task.referenceTaskName, subWorkflowId: task.outputData.subWorkflowId});
       }
     });
     let submeta = {};

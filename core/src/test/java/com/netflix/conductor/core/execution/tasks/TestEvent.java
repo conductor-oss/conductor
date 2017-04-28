@@ -233,7 +233,7 @@ public class TestEvent {
 		assertEquals(Task.Status.SCHEDULED, task.getStatus());
 		
 		task.setScheduledTime(System.currentTimeMillis() - 610_000);
-		event.execute(workflow, task, null);
+		event.start(workflow, task, null);
 		assertEquals(Task.Status.FAILED, task.getStatus());
 	}
 	

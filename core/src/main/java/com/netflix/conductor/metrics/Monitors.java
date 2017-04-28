@@ -168,7 +168,11 @@ public class Monitors {
 	}
 
 	public static void recordQueueDepth(String taskType, long size, String ownerApp) {
-		gauge(classQualifier, "task_queue_depth", size, "taskType", taskType, "ownerApp", ownerApp);
+		gauge(classQualifier, "task_queue_depth", size, "taskType", taskType, "ownerApp", ""+ownerApp);
+	}
+	
+	public static void recordTaskInProgress(String taskType, long size, String ownerApp) {
+		gauge(classQualifier, "task_in_progress", size, "taskType", taskType, "ownerApp", ""+ownerApp);
 	}
 
 	public static void recordRunningWorkflows(long count, String name, String version, String ownerApp) {
@@ -198,5 +202,9 @@ public class Monitors {
 
 	public static void recordWorkflowCompletion(String workflowType, long duration) {
 		getTimer(classQualifier, "workflow_execution", "workflowName", workflowType).record(duration, TimeUnit.MILLISECONDS);
+	}
+
+	public static void recordTaskRateLimited(String taskDefName, int limit) {
+		gauge(classQualifier, "task_rate_limited", limit, "taskType", taskDefName);
 	}
 }

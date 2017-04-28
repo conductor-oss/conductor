@@ -63,9 +63,14 @@ public class WorkflowSweeper {
 		this.config = config;
 		this.queues = queues;
 		this.executorThreadPoolSize = config.getIntProperty("workflow.sweeper.thread.count", 5);
-		this.es = Executors.newFixedThreadPool(executorThreadPoolSize);
-		init(executor);
-		logger.info("Workflow Sweeper Initialized");
+		if(this.executorThreadPoolSize > 0) {
+			this.es = Executors.newFixedThreadPool(executorThreadPoolSize);
+			init(executor);
+			logger.info("Workflow Sweeper Initialized");
+		} else {
+			logger.warn("Workflow sweeper is DISABLED");
+		}
+		
 	}
 
 	public void init(WorkflowExecutor executor) {
@@ -76,7 +81,6 @@ public class WorkflowSweeper {
 
 			try{
 				boolean disable = config.disableSweep();
-				logger.debug("Workflow Sweep disabled? {}", disable);
 				if (disable) {
 					logger.info("Workflow sweep is disabled.");
 					return;

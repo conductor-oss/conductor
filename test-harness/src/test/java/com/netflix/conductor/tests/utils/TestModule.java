@@ -55,7 +55,9 @@ public class TestModule extends AbstractModule {
 	
 	@Override
 	protected void configure() {
-		
+		System.setProperty("workflow.system.task.worker.callback.seconds", "0");
+		System.setProperty("workflow.system.task.worker.queue.size", "10000");
+		System.setProperty("workflow.system.task.worker.thread.count", "10");
 		configureExecutorService();
 		ConductorConfig config = new ConductorConfig();
 		bind(Configuration.class).toInstance(config);
@@ -79,11 +81,12 @@ public class TestModule extends AbstractModule {
 		bind(ExecutionDAO.class).to(RedisExecutionDAO.class);
 		bind(DynoQueueDAO.class).toInstance(queueDao);
 		bind(QueueDAO.class).to(DynoQueueDAO.class);
-		bind(IndexDAO.class).to(MockIndexDAO.class);
-		
+		bind(IndexDAO.class).to(MockIndexDAO.class);		
 		DynoProxy proxy = new DynoProxy(jedisMock);
 		bind(DynoProxy.class).toInstance(proxy);
 		install(new CoreModule());
+		bind(UserTask.class).asEagerSingleton();
+		
 	}
 	
 	@Provides

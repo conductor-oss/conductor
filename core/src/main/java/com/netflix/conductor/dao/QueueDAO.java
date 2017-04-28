@@ -118,5 +118,10 @@ public interface QueueDAO {
 	 * @return key : queue name, value: map of shard name to size and unack queue size
 	 */
 	public Map<String, Map<String, Map<String, Long>>> queuesDetailVerbose();
+	
+	public default void processUnacks(String queueName) {
+		
+	}
+	
 
 }

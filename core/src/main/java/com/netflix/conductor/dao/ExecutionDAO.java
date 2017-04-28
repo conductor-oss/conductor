@@ -22,6 +22,7 @@ import java.util.List;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.queue.Message;
@@ -70,6 +71,14 @@ public interface ExecutionDAO {
 	 *  
 	 */
 	public abstract void updateTask(Task task);
+	
+	/**
+	 * Checks if the number of tasks in progress for the given taskDef will exceed the limit if the task is scheduled to be in progress (given to the worker or for system tasks start() method called)
+	 * @param task The task to be executed.  Limit is set in the Task's definition 
+	 * @return true if by executing this task, the limit is breached.  false otherwise.
+	 * @see TaskDef#concurrencyLimit()
+	 */
+	public abstract boolean exceedsInProgressLimit(Task task);
 	
 	/**
 	 * 
@@ -193,7 +202,12 @@ public interface ExecutionDAO {
 	 */
 	public abstract long getPendingWorkflowCount(String workflowName);
 
-	
+	/**
+	 * 
+	 * @param taskDefName Name of the task
+	 * @return Number of task currently in IN_PROGRESS status
+	 */
+	public abstract long getInProgressTaskCount(String taskDefName);
 
 	/**
 	 * 

@@ -15,7 +15,6 @@
  */
 package com.netflix.conductor.service;
 
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -101,23 +100,17 @@ public class ExecutionService {
 				continue;
 			}
 
-			if (!taskType.equals(task.getTaskType())) {
-				// Try and remove it from the queue and add it back in -- in
-				// hopes it wont be inserted into the wrong queue again.
-				removeTaskfromQueue(task.getTaskType(), task.getTaskId());
-				executor.addTaskToQueue(task);
-				logger.error("Queue name '{}' did not match type of task retrieved '{}' for task id '{}'.", new Object[]{taskType, task.getTaskType(), task.getTaskId()});
-				return Collections.emptyList();
+			if(edao.exceedsInProgressLimit(task)) {
+				continue;
 			}
-
+			
 			task.setStatus(Status.IN_PROGRESS);
 			if (task.getStartTime() == 0) {
 				task.setStartTime(System.currentTimeMillis());
 				Monitors.recordQueueWaitTime(task.getTaskDefName(), task.getQueueWaitTime());
 			}
 			task.setWorkerId(workerId);
-			task.setPollCount(task.getPollCount() + 1);
-			
+			task.setPollCount(task.getPollCount() + 1);			
 			edao.updateTask(task);
 			tasks.add(task);
 		}

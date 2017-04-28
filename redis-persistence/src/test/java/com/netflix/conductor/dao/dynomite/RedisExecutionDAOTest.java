@@ -19,6 +19,7 @@
 package com.netflix.conductor.dao.dynomite;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
@@ -50,13 +51,13 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.dao.dynomite.DynoProxy;
-import com.netflix.conductor.dao.dynomite.RedisExecutionDAO;
 import com.netflix.conductor.dao.index.ElasticSearchDAO;
 import com.netflix.conductor.dao.redis.JedisMock;
 
@@ -68,6 +69,8 @@ import redis.clients.jedis.JedisCommands;
  */
 public class RedisExecutionDAOTest {
 
+	private RedisMetadataDAO mdao;
+	
 	private RedisExecutionDAO dao;
 	
 	private static ObjectMapper om = new ObjectMapper();
@@ -106,12 +109,44 @@ public class RedisExecutionDAOTest {
 		when(client.prepareBulk().add(any(IndexRequest.class)).execute().actionGet()).thenReturn(response);
 		
 		ElasticSearchDAO indexer = new ElasticSearchDAO(client, config, om);
-		dao = new RedisExecutionDAO(dynoClient, om, indexer, config);
+		mdao = new RedisMetadataDAO(dynoClient, om, config);
+		dao = new RedisExecutionDAO(dynoClient, om, indexer, mdao, config);
 	}
 	
 	@Rule
 	public ExpectedException expected = ExpectedException.none();
 	
+	@Test
+	public void testTaskExceedsLimit() throws Exception {
+		
+		TaskDef def = new TaskDef();
+		def.setName("task1");
+		def.setConcurrentExecLimit(1);		
+		mdao.createTaskDef(def);
+		
+		List<Task> tasks = new LinkedList<>();
+		for(int i = 0; i < 15; i++) {
+			Task task = new Task();
+			task.setScheduledTime(1L);
+			task.setSeq(1);
+			task.setTaskId("t_" + i);
+			task.setWorkflowInstanceId("workflow_" + i);
+			task.setReferenceTaskName("task1");
+			task.setTaskDefName("task1");
+			tasks.add(task);
+			task.setStatus(Status.SCHEDULED);
+		}
+		
+		dao.createTasks(tasks);
+		assertFalse(dao.exceedsInProgressLimit(tasks.get(0)));
+		tasks.get(0).setStatus(Status.IN_PROGRESS);
+		dao.updateTask(tasks.get(0));
+		
+		for(Task task : tasks) {
+			assertTrue(dao.exceedsInProgressLimit(task));
+		}
+		
+	}
 	@Test
 	public void testCreateTaskException() throws Exception {
 		Task task = new Task();

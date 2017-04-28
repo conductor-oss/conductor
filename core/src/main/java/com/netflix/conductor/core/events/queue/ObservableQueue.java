@@ -65,6 +65,12 @@ public interface ObservableQueue {
 	 */
 	public void publish(List<Message> messages);
 	
+	/**
+	 * Extend the lease of the unacknowledged message for longer period.
+	 * @param message Message for which the timeout has to be changed
+	 * @param unackTimeout timeout in milliseconds for which the unack lease should be extended. (replaces the current value with this value)
+	 */
+	public void setUnackTimeout(Message message, long unackTimeout);
 	
 	/**
 	 * 

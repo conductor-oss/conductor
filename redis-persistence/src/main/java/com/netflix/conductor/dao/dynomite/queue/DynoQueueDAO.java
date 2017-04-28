@@ -39,6 +39,7 @@ import com.netflix.dyno.queues.DynoQueue;
 import com.netflix.dyno.queues.Message;
 import com.netflix.dyno.queues.ShardSupplier;
 import com.netflix.dyno.queues.redis.DynoShardSupplier;
+import com.netflix.dyno.queues.redis.RedisDynoQueue;
 import com.netflix.dyno.queues.redis.RedisQueues;
 
 import redis.clients.jedis.JedisCommands;
@@ -200,6 +201,10 @@ public class DynoQueueDAO implements QueueDAO {
 		Map<String, Map<String, Map<String, Long>>> map = queues.queues().stream()
 				.collect(Collectors.toMap(queue -> queue.getName(), q -> q.shardSizes()));
 		return map;
+	}
+	
+	public void processUnacks(String queueName) {
+		((RedisDynoQueue)queues.get(queueName)).processUnacks();;
 	}
 
 }

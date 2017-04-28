@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -262,7 +263,7 @@ public class WorkflowExecutor {
 		retried.setRetriedTaskId(last.getTaskId());
 		retried.setStatus(Status.SCHEDULED);
 		retried.setRetryCount(last.getRetryCount() + 1);
-		scheduleTask(Arrays.asList(retried));
+		scheduleTask(workflow, Arrays.asList(retried));
 
 		workflow.setStatus(WorkflowStatus.RUNNING);
 		edao.updateWorkflow(workflow);
@@ -400,6 +401,13 @@ public class WorkflowExecutor {
 		if (wf.getStatus().isTerminal()) {
 			// Workflow is in terminal state
 			queue.remove(task.getTaskType(), result.getTaskId());
+			if(!task.getStatus().isTerminal()) {
+				task.setStatus(Status.COMPLETED);
+			}
+			task.setOutputData(result.getOutputData());
+			task.setReasonForIncompletion(result.getReasonForIncompletion());
+			task.setWorkerId(result.getWorkerId());
+			edao.updateTask(task);
 			String msg = "Workflow " + wf.getWorkflowId() + " is already completed as " + wf.getStatus() + ", task=" + task.getTaskType() + ", reason=" + wf.getReasonForIncompletion();
 			logger.info(msg);
 			Monitors.recordUpdateConflict(task.getTaskType(), wf.getWorkflowType(), wf.getStatus());
@@ -453,8 +461,8 @@ public class WorkflowExecutor {
 			break;
 		case IN_PROGRESS:
 			// put it back in queue based in callbackAfterSeconds
-			queue.remove(task.getTaskType(), task.getTaskId());
 			long callBack = result.getCallbackAfterSeconds();
+			queue.remove(task.getTaskType(), task.getTaskId());			
 			queue.push(task.getTaskType(), task.getTaskId(), callBack); // Milliseconds
 			break;
 		default:
@@ -516,19 +524,22 @@ public class WorkflowExecutor {
 			for(Task task : tasksToBeScheduled) {
 				if (SystemTaskType.is(task.getTaskType()) && !task.getStatus().isTerminal()) {
 					WorkflowSystemTask stt = WorkflowSystemTask.get(task.getTaskType());
-					if (stt.execute(workflow, task, this)) {
+					if (!stt.isAsync() && stt.execute(workflow, task, this)) {
 						tasksToBeUpdated.add(task);
 						stateChanged = true;
 					}
 				}
 			}
-			stateChanged = scheduleTask(tasksToBeScheduled) || stateChanged;
-
-			edao.updateTasks(tasksToBeUpdated);
-			if(stateChanged) {
+			stateChanged = scheduleTask(workflow, tasksToBeScheduled) || stateChanged;
+			
+			if(!outcome.tasksToBeUpdated.isEmpty() || !outcome.tasksToBeScheduled.isEmpty()) {
+				edao.updateTasks(tasksToBeUpdated);
 				edao.updateWorkflow(workflow);
-				queue.push(deciderQueue, workflow.getWorkflowId(), config.getSweepFrequency());
-				decide(workflowId);				
+				queue.push(deciderQueue, workflow.getWorkflowId(), config.getSweepFrequency());	
+			}
+
+			if(stateChanged) {				
+				decide(workflowId);
 			}
 			
 		} catch (TerminateWorkflow tw) {
@@ -615,6 +626,84 @@ public class WorkflowExecutor {
 		}
 	}
 	
+	//Executes the async system task 
+	public void executeSystemTask(WorkflowSystemTask systemTask, String taskId, String workerId, int unackTimeout) {
+		
+		
+		try {
+			
+			Task task = edao.getTask(taskId);
+			if(task.getStatus().isTerminal()) {
+				//Tune the SystemTaskWorkerCoordinator's queues - if the queue size is very big this can happen!
+				logger.info("Task {}/{} was already completed.", task.getTaskType(), task.getTaskId());
+				//don't do anything
+				return;
+			}
+			
+			String workflowId = task.getWorkflowInstanceId();			
+			Workflow workflow = edao.getWorkflow(workflowId, true);			
+			
+			if (task.getStartTime() == 0) {
+				task.setStartTime(System.currentTimeMillis());
+				Monitors.recordQueueWaitTime(task.getTaskDefName(), task.getQueueWaitTime());
+			}
+			
+			if(workflow.getStatus().isTerminal()) {
+				//how did this happen?
+				logger.warn("Workflow {} has been completed for {}/{}", workflow.getWorkflowId(), systemTask.getName(), task.getTaskId());
+				if(!task.getStatus().isTerminal()) {
+					task.setStatus(Status.CANCELED);
+				}
+				edao.updateTask(task);
+				queue.remove(task.getTaskType(), task.getTaskId());
+				return;
+			}
+			
+			if(task.getStatus().equals(Status.SCHEDULED)) {
+				
+				if(edao.exceedsInProgressLimit(task)) {
+					logger.warn("Rate limited for {}", task.getTaskDefName());					
+					return;
+				}
+			}
+			
+			logger.info("Executing {}/{}-{}", task.getTaskType(), task.getTaskId(), task.getStatus());
+			
+			queue.setUnackTimeout(task.getTaskType(), task.getTaskId(), systemTask.getRetryTimeInSecond() * 1000);
+			task.setWorkerId(workerId);
+			task.setPollCount(task.getPollCount() + 1);
+			edao.updateTask(task);
+
+			switch (task.getStatus()) {
+			
+				case SCHEDULED:
+					systemTask.start(workflow, task, this);					
+					break;
+					
+				case IN_PROGRESS:
+					systemTask.execute(workflow, task, this);
+					break;
+				default:
+					break;
+			}
+			
+			if(!task.getStatus().isTerminal()) {
+				task.setCallbackAfterSeconds(unackTimeout);
+			}
+			
+			updateTask(new TaskResult(task));
+			logger.info("Done Executing {}/{}-{} op={}", task.getTaskType(), task.getTaskId(), task.getStatus(), task.getOutputData().toString());
+			
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+		}
+		
+		
+		
+		
+		
+	}
+
 	private long getTaskDuration(long s, Task task) {
 		long duration = task.getEndTime() - task.getStartTime();
 		s += duration;
@@ -624,14 +713,12 @@ public class WorkflowExecutor {
 		return s + getTaskDuration(s, edao.getTask(task.getRetriedTaskId()));
 	}
 	
-	private boolean scheduleTask(List<Task> tasks) throws Exception {
+	@VisibleForTesting
+	boolean scheduleTask(Workflow workflow, List<Task> tasks) throws Exception {
 		
 		if (tasks == null || tasks.isEmpty()) {
 			return false;
 		}
-		
-		String workflowId = tasks.get(0).getWorkflowInstanceId();
-		Workflow workflow = edao.getWorkflow(workflowId);
 		int count = workflow.getTasks().size();
 
 		for (Task task : tasks) {
@@ -640,7 +727,8 @@ public class WorkflowExecutor {
 
 		List<Task> created = edao.createTasks(tasks);
 		List<Task> createdSystemTasks = created.stream().filter(task -> SystemTaskType.is(task.getTaskType())).collect(Collectors.toList());
-		boolean startedSystemTasks = false;
+		List<Task> toBeQueued = created.stream().filter(task -> !SystemTaskType.is(task.getTaskType())).collect(Collectors.toList());
+		boolean startedSystemTasks = false;		
 		for(Task task : createdSystemTasks) {
 
 			WorkflowSystemTask stt = WorkflowSystemTask.get(task.getTaskType());
@@ -648,23 +736,22 @@ public class WorkflowExecutor {
 				throw new RuntimeException("No system task found by name " + task.getTaskType());
 			}
 			task.setStartTime(System.currentTimeMillis());
-			stt.start(workflow, task, this);
-			edao.updateTask(task);
-			startedSystemTasks = true;
-		}
-
-		return addTaskToQueue(created) || startedSystemTasks;
-	}
-
-	private boolean addTaskToQueue(final List<Task> tasks) throws Exception {
-		boolean stateChanged = false;
-		for (Task t : tasks) {
-			if (!(t instanceof SystemTask)) {
-				addTaskToQueue(t);
-				stateChanged = true;
+			if(!stt.isAsync()) {
+				stt.start(workflow, task, this);
+				startedSystemTasks = true;
+				edao.updateTask(task);
+			} else {
+				toBeQueued.add(task);
 			}
 		}
-		return stateChanged;
+		addTaskToQueue(toBeQueued);
+		return startedSystemTasks;
+	}
+
+	private void addTaskToQueue(final List<Task> tasks) throws Exception {
+		for (Task t : tasks) {
+			addTaskToQueue(t);
+		}
 	}
 	
 	private void terminate(final WorkflowDef def, final Workflow workflow, TerminateWorkflow tw) throws Exception {
