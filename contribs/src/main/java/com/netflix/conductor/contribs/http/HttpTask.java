@@ -128,6 +128,8 @@ public class HttpTask extends WorkflowSystemTask {
 			}
 			
 		}catch(Exception e) {
+			
+			logger.error(e.getMessage(), e);
 			task.setStatus(Status.FAILED);
 			task.setReasonForIncompletion(e.getMessage());
 			task.getOutputData().put("response", e.getMessage());

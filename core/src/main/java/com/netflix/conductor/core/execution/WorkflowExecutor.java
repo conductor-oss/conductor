@@ -636,7 +636,7 @@ public class WorkflowExecutor {
 			if(task.getStatus().isTerminal()) {
 				//Tune the SystemTaskWorkerCoordinator's queues - if the queue size is very big this can happen!
 				logger.info("Task {}/{} was already completed.", task.getTaskType(), task.getTaskId());
-				//don't do anything
+				queue.remove(task.getTaskType(), task.getTaskId());
 				return;
 			}
 			
