@@ -65,8 +65,6 @@ public class SystemTaskWorkerCoordinator {
 	
 	private int unackTimeout;
 	
-	private String workerId;
-	
 	private Configuration config;
 	
 	private static BlockingQueue<WorkflowSystemTask> queue = new LinkedBlockingQueue<>();
@@ -80,7 +78,6 @@ public class SystemTaskWorkerCoordinator {
 		this.taskQueues = taskQueues;
 		this.executor = executor;
 		this.config = config;
-		this.workerId = config.getServerId();
 		this.unackTimeout = config.getIntProperty("workflow.system.task.worker.callback.seconds", 30);
 		int threadCount = config.getIntProperty("workflow.system.task.worker.thread.count", 5);
 		this.pollCount = config.getIntProperty("workflow.system.task.worker.poll.count", 5);
@@ -143,7 +140,7 @@ public class SystemTaskWorkerCoordinator {
 			logger.debug("Polling for {}, got {}", name, polled.size());
 			for(String task : polled) {
 				try {
-					es.submit(()->executor.executeSystemTask(systemTask, task, workerId, unackTimeout));
+					es.submit(()->executor.executeSystemTask(systemTask, task, unackTimeout));
 				}catch(RejectedExecutionException ree) {
 					logger.warn("Queue full for workers {}", workerQueue.size());
 				}

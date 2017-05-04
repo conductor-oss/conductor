@@ -75,7 +75,7 @@ public class WorkflowExecutor {
 	private DeciderService decider;
 	
 	private Configuration config;
-
+	
 	public static final String deciderQueue = "_deciderQueue";
 
 	@Inject
@@ -627,7 +627,7 @@ public class WorkflowExecutor {
 	}
 	
 	//Executes the async system task 
-	public void executeSystemTask(WorkflowSystemTask systemTask, String taskId, String workerId, int unackTimeout) {
+	public void executeSystemTask(WorkflowSystemTask systemTask, String taskId, int unackTimeout) {
 		
 		
 		try {
@@ -670,7 +670,6 @@ public class WorkflowExecutor {
 			logger.info("Executing {}/{}-{}", task.getTaskType(), task.getTaskId(), task.getStatus());
 			
 			queue.setUnackTimeout(task.getTaskType(), task.getTaskId(), systemTask.getRetryTimeInSecond() * 1000);
-			task.setWorkerId(workerId);
 			task.setPollCount(task.getPollCount() + 1);
 			edao.updateTask(task);
 
@@ -697,11 +696,6 @@ public class WorkflowExecutor {
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 		}
-		
-		
-		
-		
-		
 	}
 
 	private long getTaskDuration(long s, Task task) {
