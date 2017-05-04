@@ -86,6 +86,7 @@ public class TestDeciderService {
 		workflow = new Workflow();
 		workflow.getInput().put("requestId", "request id 001");
 		workflow.getInput().put("hasAwards", true);
+		workflow.getInput().put("channelMapping", 5);
 		Map<String, Object> name = new HashMap<>();
 		name.put("name", "The Who");
 		name.put("year", 1970);
@@ -129,6 +130,7 @@ public class TestDeciderService {
 		ip.put("constParam", "Some String value");
 		ip.put("nullValue", null);
 		ip.put("task2Status", "${task2.status}");
+		ip.put("channelMap", "${workflow.input.channelMapping}");
 		ip.put(null, null);
 		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null, null);
 		
@@ -138,6 +140,9 @@ public class TestDeciderService {
 		assertTrue(taskInput.containsKey("taskOutputParam2"));
 		assertTrue(taskInput.containsKey("taskOutputParam3"));
 		assertNull(taskInput.get("taskOutputParam2"));
+		
+		assertNotNull(taskInput.get("channelMap"));
+		assertEquals(5, taskInput.get("channelMap"));
 		
 		assertEquals("request id 001", taskInput.get("workflowInputParam"));
 		assertEquals("http://location", taskInput.get("taskOutputParam"));

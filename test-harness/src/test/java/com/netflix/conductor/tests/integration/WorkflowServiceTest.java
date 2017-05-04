@@ -2595,7 +2595,7 @@ public class WorkflowServiceTest {
 		es = ess.getExecutionStatus(subWorkflowId, true);
 		assertNotNull(es);
 		assertEquals(WorkflowStatus.FAILED, es.getStatus());
-		provider.executeSystemTask(subworkflow, es.getParentWorkflowTaskId(), "test", 1);
+		provider.executeSystemTask(subworkflow, es.getParentWorkflowTaskId(), 1);
 		es = ess.getExecutionStatus(wfId, true);
 		assertEquals(WorkflowStatus.FAILED, es.getStatus());
 		
