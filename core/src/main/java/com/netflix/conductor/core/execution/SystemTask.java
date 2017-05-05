@@ -30,8 +30,6 @@ import com.netflix.conductor.core.execution.tasks.Event;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.Wait;
 
-
-
 /**
  * @author Viren
  *
@@ -40,44 +38,46 @@ public class SystemTask extends Task {
 	
 	private SystemTask(){}
 	
-	public static Task decisionTask(String workflowId, String taskId, String correlationId, String refName, Map<String, Object> input, String caseValue, List<String> caseOuput){
+	public static Task decisionTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input, String caseValue, List<String> caseOuput){
 		SystemTask st = new SystemTask();
 		st.setTaskType(SystemTaskType.DECISION.name());
 		st.setTaskDefName(SystemTaskType.DECISION.name());		
-		st.setReferenceTaskName(refName);
-		st.setWorkflowInstanceId(workflowId);
-		st.setCorrelationId(correlationId);
+		st.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
+		st.setWorkflowInstanceId(workflow.getWorkflowId());
+		st.setCorrelationId(workflow.getCorrelationId());
 		st.setScheduledTime(System.currentTimeMillis());
 		st.setEndTime(System.currentTimeMillis());
 		st.getInputData().put("case", caseValue);
 		st.getOutputData().put("caseOutput", caseOuput);
 		st.setTaskId(taskId);
 		st.setStatus(Status.IN_PROGRESS);
+		st.setWorkflowTask(taskToSchedule);
 		return st;
 	}
 	
-	public static Task forkTask(String workflowId, String taskId, String correlationId, String refName, Map<String, Object> input){
+	public static Task forkTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input) {
 		SystemTask st = new SystemTask();
 		st.setTaskType(SystemTaskType.FORK.name());
 		st.setTaskDefName(SystemTaskType.FORK.name());		
-		st.setReferenceTaskName(refName);
-		st.setWorkflowInstanceId(workflowId);
-		st.setCorrelationId(correlationId);
+		st.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
+		st.setWorkflowInstanceId(workflow.getWorkflowId());
+		st.setCorrelationId(workflow.getCorrelationId());
 		st.setScheduledTime(System.currentTimeMillis());
 		st.setEndTime(System.currentTimeMillis());
-		st.setInputData(input);;
+		st.setInputData(input);
 		st.setTaskId(taskId);
 		st.setStatus(Status.COMPLETED);
+		st.setWorkflowTask(taskToSchedule);
 		return st;
 	}	
 
-	public static Task forkDynamicTask(String workflowId, String taskId, String correlationId, String refName, List<WorkflowTask> dynTaskList){
+	public static Task forkDynamicTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, List<WorkflowTask> dynTaskList){
 		SystemTask st = new SystemTask();
 		st.setTaskType(SystemTaskType.FORK.name());
 		st.setTaskDefName(SystemTaskType.FORK.name());		
-		st.setReferenceTaskName(refName);
-		st.setWorkflowInstanceId(workflowId);
-		st.setCorrelationId(correlationId);
+		st.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
+		st.setWorkflowInstanceId(workflow.getWorkflowId());
+		st.setCorrelationId(workflow.getCorrelationId());
 		st.setScheduledTime(System.currentTimeMillis());
 		st.setEndTime(System.currentTimeMillis()); 
 		List<String> forkedTasks = dynTaskList.stream().map(t -> t.getTaskReferenceName()).collect(Collectors.toList());
@@ -85,73 +85,78 @@ public class SystemTask extends Task {
 		st.getInputData().put("forkedTaskDefs", dynTaskList);	//TODO: Remove this parameter in the later releases
 		st.setTaskId(taskId);
 		st.setStatus(Status.COMPLETED);
+		st.setWorkflowTask(taskToSchedule);
 		return st;
 	}	
 	
-	public static Task JoinTask(String workflowId, String taskId, String correlationId, String refName, Map<String, Object> input){
+	public static Task JoinTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input){
 		SystemTask st = new SystemTask();
 		st.setTaskType(SystemTaskType.JOIN.name());
 		st.setTaskDefName(SystemTaskType.JOIN.name());
-		st.setReferenceTaskName(refName);
-		st.setWorkflowInstanceId(workflowId);
-		st.setCorrelationId(correlationId);
+		st.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
+		st.setWorkflowInstanceId(workflow.getWorkflowId());
+		st.setCorrelationId(workflow.getCorrelationId());
 		st.setScheduledTime(System.currentTimeMillis());
 		st.setEndTime(System.currentTimeMillis());
 		st.setInputData(input);
 		st.setTaskId(taskId);
 		st.setStatus(Status.IN_PROGRESS);
+		st.setWorkflowTask(taskToSchedule);
 		return st;
 	}	
 	
-	public static Task eventTask(String workflowId, String taskId, String correlationId, WorkflowTask taskToSchedule, String sink, Map<String, Object> input){
+	public static Task eventTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input, String sink) {
 		SystemTask st = new SystemTask();
 		st.setTaskType(Event.NAME);
 		st.setTaskDefName(taskToSchedule.getName());
 		st.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-		st.setWorkflowInstanceId(workflowId);
-		st.setCorrelationId(correlationId);
+		st.setWorkflowInstanceId(workflow.getWorkflowId());
+		st.setCorrelationId(workflow.getCorrelationId());
 		st.setScheduledTime(System.currentTimeMillis());
 		st.setEndTime(System.currentTimeMillis());
 		st.setInputData(input);
 		st.getInputData().put("sink", sink);
 		st.setTaskId(taskId);
 		st.setStatus(Status.SCHEDULED);
+		st.setWorkflowTask(taskToSchedule);
 		return st;
 	}	
 	
-	public static Task waitTask(String workflowId, String taskId, String correlationId, WorkflowTask taskToSchedule, Map<String, Object> input){
+	public static Task waitTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input) {
 		SystemTask st = new SystemTask();
 		st.setTaskType(Wait.NAME);
 		st.setTaskDefName(taskToSchedule.getName());
 		st.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-		st.setWorkflowInstanceId(workflowId);
-		st.setCorrelationId(correlationId);
+		st.setWorkflowInstanceId(workflow.getWorkflowId());
+		st.setCorrelationId(workflow.getCorrelationId());
 		st.setScheduledTime(System.currentTimeMillis());
 		st.setEndTime(System.currentTimeMillis());
 		st.setInputData(input);
 		st.setTaskId(taskId);
 		st.setStatus(Status.IN_PROGRESS);
+		st.setWorkflowTask(taskToSchedule);
 		return st;
 	}	
 	
-	public static Task subWorkflowTask(String workflowId, String taskId, String correlationId, WorkflowTask taskToSchedule, String subWorkflowName, Integer subWorkflowVersion, Map<String, Object> workflowInput){
+	public static Task subWorkflowTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input, String subWorkflowName, Integer subWorkflowVersion) {
 		SystemTask st = new SystemTask();
 		st.setTaskType(SubWorkflow.NAME);
 		st.setTaskDefName(taskToSchedule.getName());
 		st.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-		st.setWorkflowInstanceId(workflowId);
-		st.setCorrelationId(correlationId);
+		st.setWorkflowInstanceId(workflow.getWorkflowId());
+		st.setCorrelationId(workflow.getCorrelationId());
 		st.setScheduledTime(System.currentTimeMillis());
 		st.setEndTime(System.currentTimeMillis());
 		st.getInputData().put("subWorkflowName", subWorkflowName);
 		st.getInputData().put("subWorkflowVersion", subWorkflowVersion);
-		st.getInputData().put("workflowInput", workflowInput);
+		st.getInputData().put("workflowInput", input);
 		st.setTaskId(taskId);
 		st.setStatus(Status.SCHEDULED);
+		st.setWorkflowTask(taskToSchedule);
 		return st;
 	}
 	
-	public static Task userDefined(Workflow workflow, WorkflowTask taskToSchedule, TaskDef taskDef, int retryCount, String taskId, Map<String, Object> input) {
+	public static Task userDefined(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input, TaskDef taskDef, int retryCount) {
 		String taskType = taskToSchedule.getType();
 		SystemTask st = new SystemTask();
 		st.setTaskType(taskType);
@@ -165,8 +170,29 @@ public class SystemTask extends Task {
 		st.setStatus(Status.SCHEDULED);
 	    st.setRetryCount(retryCount);
 	    st.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
-	    
+	    st.setWorkflowTask(taskToSchedule);
 		return st;
 	}
+	
+	public static Task createSimpleTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input, TaskDef taskDef, int retryCount) {
+
+		Task theTask = new Task();
+		theTask.setStartDelayInSeconds(taskToSchedule.getStartDelay());		
+	    theTask.setTaskId(taskId);
+	    theTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
+	    theTask.setInputData(input);
+	    theTask.setWorkflowInstanceId(workflow.getWorkflowId());
+	    theTask.setStatus(Status.SCHEDULED);
+	    theTask.setTaskType(taskToSchedule.getName());
+	    theTask.setTaskDefName(taskToSchedule.getName());
+	    theTask.setCorrelationId(workflow.getCorrelationId());
+	    theTask.setScheduledTime(System.currentTimeMillis());
+	    theTask.setRetryCount(retryCount);
+	    theTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
+	    theTask.setResponseTimeoutSeconds(taskDef.getResponseTimeoutSeconds());
+	    theTask.setWorkflowTask(taskToSchedule);
+		return theTask;
+	}
+	
 
 }

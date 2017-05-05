@@ -45,6 +45,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
@@ -113,9 +114,9 @@ public class TestWorkflowExecutor {
 		wait.setType("WAIT");
 		wait.setTaskReferenceName("wait");
 		
-		Task task1 = SystemTask.userDefined(workflow, taskToSchedule, null, 0, "1", new HashMap<>());
-		Task task2 = SystemTask.waitTask(workflow.getWorkflowId(), "2", null, wait, new HashMap<>());
-		Task task3 = SystemTask.userDefined(workflow, taskToSchedule2, null, 0, "1", new HashMap<>());
+		Task task1 = SystemTask.userDefined(workflow, IDGenerator.generate(), taskToSchedule, new HashMap<>(), null, 0);
+		Task task2 = SystemTask.waitTask(workflow, IDGenerator.generate(), taskToSchedule, new HashMap<>());
+		Task task3 = SystemTask.userDefined(workflow, IDGenerator.generate(), taskToSchedule2, new HashMap<>(), null, 0);
 		
 		tasks.add(task1);
 		tasks.add(task2);
