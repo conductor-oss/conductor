@@ -160,8 +160,8 @@ public class DeciderService {
 			logger.debug("Scheduling Tasks " + unScheduledTasks.stream().map(t -> t.getTaskDefName()).collect(Collectors.toList()));
 			outcome.tasksToBeScheduled.addAll(unScheduledTasks);
 		}
-
-		if (checkForWorkflowCompletion(def, workflow)) {
+		updateOutput(def, workflow);
+		if (outcome.tasksToBeScheduled.isEmpty() && checkForWorkflowCompletion(def, workflow)) {
 			logger.debug("Marking workflow as complete.  workflow=" + workflow.getWorkflowId() + ", tasks=" + workflow.getTasks());
 			outcome.isComplete = true;
 		}
@@ -207,11 +207,11 @@ public class DeciderService {
 	
 	}
 
-	private boolean checkForWorkflowCompletion(final WorkflowDef def, final Workflow workflow) throws TerminateWorkflow {
+	private void updateOutput(final WorkflowDef def, final Workflow workflow) {
 
 		List<Task> allTasks = workflow.getTasks();
 		if (allTasks.isEmpty()) {
-			return false;
+			return;
 		}
 
 		Task last = null;
@@ -224,7 +224,15 @@ public class DeciderService {
 			output = getTaskInput(def.getOutputParameters(), workflow, null, null);
 		}
 		workflow.setOutput(output);
+	}
+	
+	private boolean checkForWorkflowCompletion(final WorkflowDef def, final Workflow workflow) throws TerminateWorkflow {
 
+		List<Task> allTasks = workflow.getTasks();
+		if (allTasks.isEmpty()) {
+			return false;
+		}
+		
 		Map<String, Status> taskStatusMap = new HashMap<>();
 		workflow.getTasks().forEach(task -> taskStatusMap.put(task.getReferenceTaskName(), task.getStatus()));
 
@@ -314,7 +322,7 @@ public class DeciderService {
 		rescheduled.setStatus(Status.SCHEDULED);
 		rescheduled.setPollCount(0);
 		
-		if(workflowTask != null && workflow.getSchemaVersion() > 1) {		//This is a valid case, for the dynamic fork/join
+		if(workflowTask != null && workflow.getSchemaVersion() > 1) {
 			Map<String, Object> taskInput = pu.getTaskInputV2(workflowTask.getInputParameters(), workflow, rescheduled.getTaskId(), taskDef);
 			rescheduled.setInputData(taskInput);
 		}	
