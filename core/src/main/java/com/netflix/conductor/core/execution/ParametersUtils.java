@@ -38,8 +38,6 @@ import com.netflix.conductor.common.run.Workflow;
  */
 public class ParametersUtils {
 	
-	private static Configuration option = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
-	
 	public enum SystemParameters {
 		CPEWF_TASK_ID,
 		NETFLIX_ENV,
@@ -99,7 +97,7 @@ public class ParametersUtils {
 			taskIO.put("workerId", task.getWorkerId());
 			inputMap.put(task.getReferenceTaskName(), taskIO);
 		});
-		
+		Configuration option = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
 		DocumentContext io = JsonPath.parse(inputMap, option);
 		Map<String, Object> replaced = replace(inputParams, io, taskId);
 		return replaced;
@@ -112,11 +110,13 @@ public class ParametersUtils {
 		} else {
 			doc = json;
 		}
+		Configuration option = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
 		DocumentContext io = JsonPath.parse(doc, option);
 		return replace(input, io, null);
 	}
 	
-	public Object replace(String paramString){
+	public Object replace(String paramString) {
+		Configuration option = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
 		DocumentContext io = JsonPath.parse(Collections.emptyMap(), option);
 		return replaceVariables(paramString, io, null);
 	}
