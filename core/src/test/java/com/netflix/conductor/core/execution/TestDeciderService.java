@@ -22,6 +22,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -32,6 +33,10 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -626,6 +631,82 @@ public class TestDeciderService {
 		assertNull(task.getReasonForIncompletion());
 		assertEquals(3, counter.count());
 		
+	}
+	
+	@SuppressWarnings("unchecked")
+	@Test
+	public void testConcurrentTaskInputCalc() throws InterruptedException {
+
+		TaskDef def = new TaskDef();
+		ParametersUtils pu = new ParametersUtils();
+		
+		
+		Map<String, Object> inputMap = new HashMap<>();
+		inputMap.put("path", "${workflow.input.inputLocation}");
+		inputMap.put("type", "${workflow.input.sourceType}");
+		inputMap.put("channelMapping", "${workflow.input.channelMapping}");
+		
+		List<Map<String, Object>> input = new LinkedList<>();
+		input.add(inputMap);
+		
+		Map<String, Object> body = new HashMap<>();
+		body.put("input", input);
+		
+		def.getInputTemplate().putAll(body);
+		
+		ExecutorService es = Executors.newFixedThreadPool(10);
+		final int[] result = new int[10];
+		CountDownLatch latch = new CountDownLatch(10);
+		
+		for(int i = 0; i < 10; i++) {
+			final int x = i;
+			es.submit(() -> {
+				
+				try {
+					
+					Map<String, Object> workflowInput = new HashMap<>();
+					workflowInput.put("outputLocation", "baggins://outputlocation/" + x);
+					workflowInput.put("inputLocation", "baggins://inputlocation/" + x);
+					workflowInput.put("sourceType", "MuxedSource");
+					workflowInput.put("channelMapping", x);
+					Workflow workflow = new Workflow();
+					workflow.setInput(workflowInput);
+	
+					Map<String, Object> taskInput = pu.getTaskInputV2(new HashMap<>(), workflow, null, def);
+					
+					Object reqInputObj = taskInput.get("input");
+					assertNotNull(reqInputObj);
+					assertTrue(reqInputObj instanceof List);
+					List<Map<String, Object>> reqInput = (List<Map<String, Object>>) reqInputObj;
+					
+					Object cmObj = reqInput.get(0).get("channelMapping");
+					assertNotNull(cmObj);
+					if(! (cmObj instanceof Number) ) {
+						System.out.println("Not a number @ " + x + ", found: " + cmObj.getClass());
+						result[x] = -1;
+					} else {
+						Number channelMapping = (Number)cmObj;
+						result[x] = channelMapping.intValue();	
+					}
+
+					latch.countDown();
+					
+				}catch(Exception e) {
+					e.printStackTrace();
+				}
+				
+			});
+		}
+		latch.await(1, TimeUnit.MINUTES);
+		if(latch.getCount() > 0) {
+			fail("Executions did not complete in a minute.  Something wrong with the build server?");
+		}
+		es.shutdownNow();
+		for(int i = 0; i < result.length; i++) {
+			assertEquals(i, result[i]);
+		}
+		System.out.println("Done");
+	
 	}
 	
 }

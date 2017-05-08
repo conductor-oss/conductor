@@ -649,7 +649,6 @@ public class WorkflowExecutor {
 			}
 			
 			if(workflow.getStatus().isTerminal()) {
-				//how did this happen?
 				logger.warn("Workflow {} has been completed for {}/{}", workflow.getWorkflowId(), systemTask.getName(), task.getTaskId());
 				if(!task.getStatus().isTerminal()) {
 					task.setStatus(Status.CANCELED);
