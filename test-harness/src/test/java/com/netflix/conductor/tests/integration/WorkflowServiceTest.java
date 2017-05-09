@@ -701,7 +701,7 @@ public class WorkflowServiceTest {
 		assertNotNull(es);
 		assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
 		assertEquals(2, es.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_2")).count());
-		assertTrue(es.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_2")).allMatch(t -> t.getDynamicWorkflowTask() != null));
+		assertTrue(es.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_2")).allMatch(t -> t.getWorkflowTask() != null));
 		
 		t2 = ess.poll("junit_task_2", "test");
 		assertTrue(ess.ackTaskRecieved(t2.getTaskId(), "test"));
@@ -2595,7 +2595,7 @@ public class WorkflowServiceTest {
 		es = ess.getExecutionStatus(subWorkflowId, true);
 		assertNotNull(es);
 		assertEquals(WorkflowStatus.FAILED, es.getStatus());
-		provider.executeSystemTask(subworkflow, es.getParentWorkflowTaskId(), "test", 1);
+		provider.executeSystemTask(subworkflow, es.getParentWorkflowTaskId(), 1);
 		es = ess.getExecutionStatus(wfId, true);
 		assertEquals(WorkflowStatus.FAILED, es.getStatus());
 		

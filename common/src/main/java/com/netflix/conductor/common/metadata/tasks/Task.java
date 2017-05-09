@@ -105,8 +105,6 @@ public class Task {
 	
 	private boolean callbackFromWorker = true;
 	
-	private WorkflowTask dynamicWorkflowTask;
-	
 	private int responseTimeoutSeconds;
 	
 	private String workflowInstanceId;
@@ -120,6 +118,8 @@ public class Task {
 	private String workerId;
 
 	private Map<String, Object> outputData = new HashMap<>();
+	
+	private WorkflowTask workflowTask;
 	
 	public Task(){
 		
@@ -372,23 +372,20 @@ public class Task {
 	 * @return Name of the task definition
 	 */
 	public String getTaskDefName() {
-		//TODO: Is there a way to verify if there are no tasks with missing task def name?
 		if(taskDefName == null || "".equals(taskDefName)){
 			taskDefName = taskType;
 		}
 		return taskDefName;
 	}
+	
+	/**
+	 * 
+	 * @param taskDefName Name of the task definition
+	 */
 	public void setTaskDefName(String taskDefName) {
 		this.taskDefName = taskDefName;
 	}
 	
-	public WorkflowTask getDynamicWorkflowTask() {
-		return dynamicWorkflowTask;
-	}
-	
-	public void setDynamicWorkflowTask(WorkflowTask dynamicWorkflowTask) {
-		this.dynamicWorkflowTask = dynamicWorkflowTask;
-	}
 	
 	/**
 	 * 
@@ -496,6 +493,22 @@ public class Task {
 	public void setOutputData(Map<String, Object> outputData) {
 		this.outputData = outputData;
 	}
+	
+	/**
+	 * 
+	 * @return Workflow Task definition
+	 */
+	public WorkflowTask getWorkflowTask() {
+		return workflowTask;
+	}
+	
+	/**
+	 * 
+	 * @param workflowTask
+	 */
+	public void setWorkflowTask(WorkflowTask workflowTask) {
+		this.workflowTask = workflowTask;
+	}
 
 	public Task copy() {
 		
@@ -503,7 +516,6 @@ public class Task {
 		copy.setCallbackAfterSeconds(callbackAfterSeconds);
 		copy.setCallbackFromWorker(callbackFromWorker);
 		copy.setCorrelationId(correlationId);
-		copy.setDynamicWorkflowTask(dynamicWorkflowTask);
 		copy.setInputData(inputData);
 		copy.setOutputData(outputData);
 		copy.setReferenceTaskName(referenceTaskName);
@@ -518,7 +530,7 @@ public class Task {
 		copy.setTaskId(taskId);
 		copy.setReasonForIncompletion(reasonForIncompletion);
 		copy.setWorkerId(workerId);
-		
+		copy.setWorkflowTask(workflowTask);
 		return copy;
 	}
 	

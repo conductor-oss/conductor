@@ -15,6 +15,7 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -23,6 +24,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -38,8 +41,10 @@ import com.netflix.conductor.common.run.Workflow;
  */
 public class ParametersUtils {
 	
-	private static Configuration option = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
+	private ObjectMapper om = new ObjectMapper();
 	
+	private TypeReference<Map<String, Object>> map = new TypeReference<Map<String,Object>>() {};
+
 	public enum SystemParameters {
 		CPEWF_TASK_ID,
 		NETFLIX_ENV,
@@ -56,7 +61,7 @@ public class ParametersUtils {
 			inputParams.putAll(input);
 		}
 		if(taskDef != null && taskDef.getInputTemplate() != null) {
-			inputParams.putAll(taskDef.getInputTemplate());
+			inputParams.putAll(clone(taskDef.getInputTemplate()));
 		}
 		
 		Map<String, Map<String, Object>> inputMap = new HashMap<>();
@@ -99,10 +104,22 @@ public class ParametersUtils {
 			taskIO.put("workerId", task.getWorkerId());
 			inputMap.put(task.getReferenceTaskName(), taskIO);
 		});
-		
+		Configuration option = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
 		DocumentContext io = JsonPath.parse(inputMap, option);
 		Map<String, Object> replaced = replace(inputParams, io, taskId);
 		return replaced;
+	}
+
+	//deep clone using json - POJO
+	private Map<String, Object> clone(Map<String, Object> inputTemplate) {
+		try {
+			
+			byte[] bytes = om.writeValueAsBytes(inputTemplate);
+			Map<String, Object> cloned = om.readValue(bytes, map);
+			return cloned;
+		} catch (IOException e) {
+			throw new RuntimeException(e.getMessage(), e);
+		}
 	}
 	
 	public Map<String, Object> replace(Map<String, Object> input, Object json) {
@@ -112,11 +129,13 @@ public class ParametersUtils {
 		} else {
 			doc = json;
 		}
+		Configuration option = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
 		DocumentContext io = JsonPath.parse(doc, option);
 		return replace(input, io, null);
 	}
 	
-	public Object replace(String paramString){
+	public Object replace(String paramString) {
+		Configuration option = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
 		DocumentContext io = JsonPath.parse(Collections.emptyMap(), option);
 		return replaceVariables(paramString, io, null);
 	}

@@ -28,18 +28,24 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
+import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.dao.MetadataDAO;
 
 /**
@@ -138,14 +144,14 @@ public class TestDeciderOutcomes {
 		def.setName("test");
 		
 		WorkflowTask task1 = new WorkflowTask();
-		task1.setName("test_task");
+		task1.setName("task0");
 		task1.setType("SIMPLE");
 		task1.setTaskReferenceName("t0");
 		task1.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
 		task1.setOptional(true);
 		
 		WorkflowTask task2 = new WorkflowTask();
-		task2.setName("test_task2");
+		task2.setName("task1");
 		task2.setType("SIMPLE");
 		task2.setTaskReferenceName("t1");
 		
@@ -159,28 +165,103 @@ public class TestDeciderOutcomes {
 		DeciderOutcome outcome = ds.decide(workflow, def);
 		assertNotNull(outcome);
 		
-		System.out.println(outcome.tasksToBeScheduled);
+		System.out.println("Schedule after starting: " + outcome.tasksToBeScheduled);
 		assertEquals(1, outcome.tasksToBeScheduled.size());
 		assertEquals(task1.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
-		System.out.println(outcome.tasksToBeScheduled.get(0).getInputData());
+		System.out.println("TaskId of the scheduled task in input: " + outcome.tasksToBeScheduled.get(0).getInputData());
 		String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
 		assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
 		
-		workflow.getTasks().addAll(outcome.tasksToBeScheduled);		
+		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
 		workflow.getTasks().get(0).setStatus(Status.FAILED);
 		
 		outcome = ds.decide(workflow, def);
 		
 		assertNotNull(outcome);
-		System.out.println(outcome.tasksToBeScheduled);
-		System.out.println(outcome.tasksToBeUpdated);
+		System.out.println("Schedule: " + outcome.tasksToBeScheduled);
+		System.out.println("Update: " + outcome.tasksToBeUpdated);
 		
-		assertEquals(2, outcome.tasksToBeUpdated.size());
+		assertEquals(1, outcome.tasksToBeUpdated.size());
+		assertEquals(1, outcome.tasksToBeScheduled.size());
 		
 		assertEquals(Task.Status.COMPLETED_WITH_ERRORS, workflow.getTasks().get(0).getStatus());
 		assertEquals(task1Id, outcome.tasksToBeUpdated.get(0).getTaskId());
 		assertEquals(task2.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
 		
+	}
+	
+	@Test
+	public void testOptionalWithDyammicFork() throws Exception {
+		WorkflowDef def = new WorkflowDef();
+		def.setName("test");
+		
+		WorkflowTask task1 = new WorkflowTask();
+		task1.setName("fork0");
+		task1.setWorkflowTaskType(Type.FORK_JOIN_DYNAMIC);
+		task1.setTaskReferenceName("fork0");
+		task1.setDynamicForkTasksInputParamName("forkedInputs");
+		task1.setDynamicForkTasksParam("forks");
+		task1.getInputParameters().put("forks", "${workflow.input.forks}");
+		task1.getInputParameters().put("forkedInputs", "${workflow.input.forkedInputs}");
+		
+		WorkflowTask task2 = new WorkflowTask();
+		task2.setName("join0");
+		task2.setType("JOIN");
+		task2.setTaskReferenceName("join0");
+		
+		def.getTasks().add(task1);
+		def.getTasks().add(task2);
+		def.setSchemaVersion(2);
+		
+		
+		Workflow workflow = new Workflow();
+		List<WorkflowTask> forks = new LinkedList<>();
+		Map<String, Map<String, Object>> forkedInputs = new HashMap<>();
+		
+		for(int i = 0; i < 3; i++) {
+			WorkflowTask wft = new WorkflowTask();
+			wft.setName("f" + i);
+			wft.setTaskReferenceName("f" + i);
+			wft.setWorkflowTaskType(Type.SIMPLE);
+			wft.setOptional(true);
+			forks.add(wft);
+			
+			forkedInputs.put(wft.getTaskReferenceName(), new HashMap<>());
+		}
+		workflow.getInput().put("forks", forks);
+		workflow.getInput().put("forkedInputs", forkedInputs);
+		
+		
+		workflow.setStartTime(System.currentTimeMillis());
+		DeciderOutcome outcome = ds.decide(workflow, def);
+		assertNotNull(outcome);
+		assertEquals(5, outcome.tasksToBeScheduled.size());
+		assertEquals(0, outcome.tasksToBeUpdated.size());
+
+		assertEquals(SystemTaskType.FORK.name(), outcome.tasksToBeScheduled.get(0).getTaskType());		
+		assertEquals(Task.Status.COMPLETED, outcome.tasksToBeScheduled.get(0).getStatus());
+		for(int i = 1; i < 4; i++) {
+			assertEquals(Task.Status.SCHEDULED, outcome.tasksToBeScheduled.get(i).getStatus());
+			assertEquals("f"+ (i-1), outcome.tasksToBeScheduled.get(i).getTaskDefName());			
+			outcome.tasksToBeScheduled.get(i).setStatus(Status.FAILED);		//let's mark them as failure
+		}
+		assertEquals(Task.Status.IN_PROGRESS, outcome.tasksToBeScheduled.get(4).getStatus());
+		workflow.getTasks().clear();		
+		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+		
+		outcome = ds.decide(workflow, def);
+		assertNotNull(outcome);
+		assertEquals(SystemTaskType.JOIN.name(), outcome.tasksToBeScheduled.get(0).getTaskType());
+		for(int i = 1; i < 4; i++) {
+			assertEquals(Task.Status.COMPLETED_WITH_ERRORS, outcome.tasksToBeUpdated.get(i).getStatus());
+			assertEquals("f"+ (i-1), outcome.tasksToBeUpdated.get(i).getTaskDefName());			
+		}
+		assertEquals(Task.Status.IN_PROGRESS, outcome.tasksToBeScheduled.get(0).getStatus());
+		new Join().execute(workflow, outcome.tasksToBeScheduled.get(0), null);
+		assertEquals(Task.Status.COMPLETED, outcome.tasksToBeScheduled.get(0).getStatus());
+		
+		outcome.tasksToBeScheduled.stream().map(task -> task.getStatus() + ":" + task.getTaskType() + ":").forEach(System.out::println);
+		outcome.tasksToBeUpdated.stream().map(task -> task.getStatus() + ":" + task.getTaskType() + ":").forEach(System.out::println);
 	}
 	
 }
