@@ -137,7 +137,6 @@ public class DeciderService {
 				}
 				if (workflowTask != null && workflowTask.isOptional()) {					
 					task.setStatus(Status.COMPLETED_WITH_ERRORS);
-					//outcome.tasksToBeUpdated.add(task);
 				} else {
 					Task rt = retry(taskDef, workflowTask, task, workflow);
 					tasksToBeScheduled.put(rt.getReferenceTaskName(), rt);
@@ -321,10 +320,11 @@ public class DeciderService {
 		rescheduled.setRetriedTaskId(task.getTaskId());
 		rescheduled.setStatus(Status.SCHEDULED);
 		rescheduled.setPollCount(0);
-		
+		rescheduled.setInputData(new HashMap<>());
+		rescheduled.getInputData().putAll(task.getInputData());
 		if(workflowTask != null && workflow.getSchemaVersion() > 1) {
 			Map<String, Object> taskInput = pu.getTaskInputV2(workflowTask.getInputParameters(), workflow, rescheduled.getTaskId(), taskDef);
-			rescheduled.setInputData(taskInput);
+			rescheduled.getInputData().putAll(taskInput);
 		}	
 		//for the schema version 1, we do not have to recompute the inputs
 		return rescheduled;
