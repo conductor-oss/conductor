@@ -2,6 +2,8 @@ language: java
 jdk:
 - oraclejdk8
 install: true
+before_script:
+- npm install -g gulp
 script: "./buildViaTravis.sh"
 git:
   depth: 150
