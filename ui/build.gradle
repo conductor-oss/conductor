@@ -1,7 +1,7 @@
 task buildUI(type:Exec) {
   workingDir '.'
   commandLine 'npm', 'install'
-  commandLine 'gulp', 'build', '--release'
+  commandLine './node_modules/gulp/bin/gulp.js', 'build', '--release'
   standardOutput = new ByteArrayOutputStream()
   ext.output = {
     return standardOutput.toString()
