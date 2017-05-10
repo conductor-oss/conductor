@@ -1,0 +1,21 @@
+task buildUI(type:Exec) {
+  workingDir '.'
+  commandLine 'npm', 'install'
+  commandLine 'gulp', 'build', '--release'
+  standardOutput = new ByteArrayOutputStream()
+  ext.output = {
+    return standardOutput.toString()
+  }
+}
+task zipDist(type: Zip) {
+  from './dist'
+}
+publishing {
+  publications {
+    nebula(MavenPublication) {
+      artifact zipDist
+    }
+  }
+}
+zipDist.dependsOn(buildUI)
+build.dependsOn(zipDist)
