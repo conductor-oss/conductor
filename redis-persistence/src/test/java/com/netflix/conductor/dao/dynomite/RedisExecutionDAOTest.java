@@ -50,6 +50,7 @@ import org.junit.rules.ExpectedException;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -177,7 +178,32 @@ public class RedisExecutionDAOTest {
 		expected.expectMessage("Task reference name cannot be null");
 		dao.createTasks(Arrays.asList(task));
 	}
-	
+
+	@Test
+	public void testPollData() throws Exception {
+		dao.updateLastPoll("taskDef", null, "workerId1");
+		PollData pd = dao.getPollData("taskDef", null);
+		assertNotNull(pd);
+		assertTrue(pd.getLastPollTime() > 0);
+		assertEquals(pd.getQueueName(), "taskDef");
+		assertEquals(pd.getDomain(), null);
+		assertEquals(pd.getWorkerId(), "workerId1");
+
+		dao.updateLastPoll("taskDef", "domain1", "workerId1");
+		pd = dao.getPollData("taskDef", "domain1");
+		assertNotNull(pd);
+		assertTrue(pd.getLastPollTime() > 0);
+		assertEquals(pd.getQueueName(), "taskDef");
+		assertEquals(pd.getDomain(), "domain1");
+		assertEquals(pd.getWorkerId(), "workerId1");
+		
+		List<PollData> pData = dao.getPollData("taskDef");
+		assertEquals(pData.size(), 2);
+		
+		pd = dao.getPollData("taskDef", "domain2");
+		assertTrue(pd == null);
+	}
+
 	@Test
 	public void testTaskCreateDups() throws Exception {
 		List<Task> tasks = new LinkedList<>();

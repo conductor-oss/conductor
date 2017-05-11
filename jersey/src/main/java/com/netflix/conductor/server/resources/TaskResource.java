@@ -36,6 +36,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.dao.QueueDAO;
@@ -70,8 +71,8 @@ public class TaskResource {
 	@Path("/poll/{tasktype}")
 	@ApiOperation("Poll for a task of a certain type")
 	@Consumes({ MediaType.WILDCARD })
-	public Task poll(@PathParam("tasktype") String taskType, @QueryParam("workerid") String workerId) throws Exception {
-		List<Task> tasks = taskService.poll(taskType, workerId, 1, 100);
+	public Task poll(@PathParam("tasktype") String taskType, @QueryParam("workerid") String workerId, @QueryParam("domain") String domain) throws Exception {
+		List<Task> tasks = taskService.poll(taskType, workerId, domain, 1, 100);
 		if(tasks.isEmpty()) {
 			return null;
 		}
@@ -85,11 +86,12 @@ public class TaskResource {
 	public List<Task> batchPoll(
 			@PathParam("tasktype") String taskType, 
 			@QueryParam("workerid") String workerId,
+			@QueryParam("domain") String domain,
 			@DefaultValue("1") @QueryParam("count") Integer count,
 			@DefaultValue("100") @QueryParam("timeout") Integer timeout
 			
 			) throws Exception {
-		return taskService.poll(taskType, workerId, count, timeout);
+		return taskService.poll(taskType, workerId, domain, count, timeout);
 	}
 
 	@GET
@@ -177,6 +179,15 @@ public class TaskResource {
 		return sortedMap;
 	}
 
+	@GET
+	@Path("/queue/polldata")
+	@ApiOperation("Get the last poll data for a given task type")
+	@Consumes({ MediaType.WILDCARD })
+	public List<PollData> getPollData(@QueryParam("taskType") String taskType) throws Exception {
+		return taskService.getPollData(taskType);
+	}
+	
+	
 	@POST
 	@Path("/queue/requeue")
 	@ApiOperation("Requeue pending tasks for all the running workflows")

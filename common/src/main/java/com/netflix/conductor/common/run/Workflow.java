@@ -77,6 +77,8 @@ public class Workflow extends Auditable{
 	
 	private String event;
 
+	private Map<String, String> taskToDomain = new HashMap<>();
+
 	public Workflow(){
 		
 	}
@@ -158,6 +160,18 @@ public class Workflow extends Auditable{
 	 */
 	public void setInput(Map<String, Object> input) {
 		this.input = input;
+	}
+	/**
+	 * @return the task to domain map
+	 */
+	public Map<String, String> getTaskToDomain() {
+		return taskToDomain;
+	}
+	/**
+	 * @param taskToDomain the task to domain map
+	 */
+	public void setTaskToDomain(Map<String, String> taskToDomain) {
+		this.taskToDomain = taskToDomain;
 	}
 	/**
 	 * @return the output

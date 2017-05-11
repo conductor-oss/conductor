@@ -501,6 +501,7 @@ public class DeciderService {
 			default:
 				break;
 		}
+		setTaskDomains(tasks, workflow);
 		return tasks;
 	}
 
@@ -641,6 +642,15 @@ public class DeciderService {
 			throw new TerminateWorkflow(e.getMessage());
 		}
 
+	}
+	
+	private void setTaskDomains(List<Task> tasks, Workflow wf){
+		Map<String, String> taskToDomain = wf.getTaskToDomain();
+		if(taskToDomain != null){
+			tasks.forEach(task -> {
+				task.setDomain(taskToDomain.get(task.getTaskType()));
+			});
+		}
 	}
 	
 	public static class DeciderOutcome {
