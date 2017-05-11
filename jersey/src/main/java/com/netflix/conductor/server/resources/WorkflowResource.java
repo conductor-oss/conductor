@@ -84,7 +84,7 @@ public class WorkflowResource {
 
 	@POST
 	@Produces({ MediaType.TEXT_PLAIN })
-	@ApiOperation("Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking")
+	@ApiOperation("Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain")
 	public String startWorkflow (StartWorkflowRequest request) throws Exception {
 		WorkflowDef def = metadata.getWorkflowDef(request.getName(), request.getVersion());
 		if(def == null){
