@@ -170,8 +170,8 @@ class Grapher extends Component {
           let subg = {n : n, vx: vx, layout: layout};
 
           d3.select("#propsdiv").style("left", (window.outerWidth-600) + 'px');
-          div.style.left = (window.outerWidth-600) + "px";
-          p.setState({selectedTask: data.task, showSubGraph:true, showSideBar: false, subGraph: subg, subGraphId: innerGraph[v].id});
+          div.style.left = (window.outerWidth-1200) + "px";
+          p.setState({selectedTask: data.task, showSubGraph:true, showSideBar: true, subGraph: subg, subGraphId: innerGraph[v].id});
           p.setState({showSubGraph: true});
 
         } else if(vertices[v].tooltip != null){

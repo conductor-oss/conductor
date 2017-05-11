@@ -36,6 +36,8 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -56,13 +58,23 @@ public class TestDeciderOutcomes {
 
 	private DeciderService ds;
 	
-	private ObjectMapper om = new ObjectMapper();
+	private static ObjectMapper om = new ObjectMapper();
+	
+	static {
+		om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
+        om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+        om.setSerializationInclusion(Include.NON_NULL);
+        om.setSerializationInclusion(Include.NON_EMPTY);
+	}
+	
 	
 	@Before
 	public void init() throws Exception {
 		
 		MetadataDAO metadata = mock(MetadataDAO.class);
 		TaskDef td = new TaskDef();
+		td.setRetryCount(1);
 		when(metadata.getTaskDef(any())).thenReturn(td);
 		this.ds = new DeciderService(metadata, om);
 	}
@@ -107,35 +119,102 @@ public class TestDeciderOutcomes {
 		task.setType("USER_TASK");
 		task.setTaskReferenceName("t0");
 		task.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
+		task.getInputParameters().put("requestId", "${workflow.input.requestId}");
 		
 		def.getTasks().add(task);
 		def.setSchemaVersion(2);
 		
-		
 		Workflow workflow = new Workflow();
+		workflow.getInput().put("requestId", 123);
 		workflow.setStartTime(System.currentTimeMillis());
 		DeciderOutcome outcome = ds.decide(workflow, def);
 		assertNotNull(outcome);
 		
-		System.out.println(outcome.tasksToBeScheduled);
 		assertEquals(1, outcome.tasksToBeScheduled.size());
 		assertEquals(task.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
-		System.out.println(outcome.tasksToBeScheduled.get(0).getInputData());
+		
 		String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
 		assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
+		assertEquals(123, outcome.tasksToBeScheduled.get(0).getInputData().get("requestId"));
 		
 		outcome.tasksToBeScheduled.get(0).setStatus(Status.FAILED);
 		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
 
 		outcome = ds.decide(workflow, def);
 		assertNotNull(outcome);
-		System.out.println(outcome.tasksToBeScheduled);
-		System.out.println(outcome.tasksToBeUpdated);
 		
 		assertEquals(1, outcome.tasksToBeUpdated.size());
+		assertEquals(1, outcome.tasksToBeScheduled.size());
 		assertEquals(task1Id, outcome.tasksToBeUpdated.get(0).getTaskId());
 		assertNotSame(task1Id, outcome.tasksToBeScheduled.get(0).getTaskId());
 		assertEquals(outcome.tasksToBeScheduled.get(0).getTaskId(), outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
+		assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getRetriedTaskId());		
+		assertEquals(123, outcome.tasksToBeScheduled.get(0).getInputData().get("requestId"));
+		
+		
+		WorkflowTask fork = new WorkflowTask();
+		fork.setName("fork0");
+		fork.setWorkflowTaskType(Type.FORK_JOIN_DYNAMIC);
+		fork.setTaskReferenceName("fork0");
+		fork.setDynamicForkTasksInputParamName("forkedInputs");
+		fork.setDynamicForkTasksParam("forks");
+		fork.getInputParameters().put("forks", "${workflow.input.forks}");
+		fork.getInputParameters().put("forkedInputs", "${workflow.input.forkedInputs}");
+		
+		WorkflowTask join = new WorkflowTask();
+		join.setName("join0");
+		join.setType("JOIN");
+		join.setTaskReferenceName("join0");
+		
+		def.getTasks().clear();
+		def.getTasks().add(fork);
+		def.getTasks().add(join);
+		
+		List<WorkflowTask> forks = new LinkedList<>();
+		Map<String, Map<String, Object>> forkedInputs = new HashMap<>();
+		
+		for(int i = 0; i < 1; i++) {
+			WorkflowTask wft = new WorkflowTask();
+			wft.setName("f" + i);
+			wft.setTaskReferenceName("f" + i);
+			wft.setWorkflowTaskType(Type.SIMPLE);
+			wft.getInputParameters().put("requestId", "${workflow.input.requestId}");
+			wft.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
+			forks.add(wft);
+			Map<String, Object> input = new HashMap<>();
+			input.put("k", "v");
+			input.put("k1", 1);
+			forkedInputs.put(wft.getTaskReferenceName(), input);
+		}
+		workflow = new Workflow();
+		workflow.getInput().put("requestId", 123);
+		workflow.setStartTime(System.currentTimeMillis());
+		
+		workflow.getInput().put("forks", forks);
+		workflow.getInput().put("forkedInputs", forkedInputs);
+		
+		outcome = ds.decide(workflow, def);
+		assertNotNull(outcome);
+		assertEquals(3, outcome.tasksToBeScheduled.size());
+		assertEquals(0, outcome.tasksToBeUpdated.size());
+
+		assertEquals("v", outcome.tasksToBeScheduled.get(1).getInputData().get("k"));
+		assertEquals(1, outcome.tasksToBeScheduled.get(1).getInputData().get("k1"));
+		assertEquals(outcome.tasksToBeScheduled.get(1).getTaskId(), outcome.tasksToBeScheduled.get(1).getInputData().get("taskId"));
+		System.out.println(outcome.tasksToBeScheduled.get(1).getInputData());
+		task1Id = outcome.tasksToBeScheduled.get(1).getTaskId();
+		
+		outcome.tasksToBeScheduled.get(1).setStatus(Status.FAILED);
+		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+
+		outcome = ds.decide(workflow, def);
+		assertEquals("v", outcome.tasksToBeScheduled.get(1).getInputData().get("k"));
+		assertEquals(1, outcome.tasksToBeScheduled.get(1).getInputData().get("k1"));
+		assertEquals(outcome.tasksToBeScheduled.get(1).getTaskId(), outcome.tasksToBeScheduled.get(1).getInputData().get("taskId"));
+		assertNotSame(task1Id, outcome.tasksToBeScheduled.get(1).getTaskId());
+		assertEquals(task1Id, outcome.tasksToBeScheduled.get(1).getRetriedTaskId());
+		System.out.println(outcome.tasksToBeScheduled.get(1).getInputData());
+
 	}
 	
 	@Test
