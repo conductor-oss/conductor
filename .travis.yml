@@ -4,6 +4,8 @@ jdk:
 install: true
 before_script:
 - npm install -g gulp
+node_js:
+- "4"
 script: "./buildViaTravis.sh"
 git:
   depth: 150
