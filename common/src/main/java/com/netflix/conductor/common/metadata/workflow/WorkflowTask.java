@@ -70,6 +70,8 @@ public class WorkflowTask {
 	
 	private String caseValueParam;
 	
+	private String caseExpression;
+	
 	//Populates for the tasks of the decision type
 	private Map<String, List<WorkflowTask>> decisionCases = new LinkedHashMap<>();
 	
@@ -267,6 +269,23 @@ public class WorkflowTask {
 	 */
 	public void setCaseValueParam(String caseValueParam) {
 		this.caseValueParam = caseValueParam;
+	}
+	
+	/**
+	 * 
+	 * @return A javascript expression for decision cases.  The result should be a scalar value that is used to decide the case branches.
+	 * @see #getDecisionCases()
+	 */
+	public String getCaseExpression() {
+		return caseExpression;
+	}
+	
+	/**
+	 * 
+	 * @param caseExpression A javascript expression for decision cases.  The result should be a scalar value that is used to decide the case branches.
+	 */
+	public void setCaseExpression(String caseExpression) {
+		this.caseExpression = caseExpression;
 	}
 
 	
