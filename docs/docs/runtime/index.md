@@ -14,7 +14,7 @@
 |||
  
 ## Start A Workflow
-
+### With Input only
 ```
 POST /workflow/{name}?version=&correlationId=
 {
@@ -31,6 +31,33 @@ JSON Payload to start the workflow.  Mandatory.  If workflow does not expect any
 
 #### Output
 Id of the workflow (GUID)
+
+### With Input and Task Domains
+```
+POST /workflow
+{
+   //JSON payload for Start workflow request
+}
+```
+#### Start workflow request
+JSON for start workflow request
+```
+{
+  "name": "myWorkflow", // Name of the workflow
+  "version": 1, // Version
+  “correlatond”: “corr1” // correlation Id
+  "input": {
+	// Input map. 
+  },
+  "taskToDomain": {
+	// Task to domain map
+  }
+}
+```
+
+#### Output
+Id of the workflow (GUID)
+
 
 ## Retrieve Workflows
 |Endpoint|Description|
@@ -132,8 +159,8 @@ These are critical endpoints used to poll for task, send ack (after polling) and
 
 |Endpoint|Description|
 |---|---|
-|`GET /tasks/poll/{taskType}`| Poll for a task|
-|`GET /tasks/poll/batch/{taskType}?count=&timeout=`| Poll for a task in a batch specified by `count`.  This is a long poll and the connection will wait until `timeout` or if there is at-least 1 item available, whichever comes first.|
+|`GET /tasks/poll/{taskType}?workerid=&domain=`| Poll for a task. `workerid` identifies the worker that polled for the job and `domain` allows the poller to poll for a task in a specific domain|
+|`GET /tasks/poll/batch/{taskType}?count=&timeout=&workerid=&domain`| Poll for a task in a batch specified by `count`.  This is a long poll and the connection will wait until `timeout` or if there is at-least 1 item available, whichever comes first.`workerid` identifies the worker that polled for the job and `domain` allows the poller to poll for a task in a specific domain|
 |`POST /tasks`| Update the result of task execution.  See the schema below.|
 |`POST /tasks/{taskId}/ack`| Acknowledges the task received AFTER poll by worker.|
 
