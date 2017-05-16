@@ -24,6 +24,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
@@ -33,15 +34,21 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
+import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.ListenableActionFuture;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.unit.TimeValue;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -52,13 +59,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.index.ElasticSearchDAO;
 import com.netflix.conductor.dao.redis.JedisMock;
 
@@ -102,16 +108,69 @@ public class RedisExecutionDAOTest {
 		when(laf.actionGet()).thenReturn(response);
 		when(brb.execute()).thenReturn(laf);
 		when(client.prepareBulk()).thenReturn(brb);
-		
+		final UpdateResponse ur = new UpdateResponse();
+		when(client.update(any())).thenReturn(new ActionFuture<UpdateResponse>() {
+			
+			@Override
+			public boolean isDone() {
+				return true;
+			}
+			
+			@Override
+			public boolean isCancelled() {
+				return false;
+			}
+			
+			@Override
+			public UpdateResponse get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+				return ur;
+			}
+			
+			@Override
+			public UpdateResponse get() throws InterruptedException, ExecutionException {
+				return ur;
+			}
+			
+			@Override
+			public boolean cancel(boolean mayInterruptIfRunning) {
+				return false;
+			}
+			
+			@Override
+			public UpdateResponse actionGet(long timeout, TimeUnit unit) {
+				return ur;
+			}
+			
+			@Override
+			public UpdateResponse actionGet(TimeValue timeout) {
+				return ur;
+			}
+			
+			@Override
+			public UpdateResponse actionGet(long timeoutMillis) {
+				return ur;
+			}
+			
+			@Override
+			public UpdateResponse actionGet(String timeout) {
+				return ur;
+			}
+			
+			@Override
+			public UpdateResponse actionGet() {
+				return ur;
+			}
+		});
 		BulkRequestBuilder bulk = client.prepareBulk();
 		bulk = bulk.add(any(IndexRequest.class));
 		bulk.execute().actionGet();
 		
 		when(client.prepareBulk().add(any(IndexRequest.class)).execute().actionGet()).thenReturn(response);
 		
-		ElasticSearchDAO indexer = new ElasticSearchDAO(client, config, om);
+		ElasticSearchDAO indexer = spy(new ElasticSearchDAO(client, config, om));
 		mdao = new RedisMetadataDAO(dynoClient, om, config);
 		dao = new RedisExecutionDAO(dynoClient, om, indexer, mdao, config);
+		
 	}
 	
 	@Rule
@@ -474,10 +533,6 @@ public class RedisExecutionDAOTest {
 		assertEquals(0, count);
 		
 		dao.removeWorkflow(workflowId);
-		expected.expect(ApplicationException.class);
-		expected.expectMessage("No such workflow found");
-		found = dao.getWorkflow(workflowId);
-		
 		
 	}
 	

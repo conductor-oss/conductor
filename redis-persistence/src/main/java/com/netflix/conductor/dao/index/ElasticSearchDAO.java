@@ -34,6 +34,7 @@ import javax.inject.Singleton;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang.StringUtils;
+import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
@@ -44,6 +45,7 @@ import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.get.GetField;
@@ -357,8 +359,9 @@ public class ElasticSearchDAO implements IndexDAO {
 		UpdateRequest request = new UpdateRequest(indexName, WORKFLOW_DOC_TYPE, workflowInstanceId);
 		Map<String, Object> source = new HashMap<>();
 		source.put(key, value);
-		request.doc(source);
-		client.update(request).actionGet();
+		request.doc(source);		
+		ActionFuture<UpdateResponse> response = client.update(request);
+		response.actionGet();
 	}
 	
 	@Override

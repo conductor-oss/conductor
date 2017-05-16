@@ -304,22 +304,27 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	@Override
 	public void removeWorkflow(String workflowId) {
 
-		
-		Workflow wf = getWorkflow(workflowId, true);
-		
-		//Add to elasticsearch
-		indexer.update(workflowId, RAW_JSON_FIELD, wf);
-		
-		// Remove from lists
-		String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, wf.getWorkflowType(), dateStr(wf.getCreateTime()));
-		dynoClient.srem(key, workflowId);
-		dynoClient.srem(nsKey(CORR_ID_TO_WORKFLOWS, wf.getCorrelationId()), workflowId);
-		dynoClient.srem(nsKey(PENDING_WORKFLOWS, wf.getWorkflowType()), workflowId);
-
-		// Remove the object
-		dynoClient.del(nsKey(WORKFLOW, workflowId));
-		for(Task task : wf.getTasks()) {
-			removeTask(task.getTaskId());
+		try {
+			
+			Workflow wf = getWorkflow(workflowId, true);
+			
+			//Add to elasticsearch
+			indexer.update(workflowId, RAW_JSON_FIELD, om.writeValueAsString(wf));
+			
+			// Remove from lists
+			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, wf.getWorkflowType(), dateStr(wf.getCreateTime()));
+			dynoClient.srem(key, workflowId);
+			dynoClient.srem(nsKey(CORR_ID_TO_WORKFLOWS, wf.getCorrelationId()), workflowId);
+			dynoClient.srem(nsKey(PENDING_WORKFLOWS, wf.getWorkflowType()), workflowId);
+	
+			// Remove the object
+			dynoClient.del(nsKey(WORKFLOW, workflowId));
+			for(Task task : wf.getTasks()) {
+				removeTask(task.getTaskId());
+			}
+			
+		}catch(Exception e) {
+			throw new ApplicationException(e.getMessage(), e);
 		}
 	}
 	
