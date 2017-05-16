@@ -70,5 +70,9 @@ public class MockIndexDAO implements IndexDAO {
 	public void addMessage(String queue, Message msg) {
 		
 	}
+	@Override
+	public String get(String workflowInstanceId, String key) {
+		return null;
+	}
 	
 }
