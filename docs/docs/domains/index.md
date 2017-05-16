@@ -45,7 +45,7 @@ When starting the workflow, make sure the task to domain mapping is passes
 {
   "name": "myWorkflow",
   "version": 1,
-  “correlatond”: “corr1”
+  "correlatonId": "corr1"
   "input": {
 	"wf_input1": "one"
   },
