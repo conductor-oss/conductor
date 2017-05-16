@@ -56,6 +56,11 @@
         "type": "string",
         "index": "not_analyzed",
         "doc_values": true
+      },
+      "rawJSON": {
+        "type": "string",
+        "index": "no",
+        "include_in_all": false
       }
     }
   }

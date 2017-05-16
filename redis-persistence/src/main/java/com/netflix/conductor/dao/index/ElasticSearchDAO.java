@@ -38,12 +38,15 @@ import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.index.IndexNotFoundException;
+import org.elasticsearch.index.get.GetField;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
@@ -350,18 +353,29 @@ public class ElasticSearchDAO implements IndexDAO {
 	
 	@Override
 	public void update(String workflowInstanceId, String key, Object value) {
-		try {
-			log.info("updating {} with {} and {}", workflowInstanceId, key, value);
-			UpdateRequest request = new UpdateRequest(indexName, WORKFLOW_DOC_TYPE, workflowInstanceId);
-			Map<String, Object> source = new HashMap<>();
-			source.put(key, value);
-			request.doc(source);
-			client.update(request).actionGet();
-			
-		} catch(Throwable e) {
-			log.error("Index update failed {}", e.getMessage(), e);
-			Monitors.error(className, "update");
+		log.info("updating {} with {} and {}", workflowInstanceId, key, value);
+		UpdateRequest request = new UpdateRequest(indexName, WORKFLOW_DOC_TYPE, workflowInstanceId);
+		Map<String, Object> source = new HashMap<>();
+		source.put(key, value);
+		request.doc(source);
+		client.update(request).actionGet();
+	}
+	
+	@Override
+	public String get(String workflowInstanceId, String fieldToGet) {
+		Object value = null;
+		GetRequest request = new GetRequest(indexName, WORKFLOW_DOC_TYPE, workflowInstanceId).fields(fieldToGet);
+		GetResponse response = client.get(request).actionGet();
+		Map<String, GetField> fields = response.getFields();
+		if(fields == null) {
+			return null;
 		}
+		GetField field = fields.get(fieldToGet);		
+		if(field != null) value = field.getValue();
+		if(value != null) {
+			return value.toString();
+		}
+		return null;
 	}
 	
 	private SearchResult<String> search(String structuredQuery, int start, int size, List<String> sortOptions, String freeTextQuery) throws ParserException {
@@ -395,6 +409,5 @@ public class ElasticSearchDAO implements IndexDAO {
 		long count = response.getHits().getTotalHits();
 		return new SearchResult<String>(count, result);
 	}
-	
 	
 }

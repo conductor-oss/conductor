@@ -53,6 +53,7 @@ import com.netflix.conductor.metrics.Monitors;
 public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	
+	private static final String RAW_JSON_FIELD = "rawJSON";
 	// Keys Families
 	private static final String TASK_LIMIT_BUCKET = "TASK_LIMIT_BUCKET";
 	private final static String IN_PROGRESS_TASKS = "IN_PROGRESS_TASKS";
@@ -304,7 +305,11 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	public void removeWorkflow(String workflowId) {
 
 		
-		Workflow wf = getWorkflow(workflowId, false);
+		Workflow wf = getWorkflow(workflowId, true);
+		
+		//Add to elasticsearch
+		indexer.update(workflowId, RAW_JSON_FIELD, wf);
+		
 		// Remove from lists
 		String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, wf.getWorkflowType(), dateStr(wf.getCreateTime()));
 		dynoClient.srem(key, workflowId);
@@ -316,8 +321,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		for(Task task : wf.getTasks()) {
 			removeTask(task.getTaskId());
 		}
-		indexer.remove(workflowId);
-	
 	}
 	
 	@Override
@@ -331,23 +334,25 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 
 	@Override
-	public Workflow getWorkflow(String workflowId, boolean includeTasks) {
-		Preconditions.checkNotNull(workflowId, "workflowId name cannot be null");
-
-
+	public Workflow getWorkflow(String workflowId, boolean includeTasks) {		
 		String json = dynoClient.get(nsKey(WORKFLOW, workflowId));
+		if(json != null) {
+			Workflow workflow = readValue(json, Workflow.class);
+			if (includeTasks) {
+				List<Task> tasks = getTasksForWorkflow(workflowId);
+				tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
+				workflow.setTasks(tasks);
+			}	
+			return workflow;
+		}
+
+		//try from the archive
+		json = indexer.get(workflowId, RAW_JSON_FIELD);
 		if (json == null) {
 			throw new ApplicationException(Code.NOT_FOUND, "No such workflow found by id: " + workflowId);
 		}
 		Workflow workflow = readValue(json, Workflow.class);
-		if (includeTasks) {
-			List<Task> tasks = getTasksForWorkflow(workflowId);
-			tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
-			workflow.setTasks(tasks);
-		}
 		return workflow;
-
-	
 	}
 
 	@Override
