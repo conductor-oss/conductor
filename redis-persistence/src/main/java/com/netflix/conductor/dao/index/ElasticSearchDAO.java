@@ -365,7 +365,7 @@ public class ElasticSearchDAO implements IndexDAO {
 		for (int i = 0; i < keys.length; i++) {
 			String key = keys[i];
 			Object value= values[i];
-			log.info("updating {} with {} and {}", workflowInstanceId, key, value);
+			log.debug("updating {} with {} and {}", workflowInstanceId, key, value);
 			source.put(key, value);
 		}
 		request.doc(source);		
