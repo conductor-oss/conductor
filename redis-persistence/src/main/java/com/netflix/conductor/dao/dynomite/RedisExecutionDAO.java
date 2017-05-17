@@ -53,6 +53,7 @@ import com.netflix.conductor.metrics.Monitors;
 public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	
+	private static final String ARCHIVED_FIELD = "archived";
 	private static final String RAW_JSON_FIELD = "rawJSON";
 	// Keys Families
 	private static final String TASK_LIMIT_BUCKET = "TASK_LIMIT_BUCKET";
@@ -309,7 +310,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			Workflow wf = getWorkflow(workflowId, true);
 			
 			//Add to elasticsearch
-			indexer.update(workflowId, RAW_JSON_FIELD, om.writeValueAsString(wf));
+			indexer.update(workflowId, new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD}, new Object[]{om.writeValueAsString(wf), true});
 			
 			// Remove from lists
 			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, wf.getWorkflowType(), dateStr(wf.getCreateTime()));

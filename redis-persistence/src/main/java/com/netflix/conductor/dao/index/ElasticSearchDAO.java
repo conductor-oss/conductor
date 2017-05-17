@@ -354,11 +354,20 @@ public class ElasticSearchDAO implements IndexDAO {
 	}
 	
 	@Override
-	public void update(String workflowInstanceId, String key, Object value) {
-		log.info("updating {} with {} and {}", workflowInstanceId, key, value);
+	public void update(String workflowInstanceId, String[] keys, Object[] values) {
+		if(keys.length != values.length) {
+			throw new IllegalArgumentException("Number of keys and values should be same.");
+		}
+		
 		UpdateRequest request = new UpdateRequest(indexName, WORKFLOW_DOC_TYPE, workflowInstanceId);
 		Map<String, Object> source = new HashMap<>();
-		source.put(key, value);
+
+		for (int i = 0; i < keys.length; i++) {
+			String key = keys[i];
+			Object value= values[i];
+			log.info("updating {} with {} and {}", workflowInstanceId, key, value);
+			source.put(key, value);
+		}
 		request.doc(source);		
 		ActionFuture<UpdateResponse> response = client.update(request);
 		response.actionGet();

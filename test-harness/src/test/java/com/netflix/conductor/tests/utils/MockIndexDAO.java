@@ -49,7 +49,7 @@ public class MockIndexDAO implements IndexDAO {
 	}
 	
 	@Override
-	public void update(String workflowInstanceId, String key, Object value) {
+	public void update(String workflowInstanceId, String[] keys, Object[] values) {
 		
 	}
 	@Override
