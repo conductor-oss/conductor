@@ -49,7 +49,7 @@ router.get('/id/:workflowId', async (req, res, next) => {
     const subworkflows = {};
     result.tasks.forEach(task=>{
       if(task.taskType == 'SUB_WORKFLOW'){
-        let subWorkflowId = task.outputData && sk.outputData.subWorkflowId;
+        let subWorkflowId = task.outputData && task.outputData.subWorkflowId;
         if(subWorkflowId == null) {
           subWorkflowId = task.inputData.subWorkflowId;
         }
