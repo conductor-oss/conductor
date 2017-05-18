@@ -10,7 +10,7 @@ The poll call must now specify the domain.
 #### Java Client
 If you are using the java client then a simple property change will force  WorkflowTaskCoordinator to pass the domain to the poller.
 ```
-	conductor.worker.T2.domain=mydomain // Task T2 needs to poll 
+	conductor.worker.T2.domain=mydomain //Task T2 needs to poll for domain "mydomain"
 ```
 #### REST call
 `GET /tasks/poll/batch/T2?workerid=myworker&domain=mydomain`
