@@ -15,6 +15,7 @@
  */
 package com.netflix.conductor.service;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -131,6 +132,20 @@ public class ExecutionService {
 	
 	public List<PollData> getPollData(String taskType) throws Exception{
 		return edao.getPollData(taskType);
+	}
+
+	public List<PollData> getAllPollData() throws Exception{
+		Map<String, Long> queueSizes = queue.queuesDetail();
+		List<PollData> allPollData = new ArrayList<PollData>();
+		queueSizes.keySet().forEach(k -> {
+			try {
+				allPollData.addAll(getPollData(QueueUtils.getQueueNameWithoutDomain(k)));
+			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
+			}
+		});
+		return allPollData;
+
 	}
 
 	//For backward compatibility - to be removed in the later versions

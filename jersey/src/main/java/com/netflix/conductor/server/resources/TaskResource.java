@@ -187,7 +187,15 @@ public class TaskResource {
 		return taskService.getPollData(taskType);
 	}
 	
-	
+
+	@GET
+	@Path("/queue/polldata/all")
+	@ApiOperation("Get the last poll data for a given task type")
+	@Consumes({ MediaType.WILDCARD })
+	public List<PollData> getAllPollData() throws Exception {
+		return taskService.getAllPollData();
+	}
+
 	@POST
 	@Path("/queue/requeue")
 	@ApiOperation("Requeue pending tasks for all the running workflows")

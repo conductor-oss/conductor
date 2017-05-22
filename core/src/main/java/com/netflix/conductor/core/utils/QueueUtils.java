@@ -17,5 +17,8 @@ public class QueueUtils {
 		}
 		return queueName;
 	}
+	public static String getQueueNameWithoutDomain(String queueName){
+		return queueName.substring(queueName.indexOf(DOMAIN_SEPARATOR) + 1);
+	}
 
 }
