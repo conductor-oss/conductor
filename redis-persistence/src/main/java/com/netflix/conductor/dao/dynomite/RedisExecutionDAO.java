@@ -229,6 +229,10 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	public void removeTask(String taskId) {
 
 		Task task = getTask(taskId);
+		if(task == null) {
+			logger.warn("No such Task by id {}", taskId);
+			return;
+		}
 		String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
 
 		dynoClient.hdel(nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()), taskKey);
