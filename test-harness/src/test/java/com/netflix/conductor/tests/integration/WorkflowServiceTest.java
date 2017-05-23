@@ -47,6 +47,7 @@ import org.junit.runner.RunWith;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -1223,6 +1224,27 @@ public class WorkflowServiceTest {
 		
 		assertTrue("Found "  +es.getOutput().toString(), es.getOutput().containsKey("o3"));
 		assertEquals("task1.Done", es.getOutput().get("o3"));
+
+		List<PollData> pddata = ess.getPollData("junit_task_3");
+		assertTrue(pddata.size() == 2);
+		for(PollData pd: pddata){
+			assertEquals(pd.getQueueName(), "junit_task_3");
+			assertEquals(pd.getWorkerId(), "task1.junit.worker");
+			assertTrue(pd.getLastPollTime() != 0);
+			if(pd.getDomain() != null){
+				assertEquals(pd.getDomain(), "domain1");
+			}
+		}
+		
+		
+		List<PollData> pdList = ess.getAllPollData();
+		int count = 0;
+		for(PollData pd: pdList){
+			if(pd.getQueueName().equals("junit_task_3")){
+				count++;
+			}
+		}
+		assertTrue(count == 2);
 
 	}	
 

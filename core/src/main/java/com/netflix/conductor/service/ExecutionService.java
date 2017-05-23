@@ -139,7 +139,9 @@ public class ExecutionService {
 		List<PollData> allPollData = new ArrayList<PollData>();
 		queueSizes.keySet().forEach(k -> {
 			try {
-				allPollData.addAll(getPollData(QueueUtils.getQueueNameWithoutDomain(k)));
+				if(k.indexOf(QueueUtils.DOMAIN_SEPARATOR) == -1){
+					allPollData.addAll(getPollData(QueueUtils.getQueueNameWithoutDomain(k)));
+				}
 			} catch (Exception e) {
 				logger.error(e.getMessage(), e);
 			}
