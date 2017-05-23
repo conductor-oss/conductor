@@ -29,6 +29,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
+import javax.script.ScriptException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,6 +49,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -183,7 +185,8 @@ public class DeciderService {
 			while (isTaskSkipped(taskToSchedule, workflow)) {
 				taskToSchedule = def.getNextTask(taskToSchedule.getTaskReferenceName());
 			}
-			List<Task> toBeScheduled = getTasksToBeScheduled(def, workflow, taskToSchedule, 0, workflow.getStartTime());
+			//List<Task> toBeScheduled = getTasksToBeScheduled(def, workflow, taskToSchedule, 0, workflow.getStartTime());
+			List<Task> toBeScheduled = getTasksToBeScheduled(def, workflow, taskToSchedule, 0);
 			return toBeScheduled;
 		} 
 
@@ -270,7 +273,8 @@ public class DeciderService {
 			taskToSchedule = def.getNextTask(taskToSchedule.getTaskReferenceName());
 		}
 		if(taskToSchedule != null){
-			return getTasksToBeScheduled(def, workflow, taskToSchedule, 0, task.getEndTime());
+			//return getTasksToBeScheduled(def, workflow, taskToSchedule, 0, task.getEndTime());
+			return getTasksToBeScheduled(def, workflow, taskToSchedule, 0);
 		}
 		
 		return Collections.emptyList();
@@ -369,11 +373,11 @@ public class DeciderService {
 		return;
 	}
 
-	private List<Task> getTasksToBeScheduled(WorkflowDef def, Workflow workflow, WorkflowTask taskToSchedule, int retryCount, long lastEventTime)  {
-		return getTasksToBeScheduled(def, workflow, taskToSchedule, retryCount, lastEventTime, 0, null);
+	private List<Task> getTasksToBeScheduled(WorkflowDef def, Workflow workflow, WorkflowTask taskToSchedule, int retryCount)  {
+		return getTasksToBeScheduled(def, workflow, taskToSchedule, retryCount, null);
 	}
 	
-	private List<Task> getTasksToBeScheduled(WorkflowDef def, Workflow workflow, WorkflowTask taskToSchedule, int retryCount, long lastEventTime, int ignore, String retriedTaskId) {
+	private List<Task> getTasksToBeScheduled(WorkflowDef def, Workflow workflow, WorkflowTask taskToSchedule, int retryCount, String retriedTaskId) {
 
 		List<Task> tasks = new LinkedList<>();
 		
@@ -385,11 +389,26 @@ public class DeciderService {
 			tt = Type.valueOf(type);
 		}
 		String taskId = IDGenerator.generate();
-		switch(tt){
+		switch (tt) {
 		
 			case DECISION:
-				String paramName = taskToSchedule.getCaseValueParam();
-				String caseValue = "" + input.get(paramName);
+				String expression = taskToSchedule.getCaseExpression();
+				String caseValue = null;
+				if(expression != null) {
+					
+					try {
+						Object returnValue = ScriptEvaluator.eval(expression, input);
+						caseValue = (returnValue == null) ? "null": returnValue.toString(); 
+					} catch (ScriptException e) {
+						logger.error(e.getMessage(), e);
+						throw new RuntimeException("Error while evaluating the script " + expression, e);
+					}
+					
+				} else {
+					String paramName = taskToSchedule.getCaseValueParam();
+					caseValue = "" + input.get(paramName);	
+				}
+				
 				
 				Task st = SystemTask.decisionTask(workflow, taskId, taskToSchedule, input, caseValue, Arrays.asList(caseValue));
 				tasks.add(st);
@@ -399,14 +418,14 @@ public class DeciderService {
 				}
 				if (selectedTasks != null && !selectedTasks.isEmpty()) {
 					WorkflowTask selectedTask = selectedTasks.get(0);		//Schedule the first task to be executed...
-					List<Task> caseTasks = getTasksToBeScheduled(def, workflow, selectedTask, retryCount, lastEventTime, 0, retriedTaskId);
+					List<Task> caseTasks = getTasksToBeScheduled(def, workflow, selectedTask, retryCount, retriedTaskId);
 					tasks.addAll(caseTasks);
 					st.getInputData().put("hasChildren", "true");
 				}
 				break;
 				
 			case DYNAMIC:
-				paramName = taskToSchedule.getDynamicTaskNameParam();
+				String paramName = taskToSchedule.getDynamicTaskNameParam();
 				String taskName = (String) input.get(paramName);
 				if(taskName == null){
 					//Workflow should be terminated here...
@@ -424,7 +443,7 @@ public class DeciderService {
 				List<List<WorkflowTask>> forkTasks = taskToSchedule.getForkTasks();
 				for(List<WorkflowTask> wfts : forkTasks){
 					WorkflowTask wft = wfts.get(0);
-					List<Task> tasks2 = getTasksToBeScheduled(def, workflow, wft, retryCount, lastEventTime);
+					List<Task> tasks2 = getTasksToBeScheduled(def, workflow, wft, retryCount);
 					tasks.addAll(tasks2);
 				}
 				
@@ -440,7 +459,7 @@ public class DeciderService {
 				tasks.add(joinTask);
 				break;
 			case FORK_JOIN_DYNAMIC:
-				joinTask = getDynamicTasks(def, workflow, taskToSchedule, taskId, retryCount, lastEventTime, tasks);
+				joinTask = getDynamicTasks(def, workflow, taskToSchedule, taskId, retryCount, tasks);
 				tasks.add(joinTask);
 				break;
 			case USER_DEFINED:
@@ -501,13 +520,14 @@ public class DeciderService {
 			default:
 				break;
 		}
+		setTaskDomains(tasks, workflow);
 		return tasks;
 	}
 
 	
 
 	@SuppressWarnings({ "unchecked", "deprecation" })
-	private Task getDynamicTasks(WorkflowDef def, Workflow workflow, WorkflowTask taskToSchedule, String taskId, int retryCount, long lastEventTime, List<Task> tasks) {
+	private Task getDynamicTasks(WorkflowDef def, Workflow workflow, WorkflowTask taskToSchedule, String taskId, int retryCount, List<Task> tasks) {
 		
 		List<WorkflowTask> dynForkTasks = new LinkedList<>();
 		Map<String, Map<String, Object>> tasksInput = new HashMap<>();
@@ -547,7 +567,7 @@ public class DeciderService {
 		List<String> joinOnTaskRefs = new LinkedList<>();
 		// Create Dynamic tasks
 		for (WorkflowTask wft : dynForkTasks) {
-			List<Task> forkedTasks = getTasksToBeScheduled(def, workflow, wft, retryCount, lastEventTime);
+			List<Task> forkedTasks = getTasksToBeScheduled(def, workflow, wft, retryCount);
 			tasks.addAll(forkedTasks);			
 			Task last = forkedTasks.get(forkedTasks.size()-1);
 			joinOnTaskRefs.add(last.getReferenceTaskName());
@@ -641,6 +661,15 @@ public class DeciderService {
 			throw new TerminateWorkflow(e.getMessage());
 		}
 
+	}
+	
+	private void setTaskDomains(List<Task> tasks, Workflow wf){
+		Map<String, String> taskToDomain = wf.getTaskToDomain();
+		if(taskToDomain != null){
+			tasks.forEach(task -> {
+				task.setDomain(taskToDomain.get(task.getTaskType()));
+			});
+		}
 	}
 	
 	public static class DeciderOutcome {

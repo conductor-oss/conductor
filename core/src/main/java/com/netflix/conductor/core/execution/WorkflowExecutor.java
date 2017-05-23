@@ -53,6 +53,7 @@ import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.IDGenerator;
+import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
@@ -94,8 +95,16 @@ public class WorkflowExecutor {
 	public String startWorkflow(String name, int version, String correlationId, Map<String, Object> input, String event) throws Exception {
 		return startWorkflow(name, version, input, correlationId, null, null, event);
 	}
+
+	public String startWorkflow(String name, int version, String correlationId, Map<String, Object> input, String event, Map<String, String> taskToDomain) throws Exception {
+		return startWorkflow(name, version, input, correlationId, null, null, event, taskToDomain);
+	}
 	
 	public String startWorkflow(String name, int version, Map<String, Object> input, String correlationId, String parentWorkflowId, String parentWorkflowTaskId, String event) throws Exception {
+		return startWorkflow(name, version, input, correlationId, parentWorkflowId, parentWorkflowTaskId, event, null);
+	}
+	
+	public String startWorkflow(String name, int version, Map<String, Object> input, String correlationId, String parentWorkflowId, String parentWorkflowTaskId, String event, Map<String, String> taskToDomain) throws Exception {
 		
 		try {
 			
@@ -131,6 +140,7 @@ public class WorkflowExecutor {
 			wf.setUpdatedBy(null);
 			wf.setUpdateTime(null);
 			wf.setEvent(event);
+			wf.setTaskToDomain(taskToDomain);
 			edao.createWorkflow(wf);
 			decide(workflowId);
 			return workflowId;
@@ -352,7 +362,7 @@ public class WorkflowExecutor {
 				edao.updateTask(task);
 			}
 			// And remove from the task queue if they were there
-			queue.remove(task.getTaskType(), task.getTaskId());
+			queue.remove(QueueUtils.getQueueName(task), task.getTaskId());
 		}
 
 		// If the following lines, for some reason fails, the sweep will take
@@ -386,7 +396,7 @@ public class WorkflowExecutor {
 		
 		// Send to atlas
 		Monitors.recordWorkflowTermination(workflow.getWorkflowType(), workflow.getStatus());
-	}
+	}	
 
 	public void updateTask(TaskResult result) throws Exception {
 		if (result == null) {
@@ -400,7 +410,7 @@ public class WorkflowExecutor {
 		
 		if (wf.getStatus().isTerminal()) {
 			// Workflow is in terminal state
-			queue.remove(task.getTaskType(), result.getTaskId());
+			queue.remove(QueueUtils.getQueueName(task), result.getTaskId());
 			if(!task.getStatus().isTerminal()) {
 				task.setStatus(Status.COMPLETED);
 			}
@@ -416,7 +426,7 @@ public class WorkflowExecutor {
 
 		if (task.getStatus().isTerminal()) {
 			// Task was already updated....
-			queue.remove(task.getTaskType(), result.getTaskId());
+			queue.remove(QueueUtils.getQueueName(task), result.getTaskId());
 			String msg = "Task is already completed as " + task.getStatus() + "@" + task.getEndTime() + ", workflow status=" + wf.getStatus() + ", workflowId=" + wf.getWorkflowId() + ", taskId=" + task.getTaskId();
 			logger.info(msg);
 			Monitors.recordUpdateConflict(task.getTaskType(), wf.getWorkflowType(), task.getStatus());
@@ -450,20 +460,20 @@ public class WorkflowExecutor {
 		switch (task.getStatus()) {
 
 		case COMPLETED:
-			queue.remove(task.getTaskType(), result.getTaskId());
+			queue.remove(QueueUtils.getQueueName(task), result.getTaskId());
 			break;
 
 		case CANCELED:
-			queue.remove(task.getTaskType(), result.getTaskId());
+			queue.remove(QueueUtils.getQueueName(task), result.getTaskId());
 			break;
 		case FAILED:
-			queue.remove(task.getTaskType(), result.getTaskId());
+			queue.remove(QueueUtils.getQueueName(task), result.getTaskId());
 			break;
 		case IN_PROGRESS:
 			// put it back in queue based in callbackAfterSeconds
 			long callBack = result.getCallbackAfterSeconds();
-			queue.remove(task.getTaskType(), task.getTaskId());			
-			queue.push(task.getTaskType(), task.getTaskId(), callBack); // Milliseconds
+			queue.remove(QueueUtils.getQueueName(task), task.getTaskId());			
+			queue.push(QueueUtils.getQueueName(task), task.getTaskId(), callBack); // Milliseconds
 			break;
 		default:
 			break;
@@ -618,13 +628,13 @@ public class WorkflowExecutor {
 	
 	public void addTaskToQueue(Task task) throws Exception {
 		// put in queue
-		queue.remove(task.getTaskType(), task.getTaskId());
+		queue.remove(QueueUtils.getQueueName(task), task.getTaskId());
 		if (task.getCallbackAfterSeconds() > 0) {
-			queue.push(task.getTaskType(), task.getTaskId(), task.getCallbackAfterSeconds());
+			queue.push(QueueUtils.getQueueName(task), task.getTaskId(), task.getCallbackAfterSeconds());
 		} else {
-			queue.push(task.getTaskType(), task.getTaskId(), 0);
+			queue.push(QueueUtils.getQueueName(task), task.getTaskId(), 0);
 		}
-	}
+	}	
 	
 	//Executes the async system task 
 	public void executeSystemTask(WorkflowSystemTask systemTask, String taskId, int unackTimeout) {
@@ -636,7 +646,7 @@ public class WorkflowExecutor {
 			if(task.getStatus().isTerminal()) {
 				//Tune the SystemTaskWorkerCoordinator's queues - if the queue size is very big this can happen!
 				logger.info("Task {}/{} was already completed.", task.getTaskType(), task.getTaskId());
-				queue.remove(task.getTaskType(), task.getTaskId());
+				queue.remove(QueueUtils.getQueueName(task), task.getTaskId());
 				return;
 			}
 			
@@ -654,7 +664,7 @@ public class WorkflowExecutor {
 					task.setStatus(Status.CANCELED);
 				}
 				edao.updateTask(task);
-				queue.remove(task.getTaskType(), task.getTaskId());
+				queue.remove(QueueUtils.getQueueName(task), task.getTaskId());
 				return;
 			}
 			
@@ -668,7 +678,7 @@ public class WorkflowExecutor {
 			
 			logger.info("Executing {}/{}-{}", task.getTaskType(), task.getTaskId(), task.getStatus());
 			
-			queue.setUnackTimeout(task.getTaskType(), task.getTaskId(), systemTask.getRetryTimeInSecond() * 1000);
+			queue.setUnackTimeout(QueueUtils.getQueueName(task), task.getTaskId(), systemTask.getRetryTimeInSecond() * 1000);
 			task.setPollCount(task.getPollCount() + 1);
 			edao.updateTask(task);
 

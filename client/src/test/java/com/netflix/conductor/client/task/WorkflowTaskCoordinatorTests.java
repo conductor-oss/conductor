@@ -118,7 +118,7 @@ public class WorkflowTaskCoordinatorTests {
 				.withUpdateRetryCount(1)
 				.withTaskClient(client)
 				.build();
-		when(client.poll(anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(new Task()));
+		when(client.poll(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(new Task()));
 		when(client.ack(anyString(), anyString())).thenReturn(true);
 		CountDownLatch latch = new CountDownLatch(1);
 		doAnswer(new Answer<Void>() {

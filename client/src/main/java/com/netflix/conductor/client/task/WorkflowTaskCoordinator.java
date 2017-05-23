@@ -74,6 +74,8 @@ public class WorkflowTaskCoordinator {
 	
 	private static Map<Worker, Map<String, Object>> environmentData = new HashMap<>();
 	
+	private static final String DOMAIN = "domain";
+	
 	/**
 	 *
 	 * @param ec Eureka client - used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is terminated.  If passed null, discovery check is not done.
@@ -268,16 +270,16 @@ public class WorkflowTaskCoordinator {
 			logger.debug("Worker {} has been paused. Not polling anymore!", worker.getClass());
 			return;
 		}
-		
-		logger.debug("Polling {}, count = {} timeout = {} ms", worker.getTaskDefName(), worker.getPollCount(), worker.getLongPollTimeoutInMS());
+		String domain = PropertyFactory.getString(worker.getTaskDefName(), DOMAIN, null);		
+		logger.debug("Polling {}, domain={}, count = {} timeout = {} ms", worker.getTaskDefName(), domain, worker.getPollCount(), worker.getLongPollTimeoutInMS());
 		
 		try{
 			
 			String taskType = worker.getTaskDefName();
 			Stopwatch sw = WorkflowTaskMetrics.pollTimer(worker.getTaskDefName());
-			List<Task> tasks = client.poll(taskType, worker.getIdentity(), worker.getPollCount(), worker.getLongPollTimeoutInMS());
+			List<Task> tasks = client.poll(taskType, domain, worker.getIdentity(), worker.getPollCount(), worker.getLongPollTimeoutInMS());
 			sw.stop();
-			logger.debug("Polled {} and receivd {} tasks", worker.getTaskDefName(), tasks.size());
+			logger.debug("Polled {}, for domain {} and receivd {} tasks", worker.getTaskDefName(), domain, tasks.size());
 			for(Task task : tasks) {
 				es.submit(() -> {
 					try {

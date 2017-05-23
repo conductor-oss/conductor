@@ -23,6 +23,7 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.inject.Inject;
@@ -32,6 +33,7 @@ import com.google.common.base.Preconditions;
 import com.google.inject.Singleton;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -65,6 +67,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	private final static String PENDING_WORKFLOWS = "PENDING_WORKFLOWS";
 	private final static String WORKFLOW_DEF_TO_WORKFLOWS = "WORKFLOW_DEF_TO_WORKFLOWS";
 	private final static String CORR_ID_TO_WORKFLOWS = "CORR_ID_TO_WORKFLOWS";
+	private final static String POLL_DATA = "POLL_DATA";
 	
 	private final static String EVENT_EXECUTION = "EVENT_EXECUTION";
 
@@ -359,6 +362,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			throw new ApplicationException(Code.NOT_FOUND, "No such workflow found by id: " + workflowId);
 		}
 		Workflow workflow = readValue(json, Workflow.class);
+
 		if(!includeTasks) {
 			workflow.getTasks().clear();
 		}
@@ -560,6 +564,44 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		indexer.addMessage(queue, msg);		
 	}
 
-	
+	@Override
+	public void updateLastPoll(String taskDefName, String domain, String workerId) {
+		Preconditions.checkNotNull(taskDefName, "taskDefName name cannot be null");
+		PollData pd = new PollData(taskDefName, domain, workerId, System.currentTimeMillis());
+		
+		String key = nsKey(POLL_DATA, pd.getQueueName());
+		String field = (domain == null)?"DEFAULT":domain;
+		
+		dynoClient.hset(key, field, toJson(pd));
+	}
+
+	@Override
+	public PollData getPollData(String taskDefName, String domain) {
+		Preconditions.checkNotNull(taskDefName, "taskDefName name cannot be null");
+		
+		String key = nsKey(POLL_DATA, taskDefName);
+		String field = (domain == null)?"DEFAULT":domain;
+
+		String pdJsonStr = dynoClient.hget(key, field);
+		PollData pd = null;
+		if (pdJsonStr != null) {
+			pd = readValue(pdJsonStr, PollData.class);
+		}
+		return pd;
+	}
+
+	@Override
+	public List<PollData> getPollData(String taskDefName) {
+		Preconditions.checkNotNull(taskDefName, "taskDefName name cannot be null");
+		
+		String key = nsKey(POLL_DATA, taskDefName);
+		Map<String, String> pMapdata = dynoClient.hgetAll(key);
+		List<PollData> pdata = new ArrayList<PollData>();
+		if(pMapdata != null){
+			pMapdata.values().forEach(pdJsonStr -> pdata.add(readValue(pdJsonStr, PollData.class)));
+		}
+		return pdata;
+	}
+
 	
 }

@@ -28,6 +28,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.io.InputStream;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -341,6 +342,72 @@ public class TestDeciderOutcomes {
 		
 		outcome.tasksToBeScheduled.stream().map(task -> task.getStatus() + ":" + task.getTaskType() + ":").forEach(System.out::println);
 		outcome.tasksToBeUpdated.stream().map(task -> task.getStatus() + ":" + task.getTaskType() + ":").forEach(System.out::println);
+	}
+	
+	@Test
+	public void testDecisionCases() {
+		WorkflowDef def = new WorkflowDef();
+		def.setName("test");
+		
+		WorkflowTask even = new WorkflowTask();
+		even.setName("even");
+		even.setType("SIMPLE");
+		even.setTaskReferenceName("even");
+		
+		WorkflowTask odd = new WorkflowTask();
+		odd.setName("odd");
+		odd.setType("SIMPLE");
+		odd.setTaskReferenceName("odd");
+		
+		WorkflowTask defaultt = new WorkflowTask();
+		defaultt.setName("defaultt");
+		defaultt.setType("SIMPLE");
+		defaultt.setTaskReferenceName("defaultt");
+		
+		
+		WorkflowTask decide = new WorkflowTask();
+		decide.setName("decide");
+		decide.setWorkflowTaskType(Type.DECISION);
+		decide.setTaskReferenceName("d0");
+		decide.getInputParameters().put("Id", "${workflow.input.Id}");
+		decide.getInputParameters().put("location", "${workflow.input.location}");
+		decide.setCaseExpression("if ($.Id == null) 'bad input'; else if ( ($.Id != null && $.Id % 2 == 0) || $.location == 'usa') 'even'; else 'odd'; ");
+		
+		decide.getDecisionCases().put("even", Arrays.asList(even));
+		decide.getDecisionCases().put("odd", Arrays.asList(odd));
+		decide.setDefaultCase(Arrays.asList(defaultt));
+		
+		def.getTasks().add(decide);
+		def.setSchemaVersion(2);
+		
+		
+		Workflow workflow = new Workflow();
+		workflow.setStartTime(System.currentTimeMillis());
+		DeciderOutcome outcome = ds.decide(workflow, def);
+		assertNotNull(outcome);
+		
+		System.out.println("Schedule after starting: " + outcome.tasksToBeScheduled);
+		assertEquals(2, outcome.tasksToBeScheduled.size());
+		assertEquals(decide.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+		assertEquals(defaultt.getTaskReferenceName(), outcome.tasksToBeScheduled.get(1).getReferenceTaskName());		//default
+		System.out.println(outcome.tasksToBeScheduled.get(0).getOutputData().get("caseOutput"));
+		assertEquals(Arrays.asList("bad input"), outcome.tasksToBeScheduled.get(0).getOutputData().get("caseOutput"));
+		
+		workflow.getInput().put("Id", 9);		
+		workflow.getInput().put("location", "usa");
+		outcome = ds.decide(workflow, def);
+		assertEquals(2, outcome.tasksToBeScheduled.size());
+		assertEquals(decide.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+		assertEquals(even.getTaskReferenceName(), outcome.tasksToBeScheduled.get(1).getReferenceTaskName());		//even because of location == usa
+		assertEquals(Arrays.asList("even"), outcome.tasksToBeScheduled.get(0).getOutputData().get("caseOutput"));
+		
+		workflow.getInput().put("Id", 9);		
+		workflow.getInput().put("location", "canada");
+		outcome = ds.decide(workflow, def);
+		assertEquals(2, outcome.tasksToBeScheduled.size());
+		assertEquals(decide.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+		assertEquals(odd.getTaskReferenceName(), outcome.tasksToBeScheduled.get(1).getReferenceTaskName());			//odd
+		assertEquals(Arrays.asList("odd"), outcome.tasksToBeScheduled.get(0).getOutputData().get("caseOutput"));
 	}
 	
 }

@@ -121,6 +121,8 @@ public class Task {
 	
 	private WorkflowTask workflowTask;
 	
+	private String domain;
+	
 	public Task(){
 		
 	}
@@ -508,6 +510,21 @@ public class Task {
 	 */
 	public void setWorkflowTask(WorkflowTask workflowTask) {
 		this.workflowTask = workflowTask;
+	}
+
+	/**
+	 * @return the domain
+	 */
+	public String getDomain() {
+		return domain;
+	}
+
+	/**
+	 * @param domain the Domain
+	 * 
+	 */
+	public void setDomain(String domain) {
+		this.domain = domain;
 	}
 
 	public Task copy() {

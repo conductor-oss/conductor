@@ -21,6 +21,7 @@ package com.netflix.conductor.dao;
 import java.util.List;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -258,5 +259,11 @@ public interface ExecutionDAO {
 	 * @param msg Message
 	 */
 	public abstract void addMessage(String queue, Message msg);
+	
+	public abstract void updateLastPoll(String taskDefName, String domain, String workerId);
+	
+	public abstract PollData getPollData(String taskDefName, String domain);
+
+	public abstract List<PollData> getPollData(String taskDefName);
 
 }
