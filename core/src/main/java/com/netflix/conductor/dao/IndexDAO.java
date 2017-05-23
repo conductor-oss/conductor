@@ -63,10 +63,18 @@ public interface IndexDAO {
 	/**
 	 * Updates the index
 	 * @param workflowInstanceId id of the workflow
-	 * @param key key to be updated
-	 * @param value value
+	 * @param keys keys to be updated
+	 * @param values values. Number of keys and values MUST match.
 	 */
-	public void update(String workflowInstanceId, String key, Object value);
+	public void update(String workflowInstanceId, String[] keys, Object[] values);
+	
+	/**
+	 * Retrieves a specific field from the index 
+	 * @param workflowInstanceId id of the workflow
+	 * @param key field to be retrieved
+	 * @return value of the field as string
+	 */
+	public String get(String workflowInstanceId, String key);
 
 	/**
 	 * 

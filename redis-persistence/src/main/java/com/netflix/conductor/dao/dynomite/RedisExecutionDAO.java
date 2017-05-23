@@ -51,6 +51,8 @@ import com.netflix.conductor.metrics.Monitors;
 public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	
+	private static final String ARCHIVED_FIELD = "archived";
+	private static final String RAW_JSON_FIELD = "rawJSON";
 	// Keys Families
 	private static final String TASK_LIMIT_BUCKET = "TASK_LIMIT_BUCKET";
 	private final static String IN_PROGRESS_TASKS = "IN_PROGRESS_TASKS";
@@ -227,6 +229,10 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	public void removeTask(String taskId) {
 
 		Task task = getTask(taskId);
+		if(task == null) {
+			logger.warn("No such Task by id {}", taskId);
+			return;
+		}
 		String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
 
 		dynoClient.hdel(nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()), taskKey);
@@ -300,21 +306,28 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	@Override
 	public void removeWorkflow(String workflowId) {
 
-		
-		Workflow wf = getWorkflow(workflowId, false);
-		// Remove from lists
-		String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, wf.getWorkflowType(), dateStr(wf.getCreateTime()));
-		dynoClient.srem(key, workflowId);
-		dynoClient.srem(nsKey(CORR_ID_TO_WORKFLOWS, wf.getCorrelationId()), workflowId);
-		dynoClient.srem(nsKey(PENDING_WORKFLOWS, wf.getWorkflowType()), workflowId);
-
-		// Remove the object
-		dynoClient.del(nsKey(WORKFLOW, workflowId));
-		for(Task task : wf.getTasks()) {
-			removeTask(task.getTaskId());
-		}
-		indexer.remove(workflowId);
+		try {
+			
+			Workflow wf = getWorkflow(workflowId, true);
+			
+			//Add to elasticsearch
+			indexer.update(workflowId, new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD}, new Object[]{om.writeValueAsString(wf), true});
+			
+			// Remove from lists
+			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, wf.getWorkflowType(), dateStr(wf.getCreateTime()));
+			dynoClient.srem(key, workflowId);
+			dynoClient.srem(nsKey(CORR_ID_TO_WORKFLOWS, wf.getCorrelationId()), workflowId);
+			dynoClient.srem(nsKey(PENDING_WORKFLOWS, wf.getWorkflowType()), workflowId);
 	
+			// Remove the object
+			dynoClient.del(nsKey(WORKFLOW, workflowId));
+			for(Task task : wf.getTasks()) {
+				removeTask(task.getTaskId());
+			}
+			
+		}catch(Exception e) {
+			throw new ApplicationException(e.getMessage(), e);
+		}
 	}
 	
 	@Override
@@ -328,23 +341,28 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 
 	@Override
-	public Workflow getWorkflow(String workflowId, boolean includeTasks) {
-		Preconditions.checkNotNull(workflowId, "workflowId name cannot be null");
-
-
+	public Workflow getWorkflow(String workflowId, boolean includeTasks) {		
 		String json = dynoClient.get(nsKey(WORKFLOW, workflowId));
+		if(json != null) {
+			Workflow workflow = readValue(json, Workflow.class);
+			if (includeTasks) {
+				List<Task> tasks = getTasksForWorkflow(workflowId);
+				tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
+				workflow.setTasks(tasks);
+			}	
+			return workflow;
+		}
+
+		//try from the archive
+		json = indexer.get(workflowId, RAW_JSON_FIELD);
 		if (json == null) {
 			throw new ApplicationException(Code.NOT_FOUND, "No such workflow found by id: " + workflowId);
 		}
 		Workflow workflow = readValue(json, Workflow.class);
-		if (includeTasks) {
-			List<Task> tasks = getTasksForWorkflow(workflowId);
-			tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
-			workflow.setTasks(tasks);
+		if(!includeTasks) {
+			workflow.getTasks().clear();
 		}
 		return workflow;
-
-	
 	}
 
 	@Override
@@ -541,5 +559,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	public void addMessage(String queue, Message msg) {
 		indexer.addMessage(queue, msg);		
 	}
+
+	
 	
 }

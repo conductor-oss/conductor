@@ -51,13 +51,12 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.index.ElasticSearchDAO;
 import com.netflix.conductor.dao.redis.JedisMock;
 
@@ -446,12 +445,6 @@ public class RedisExecutionDAOTest {
 		}
 		count = dao.getPendingWorkflowCount(workflowName);
 		assertEquals(0, count);
-		
-		dao.removeWorkflow(workflowId);
-		expected.expect(ApplicationException.class);
-		expected.expectMessage("No such workflow found");
-		found = dao.getWorkflow(workflowId);
-		
 		
 	}
 	
