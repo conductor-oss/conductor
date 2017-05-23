@@ -532,8 +532,6 @@ public class RedisExecutionDAOTest {
 		count = dao.getPendingWorkflowCount(workflowName);
 		assertEquals(0, count);
 		
-		dao.removeWorkflow(workflowId);
-		
 	}
 	
 }
