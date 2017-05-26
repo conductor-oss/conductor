@@ -73,8 +73,8 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.dao.index.query.parser.Expression;
-import com.netflix.conductor.dao.index.query.parser.ParserException;
+import com.netflix.conductor.dao.es5.index.query.parser.Expression;
+import com.netflix.conductor.dao.es5.index.query.parser.ParserException;
 import com.netflix.conductor.metrics.Monitors;
 
 /**
