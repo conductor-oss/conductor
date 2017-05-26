@@ -1,0 +1,14 @@
+dependencies {
+
+	compile project(':conductor-core')
+	compile 'com.google.inject:guice:3.0'
+
+	//ES5 Dependency
+	compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: '2.8.2'
+	compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: '2.8.2'
+
+	compile 'org.elasticsearch:elasticsearch:5.+'
+	compile 'org.elasticsearch.client:transport:5.+'
+	compile 'commons-io:commons-io:2.4'
+
+}
