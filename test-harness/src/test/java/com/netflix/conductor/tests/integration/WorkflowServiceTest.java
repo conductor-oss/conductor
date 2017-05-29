@@ -1270,12 +1270,12 @@ public class WorkflowServiceTest {
 		input.put("param1", inputParam1);
 		input.put("param2", "p2 value");
 		Map<String, String> taskToDomain = new HashMap<String, String>();
-		taskToDomain.put("*", "domain1,, domain2");
+		taskToDomain.put("*", "domain11,, domain12");
 		
 		// Poll before so that a polling for this task is "active"
-		Task task = ess.poll("junit_task_3", "task1.junit.worker", "domain1");
+		Task task = ess.poll("junit_task_3", "task1.junit.worker", "domain11");
 		assertNull(task);
-		task = ess.poll("junit_task_2", "task1.junit.worker", "domain2");
+		task = ess.poll("junit_task_2", "task1.junit.worker", "domain12");
 		assertNull(task);
 
 		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2_SW, 1, correlationId , input, null, taskToDomain);
@@ -1297,17 +1297,17 @@ public class WorkflowServiceTest {
 		
 				
 		// Check Size 
-		Map<String, Integer> sizes = ess.getTaskQueueSizes(Arrays.asList("domain1:junit_task_3","junit_task_3"));
-		assertEquals(sizes.get("domain1:junit_task_3").intValue(), 1);
+		Map<String, Integer> sizes = ess.getTaskQueueSizes(Arrays.asList("domain11:junit_task_3","junit_task_3"));
+		assertEquals(sizes.get("domain11:junit_task_3").intValue(), 1);
 		assertEquals(sizes.get("junit_task_3").intValue(), 0);
 		
 		// Polling for the first task should return the same task as before
 		task = ess.poll("junit_task_3", "task1.junit.worker");
 		assertNull(task);
-		task = ess.poll("junit_task_3", "task1.junit.worker", "domain1");
+		task = ess.poll("junit_task_3", "task1.junit.worker", "domain11");
 		assertNotNull(task);
 		assertEquals("junit_task_3", task.getTaskType());
-		assertEquals("domain1", task.getDomain());
+		assertEquals("domain11", task.getDomain());
 		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
 		assertEquals(wfid, task.getWorkflowInstanceId());
 		
@@ -1343,12 +1343,12 @@ public class WorkflowServiceTest {
 		ess.updateTask(task);
 		
 		
-		task = ess.poll("junit_task_2", "task2.junit.worker", "domain1");
+		task = ess.poll("junit_task_2", "task2.junit.worker", "domain11");
 		assertNull(task);
-		task = ess.poll("junit_task_2", "task2.junit.worker", "domain2");
+		task = ess.poll("junit_task_2", "task2.junit.worker", "domain12");
 		assertNotNull(task);
 		assertEquals("junit_task_2", task.getTaskType());
-		assertEquals("domain2", task.getDomain());
+		assertEquals("domain12", task.getDomain());
 		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
 				
 		task.setStatus(Status.COMPLETED);
@@ -1366,27 +1366,6 @@ public class WorkflowServiceTest {
 		
 		assertTrue("Found "  +es.getOutput().toString(), es.getOutput().containsKey("o3"));
 		assertEquals("task1.Done", es.getOutput().get("o3"));
-
-		List<PollData> pddata = ess.getPollData("junit_task_3");
-		assertTrue(pddata.size() == 2);
-		for(PollData pd: pddata){
-			assertEquals(pd.getQueueName(), "junit_task_3");
-			assertEquals(pd.getWorkerId(), "task1.junit.worker");
-			assertTrue(pd.getLastPollTime() != 0);
-			if(pd.getDomain() != null){
-				assertEquals(pd.getDomain(), "domain1");
-			}
-		}
-		
-		
-		List<PollData> pdList = ess.getAllPollData();
-		int count = 0;
-		for(PollData pd: pdList){
-			if(pd.getQueueName().equals("junit_task_3")){
-				count++;
-			}
-		}
-		assertTrue(count == 2);
 
 	}	
 	
