@@ -49,6 +49,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.tasks.Join;
+import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 
 /**
@@ -77,7 +78,10 @@ public class TestDeciderOutcomes {
 		TaskDef td = new TaskDef();
 		td.setRetryCount(1);
 		when(metadata.getTaskDef(any())).thenReturn(td);
-		this.ds = new DeciderService(metadata, om);
+ 		ExecutionDAO edao = mock(ExecutionDAO.class);
+ 		when(edao.getPollData(any(), any())).thenReturn(null);
+
+		this.ds = new DeciderService(metadata, om, edao);
 	}
 	
 	@Test

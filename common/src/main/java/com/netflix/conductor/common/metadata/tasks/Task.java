@@ -548,6 +548,7 @@ public class Task {
 		copy.setReasonForIncompletion(reasonForIncompletion);
 		copy.setWorkerId(workerId);
 		copy.setWorkflowTask(workflowTask);
+		copy.setDomain(domain);
 		return copy;
 	}
 	

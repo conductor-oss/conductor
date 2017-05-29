@@ -55,6 +55,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
+import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DefaultRegistry;
@@ -85,8 +86,9 @@ public class TestDeciderService {
 		MetadataDAO mdao = mock(MetadataDAO.class);
 		TaskDef taskDef = new TaskDef();
 		when(mdao.getTaskDef(any())).thenReturn(taskDef);
-		
-		ds = new DeciderService(mdao, new ObjectMapper());
+ 		ExecutionDAO edao = mock(ExecutionDAO.class);
+ 		when(edao.getPollData(any(), any())).thenReturn(null);
+		ds = new DeciderService(mdao, new ObjectMapper(), edao);
 		
 		workflow = new Workflow();
 		workflow.getInput().put("requestId", "request id 001");

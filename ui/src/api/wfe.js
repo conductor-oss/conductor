@@ -154,10 +154,6 @@ router.get('/queue/data', async (req, res, next) => {
         qname = pd.domain + ":" + qname;
       }
       pd.qsize = sizes[qname];
-
-      if(qname == "aggregateDBLoad"){
-        console.log(pd);
-      }
     });
     res.status(200).send({polldata});
   } catch (err) {

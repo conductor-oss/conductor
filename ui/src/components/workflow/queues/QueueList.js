@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import moment from 'moment';
 import { Link, browserHistory } from 'react-router';
 import { Breadcrumb, BreadcrumbItem, Input, Well, Button, Panel, DropdownButton, ButtonToolbar, MenuItem, Popover, OverlayTrigger, ButtonGroup } from 'react-bootstrap';
 import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
@@ -35,7 +36,7 @@ const QueueListList = React.createClass({
     };
 
     function formatDate(cell, row){
-      return new Date(row.lastPollTime);
+      return moment(row.lastPollTime).fromNow();
     };
 
     return (
