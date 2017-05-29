@@ -85,7 +85,7 @@ public class WorkflowExecutor {
 		this.edao = edao;
 		this.queue = queue;
 		this.config = config;
-		this.decider = new DeciderService(metadata, om, edao);
+		this.decider = new DeciderService(metadata, om, edao, config);
 	}
 
 	public String startWorkflow(String name, int version, String correlationId, Map<String, Object> input) throws Exception {

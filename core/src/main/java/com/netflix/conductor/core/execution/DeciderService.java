@@ -50,6 +50,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -76,11 +77,14 @@ public class DeciderService {
 	
 	private ParametersUtils pu = new ParametersUtils();
 	
+	private int activeWorkerLastPollnSecs;
+	
 	@Inject
-	public DeciderService(MetadataDAO metadata, ObjectMapper om, ExecutionDAO execution) {
+	public DeciderService(MetadataDAO metadata, ObjectMapper om, ExecutionDAO execution, Configuration config) {
 		this.metadata = metadata;
 		this.om = om;
 		this.execution = execution;
+		activeWorkerLastPollnSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
 	}
 
 	public DeciderOutcome decide(Workflow workflow, WorkflowDef def) throws TerminateWorkflow {
@@ -700,11 +704,11 @@ public class DeciderService {
 	private String getActiveDomain(String taskType, String[] domains){
 		// The domain list has to be ordered.
 		// In sequence check if any worker has polled for last 30 seconds, if so that is the Active domain
-		String domain = null; // Default domain
+		String domain = null; // Default domain 
 		for(String d: domains){
 			PollData pd = execution.getPollData(taskType, d.trim());
 			if(pd != null){
-				if(pd.getLastPollTime() > System.currentTimeMillis() - 30000){
+				if(pd.getLastPollTime() > System.currentTimeMillis() - (activeWorkerLastPollnSecs * 1000)){
 					domain = d.trim();
 					break;
 				}
