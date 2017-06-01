@@ -18,6 +18,8 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -31,7 +33,7 @@ public class TaskExecLog {
 
 	private Map<String, Object> environment = new HashMap<>();
 	
-	private Map<String, Object> data = new HashMap<>();
+	private List<String> logs = Collections.synchronizedList(new ArrayList<>());
 	
 	private List<String> errorTrace = new LinkedList<>();
 	
@@ -61,20 +63,29 @@ public class TaskExecLog {
 	}
 
 	/**
-	 * @return the data
-	 */
-	public Map<String, Object> getData() {
-		return data;
-	}
-
-	/**
-	 * @param data the data to set
 	 * 
+	 * @return Task Execution Logs
 	 */
-	public void setData(Map<String, Object> data) {
-		this.data = data;
+	public List<String> getLogs() {
+		return logs;
 	}
-
+	
+	/**
+	 * 
+	 * @param logs Log entries to set
+	 */
+	public void setLogs(List<String> logs) {
+		this.logs = logs;
+	}
+	
+	/**
+	 * 
+	 * @param log adds a log entry.  The object is toString'ed and added to the logs
+	 */
+	public void log(Object log) {
+		this.logs.add(log.toString());
+	}
+	
 	/**
 	 * @return the errorTrace
 	 */

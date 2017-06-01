@@ -406,7 +406,6 @@ public class WorkflowExecutor {
 		String workflowId = result.getWorkflowInstanceId();
 		Workflow wf = edao.getWorkflow(workflowId);
 		Task task = edao.getTask(result.getTaskId());
-		long cpuTime = System.currentTimeMillis() - task.getUpdateTime();
 		
 		if (wf.getStatus().isTerminal()) {
 			// Workflow is in terminal state
@@ -443,18 +442,9 @@ public class WorkflowExecutor {
 			task.setEndTime(System.currentTimeMillis());
 		}
 		edao.updateTask(task);
-		
-		
+
 		TaskExecLog tlog = result.getLog();
 		tlog.setTaskId(task.getTaskId());
-		Map<String, Object> taskLogData = new HashMap<>();
-		taskLogData.put("status", task.getStatus().name());
-		taskLogData.put("cpuTime", cpuTime);
-		taskLogData.put("taskType", task.getTaskType());
-		taskLogData.put("taskDefName", task.getTaskDefName());
-		
-		tlog.getData().put("task", taskLogData);
-		
 		edao.addTaskExecLog(tlog);
 
 		switch (task.getStatus()) {
