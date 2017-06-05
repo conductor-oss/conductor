@@ -284,9 +284,7 @@ public class TestHttpTask {
  		wft.setTaskReferenceName("t1");
 		def.getTasks().add(wft);
  		MetadataDAO metadata = mock(MetadataDAO.class);
- 		ExecutionDAO execution = mock(ExecutionDAO.class);
- 		Configuration config = mock(Configuration.class);
- 		new DeciderService(metadata, null, execution, config).decide(workflow, def);
+ 		new DeciderService(metadata, null).decide(workflow, def);
  		
  		System.out.println(workflow.getTasks());
  		System.out.println(workflow.getStatus());

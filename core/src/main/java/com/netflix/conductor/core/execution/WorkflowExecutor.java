@@ -37,6 +37,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -79,13 +80,16 @@ public class WorkflowExecutor {
 	
 	public static final String deciderQueue = "_deciderQueue";
 
+	private int activeWorkerLastPollnSecs;
+	
 	@Inject
 	public WorkflowExecutor(MetadataDAO metadata, ExecutionDAO edao, QueueDAO queue, ObjectMapper om, Configuration config) {
 		this.metadata = metadata;
 		this.edao = edao;
 		this.queue = queue;
 		this.config = config;
-		this.decider = new DeciderService(metadata, om, edao, config);
+		activeWorkerLastPollnSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
+		this.decider = new DeciderService(metadata, om);
 	}
 
 	public String startWorkflow(String name, int version, String correlationId, Map<String, Object> input) throws Exception {
@@ -517,6 +521,7 @@ public class WorkflowExecutor {
 			}
 			
 			List<Task> tasksToBeScheduled = outcome.tasksToBeScheduled;
+			setTaskDomains(tasksToBeScheduled, workflow);
 			List<Task> tasksToBeUpdated = outcome.tasksToBeUpdated;
 			boolean stateChanged = false;
 			
@@ -695,6 +700,51 @@ public class WorkflowExecutor {
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
 		}
+	}
+
+	public void setTaskDomains(List<Task> tasks, Workflow wf){
+		Map<String, String> taskToDomain = wf.getTaskToDomain();
+		if(taskToDomain != null){
+			// Check if all tasks have the same domain "*"
+			String domainstr = taskToDomain.get("*");
+			if(domainstr != null){
+				String[] domains = domainstr.split(",");
+				tasks.forEach(task -> {
+					// Filter out SystemTask
+					if(!(task instanceof SystemTask)){
+						// Check which domain worker is polling 
+						// Set the task domain
+						task.setDomain(getActiveDomain(task.getTaskType(), domains));
+					}
+				});
+				
+			} else {
+				tasks.forEach(task -> {
+					if(!(task instanceof SystemTask)){
+						String taskDomainstr = taskToDomain.get(task.getTaskType());
+						if(taskDomainstr != null){
+							task.setDomain(getActiveDomain(task.getTaskType(), taskDomainstr.split(",")));
+						}
+					}					
+				});				
+			}
+		}
+	}
+	
+	private String getActiveDomain(String taskType, String[] domains){
+		// The domain list has to be ordered.
+		// In sequence check if any worker has polled for last 30 seconds, if so that is the Active domain
+		String domain = null; // Default domain 
+		for(String d: domains){
+			PollData pd = edao.getPollData(taskType, d.trim());
+			if(pd != null){
+				if(pd.getLastPollTime() > System.currentTimeMillis() - (activeWorkerLastPollnSecs * 1000)){
+					domain = d.trim();
+					break;
+				}
+			}
+		}
+		return domain;
 	}
 
 	private long getTaskDuration(long s, Task task) {

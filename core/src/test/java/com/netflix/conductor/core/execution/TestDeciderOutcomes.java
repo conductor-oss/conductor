@@ -79,10 +79,7 @@ public class TestDeciderOutcomes {
 		TaskDef td = new TaskDef();
 		td.setRetryCount(1);
 		when(metadata.getTaskDef(any())).thenReturn(td);
- 		ExecutionDAO edao = mock(ExecutionDAO.class);
- 		when(edao.getPollData(any(), any())).thenReturn(null);
- 		Configuration config = mock(Configuration.class);
-		this.ds = new DeciderService(metadata, om, edao,config);
+		this.ds = new DeciderService(metadata, om);
 	}
 	
 	@Test

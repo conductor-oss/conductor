@@ -38,7 +38,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -50,10 +49,8 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
-import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.utils.IDGenerator;
-import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -71,20 +68,14 @@ public class DeciderService {
 	
 	private MetadataDAO metadata;
 
-	private ExecutionDAO execution;
-
 	private ObjectMapper om;
 	
 	private ParametersUtils pu = new ParametersUtils();
-	
-	private int activeWorkerLastPollnSecs;
-	
+		
 	@Inject
-	public DeciderService(MetadataDAO metadata, ObjectMapper om, ExecutionDAO execution, Configuration config) {
+	public DeciderService(MetadataDAO metadata, ObjectMapper om) {
 		this.metadata = metadata;
 		this.om = om;
-		this.execution = execution;
-		activeWorkerLastPollnSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
 	}
 
 	public DeciderOutcome decide(Workflow workflow, WorkflowDef def) throws TerminateWorkflow {
@@ -529,7 +520,6 @@ public class DeciderService {
 			default:
 				break;
 		}
-		setTaskDomains(tasks, workflow);
 		return tasks;
 	}
 
@@ -672,50 +662,6 @@ public class DeciderService {
 
 	}
 	
-	private void setTaskDomains(List<Task> tasks, Workflow wf){
-		Map<String, String> taskToDomain = wf.getTaskToDomain();
-		if(taskToDomain != null){
-			// Check if all tasks have the same domain "*"
-			String domainstr = taskToDomain.get("*");
-			if(domainstr != null){
-				String[] domains = domainstr.split(",");
-				tasks.forEach(task -> {
-					// Filter out SystemTask
-					if(!(task instanceof SystemTask)){
-						// Check which domain worker is polling 
-						// Set the task domain
-						task.setDomain(getActiveDomain(task.getTaskType(), domains));
-					}
-				});
-				
-			} else {
-				tasks.forEach(task -> {
-					if(!(task instanceof SystemTask)){
-						String taskDomainstr = taskToDomain.get(task.getTaskType());
-						if(taskDomainstr != null){
-							task.setDomain(getActiveDomain(task.getTaskType(), taskDomainstr.split(",")));
-						}
-					}					
-				});				
-			}
-		}
-	}
-	
-	private String getActiveDomain(String taskType, String[] domains){
-		// The domain list has to be ordered.
-		// In sequence check if any worker has polled for last 30 seconds, if so that is the Active domain
-		String domain = null; // Default domain 
-		for(String d: domains){
-			PollData pd = execution.getPollData(taskType, d.trim());
-			if(pd != null){
-				if(pd.getLastPollTime() > System.currentTimeMillis() - (activeWorkerLastPollnSecs * 1000)){
-					domain = d.trim();
-					break;
-				}
-			}
-		}
-		return domain;
-	}
 	
 	public static class DeciderOutcome {
 		
