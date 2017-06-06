@@ -75,6 +75,7 @@ public class WorkflowTaskCoordinator {
 	private static Map<Worker, Map<String, Object>> environmentData = new HashMap<>();
 	
 	private static final String DOMAIN = "domain";
+	private static final String ALL_WORKERS = "all";
 	
 	/**
 	 *
@@ -271,6 +272,9 @@ public class WorkflowTaskCoordinator {
 			return;
 		}
 		String domain = PropertyFactory.getString(worker.getTaskDefName(), DOMAIN, null);		
+		if(domain == null){
+			domain = PropertyFactory.getString(ALL_WORKERS, DOMAIN, null);		
+		}
 		logger.debug("Polling {}, domain={}, count = {} timeout = {} ms", worker.getTaskDefName(), domain, worker.getPollCount(), worker.getLongPollTimeoutInMS());
 		
 		try{

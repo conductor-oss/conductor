@@ -47,6 +47,7 @@ import org.junit.runner.RunWith;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -1123,7 +1124,7 @@ public class WorkflowServiceTest {
 	}
 
 	@Test
-	public void testSimpleWorkflowWithDomain() throws Exception {
+	public void testSimpleWorkflowWithTaskSpecificDomain() throws Exception {
 		
 		clearWorkflows();
 		createWorkflowDefForDomain();
@@ -1139,6 +1140,13 @@ public class WorkflowServiceTest {
 		Map<String, String> taskToDomain = new HashMap<String, String>();
 		taskToDomain.put("junit_task_3", "domain1");
 		taskToDomain.put("junit_task_2", "domain1");
+		
+		// Poll before so that a polling for this task is "active"
+		Task task = ess.poll("junit_task_3", "task1.junit.worker", "domain1");
+		assertNull(task);
+		task = ess.poll("junit_task_2", "task1.junit.worker", "domain1");
+		assertNull(task);
+
 		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2_SW, 1, correlationId , input, null, taskToDomain);
 		System.out.println("testSimpleWorkflow.wfid=" + wfid);
 		assertNotNull(wfid);
@@ -1163,7 +1171,7 @@ public class WorkflowServiceTest {
 		assertEquals(sizes.get("junit_task_3").intValue(), 0);
 		
 		// Polling for the first task should return the same task as before
-		Task task = ess.poll("junit_task_3", "task1.junit.worker");
+		task = ess.poll("junit_task_3", "task1.junit.worker");
 		assertNull(task);
 		task = ess.poll("junit_task_3", "task1.junit.worker", "domain1");
 		assertNotNull(task);
@@ -1224,8 +1232,144 @@ public class WorkflowServiceTest {
 		assertTrue("Found "  +es.getOutput().toString(), es.getOutput().containsKey("o3"));
 		assertEquals("task1.Done", es.getOutput().get("o3"));
 
+		List<PollData> pddata = ess.getPollData("junit_task_3");
+		assertTrue(pddata.size() == 2);
+		for(PollData pd: pddata){
+			assertEquals(pd.getQueueName(), "junit_task_3");
+			assertEquals(pd.getWorkerId(), "task1.junit.worker");
+			assertTrue(pd.getLastPollTime() != 0);
+			if(pd.getDomain() != null){
+				assertEquals(pd.getDomain(), "domain1");
+			}
+		}
+		
+		
+		List<PollData> pdList = ess.getAllPollData();
+		int count = 0;
+		for(PollData pd: pdList){
+			if(pd.getQueueName().equals("junit_task_3")){
+				count++;
+			}
+		}
+		assertTrue(count == 2);
+
 	}	
 
+	@Test
+	public void testSimpleWorkflowWithAllTaskInOneDomain() throws Exception {
+		
+		clearWorkflows();
+		createWorkflowDefForDomain();
+		
+		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
+		assertNotNull(found);
+		
+		String correlationId = "unit_test_sw";
+		Map<String, Object> input = new HashMap<String, Object>();
+		String inputParam1 = "p1 value";
+		input.put("param1", inputParam1);
+		input.put("param2", "p2 value");
+		Map<String, String> taskToDomain = new HashMap<String, String>();
+		taskToDomain.put("*", "domain11,, domain12");
+		
+		// Poll before so that a polling for this task is "active"
+		Task task = ess.poll("junit_task_3", "task1.junit.worker", "domain11");
+		assertNull(task);
+		task = ess.poll("junit_task_2", "task1.junit.worker", "domain12");
+		assertNull(task);
+
+		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2_SW, 1, correlationId , input, null, taskToDomain);
+		System.out.println("testSimpleWorkflow.wfid=" + wfid);
+		assertNotNull(wfid);
+		Workflow wf = provider.getWorkflow(wfid, false);
+		assertNotNull(wf);
+		
+		Workflow es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
+		
+		
+		es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+		assertEquals(1, es.getTasks().size());		//The very first task is the one that should be scheduled.
+		
+		
+				
+		// Check Size 
+		Map<String, Integer> sizes = ess.getTaskQueueSizes(Arrays.asList("domain11:junit_task_3","junit_task_3"));
+		assertEquals(sizes.get("domain11:junit_task_3").intValue(), 1);
+		assertEquals(sizes.get("junit_task_3").intValue(), 0);
+		
+		// Polling for the first task should return the same task as before
+		task = ess.poll("junit_task_3", "task1.junit.worker");
+		assertNull(task);
+		task = ess.poll("junit_task_3", "task1.junit.worker", "domain11");
+		assertNotNull(task);
+		assertEquals("junit_task_3", task.getTaskType());
+		assertEquals("domain11", task.getDomain());
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertEquals(wfid, task.getWorkflowInstanceId());
+		
+		String task1Op = "task1.Done";
+		List<Task> tasks = ess.getTasks(task.getTaskType(), null, 1);
+		assertNotNull(tasks);
+		assertEquals(1, tasks.size());
+		task = tasks.get(0);
+		
+		Workflow workflow = ess.getExecutionStatus(task.getWorkflowInstanceId(), false);
+		System.out.println("task workflow = " + workflow.getWorkflowType() + "," + workflow.getInput());
+		assertEquals(wfid, task.getWorkflowInstanceId());
+		task.getOutputData().put("op", task1Op);
+		task.setStatus(Status.COMPLETED);
+		ess.updateTask(task);
+		
+		es = ess.getExecutionStatus(wfid, false);
+		assertNotNull(es);
+		assertNotNull(es.getOutput());
+		assertTrue("Found "  +es.getOutput().toString(), es.getOutput().containsKey("o3"));
+		assertEquals("task1.Done", es.getOutput().get("o3"));
+		
+		task = ess.poll("junit_task_1", "task1.junit.worker");
+		assertNotNull(task);
+		assertEquals("junit_task_1", task.getTaskType());
+		Workflow essw = ess.getExecutionStatus(task.getWorkflowInstanceId(), false);
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertNotNull(essw.getTaskToDomain());
+		assertEquals(essw.getTaskToDomain().size(), 1);
+		
+		task.setStatus(Status.COMPLETED);
+		task.setReasonForIncompletion("unit test failure");
+		ess.updateTask(task);
+		
+		
+		task = ess.poll("junit_task_2", "task2.junit.worker", "domain11");
+		assertNull(task);
+		task = ess.poll("junit_task_2", "task2.junit.worker", "domain12");
+		assertNotNull(task);
+		assertEquals("junit_task_2", task.getTaskType());
+		assertEquals("domain12", task.getDomain());
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+				
+		task.setStatus(Status.COMPLETED);
+		task.setReasonForIncompletion("unit test failure");
+		ess.updateTask(task);
+
+		
+		
+		es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+		tasks = es.getTasks();
+		assertNotNull(tasks);
+		assertEquals(2, tasks.size());
+		
+		assertTrue("Found "  +es.getOutput().toString(), es.getOutput().containsKey("o3"));
+		assertEquals("task1.Done", es.getOutput().get("o3"));
+
+	}	
+	
+	
 	private void clearWorkflows() throws Exception {
 		List<String> workflows = ms.getWorkflowDefs().stream().map(def -> def.getName()).collect(Collectors.toList());
 		for(String wfName : workflows){

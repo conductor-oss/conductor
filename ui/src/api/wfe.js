@@ -6,6 +6,7 @@ const router = new Router();
 const baseURL = process.env.WF_SERVER;
 const baseURL2 = baseURL + 'workflow/';
 const baseURLMeta = baseURL + 'metadata/';
+const baseURLTask = baseURL + 'tasks/';
 
 
 router.get('/', async (req, res, next) => {
@@ -138,6 +139,23 @@ router.get('/metadata/taskdef', async (req, res, next) => {
   try {
     const result = await http.get(baseURLMeta + 'taskdefs');
     res.status(200).send({result});
+  } catch (err) {
+    next(err);
+  }
+});
+router.get('/queue/data', async (req, res, next) => {
+  try {
+    const sizes = await http.get(baseURLTask + 'queue/all');
+    const polldata = await http.get(baseURLTask + 'queue/polldata/all');
+    polldata.forEach(pd=>{
+      var qname = pd.queueName;
+
+      if(pd.domain != null){
+        qname = pd.domain + ":" + qname;
+      }
+      pd.qsize = sizes[qname];
+    });
+    res.status(200).send({polldata});
   } catch (err) {
     next(err);
   }

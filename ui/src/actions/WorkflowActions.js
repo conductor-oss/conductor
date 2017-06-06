@@ -227,6 +227,28 @@ export function getTaskDefs() {
   }
 }
 
+export function getQueueData() {
+
+  return function (dispatch) {
+    dispatch({
+      type: 'GET_POLL_DATA'
+    });
+
+
+    return http.get('/api/wfe/queue/data').then((data) => {
+      dispatch({
+        type: 'RECEIVED_POLL_DATA',
+        queueData: data
+      });
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}
+
 export function updateWorkflow(workflow){
   return function (dispatch) {
     dispatch({
