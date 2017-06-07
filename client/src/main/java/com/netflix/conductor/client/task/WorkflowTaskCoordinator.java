@@ -15,13 +15,9 @@
  */
 package com.netflix.conductor.client.task;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -72,10 +68,11 @@ public class WorkflowTaskCoordinator {
 	
 	private int threadCount;
 	
-	private static Map<Worker, Map<String, Object>> environmentData = new HashMap<>();
-	
 	private static final String DOMAIN = "domain";
+	
 	private static final String ALL_WORKERS = "all";
+	
+	private TaskLogger taskLogger;
 	
 	/**
 	 *
@@ -101,6 +98,7 @@ public class WorkflowTaskCoordinator {
 		for (Worker worker : taskWorkers) {
 			workers.add(worker);
 		}
+		this.taskLogger = new TaskLogger(client);
 	}
 	
 	/**
@@ -253,7 +251,6 @@ public class WorkflowTaskCoordinator {
 		});
 		this.ses = Executors.newScheduledThreadPool(workers.size());
 		workers.forEach(worker -> {
-			environmentData.put(worker, getEnvData(worker));
 			ses.scheduleWithFixedDelay(()->pollForTask(worker), worker.getPollingInterval(), worker.getPollingInterval(), TimeUnit.MILLISECONDS);	
 		});
 		
@@ -286,12 +283,15 @@ public class WorkflowTaskCoordinator {
 			logger.debug("Polled {}, for domain {} and receivd {} tasks", worker.getTaskDefName(), domain, tasks.size());
 			for(Task task : tasks) {
 				es.submit(() -> {
+					taskLogger.push(task);
 					try {
 						execute(worker, task);
 					} catch (Throwable t) {
 						task.setStatus(Task.Status.FAILED);
 						TaskResult result = new TaskResult(task);
 						handleException(t, result, worker, true, task);
+					} finally {
+						taskLogger.remove(task);
 					}
 				});
 			}
@@ -346,7 +346,6 @@ public class WorkflowTaskCoordinator {
 		}
 		
 		logger.debug("Task {} executed by worker {} with status {}", task.getTaskId(), worker.getClass().getSimpleName(), task.getStatus());
-		result.getLog().getEnvironment().putAll(environmentData.get(worker));
 		updateWithRetry(updateRetryCount, task, result, worker);
 
 	}
@@ -381,28 +380,6 @@ public class WorkflowTaskCoordinator {
 	 */
 	public int getUpdateRetryCount() {
 		return updateRetryCount;
-	}
-	
-	static Map<String, Object> getEnvData(Worker worker) {
-		List<String> props = worker.getLoggingEnvProps();
-		Map<String, Object> data = new HashMap<>();
-		if(props == null || props.isEmpty()) {
-			return data;
-		}		
-		String workerName = worker.getTaskDefName();
-		for(String property : props) {
-			property = property.trim();
-			String defaultValue = System.getenv(property);
-			String value = PropertyFactory.getString(workerName, property, defaultValue);
-			data.put(property, value);
-		}
-		
-		try {
-			data.put("HOSTNAME", InetAddress.getLocalHost().getHostName());			
-		} catch (UnknownHostException e) {
-			
-		}
-		return data;
 	}
 	
 	private void updateWithRetry(int count, Task task, TaskResult result, Worker worker) {

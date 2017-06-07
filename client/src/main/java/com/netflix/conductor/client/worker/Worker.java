@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Function;
 
+import com.netflix.conductor.client.task.TaskLogger;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
@@ -30,8 +31,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
  *
  */
 public interface Worker {
-	
-	
+		
 	public String getTaskDefName();
 	
 	/**
@@ -118,6 +118,14 @@ public interface Worker {
 	 */
 	public default int getLongPollTimeoutInMS() {
 		return PropertyFactory.getInteger(getTaskDefName(), "longPollTimeout", 100);
+	}
+	
+	/**
+	 * 
+	 * @param log
+	 */
+	public default void log(Object log) {
+		TaskLogger.log(log);
 	}
 	
 	public static Worker create(String taskType, Function<Task, TaskResult> executor){
