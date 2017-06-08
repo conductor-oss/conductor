@@ -22,33 +22,24 @@ public class TaskLogger {
 	
 	private static final ThreadLocal<String> tl = new InheritableThreadLocal<>();
 	
-	private static final ThreadLocal<TaskLogger> instance = new InheritableThreadLocal<>();
 	
-	private ExecutorService es;
+	private static ExecutorService es = Executors.newFixedThreadPool(1);
 	
-	private TaskClient client;
+	static TaskClient client;
 	
-	public TaskLogger(TaskClient client) {
-		this.es = Executors.newFixedThreadPool(1);
-		this.client = client;
-	}
-	
-	public void push(Task task) {
+	static void push(Task task) {
 		tl.set(task.getTaskId());
-		instance.set(this);
 	}
 	
-	public void remove(Task task) {
+	static void remove(Task task) {
 		tl.remove();
-		instance.remove();
 	}
 
 	public static void log(Object log) {
 		String taskId = tl.get();
-		TaskLogger taskLogger = instance.get();		
-		taskLogger.es.submit(() -> {
+		es.submit(() -> {
 			try {
-				taskLogger.client.log(taskId, log.toString());
+				client.log(taskId, log.toString());
 			}catch(Exception e) {
 				logger.error(e.getMessage(), e);
 			}

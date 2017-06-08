@@ -112,7 +112,7 @@ public interface Worker {
 	
 	/**
 	 * 
-	 * @param log
+	 * @param log execution log for the current task.  The object will be stringified (toString) and sent to the server.
 	 */
 	public default void log(Object log) {
 		TaskLogger.log(log);

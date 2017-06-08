@@ -15,6 +15,8 @@
  */
 package com.netflix.conductor.client.task;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
@@ -36,7 +38,6 @@ import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.PropertyFactory;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.servo.monitor.Stopwatch;
@@ -72,8 +73,6 @@ public class WorkflowTaskCoordinator {
 	
 	private static final String ALL_WORKERS = "all";
 	
-	private TaskLogger taskLogger;
-	
 	/**
 	 *
 	 * @param ec Eureka client - used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is terminated.  If passed null, discovery check is not done.
@@ -98,7 +97,6 @@ public class WorkflowTaskCoordinator {
 		for (Worker worker : taskWorkers) {
 			workers.add(worker);
 		}
-		this.taskLogger = new TaskLogger(client);
 	}
 	
 	/**
@@ -283,7 +281,7 @@ public class WorkflowTaskCoordinator {
 			logger.debug("Polled {}, for domain {} and receivd {} tasks", worker.getTaskDefName(), domain, tasks.size());
 			for(Task task : tasks) {
 				es.submit(() -> {
-					taskLogger.push(task);
+					TaskLogger.push(task);
 					try {
 						execute(worker, task);
 					} catch (Throwable t) {
@@ -291,7 +289,7 @@ public class WorkflowTaskCoordinator {
 						TaskResult result = new TaskResult(task);
 						handleException(t, result, worker, true, task);
 					} finally {
-						taskLogger.remove(task);
+						TaskLogger.remove(task);
 					}
 				});
 			}
@@ -409,11 +407,12 @@ public class WorkflowTaskCoordinator {
 		WorkflowTaskMetrics.executionException(worker.getTaskDefName(), t);
 		result.setStatus(TaskResult.Status.FAILED);
 		result.setReasonForIncompletion("Error while executing the task: " + t);
-		TaskExecLog execLog = result.getLog();
-		execLog.setError(t.getMessage());
-		for (StackTraceElement ste : t.getStackTrace()) {
-			execLog.getErrorTrace().add(ste.toString());
-		}
+		
+		StringWriter sw = new StringWriter();
+		t.printStackTrace(new PrintWriter(sw));		
+		TaskLogger.log(sw.toString());
+		
 		updateWithRetry(updateRetryCount, task, result, worker);
 	}
+	
 }
