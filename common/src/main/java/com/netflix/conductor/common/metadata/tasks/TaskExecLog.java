@@ -18,48 +18,35 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 /**
  * @author Viren
  * Model that represents the task's execution log.
  */
 public class TaskExecLog {
 	
-	private List<String> logs = Collections.synchronizedList(new ArrayList<>());
+	private String log;
 	
 	private String taskId;
 	
 	private String createdTime;
 	
 	public TaskExecLog() {}
+	
+	/**
+	 * @return the log
+	 */
+	public String getLog() {
+		return log;
+	}
 
 	/**
+	 * @param log the log to set
 	 * 
-	 * @return Task Execution Logs
 	 */
-	public List<String> getLogs() {
-		return logs;
+	public void setLog(String log) {
+		this.log = log;
 	}
-	
-	/**
-	 * 
-	 * @param logs Log entries to set
-	 */
-	public void setLogs(List<String> logs) {
-		this.logs = logs;
-	}
-	
-	/**
-	 * 
-	 * @param log adds a log entry.  The object is toString'ed and added to the logs
-	 */
-	public void log(Object log) {
-		this.logs.add(log.toString());
-	}
-	
+
 	/**
 	 * @return the taskId
 	 */

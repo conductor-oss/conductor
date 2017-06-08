@@ -177,14 +177,6 @@ public class TaskResult {
 		this.log = log;
 	}
 	
-	/**
-	 * 
-	 * @param log adds a log entry.  The object is toString'ed and added to the logs
-	 */
-	public void log(Object log) {
-		getLog().log(log);
-	}
-
 	@Override
 	public String toString() {
 		return "TaskResult [workflowInstanceId=" + workflowInstanceId + ", taskId=" + taskId + ", status=" + status + "]";
