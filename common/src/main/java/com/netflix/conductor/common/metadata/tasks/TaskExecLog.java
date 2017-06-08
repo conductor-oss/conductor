@@ -32,9 +32,9 @@ public class TaskExecLog {
 	
 	private String taskId;
 	
-	public TaskExecLog() {
-		
-	}
+	private String createdTime;
+	
+	public TaskExecLog() {}
 
 	/**
 	 * 
@@ -73,6 +73,21 @@ public class TaskExecLog {
 	 */
 	public void setTaskId(String taskId) {
 		this.taskId = taskId;
+	}
+
+	/**
+	 * @return the createdTime
+	 */
+	public String getCreatedTime() {
+		return createdTime;
+	}
+
+	/**
+	 * @param createdTime the createdTime to set
+	 * 
+	 */
+	public void setCreatedTime(String createdTime) {
+		this.createdTime = createdTime;
 	}
 	
 	
