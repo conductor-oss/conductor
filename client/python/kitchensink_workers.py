@@ -1,3 +1,4 @@
+from __future__ import print_function
 from conductor.ConductorWorker import ConductorWorker
 
 def execute(task):
@@ -9,7 +10,7 @@ def execute4(task):
     return {'status': 'COMPLETED', 'output': {'mod': 5, 'taskToExecute': 'task_1', 'oddEven': 0, 'dynamicTasks': forkTasks, 'inputs': input}}
 
 def main():
-    print 'Hello World'
+    print('Hello World')
     cc = ConductorWorker('http://localhost:8080/api', 1, 0.1)
     for x in range(1, 30):
         if(x == 4):

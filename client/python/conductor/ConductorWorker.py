@@ -13,18 +13,20 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 # 
+from __future__ import print_function
 import sys
 import time
 import subprocess
 import conductor
-import thread
+from conductor.conductor import WFClientMgr
+from threading import Thread
 import socket
 
 hostname = socket.gethostname()
 
 class ConductorWorker:
     def __init__(self, server_url, thread_count, polling_interval):
-        wfcMgr = conductor.WFClientMgr(server_url)
+        wfcMgr = conductor.conductor.WFClientMgr(server_url)
         self.workflowClient = wfcMgr.workflowClient
         self.taskClient = wfcMgr.taskClient
         self.thread_count = thread_count
@@ -39,7 +41,7 @@ class ConductorWorker:
             task['outputData'] = resp['output']
             self.taskClient.updateTask(task)
         except Exception as err:
-            print 'Error executing task: ' + str(err)
+            print('Error executing task: ' + str(err))
 
     def poll_and_execute(self, taskType, exec_function):
         while True:
@@ -49,15 +51,16 @@ class ConductorWorker:
                 self.execute(polled, exec_function)
 
     def start(self, taskType, exec_function, wait):
-        print 'Polling for task ' + taskType + ' at a ' + str(self.polling_interval) + ' ms interval with ' + str(self.thread_count) + ' threads for task execution, with worker id as ' + hostname
+        print('Polling for task ' + taskType + ' at a ' + str(self.polling_interval) + ' ms interval with ' + str(self.thread_count) + ' threads for task execution, with worker id as ' + hostname)
         for x in range(0, int(self.thread_count)):
-            thread.start_new_thread(self.poll_and_execute, (taskType, exec_function, ) )
+            thread = Thread(target = self.poll_and_execute, args = (taskType, exec_function, ))
+            thread.start()
         if(wait):
             while 1:
                 pass
 
 def exc(taskType, inputData, startTime, retryCount, status, callbackAfterSeconds, pollCount):
-    print 'Executing the function'
+    print('Executing the function')
     return {'status': 'COMPLETED', 'output': {}}
 
 def main():
