@@ -20,12 +20,7 @@ package com.netflix.conductor.dao.es5.index;
 
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -56,6 +51,7 @@ import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
+import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -260,7 +256,41 @@ public class ElasticSearch5DAO implements IndexDAO {
 		}
 		
 	}
-	
+
+	@Override
+	public List<TaskExecLog> getTaskLogs(String taskId) {
+		try {
+
+			QueryBuilder qf = QueryBuilders.matchAllQuery();
+			Expression expression = Expression.fromString("taskId='" + taskId + "'");
+			qf = expression.getFilterBuilder();
+
+			BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(qf);
+			QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery("*");
+			BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
+
+			final SearchRequestBuilder srb = client.prepareSearch(indexName).setQuery(fq).setTypes(TASK_DOC_TYPE);
+			SearchResponse response = srb.execute().actionGet();
+			SearchHit[] hits = response.getHits().getHits();
+			List<TaskExecLog> logs = new ArrayList<>(hits.length);
+			for(SearchHit hit : hits) {
+				Map<String, Object> source = hit.getSource();
+				TaskExecLog tel = new TaskExecLog();
+				tel.setCreatedTime((String)source.get("createdTime"));
+				tel.setLog((String)source.get("log"));
+				tel.setTaskId((String)source.get("taskId"));
+				logs.add(tel);
+			}
+
+			return logs;
+
+		}catch(Exception e) {
+			log.error(e.getMessage(), e);
+		}
+
+		return null;
+	}
+
 	@Override
 	public void addMessage(String queue, Message msg) {
 		
