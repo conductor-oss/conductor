@@ -113,6 +113,13 @@
           
             <li>
     <li class="toctree-l1 ">
+        <a class="" href="../domains/">Task Domains</a>
+        
+    </li>
+<li>
+          
+            <li>
+    <li class="toctree-l1 ">
         <a class="" href="../extend/">Extending Conductor</a>
         
     </li>
@@ -282,6 +289,7 @@
 </tbody>
 </table>
 <h2 id="start-a-workflow">Start A Workflow<a class="headerlink" href="#start-a-workflow" title="Permanent link">&para;</a></h2>
+<h3 id="with-input-only">With Input only<a class="headerlink" href="#with-input-only" title="Permanent link">&para;</a></h3>
 <pre><code>POST /workflow/{name}?version=&amp;correlationId=
 {
    //JSON payload for workflow
@@ -309,6 +317,30 @@
 <h4 id="input">Input<a class="headerlink" href="#input" title="Permanent link">&para;</a></h4>
 <p>JSON Payload to start the workflow.  Mandatory.  If workflow does not expect any input MUST pass an empty JSON like <code>{}</code></p>
 <h4 id="output">Output<a class="headerlink" href="#output" title="Permanent link">&para;</a></h4>
+<p>Id of the workflow (GUID)</p>
+<h3 id="with-input-and-task-domains">With Input and Task Domains<a class="headerlink" href="#with-input-and-task-domains" title="Permanent link">&para;</a></h3>
+<pre><code>POST /workflow
+{
+   //JSON payload for Start workflow request
+}
+</code></pre>
+
+<h4 id="start-workflow-request">Start workflow request<a class="headerlink" href="#start-workflow-request" title="Permanent link">&para;</a></h4>
+<p>JSON for start workflow request</p>
+<pre><code>{
+  &quot;name&quot;: &quot;myWorkflow&quot;, // Name of the workflow
+  &quot;version&quot;: 1, // Version
+  “correlatond”: “corr1” // correlation Id
+  &quot;input&quot;: {
+    // Input map. 
+  },
+  &quot;taskToDomain&quot;: {
+    // Task to domain map
+  }
+}
+</code></pre>
+
+<h4 id="output_1">Output<a class="headerlink" href="#output_1" title="Permanent link">&para;</a></h4>
 <p>Id of the workflow (GUID)</p>
 <h2 id="retrieve-workflows">Retrieve Workflows<a class="headerlink" href="#retrieve-workflows" title="Permanent link">&para;</a></h2>
 <table>
@@ -374,7 +406,7 @@
 </tr>
 </tbody>
 </table>
-<h3 id="output_1">Output<a class="headerlink" href="#output_1" title="Permanent link">&para;</a></h3>
+<h3 id="output_2">Output<a class="headerlink" href="#output_2" title="Permanent link">&para;</a></h3>
 <p>Search result as described below:</p>
 <pre><code class="json">{
   &quot;totalHits&quot;: 0,
@@ -504,12 +536,12 @@ Optionally updating task's input and output as specified in the payload.
 </thead>
 <tbody>
 <tr>
-<td><code>GET /tasks/poll/{taskType}</code></td>
-<td>Poll for a task</td>
+<td><code>GET /tasks/poll/{taskType}?workerid=&amp;domain=</code></td>
+<td>Poll for a task. <code>workerid</code> identifies the worker that polled for the job and <code>domain</code> allows the poller to poll for a task in a specific domain</td>
 </tr>
 <tr>
-<td><code>GET /tasks/poll/batch/{taskType}?count=&amp;timeout=</code></td>
-<td>Poll for a task in a batch specified by <code>count</code>.  This is a long poll and the connection will wait until <code>timeout</code> or if there is at-least 1 item available, whichever comes first.</td>
+<td><code>GET /tasks/poll/batch/{taskType}?count=&amp;timeout=&amp;workerid=&amp;domain</code></td>
+<td>Poll for a task in a batch specified by <code>count</code>.  This is a long poll and the connection will wait until <code>timeout</code> or if there is at-least 1 item available, whichever comes first.<code>workerid</code> identifies the worker that polled for the job and <code>domain</code> allows the poller to poll for a task in a specific domain</td>
 </tr>
 <tr>
 <td><code>POST /tasks</code></td>
