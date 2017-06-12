@@ -144,6 +144,10 @@ public class TaskClient extends ClientBase {
 		postForEntity("tasks", task);
 	}
 	
+	public void log(String taskId, String logMessage) {
+		postForEntity("tasks/"  + taskId + "/log", logMessage);		
+	}
+	
 	/**
 	 * Ack for the task poll
 	 * @param taskId Id of the task to be polled

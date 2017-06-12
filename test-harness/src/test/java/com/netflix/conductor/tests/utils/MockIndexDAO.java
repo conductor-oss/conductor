@@ -71,9 +71,14 @@ public class MockIndexDAO implements IndexDAO {
 		
 	}
   
-  @Override
+	@Override
 	public String get(String workflowInstanceId, String key) {
 		return null;
 	}
 	
+	
+	@Override
+	public List<TaskExecLog> getTaskLogs(String taskId) {
+		return null;
+	}
 }

@@ -33,6 +33,7 @@ import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
@@ -342,5 +343,18 @@ public class ExecutionService {
 
 	public void addMessage(String name, Message msg) {	
 		edao.addMessage(name, msg);
+	}
+
+	/**
+	 * Adds task logs
+	 * @param taskId Id of the task
+	 * @param log logs
+	 */
+	public void log(String taskId, String log) {
+		TaskExecLog executionLog = new TaskExecLog();
+		executionLog.setTaskId(taskId);
+		executionLog.setLog(log);
+		edao.addTaskExecLog(executionLog);
+		
 	}
 }

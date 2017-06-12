@@ -62,7 +62,7 @@ const menuPaths = {
   },{
     label: 'Poll Data',
     href: '/workflow/queue/data',
-    icon: 'fa-star'
+    icon: 'fa-exchange'
   }]
 };
 

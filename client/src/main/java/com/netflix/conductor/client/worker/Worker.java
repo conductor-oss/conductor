@@ -17,10 +17,9 @@ package com.netflix.conductor.client.worker;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.function.Function;
 
+import com.netflix.conductor.client.task.TaskLogger;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
@@ -30,8 +29,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
  *
  */
 public interface Worker {
-	
-	
+		
 	public String getTaskDefName();
 	
 	/**
@@ -102,15 +100,7 @@ public interface Worker {
 	public default int getPollingInterval() {
 		return PropertyFactory.getInteger(getTaskDefName(), "pollInterval", 1000);
 	}
-	
-	/**
-	 * 
-	 * @return Returns a list of environment or system variables that should be logged
-	 */
-	public default List<String> getLoggingEnvProps() {
-		String keys = PropertyFactory.getString(getTaskDefName(), "taskLogProps", "HOSTNAME,USER,EC2_INSTANCE_ID");
-		return Arrays.asList(keys.split(","));
-	}
+
 	/**
 	 * 
 	 * @return Time to wait when making a poll to workflow server for tasks.  The client will wait for at-least specified seconds for task queue to be "filled".  
@@ -118,6 +108,14 @@ public interface Worker {
 	 */
 	public default int getLongPollTimeoutInMS() {
 		return PropertyFactory.getInteger(getTaskDefName(), "longPollTimeout", 100);
+	}
+	
+	/**
+	 * 
+	 * @param log execution log for the current task.  The object will be stringified (toString) and sent to the server.
+	 */
+	public default void log(Object log) {
+		TaskLogger.log(log);
 	}
 	
 	public static Worker create(String taskType, Function<Task, TaskResult> executor){

@@ -67,11 +67,11 @@ public class DeciderService {
 	private static final TypeReference<List<WorkflowTask>> ListOfWorkflowTasks = new TypeReference<List<WorkflowTask>>() {};
 	
 	private MetadataDAO metadata;
-	
+
 	private ObjectMapper om;
 	
 	private ParametersUtils pu = new ParametersUtils();
-	
+		
 	@Inject
 	public DeciderService(MetadataDAO metadata, ObjectMapper om) {
 		this.metadata = metadata;
@@ -520,7 +520,6 @@ public class DeciderService {
 			default:
 				break;
 		}
-		setTaskDomains(tasks, workflow);
 		return tasks;
 	}
 
@@ -663,14 +662,6 @@ public class DeciderService {
 
 	}
 	
-	private void setTaskDomains(List<Task> tasks, Workflow wf){
-		Map<String, String> taskToDomain = wf.getTaskToDomain();
-		if(taskToDomain != null){
-			tasks.forEach(task -> {
-				task.setDomain(taskToDomain.get(task.getTaskType()));
-			});
-		}
-	}
 	
 	public static class DeciderOutcome {
 		

@@ -19,51 +19,31 @@
 package com.netflix.conductor.client.task;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+
+import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Uninterruptibles;
-import org.junit.Test;
-
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 /**
  * @author Viren
  *
  */
 public class WorkflowTaskCoordinatorTests {
-
-	@Test
-	public void testLoggingEnvironment() {
-		Worker worker = Worker.create("test", (Task task)-> new TaskResult(task));
-		List<String> keys = worker.getLoggingEnvProps();
-		
-		Map<String, Object> env = WorkflowTaskCoordinator.getEnvData(worker);
-		assertNotNull(env);
-		assertTrue(!env.isEmpty());
-		Set<String> loggedKeys = env.keySet();
-		for(String key : keys) {
-			assertTrue(loggedKeys.contains(key));
-		}
-	}
 	
 	@Test(expected=IllegalArgumentException.class)
 	public void testNoWorkersException() {
