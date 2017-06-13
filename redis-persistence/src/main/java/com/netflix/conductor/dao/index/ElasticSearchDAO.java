@@ -114,7 +114,7 @@ public class ElasticSearchDAO implements IndexDAO {
 	
 	private static final TimeZone gmt = TimeZone.getTimeZone("GMT");
 	    
-    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMww");
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMWW");
 	
     static {
     	sdf.setTimeZone(gmt);
@@ -274,7 +274,7 @@ public class ElasticSearchDAO implements IndexDAO {
 			QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery("*");
 			BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
 			
-			final SearchRequestBuilder srb = client.prepareSearch(indexName).setQuery(fq).setTypes(TASK_DOC_TYPE);
+			final SearchRequestBuilder srb = client.prepareSearch(logIndexPrefix + "*").setQuery(fq).setTypes(TASK_DOC_TYPE);
 			SearchResponse response = srb.execute().actionGet();
 			SearchHit[] hits = response.getHits().getHits();
 			List<TaskExecLog> logs = new ArrayList<>(hits.length);
@@ -458,5 +458,4 @@ public class ElasticSearchDAO implements IndexDAO {
 		long count = response.getHits().getTotalHits();
 		return new SearchResult<String>(count, result);
 	}
-	
 }
