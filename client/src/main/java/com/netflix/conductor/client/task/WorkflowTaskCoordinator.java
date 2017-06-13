@@ -97,6 +97,7 @@ public class WorkflowTaskCoordinator {
 		for (Worker worker : taskWorkers) {
 			workers.add(worker);
 		}
+		TaskLogger.client = client;
 	}
 	
 	/**
