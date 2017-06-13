@@ -219,7 +219,7 @@ public class ElasticSearchDAO implements IndexDAO {
 	@Override
 	public void index(Task task) {
 		try {
-
+			
 			String id = task.getTaskId();
 			TaskSummary summary = new TaskSummary(task);
 			byte[] doc = om.writeValueAsBytes(summary);
@@ -236,6 +236,11 @@ public class ElasticSearchDAO implements IndexDAO {
 	
 	@Override
 	public void add(TaskExecLog taskExecLog) {
+		
+		if(StringUtils.isEmpty(taskExecLog.getLog())) {
+			return;
+		}
+		
 		SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
 		sdf2.setTimeZone(gmt);
 		String created = sdf2.format(new Date());

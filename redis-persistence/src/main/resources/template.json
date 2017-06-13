@@ -7,6 +7,14 @@
                 "log": {
                     "type": "string",
                     "index": "analyzed"
+                },
+                "input": {
+                    "type": "string",
+                    "index": "analyzed"
+                },
+                "output": {
+                    "type": "string",
+                    "index": "analyzed"
                 }
             }
         },
