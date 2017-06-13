@@ -339,6 +339,10 @@ public class WorkflowTaskCoordinator {
 			
 		} catch (Exception e) {
 			logger.error("Unable to execute task {}", task, e);
+			if (result == null) {
+				task.setStatus(Task.Status.FAILED);
+				result = new TaskResult(task);
+			}
 			handleException(e, result, worker, false, task);
 		} finally {
 			sw.stop();
