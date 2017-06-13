@@ -337,12 +337,18 @@ public class ExecutionService {
 		return edao.addEventExecution(ee);
 	}
 	
+
 	public void updateEventExecution(EventExecution ee) {
 		edao.updateEventExecution(ee);
 	}
 
-	public void addMessage(String name, Message msg) {	
-		edao.addMessage(name, msg);
+	/**
+	 * 
+	 * @param queue Name of the registered queue
+	 * @param msg Message
+	 */
+	public void addMessage(String queue, Message msg) {	
+		edao.addMessage(queue, msg);
 	}
 
 	/**
@@ -356,5 +362,14 @@ public class ExecutionService {
 		executionLog.setLog(log);
 		edao.addTaskExecLog(executionLog);
 		
+	}
+	
+	/**
+	 * 
+	 * @param taskId Id of the task for which to retrieve logs
+	 * @return Execution Logs (logged by the worker)
+	 */
+	public List<TaskExecLog> getTaskLogs(String taskId) {
+		return indexer.getTaskLogs(taskId);		
 	}
 }
