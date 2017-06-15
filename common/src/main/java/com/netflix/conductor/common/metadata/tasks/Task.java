@@ -506,7 +506,7 @@ public class Task {
 	
 	/**
 	 * 
-	 * @param workflowTask
+	 * @param workflowTask Task definition
 	 */
 	public void setWorkflowTask(WorkflowTask workflowTask) {
 		this.workflowTask = workflowTask;
