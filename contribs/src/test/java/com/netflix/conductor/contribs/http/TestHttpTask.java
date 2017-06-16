@@ -28,9 +28,11 @@ import static org.mockito.Mockito.when;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -57,7 +59,6 @@ import com.netflix.conductor.contribs.http.HttpTask.Input;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 
 /**
@@ -289,6 +290,31 @@ public class TestHttpTask {
  		System.out.println(workflow.getTasks());
  		System.out.println(workflow.getStatus());
  	}
+
+ 	@Test
+	public void testOAuth() throws Exception {
+		Task task = new Task();
+		Input input = new Input();
+		input.setUri("http://localhost:7009/oauth");
+		input.setMethod("POST");
+		input.setOauthConsumerKey("someKey");
+		input.setOauthConsumerSecret("someSecret");
+		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+
+		httpTask.start(workflow, task, executor);
+
+		Map<String, Object> response = (Map<String, Object>) task.getOutputData().get("response");
+		Map<String, String> body = (Map<String, String>) response.get("body");
+
+		assertEquals("someKey", body.get("oauth_consumer_key"));
+		assertTrue("Should have OAuth nonce", body.containsKey("oauth_nonce"));
+		assertTrue("Should have OAuth signature", body.containsKey("oauth_signature"));
+		assertTrue("Should have OAuth signature method", body.containsKey("oauth_signature_method"));
+		assertTrue("Should have OAuth oauth_timestamp", body.containsKey("oauth_timestamp"));
+		assertTrue("Should have OAuth oauth_version", body.containsKey("oauth_version"));
+		
+		assertEquals("Task output: " + task.getOutputData(), Status.COMPLETED, task.getStatus());
+	}
 	
 	private static class EchoHandler extends AbstractHandler {
 
@@ -317,7 +343,6 @@ public class TestHttpTask {
 				writer.close();
 			} else if(request.getMethod().equals("POST") && request.getRequestURI().equals("/post")) {
 				response.addHeader("Content-Type", "application/json");
-				
 				BufferedReader reader = request.getReader();
 				Map<String, Object> input = om.readValue(reader, mapOfObj);
 				Set<String> keys = input.keySet();
@@ -342,8 +367,22 @@ public class TestHttpTask {
 				writer.print(NUM_RESPONSE);
 				writer.flush();
 				writer.close();
-			} 
+			} else if(request.getMethod().equals("POST") && request.getRequestURI().equals("/oauth")) {
+				//echo back oauth parameters generated in the Authorization header in the response
+				Map<String, String> params = parseOauthParameters(request);
+				response.addHeader("Content-Type", "application/json");
+				PrintWriter writer = response.getWriter();
+				writer.print(om.writeValueAsString(params));
+				writer.flush();
+				writer.close();
+			}
 		}
-		
+
+		private Map<String, String> parseOauthParameters(HttpServletRequest request) {
+			String paramString = request.getHeader("Authorization").replaceAll("^OAuth (.*)", "$1");
+			return Arrays.stream(paramString.split("\\s*,\\s*"))
+				.map(pair -> pair.split("="))
+				.collect(Collectors.toMap(o -> o[0], o -> o[1].replaceAll("\"","")));
+		}
 	}
 }
