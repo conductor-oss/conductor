@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -26,7 +27,7 @@ import java.util.List;
  */
 public class TaskExecLog {
 	
-	private List<String> logs;
+	private List<String> logs = new LinkedList<>();
 	
 	private String taskId;
 	
