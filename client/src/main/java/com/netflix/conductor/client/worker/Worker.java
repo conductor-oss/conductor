@@ -19,7 +19,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.function.Function;
 
-import com.netflix.conductor.client.task.TaskLogger;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 
@@ -108,14 +107,6 @@ public interface Worker {
 	 */
 	public default int getLongPollTimeoutInMS() {
 		return PropertyFactory.getInteger(getTaskDefName(), "longPollTimeout", 100);
-	}
-	
-	/**
-	 * 
-	 * @param log execution log for the current task.  The object will be stringified (toString) and sent to the server.
-	 */
-	public default void log(Object log) {
-		TaskLogger.log(log);
 	}
 	
 	public static Worker create(String taskType, Function<Task, TaskResult> executor){

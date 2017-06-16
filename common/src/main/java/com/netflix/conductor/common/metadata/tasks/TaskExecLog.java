@@ -18,33 +18,36 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import java.util.List;
+
 /**
  * @author Viren
  * Model that represents the task's execution log.
  */
 public class TaskExecLog {
 	
-	private String log;
+	private List<String> logs;
 	
 	private String taskId;
 	
-	private String createdTime;
+	private long createdTime;
 	
 	public TaskExecLog() {}
 	
 	/**
-	 * @return the log
-	 */
-	public String getLog() {
-		return log;
-	}
-
-	/**
-	 * @param log the log to set
 	 * 
+	 * @return Task Execution Logs
 	 */
-	public void setLog(String log) {
-		this.log = log;
+	public List<String> getLogs() {
+		return logs;
+	}
+	
+	/**
+	 * 
+	 * @param logs Task Execution Logs
+	 */
+	public void setLogs(List<String> logs) {
+		this.logs = logs;
 	}
 
 	/**
@@ -65,7 +68,7 @@ public class TaskExecLog {
 	/**
 	 * @return the createdTime
 	 */
-	public String getCreatedTime() {
+	public long getCreatedTime() {
 		return createdTime;
 	}
 
@@ -73,7 +76,7 @@ public class TaskExecLog {
 	 * @param createdTime the createdTime to set
 	 * 
 	 */
-	public void setCreatedTime(String createdTime) {
+	public void setCreatedTime(long createdTime) {
 		this.createdTime = createdTime;
 	}
 	

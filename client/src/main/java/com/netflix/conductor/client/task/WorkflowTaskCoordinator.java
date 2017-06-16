@@ -97,7 +97,6 @@ public class WorkflowTaskCoordinator {
 		for (Worker worker : taskWorkers) {
 			workers.add(worker);
 		}
-		TaskLogger.client = client;
 	}
 	
 	/**
@@ -282,15 +281,12 @@ public class WorkflowTaskCoordinator {
 			logger.debug("Polled {}, for domain {} and receivd {} tasks", worker.getTaskDefName(), domain, tasks.size());
 			for(Task task : tasks) {
 				es.submit(() -> {
-					TaskLogger.push(task);
 					try {
 						execute(worker, task);
 					} catch (Throwable t) {
 						task.setStatus(Task.Status.FAILED);
 						TaskResult result = new TaskResult(task);
 						handleException(t, result, worker, true, task);
-					} finally {
-						TaskLogger.remove(task);
 					}
 				});
 			}
@@ -414,8 +410,8 @@ public class WorkflowTaskCoordinator {
 		result.setReasonForIncompletion("Error while executing the task: " + t);
 		
 		StringWriter sw = new StringWriter();
-		t.printStackTrace(new PrintWriter(sw));		
-		TaskLogger.log(sw.toString());
+		t.printStackTrace(new PrintWriter(sw));
+		result.log(sw.toString());
 		
 		updateWithRetry(updateRetryCount, task, result, worker);
 	}

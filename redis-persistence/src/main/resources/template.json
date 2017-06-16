@@ -8,6 +8,10 @@
                     "type": "string",
                     "index": "analyzed"
                 },
+                "logs": {
+                    "type": "string",
+                    "index": "analyzed"
+                },
                 "input": {
                     "type": "string",
                     "index": "analyzed"

@@ -237,19 +237,14 @@ public class ElasticSearchDAO implements IndexDAO {
 	@Override
 	public void add(TaskExecLog taskExecLog) {
 		
-		if(StringUtils.isEmpty(taskExecLog.getLog())) {
+		if (taskExecLog.getLogs().isEmpty()) {
 			return;
 		}
 		
-		SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-		sdf2.setTimeZone(gmt);
-		String created = sdf2.format(new Date());
 		int retry = 3;
 		while(retry > 0) {
 			try {
 				
-				
-				taskExecLog.setCreatedTime(created);
 				IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
 				request.source(om.writeValueAsBytes(taskExecLog));
 	 			client.index(request).actionGet();
@@ -284,11 +279,8 @@ public class ElasticSearchDAO implements IndexDAO {
 			SearchHit[] hits = response.getHits().getHits();
 			List<TaskExecLog> logs = new ArrayList<>(hits.length);
 			for(SearchHit hit : hits) {
-				Map<String, Object> source = hit.getSource();
-				TaskExecLog tel = new TaskExecLog();
-				tel.setCreatedTime((String)source.get("createdTime"));
-				tel.setLog((String)source.get("log"));
-				tel.setTaskId((String)source.get("taskId"));
+				String source = hit.getSourceAsString();
+				TaskExecLog tel = om.readValue(source, TaskExecLog.class);			
 				logs.add(tel);
 			}
 			

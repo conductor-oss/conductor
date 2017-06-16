@@ -359,9 +359,9 @@ public class ExecutionService {
 	public void log(String taskId, String log) {
 		TaskExecLog executionLog = new TaskExecLog();
 		executionLog.setTaskId(taskId);
-		executionLog.setLog(log);
+		executionLog.getLogs().add(log);
+		executionLog.setCreatedTime(System.currentTimeMillis());
 		edao.addTaskExecLog(executionLog);
-		
 	}
 	
 	/**
@@ -372,4 +372,5 @@ public class ExecutionService {
 	public List<TaskExecLog> getTaskLogs(String taskId) {
 		return indexer.getTaskLogs(taskId);		
 	}
+	
 }
