@@ -33,6 +33,7 @@ import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
@@ -336,11 +337,40 @@ public class ExecutionService {
 		return edao.addEventExecution(ee);
 	}
 	
+
 	public void updateEventExecution(EventExecution ee) {
 		edao.updateEventExecution(ee);
 	}
 
-	public void addMessage(String name, Message msg) {	
-		edao.addMessage(name, msg);
+	/**
+	 * 
+	 * @param queue Name of the registered queue
+	 * @param msg Message
+	 */
+	public void addMessage(String queue, Message msg) {	
+		edao.addMessage(queue, msg);
 	}
+
+	/**
+	 * Adds task logs
+	 * @param taskId Id of the task
+	 * @param log logs
+	 */
+	public void log(String taskId, String log) {
+		TaskExecLog executionLog = new TaskExecLog();
+		executionLog.setTaskId(taskId);
+		executionLog.getLogs().add(log);
+		executionLog.setCreatedTime(System.currentTimeMillis());
+		edao.addTaskExecLog(executionLog);
+	}
+	
+	/**
+	 * 
+	 * @param taskId Id of the task for which to retrieve logs
+	 * @return Execution Logs (logged by the worker)
+	 */
+	public List<TaskExecLog> getTaskLogs(String taskId) {
+		return indexer.getTaskLogs(taskId);		
+	}
+	
 }

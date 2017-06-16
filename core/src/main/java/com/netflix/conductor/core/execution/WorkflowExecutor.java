@@ -447,8 +447,10 @@ public class WorkflowExecutor {
 		}
 		edao.updateTask(task);
 
-		TaskExecLog tlog = result.getLog();
+		TaskExecLog tlog = new TaskExecLog();		
 		tlog.setTaskId(task.getTaskId());
+		tlog.setLogs(result.getLogs());
+		tlog.setCreatedTime(System.currentTimeMillis());
 		edao.addTaskExecLog(tlog);
 
 		switch (task.getStatus()) {

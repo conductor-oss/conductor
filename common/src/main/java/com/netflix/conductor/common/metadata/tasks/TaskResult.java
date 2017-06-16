@@ -19,7 +19,9 @@
 package com.netflix.conductor.common.metadata.tasks;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author Viren
@@ -47,7 +49,7 @@ public class TaskResult {
 
 	private Map<String, Object> outputData = new HashMap<>();
 	
-	private TaskExecLog log = new TaskExecLog();
+	private List<String> logs = new CopyOnWriteArrayList<>();
 
 	public TaskResult(Task task) {
 		this.workflowInstanceId = task.getWorkflowInstanceId();
@@ -163,28 +165,32 @@ public class TaskResult {
 	}
 
 	/**
-	 * @return the task execution log
-	 */
-	public TaskExecLog getLog() {
-		return log;
-	}
-
-	/**
-	 * @param log task execution log
 	 * 
+	 * @return Task execution logs
 	 */
-	public void setLog(TaskExecLog log) {
-		this.log = log;
+	public List<String> getLogs() {
+		return logs;
 	}
 	
 	/**
 	 * 
-	 * @param log adds a log entry.  The object is toString'ed and added to the logs
+	 * @param logs Task execution logs
 	 */
-	public void log(Object log) {
-		getLog().log(log);
+	public void setLogs(List<String> logs) {
+		this.logs = logs;
 	}
+	
 
+	/**
+	 * 
+	 * @param log Log line to be added
+	 * @return Instance of TaskResult
+	 */
+	public TaskResult log(String log) {
+		this.logs.add(log);
+		return this;
+	}
+	
 	@Override
 	public String toString() {
 		return "TaskResult [workflowInstanceId=" + workflowInstanceId + ", taskId=" + taskId + ", status=" + status + "]";

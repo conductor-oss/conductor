@@ -60,6 +60,10 @@ public class TaskSummary {
 	
 	private String taskType;
 	
+	private String input;
+	
+	private String output;
+	
 	public TaskSummary(Task task) {
 		
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
@@ -76,7 +80,15 @@ public class TaskSummary {
 		this.status = task.getStatus();
 		this.reasonForIncompletion = task.getReasonForIncompletion();
 		this.queueWaitTime = task.getQueueWaitTime();
-
+		if (task.getInputData() != null) {
+			this.input = task.getInputData().toString();
+		}
+		
+		if (task.getOutputData() != null) {
+			this.output = task.getOutputData().toString();
+		}
+		
+		
 		if(task.getEndTime() > 0){
 			this.executionTime = task.getEndTime() - task.getStartTime();
 		}
@@ -259,5 +271,36 @@ public class TaskSummary {
 		this.taskType = taskType;
 	}
 
+	/**
+	 * 
+	 * @return input to the task
+	 */
+	public String getInput() {
+		return input;
+	}
+	
+	/**
+	 * 
+	 * @param input input to the task
+	 */
+	public void setInput(String input) {
+		this.input = input;
+	}
+	
+	/**
+	 * 
+	 * @return output of the task
+	 */
+	public String getOutput() {
+		return output;
+	}
+	
+	/**
+	 * 
+	 * @param output Task output
+	 */
+	public void setOutput(String output) {
+		this.output = output;
+	}
 	
 }

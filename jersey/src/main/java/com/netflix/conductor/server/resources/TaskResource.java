@@ -38,6 +38,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
@@ -125,6 +126,20 @@ public class TaskResource {
 	@Consumes({ MediaType.WILDCARD })
 	public String ack(@PathParam("taskId") String taskId, @QueryParam("workerid") String workerId) throws Exception {
 		return "" + taskService.ackTaskRecieved(taskId, workerId);
+	}
+	
+	@POST
+	@Path("/{taskId}/log")
+	@ApiOperation("Log Task Execution Details")
+	public void log(@PathParam("taskId") String taskId, String log) throws Exception {
+		taskService.log(taskId, log);		
+	}
+	
+	@GET
+	@Path("/{taskId}/log")
+	@ApiOperation("Get Task Execution Logs")
+	public List<TaskExecLog> getTaskLogs(@PathParam("taskId") String taskId) throws Exception {
+		return taskService.getTaskLogs(taskId);		
 	}
 
 	@GET

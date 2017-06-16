@@ -185,8 +185,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			dynoClient.srem(nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getTaskId());
 		}
 		
-		
-
 		indexer.index(task);
 	}
 	

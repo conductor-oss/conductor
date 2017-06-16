@@ -514,7 +514,7 @@ public class DeciderService {
 				break;
 			case WAIT:				
 				Map<String, Object> waitTaskInput = pu.getTaskInputV2(taskToSchedule.getInputParameters(), workflow, taskId, null);
-				Task waitTask = SystemTask.waitTask(workflow, workflow.getCorrelationId(), taskToSchedule, waitTaskInput);
+				Task waitTask = SystemTask.waitTask(workflow, taskId, taskToSchedule, waitTaskInput);
 				tasks.add(waitTask);
 				break;
 			default:
