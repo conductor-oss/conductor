@@ -360,7 +360,7 @@ public class ExecutionService {
 	public void log(String taskId, String log) {
 		TaskExecLog executionLog = new TaskExecLog();
 		executionLog.setTaskId(taskId);
-		executionLog.getLogs().add(log);
+		executionLog.setLog(log);
 		executionLog.setCreatedTime(System.currentTimeMillis());
 		edao.addTaskExecLog(Arrays.asList(executionLog));
 	}
