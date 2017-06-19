@@ -222,7 +222,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 
 	@Override
-	public void addTaskExecLog(TaskExecLog log) {
+	public void addTaskExecLog(List<TaskExecLog> log) {
 		indexer.add(log);		
 	}
 	

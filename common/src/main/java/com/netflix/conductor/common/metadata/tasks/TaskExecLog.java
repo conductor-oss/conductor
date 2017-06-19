@@ -35,6 +35,10 @@ public class TaskExecLog {
 	
 	public TaskExecLog() {}
 	
+	public TaskExecLog(String log) {
+		this.logs.add(log);
+		this.createdTime = System.currentTimeMillis();
+	}
 	/**
 	 * 
 	 * @return Task Execution Logs

@@ -78,9 +78,9 @@ public interface IndexDAO {
 
 	/**
 	 * 
-	 * @param log Task Execution log to be indexed
+	 * @param logs Task Execution logs to be indexed
 	 */
-	public void add(TaskExecLog log);
+	public void add(List<TaskExecLog> logs);
 	
 	/**
 	 * 
