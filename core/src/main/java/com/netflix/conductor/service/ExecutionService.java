@@ -16,6 +16,7 @@
 package com.netflix.conductor.service;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -361,7 +362,7 @@ public class ExecutionService {
 		executionLog.setTaskId(taskId);
 		executionLog.getLogs().add(log);
 		executionLog.setCreatedTime(System.currentTimeMillis());
-		edao.addTaskExecLog(executionLog);
+		edao.addTaskExecLog(Arrays.asList(executionLog));
 	}
 	
 	/**
