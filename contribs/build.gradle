@@ -6,6 +6,8 @@ dependencies {
 	compile 'com.amazonaws:aws-java-sdk-sqs:latest.release'
 	compile ('com.google.inject:guice:4.1+') { force= true}
 
+	compile 'net.thisptr:jackson-jq:+'
+
 	compile 'com.sun.jersey.contribs.jersey-oauth:oauth-client:1.19.+'
 	compile 'com.sun.jersey.contribs.jersey-oauth:oauth-signature:1.19.+'
 
