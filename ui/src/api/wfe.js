@@ -62,7 +62,8 @@ router.get('/id/:workflowId', async (req, res, next) => {
     });
     for(let t = 0; t < result.tasks.length; t++) {
       let task = result.tasks[t];
-      const logs = await http.get(baseURLTask + task.taskId + '/log');
+      let logs = await http.get(baseURLTask + task.taskId + '/log');
+      logs = logs || [];
       let logs2 = [];
       logs.forEach(log => {
         const dtstr = moment(log.createdTime).format('MM/DD/YY, HH:mm:ss:SSS');
