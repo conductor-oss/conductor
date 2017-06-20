@@ -1,0 +1,67 @@
+{
+  "workflow": {
+    "properties": {
+      "correlationId": {
+        "type": "string",
+        "index": "not_analyzed",
+        "doc_values": true
+      },
+      "endTime": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis",
+        "doc_values": true
+      },
+      "executionTime": {
+        "type": "long",
+        "doc_values": true
+      },
+      "input": {
+        "type": "string",
+        "index": "analyzed"
+      },
+      "output": {
+        "type": "string",
+        "index": "analyzed"
+      },
+      "reasonForIncompletion": {
+        "type": "string",
+        "index": "not_analyzed",
+        "doc_values": true
+      },
+      "startTime": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis",
+        "doc_values": true
+      },
+      "status": {
+        "type": "string",
+        "index": "not_analyzed",
+        "doc_values": true
+      },
+      "updateTime": {
+        "type": "date",
+        "format": "strict_date_optional_time||epoch_millis",
+        "doc_values": true
+      },
+      "version": {
+        "type": "long",
+        "doc_values": true
+      },
+      "workflowId": {
+        "type": "string",
+        "index": "not_analyzed",
+        "doc_values": true
+      },
+      "workflowType": {
+        "type": "string",
+        "index": "not_analyzed",
+        "doc_values": true
+      },
+      "rawJSON": {
+        "type": "string",
+        "index": "no",
+        "include_in_all": false
+      }
+    }
+  }
+}

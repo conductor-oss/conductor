@@ -1,0 +1,11 @@
+{
+  "archive": {
+    "properties": {
+      "workflow_data": {
+        "type": "string",
+        "index": "no",
+        "doc_values": true
+      }
+    }
+  }
+}
