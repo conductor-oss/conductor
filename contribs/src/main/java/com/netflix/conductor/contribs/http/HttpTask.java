@@ -47,6 +47,9 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource.Builder;
+import com.sun.jersey.oauth.client.OAuthClientFilter;
+import com.sun.jersey.oauth.signature.OAuthParameters;
+import com.sun.jersey.oauth.signature.OAuthSecrets;
 
 /**
  * @author Viren
@@ -149,7 +152,16 @@ public class HttpTask extends WorkflowSystemTask {
 	 */
 	protected HttpResponse httpCall(Input input) throws Exception {
 		Client client = rcm.getClient(input);
+
+		if(input.oauthConsumerKey != null) {
+			logger.info("Configuring OAuth filter");
+			OAuthParameters params = new OAuthParameters().consumerKey(input.oauthConsumerKey).signatureMethod("HMAC-SHA1").version("1.0");
+			OAuthSecrets secrets = new OAuthSecrets().consumerSecret(input.oauthConsumerSecret);
+			client.addFilter(new OAuthClientFilter(client.getProviders(), params, secrets));
+		}
+
 		Builder builder = client.resource(input.uri).type(MediaType.APPLICATION_JSON);
+
 		if(input.body != null) {
 			builder.entity(input.body);
 		}
@@ -280,6 +292,10 @@ public class HttpTask extends WorkflowSystemTask {
 		private Object body;
 		
 		private String accept = MediaType.APPLICATION_JSON;
+		
+		private String oauthConsumerKey;
+
+		private String oauthConsumerSecret;
 
 		/**
 		 * @return the method
@@ -367,5 +383,32 @@ public class HttpTask extends WorkflowSystemTask {
 			this.accept = accept;
 		}
 		
+		/**
+		 * @return the OAuth consumer Key
+		 */
+		public String getOauthConsumerKey() {
+			return oauthConsumerKey;
+		}
+
+		/**
+		 * @param oauthConsumerKey the OAuth consumer key to set
+		 */
+		public void setOauthConsumerKey(String oauthConsumerKey) {
+			this.oauthConsumerKey = oauthConsumerKey;
+		}
+
+		/**
+		 * @return the OAuth consumer secret
+		 */
+		public String getOauthConsumerSecret() {
+			return oauthConsumerSecret;
+		}
+
+		/**
+		 * @param oauthConsumerSecret the OAuth consumer secret to set
+		 */
+		public void setOauthConsumerSecret(String oauthConsumerSecret) {
+			this.oauthConsumerSecret = oauthConsumerSecret;
+		}
 	}
 }
