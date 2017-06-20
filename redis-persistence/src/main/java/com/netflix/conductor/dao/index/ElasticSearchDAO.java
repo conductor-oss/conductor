@@ -38,6 +38,7 @@ import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -56,6 +57,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.indices.IndexAlreadyExistsException;
 import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -235,9 +237,9 @@ public class ElasticSearchDAO implements IndexDAO {
 	}
 	
 	@Override
-	public void add(TaskExecLog taskExecLog) {
+	public void add(List<TaskExecLog> taskExecLogs) {
 		
-		if (taskExecLog.getLogs().isEmpty()) {
+		if (taskExecLogs.isEmpty()) {
 			return;
 		}
 		
@@ -245,9 +247,13 @@ public class ElasticSearchDAO implements IndexDAO {
 		while(retry > 0) {
 			try {
 				
-				IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
-				request.source(om.writeValueAsBytes(taskExecLog));
-	 			client.index(request).actionGet();
+				BulkRequestBuilder brb = client.prepareBulk();
+				for(TaskExecLog taskExecLog : taskExecLogs) {
+					IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
+					request.source(om.writeValueAsBytes(taskExecLog));
+					brb.add(request);
+				}
+				brb.execute().actionGet();
 	 			break;
 	 			
 			} catch (Throwable e) {
@@ -274,7 +280,7 @@ public class ElasticSearchDAO implements IndexDAO {
 			QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery("*");
 			BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
 			
-			final SearchRequestBuilder srb = client.prepareSearch(logIndexPrefix + "*").setQuery(fq).setTypes(TASK_DOC_TYPE);
+			final SearchRequestBuilder srb = client.prepareSearch(logIndexPrefix + "*").setQuery(fq).setTypes(TASK_DOC_TYPE).addSort(SortBuilders.fieldSort("createdTime").order(SortOrder.ASC));
 			SearchResponse response = srb.execute().actionGet();
 			SearchHit[] hits = response.getHits().getHits();
 			List<TaskExecLog> logs = new ArrayList<>(hits.length);

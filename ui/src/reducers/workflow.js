@@ -234,6 +234,20 @@ export default function workflows(state = initialState, action) {
       pausing: false,
       resumign: false
     };
+    case 'GET_TASK_LOGS':
+      return {
+        ...state,
+        fetching: true,
+        error: false
+      };
+    case 'RECEIVED_GET_TASK_LOGS':
+      return {
+        ...state,
+        logs: action.logs,
+        error: false,
+        fetching: false,
+        refetch: false
+      };
     default:
       return state;
     };

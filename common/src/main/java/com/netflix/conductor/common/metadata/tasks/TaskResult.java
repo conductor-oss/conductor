@@ -49,7 +49,7 @@ public class TaskResult {
 
 	private Map<String, Object> outputData = new HashMap<>();
 	
-	private List<String> logs = new CopyOnWriteArrayList<>();
+	private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
 
 	public TaskResult(Task task) {
 		this.workflowInstanceId = task.getWorkflowInstanceId();
@@ -168,7 +168,7 @@ public class TaskResult {
 	 * 
 	 * @return Task execution logs
 	 */
-	public List<String> getLogs() {
+	public List<TaskExecLog> getLogs() {
 		return logs;
 	}
 	
@@ -176,7 +176,7 @@ public class TaskResult {
 	 * 
 	 * @param logs Task execution logs
 	 */
-	public void setLogs(List<String> logs) {
+	public void setLogs(List<TaskExecLog> logs) {
 		this.logs = logs;
 	}
 	
@@ -187,7 +187,7 @@ public class TaskResult {
 	 * @return Instance of TaskResult
 	 */
 	public TaskResult log(String log) {
-		this.logs.add(log);
+		this.logs.add(new TaskExecLog(log));
 		return this;
 	}
 	
