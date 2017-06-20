@@ -32,62 +32,62 @@
   <!-- <script src='lang/en.js' type='text/javascript'></script> -->
 
   <script type="text/javascript">
-    $(function () {
-    	
-      var url = window.location.search.match(/url=([^&]+)/);
-      if (url && url.length > 1) {
-        url = decodeURIComponent(url[1]);
-      } else {
-        url = "http://localhost:8080/api/swagger.json";
-      }
+      $(function () {
 
-      hljs.configure({
-        highlightSizeThreshold: 5000
-      });
-
-      // Pre load translate...
-      if(window.SwaggerTranslator) {
-        window.SwaggerTranslator.translate();
-      }
-      window.swaggerUi = new SwaggerUi({
-        url: url,
-        dom_id: "swagger-ui-container",
-        supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
-        onComplete: function(swaggerApi, swaggerUi){
-        	window.swaggerUi.api.setHost("localhost:8080/api");
-          if(typeof initOAuth == "function") {
-            initOAuth({
-              clientId: "your-client-id",
-              clientSecret: "your-client-secret-if-required",
-              realm: "your-realms",
-              appName: "your-app-name",
-              scopeSeparator: " ",
-              additionalQueryStringParams: {}
-            });
+          var url = window.location.search.match(/url=([^&]+)/); //http://127.0.0.1:8080/?url=127.0.0.1:8080
+          if (url && url.length > 1) {
+              url = decodeURIComponent(url[1]);
+          } else {
+              url = "localhost:8080";
           }
 
+          hljs.configure({
+              highlightSizeThreshold: 5000
+          });
+
+          // Pre load translate...
           if(window.SwaggerTranslator) {
-            window.SwaggerTranslator.translate();
+              window.SwaggerTranslator.translate();
           }
-        },
-        onFailure: function(data) {
-          log("Unable to Load SwaggerUI");
-        },
-        docExpansion: "none",
-        jsonEditor: false,
-        defaultModelRendering: 'schema',
-        showRequestHeaders: false
+          window.swaggerUi = new SwaggerUi({
+              url: "http://" + url + "/api/swagger.json",
+              dom_id: "swagger-ui-container",
+              supportedSubmitMethods: ['get', 'post', 'put', 'delete', 'patch'],
+              onComplete: function(swaggerApi, swaggerUi){
+                  window.swaggerUi.api.setHost(url + "/api");
+                  if(typeof initOAuth == "function") {
+                      initOAuth({
+                          clientId: "your-client-id",
+                          clientSecret: "your-client-secret-if-required",
+                          realm: "your-realms",
+                          appName: "your-app-name",
+                          scopeSeparator: " ",
+                          additionalQueryStringParams: {}
+                      });
+                  }
+
+                  if(window.SwaggerTranslator) {
+                      window.SwaggerTranslator.translate();
+                  }
+              },
+              onFailure: function(data) {
+                  log("Unable to Load SwaggerUI");
+              },
+              docExpansion: "none",
+              jsonEditor: false,
+              defaultModelRendering: 'schema',
+              showRequestHeaders: false
+          });
+
+          window.swaggerUi.load();
+
+          function log() {
+              if ('console' in window) {
+                  console.log.apply(console, arguments);
+              }
+          }
       });
 
-      window.swaggerUi.load();
-
-      function log() {
-        if ('console' in window) {
-          console.log.apply(console, arguments);
-        }
-      }
-  });
-    
   </script>
 </head>
 

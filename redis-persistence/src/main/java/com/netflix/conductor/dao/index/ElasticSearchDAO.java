@@ -20,6 +20,7 @@ package com.netflix.conductor.dao.index;
 
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -37,6 +38,8 @@ import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -54,6 +57,8 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.indices.IndexAlreadyExistsException;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,8 +78,8 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.dao.index.query.parser.Expression;
-import com.netflix.conductor.dao.index.query.parser.ParserException;
+import com.netflix.conductor.dao.es5.index.query.parser.Expression;
+import com.netflix.conductor.dao.es5.index.query.parser.ParserException;
 import com.netflix.conductor.metrics.Monitors;
 
 /**
@@ -112,7 +117,7 @@ public class ElasticSearchDAO implements IndexDAO {
 	
 	private static final TimeZone gmt = TimeZone.getTimeZone("GMT");
 	    
-    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMww");
+    private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMWW");
 	
     static {
     	sdf.setTimeZone(gmt);
@@ -217,7 +222,7 @@ public class ElasticSearchDAO implements IndexDAO {
 	@Override
 	public void index(Task task) {
 		try {
-
+			
 			String id = task.getTaskId();
 			TaskSummary summary = new TaskSummary(task);
 			byte[] doc = om.writeValueAsBytes(summary);
@@ -233,20 +238,27 @@ public class ElasticSearchDAO implements IndexDAO {
 	}
 	
 	@Override
-	public void add(TaskExecLog taskExecLog) {
-		SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-		sdf2.setTimeZone(gmt);
-		String created = sdf2.format(new Date());
+	public void add(List<TaskExecLog> taskExecLogs) {
+		
+		if (taskExecLogs.isEmpty()) {
+			return;
+		}
+		
 		int retry = 3;
 		while(retry > 0) {
 			try {
 				
-				
-				taskExecLog.setCreatedTime(created);
-				IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
-				request.source(om.writeValueAsBytes(taskExecLog));
-	 			client.index(request).actionGet();
-	 			break;
+				BulkRequestBuilder brb = client.prepareBulk();
+				for(TaskExecLog taskExecLog : taskExecLogs) {
+					IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
+					request.source(om.writeValueAsBytes(taskExecLog));
+					brb.add(request);
+				}
+				BulkResponse response = brb.execute().actionGet();
+				if(!response.hasFailures()) {
+					break;
+				}
+	 			retry--;
 	 			
 			} catch (Throwable e) {
 				log.error("Indexing failed {}", e.getMessage(), e);
@@ -257,6 +269,38 @@ public class ElasticSearchDAO implements IndexDAO {
 			}
 		}
 		
+	}
+	
+	
+	public List<TaskExecLog> getTaskLogs(String taskId) {
+		
+		try {
+			
+			QueryBuilder qf = QueryBuilders.matchAllQuery();
+			Expression expression = Expression.fromString("taskId='" + taskId + "'");
+			qf = expression.getFilterBuilder();
+			
+			BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(qf);
+			QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery("*");
+			BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
+			
+			final SearchRequestBuilder srb = client.prepareSearch(logIndexPrefix + "*").setQuery(fq).setTypes(TASK_DOC_TYPE).addSort(SortBuilders.fieldSort("createdTime").order(SortOrder.ASC));
+			SearchResponse response = srb.execute().actionGet();
+			SearchHit[] hits = response.getHits().getHits();
+			List<TaskExecLog> logs = new ArrayList<>(hits.length);
+			for(SearchHit hit : hits) {
+				String source = hit.getSourceAsString();
+				TaskExecLog tel = om.readValue(source, TaskExecLog.class);			
+				logs.add(tel);
+			}
+			
+			return logs;
+			
+		}catch(Exception e) {
+			log.error(e.getMessage(), e);
+		}
+		
+		return null;
 	}
 	
 	@Override
@@ -421,5 +465,4 @@ public class ElasticSearchDAO implements IndexDAO {
 		long count = response.getHits().getTotalHits();
 		return new SearchResult<String>(count, result);
 	}
-	
 }

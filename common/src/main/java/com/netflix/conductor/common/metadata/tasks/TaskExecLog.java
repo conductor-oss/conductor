@@ -18,102 +18,39 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
 /**
  * @author Viren
  * Model that represents the task's execution log.
  */
 public class TaskExecLog {
-
-	private Map<String, Object> environment = new HashMap<>();
 	
-	private List<String> logs = Collections.synchronizedList(new ArrayList<>());
-	
-	private List<String> errorTrace = new LinkedList<>();
-	
-	private String error;
+	private String log;
 	
 	private String taskId;
 	
-	private String createdTime;
+	private long createdTime;
 	
-	public TaskExecLog() {
-		
-	}
-
-	/**
-	 * @return the environment
-	 */
-	public Map<String, Object> getEnvironment() {
-		return environment;
-	}
-
-	/**
-	 * @param environment the environment to set
-	 * 
-	 */
-	public void setEnvironment(Map<String, Object> environment) {
-		this.environment = environment;
-	}
-
-	/**
-	 * 
-	 * @return Task Execution Logs
-	 */
-	public List<String> getLogs() {
-		return logs;
+	public TaskExecLog() {}
+	
+	public TaskExecLog(String log) {
+		this.log =log;
+		this.createdTime = System.currentTimeMillis();
 	}
 	
 	/**
 	 * 
-	 * @param logs Log entries to set
+	 * @return Task Exec Log
 	 */
-	public void setLogs(List<String> logs) {
-		this.logs = logs;
+	public String getLog() {
+		return log;
 	}
 	
 	/**
 	 * 
-	 * @param log adds a log entry.  The object is toString'ed and added to the logs
+	 * @param log The Log
 	 */
-	public void log(Object log) {
-		this.logs.add(log.toString());
-	}
-	
-	/**
-	 * @return the errorTrace
-	 */
-	public List<String> getErrorTrace() {
-		return errorTrace;
-	}
-
-	/**
-	 * @param errorTrace the errorTrace to set
-	 * 
-	 */
-	public void setErrorTrace(List<String> errorTrace) {
-		this.errorTrace = errorTrace;
-	}
-
-	/**
-	 * @return the error
-	 */
-	public String getError() {
-		return error;
-	}
-
-	/**
-	 * @param error the error to set
-	 * 
-	 */
-	public void setError(String error) {
-		this.error = error;
+	public void setLog(String log) {
+		this.log = log;
 	}
 
 	/**
@@ -132,21 +69,19 @@ public class TaskExecLog {
 	}
 
 	/**
-	 * 
-	 * @return Creation time (server side) when the log was added
+	 * @return the createdTime
 	 */
-	public String getCreatedTime() {
+	public long getCreatedTime() {
 		return createdTime;
 	}
-	
+
 	/**
+	 * @param createdTime the createdTime to set
 	 * 
-	 * @param createdTime creation time to set
 	 */
-	public void setCreatedTime(String createdTime) {
+	public void setCreatedTime(long createdTime) {
 		this.createdTime = createdTime;
 	}
-	
 	
 	
 }

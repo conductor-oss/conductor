@@ -13,14 +13,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 #
+from __future__ import print_function
 import requests
 import json
 import sys
 import time
-import thread
 import socket
 
+
 hostname = socket.gethostname()
+
 
 class BaseClient:
     printUrl = False
@@ -31,9 +33,9 @@ class BaseClient:
 
     def get(self, resPath, queryParams=None):
         theUrl = "{}/{}".format(self.baseURL, resPath)
-        resp = requests.get(theUrl, params=queryParams);
+        resp = requests.get(theUrl, params=queryParams)
         self.__checkForSuccess(resp)
-        if(resp.content == ''):
+        if(resp.content == b''):
             return None
         else:
             return resp.json()
@@ -45,9 +47,9 @@ class BaseClient:
             theHeader = dict(self.headers.items() + headers.items())
         if body is not None:
             jsonBody = json.dumps(body, ensure_ascii=False)
-            resp = requests.post(theUrl, params=queryParams, data=jsonBody, headers=theHeader);
+            resp = requests.post(theUrl, params=queryParams, data=jsonBody, headers=theHeader)
         else:
-            resp = requests.post(theUrl, params=queryParams, headers=theHeader);
+            resp = requests.post(theUrl, params=queryParams, headers=theHeader)
 
         self.__checkForSuccess(resp)
         return self.__return(resp, theHeader)
@@ -60,9 +62,9 @@ class BaseClient:
 
         if body is not None:
             jsonBody = json.dumps(body, ensure_ascii=False)
-            resp = requests.put(theUrl, params=queryParams, data=jsonBody, headers=theHeader);
+            resp = requests.put(theUrl, params=queryParams, data=jsonBody, headers=theHeader)
         else:
-            resp = requests.put(theUrl, params=queryParams, headers=theHeader);
+            resp = requests.put(theUrl, params=queryParams, headers=theHeader)
 
         self.__print(resp)
         self.__checkForSuccess(resp)
@@ -97,7 +99,7 @@ class BaseClient:
         try:
             resp.raise_for_status()
         except:
-            print "ERROR: " + resp.text
+            print("ERROR: " + resp.text)
             raise
 
 class MetadataClient(BaseClient):
@@ -163,7 +165,7 @@ class TaskClient(BaseClient):
         try:
             return self.get(url, params)
         except Exception as err:
-            print 'Error while polling ' + str(err)
+            print('Error while polling ' + str(err))
             return None
 
     def ackTask(self, taskId, workerid):
@@ -251,7 +253,7 @@ class WFClientMgr:
 
 def main():
     if len(sys.argv) < 3 :
-        print "Usage - python conductor server_url command parameters..."
+        print("Usage - python conductor server_url command parameters...")
         return None
 
     server_url = sys.argv[1]
@@ -260,30 +262,30 @@ def main():
     wfc = wfcMgr.workflowClient
     if command == 'start':
         if len(sys.argv) < 7:
-            print 'python conductor server_url start workflow_name input_json [version] [correlationId]'
+            print('python conductor server_url start workflow_name input_json [version] [correlationId]')
             return None;
         wfName = sys.argv[3]
         version = sys.argv[4]
         input = json.loads(sys.argv[5])
         correlationId = sys.argv[6]
         workflowId = wfc.startWorkflow(wfName, input, 1, correlationId)
-        print workflowId
+        print(workflowId)
         return workflowId
     elif command == 'get':
         if len(sys.argv) < 4:
-            print 'python conductor server_url get workflow_id'
+            print('python conductor server_url get workflow_id')
             return None
         wfId = sys.argv[3]
         wfjson = wfc.getWorkflow(wfId)
-        print json.dumps(wfjson, indent=True, separators=(',', ': '))
+        print(json.dumps(wfjson, indent=True, separators=(',', ': ')))
         return wfjson
     elif command == 'terminate':
         if len(sys.argv) < 4:
-            print 'python conductor server_url terminate workflow_id'
+            print('python conductor server_url terminate workflow_id')
             return None
         wfId = sys.argv[3]
         wfjson = wfc.terminateWorkflow(wfId)
-        print 'OK'
+        print('OK')
         return wfId
 if __name__ == '__main__':
     main()

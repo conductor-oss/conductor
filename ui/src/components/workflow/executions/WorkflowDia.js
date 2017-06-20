@@ -32,8 +32,6 @@ class WorkflowDia extends Component {
 
   render() {
 
-
-
     var wf = this.props.data;
     if(wf == null) {
       wf = {};

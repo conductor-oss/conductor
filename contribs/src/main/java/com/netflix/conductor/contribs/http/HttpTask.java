@@ -47,6 +47,9 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource.Builder;
+import com.sun.jersey.oauth.client.OAuthClientFilter;
+import com.sun.jersey.oauth.signature.OAuthParameters;
+import com.sun.jersey.oauth.signature.OAuthSecrets;
 
 /**
  * @author Viren
@@ -117,10 +120,15 @@ public class HttpTask extends WorkflowSystemTask {
 		try {
 			
 			HttpResponse response = httpCall(input);
+			logger.info("response {}, {}", response.statusCode, response.body);
 			if(response.statusCode > 199 && response.statusCode < 300) {
 				task.setStatus(Status.COMPLETED);
 			} else {
-				task.setReasonForIncompletion(response.body.toString());
+				if(response.body != null) {
+					task.setReasonForIncompletion(response.body.toString());
+				} else {
+					task.setReasonForIncompletion("No response from the remote service");
+				}
 				task.setStatus(Status.FAILED);
 			}
 			if(response != null) {
@@ -144,7 +152,16 @@ public class HttpTask extends WorkflowSystemTask {
 	 */
 	protected HttpResponse httpCall(Input input) throws Exception {
 		Client client = rcm.getClient(input);
+
+		if(input.oauthConsumerKey != null) {
+			logger.info("Configuring OAuth filter");
+			OAuthParameters params = new OAuthParameters().consumerKey(input.oauthConsumerKey).signatureMethod("HMAC-SHA1").version("1.0");
+			OAuthSecrets secrets = new OAuthSecrets().consumerSecret(input.oauthConsumerSecret);
+			client.addFilter(new OAuthClientFilter(client.getProviders(), params, secrets));
+		}
+
 		Builder builder = client.resource(input.uri).type(MediaType.APPLICATION_JSON);
+
 		if(input.body != null) {
 			builder.entity(input.body);
 		}
@@ -164,9 +181,9 @@ public class HttpTask extends WorkflowSystemTask {
 			return response;
 
 		} catch(UniformInterfaceException ex) {
-			
+			logger.error(ex.getMessage(), ex);
 			ClientResponse cr = ex.getResponse();
-			
+			logger.error("Status Code: {}", cr.getStatus());
 			if(cr.getStatus() > 199 && cr.getStatus() < 300) {
 				
 				if(cr.getStatus() != 204 && cr.hasEntity()) {
@@ -187,7 +204,7 @@ public class HttpTask extends WorkflowSystemTask {
 	private Object extractBody(ClientResponse cr) {
 
 		String json = cr.getEntity(String.class);
-		logger.debug(json);
+		logger.info(json);
 		
 		try {
 			
@@ -275,6 +292,10 @@ public class HttpTask extends WorkflowSystemTask {
 		private Object body;
 		
 		private String accept = MediaType.APPLICATION_JSON;
+		
+		private String oauthConsumerKey;
+
+		private String oauthConsumerSecret;
 
 		/**
 		 * @return the method
@@ -362,5 +383,32 @@ public class HttpTask extends WorkflowSystemTask {
 			this.accept = accept;
 		}
 		
+		/**
+		 * @return the OAuth consumer Key
+		 */
+		public String getOauthConsumerKey() {
+			return oauthConsumerKey;
+		}
+
+		/**
+		 * @param oauthConsumerKey the OAuth consumer key to set
+		 */
+		public void setOauthConsumerKey(String oauthConsumerKey) {
+			this.oauthConsumerKey = oauthConsumerKey;
+		}
+
+		/**
+		 * @return the OAuth consumer secret
+		 */
+		public String getOauthConsumerSecret() {
+			return oauthConsumerSecret;
+		}
+
+		/**
+		 * @param oauthConsumerSecret the OAuth consumer secret to set
+		 */
+		public void setOauthConsumerSecret(String oauthConsumerSecret) {
+			this.oauthConsumerSecret = oauthConsumerSecret;
+		}
 	}
 }

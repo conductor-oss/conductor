@@ -1,6 +1,7 @@
 import { join } from 'path';
 import { Router } from 'express';
 import http from '../core/HttpClient';
+import moment from 'moment';
 
 const router = new Router();
 const baseURL = process.env.WF_SERVER;
@@ -48,7 +49,7 @@ router.get('/id/:workflowId', async (req, res, next) => {
     const meta = await http.get(baseURLMeta + 'workflow/' + result.workflowType + '?version=' + result.version);
     const subs = [];
     const subworkflows = {};
-    result.tasks.forEach(task=>{
+    result.tasks.forEach(task => {
       if(task.taskType == 'SUB_WORKFLOW'){
         let subWorkflowId = task.outputData && task.outputData.subWorkflowId;
         if(subWorkflowId == null) {
@@ -59,6 +60,17 @@ router.get('/id/:workflowId', async (req, res, next) => {
         }
       }
     });
+    for(let t = 0; t < result.tasks.length; t++) {
+      let task = result.tasks[t];
+      let logs = await http.get(baseURLTask + task.taskId + '/log');
+      logs = logs || [];
+      let logs2 = [];
+      logs.forEach(log => {
+        const dtstr = moment(log.createdTime).format('MM/DD/YY, HH:mm:ss:SSS');
+        logs2.push(dtstr + ' : ' + log.log);
+      });
+      task.logs = logs2;
+    }
     let submeta = {};
     for(let i = 0; i < subs.length; i++){
       let submeta = await http.get(baseURLMeta + 'workflow/' + subs[i].name + '?version=' + subs[i].version);
@@ -139,6 +151,14 @@ router.get('/metadata/taskdef', async (req, res, next) => {
   try {
     const result = await http.get(baseURLMeta + 'taskdefs');
     res.status(200).send({result});
+  } catch (err) {
+    next(err);
+  }
+});
+router.get('/task/log/:taskId', async (req, res, next) => {
+  try {
+    const logs = await http.get(baseURLTask + req.params.taskId + '/log');
+    res.status(200).send({logs});
   } catch (err) {
     next(err);
   }
