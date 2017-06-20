@@ -39,6 +39,7 @@ import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -253,8 +254,11 @@ public class ElasticSearchDAO implements IndexDAO {
 					request.source(om.writeValueAsBytes(taskExecLog));
 					brb.add(request);
 				}
-				brb.execute().actionGet();
-	 			break;
+				BulkResponse response = brb.execute().actionGet();
+				if(!response.hasFailures()) {
+					break;
+				}
+	 			retry--;
 	 			
 			} catch (Throwable e) {
 				log.error("Indexing failed {}", e.getMessage(), e);

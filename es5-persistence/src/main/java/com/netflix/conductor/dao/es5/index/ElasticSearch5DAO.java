@@ -20,7 +20,13 @@ package com.netflix.conductor.dao.es5.index;
 
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
@@ -34,6 +40,8 @@ import org.elasticsearch.action.ActionFuture;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
 import org.elasticsearch.action.delete.DeleteRequest;
 import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
@@ -230,21 +238,24 @@ public class ElasticSearch5DAO implements IndexDAO {
 		}
 	}
 	
+
 	@Override
-	public void add(TaskExecLog taskExecLog) {
-		SimpleDateFormat sdf2 = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-		sdf2.setTimeZone(gmt);
-		String created = sdf2.format(new Date());
+	public void add(List<TaskExecLog> logs) {
 		int retry = 3;
 		while(retry > 0) {
 			try {
 				
-				
-				taskExecLog.setCreatedTime(created);
-				IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
-				request.source(om.writeValueAsBytes(taskExecLog), XContentType.JSON);
-	 			client.index(request).actionGet();
-	 			break;
+				BulkRequestBuilder brb = client.prepareBulk();
+				for(TaskExecLog log : logs) {
+					IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
+					request.source(om.writeValueAsBytes(log), XContentType.JSON);
+					brb.add(request);
+				}
+				BulkResponse response = brb.execute().actionGet();
+				if(!response.hasFailures()) {
+					break;	
+				}
+				retry--;
 	 			
 			} catch (Throwable e) {
 				log.error("Indexing failed {}", e.getMessage(), e);
@@ -274,11 +285,8 @@ public class ElasticSearch5DAO implements IndexDAO {
 			SearchHit[] hits = response.getHits().getHits();
 			List<TaskExecLog> logs = new ArrayList<>(hits.length);
 			for(SearchHit hit : hits) {
-				Map<String, Object> source = hit.getSource();
-				TaskExecLog tel = new TaskExecLog();
-				tel.setCreatedTime((String)source.get("createdTime"));
-				tel.setLog((String)source.get("log"));
-				tel.setTaskId((String)source.get("taskId"));
+				String source = hit.getSourceAsString();
+				TaskExecLog tel = om.readValue(source, TaskExecLog.class);			
 				logs.add(tel);
 			}
 
@@ -446,7 +454,6 @@ public class ElasticSearch5DAO implements IndexDAO {
 			});
 		}
 		List<String> result = new LinkedList<String>();
-//		SearchResponse response = srb.execute().actionGet();
 		SearchResponse response = srb.get();
 		response.getHits().forEach(hit -> {
 			result.add(hit.getId());
@@ -454,5 +461,7 @@ public class ElasticSearch5DAO implements IndexDAO {
 		long count = response.getHits().getTotalHits();
 		return new SearchResult<String>(count, result);
 	}
+
+	
 	
 }

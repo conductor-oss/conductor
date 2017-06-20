@@ -1,6 +1,11 @@
 {
     "template": "*",
     "order": 0,
+     "settings": {
+        "index": {
+            "refresh_interval": "1s"
+        }
+    },
     "mappings": {
         "task": {
             "properties": {
