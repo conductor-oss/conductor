@@ -93,7 +93,7 @@ public interface ExecutionDAO {
 	 * @param log Task Execution Log to be added
 	 *  
 	 */
-	public abstract void addTaskExecLog(TaskExecLog log);
+	public abstract void addTaskExecLog(List<TaskExecLog> log);
 	
 	/**
 	 * 

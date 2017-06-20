@@ -78,9 +78,16 @@ public interface IndexDAO {
 
 	/**
 	 * 
-	 * @param log Task Execution log to be indexed
+	 * @param logs Task Execution logs to be indexed
 	 */
-	public void add(TaskExecLog log);
+	public void add(List<TaskExecLog> logs);
+	
+	/**
+	 * 
+	 * @param taskId Id of the task for which to fetch the execution logs
+	 * @return Returns the task execution logs for given task id
+	 */
+	public List<TaskExecLog> getTaskLogs(String taskId);
 	
 	
 	/**

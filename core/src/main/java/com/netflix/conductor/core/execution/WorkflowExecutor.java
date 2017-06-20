@@ -40,7 +40,6 @@ import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
-import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
@@ -447,9 +446,8 @@ public class WorkflowExecutor {
 		}
 		edao.updateTask(task);
 
-		TaskExecLog tlog = result.getLog();
-		tlog.setTaskId(task.getTaskId());
-		edao.addTaskExecLog(tlog);
+		result.getLogs().forEach(tl -> tl.setTaskId(task.getTaskId()));
+		edao.addTaskExecLog(result.getLogs());
 
 		switch (task.getStatus()) {
 

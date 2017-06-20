@@ -117,10 +117,15 @@ public class HttpTask extends WorkflowSystemTask {
 		try {
 			
 			HttpResponse response = httpCall(input);
+			logger.info("response {}, {}", response.statusCode, response.body);
 			if(response.statusCode > 199 && response.statusCode < 300) {
 				task.setStatus(Status.COMPLETED);
 			} else {
-				task.setReasonForIncompletion(response.body.toString());
+				if(response.body != null) {
+					task.setReasonForIncompletion(response.body.toString());
+				} else {
+					task.setReasonForIncompletion("No response from the remote service");
+				}
 				task.setStatus(Status.FAILED);
 			}
 			if(response != null) {
@@ -164,9 +169,9 @@ public class HttpTask extends WorkflowSystemTask {
 			return response;
 
 		} catch(UniformInterfaceException ex) {
-			
+			logger.error(ex.getMessage(), ex);
 			ClientResponse cr = ex.getResponse();
-			
+			logger.error("Status Code: {}", cr.getStatus());
 			if(cr.getStatus() > 199 && cr.getStatus() < 300) {
 				
 				if(cr.getStatus() != 204 && cr.hasEntity()) {
@@ -187,7 +192,7 @@ public class HttpTask extends WorkflowSystemTask {
 	private Object extractBody(ClientResponse cr) {
 
 		String json = cr.getEntity(String.class);
-		logger.debug(json);
+		logger.info(json);
 		
 		try {
 			

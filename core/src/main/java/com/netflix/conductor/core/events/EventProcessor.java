@@ -148,7 +148,7 @@ public class EventProcessor {
 			for(EventHandler handler : handlers) {
 				
 				String condition = handler.getCondition();
-				logger.info("condition: {}", condition);
+				logger.debug("condition: {}", condition);
 				if(!StringUtils.isEmpty(condition)) {
 					Boolean success = ScriptEvaluator.evalBool(condition, payloadObj);
 					if(!success) {

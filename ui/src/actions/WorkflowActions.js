@@ -313,3 +313,25 @@ export function getEvents(event, time, query) {
     });
   }
 }
+
+export function getTaskLogs(taskId) {
+
+  return function (dispatch) {
+    dispatch({
+      type: 'GET_TASK_LOGS'
+    });
+
+
+    return http.get('/api/wfe/task/log' + taskId).then((data) => {
+      dispatch({
+        type: 'RECEIVED_GET_TASK_LOGS',
+        logs : data
+      });
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}

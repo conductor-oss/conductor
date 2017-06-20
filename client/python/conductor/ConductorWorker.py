@@ -12,7 +12,6 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-# 
 from __future__ import print_function
 import sys
 import time
@@ -39,6 +38,7 @@ class ConductorWorker:
                 raise Exception('Task execution function MUST return a response as a dict with status and output fields')
             task['status'] = resp['status']
             task['outputData'] = resp['output']
+            task['logs'] = resp['logs']
             self.taskClient.updateTask(task)
         except Exception as err:
             print('Error executing task: ' + str(err))
