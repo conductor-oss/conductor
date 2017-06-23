@@ -371,7 +371,19 @@ public class ElasticSearch5DAO implements IndexDAO {
 
 		try {
 			
-			return search(query, start, count, sort, freeText);
+			return search(query, start, count, sort, freeText, WORKFLOW_DOC_TYPE);
+			
+		} catch (ParserException e) {
+			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
+		}
+	}
+	
+	@Override
+	public SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort) {
+
+		try {
+			
+			return search(query, start, count, sort, freeText, TASK_DOC_TYPE);
 			
 		} catch (ParserException e) {
 			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
@@ -430,7 +442,7 @@ public class ElasticSearch5DAO implements IndexDAO {
 		return null;
 	}
 	
-	private SearchResult<String> search(String structuredQuery, int start, int size, List<String> sortOptions, String freeTextQuery) throws ParserException {
+	private SearchResult<String> search(String structuredQuery, int start, int size, List<String> sortOptions, String freeTextQuery, String docType) throws ParserException {
 		QueryBuilder qf = QueryBuilders.matchAllQuery();
 		if(StringUtils.isNotEmpty(structuredQuery)) {
 			Expression expression = Expression.fromString(structuredQuery);
@@ -440,7 +452,7 @@ public class ElasticSearch5DAO implements IndexDAO {
 		BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(qf);
 		QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery(freeTextQuery);
 		BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
-		final SearchRequestBuilder srb = client.prepareSearch(indexName).setQuery(fq).setTypes(WORKFLOW_DOC_TYPE).storedFields("_id").setFrom(start).setSize(size);
+		final SearchRequestBuilder srb = client.prepareSearch(indexName).setQuery(fq).setTypes(docType).storedFields("_id").setFrom(start).setSize(size);
 		if(sortOptions != null){
 			sortOptions.forEach(sortOption -> {
 				SortOrder order = SortOrder.ASC;
