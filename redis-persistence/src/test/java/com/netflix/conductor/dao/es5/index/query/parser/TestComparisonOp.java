@@ -18,6 +18,8 @@
  */
 package com.netflix.conductor.dao.es5.index.query.parser;
 
+import com.netflix.conductor.dao.index.query.parser.ComparisonOp;
+import com.netflix.conductor.dao.index.query.parser.ParserException;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;

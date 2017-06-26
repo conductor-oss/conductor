@@ -16,26 +16,20 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
+package com.netflix.conductor.dao.index.query.parser;
 
-import com.netflix.conductor.dao.index.query.parser.Name;
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.elasticsearch.index.query.QueryBuilder;
 
 /**
  * @author Viren
  *
  */
-public class TestName extends AbstractParserTest {
+public interface FilterProvider {
 
-	@Test
-	public void test() throws Exception{
-		String test =  "metadata.en_US.lang		";
-		Name name = new Name(getInputStream(test));
-		String nameVal = name.getName();
-		assertNotNull(nameVal);
-		assertEquals(test.trim(), nameVal);
-	}
+	/**
+	 * 
+	 * @return FilterBuilder for elasticsearch
+	 */
+	public QueryBuilder getFilterBuilder();
+
 }
