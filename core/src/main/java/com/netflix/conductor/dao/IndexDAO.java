@@ -53,6 +53,18 @@ public interface IndexDAO {
 	 * @return List of workflow ids for the matching query
 	 */
 	public SearchResult<String> searchWorkflows(String query, String freeText, int start, int count, List<String> sort);
+	
+	
+	/**
+	 * 
+	 * @param query SQL like query for task search parameters.
+	 * @param freeText	Additional query in free text.  Lucene syntax
+	 * @param start	start start index for pagination
+	 * @param count	count # of task ids to be returned
+	 * @param sort sort options
+	 * @return List of workflow ids for the matching query
+	 */
+	public SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort);
 
 	/**
 	 * Remove the workflow index
