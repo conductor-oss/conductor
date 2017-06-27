@@ -16,7 +16,7 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
+package com.netflix.conductor.dao.index.query.parser;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
