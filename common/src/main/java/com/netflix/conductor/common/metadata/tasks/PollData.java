@@ -58,8 +58,20 @@ public class PollData {
 		this.lastPollTime = lastPollTime;
 	}
 
+	
 	@Override
-	public boolean equals(Object obj) {
+	public synchronized int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((domain == null) ? 0 : domain.hashCode());
+		result = prime * result + (int) (lastPollTime ^ (lastPollTime >>> 32));
+		result = prime * result + ((queueName == null) ? 0 : queueName.hashCode());
+		result = prime * result + ((workerId == null) ? 0 : workerId.hashCode());
+		return result;
+	}
+
+	@Override
+	public synchronized boolean equals(Object obj) {
 		if (this == obj)
 			return true;
 		if (obj == null)
