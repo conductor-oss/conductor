@@ -18,7 +18,7 @@ Follow the steps below to quickly bring up a local Conductor instance backed by 
 #### Checkout the source from github
 
 ```
-git clone git@github.com/Netflix/conductor.git
+git clone https://github.com/Netflix/conductor.git
 ```
 #### Start Local Server
 ```shell
