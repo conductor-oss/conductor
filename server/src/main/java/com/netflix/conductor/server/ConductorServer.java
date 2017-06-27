@@ -41,7 +41,7 @@ import com.google.inject.Guice;
 import com.google.inject.servlet.GuiceFilter;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.redis.utils.JedisMock;
-import com.netflix.conductor.server.es.EmbeddedElasticSearch;
+import com.netflix.conductor.dao.es.EmbeddedElasticSearch;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.Host.Status;
 import com.netflix.dyno.connectionpool.HostSupplier;
