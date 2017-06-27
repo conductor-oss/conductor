@@ -16,20 +16,15 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
-
-import org.elasticsearch.index.query.QueryBuilder;
+package com.netflix.conductor.dao.index.query.parser;
 
 /**
  * @author Viren
  *
  */
-public interface FilterProvider {
+@FunctionalInterface
+public interface FunctionThrowingException<T> {
 
-	/**
-	 * 
-	 * @return FilterBuilder for elasticsearch
-	 */
-	public QueryBuilder getFilterBuilder();
+	void accept(T t) throws Exception;
 
 }

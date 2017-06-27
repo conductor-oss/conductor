@@ -16,20 +16,18 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
+package com.netflix.conductor.dao.index.query.parser;
 
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+import org.junit.Test;
 
 /**
  * @author Viren
  *
  */
-public abstract class AbstractParserTest {
+public class TestGroupedExpression {
 
-	protected InputStream getInputStream(String expression) {
-		return new BufferedInputStream(new ByteArrayInputStream(expression.getBytes()));
+	@Test
+	public void test(){
+		
 	}
-
 }

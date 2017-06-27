@@ -16,18 +16,21 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
-
-import org.junit.Test;
+package com.netflix.conductor.dao.index.query.parser;
 
 /**
  * @author Viren
  *
  */
-public class TestGroupedExpression {
+@SuppressWarnings("serial")
+public class ParserException extends Exception {
 
-	@Test
-	public void test(){
-		
+	public ParserException(String message) {
+		super(message);
 	}
+
+	public ParserException(String message, Throwable cause) {
+		super(message, cause);
+	}
+
 }

@@ -38,9 +38,9 @@ import com.netflix.conductor.core.config.Configuration;
  * @author Viren
  * Provider for the elasticsearch transport client
  */
-public class Elasticsearch5Module extends AbstractModule {
+public class ElasticsearchModule extends AbstractModule {
 
-	private static Logger log = LoggerFactory.getLogger(Elasticsearch5Module.class);
+	private static Logger log = LoggerFactory.getLogger(ElasticsearchModule.class);
 	
 	@Provides
 	@Singleton

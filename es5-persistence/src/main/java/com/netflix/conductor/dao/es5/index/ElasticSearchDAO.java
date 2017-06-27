@@ -89,9 +89,9 @@ import com.netflix.conductor.metrics.Monitors;
  */
 @Trace
 @Singleton
-public class ElasticSearch5DAO implements IndexDAO {
+public class ElasticSearchDAO implements IndexDAO {
 
-	private static Logger log = LoggerFactory.getLogger(ElasticSearch5DAO.class);
+	private static Logger log = LoggerFactory.getLogger(ElasticSearchDAO.class);
 	
 	private static final String WORKFLOW_DOC_TYPE = "workflow";
 	
@@ -103,7 +103,7 @@ public class ElasticSearch5DAO implements IndexDAO {
 	
 	private static final String MSG_DOC_TYPE = "message";
 	
-	private static final String className = ElasticSearch5DAO.class.getSimpleName();
+	private static final String className = ElasticSearchDAO.class.getSimpleName();
 	
 	private String indexName;
 	
@@ -125,7 +125,7 @@ public class ElasticSearch5DAO implements IndexDAO {
     }
 	
 	@Inject
-	public ElasticSearch5DAO(Client client, Configuration config, ObjectMapper om) {
+	public ElasticSearchDAO(Client client, Configuration config, ObjectMapper om) {
 		this.om = om;
 		this.client = client;
 		this.indexName = config.getProperty("workflow.elasticsearch.index.name", null);
@@ -167,7 +167,7 @@ public class ElasticSearch5DAO implements IndexDAO {
 		GetIndexTemplatesResponse result = client.admin().indices().prepareGetTemplates("wfe_template").execute().actionGet();
 		if(result.getIndexTemplates().isEmpty()) {
 			log.info("Creating the index template 'wfe_template'");
-			InputStream stream = ElasticSearch5DAO.class.getResourceAsStream("/template.json");
+			InputStream stream = ElasticSearchDAO.class.getResourceAsStream("/template.json");
 			byte[] templateSource = IOUtils.toByteArray(stream);
 			
 			try {
@@ -190,7 +190,7 @@ public class ElasticSearch5DAO implements IndexDAO {
 		GetMappingsResponse response = client.admin().indices().prepareGetMappings(indexName).addTypes(WORKFLOW_DOC_TYPE).execute().actionGet();
 		if(response.mappings().isEmpty()) {
 			log.info("Adding the workflow type mappings");
-			InputStream stream = ElasticSearch5DAO.class.getResourceAsStream("/wfe_type.json");
+			InputStream stream = ElasticSearchDAO.class.getResourceAsStream("/wfe_type.json");
 			byte[] bytes = IOUtils.toByteArray(stream);
 			String source = new String(bytes);
 			try {
