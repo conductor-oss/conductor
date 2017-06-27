@@ -16,12 +16,8 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
+package com.netflix.conductor.dao.index.query.parser;
 
-import com.netflix.conductor.dao.index.query.parser.ConstValue;
-import com.netflix.conductor.dao.index.query.parser.ListConst;
-import com.netflix.conductor.dao.index.query.parser.ParserException;
-import com.netflix.conductor.dao.index.query.parser.Range;
 import org.junit.Test;
 
 import java.util.List;

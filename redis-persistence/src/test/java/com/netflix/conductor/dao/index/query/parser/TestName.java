@@ -16,10 +16,8 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
+package com.netflix.conductor.dao.index.query.parser;
 
-import com.netflix.conductor.dao.index.query.parser.BooleanOp;
-import com.netflix.conductor.dao.index.query.parser.ParserException;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -29,26 +27,14 @@ import static org.junit.Assert.assertNotNull;
  * @author Viren
  *
  */
-public class TestBooleanOp extends AbstractParserTest {
+public class TestName extends AbstractParserTest {
 
 	@Test
-	public void test() throws Exception {
-		String[] tests = new String[]{"AND", "OR"};
-		for(String test : tests){
-			BooleanOp name = new BooleanOp(getInputStream(test));
-			String nameVal = name.getOperator();
-			assertNotNull(nameVal);
-			assertEquals(test, nameVal);
-		}
-	}
-	
-	@Test(expected=ParserException.class)
-	public void testInvalid() throws Exception {
-		String test = "<";
-		BooleanOp name = new BooleanOp(getInputStream(test));
-		String nameVal = name.getOperator();
+	public void test() throws Exception{
+		String test =  "metadata.en_US.lang		";
+		Name name = new Name(getInputStream(test));
+		String nameVal = name.getName();
 		assertNotNull(nameVal);
-		assertEquals(test, nameVal);
-	
+		assertEquals(test.trim(), nameVal);
 	}
 }

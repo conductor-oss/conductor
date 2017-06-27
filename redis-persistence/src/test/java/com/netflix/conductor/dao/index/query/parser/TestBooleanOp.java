@@ -16,10 +16,8 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
+package com.netflix.conductor.dao.index.query.parser;
 
-import com.netflix.conductor.dao.index.query.parser.ComparisonOp;
-import com.netflix.conductor.dao.index.query.parser.ParserException;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -29,13 +27,13 @@ import static org.junit.Assert.assertNotNull;
  * @author Viren
  *
  */
-public class TestComparisonOp extends AbstractParserTest {
+public class TestBooleanOp extends AbstractParserTest {
 
 	@Test
 	public void test() throws Exception {
-		String[] tests = new String[]{"<",">","=","!=","IN"};
+		String[] tests = new String[]{"AND", "OR"};
 		for(String test : tests){
-			ComparisonOp name = new ComparisonOp(getInputStream(test));
+			BooleanOp name = new BooleanOp(getInputStream(test));
 			String nameVal = name.getOperator();
 			assertNotNull(nameVal);
 			assertEquals(test, nameVal);
@@ -43,11 +41,12 @@ public class TestComparisonOp extends AbstractParserTest {
 	}
 	
 	@Test(expected=ParserException.class)
-	public void testInvalidOp() throws Exception {
-		String test =  "AND";
-		ComparisonOp name = new ComparisonOp(getInputStream(test));
+	public void testInvalid() throws Exception {
+		String test = "<";
+		BooleanOp name = new BooleanOp(getInputStream(test));
 		String nameVal = name.getOperator();
 		assertNotNull(nameVal);
 		assertEquals(test, nameVal);
+	
 	}
 }
