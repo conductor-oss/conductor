@@ -59,7 +59,11 @@ public class SystemTaskWorkerCoordinator {
 	
 	private int workerQueueSize;
 	
+	//Number of items to poll for
 	private int pollCount;
+	
+	//Interval in ms at which the polling is done
+	private int pollInterval;
 	
 	private LinkedBlockingQueue<Runnable> workerQueue;
 	
@@ -79,8 +83,9 @@ public class SystemTaskWorkerCoordinator {
 		this.executor = executor;
 		this.config = config;
 		this.unackTimeout = config.getIntProperty("workflow.system.task.worker.callback.seconds", 30);
-		int threadCount = config.getIntProperty("workflow.system.task.worker.thread.count", 5);
-		this.pollCount = config.getIntProperty("workflow.system.task.worker.poll.count", 5);
+		int threadCount = config.getIntProperty("workflow.system.task.worker.thread.count", 10);
+		this.pollCount = config.getIntProperty("workflow.system.task.worker.poll.count", 10);
+		this.pollInterval = config.getIntProperty("workflow.system.task.worker.poll.interval", 50);
 		this.workerQueueSize = config.getIntProperty("workflow.system.task.worker.queue.size", 100);
 		this.workerQueue = new LinkedBlockingQueue<Runnable>(workerQueueSize);
 		if(threadCount > 0) {
@@ -117,7 +122,7 @@ public class SystemTaskWorkerCoordinator {
 	}
 	
 	private void listen(WorkflowSystemTask systemTask) {
-		Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(()->pollAndExecute(systemTask), 1000, 500, TimeUnit.MILLISECONDS);
+		Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(()->pollAndExecute(systemTask), 1000, pollInterval, TimeUnit.MILLISECONDS);
 		logger.info("Started listening {}", systemTask.getName());
 	}
 
