@@ -22,7 +22,7 @@ RUN apt-get update -y \
   && chmod +x /app/startup.sh
 
 # Get and install conductor
-RUN git clone https://github.com/Netflix/conductor.git \
+RUN git clone --depth 1 https://github.com/Netflix/conductor.git \
   && cd conductor \
   && ./gradlew build -x test \
 
