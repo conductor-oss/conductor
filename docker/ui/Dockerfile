@@ -19,7 +19,7 @@ RUN apt-get update -y \
   && chmod +x /app/startup.sh
 
 # Get and install conductor UI
-RUN git clone --depth 1 https://github.com/netflix/conductor.git \
+RUN git clone https://github.com/netflix/conductor.git \
 
   # Get UI project
   && mv /conductor/ui /app \
