@@ -59,7 +59,9 @@ public class WorkflowTask {
 	private String name;
 	
 	private String taskReferenceName;
-	
+
+	private String description;
+
 	//Key: Name of the input parameter.  MUST be one of the keys defined in TaskDef (e.g. fileName)
 	//Value: mapping of the parameter from another task (e.g. task1.someOutputParameterAsFileName)
 	private Map<String, Object> inputParameters = new HashMap<String, Object>();
@@ -122,6 +124,20 @@ public class WorkflowTask {
 	 */
 	public void setTaskReferenceName(String taskReferenceName) {
 		this.taskReferenceName = taskReferenceName;
+	}
+
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
+	}
+
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	/**
