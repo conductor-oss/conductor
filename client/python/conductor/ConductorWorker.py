@@ -12,11 +12,12 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 import sys
 import time
 import subprocess
-from .conductor import WFClientMgr
+import conductor
+from conductor.conductor import WFClientMgr
 from threading import Thread
 import socket
 
