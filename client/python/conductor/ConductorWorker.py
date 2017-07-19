@@ -16,8 +16,7 @@ from __future__ import print_function
 import sys
 import time
 import subprocess
-import conductor
-from conductor.conductor import WFClientMgr
+from .conductor import WFClientMgr
 from threading import Thread
 import socket
 
@@ -25,7 +24,7 @@ hostname = socket.gethostname()
 
 class ConductorWorker:
     def __init__(self, server_url, thread_count, polling_interval):
-        wfcMgr = conductor.conductor.WFClientMgr(server_url)
+        wfcMgr = WFClientMgr(server_url)
         self.workflowClient = wfcMgr.workflowClient
         self.taskClient = wfcMgr.taskClient
         self.thread_count = thread_count
