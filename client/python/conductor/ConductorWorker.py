@@ -55,11 +55,12 @@ class ConductorWorker:
     def start(self, taskType, exec_function, wait):
         print('Polling for task ' + taskType + ' at a ' + str(self.polling_interval) + ' ms interval with ' + str(self.thread_count) + ' threads for task execution, with worker id as ' + hostname)
         for x in range(0, int(self.thread_count)):
-            thread = Thread(target = self.poll_and_execute, args = (taskType, exec_function, ))
+            thread = Thread(target=self.poll_and_execute, args=(taskType, exec_function, ))
+            thread.daemon = True
             thread.start()
-        if(wait):
+        if wait:
             while 1:
-                pass
+                time.sleep(1)
 
 def exc(taskType, inputData, startTime, retryCount, status, callbackAfterSeconds, pollCount):
     print('Executing the function')
