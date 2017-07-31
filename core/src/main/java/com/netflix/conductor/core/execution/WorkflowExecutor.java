@@ -149,7 +149,7 @@ public class WorkflowExecutor {
 			return workflowId;
 			
 		}catch (Exception e) {
-			Monitors.recordWorkflowStartError(name);
+			Monitors.recordWorkflowStartError(name, WorkflowContext.get().getClientApp());
 			throw e;
 		}
 	}
@@ -313,6 +313,7 @@ public class WorkflowExecutor {
 		Workflow workflow = edao.getWorkflow(wf.getWorkflowId(), false);
 
 		if (workflow.getStatus().equals(WorkflowStatus.COMPLETED)) {
+			edao.removeFromPendingWorkflow(workflow.getWorkflowType(), workflow.getWorkflowId());
 			logger.info("Workflow has already been completed.  Current status=" + workflow.getStatus() + ", workflowId=" + wf.getWorkflowId());
 			return;
 		}
@@ -332,7 +333,7 @@ public class WorkflowExecutor {
 			Workflow parent = edao.getWorkflow(workflow.getParentWorkflowId(), false);
 			decide(parent.getWorkflowId());
 		}
-		Monitors.recordWorkflowCompletion(workflow.getWorkflowType(), workflow.getEndTime() - workflow.getStartTime());
+		Monitors.recordWorkflowCompletion(workflow.getWorkflowType(), workflow.getEndTime() - workflow.getStartTime(), wf.getOwnerApp());
 		queue.remove(deciderQueue, workflow.getWorkflowId());	//remove from the sweep queue
 	}
 
@@ -391,14 +392,15 @@ public class WorkflowExecutor {
 			} catch (Exception e) {
 				logger.error("Failed to start error workflow", e);
 				workflow.getOutput().put("conductor.failure_workflow", "Error workflow " + failureWorkflow + " failed to start.  reason: " + e.getMessage());
-				Monitors.recordWorkflowStartError(failureWorkflow);
+				Monitors.recordWorkflowStartError(failureWorkflow, WorkflowContext.get().getClientApp());
 			}
 		}
 		
 		queue.remove(deciderQueue, workflow.getWorkflowId());	//remove from the sweep queue
+		edao.removeFromPendingWorkflow(workflow.getWorkflowType(), workflow.getWorkflowId());
 		
 		// Send to atlas
-		Monitors.recordWorkflowTermination(workflow.getWorkflowType(), workflow.getStatus());
+		Monitors.recordWorkflowTermination(workflow.getWorkflowType(), workflow.getStatus(), workflow.getOwnerApp());
 	}	
 
 	public void updateTask(TaskResult result) throws Exception {

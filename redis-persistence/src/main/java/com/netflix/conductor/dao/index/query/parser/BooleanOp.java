@@ -16,34 +16,49 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
+package com.netflix.conductor.dao.index.query.parser;
 
 import java.io.InputStream;
 
 /**
  * @author Viren
- * Represents the name of the field to be searched against.  
+ *   
  */
-public class Name extends AbstractNode {
+public class BooleanOp extends AbstractNode {
 
 	private String value;
 	
-	public Name(InputStream is) throws ParserException {
+	public BooleanOp(InputStream is) throws ParserException {
 		super(is);
 	}
 
 	@Override
 	protected void _parse() throws Exception {
-		this.value = readToken();
+		byte[] buffer = peek(3);
+		if(buffer.length > 1 && buffer[0] == 'O' && buffer[1] == 'R'){
+			this.value = "OR";
+		}else if(buffer.length > 2 && buffer[0] == 'A' && buffer[1] == 'N' && buffer[2] == 'D'){
+			this.value = "AND";
+		}else {
+			throw new ParserException("No valid boolean operator found...");
+		}
+		read(this.value.length());
 	}
 	
 	@Override
 	public String toString(){
+		return " " + value + " ";
+	}
+	
+	public String getOperator(){
 		return value;
 	}
 	
-	public String getName(){
-		return value;
+	public boolean isAnd(){
+		return "AND".equals(value);
 	}
 
+	public boolean isOr(){
+		return "OR".equals(value);
+	}
 }

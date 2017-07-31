@@ -16,49 +16,52 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
+package com.netflix.conductor.dao.index.query.parser;
 
 import java.io.InputStream;
 
+import org.elasticsearch.index.query.QueryBuilder;
+
 /**
  * @author Viren
- *   
+ * 
  */
-public class BooleanOp extends AbstractNode {
+public class GroupedExpression extends AbstractNode implements FilterProvider {
 
-	private String value;
+	private Expression expression;
 	
-	public BooleanOp(InputStream is) throws ParserException {
+	public GroupedExpression(InputStream is) throws ParserException {
 		super(is);
 	}
 
 	@Override
 	protected void _parse() throws Exception {
-		byte[] buffer = peek(3);
-		if(buffer.length > 1 && buffer[0] == 'O' && buffer[1] == 'R'){
-			this.value = "OR";
-		}else if(buffer.length > 2 && buffer[0] == 'A' && buffer[1] == 'N' && buffer[2] == 'D'){
-			this.value = "AND";
-		}else {
-			throw new ParserException("No valid boolean operator found...");
-		}
-		read(this.value.length());
+		byte[] peeked = read(1);
+		assertExpected(peeked, "(");
+		
+		this.expression = new Expression(is);
+		
+		peeked = read(1);
+		assertExpected(peeked, ")");
+		
 	}
 	
 	@Override
 	public String toString(){
-		return " " + value + " ";
-	}
-	
-	public String getOperator(){
-		return value;
-	}
-	
-	public boolean isAnd(){
-		return "AND".equals(value);
+		return "(" + expression + ")";
 	}
 
-	public boolean isOr(){
-		return "OR".equals(value);
+	/**
+	 * @return the expression
+	 */
+	public Expression getExpression() {
+		return expression;
 	}
+
+	@Override
+	public QueryBuilder getFilterBuilder() {
+		return expression.getFilterBuilder();
+	}
+
+	
 }

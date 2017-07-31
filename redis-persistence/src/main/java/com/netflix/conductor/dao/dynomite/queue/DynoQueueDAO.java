@@ -61,8 +61,6 @@ public class DynoQueueDAO implements QueueDAO {
 
 	private Configuration config;
 
-	private int dynoThreadCount;
-
 	@Inject
 	public DynoQueueDAO(DiscoveryClient dc, Configuration config) {
 		
@@ -71,7 +69,6 @@ public class DynoQueueDAO implements QueueDAO {
 		this.config = config;
 		this.domain = config.getProperty("workflow.dyno.keyspace.domain", null);
 		String cluster = config.getProperty("workflow.dynomite.cluster", null);
-		this.dynoThreadCount = config.getIntProperty("queues.dynomite.threads", 100);
 		final int readConnPort = config.getIntProperty("queues.dynomite.nonQuorum.port", 22122);
 		
 		EurekaHostsSupplier hostSupplier = new EurekaHostsSupplier(cluster, dc) {
@@ -108,7 +105,6 @@ public class DynoQueueDAO implements QueueDAO {
 		this.dynoClientRead = dynoClient;
 		this.ss = ss;
 		this.config = config;
-		this.dynoThreadCount = config.getIntProperty("queues.dynomite.threads", 100);
 		init();
 	}
 
@@ -120,7 +116,7 @@ public class DynoQueueDAO implements QueueDAO {
 		if (domain != null) {
 			prefix = prefix + "." + domain;
 		}
-		queues = new RedisQueues(dynoClient, dynoClientRead, prefix, ss, 60_000, 60_000, dynoThreadCount);
+		queues = new RedisQueues(dynoClient, dynoClientRead, prefix, ss, 60_000, 60_000);
 		logger.info("DynoQueueDAO initialized with prefix " + prefix + "!");
 	}
 
