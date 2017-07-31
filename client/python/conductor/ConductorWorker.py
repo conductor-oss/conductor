@@ -12,7 +12,7 @@
 #  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
-from __future__ import print_function
+from __future__ import print_function, absolute_import
 import sys
 import time
 import subprocess
@@ -25,7 +25,7 @@ hostname = socket.gethostname()
 
 class ConductorWorker:
     def __init__(self, server_url, thread_count, polling_interval):
-        wfcMgr = conductor.conductor.WFClientMgr(server_url)
+        wfcMgr = WFClientMgr(server_url)
         self.workflowClient = wfcMgr.workflowClient
         self.taskClient = wfcMgr.taskClient
         self.thread_count = thread_count
