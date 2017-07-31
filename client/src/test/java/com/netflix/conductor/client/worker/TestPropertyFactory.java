@@ -62,7 +62,7 @@ public class TestPropertyFactory {
 		assertEquals("domainB", PropertyFactory.getString("workerB", "domain", null));	
 		assertEquals(null, PropertyFactory.getString("workerC", "domain", null));	// Non Existent
 
-
+		assertEquals("test-group-", PropertyFactory.getString("", "workerNamePrefix", "workflow-worker-"));
 	}
 	
 	@Test

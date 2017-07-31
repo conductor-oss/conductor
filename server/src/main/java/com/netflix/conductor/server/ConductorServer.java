@@ -29,6 +29,7 @@ import java.util.Set;
 import javax.servlet.DispatcherType;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -51,6 +52,8 @@ import com.netflix.dyno.connectionpool.impl.lb.HostToken;
 import com.netflix.dyno.jedis.DynoJedisClient;
 import com.sun.jersey.api.client.Client;
 
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.JedisCommands;
 
 /**
@@ -62,7 +65,7 @@ public class ConductorServer {
 	private static Logger logger = LoggerFactory.getLogger(ConductorServer.class);
 	
 	private enum DB {
-		redis, dynomite, memory
+		redis, dynomite, memory, redis_cluster
 	}
 	
 	private ServerModule sm;
@@ -166,6 +169,15 @@ public class ConductorServer {
 				logger.error("Error starting embedded elasticsearch.  Search functionality will be impacted: " + e.getMessage(), e);
 			}
 			logger.info("Starting conductor server using in memory data store");
+			break;
+
+		case redis_cluster:
+			Host host = dynoHosts.get(0);
+			GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
+			poolConfig.setMinIdle(5);
+			poolConfig.setMaxTotal(1000);
+			jedis = new JedisCluster(new HostAndPort(host.getHostName(), host.getPort()), poolConfig);
+			logger.info("Starting conductor server using redis_cluster " + dynoClusterName);
 			break;
 		}
 		

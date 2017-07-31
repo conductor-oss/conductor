@@ -243,7 +243,7 @@ public class WorkflowTaskCoordinator {
 			@Override
 			public Thread newThread(Runnable r) {
 				Thread t = new Thread(r);
-				t.setName("workflow-worker-" + count.getAndIncrement());
+				t.setName(PropertyFactory.getString("", "workerNamePrefix", "workflow-worker-") + count.getAndIncrement());
 				return t;
 			}
 		});
