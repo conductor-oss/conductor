@@ -27,7 +27,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.netflix.conductor.contribs.http.HttpTask;
 import com.netflix.conductor.contribs.http.RestClientManager;
-import com.netflix.conductor.contribs.json.JsonTransform;
+import com.netflix.conductor.contribs.json.JsonJqTransform;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -98,7 +98,7 @@ public class ServerModule extends AbstractModule {
 		install(new CoreModule());
 		install(new JerseyModule());
 		new HttpTask(new RestClientManager(), config);
-		new JsonTransform();
+		new JsonJqTransform();
 		List<AbstractModule> additionalModules = config.getAdditionalModules();
 		if(additionalModules != null) {
 			for(AbstractModule additionalModule : additionalModules) {

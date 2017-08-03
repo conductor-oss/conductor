@@ -177,6 +177,7 @@ public class HttpTask extends WorkflowSystemTask {
 				response.body = extractBody(cr);
 			}
 			response.statusCode = cr.getStatus();
+			response.reasonPhrase = cr.getStatusInfo().getReasonPhrase();
 			response.headers = cr.getHeaders();
 			return response;
 
@@ -191,6 +192,7 @@ public class HttpTask extends WorkflowSystemTask {
 				}
 				response.headers = cr.getHeaders();
 				response.statusCode = cr.getStatus();
+				response.reasonPhrase = cr.getStatusInfo().getReasonPhrase();
 				return response;
 				
 			}else {
@@ -263,9 +265,11 @@ public class HttpTask extends WorkflowSystemTask {
 		
 		public int statusCode;
 
+		public String reasonPhrase;
+
 		@Override
 		public String toString() {
-			return "HttpResponse [body=" + body + ", headers=" + headers + ", statusCode=" + statusCode + "]";
+			return "HttpResponse [body=" + body + ", headers=" + headers + ", statusCode=" + statusCode + ", reasonPhrase=" + reasonPhrase + "]";
 		}
 		
 		public Map<String, Object> asMap() {
@@ -274,6 +278,7 @@ public class HttpTask extends WorkflowSystemTask {
 			map.put("body", body);
 			map.put("headers", headers);
 			map.put("statusCode", statusCode);
+			map.put("reasonPhrase", reasonPhrase);
 			
 			return map;
 		}
