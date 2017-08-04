@@ -337,7 +337,6 @@ public class WorkflowServiceTest {
 		Map<String, Object> input = new HashMap<String, Object>();
 		String wfid = provider.startWorkflow(FORK_JOIN_WF, 1, "fanouttest", input );
 		System.out.println("testForkJoin.wfid=" + wfid);
-		
 		Task t1 = ess.poll("junit_task_1", "test");
 		assertTrue(ess.ackTaskRecieved(t1.getTaskId(), "test"));
 		
@@ -517,6 +516,7 @@ public class WorkflowServiceTest {
 		wf = ess.getExecutionStatus(wfid, true);
 		assertNotNull(wf);
 		assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
+
 	}
 	
 	@Test
@@ -1121,6 +1121,104 @@ public class WorkflowServiceTest {
 		assertTrue("Found "  +es.getOutput().toString(), es.getOutput().containsKey("o3"));
 		assertEquals("task1.Done", es.getOutput().get("o3"));
 
+	}
+
+	@Test
+	public void testWorkflowRerunWithSubWorkflows() throws Exception {
+		// Execute a workflow
+		String wfid = this.runWorkflowWithSubworkflow();
+		// Check it completed 
+		Workflow wf  = ess.getExecutionStatus(wfid, true);
+		assertNotNull(wf);
+		assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
+		assertEquals(2, wf.getTasks().size());
+		
+		// Now lets pickup the first task in the sub workflow and rerun it from there
+		String subWorkflowId = null;
+		for(Task t: wf.getTasks()){
+			if(t.getTaskType().equalsIgnoreCase("SUB_WORKFLOW")){
+				subWorkflowId = t.getOutputData().get("subWorkflowId").toString();
+			}
+		}
+		assertNotNull(subWorkflowId);
+		Workflow subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
+		Task swT1 = null;
+		for(Task t: subWorkflow.getTasks()){
+			if(t.getTaskDefName().equalsIgnoreCase("junit_task_1")){
+				swT1 = t;
+			}
+		}
+		assertNotNull(swT1);
+		
+		RerunWorkflowRequest request = new RerunWorkflowRequest();
+		request.setReRunFromTaskId(swT1.getTaskId());
+		
+		Map<String, Object> newInput = new HashMap<String, Object>();
+		newInput.put("p1", "1");
+		newInput.put("p2", "2");
+		request.setTaskInput(newInput);
+		
+		String correlationId = "unit_test_sw_new";
+		Map<String, Object> input = new HashMap<String, Object>();
+		input.put("param1", "New p1 value");
+		input.put("param2", "New p2 value");
+		request.setCorrelationId(correlationId);
+		request.setWorkflowInput(input);
+		
+		request.setReRunFromWorkflowId(wfid);
+		request.setReRunFromTaskId(swT1.getTaskId());
+		// Rerun
+		provider.rerun(request);
+		// The main WF and the sub WF should be in RUNNING state
+		wf  = ess.getExecutionStatus(wfid, true);
+		assertNotNull(wf);
+		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
+		assertEquals(2, wf.getTasks().size());
+		assertEquals(correlationId, wf.getCorrelationId());
+		assertEquals("New p1 value", wf.getInput().get("param1"));
+		assertEquals("New p2 value", wf.getInput().get("param2"));
+		
+		subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
+		assertNotNull(subWorkflow);
+		assertEquals(WorkflowStatus.RUNNING, subWorkflow.getStatus());
+		// Since we are re running from the sub workflow task, there
+		// should be only 1 task that is SCHEDULED
+		assertEquals(1, subWorkflow.getTasks().size());
+		assertEquals(Status.SCHEDULED, subWorkflow.getTasks().get(0).getStatus());
+		
+		// Now execute the task
+		Task task = ess.poll("junit_task_1", "task1.junit.worker");
+		assertNotNull(task);
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertEquals(task.getInputData().get("p1").toString(), "1");
+		assertEquals(task.getInputData().get("p2").toString(), "2");
+		task.getOutputData().put("op", "junit_task_1.done");
+		task.setStatus(Status.COMPLETED);
+		ess.updateTask(task);
+		
+		subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
+		assertNotNull(subWorkflow);
+		assertEquals(WorkflowStatus.RUNNING, subWorkflow.getStatus());
+		assertEquals(2, subWorkflow.getTasks().size());
+		
+		// Poll for second task of the sub workflow and execute it
+		task = ess.poll("junit_task_2", "task2.junit.worker");
+		assertNotNull(task);
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		task.getOutputData().put("op", "junit_task_2.done");
+		task.setStatus(Status.COMPLETED);
+		ess.updateTask(task);
+		
+		// Now the sub workflow and the main workflow must have finished
+		subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
+		assertNotNull(subWorkflow);
+		assertEquals(WorkflowStatus.COMPLETED, subWorkflow.getStatus());
+		assertEquals(2, subWorkflow.getTasks().size());
+		
+		wf = ess.getExecutionStatus(wfid, true);
+		assertNotNull(wf);
+		assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
+		assertEquals(2, wf.getTasks().size());
 	}
 
 	@Test
@@ -2474,7 +2572,7 @@ public class WorkflowServiceTest {
 		// Check the tasks, at this time there should be 2 tasks
 		// first one is skipped and the second one is scheduled
 		assertEquals(esRR.getTasks().toString(), 2, esRR.getTasks().size());
-		assertEquals(Status.SKIPPED, esRR.getTasks().get(0).getStatus());
+		assertEquals(Status.COMPLETED, esRR.getTasks().get(0).getStatus());
 		Task tRR = esRR.getTasks().get(1);
 		assertEquals(esRR.getTasks().toString(), Status.SCHEDULED, tRR.getStatus());
 		assertEquals(tRR.getTaskType(), "junit_task_2");
@@ -3139,5 +3237,102 @@ public class WorkflowServiceTest {
 	    try {			
 			ms.updateWorkflowDef(defSW);
 		} catch (Exception e) {}
+	}
+	
+	private String runWorkflowWithSubworkflow() throws Exception{
+		clearWorkflows();
+		createWorkflowDefForDomain();
+		
+		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
+		assertNotNull(found);
+		
+		String correlationId = "unit_test_sw";
+		Map<String, Object> input = new HashMap<String, Object>();
+		String inputParam1 = "p1 value";
+		input.put("param1", inputParam1);
+		input.put("param2", "p2 value");
+		
+		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2_SW, 1, correlationId , input, null);
+		System.out.println("testSimpleWorkflow.wfid=" + wfid);
+		assertNotNull(wfid);
+		Workflow wf = provider.getWorkflow(wfid, false);
+		assertNotNull(wf);
+		
+		Workflow es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
+		
+		
+		es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+		assertEquals(1, es.getTasks().size());		//The very first task is the one that should be scheduled.
+		
+		// Poll for first task and execute it
+		Task task = ess.poll("junit_task_3", "task3.junit.worker");
+		assertNotNull(task);
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task3.junit.worker"));
+		task.getOutputData().put("op", "junit_task_3.done");
+		task.setStatus(Status.COMPLETED);
+		ess.updateTask(task);
+		
+		es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+		assertEquals(2, es.getTasks().size());	
+		
+		// Get the sub workflow id
+		String subWorkflowId = null;
+		for(Task t: es.getTasks()){
+			if(t.getTaskType().equalsIgnoreCase("SUB_WORKFLOW")){
+				subWorkflowId = t.getOutputData().get("subWorkflowId").toString();
+			}
+		}
+		assertNotNull(subWorkflowId);
+		
+		Workflow subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
+		assertNotNull(subWorkflow);
+		assertEquals(WorkflowStatus.RUNNING, subWorkflow.getStatus());
+		assertEquals(1, subWorkflow.getTasks().size());
+		
+		// Now the Sub workflow is triggers
+		// Poll for first task of the sub workflow and execute it
+		task = ess.poll("junit_task_1", "task1.junit.worker");
+		assertNotNull(task);
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		task.getOutputData().put("op", "junit_task_1.done");
+		task.setStatus(Status.COMPLETED);
+		ess.updateTask(task);
+		
+		subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
+		assertNotNull(subWorkflow);
+		assertEquals(WorkflowStatus.RUNNING, subWorkflow.getStatus());
+		assertEquals(2, subWorkflow.getTasks().size());
+		
+		es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+		assertEquals(2, es.getTasks().size());	
+		
+		// Poll for second task of the sub workflow and execute it
+		task = ess.poll("junit_task_2", "task2.junit.worker");
+		assertNotNull(task);
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		task.getOutputData().put("op", "junit_task_2.done");
+		task.setStatus(Status.COMPLETED);
+		ess.updateTask(task);
+		
+		// Now the sub workflow and the main workflow must have finished
+		subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
+		assertNotNull(subWorkflow);
+		assertEquals(WorkflowStatus.COMPLETED, subWorkflow.getStatus());
+		assertEquals(2, subWorkflow.getTasks().size());
+		
+		es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+		assertEquals(2, es.getTasks().size());
+		
+		return wfid;
 	}
 }
