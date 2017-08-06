@@ -3,7 +3,10 @@
 This Dockerfile create the conductor:ui image
 
 ## Building the image
-`docker build -t conductor:ui .`
+
+Run the following commands from the project root.
+
+`docker build -f docker/ui/Dockerfile -t conductor:ui .`
 
 ## Running the conductor server
  - With localhost conductor server: `docker run -p 5000:5000 -d -t conductor:ui`

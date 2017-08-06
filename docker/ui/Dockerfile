@@ -1,38 +1,42 @@
 #
 # conductor:ui - Netflix conductor UI
 #
-FROM node
-
+FROM node:alpine
 MAINTAINER Netflix OSS <conductor@netflix.com>
 
+# Install the required packages for the node build
+# to run on alpine
+RUN apk update && apk add \
+  autoconf \
+  automake \
+  libtool \
+  build-base \
+  libstdc++ \
+  gcc \
+  abuild \
+  binutils \
+  nasm \
+  libpng \
+  libpng-dev \
+  libjpeg-turbo \
+  libjpeg-turbo-dev 
+
 # Make app folders
-RUN mkdir -p /app/config /app/logs /app/libs
+RUN mkdir -p /app/ui
 
-# Startup script(s)
-COPY ./bin /app
+# Copy the ui files onto the image
+COPY ./docker/ui/bin /app
+COPY ./ui /app/ui
 
-# Get all the dependencies
-RUN apt-get update -y \
-  && apt-get -y install git \
-
-  # Chmod scripts
-  && chmod +x /app/startup.sh
+# Copy the files for the server into the app folders
+RUN chmod +x /app/startup.sh
 
 # Get and install conductor UI
-RUN git clone https://github.com/netflix/conductor.git \
-
-  # Get UI project
-  && mv /conductor/ui /app \
-
-  # Remove the conductor project
-  && rm -rf conductor \
-
-  # Install UI packages
-  && cd /app/ui \
+RUN cd /app/ui \
   && npm install \
   && npm run build --server
 
 EXPOSE 5000
 
-CMD ["/app/startup.sh"]
-ENTRYPOINT ["/bin/bash"]
+CMD [ "/app/startup.sh" ]
+ENTRYPOINT ["/bin/sh"]
