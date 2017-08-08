@@ -25,6 +25,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -147,6 +148,20 @@ public class WorkflowServiceTest {
 			ms.registerTaskDef(Arrays.asList(task));
 		}
 
+		for(int i = 0; i < 5; i++){
+			
+			String name = "junit_task_0_RT_" + i;
+			if(ms.getTaskDef(name) != null){
+				continue;
+			}
+			
+			TaskDef task = new TaskDef();
+			task.setName(name);
+			task.setTimeoutSeconds(120);
+			task.setRetryCount(0);
+			ms.registerTaskDef(Arrays.asList(task));
+		}
+		
 		TaskDef task = new TaskDef();
 		task.setName("short_time_out");
 		task.setTimeoutSeconds(5);
@@ -182,7 +197,7 @@ public class WorkflowServiceTest {
 		ip2.put("tp2", "${t1.output.op}");
 		wft2.setInputParameters(ip2);
 		wft2.setTaskReferenceName("t2");
-		
+				
 		wftasks.add(wft1);
 		wftasks.add(wft2);
 		def.setTasks(wftasks);
@@ -337,6 +352,8 @@ public class WorkflowServiceTest {
 		Map<String, Object> input = new HashMap<String, Object>();
 		String wfid = provider.startWorkflow(FORK_JOIN_WF, 1, "fanouttest", input );
 		System.out.println("testForkJoin.wfid=" + wfid);
+		printTaskStatuses(wfid, "initiated");
+		
 		Task t1 = ess.poll("junit_task_1", "test");
 		assertTrue(ess.ackTaskRecieved(t1.getTaskId(), "test"));
 		
@@ -355,6 +372,7 @@ public class WorkflowServiceTest {
 		Workflow wf = ess.getExecutionStatus(wfid, true);
 		assertNotNull(wf);
 		assertEquals("Found " + wf.getTasks(), WorkflowStatus.RUNNING, wf.getStatus());
+		printTaskStatuses(wf, "T1 completed");
 		
 		t3 = ess.poll("junit_task_3", "test");
 		assertNotNull(t3);
@@ -385,6 +403,7 @@ public class WorkflowServiceTest {
 		
 		wf = ess.getExecutionStatus(wfid, true);
 		assertNotNull(wf);
+		printTaskStatuses(wf, "T2 T3 completed");
 		assertEquals("Found " + wf.getTasks(), WorkflowStatus.RUNNING, wf.getStatus());
 		if (!wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t3"))) {
 			provider.decide(wfid);
@@ -418,6 +437,7 @@ public class WorkflowServiceTest {
 		wf = ess.getExecutionStatus(wfid, true);
 		assertNotNull(wf);
 		assertEquals("Found " + wf.getTasks(), WorkflowStatus.COMPLETED, wf.getStatus());
+		printTaskStatuses(wf, "All completed");
 	}
 	
 	@Test
@@ -745,6 +765,8 @@ public class WorkflowServiceTest {
 		taskDef.setRetryCount(retryCount);
 		taskDef.setRetryDelaySeconds(1);
 		ms.updateTaskDef(taskDef);
+		
+		
 	}
 
 	private void createForkJoinWorkflow() throws Exception {
@@ -800,6 +822,59 @@ public class WorkflowServiceTest {
 
 	}
 	
+	
+	private void createForkJoinWorkflowWithZeroRetry() throws Exception {
+		
+		WorkflowDef def = new WorkflowDef();
+		def.setName(FORK_JOIN_WF + "_2");
+		def.setDescription(def.getName());
+		def.setVersion(1);
+		def.setInputParameters(Arrays.asList("param1", "param2"));
+		
+		WorkflowTask fanout = new WorkflowTask();
+		fanout.setType(Type.FORK_JOIN.name());
+		fanout.setTaskReferenceName("fanouttask");
+		
+		WorkflowTask wft1 = new WorkflowTask();
+		wft1.setName("junit_task_0_RT_1");
+		Map<String, Object> ip1 = new HashMap<>();
+		ip1.put("p1", "workflow.input.param1");
+		ip1.put("p2", "workflow.input.param2");
+		wft1.setInputParameters(ip1);
+		wft1.setTaskReferenceName("t1");
+		
+		WorkflowTask wft3 = new WorkflowTask();
+		wft3.setName("junit_task_0_RT_3");
+		wft3.setInputParameters(ip1);
+		wft3.setTaskReferenceName("t3");
+		
+		WorkflowTask wft2 = new WorkflowTask();
+		wft2.setName("junit_task_0_RT_2");
+		Map<String, Object> ip2 = new HashMap<>();
+		ip2.put("tp1", "workflow.input.param1");
+		wft2.setInputParameters(ip2);
+		wft2.setTaskReferenceName("t2");
+		
+		WorkflowTask wft4 = new WorkflowTask();
+		wft4.setName("junit_task_0_RT_4");
+		wft4.setInputParameters(ip2);
+		wft4.setTaskReferenceName("t4");
+		
+		fanout.getForkTasks().add(Arrays.asList(wft1, wft3));
+		fanout.getForkTasks().add(Arrays.asList(wft2));
+		
+		def.getTasks().add(fanout);
+		
+		WorkflowTask join = new WorkflowTask();
+		join.setType(Type.JOIN.name());
+		join.setTaskReferenceName("fanouttask_join");
+		join.setJoinOn(Arrays.asList("t3","t2"));
+		
+		def.getTasks().add(join);
+		def.getTasks().add(wft4);
+		ms.updateWorkflowDef(def);
+
+	}
 	private void createForkJoinNestedWorkflow() throws Exception {
 		
 		WorkflowDef def = new WorkflowDef();
@@ -2269,6 +2344,65 @@ public class WorkflowServiceTest {
 	}
 	
 	@Test
+	public void testRetryWithForkJoin() throws Exception {
+		String wfid = this.runAFailedForkJoinWF();
+		
+		provider.retry(wfid);
+		
+		Workflow wf = ess.getExecutionStatus(wfid, true);
+		assertNotNull(wf);
+		
+		printTaskStatuses(wf, "After retry called");
+		
+		Task t2 = ess.poll("junit_task_0_RT_2", "test");
+		assertTrue(ess.ackTaskRecieved(t2.getTaskId(), "test"));
+		
+		Task t3 = ess.poll("junit_task_0_RT_3", "test");
+		assertNotNull(t3);
+		assertTrue(ess.ackTaskRecieved(t3.getTaskId(), "test"));
+
+		t2.setStatus(Status.COMPLETED);
+		t3.setStatus(Status.COMPLETED);
+
+		ExecutorService es = Executors.newFixedThreadPool(2);
+		Future<?> future1 = es.submit(()->{
+			try {
+				ess.updateTask(t2);
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+				
+		});
+		final Task _t3 = t3;
+		Future<?> future2 = es.submit(()->{
+			try {
+				ess.updateTask(_t3);
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+				
+		});
+		future1.get();
+		future2.get();
+		
+		provider.decide(wfid);
+		provider.decide(wfid);
+		
+		wf = ess.getExecutionStatus(wfid, true);
+		assertNotNull(wf);
+		
+		printTaskStatuses(wf, "T2, T3 complete");
+		provider.decide(wfid);
+		
+		Task t4 = ess.poll("junit_task_0_RT_4", "test");
+		assertNotNull(t4);
+		t4.setStatus(Status.COMPLETED);
+		ess.updateTask(t4);
+		
+		printTaskStatuses(wfid, "After complete");
+	}
+	
+	@Test
 	public void testRetry() throws Exception {
 		WorkflowDef errorWorkflow = ms.getWorkflowDef(FORK_JOIN_WF, 1);
 		assertNotNull("Error workflow is not defined", errorWorkflow);
@@ -2293,6 +2427,7 @@ public class WorkflowServiceTest {
 		input.put("param2", "p2 value");
 		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
 		assertNotNull(wfid);
+		printTaskStatuses(wfid, "initial");
 
 		Task task = getTask("junit_task_1");
 		assertNotNull(task);
@@ -2312,8 +2447,11 @@ public class WorkflowServiceTest {
 		assertNotNull(es);
 		assertEquals(WorkflowStatus.FAILED, es.getStatus());
 		
+		printTaskStatuses(wfid, "before retry");
+		
 		provider.retry(wfid);
 		
+		printTaskStatuses(wfid, "after retry");
 		es = ess.getExecutionStatus(wfid, true);
 		assertNotNull(es);
 		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
@@ -2343,6 +2481,8 @@ public class WorkflowServiceTest {
 		taskDef.setRetryCount(retryCount);
 		taskDef.setRetryDelaySeconds(retryDelay);
 		ms.updateTaskDef(taskDef);
+		
+		printTaskStatuses(wfid, "final");
 	
 	}
 	
@@ -3239,6 +3379,8 @@ public class WorkflowServiceTest {
 		} catch (Exception e) {}
 	}
 	
+	
+	
 	private String runWorkflowWithSubworkflow() throws Exception{
 		clearWorkflows();
 		createWorkflowDefForDomain();
@@ -3334,5 +3476,87 @@ public class WorkflowServiceTest {
 		assertEquals(2, es.getTasks().size());
 		
 		return wfid;
+	}
+	
+	private String runAFailedForkJoinWF() throws Exception {
+		try{
+			this.createForkJoinWorkflowWithZeroRetry();
+		}catch(Exception e){}
+		
+		Map<String, Object> input = new HashMap<String, Object>();
+		String wfid = provider.startWorkflow(FORK_JOIN_WF +"_2", 1, "fanouttest", input );
+		System.out.println("testForkJoin.wfid=" + wfid);
+		Task t1 = ess.poll("junit_task_0_RT_1", "test");
+		assertTrue(ess.ackTaskRecieved(t1.getTaskId(), "test"));
+		
+		Task t2 = ess.poll("junit_task_0_RT_2", "test");
+		assertTrue(ess.ackTaskRecieved(t2.getTaskId(), "test"));		
+		assertNotNull(t1);
+		assertNotNull(t2);
+		
+		t1.setStatus(Status.COMPLETED);
+		ess.updateTask(t1);
+
+		Workflow wf = ess.getExecutionStatus(wfid, true);
+		assertNotNull(wf);
+		assertEquals("Found " + wf.getTasks(), WorkflowStatus.RUNNING, wf.getStatus());
+		printTaskStatuses(wf, "Initial");
+		
+		t2.setStatus(Status.FAILED);
+
+		ExecutorService es = Executors.newFixedThreadPool(2);
+		Future<?> future1 = es.submit(()->{
+			try {
+				ess.updateTask(t2);
+			} catch (Exception e) {
+				throw new RuntimeException(e);
+			}
+				
+		});
+		future1.get();
+		
+		wf = ess.getExecutionStatus(wfid, true);
+		assertNotNull(wf);
+		if (!wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t3"))) {
+			provider.decide(wfid);
+			wf = ess.getExecutionStatus(wfid, true);
+			assertNotNull(wf);
+		}else {
+			provider.decide(wfid);
+		}
+		assertTrue("Found " + wf.getTasks().stream().map(t -> t.getTaskType()).collect(Collectors.toList()), wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t3")));
+		
+		wf = ess.getExecutionStatus(wfid, true);
+		assertNotNull(wf);
+
+		provider.decide(wfid);
+		provider.decide(wfid);
+		
+		wf = ess.getExecutionStatus(wfid, true);
+		assertNotNull(wf);
+		
+		wf = ess.getExecutionStatus(wfid, true);
+		assertNotNull(wf);
+		provider.decide(wfid);
+		printTaskStatuses(wfid, "After failed");
+		
+		return wfid;
+	}
+	
+	private void printTaskStatuses(String wfid, String message) throws Exception{
+		Workflow wf = ess.getExecutionStatus(wfid, true);
+		assertNotNull(wf);
+		printTaskStatuses(wf, message);
+	}
+	
+	private boolean printWFTaskDetails = false;
+	private void printTaskStatuses(Workflow wf, String message) throws Exception{
+		if(printWFTaskDetails){
+			System.out.println(message + " >>> Workflow status " + wf.getStatus().name());
+			wf.getTasks().forEach(t -> {
+				System.out.println("Task " +  String.format("%-15s",t.getTaskType()) + "\t" + String.format("%-15s",t.getReferenceTaskName()) + "\t" + String.format("%-15s",t.getWorkflowTask().getType()) + "\t" + t.getSeq() + "\t" + t.getStatus() + "\t" + t.getTaskId());
+			});
+			System.out.println();
+		}
 	}
 }
