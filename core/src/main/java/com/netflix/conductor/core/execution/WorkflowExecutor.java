@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.core.execution;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -155,78 +156,14 @@ public class WorkflowExecutor {
 	}
 
 	public String rerun(RerunWorkflowRequest request) throws Exception {
-
-		Workflow reRunFromWorkflow = edao.getWorkflow(request.getReRunFromWorkflowId());
-
-		String workflowId = IDGenerator.generate();
-
-		// Persist the workflow and task First
-		Workflow wf = new Workflow();
-		wf.setWorkflowId(workflowId);
-		wf.setCorrelationId((request.getCorrelationId() == null) ? reRunFromWorkflow.getCorrelationId() : request.getCorrelationId());
-		wf.setWorkflowType(reRunFromWorkflow.getWorkflowType());
-		wf.setVersion(reRunFromWorkflow.getVersion());
-		wf.setInput((request.getWorkflowInput() == null) ? reRunFromWorkflow.getInput() : request.getWorkflowInput());
-		wf.setReRunFromWorkflowId(request.getReRunFromWorkflowId());
-		wf.setStatus(WorkflowStatus.RUNNING);
-		wf.setOwnerApp(WorkflowContext.get().getClientApp());
-		wf.setCreateTime(System.currentTimeMillis());
-		wf.setUpdatedBy(null);
-		wf.setUpdateTime(null);
-
-		// If the "reRunFromTaskId" is not given in the RerunWorkflowRequest,
-		// then the whole
-		// workflow has to rerun
-		if (request.getReRunFromTaskId() != null) {
-			// We need to go thru the workflowDef and create tasks for
-			// all tasks before request.getReRunFromTaskId() and marked them
-			// skipped
-			List<Task> newTasks = new LinkedList<>();
-			Map<String, Task> refNameToTask = new HashMap<String, Task>();
-			reRunFromWorkflow.getTasks().forEach(task -> refNameToTask.put(task.getReferenceTaskName(), task));
-			WorkflowDef wd = metadata.get(reRunFromWorkflow.getWorkflowType(), reRunFromWorkflow.getVersion());
-			Iterator<WorkflowTask> it = wd.getTasks().iterator();
-			int seq = wf.getTasks().size();
-			while (it.hasNext()) {
-				WorkflowTask wt = it.next();
-				Task previousTask = refNameToTask.get(wt.getTaskReferenceName());
-				if (previousTask.getTaskId().equals(request.getReRunFromTaskId())) {
-					Task theTask = new Task();
-					theTask.setTaskId(IDGenerator.generate());
-					theTask.setReferenceTaskName(previousTask.getReferenceTaskName());
-					theTask.setInputData((request.getTaskInput() == null) ? previousTask.getInputData() : request.getTaskInput());
-					theTask.setWorkflowInstanceId(workflowId);
-					theTask.setStatus(Status.READY_FOR_RERUN);
-					theTask.setTaskType(previousTask.getTaskType());
-					theTask.setCorrelationId(wf.getCorrelationId());
-					theTask.setSeq(seq++);
-					theTask.setRetryCount(previousTask.getRetryCount() + 1);
-					newTasks.add(theTask);
-					break;
-				} else { // Create with Skipped status
-					Task theTask = new Task();
-					theTask.setTaskId(IDGenerator.generate());
-					theTask.setReferenceTaskName(previousTask.getReferenceTaskName());
-					theTask.setWorkflowInstanceId(workflowId);
-					theTask.setStatus(Status.SKIPPED);
-					theTask.setTaskType(previousTask.getTaskType());
-					theTask.setCorrelationId(wf.getCorrelationId());
-					theTask.setInputData(previousTask.getInputData());
-					theTask.setOutputData(previousTask.getOutputData());
-					theTask.setRetryCount(previousTask.getRetryCount() + 1);
-					theTask.setSeq(seq++);
-					newTasks.add(theTask);
-				}
-			}
-
-			edao.createTasks(newTasks);
+		Preconditions.checkNotNull(request.getReRunFromWorkflowId(), "reRunFromWorkflowId is missing");
+		if(!rerunWF(request.getReRunFromWorkflowId(), request.getReRunFromTaskId(), request.getTaskInput(), 
+				request.getWorkflowInput(), request.getCorrelationId())){
+			throw new ApplicationException(Code.INVALID_INPUT, "Task " + request.getReRunFromTaskId() + " not found");
 		}
-
-		edao.createWorkflow(wf);
-		decide(workflowId);
-		return workflowId;
+		return request.getReRunFromWorkflowId();
 	}
-
+	
 	public void rewind(String workflowId) throws Exception {
 		Workflow workflow = edao.getWorkflow(workflowId, true);
 		if (!workflow.getStatus().isTerminal()) {
@@ -253,13 +190,23 @@ public class WorkflowExecutor {
 		if (workflow.getTasks().isEmpty()) {
 			throw new ApplicationException(Code.CONFLICT, "Workflow has not started yet");
 		}
-		int lastIndex = workflow.getTasks().size() - 1;
-		Task last = workflow.getTasks().get(lastIndex);
-		if (!last.getStatus().isTerminal()) {
+		
+		// First get the failed task and the cancelled task
+		Task failedTask  = null;
+		List<Task> cancelledTasks = new ArrayList<Task>();
+		for(Task t: workflow.getTasks()) {
+			if(t.getStatus().equals(Status.FAILED)){
+				failedTask = t;
+			} else if(t.getStatus().equals(Status.CANCELED)){
+				cancelledTasks.add(t);
+				
+			}
+		};
+		if (failedTask != null && !failedTask.getStatus().isTerminal()) {
 			throw new ApplicationException(Code.CONFLICT,
 					"The last task is still not completed!  I can only retry the last failed task.  Use restart if you want to attempt entire workflow execution again.");
 		}
-		if (last.getStatus().isSuccessful()) {
+		if (failedTask != null && failedTask.getStatus().isSuccessful()) {
 			throw new ApplicationException(Code.CONFLICT,
 					"The last task has not failed!  I can only retry the last failed task.  Use restart if you want to attempt entire workflow execution again.");
 		}
@@ -271,13 +218,34 @@ public class WorkflowExecutor {
 		update.forEach(task -> task.setRetried(true));
 		edao.updateTasks(update);
 
-		Task retried = last.copy();
+		List<Task> rescheduledTasks = new ArrayList<Task>();
+		// Now reschedule the failed task
+		Task retried = failedTask.copy();
 		retried.setTaskId(IDGenerator.generate());
-		retried.setRetriedTaskId(last.getTaskId());
+		retried.setRetriedTaskId(failedTask.getTaskId());
 		retried.setStatus(Status.SCHEDULED);
-		retried.setRetryCount(last.getRetryCount() + 1);
-		scheduleTask(workflow, Arrays.asList(retried));
-
+		retried.setRetryCount(failedTask.getRetryCount() + 1);
+		rescheduledTasks.add(retried);
+		
+		// Reschedule the cancelled task but if the join is cancelled set that to in progress
+		cancelledTasks.forEach(t -> {
+			if(t.getTaskType().equalsIgnoreCase(WorkflowTask.Type.JOIN.toString())){
+				t.setStatus(Status.IN_PROGRESS);
+				t.setRetried(false);
+				edao.updateTask(t);
+			} else {
+				//edao.removeTask(t.getTaskId());
+				Task copy = t.copy();
+				copy.setTaskId(IDGenerator.generate());
+				copy.setRetriedTaskId(t.getTaskId());
+				copy.setStatus(Status.SCHEDULED);
+				copy.setRetryCount(t.getRetryCount() + 1);
+				rescheduledTasks.add(copy);
+			}
+		});
+		
+		scheduleTask(workflow, rescheduledTasks);
+		
 		workflow.setStatus(WorkflowStatus.RUNNING);
 		edao.updateWorkflow(workflow);
 
@@ -762,10 +730,19 @@ public class WorkflowExecutor {
 		if (tasks == null || tasks.isEmpty()) {
 			return false;
 		}
-		int count = workflow.getTasks().size();
+		int count = 0;
+		
+		// Get the highest seq number
+		for(Task t: workflow.getTasks()){
+			if(t.getSeq() > count){
+				count = t.getSeq();
+			}
+		}
 
 		for (Task task : tasks) {
-			task.setSeq(++count);
+			if(task.getSeq() == 0){ // Set only if the seq was not set
+				task.setSeq(++count);
+			}
 		}
 
 		List<Task> created = edao.createTasks(tasks);
@@ -817,5 +794,87 @@ public class WorkflowExecutor {
 		terminateWorkflow(workflow, tw.getMessage(), failureWorkflow);
 	}
 	
+	private boolean rerunWF(String workflowId, String taskId, Map<String, Object> taskInput, 
+			Map<String, Object> workflowInput, String correlationId) throws Exception{
+		
+		// Get the workflow
+		Workflow workflow = edao.getWorkflow(workflowId);
+		
+		// If the task Id is null it implies that the entire workflow has to be rerun
+		if(taskId == null){
+			// remove all tasks
+			workflow.getTasks().forEach(t -> edao.removeTask(t.getTaskId()));
+			// Set workflow as RUNNING
+			workflow.setStatus(WorkflowStatus.RUNNING);
+			if(correlationId != null){
+				workflow.setCorrelationId(correlationId);
+			} 
+			if(workflowInput != null){
+				workflow.setInput(workflowInput);
+			}
+
+			edao.updateWorkflow(workflow);
+			
+			decide(workflowId);
+			return true;
+		}
+		
+		// Now iterate thru the tasks and find the "specific" task
+		Task theTask = null;
+		for(Task t: workflow.getTasks()){
+			if(t.getTaskId().equals(taskId)){
+				theTask = t;
+				break;
+			} else {
+				// If not found look into sub workflows
+				if(t.getTaskType().equalsIgnoreCase("SUB_WORKFLOW")){
+					String subWorkflowId = t.getInputData().get("subWorkflowId").toString();
+					if(rerunWF(subWorkflowId, taskId, taskInput, null, null)){
+						theTask = t;
+						break;
+					}
+				}
+			}
+		}
+		
+		
+		if(theTask != null){
+			// Remove all later tasks from the "theTask"
+			for(Task t: workflow.getTasks()){
+				if(t.getSeq() > theTask.getSeq()){
+					edao.removeTask(t.getTaskId());
+				}
+			}
+			if(theTask.getTaskType().equalsIgnoreCase("SUB_WORKFLOW")){
+				// if task is sub workflow set task as IN_PROGRESS
+				theTask.setStatus(Status.IN_PROGRESS);
+				edao.updateTask(theTask);
+			} else {
+				// Set the task to rerun
+				theTask.setStatus(Status.SCHEDULED);
+				if(taskInput != null){
+					theTask.setInputData(taskInput);
+				}
+				theTask.setRetried(false);
+				edao.updateTask(theTask);
+				addTaskToQueue(theTask);
+			}
+			// and workflow as RUNNING
+			workflow.setStatus(WorkflowStatus.RUNNING);
+			if(correlationId != null){
+				workflow.setCorrelationId(correlationId);
+			} 
+			if(workflowInput != null){
+				workflow.setInput(workflowInput);
+			}
+
+			edao.updateWorkflow(workflow);
+			
+			decide(workflowId);
+			return true;
+		}
+
+		return false;
+	}
 
 }

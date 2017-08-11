@@ -549,6 +549,9 @@ public class DeciderService {
 			Map<String, Object> input = getTaskInput(taskToSchedule.getInputParameters(), workflow, null, null);
 			Object paramValue = input.get(paramName);
 			DynamicForkJoinTaskList dynForkTasks0 = om.convertValue(paramValue, DynamicForkJoinTaskList.class);
+			if(dynForkTasks0 == null) {
+				throw new TerminateWorkflow("Dynamic tasks could not be created.  The value of " + paramName + " from task's input " + input + " has no dynamic tasks to be scheduled");
+			}
 			for( DynamicForkJoinTask dt : dynForkTasks0.getDynamicTasks()) {
 				WorkflowTask wft = new WorkflowTask();
 				wft.setTaskReferenceName(dt.getReferenceName());
