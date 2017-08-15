@@ -1,0 +1,13 @@
+#
+# conductor:server - Netflix conductor server
+#
+FROM java:8-jdk
+
+MAINTAINER Netflix OSS <conductor@netflix.com>
+
+# Copy the project directly onto the image
+COPY . /conductor
+WORKDIR /conductor
+
+# Build the server on run
+ENTRYPOINT ./gradlew build -x test

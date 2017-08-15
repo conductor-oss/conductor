@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 # startup.sh - startup script for the server docker image
 
 echo "Starting Conductor server"
@@ -18,4 +18,4 @@ if [ -z "$CONFIG_PROP" ];
     export config_file=/app/config/$CONFIG_PROP
 fi
 
-nohup java -jar conductor-server-*-all.jar $config_file 1>&2 > /app/logs/server.log
+java -jar conductor-server-*-all.jar $config_file

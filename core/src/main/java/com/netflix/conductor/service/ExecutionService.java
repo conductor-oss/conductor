@@ -176,9 +176,9 @@ public class ExecutionService {
 
 	public boolean ackTaskRecieved(String taskId, String consumerId) throws Exception {
 		Task task = getTask(taskId);
-		String queueName = QueueUtils.getQueueName(task);
 
 		if (task != null) {
+			String queueName = QueueUtils.getQueueName(task);
 			if(task.getResponseTimeoutSeconds() > 0) {
 				logger.debug("Adding task " + queueName + "/" + taskId + " to be requeued if no response received " + task.getResponseTimeoutSeconds());
 				return queue.setUnackTimeout(queueName, task.getTaskId(), 1000 * task.getResponseTimeoutSeconds());		//Value is in millisecond
