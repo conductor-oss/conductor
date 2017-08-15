@@ -68,6 +68,8 @@ public class WorkflowTaskCoordinator {
 	private int workerQueueSize;
 	
 	private int threadCount;
+
+	private String workerNamePrefix = "workflow-worker-";
 	
 	private static final String DOMAIN = "domain";
 	
@@ -80,31 +82,37 @@ public class WorkflowTaskCoordinator {
 	 * @param threadCount # of threads assigned to the workers.  Should be at-least the size of taskWorkers to avoid starvation in a busy system.
 	 * @param sleepWhenRetry sleep time in millisecond for Conductor server retries (poll, ack, update task)
 	 * @param updateRetryCount number of times to retry the failed updateTask operation
-	 * @param workerQueueSize queue size for the polled task.  
+	 * @param workerQueueSize queue size for the polled task.
 	 * @param taskWorkers workers that will be used for polling work and task execution.
 	 * <p>
 	 * Please see {@link #init()} method.  The method must be called after this constructor for the polling to start.
 	 * </p>
+	 * @param workerNamePrefix
 	 * @see Builder
 	 */
-	public WorkflowTaskCoordinator(EurekaClient ec, TaskClient client, int threadCount, int sleepWhenRetry, int updateRetryCount, int workerQueueSize, Iterable<Worker> taskWorkers) {
+	public WorkflowTaskCoordinator(EurekaClient ec, TaskClient client, int threadCount, int sleepWhenRetry,
+								   int updateRetryCount, int workerQueueSize, Iterable<Worker> taskWorkers,
+								   String workerNamePrefix) {
 		this.ec = ec;
 		this.client = client;
 		this.threadCount = threadCount;
 		this.sleepWhenRetry = sleepWhenRetry;
 		this.updateRetryCount = updateRetryCount;
 		this.workerQueueSize = workerQueueSize;
+		this.workerNamePrefix = workerNamePrefix;
 		for (Worker worker : taskWorkers) {
 			workers.add(worker);
 		}
 	}
-	
+
 	/**
 	 * 
 	 * Builder used to create the instances of WorkflowTaskCoordinator
 	 *
 	 */
 	public static class Builder {
+
+		private String workerNamePrefix = "workflow-worker-";
 	
 		private int sleepWhenRetry = 500;
 		
@@ -119,6 +127,16 @@ public class WorkflowTaskCoordinator {
 		private EurekaClient ec;
 		
 		private TaskClient client;
+
+		/**
+		 *
+		 * @param workerNamePrefix prefix to be used for worker names, defaults to workflow-worker- if not supplied.
+		 * @return Returns the current instance.
+		 */
+		public Builder withWorkerNamePrefix(String workerNamePrefix) {
+			this.workerNamePrefix = workerNamePrefix;
+			return this;
+		}
 		
 		/**
 		 * 
@@ -219,7 +237,8 @@ public class WorkflowTaskCoordinator {
 			if(client == null) {
 				throw new IllegalArgumentException("No TaskClient provided.  use withTaskClient() to provide one"); 
 			}
-			return new WorkflowTaskCoordinator(ec, client, threadCount, sleepWhenRetry, updateRetryCount, workerQueueSize, taskWorkers);
+			return new WorkflowTaskCoordinator(ec, client, threadCount, sleepWhenRetry, updateRetryCount,
+											   workerQueueSize, taskWorkers, workerNamePrefix);
 		}
 	}
 	
@@ -243,7 +262,7 @@ public class WorkflowTaskCoordinator {
 			@Override
 			public Thread newThread(Runnable r) {
 				Thread t = new Thread(r);
-				t.setName(PropertyFactory.getString("", "workerNamePrefix", "workflow-worker-") + count.getAndIncrement());
+				t.setName(workerNamePrefix + count.getAndIncrement());
 				return t;
 			}
 		});
@@ -379,6 +398,15 @@ public class WorkflowTaskCoordinator {
 	 */
 	public int getUpdateRetryCount() {
 		return updateRetryCount;
+	}
+
+	/**
+	 *
+	 * @return prefix used for worker names
+	 */
+	public String getWorkerNamePrefix()
+	{
+		return workerNamePrefix;
 	}
 	
 	private void updateWithRetry(int count, Task task, TaskResult result, Worker worker) {
