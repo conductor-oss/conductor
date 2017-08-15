@@ -69,7 +69,7 @@ public class WorkflowTaskCoordinator {
 	
 	private int threadCount;
 
-	private String workerNamePrefix = "workflow-worker-";
+	private String workerNamePrefix;
 	
 	private static final String DOMAIN = "domain";
 	
@@ -84,6 +84,7 @@ public class WorkflowTaskCoordinator {
 	 * @param updateRetryCount number of times to retry the failed updateTask operation
 	 * @param workerQueueSize queue size for the polled task.
 	 * @param taskWorkers workers that will be used for polling work and task execution.
+	 * @param workerNamePrefix String prefix that will be used for all the workers.
 	 * <p>
 	 * Please see {@link #init()} method.  The method must be called after this constructor for the polling to start.
 	 * </p>
