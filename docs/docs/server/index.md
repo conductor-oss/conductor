@@ -52,16 +52,18 @@ log4j.properties file path is optional and allows finer control over the logging
 ### Configuration Parameters
 ```properties
 
-# Database persistence model.  Possible values are memory, redis, and dynomite.
+# Database persistence model.  Possible values are memory, redis, redis_cluster and dynomite.
 # If omitted, the persistence used is memory
 #
 # memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo
 # redis : non-Dynomite based redis instance
+# redis_cluster: AWS Elasticache Redis (cluster mode enabled).See [http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.Create.CON.RedisCluster.html]
 # dynomite : Dynomite cluster.  Use this for HA configuration.
 db=dynomite
 
 # Dynomite Cluster details.
 # format is host:port:rack separated by semicolon
+# for AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e. The region in this case does not matter
 workflow.dynomite.cluster.hosts=host1:8102:us-east-1c;host2:8102:us-east-1d;host3:8102:us-east-1e
 
 # Dynomite cluster name
