@@ -1,175 +1,45 @@
-/**
- * Copyright 2016 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-/**
- *
- */
-package com.netflix.conductor.dao.dynomite;
+package com.netflix.conductor.dao.mysql;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang.builder.EqualsBuilder;
-import org.elasticsearch.action.ActionFuture;
-import org.elasticsearch.action.ListenableActionFuture;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.common.unit.TimeValue;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
-import com.netflix.conductor.config.TestConfiguration;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.dao.index.ElasticSearchDAO;
-import com.netflix.conductor.dao.redis.JedisMock;
+import com.netflix.conductor.dao.IndexDAO;
 
-import redis.clients.jedis.JedisCommands;
+public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 
-/**
- * @author Viren
- *
- */
-public class RedisExecutionDAOTest {
+	private MySQLMetadataDAO metadata;
+	private MySQLExecutionDAO dao;
 
-	private RedisMetadataDAO mdao;
-
-	private RedisExecutionDAO dao;
-
-	private static ObjectMapper om = new ObjectMapper();
-
-	static {
-		om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-		om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-		om.setSerializationInclusion(Include.NON_NULL);
-		om.setSerializationInclusion(Include.NON_EMPTY);
-	}
-
-	@SuppressWarnings("unchecked")
 	@Before
-	public void init() throws Exception {
-		Configuration config = new TestConfiguration();
-		JedisCommands jedisMock = new JedisMock();
-		DynoProxy dynoClient = new DynoProxy(jedisMock);
-
-		Client client = mock(Client.class);
-		BulkItemResponse[] responses = new BulkItemResponse[0];
-		BulkResponse response = new BulkResponse(responses, 1);
-		BulkRequestBuilder brb = mock(BulkRequestBuilder.class);
-
-		when(brb.add(any(IndexRequest.class))).thenReturn(brb);
-		ListenableActionFuture<BulkResponse> laf = mock(ListenableActionFuture.class);
-		when(laf.actionGet()).thenReturn(response);
-		when(brb.execute()).thenReturn(laf);
-		when(client.prepareBulk()).thenReturn(brb);
-		final UpdateResponse ur = new UpdateResponse();
-		when(client.update(any())).thenReturn(new ActionFuture<UpdateResponse>() {
-
-			@Override
-			public boolean isDone() {
-				return true;
-			}
-
-			@Override
-			public boolean isCancelled() {
-				return false;
-			}
-
-			@Override
-			public UpdateResponse get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse get() throws InterruptedException, ExecutionException {
-				return ur;
-			}
-
-			@Override
-			public boolean cancel(boolean mayInterruptIfRunning) {
-				return false;
-			}
-
-			@Override
-			public UpdateResponse actionGet(long timeout, TimeUnit unit) {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse actionGet(TimeValue timeout) {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse actionGet(long timeoutMillis) {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse actionGet(String timeout) {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse actionGet() {
-				return ur;
-			}
-		});
-		BulkRequestBuilder bulk = client.prepareBulk();
-		bulk = bulk.add(any(IndexRequest.class));
-		bulk.execute().actionGet();
-
-		when(client.prepareBulk().add(any(IndexRequest.class)).execute().actionGet()).thenReturn(response);
-
-		ElasticSearchDAO indexer = spy(new ElasticSearchDAO(client, config, om));
-		mdao = new RedisMetadataDAO(dynoClient, om, config);
-		dao = new RedisExecutionDAO(dynoClient, om, indexer, mdao, config);
-
+	public void setup() throws Exception {
+		metadata = new MySQLMetadataDAO(objectMapper, testSql2o, testConfiguration);
+		dao = new MySQLExecutionDAO(mock(IndexDAO.class), metadata, objectMapper, testSql2o);
+		resetAllData();
 	}
 
 	@Rule
@@ -177,11 +47,10 @@ public class RedisExecutionDAOTest {
 
 	@Test
 	public void testTaskExceedsLimit() throws Exception {
-
 		TaskDef def = new TaskDef();
 		def.setName("task1");
 		def.setConcurrentExecLimit(1);
-		mdao.createTaskDef(def);
+		metadata.createTaskDef(def);
 
 		List<Task> tasks = new LinkedList<>();
 		for(int i = 0; i < 15; i++) {
@@ -204,8 +73,8 @@ public class RedisExecutionDAOTest {
 		for(Task task : tasks) {
 			assertTrue(dao.exceedsInProgressLimit(task));
 		}
-
 	}
+
 	@Test
 	public void testCreateTaskException() throws Exception {
 		Task task = new Task();
@@ -213,15 +82,15 @@ public class RedisExecutionDAOTest {
 		task.setSeq(1);
 		task.setTaskId("t1");
 		task.setTaskDefName("task1");
+
 		expected.expect(NullPointerException.class);
 		expected.expectMessage("Workflow instance id cannot be null");
-		dao.createTasks(Arrays.asList(task));
+		dao.createTasks(Collections.singletonList(task));
 
 		task.setWorkflowInstanceId("wfid");
 		expected.expect(NullPointerException.class);
-		expected.expectMessage("Task reference name cannot be nullss");
-		dao.createTasks(Arrays.asList(task));
-
+		expected.expectMessage("Task reference name cannot be null");
+		dao.createTasks(Collections.singletonList(task));
 	}
 
 	@Test
@@ -232,9 +101,10 @@ public class RedisExecutionDAOTest {
 		task.setTaskId("t1");
 		task.setTaskDefName("task1");
 		task.setWorkflowInstanceId("wfid");
+
 		expected.expect(NullPointerException.class);
 		expected.expectMessage("Task reference name cannot be null");
-		dao.createTasks(Arrays.asList(task));
+		dao.createTasks(Collections.singletonList(task));
 	}
 
 	@Test
@@ -305,7 +175,7 @@ public class RedisExecutionDAOTest {
 		tasks.add(task);
 
 		List<Task> created = dao.createTasks(tasks);
-		assertEquals(tasks.size()-1, created.size());		//1 less
+		assertEquals(tasks.size()-1, created.size());	//1 less
 
 		Set<String> srcIds = tasks.stream().map(t -> t.getReferenceTaskName() + "." + t.getRetryCount()).collect(Collectors.toSet());
 		Set<String> createdIds = created.stream().map(t -> t.getReferenceTaskName() + "." + t.getRetryCount()).collect(Collectors.toSet());
@@ -530,7 +400,6 @@ public class RedisExecutionDAOTest {
 		}
 		count = dao.getPendingWorkflowCount(workflowName);
 		assertEquals(0, count);
-
 	}
 
 }
