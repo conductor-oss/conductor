@@ -20,14 +20,7 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -279,10 +272,12 @@ public class WorkflowTaskCoordinator {
 			List<Task> tasks = client.poll(taskType, domain, worker.getIdentity(), worker.getPollCount(), worker.getLongPollTimeoutInMS());
 			sw.stop();
 			logger.debug("Polled {}, for domain {} and receivd {} tasks", worker.getTaskDefName(), domain, tasks.size());
-			for(Task task : tasks) {
+            final CountDownLatch countDownLatch = new CountDownLatch(tasks.size());
+            for(Task task : tasks) {
 				es.submit(() -> {
 					try {
 						execute(worker, task);
+						countDownLatch.countDown();
 					} catch (Throwable t) {
 						task.setStatus(Task.Status.FAILED);
 						TaskResult result = new TaskResult(task);
@@ -290,6 +285,7 @@ public class WorkflowTaskCoordinator {
 					}
 				});
 			}
+			countDownLatch.await();
 			
 		}catch(RejectedExecutionException qfe) {
 			WorkflowTaskMetrics.queueFull(worker.getTaskDefName());
