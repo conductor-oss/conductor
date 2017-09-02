@@ -69,6 +69,9 @@ workflow.dynomite.cluster.hosts=host1:8102:us-east-1c;host2:8102:us-east-1d;host
 # Dynomite cluster name
 workflow.dynomite.cluster.name=dyno_cluster_name
 
+# Maximum connections to redis/dynomite
+workflow.dynomite.connection.maxConnsPerHost=31
+
 # Namespace for the keys stored in Dynomite/Redis
 workflow.namespace.prefix=conductor
 
@@ -109,6 +112,7 @@ db=redis
 # For AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e. 
 # The region in this case does not matter
 workflow.dynomite.cluster.hosts=server_address:server_port:us-east-1e
+workflow.dynomite.connection.maxConnsPerHost=31
 
 queues.dynomite.nonQuorum.port=server_port
 ```
