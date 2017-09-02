@@ -398,8 +398,10 @@ The task takes 3 parameters:</p>
 </table>
 <h3 id="example_3">Example<a class="headerlink" href="#example_3" title="Permanent link">&para;</a></h3>
 <pre><code class="json">{
-  &quot;dynamicTasks&quot;: &quot;${taskA.output.dynamicTasksJSON}&quot;,
-  &quot;dynamicTasksInput&quot;: &quot;${taskA.output.dynamicTasksInputJSON}&quot;,
+  &quot;inputParameters&quot;: {
+     &quot;dynamicTasks&quot;: &quot;${taskA.output.dynamicTasksJSON}&quot;,
+     &quot;dynamicTasksInput&quot;: &quot;${taskA.output.dynamicTasksInputJSON}&quot;
+  }
   &quot;type&quot;: &quot;FORK_JOIN_DYNAMIC&quot;,
   &quot;dynamicForkTasksParam&quot;: &quot;dynamicTasks&quot;,
   &quot;dynamicForkTasksInputParamName&quot;: &quot;dynamicTasksInput&quot;
@@ -705,7 +707,7 @@ To use a wait task, set the task type as <code>WAIT</code></p>
   <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/Netflix/conductor" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/Netflix/conductor" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href="../" style="color: #fcfcfc;">&laquo; Previous</a></span>

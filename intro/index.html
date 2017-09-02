@@ -225,12 +225,10 @@
 </div>
 <h2 id="running-in-memory-server">Running In-Memory Server<a class="headerlink" href="#running-in-memory-server" title="Permanent link">&para;</a></h2>
 <p>Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>In-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies.</p>
-</div>
+<p>!!!warning:
+    In-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies.</p>
 <h4 id="checkout-the-source-from-github">Checkout the source from github<a class="headerlink" href="#checkout-the-source-from-github" title="Permanent link">&para;</a></h4>
-<pre><code>git clone git@github.com/Netflix/conductor.git
+<pre><code>git clone git@github.com:Netflix/conductor.git
 </code></pre>
 
 <h4 id="start-local-server">Start Local Server<a class="headerlink" href="#start-local-server" title="Permanent link">&para;</a></h4>
@@ -245,11 +243,14 @@
 gulp watch
 </code></pre>
 
-<p>Launch UI at <a href="http://localhost:3000/">http://localhost:3000/</a></p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The server will load a sample kitchen sink workflow definition by default.  See <a href="../metadata/kitchensink/">here</a> for details.</p>
-</div>
+<h4 id="or-start-all-the-services-using-docker-compose">Or Start all the services using <a href="../docker/docker-compose.yaml">docker-compose</a><a class="headerlink" href="#or-start-all-the-services-using-docker-compose" title="Permanent link">&para;</a></h4>
+<pre><code class="shell">cd docker
+docker-compose up
+</code></pre>
+
+<p>If you ran it locally, launch UI at <a href="http://localhost:3000/">http://localhost:3000/</a> or if you have ran it using docker-compose launch the UI at <a href="http://localhost:5000/">http://localhost:5000/</a></p>
+<p>!!!Note:
+    The server will load a sample kitchen sink workflow definition by default.  See <a href="../metadata/kitchensink/">here</a> for details.</p>
 <h1 id="runtime-model">Runtime Model<a class="headerlink" href="#runtime-model" title="Permanent link">&para;</a></h1>
 <p>Conductor follows RPC based communication model where workers are running on a separate machine from the server.  Workers communicate with server over HTTP based endpoints and employs polling model for managing work queues.</p>
 <p><img alt="name_for_alt" src="./overview.png" /></p>
@@ -323,7 +324,7 @@ gulp watch
   <div class="rst-versions" role="note" style="cursor: pointer">
     <span class="rst-current-version" data-toggle="rst-current-version">
       
-          <a href="https://github.com/Netflix/conductor" class="icon icon-github" style="float: left; color: #fcfcfc"> GitHub</a>
+          <a href="https://github.com/Netflix/conductor" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
         <span><a href=".." style="color: #fcfcfc;">&laquo; Previous</a></span>

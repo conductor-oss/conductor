@@ -22,10 +22,25 @@
  * area doesn't scroll.
  *
  * https://github.com/mkdocs/mkdocs/pull/202
+ *
+ * Builds upon pull 202 https://github.com/mkdocs/mkdocs/pull/202
+ * to make toc scrollbar end before navigations buttons to not be overlapping.
  */
 .wy-nav-side {
-    height: 100%;
+    height: calc(100% - 45px);
     overflow-y: auto;
+    min-height: 0;
+}
+
+.rst-versions{
+    border-top: 0;
+    height: 45px;
+}
+
+@media screen and (max-width: 768px) {
+    .wy-nav-side {
+        height: 100%;
+    }
 }
 
 /*
