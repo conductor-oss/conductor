@@ -99,4 +99,16 @@ Conductor servers are stateless and can be deployed on multiple servers to handl
 
 Clients connects to the server via HTTP load balancer or using Discovery (on NetflixOSS stack).
 
+# Using Standalone Redis / ElastiCache
 
+Conductor server can be used with a standlone Redis or ElastiCache server.  To configure the server, change the config to use the following:
+
+```properties
+db=redis
+
+# For AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e. 
+# The region in this case does not matter
+workflow.dynomite.cluster.hosts=server_address:server_port:us-east-1e
+
+queues.dynomite.nonQuorum.port=server_port
+```
