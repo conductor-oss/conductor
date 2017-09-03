@@ -23,6 +23,7 @@ import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.google.common.collect.Lists;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -268,16 +269,20 @@ public class WorkflowTaskCoordinator {
 		try{
 			
 			String taskType = worker.getTaskDefName();
-			Stopwatch sw = WorkflowTaskMetrics.pollTimer(worker.getTaskDefName());
-			List<Task> tasks = client.poll(taskType, domain, worker.getIdentity(), worker.getPollCount(), worker.getLongPollTimeoutInMS());
-			sw.stop();
-			logger.debug("Polled {}, for domain {} and receivd {} tasks", worker.getTaskDefName(), domain, tasks.size());
-            final CountDownLatch countDownLatch = new CountDownLatch(tasks.size());
+            List<Task> tasks = Lists.newArrayList();
+            ThreadPoolExecutor threadPoolExecutor = (ThreadPoolExecutor) es;
+            int pollCount = threadPoolExecutor.getMaximumPoolSize() - threadPoolExecutor.getActiveCount();
+            pollCount = pollCount < worker.getPollCount() ? pollCount : worker.getPollCount();
+            if (pollCount > 0) {
+                Stopwatch sw = WorkflowTaskMetrics.pollTimer(worker.getTaskDefName());
+                tasks = client.poll(taskType, domain, worker.getIdentity(), pollCount, worker.getLongPollTimeoutInMS());
+                sw.stop();
+                logger.debug("Polled {}, for domain {} and receivd {} tasks", worker.getTaskDefName(), domain, tasks.size());
+            }
             for(Task task : tasks) {
 				es.submit(() -> {
 					try {
 						execute(worker, task);
-						countDownLatch.countDown();
 					} catch (Throwable t) {
 						task.setStatus(Task.Status.FAILED);
 						TaskResult result = new TaskResult(task);
@@ -285,8 +290,7 @@ public class WorkflowTaskCoordinator {
 					}
 				});
 			}
-			countDownLatch.await();
-			
+
 		}catch(RejectedExecutionException qfe) {
 			WorkflowTaskMetrics.queueFull(worker.getTaskDefName());
 			logger.error("Execution queue is full", qfe);
