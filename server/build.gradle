@@ -76,6 +76,7 @@ build.dependsOn('shadowJar')
 task server(type: JavaExec) {
   systemProperty 'workflow.elasticsearch.url', 'localhost:9300'
   systemProperty 'loadSample', 'true'
+  systemProperties System.properties
   main = 'com.netflix.conductor.server.Main'
   classpath = sourceSets.test.runtimeClasspath  
 }
