@@ -136,7 +136,7 @@ public class SystemTaskWorkerCoordinator {
 
 			// get the remaining capacity of worker queue to prevent queue full exception
 			int realPollCount = Math.min(workerQueue.remainingCapacity(), pollCount);
-			if (realPollCount <= 0) {
+			if (realPollCount <= 0) {				
                 logger.warn("All workers are busy, not polling.  queue size {}, max {}", workerQueue.size(), workerQueueSize);
                 return;
 			}
@@ -144,6 +144,7 @@ public class SystemTaskWorkerCoordinator {
 			String name = systemTask.getName();
 			List<String> polled = taskQueues.pop(name, realPollCount, 200);
 			Monitors.recordTaskPoll(name);
+			Monitors.recordTaskPoll(className);
 			logger.debug("Polling for {}, got {}", name, polled.size());
 			for(String task : polled) {
 				try {
