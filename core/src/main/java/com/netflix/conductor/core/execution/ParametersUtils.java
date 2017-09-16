@@ -56,7 +56,12 @@ public class ParametersUtils {
 	}
 	
 	public Map<String, Object> getTaskInputV2(Map<String, Object> input, Workflow workflow, String taskId, TaskDef taskDef) {
-		Map<String, Object> inputParams = clone(input);
+		Map<String, Object> inputParams = null;
+		if(input != null) {
+			inputParams = clone(input);
+		} else {
+			inputParams = new HashMap<>();
+		}
 		if(taskDef != null && taskDef.getInputTemplate() != null) {
 			inputParams.putAll(clone(taskDef.getInputTemplate()));
 		}
