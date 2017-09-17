@@ -41,8 +41,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Guice;
 import com.google.inject.servlet.GuiceFilter;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.redis.utils.JedisMock;
 import com.netflix.conductor.dao.es.EmbeddedElasticSearch;
+import com.netflix.conductor.redis.utils.JedisMock;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.Host.Status;
 import com.netflix.dyno.connectionpool.HostSupplier;
@@ -126,9 +126,8 @@ public class ConductorServer {
 		
 		JedisCommands jedis = null;
 		switch(db) {
-		case redis:	
+		case redis:		
 		case dynomite:
-			
 			ConnectionPoolConfigurationImpl cp = new ConnectionPoolConfigurationImpl(dynoClusterName).withTokenSupplier(new TokenMapSupplier() {
 				
 				HostToken token = new HostToken(1L, dynoHosts.get(0));
@@ -142,7 +141,12 @@ public class ConductorServer {
 				public HostToken getTokenForHost(Host host, Set<Host> activeHosts) {
 					return token;
 				}
+				
+				
 			}).setLocalRack(cc.getAvailabilityZone()).setLocalDataCenter(cc.getRegion());
+			cp.setSocketTimeout(0);
+			cp.setConnectTimeout(0);
+			cp.setMaxConnsPerHost(cc.getIntProperty("workflow.dynomite.connection.maxConnsPerHost", 10));
 			
 			jedis = new DynoJedisClient.Builder()
 				.withHostSupplier(hs)
@@ -151,7 +155,7 @@ public class ConductorServer {
 				.withCPConfig(cp)
 				.build();
 			
-			logger.info("Starting conductor server using dynomite cluster " + dynoClusterName);
+			logger.info("Starting conductor server using dynomite/redis cluster " + dynoClusterName);
 			
 			break;
 			

@@ -20,14 +20,7 @@ import java.io.StringWriter;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -66,8 +59,12 @@ public class WorkflowTaskCoordinator {
 	private int updateRetryCount;
 	
 	private int workerQueueSize;
+
+	private LinkedBlockingQueue<Runnable> workerQueue;
 	
 	private int threadCount;
+
+	private String workerNamePrefix;
 	
 	private static final String DOMAIN = "domain";
 	
@@ -80,31 +77,38 @@ public class WorkflowTaskCoordinator {
 	 * @param threadCount # of threads assigned to the workers.  Should be at-least the size of taskWorkers to avoid starvation in a busy system.
 	 * @param sleepWhenRetry sleep time in millisecond for Conductor server retries (poll, ack, update task)
 	 * @param updateRetryCount number of times to retry the failed updateTask operation
-	 * @param workerQueueSize queue size for the polled task.  
+	 * @param workerQueueSize queue size for the polled task.
 	 * @param taskWorkers workers that will be used for polling work and task execution.
+	 * @param workerNamePrefix String prefix that will be used for all the workers.
 	 * <p>
 	 * Please see {@link #init()} method.  The method must be called after this constructor for the polling to start.
 	 * </p>
+	 * @param workerNamePrefix
 	 * @see Builder
 	 */
-	public WorkflowTaskCoordinator(EurekaClient ec, TaskClient client, int threadCount, int sleepWhenRetry, int updateRetryCount, int workerQueueSize, Iterable<Worker> taskWorkers) {
+	public WorkflowTaskCoordinator(EurekaClient ec, TaskClient client, int threadCount, int sleepWhenRetry,
+								   int updateRetryCount, int workerQueueSize, Iterable<Worker> taskWorkers,
+								   String workerNamePrefix) {
 		this.ec = ec;
 		this.client = client;
 		this.threadCount = threadCount;
 		this.sleepWhenRetry = sleepWhenRetry;
 		this.updateRetryCount = updateRetryCount;
 		this.workerQueueSize = workerQueueSize;
+		this.workerNamePrefix = workerNamePrefix;
 		for (Worker worker : taskWorkers) {
 			workers.add(worker);
 		}
 	}
-	
+
 	/**
 	 * 
 	 * Builder used to create the instances of WorkflowTaskCoordinator
 	 *
 	 */
 	public static class Builder {
+
+		private String workerNamePrefix = "workflow-worker-";
 	
 		private int sleepWhenRetry = 500;
 		
@@ -119,6 +123,16 @@ public class WorkflowTaskCoordinator {
 		private EurekaClient ec;
 		
 		private TaskClient client;
+
+		/**
+		 *
+		 * @param workerNamePrefix prefix to be used for worker names, defaults to workflow-worker- if not supplied.
+		 * @return Returns the current instance.
+		 */
+		public Builder withWorkerNamePrefix(String workerNamePrefix) {
+			this.workerNamePrefix = workerNamePrefix;
+			return this;
+		}
 		
 		/**
 		 * 
@@ -219,7 +233,8 @@ public class WorkflowTaskCoordinator {
 			if(client == null) {
 				throw new IllegalArgumentException("No TaskClient provided.  use withTaskClient() to provide one"); 
 			}
-			return new WorkflowTaskCoordinator(ec, client, threadCount, sleepWhenRetry, updateRetryCount, workerQueueSize, taskWorkers);
+			return new WorkflowTaskCoordinator(ec, client, threadCount, sleepWhenRetry, updateRetryCount,
+											   workerQueueSize, taskWorkers, workerNamePrefix);
 		}
 	}
 	
@@ -233,17 +248,18 @@ public class WorkflowTaskCoordinator {
 		}
 		
 		logger.info("Initialized the worker with {} threads", threadCount);
-		
-		AtomicInteger count = new AtomicInteger(0);
+
+        this.workerQueue = new LinkedBlockingQueue<Runnable>(workerQueueSize);
+        AtomicInteger count = new AtomicInteger(0);
 		this.es = new ThreadPoolExecutor(threadCount, threadCount,
                 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>(workerQueueSize),
+                workerQueue,
                 new ThreadFactory() {
 
 			@Override
 			public Thread newThread(Runnable r) {
 				Thread t = new Thread(r);
-				t.setName(PropertyFactory.getString("", "workerNamePrefix", "workflow-worker-") + count.getAndIncrement());
+				t.setName(workerNamePrefix + count.getAndIncrement());
 				return t;
 			}
 		});
@@ -273,13 +289,19 @@ public class WorkflowTaskCoordinator {
 		logger.debug("Polling {}, domain={}, count = {} timeout = {} ms", worker.getTaskDefName(), domain, worker.getPollCount(), worker.getLongPollTimeoutInMS());
 		
 		try{
-			
+
+            // get the remaining capacity of worker queue to prevent queue full exception
+            int realPollCount = Math.min(workerQueue.remainingCapacity(), worker.getPollCount());
+            if (realPollCount <= 0) {
+				logger.warn("All workers are busy, not polling.  queue size {}, max {}", workerQueue.size(), workerQueueSize);
+				return;
+            }
 			String taskType = worker.getTaskDefName();
 			Stopwatch sw = WorkflowTaskMetrics.pollTimer(worker.getTaskDefName());
-			List<Task> tasks = client.poll(taskType, domain, worker.getIdentity(), worker.getPollCount(), worker.getLongPollTimeoutInMS());
-			sw.stop();
-			logger.debug("Polled {}, for domain {} and receivd {} tasks", worker.getTaskDefName(), domain, tasks.size());
-			for(Task task : tasks) {
+			List<Task> tasks = client.poll(taskType, domain, worker.getIdentity(), realPollCount, worker.getLongPollTimeoutInMS());
+            sw.stop();
+            logger.debug("Polled {}, for domain {} and received {} tasks", worker.getTaskDefName(), domain, tasks.size());
+            for(Task task : tasks) {
 				es.submit(() -> {
 					try {
 						execute(worker, task);
@@ -290,7 +312,7 @@ public class WorkflowTaskCoordinator {
 					}
 				});
 			}
-			
+
 		}catch(RejectedExecutionException qfe) {
 			WorkflowTaskMetrics.queueFull(worker.getTaskDefName());
 			logger.error("Execution queue is full", qfe);
@@ -379,6 +401,15 @@ public class WorkflowTaskCoordinator {
 	 */
 	public int getUpdateRetryCount() {
 		return updateRetryCount;
+	}
+
+	/**
+	 *
+	 * @return prefix used for worker names
+	 */
+	public String getWorkerNamePrefix()
+	{
+		return workerNamePrefix;
 	}
 	
 	private void updateWithRetry(int count, Task task, TaskResult result, Worker worker) {

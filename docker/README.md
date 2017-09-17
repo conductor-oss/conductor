@@ -3,6 +3,9 @@
 This dockerfile runs using dynomite and elasticsearch. The conductor is split into the backend (server) and the frontend (ui). If an image with both of these items combined is desired, build the Dockerfile in the folder serverAndUI
 
 ## Building the image
+Dependency (build the jar files in ./server from project root)
+- `gradlew build`
+
 Building the images:
  - `docker build -t conductor:server ./server`
  - `docker build -t conductor:ui ./ui`

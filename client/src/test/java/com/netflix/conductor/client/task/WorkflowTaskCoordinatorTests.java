@@ -62,7 +62,6 @@ public class WorkflowTaskCoordinatorTests {
 		assertEquals(500, coordinator.getSleepWhenRetry());
 		assertEquals(3, coordinator.getUpdateRetryCount());
 		
-		
 		coordinator = new WorkflowTaskCoordinator.Builder()
 				.withWorkers(worker)
 				.withThreadCount(100)
@@ -70,6 +69,7 @@ public class WorkflowTaskCoordinatorTests {
 				.withSleepWhenRetry(100)
 				.withUpdateRetryCount(10)
 				.withTaskClient(new TaskClient())
+				.withWorkerNamePrefix("test-worker-")
 				.build();
 		assertEquals(100, coordinator.getThreadCount());
 		coordinator.init();
@@ -77,9 +77,7 @@ public class WorkflowTaskCoordinatorTests {
 		assertEquals(400, coordinator.getWorkerQueueSize());
 		assertEquals(100, coordinator.getSleepWhenRetry());
 		assertEquals(10, coordinator.getUpdateRetryCount());
-		
-		
-	
+		assertEquals("test-worker-", coordinator.getWorkerNamePrefix());
 	}
 
 	@Test
@@ -97,6 +95,7 @@ public class WorkflowTaskCoordinatorTests {
 				.withSleepWhenRetry(100000)
 				.withUpdateRetryCount(1)
 				.withTaskClient(client)
+				.withWorkerNamePrefix("test-worker-")
 				.build();
 		when(client.poll(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(new Task()));
 		when(client.ack(anyString(), anyString())).thenReturn(true);
@@ -104,6 +103,7 @@ public class WorkflowTaskCoordinatorTests {
 		doAnswer(new Answer<Void>() {
 			@Override
 			public Void answer(InvocationOnMock invocation) throws Throwable {
+				assertEquals("test-worker-0", Thread.currentThread().getName());
 				Object[] args = invocation.getArguments();
 				TaskResult result = (TaskResult) args[0];
 				assertEquals(TaskResult.Status.FAILED, result.getStatus());

@@ -6,8 +6,8 @@ services:
       - CONFIG_PROP=config.properties
     image: conductor:server
     build:
-      context: ./server
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: docker/server/Dockerfile
     ports:
       - 8080:8080
     links:
@@ -19,8 +19,8 @@ services:
       - WF_SERVER=http://conductor-server:8080/api/
     image: conductor:ui
     build:
-      context: ./ui
-      dockerfile: Dockerfile
+      context: ../
+      dockerfile: docker/ui/Dockerfile
     ports:
       - 5000:5000
     links:

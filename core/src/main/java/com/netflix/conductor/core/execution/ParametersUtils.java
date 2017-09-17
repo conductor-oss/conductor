@@ -56,9 +56,11 @@ public class ParametersUtils {
 	}
 	
 	public Map<String, Object> getTaskInputV2(Map<String, Object> input, Workflow workflow, String taskId, TaskDef taskDef) {
-		Map<String, Object> inputParams = new HashMap<>();
+		Map<String, Object> inputParams = null;
 		if(input != null) {
-			inputParams.putAll(input);
+			inputParams = clone(input);
+		} else {
+			inputParams = new HashMap<>();
 		}
 		if(taskDef != null && taskDef.getInputTemplate() != null) {
 			inputParams.putAll(clone(taskDef.getInputTemplate()));
@@ -239,5 +241,6 @@ public class ParametersUtils {
 	    String value = Optional.ofNullable(System.getProperty(test)).orElse(Optional.ofNullable(System.getenv(test)).orElse(null));
 	    return value != null;
 	}
+
 	
 }
