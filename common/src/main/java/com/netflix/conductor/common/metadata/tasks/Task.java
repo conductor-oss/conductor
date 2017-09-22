@@ -393,8 +393,9 @@ public class Task {
 	 * 
 	 * @return the timeout for task to send response.  After this timeout, the task will be re-queued
 	 */
+	@Deprecated
 	public int getResponseTimeoutSeconds() {
-		return responseTimeoutSeconds;
+		return 0;
 	}
 	
 	/**
