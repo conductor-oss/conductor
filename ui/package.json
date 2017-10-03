@@ -51,7 +51,7 @@
     "react-router": "^1.0.3",
     "react-router-redux": "^4.0.0",
     "react-select": "^1.0.0-beta10",
-    “react-toastr”: “2.9.3",
+    "react-toastr": "2.9.3",
     "redux": "^3.3.1",
     "redux-thunk": "^1.0.3",
     "superagent": "^1.7.2",
