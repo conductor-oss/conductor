@@ -123,5 +123,14 @@ public interface QueueDAO {
 		
 	}
 	
+	/**
+	 * Sets the offset time without pulling out the message from the queue 
+	 * @param queueName name of the queue
+	 * @param id message id
+	 * @param offsetTimeInSecond time in seconds, after which the message should be marked visible.  (for timed queues)
+	 * @return true if the message is in queue and the change was successful else returns false  
+	 */
+	public boolean setOffsetTime(String queueName, String id, long offsetTimeInSecond);
+
 
 }

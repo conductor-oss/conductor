@@ -5,7 +5,7 @@ dependencies {
 	compile 'com.google.inject:guice:3.0'
 	compile 'com.netflix.dyno:dyno-core:1.5.9'
 	compile 'com.netflix.dyno:dyno-jedis:1.5.9'
- 	compile 'com.netflix.dyno-queues:dyno-queues-redis:1.0.7'
+ 	compile 'com.netflix.dyno-queues:dyno-queues-redis:1.0.8'
 	compile 'org.elasticsearch:elasticsearch:2.+'
 
 	//In memory redis for unit testing

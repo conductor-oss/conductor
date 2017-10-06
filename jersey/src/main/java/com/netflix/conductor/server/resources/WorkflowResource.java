@@ -207,6 +207,14 @@ public class WorkflowResource {
 	public void retry(@PathParam("workflowId") String workflowId) throws Exception {		
 		executor.retry(workflowId);
 	}
+
+	@POST
+	@Path("/{workflowId}/resetcallbacks")
+	@ApiOperation("Resets callback times of all in_progress tasks to 0")
+	@Consumes(MediaType.WILDCARD)
+	public void reset(@PathParam("workflowId") String workflowId) throws Exception {		
+		executor.resetCallbacksForInProgressTasks(workflowId);
+	}
 	
 	@DELETE
 	@Path("/{workflowId}")
