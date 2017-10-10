@@ -64,8 +64,8 @@ public class ConductorServer {
 
 	private static Logger logger = LoggerFactory.getLogger(ConductorServer.class);
 	
-	private enum DB {
-		redis, dynomite, memory, redis_cluster
+	enum DB {
+		redis, dynomite, memory, redis_cluster, mysql
 	}
 	
 	private ServerModule sm;
@@ -85,11 +85,11 @@ public class ConductorServer {
 		try {
 			db = DB.valueOf(dbstring);
 		}catch(IllegalArgumentException ie) {
-			logger.error("Invalid db name: " + dbstring + ", supported values are: redis, dynomite, memory");
+			logger.error("Invalid db name: " + dbstring + ", supported values are: " + Arrays.toString(DB.values()));
 			System.exit(1);
 		}
 		
-		if(!db.equals(DB.memory)) {
+		if(!(db.equals(DB.memory) || db.equals(DB.mysql))) {
 			String hosts = cc.getProperty("workflow.dynomite.cluster.hosts", null);
 			if(hosts == null) {
 				System.err.println("Missing dynomite/redis hosts.  Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied configuration.");
@@ -125,6 +125,7 @@ public class ConductorServer {
 		};
 		
 		JedisCommands jedis = null;
+
 		switch(db) {
 		case redis:		
 		case dynomite:
@@ -159,6 +160,9 @@ public class ConductorServer {
 			
 			break;
 			
+		case mysql:
+			logger.info("Starting conductor server using MySQL data store", db);
+			break;
 		case memory:
 			jedis = new JedisMock();
 			try {
@@ -185,7 +189,7 @@ public class ConductorServer {
 			break;
 		}
 		
-		this.sm = new ServerModule(jedis, hs, cc);
+		this.sm = new ServerModule(jedis, hs, cc, db);
 	}
 	
 	public ServerModule getGuiceModule() {
