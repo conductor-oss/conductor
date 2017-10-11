@@ -105,15 +105,14 @@ class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 			"UPDATE queue_message SET offset_time_seconds = :offsetSeconds, deliver_on = TIMESTAMPADD(SECOND,:offsetSeconds,created_on) \n" +
 			"WHERE queue_name = :queueName AND message_id = :messageId";
 
-		withTransaction(tx ->
+		return getWithTransaction(tx ->
 			tx.createQuery(UPDATE_UNACK_TIMEOUT)
 				.addParameter("queueName", queueName)
 				.addParameter("messageId", messageId)
 				.addParameter("offsetSeconds", updatedOffsetTimeInSecond)
 				.executeUpdate()
-		);
-
-		return false;
+				.getResult()
+		) == 1;
 	}
 
 	@Override
@@ -168,6 +167,22 @@ class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 	public void processUnacks(String queueName) {
 		String PROCESS_UNACKS = "UPDATE queue_message SET popped = false WHERE CURRENT_TIMESTAMP > deliver_on AND popped = true";
 		withTransaction(tx -> tx.createQuery(PROCESS_UNACKS).executeUpdate());
+	}
+
+	@Override
+	public boolean setOffsetTime(String queueName, String messageId, long offsetTimeInSecond) {
+		String SET_OFFSET_TIME =
+				"UPDATE queue_message SET offset_time_seconds = :offsetSeconds, deliver_on = TIMESTAMPADD(SECOND,:offsetSeconds,created_on) \n" +
+						"WHERE queue_name = :queueName AND message_id = :messageId";
+
+		return getWithTransaction(tx ->
+				tx.createQuery(SET_OFFSET_TIME)
+						.addParameter("queueName", queueName)
+						.addParameter("messageId", messageId)
+						.addParameter("offsetSeconds", offsetTimeInSecond)
+						.executeUpdate()
+						.getResult()
+		) == 1;
 	}
 
 	private boolean existsMessage(Connection connection, String queueName, String messageId) {
