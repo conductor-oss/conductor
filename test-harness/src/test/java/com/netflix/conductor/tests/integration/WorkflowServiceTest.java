@@ -1665,6 +1665,120 @@ public class WorkflowServiceTest {
 
 	}
 	
+	@Test	
+	public void testResetWorkflowInProgressTasks() throws Exception {
+		
+		clearWorkflows();
+		
+		WorkflowDef found = ms.getWorkflowDef(LONG_RUNNING, 1);
+		assertNotNull(found);
+		
+		String correlationId = "unit_test_1";
+		Map<String, Object> input = new HashMap<String, Object>();
+		String inputParam1 = "p1 value";
+		input.put("param1", inputParam1);
+		input.put("param2", "p2 value");
+		String wfid = provider.startWorkflow(LONG_RUNNING, 1, correlationId , input);
+		System.out.println("testLongRunning.wfid=" + wfid);
+		assertNotNull(wfid);
+		
+		Workflow es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+		
+		
+		es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+		
+		// Check the queue
+		assertEquals(Integer.valueOf(1), ess.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
+		///
+		
+		Task task = ess.poll("junit_task_1", "task1.junit.worker");
+		assertNotNull(task);
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+
+		String param1 = (String) task.getInputData().get("p1");
+		String param2 = (String) task.getInputData().get("p2");
+		
+		assertNotNull(param1);
+		assertNotNull(param2);
+		assertEquals("p1 value", param1);
+		assertEquals("p2 value", param2);
+		
+		
+		String task1Op = "task1.In.Progress";
+		task.getOutputData().put("op", task1Op);
+		task.setStatus(Status.IN_PROGRESS);
+		task.setCallbackAfterSeconds(3600);
+		ess.updateTask(task);
+		String taskId = task.getTaskId();
+
+		// Check the queue
+		assertEquals(Integer.valueOf(1), ess.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
+		///
+		
+
+		es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+		// Polling for next task should not return anything
+		Task task2 = ess.poll("junit_task_2", "task2.junit.worker");
+		assertNull(task2);
+		
+		task = ess.poll("junit_task_1", "task1.junit.worker");
+		assertNull(task);
+		
+		//Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
+		// Reset
+		provider.resetCallbacksForInProgressTasks(wfid);
+		
+		
+		// Now Polling for the first task should return the same task as before
+		task = ess.poll("junit_task_1", "task1.junit.worker");
+		assertNotNull(task);
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertEquals(task.getTaskId(), taskId);
+		assertEquals(task.getCallbackAfterSeconds(), 0);
+		
+		task1Op = "task1.Done";
+		List<Task> tasks = ess.getTasks(task.getTaskType(), null, 1);
+		assertNotNull(tasks);
+		assertEquals(1, tasks.size());
+		assertEquals(wfid, task.getWorkflowInstanceId());
+		task = tasks.get(0);
+		task.getOutputData().put("op", task1Op);
+		task.setStatus(Status.COMPLETED);
+		ess.updateTask(task);
+
+		task = ess.poll("junit_task_2", "task2.junit.worker");
+		assertNotNull(task);
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		String task2Input = (String) task.getInputData().get("tp2");
+		assertNotNull(task2Input);
+		assertEquals(task1Op, task2Input);
+		
+		task2Input = (String) task.getInputData().get("tp1");
+		assertNotNull(task2Input);
+		assertEquals(inputParam1, task2Input);
+		
+		task.setStatus(Status.COMPLETED);
+		ess.updateTask(task);
+		
+		
+		es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+		tasks = es.getTasks();
+		assertNotNull(tasks);
+		assertEquals(2, tasks.size());
+		
+
+	}
+	
+	
 	@Test
 	public void testConcurrentWorkflowExecutions() throws Exception {
 

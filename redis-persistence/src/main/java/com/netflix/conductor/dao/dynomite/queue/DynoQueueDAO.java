@@ -203,4 +203,11 @@ public class DynoQueueDAO implements QueueDAO {
 		((RedisDynoQueue)queues.get(queueName)).processUnacks();;
 	}
 
+	@Override
+	public boolean setOffsetTime(String queueName, String id, long offsetTimeInSecond) {
+		DynoQueue queue = queues.get(queueName);
+		return queue.setTimeout(id, offsetTimeInSecond);
+		
+	}
+
 }

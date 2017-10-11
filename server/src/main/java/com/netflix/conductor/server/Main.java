@@ -20,6 +20,7 @@ package com.netflix.conductor.server;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.Properties;
 
 import org.apache.log4j.PropertyConfigurator;
@@ -32,16 +33,7 @@ public class Main {
 	
 	public static void main(String[] args) throws Exception {
 		
-		if(args.length > 0) {
-			String propertyFile = args[0];	
-			System.out.println("Using " + propertyFile);
-			FileInputStream propFile = new FileInputStream(propertyFile);
-			Properties props = new Properties(System.getProperties());
-			props.load(propFile);
-			System.setProperties(props);
-		}
-		
-		
+		loadConfigFile(args.length > 0 ? args[0] : System.getenv("CONDUCTOR_CONFIG_FILE"));
 		
 		if(args.length == 2) {
 			System.out.println("Using log4j config " + args[1]);
@@ -61,6 +53,13 @@ public class Main {
 		
 		server.start(config.getIntProperty("port", 8080), true);
 		
+	}
 		
+	private static void loadConfigFile(String propertyFile) throws IOException {
+		if (propertyFile == null) return;
+		System.out.println("Using config file" + propertyFile);
+		Properties props = new Properties(System.getProperties());
+		props.load(new FileInputStream(propertyFile));
+		System.setProperties(props);
 	}
 }

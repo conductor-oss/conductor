@@ -155,6 +155,26 @@ public class WorkflowExecutor {
 		}
 	}
 
+	public String resetCallbacksForInProgressTasks(String workflowId)  throws Exception {
+		Workflow workflow = edao.getWorkflow(workflowId, true);
+		if (workflow.getStatus().isTerminal()) {
+			throw new ApplicationException(Code.CONFLICT, "Workflow is completed.  status=" + workflow.getStatus());
+		}
+		
+		// Get tasks that are in progress and have callbackAfterSeconds > 0
+		// and set the callbackAfterSeconds to 0;
+		for(Task t: workflow.getTasks()) {
+			if(t.getStatus().equals(Status.IN_PROGRESS) &&
+					t.getCallbackAfterSeconds() > 0){
+				if(queue.setOffsetTime(QueueUtils.getQueueName(t), t.getTaskId(), 0)){
+					t.setCallbackAfterSeconds(0);
+					edao.updateTask(t);
+				}
+			} 
+		};
+		return workflowId;
+	}
+	
 	public String rerun(RerunWorkflowRequest request) throws Exception {
 		Preconditions.checkNotNull(request.getReRunFromWorkflowId(), "reRunFromWorkflowId is missing");
 		if(!rerunWF(request.getReRunFromWorkflowId(), request.getReRunFromTaskId(), request.getTaskInput(), 
