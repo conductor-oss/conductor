@@ -140,6 +140,10 @@ public class WorkflowClient extends ClientBase {
 		postForEntity1("workflow/{workflowId}/retry", workflowId);		
 	}
 
+	public void resetCallbacksForInProgressTasks(String workflowId) {
+		postForEntity1("workflow/{workflowId}//{workflowId}/resetcallbacks", workflowId);		
+	}	
+	
 	public void terminateWorkflow(String workflowId, String reason) {
 		delete(new Object[]{"reason", reason}, "workflow/{workflowId}", workflowId);		
 	}

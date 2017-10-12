@@ -67,6 +67,7 @@ public class End2EndTests {
 	
 	@BeforeClass
 	public static void setup() throws Exception {
+		
 		ConductorServer server = new ConductorServer(new ConductorConfig());
 		server.start(8080, false);
 		
@@ -133,13 +134,6 @@ public class End2EndTests {
 		assertNotNull(runningIds);
 		assertEquals(1, runningIds.size());
 		assertEquals(workflowId, runningIds.get(0));
-		
-		List<Workflow> byCorrId = wc.getWorkflows(def.getName(), correlationId, true, true);
-		assertNotNull(byCorrId);
-		assertTrue(!byCorrId.isEmpty());
-		assertEquals(workflowId, byCorrId.get(0).getWorkflowId());
-		assertEquals(correlationId, byCorrId.get(0).getCorrelationId());
-		assertTrue(!byCorrId.get(0).getStatus().isTerminal());
 		
 		List<Task> polled = tc.poll("non existing task", "test", 1, 100);
 		assertNotNull(polled);

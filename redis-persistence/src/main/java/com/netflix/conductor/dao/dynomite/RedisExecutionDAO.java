@@ -38,6 +38,7 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
+import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
@@ -423,8 +424,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		
 		Preconditions.checkNotNull(correlationId, "correlationId cannot be null");
 		List<Workflow> workflows = new LinkedList<Workflow>();
-
-		Set<String> workflowIds = dynoClient.smembers(nsKey(CORR_ID_TO_WORKFLOWS, correlationId));
+		SearchResult<String> result = indexer.searchWorkflows("correlationId='" + correlationId + "'", "*", 0, 10000, null);
+		List<String> workflowIds = result.getResults();
 		for(String wfId : workflowIds) {
 			workflows.add(getWorkflow(wfId));
 		}
