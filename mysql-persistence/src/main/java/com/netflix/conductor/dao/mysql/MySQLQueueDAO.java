@@ -184,7 +184,6 @@ class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 						.getResult()
 		) == 1;
 	}
-
 	private boolean existsMessage(Connection connection, String queueName, String messageId) {
 		String EXISTS_MESSAGE = "SELECT EXISTS(SELECT 1 FROM queue_message WHERE queue_name = :queueName AND message_id = :messageId)";
 		return connection.createQuery(EXISTS_MESSAGE).addParameter("queueName", queueName).addParameter("messageId", messageId).executeScalar(Boolean.class);
