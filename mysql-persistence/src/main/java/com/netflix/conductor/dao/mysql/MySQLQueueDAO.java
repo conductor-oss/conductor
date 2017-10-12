@@ -170,6 +170,11 @@ class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 		withTransaction(tx -> tx.createQuery(PROCESS_UNACKS).executeUpdate());
 	}
 
+	@Override
+	public boolean setOffsetTime(String queueName, String id, long offsetTimeInSecond){
+		// Need implementation
+		return false;
+	}
 	private boolean existsMessage(Connection connection, String queueName, String messageId) {
 		String EXISTS_MESSAGE = "SELECT EXISTS(SELECT 1 FROM queue_message WHERE queue_name = :queueName AND message_id = :messageId)";
 		return connection.createQuery(EXISTS_MESSAGE).addParameter("queueName", queueName).addParameter("messageId", messageId).executeScalar(Boolean.class);
