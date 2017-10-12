@@ -25,7 +25,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -2079,10 +2078,13 @@ public class WorkflowServiceTest {
 		}
 		assertTrue(foundId);
 		
+		/*
+		 * @correlationId
 		List<Workflow> byCorrelationId = ess.getWorkflowInstances(LINEAR_WORKFLOW_T1_T2, correlationId, false, false);
 		assertNotNull(byCorrelationId);
 		assertTrue(!byCorrelationId.isEmpty());
 		assertEquals(1, byCorrelationId.size());
+		*/
 		
 		Workflow es = ess.getExecutionStatus(wfid, true);
 		assertNotNull(es);
@@ -2293,11 +2295,6 @@ public class WorkflowServiceTest {
 		}
 		assertTrue(foundId);
 		
-		List<Workflow> byCorrelationId = ess.getWorkflowInstances(LINEAR_WORKFLOW_T1_T2, correlationId, false, false);
-		assertNotNull(byCorrelationId);
-		assertTrue(!byCorrelationId.isEmpty());
-		assertEquals(1, byCorrelationId.size());
-		
 		Workflow es = ess.getExecutionStatus(wfid, true);
 		assertNotNull(es);
 		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
@@ -2448,10 +2445,6 @@ public class WorkflowServiceTest {
 		assertNotNull(es);
 		assertEquals(WorkflowStatus.FAILED, es.getStatus());
 		
-		List<Workflow> failureInstances = ess.getWorkflowInstances(FORK_JOIN_WF, wfid, false, false);
-		assertNotNull(failureInstances);
-		assertEquals(1, failureInstances.size());
-		assertEquals(wfid, failureInstances.get(0).getCorrelationId());
 		taskDef.setRetryCount(RETRY_COUNT);
 		ms.updateTaskDef(taskDef);
 	
@@ -2730,12 +2723,6 @@ public class WorkflowServiceTest {
 		assertEquals(Status.TIMED_OUT, es.getTasks().get(0).getStatus());
 		assertEquals(Status.TIMED_OUT, es.getTasks().get(1).getStatus());
 		assertEquals(WorkflowStatus.TIMED_OUT, es.getStatus());
-		
-		List<Workflow> failureInstances = ess.getWorkflowInstances(FORK_JOIN_WF, wfid, false, false);
-		assertNotNull(failureInstances);
-		assertEquals(failureInstances.stream().map(Workflow::getCorrelationId).collect(Collectors.toList()).toString(), 1, failureInstances.size());
-		assertEquals(wfid, failureInstances.get(0).getCorrelationId());
-		assertTrue(!failureInstances.get(0).getStatus().isTerminal());
 
 		assertEquals(1, queue.getSize(WorkflowExecutor.deciderQueue));		
 		
@@ -2990,12 +2977,7 @@ public class WorkflowServiceTest {
 			}
 		}
 		assertTrue(foundId);
-		
-		List<Workflow> byCorrelationId = ess.getWorkflowInstances(LINEAR_WORKFLOW_T1_T2, correlationId, false, false);
-		assertNotNull(byCorrelationId);
-		assertTrue(!byCorrelationId.isEmpty());
-		assertEquals(byCorrelationId.toString(), 1, byCorrelationId.size());
-		
+
 		Workflow es = ess.getExecutionStatus(wfid, true);
 		assertNotNull(es);
 		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
