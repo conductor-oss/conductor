@@ -1148,6 +1148,8 @@ public class WorkflowServiceTest {
 		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
 		assertEquals(wfid, task.getWorkflowInstanceId());
 		
+		provider.decide(wfid);
+		
 		String task1Op = "task1.Done";
 		List<Task> tasks = ess.getTasks(task.getTaskType(), null, 1);
 		assertNotNull(tasks);
@@ -1197,6 +1199,67 @@ public class WorkflowServiceTest {
 
 	}
 
+	@Test
+	public void testSimpleWorkflowWithResponseTimeout() throws Exception {
+		
+		createWFWithResponseTimeout();
+		
+		String correlationId = "unit_test_1";
+		Map<String, Object> input = new HashMap<String, Object>();
+		String inputParam1 = "p1 value";
+		input.put("param1", inputParam1);
+		input.put("param2", "p2 value");
+		String wfid = provider.startWorkflow("RTOWF", 1, correlationId , input);
+		System.out.println("testSimpleWorkflowWithResponseTimeout.wfid=" + wfid);
+		assertNotNull(wfid);
+		
+		Workflow es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+		assertEquals(1, es.getTasks().size());		//The very first task is the one that should be scheduled.
+		
+						
+		// Polling for the first task should return the same task as before
+		Task task = ess.poll("task_rt", "task1.junit.worker");
+		assertNotNull(task);
+		assertEquals("task_rt", task.getTaskType());
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertEquals(wfid, task.getWorkflowInstanceId());
+		
+		// As the task_rt is out of the queue, the next poll should not get it		
+		Task nullTask = ess.poll("task_rt", "task1.junit.worker");
+		assertNull(nullTask);
+		
+		// Now since the ResponseTimeOut is set to 15 secs, sleep
+		Thread.sleep(15000);
+		provider.decide(wfid);
+		
+		// Polling now should get the same task back because it should have been put back in the queue
+		Task taskAgain = ess.poll("task_rt", "task1.junit.worker");
+		assertNotNull(taskAgain);
+		assertEquals(task.getTaskId(), taskAgain.getTaskId());
+				
+		String task1Op = "task1.Done";
+		task.getOutputData().put("op", task1Op);
+		task.setStatus(Status.COMPLETED);
+		ess.updateTask(task);
+		
+		task = ess.poll("junit_task_2", "task2.junit.worker");
+		assertNotNull(task);
+		assertEquals("junit_task_2", task.getTaskType());
+		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		
+		task.setStatus(Status.COMPLETED);
+		task.setReasonForIncompletion("unit test failure");
+		ess.updateTask(task);
+		
+		
+		es = ess.getExecutionStatus(wfid, true);
+		assertNotNull(es);
+		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+
+	}
+	
 	@Test
 	public void testWorkflowRerunWithSubWorkflows() throws Exception {
 		// Execute a workflow
@@ -3475,7 +3538,50 @@ public class WorkflowServiceTest {
 		} catch (Exception e) {}
 	}
 	
-	
+	private void createWFWithResponseTimeout() throws Exception{
+		TaskDef task = new TaskDef();
+		task.setName("task_rt");
+		task.setTimeoutSeconds(120);
+		task.setRetryCount(RETRY_COUNT);
+		task.setResponseTimeoutSeconds(15);
+		ms.registerTaskDef(Arrays.asList(task));
+		
+		WorkflowDef def = new WorkflowDef();
+		def.setName("RTOWF");
+		def.setDescription(def.getName());
+		def.setVersion(1);
+		def.setInputParameters(Arrays.asList("param1", "param2"));
+		Map<String, Object> outputParameters = new HashMap<>();
+		outputParameters.put("o1", "${workflow.input.param1}");
+		outputParameters.put("o2", "${t2.output.uuid}");
+		outputParameters.put("o3", "${t1.output.op}");
+		def.setOutputParameters(outputParameters);
+		def.setFailureWorkflow("$workflow.input.failureWfName");
+		def.setSchemaVersion(2);
+		LinkedList<WorkflowTask> wftasks = new LinkedList<>();
+		
+		WorkflowTask wft1 = new WorkflowTask();
+		wft1.setName("task_rt");
+		Map<String, Object> ip1 = new HashMap<>();
+		ip1.put("p1", "${workflow.input.param1}");
+		ip1.put("p2", "${workflow.input.param2}");
+		wft1.setInputParameters(ip1);
+		wft1.setTaskReferenceName("task_rt_t1");
+		
+		WorkflowTask wft2 = new WorkflowTask();
+		wft2.setName("junit_task_2");
+		Map<String, Object> ip2 = new HashMap<>();
+		ip2.put("tp1", "${workflow.input.param1}");
+		ip2.put("tp2", "${t1.output.op}");
+		wft2.setInputParameters(ip2);
+		wft2.setTaskReferenceName("t2");
+				
+		wftasks.add(wft1);
+		wftasks.add(wft2);
+		def.setTasks(wftasks);
+		
+		ms.updateWorkflowDef(def);
+	}
 	
 	private String runWorkflowWithSubworkflow() throws Exception{
 		clearWorkflows();
