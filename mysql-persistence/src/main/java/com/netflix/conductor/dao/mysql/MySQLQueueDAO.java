@@ -133,7 +133,7 @@ class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 			Number queueSize = (Number)row.get("size");
 			detail.put(queueName, queueSize.longValue());
 		}));
-		
+
 		return detail;
 	}
 
@@ -146,7 +146,7 @@ class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 			"       (SELECT count(*) FROM queue_message WHERE popped = false AND queue_name = q.queue_name) AS size,\n" +
 			"       (SELECT count(*) FROM queue_message WHERE popped = true AND queue_name = q.queue_name) AS uacked \n" +
 			"FROM queue q";
-		
+
 		withTransaction(tx -> tx.createQuery(GET_QUEUES_DETAIL_VERBOSE).executeAndFetchTable().asList().forEach(row -> {
 			String queueName = (String)row.get("queue_name");
 			Number queueSize = (Number)row.get("size");
@@ -222,7 +222,7 @@ class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 
 	private List<String> peekMessages(String queueName, int count) {
 		if (count < 1) return Collections.emptyList();
-		String PEEK_MESSAGES = "SELECT message_id FROM queue_message WHERE queue_name = :queueName LIMIT :count";
+		String PEEK_MESSAGES = "SELECT message_id FROM queue_message WHERE queue_name = :queueName AND popped = false LIMIT :count";
 		return getWithTransaction(tx -> tx.createQuery(PEEK_MESSAGES)
 				.addParameter("queueName", queueName)
 				.addParameter("count", count)
@@ -232,7 +232,7 @@ class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 	private List<String> popMessages(Connection connection, String queueName, List<String> messageIds) {
 		if (messageIds.isEmpty()) return messageIds;
 
-		String POP_MESSAGES = "UPDATE queue_message SET popped = true WHERE queue_name = :queueName AND message_id IN (%s)";
+		String POP_MESSAGES = "UPDATE queue_message SET popped = true WHERE queue_name = :queueName AND message_id IN (%s) AND popped = false";
 		String query = generateQueryWithParametersListPlaceholders(POP_MESSAGES, messageIds.size());
 
 		int result = connection.createQuery(query).addParameter("queueName", queueName).withParams(messageIds.toArray()).executeUpdate().getResult();
@@ -248,7 +248,7 @@ class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 	private List<Message> readMessages(String queueName, List<String> messageIds) {
 		if (messageIds.isEmpty()) return Collections.emptyList();
 
-		String READ_MESSAGES = "SELECT message_id, payload FROM queue_message WHERE queue_name = :queueName AND message_id IN (%s)";
+		String READ_MESSAGES = "SELECT message_id, payload FROM queue_message WHERE queue_name = :queueName AND message_id IN (%s) AND popped = false";
 		String query = generateQueryWithParametersListPlaceholders(READ_MESSAGES, messageIds.size());
 
 		List<Message> messages = getWithTransaction(tx -> tx.createQuery(query)
