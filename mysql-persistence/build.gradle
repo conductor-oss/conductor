@@ -7,7 +7,7 @@ dependencies {
 	compile 'commons-io:commons-io:2.4+'
 	compile 'mysql:mysql-connector-java:5.1.43'
 	compile 'com.zaxxer:HikariCP:2.6.3'
-	compile 'org.flywaydb:flyway-core:4.2.0'
+	compile 'org.flywaydb:flyway-core:4.0.3'
 
 	testCompile 'ch.vorburger.mariaDB4j:mariaDB4j:2.2.3'
 	testCompile 'ch.qos.logback:logback-core:1.2.3'
