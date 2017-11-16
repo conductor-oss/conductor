@@ -112,3 +112,4 @@ public class NATSObservableQueue extends NATSAbstractQueue implements Observable
         connection.publish(subject, data);
     }
 }
+
