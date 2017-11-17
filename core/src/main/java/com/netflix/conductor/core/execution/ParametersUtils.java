@@ -231,7 +231,7 @@ public class ParametersUtils {
 		}
 		return value;
 	}
-		
+
 	private boolean contains(String test) {
 	    for (SystemParameters c : SystemParameters.values()) {
 	        if (c.name().equals(test)) {
