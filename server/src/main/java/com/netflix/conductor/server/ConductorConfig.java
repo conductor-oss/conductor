@@ -104,9 +104,10 @@ public class ConductorConfig implements Configuration {
 
 	@Override
 	public String getProperty(String key, String defaultValue) {
+
 		String val = null;
 		try{
-			val = System.getenv(key);
+			val = System.getenv(key.replace('.','_'));
 			if (val == null || val.isEmpty()) {
 				val = Optional.ofNullable(System.getProperty(key)).orElse(defaultValue);
 			}
