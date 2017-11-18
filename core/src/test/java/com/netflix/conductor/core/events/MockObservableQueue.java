@@ -82,6 +82,10 @@ public class MockObservableQueue implements ObservableQueue {
 	}
 
 	@Override
+	public void setUnackTimeout(Message message, long unackTimeout) {
+	}
+	
+	@Override
 	public long size() {
 		return messages.size();
 	}

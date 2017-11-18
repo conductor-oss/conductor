@@ -40,4 +40,17 @@ public class TestWorkflowTask {
 		assertNotNull(wt.getType());
 		assertEquals(Type.DECISION.name(), wt.getType());
 	}
+	
+	@Test
+	public void testOptional() {
+		WorkflowTask task = new WorkflowTask();
+		assertFalse(task.isOptional());
+		
+		task.setOptional(Boolean.FALSE);
+		assertFalse(task.isOptional());
+		
+		task.setOptional(Boolean.TRUE);
+		assertTrue(task.isOptional());
+		
+	}
 }

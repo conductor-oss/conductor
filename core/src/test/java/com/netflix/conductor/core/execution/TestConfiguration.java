@@ -38,6 +38,11 @@ public class TestConfiguration implements Configuration {
 	public boolean disableSweep() {
 		return false;
 	}
+	
+	@Override
+	public boolean disableAsyncWorkers() {
+		return false;
+	}
 
 	@Override
 	public String getServerId() {

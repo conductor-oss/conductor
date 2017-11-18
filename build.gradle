@@ -10,7 +10,7 @@ buildscript {
     }
 }
 plugins {
-    id 'nebula.netflixoss' version '3.5.2'
+    id 'nebula.netflixoss' version '3.6.0'
 }
 
 // Establish version and status
@@ -32,8 +32,7 @@ subprojects {
     targetCompatibility = 1.8
 
     repositories {
-      jcenter()
-      maven { url 'https://dl.bintray.com/netflixoss/oss-candidate/' }
+        jcenter()
     }
 
     dependencies {
@@ -44,7 +43,7 @@ subprojects {
     group = "com.netflix.${githubProjectName}"
     
     tasks.withType(Test)  {
-        maxParallelForks = 1
+        maxParallelForks = 100
     }
     
     license {

@@ -20,6 +20,7 @@ package com.netflix.conductor.core.execution.tasks;
 
 import java.util.Map;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,15 +38,16 @@ public class SubWorkflow extends WorkflowSystemTask {
 
 	private static final Logger logger = LoggerFactory.getLogger(SubWorkflow.class);
 	
+	public static final String NAME = "SUB_WORKFLOW";
+	
 	public SubWorkflow() {
-		super("SUB_WORKFLOW");
+		super(NAME);
 	}
 	
 	@SuppressWarnings("unchecked")
 	@Override
 	public void start(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
-		
-		super.start(workflow, task, provider);
+
 		Map<String, Object> input = task.getInputData();
 		String name = input.get("subWorkflowName").toString();
 		int version = (int) input.get("subWorkflowVersion");
@@ -57,33 +59,27 @@ public class SubWorkflow extends WorkflowSystemTask {
 		
 		try {
 			
-			String subWorkflowId = provider.startWorkflow(name, version, wfInput, correlationId, workflow.getWorkflowId(), task.getTaskId(), null);
-			task.getInputData().put("subWorkflowId", subWorkflowId);
+			String subWorkflowId = provider.startWorkflow(name, version, wfInput, correlationId, workflow.getWorkflowId(), task.getTaskId(), null, workflow.getTaskToDomain());
 			task.getOutputData().put("subWorkflowId", subWorkflowId);
+			task.getInputData().put("subWorkflowId", subWorkflowId);
 			task.setStatus(Status.IN_PROGRESS);
 			
 		} catch (Exception e) {
-			// If we are not able to start the sub workflow now, let's
-			// continue for now and let the sweep job take care of it.
+			task.setStatus(Status.FAILED);
+			task.setReasonForIncompletion(e.getMessage());
 			logger.error(e.getMessage(), e);
 		}
 	}
 	
 	@Override
 	public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
-		String workflowId = (String) task.getInputData().get("subWorkflowId");
-		if(workflowId == null){
-			workflowId = (String) task.getOutputData().get("subWorkflowId");	//This is for backward compatibility, can be removed in future.
+		String workflowId = (String) task.getOutputData().get("subWorkflowId");
+		if (workflowId == null) {
+			workflowId = (String) task.getInputData().get("subWorkflowId");	//Backward compatibility
 		}
 		
-		if (task.getStatus().equals(Status.SCHEDULED)) {
-			long timeSince = System.currentTimeMillis() - task.getScheduledTime();
-			if(timeSince > 600_000) {
-				start(workflow, task, provider);
-				return true;	
-			}else {
-				return false;
-			}				
+		if(StringUtils.isEmpty(workflowId)) {
+			return false;
 		}
 		
 		Workflow subWorkflow = provider.getWorkflow(workflowId, false);
@@ -91,10 +87,10 @@ public class SubWorkflow extends WorkflowSystemTask {
 		if(!subWorkflowStatus.isTerminal()){
 			return false;
 		}
-		task.setOutputData(subWorkflow.getOutput());
-		if(subWorkflowStatus.isSuccessful()){
+		task.getOutputData().putAll(subWorkflow.getOutput());
+		if (subWorkflowStatus.isSuccessful()) {
 			task.setStatus(Status.COMPLETED);
-		}else{
+		} else {
 			task.setStatus(Status.FAILED);
 		}
 		return true;
@@ -102,13 +98,22 @@ public class SubWorkflow extends WorkflowSystemTask {
 	
 	@Override
 	public void cancel(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
-		String workflowId = (String) task.getInputData().get("subWorkflowId");
-		if(workflowId == null){
-			workflowId = (String) task.getOutputData().get("subWorkflowId");	//TODO: Remove in the next release.  Only for the backward compatibility
+		String workflowId = (String) task.getOutputData().get("subWorkflowId");
+		if(workflowId == null) {
+			workflowId = (String) task.getInputData().get("subWorkflowId");	//Backward compatibility
+		}
+		
+		if(StringUtils.isEmpty(workflowId)) {
+			return;
 		}
 		Workflow subWorkflow = provider.getWorkflow(workflowId, false);
 		subWorkflow.setStatus(WorkflowStatus.TERMINATED);
 		provider.terminateWorkflow(subWorkflow, "Parent workflow has been terminated with status " + workflow.getStatus(), null);
+	}
+	
+	@Override
+	public boolean isAsync() {
+		return false;
 	}
 
 }

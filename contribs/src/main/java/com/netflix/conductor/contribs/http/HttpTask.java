@@ -47,6 +47,9 @@ import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource.Builder;
+import com.sun.jersey.oauth.client.OAuthClientFilter;
+import com.sun.jersey.oauth.signature.OAuthParameters;
+import com.sun.jersey.oauth.signature.OAuthSecrets;
 
 /**
  * @author Viren
@@ -117,10 +120,15 @@ public class HttpTask extends WorkflowSystemTask {
 		try {
 			
 			HttpResponse response = httpCall(input);
+			logger.info("response {}, {}", response.statusCode, response.body);
 			if(response.statusCode > 199 && response.statusCode < 300) {
 				task.setStatus(Status.COMPLETED);
 			} else {
-				task.setReasonForIncompletion(response.body.toString());
+				if(response.body != null) {
+					task.setReasonForIncompletion(response.body.toString());
+				} else {
+					task.setReasonForIncompletion("No response from the remote service");
+				}
 				task.setStatus(Status.FAILED);
 			}
 			if(response != null) {
@@ -128,6 +136,8 @@ public class HttpTask extends WorkflowSystemTask {
 			}
 			
 		}catch(Exception e) {
+			
+			logger.error(e.getMessage(), e);
 			task.setStatus(Status.FAILED);
 			task.setReasonForIncompletion(e.getMessage());
 			task.getOutputData().put("response", e.getMessage());
@@ -142,7 +152,16 @@ public class HttpTask extends WorkflowSystemTask {
 	 */
 	protected HttpResponse httpCall(Input input) throws Exception {
 		Client client = rcm.getClient(input);
+
+		if(input.oauthConsumerKey != null) {
+			logger.info("Configuring OAuth filter");
+			OAuthParameters params = new OAuthParameters().consumerKey(input.oauthConsumerKey).signatureMethod("HMAC-SHA1").version("1.0");
+			OAuthSecrets secrets = new OAuthSecrets().consumerSecret(input.oauthConsumerSecret);
+			client.addFilter(new OAuthClientFilter(client.getProviders(), params, secrets));
+		}
+
 		Builder builder = client.resource(input.uri).type(MediaType.APPLICATION_JSON);
+
 		if(input.body != null) {
 			builder.entity(input.body);
 		}
@@ -158,13 +177,14 @@ public class HttpTask extends WorkflowSystemTask {
 				response.body = extractBody(cr);
 			}
 			response.statusCode = cr.getStatus();
+			response.reasonPhrase = cr.getStatusInfo().getReasonPhrase();
 			response.headers = cr.getHeaders();
 			return response;
 
 		} catch(UniformInterfaceException ex) {
-			
+			logger.error(ex.getMessage(), ex);
 			ClientResponse cr = ex.getResponse();
-			
+			logger.error("Status Code: {}", cr.getStatus());
 			if(cr.getStatus() > 199 && cr.getStatus() < 300) {
 				
 				if(cr.getStatus() != 204 && cr.hasEntity()) {
@@ -172,6 +192,7 @@ public class HttpTask extends WorkflowSystemTask {
 				}
 				response.headers = cr.getHeaders();
 				response.statusCode = cr.getStatus();
+				response.reasonPhrase = cr.getStatusInfo().getReasonPhrase();
 				return response;
 				
 			}else {
@@ -185,7 +206,7 @@ public class HttpTask extends WorkflowSystemTask {
 	private Object extractBody(ClientResponse cr) {
 
 		String json = cr.getEntity(String.class);
-		logger.debug(json);
+		logger.info(json);
 		
 		try {
 			
@@ -208,21 +229,22 @@ public class HttpTask extends WorkflowSystemTask {
 
 	@Override
 	public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
-		if (task.getStatus().equals(Status.SCHEDULED)) {
-			long timeSince = System.currentTimeMillis() - task.getScheduledTime();
-			if(timeSince > 600_000) {
-				start(workflow, task, executor);
-				return true;	
-			}else {
-				return false;
-			}				
-		}
 		return false;
 	}
 	
 	@Override
 	public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
 		task.setStatus(Status.CANCELED);
+	}
+	
+	@Override
+	public boolean isAsync() {
+		return true;
+	}
+	
+	@Override
+	public int getRetryTimeInSecond() {
+		return 60;
 	}
 	
 	private static ObjectMapper objectMapper() {
@@ -243,9 +265,11 @@ public class HttpTask extends WorkflowSystemTask {
 		
 		public int statusCode;
 
+		public String reasonPhrase;
+
 		@Override
 		public String toString() {
-			return "HttpResponse [body=" + body + ", headers=" + headers + ", statusCode=" + statusCode + "]";
+			return "HttpResponse [body=" + body + ", headers=" + headers + ", statusCode=" + statusCode + ", reasonPhrase=" + reasonPhrase + "]";
 		}
 		
 		public Map<String, Object> asMap() {
@@ -254,6 +278,7 @@ public class HttpTask extends WorkflowSystemTask {
 			map.put("body", body);
 			map.put("headers", headers);
 			map.put("statusCode", statusCode);
+			map.put("reasonPhrase", reasonPhrase);
 			
 			return map;
 		}
@@ -272,6 +297,10 @@ public class HttpTask extends WorkflowSystemTask {
 		private Object body;
 		
 		private String accept = MediaType.APPLICATION_JSON;
+		
+		private String oauthConsumerKey;
+
+		private String oauthConsumerSecret;
 
 		/**
 		 * @return the method
@@ -359,5 +388,32 @@ public class HttpTask extends WorkflowSystemTask {
 			this.accept = accept;
 		}
 		
+		/**
+		 * @return the OAuth consumer Key
+		 */
+		public String getOauthConsumerKey() {
+			return oauthConsumerKey;
+		}
+
+		/**
+		 * @param oauthConsumerKey the OAuth consumer key to set
+		 */
+		public void setOauthConsumerKey(String oauthConsumerKey) {
+			this.oauthConsumerKey = oauthConsumerKey;
+		}
+
+		/**
+		 * @return the OAuth consumer secret
+		 */
+		public String getOauthConsumerSecret() {
+			return oauthConsumerSecret;
+		}
+
+		/**
+		 * @param oauthConsumerSecret the OAuth consumer secret to set
+		 */
+		public void setOauthConsumerSecret(String oauthConsumerSecret) {
+			this.oauthConsumerSecret = oauthConsumerSecret;
+		}
 	}
 }

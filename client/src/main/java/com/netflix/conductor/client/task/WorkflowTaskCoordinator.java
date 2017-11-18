@@ -15,21 +15,12 @@
  */
 package com.netflix.conductor.client.task;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.RejectedExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
@@ -40,7 +31,6 @@ import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.PropertyFactory;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.servo.monitor.Stopwatch;
@@ -69,10 +59,16 @@ public class WorkflowTaskCoordinator {
 	private int updateRetryCount;
 	
 	private int workerQueueSize;
+
+	private LinkedBlockingQueue<Runnable> workerQueue;
 	
 	private int threadCount;
+
+	private String workerNamePrefix;
 	
-	private static Map<Worker, Map<String, Object>> environmentData = new HashMap<>();
+	private static final String DOMAIN = "domain";
+	
+	private static final String ALL_WORKERS = "all";
 	
 	/**
 	 *
@@ -81,31 +77,38 @@ public class WorkflowTaskCoordinator {
 	 * @param threadCount # of threads assigned to the workers.  Should be at-least the size of taskWorkers to avoid starvation in a busy system.
 	 * @param sleepWhenRetry sleep time in millisecond for Conductor server retries (poll, ack, update task)
 	 * @param updateRetryCount number of times to retry the failed updateTask operation
-	 * @param workerQueueSize queue size for the polled task.  
+	 * @param workerQueueSize queue size for the polled task.
 	 * @param taskWorkers workers that will be used for polling work and task execution.
+	 * @param workerNamePrefix String prefix that will be used for all the workers.
 	 * <p>
 	 * Please see {@link #init()} method.  The method must be called after this constructor for the polling to start.
 	 * </p>
+	 * @param workerNamePrefix
 	 * @see Builder
 	 */
-	public WorkflowTaskCoordinator(EurekaClient ec, TaskClient client, int threadCount, int sleepWhenRetry, int updateRetryCount, int workerQueueSize, Iterable<Worker> taskWorkers) {
+	public WorkflowTaskCoordinator(EurekaClient ec, TaskClient client, int threadCount, int sleepWhenRetry,
+								   int updateRetryCount, int workerQueueSize, Iterable<Worker> taskWorkers,
+								   String workerNamePrefix) {
 		this.ec = ec;
 		this.client = client;
 		this.threadCount = threadCount;
 		this.sleepWhenRetry = sleepWhenRetry;
 		this.updateRetryCount = updateRetryCount;
 		this.workerQueueSize = workerQueueSize;
+		this.workerNamePrefix = workerNamePrefix;
 		for (Worker worker : taskWorkers) {
-			registerWorker(worker);
+			workers.add(worker);
 		}
 	}
-	
+
 	/**
 	 * 
 	 * Builder used to create the instances of WorkflowTaskCoordinator
 	 *
 	 */
 	public static class Builder {
+
+		private String workerNamePrefix = "workflow-worker-";
 	
 		private int sleepWhenRetry = 500;
 		
@@ -120,6 +123,16 @@ public class WorkflowTaskCoordinator {
 		private EurekaClient ec;
 		
 		private TaskClient client;
+
+		/**
+		 *
+		 * @param workerNamePrefix prefix to be used for worker names, defaults to workflow-worker- if not supplied.
+		 * @return Returns the current instance.
+		 */
+		public Builder withWorkerNamePrefix(String workerNamePrefix) {
+			this.workerNamePrefix = workerNamePrefix;
+			return this;
+		}
 		
 		/**
 		 * 
@@ -158,6 +171,9 @@ public class WorkflowTaskCoordinator {
 		 * @return Builder instance
 		 */
 		public Builder withThreadCount(int threadCount) {
+			if(threadCount < 1) {
+				throw new IllegalArgumentException("No. of threads cannot be less than 1");
+			}
 			this.threadCount = threadCount;
 			return this;
 		}
@@ -217,7 +233,8 @@ public class WorkflowTaskCoordinator {
 			if(client == null) {
 				throw new IllegalArgumentException("No TaskClient provided.  use withTaskClient() to provide one"); 
 			}
-			return new WorkflowTaskCoordinator(ec, client, threadCount, sleepWhenRetry, updateRetryCount, workerQueueSize, taskWorkers);
+			return new WorkflowTaskCoordinator(ec, client, threadCount, sleepWhenRetry, updateRetryCount,
+											   workerQueueSize, taskWorkers, workerNamePrefix);
 		}
 	}
 	
@@ -231,38 +248,28 @@ public class WorkflowTaskCoordinator {
 		}
 		
 		logger.info("Initialized the worker with {} threads", threadCount);
-		
-		AtomicInteger count = new AtomicInteger(0);
+
+        this.workerQueue = new LinkedBlockingQueue<Runnable>(workerQueueSize);
+        AtomicInteger count = new AtomicInteger(0);
 		this.es = new ThreadPoolExecutor(threadCount, threadCount,
                 0L, TimeUnit.MILLISECONDS,
-                new LinkedBlockingQueue<Runnable>(workerQueueSize),
+                workerQueue,
                 new ThreadFactory() {
 
 			@Override
 			public Thread newThread(Runnable r) {
 				Thread t = new Thread(r);
-				t.setName("workflow-worker-" + count.getAndIncrement());
+				t.setName(workerNamePrefix + count.getAndIncrement());
 				return t;
 			}
 		});
 		this.ses = Executors.newScheduledThreadPool(workers.size());
 		workers.forEach(worker -> {
-			environmentData.put(worker, getEnvData(worker));
 			ses.scheduleWithFixedDelay(()->pollForTask(worker), worker.getPollingInterval(), worker.getPollingInterval(), TimeUnit.MILLISECONDS);	
 		});
 		
 	}
 
-	/**
-	 * 
-	 * @param worker Adds a new worker.
-	 * If you register a worker after doing {@link #init()}, the no. of threads assigned to the poller will be less than the actual number of workers causing starvation.  
-	 *  
-	 */
-	public void registerWorker(Worker worker) {
-		workers.add(worker);
-	}
-	
 	private void pollForTask(Worker worker) {
 		
 		if(ec != null && !ec.getInstanceRemoteStatus().equals(InstanceStatus.UP)) {
@@ -275,20 +282,37 @@ public class WorkflowTaskCoordinator {
 			logger.debug("Worker {} has been paused. Not polling anymore!", worker.getClass());
 			return;
 		}
-		
-		logger.debug("Polling {}, count = {} timeout = {} ms", worker.getTaskDefName(), worker.getPollCount(), worker.getLongPollTimeoutInMS());
+		String domain = PropertyFactory.getString(worker.getTaskDefName(), DOMAIN, null);		
+		if(domain == null){
+			domain = PropertyFactory.getString(ALL_WORKERS, DOMAIN, null);		
+		}
+		logger.debug("Polling {}, domain={}, count = {} timeout = {} ms", worker.getTaskDefName(), domain, worker.getPollCount(), worker.getLongPollTimeoutInMS());
 		
 		try{
-			
+
+            // get the remaining capacity of worker queue to prevent queue full exception
+            int realPollCount = Math.min(workerQueue.remainingCapacity(), worker.getPollCount());
+            if (realPollCount <= 0) {
+				logger.warn("All workers are busy, not polling.  queue size {}, max {}", workerQueue.size(), workerQueueSize);
+				return;
+            }
 			String taskType = worker.getTaskDefName();
 			Stopwatch sw = WorkflowTaskMetrics.pollTimer(worker.getTaskDefName());
-			List<Task> tasks = client.poll(taskType, worker.getIdentity(), worker.getPollCount(), worker.getLongPollTimeoutInMS());
-			sw.stop();
-			logger.debug("Polled {} and receivd {} tasks", worker.getTaskDefName(), tasks.size());
-			for(Task task : tasks) {
-				es.submit(()->execute(worker, task));	
+			List<Task> tasks = client.poll(taskType, domain, worker.getIdentity(), realPollCount, worker.getLongPollTimeoutInMS());
+            sw.stop();
+            logger.debug("Polled {}, for domain {} and received {} tasks", worker.getTaskDefName(), domain, tasks.size());
+            for(Task task : tasks) {
+				es.submit(() -> {
+					try {
+						execute(worker, task);
+					} catch (Throwable t) {
+						task.setStatus(Task.Status.FAILED);
+						TaskResult result = new TaskResult(task);
+						handleException(t, result, worker, true, task);
+					}
+				});
 			}
-			
+
 		}catch(RejectedExecutionException qfe) {
 			WorkflowTaskMetrics.queueFull(worker.getTaskDefName());
 			logger.error("Execution queue is full", qfe);
@@ -297,15 +321,10 @@ public class WorkflowTaskCoordinator {
 			logger.error("Error when polling for task " + e.getMessage(), e);
 		}
 	}
-	
+
 	private void execute(Worker worker, Task task) {
 		
 		String taskType = task.getTaskDefName();
-		if (!taskType.equals(task.getTaskType())) {
-			logger.error("Queue name '{}' did not match type of task retrieved '{}' for task id '{}'.", taskType, task.getTaskType(),task.getTaskId());
-			return;
-		}
-		
 		try {
 			
 			if(!worker.preAck(task)) {
@@ -325,34 +344,31 @@ public class WorkflowTaskCoordinator {
 			return;
 		}
 		
-		TaskResult result = new TaskResult(task);
-		result.getLog().getEnvironment().putAll(environmentData.get(worker));
 		Stopwatch sw = WorkflowTaskMetrics.executionTimer(worker.getTaskDefName());
 		
+		TaskResult result = null;
 		try {
 			
 			logger.debug("Executing task {} on worker {}", task, worker.getClass().getSimpleName());			
 			result = worker.execute(task);
+			result.setWorkflowInstanceId(task.getWorkflowInstanceId());
+			result.setTaskId(task.getTaskId());
+			
 			
 		} catch (Exception e) {
 			logger.error("Unable to execute task {}", task, e);
-			
-			WorkflowTaskMetrics.executionException(worker.getTaskDefName(), e);
-			result.setStatus(TaskResult.Status.FAILED);
-			result.setReasonForIncompletion("Error while executing the task: " + e);
-			TaskExecLog execLog = result.getLog();
-			execLog.setError(e.getMessage());
-			for (StackTraceElement ste : e.getStackTrace()) {
-				execLog.getErrorTrace().add(ste.toString());
+			if (result == null) {
+				task.setStatus(Task.Status.FAILED);
+				result = new TaskResult(task);
 			}
-			
+			handleException(e, result, worker, false, task);
 		} finally {
 			sw.stop();
 		}
 		
 		logger.debug("Task {} executed by worker {} with status {}", task.getTaskId(), worker.getClass().getSimpleName(), task.getStatus());
 		updateWithRetry(updateRetryCount, task, result, worker);
-		
+
 	}
 	
 	/**
@@ -386,27 +402,14 @@ public class WorkflowTaskCoordinator {
 	public int getUpdateRetryCount() {
 		return updateRetryCount;
 	}
-	
-	static Map<String, Object> getEnvData(Worker worker) {
-		List<String> props = worker.getLoggingEnvProps();
-		Map<String, Object> data = new HashMap<>();
-		if(props == null || props.isEmpty()) {
-			return data;
-		}		
-		String workerName = worker.getTaskDefName();
-		for(String property : props) {
-			property = property.trim();
-			String defaultValue = System.getenv(property);
-			String value = PropertyFactory.getString(workerName, property, defaultValue);
-			data.put(property, value);
-		}
-		
-		try {
-			data.put("HOSTNAME", InetAddress.getLocalHost().getHostName());
-		} catch (UnknownHostException e) {
-			
-		}
-		return data;
+
+	/**
+	 *
+	 * @return prefix used for worker names
+	 */
+	public String getWorkerNamePrefix()
+	{
+		return workerNamePrefix;
 	}
 	
 	private void updateWithRetry(int count, Task task, TaskResult result, Worker worker) {
@@ -419,7 +422,7 @@ public class WorkflowTaskCoordinator {
 		try{
 			client.updateTask(result);
 			return;
-		}catch(Throwable t) {
+		}catch(Exception t) {
 			WorkflowTaskMetrics.updateTaskError(worker.getTaskDefName(), t);
 			logger.error("Unable to update {} on count {}", result, count, t);
 			try {
@@ -431,4 +434,17 @@ public class WorkflowTaskCoordinator {
 			}
 		}
 	}
+
+	private void handleException(Throwable t, TaskResult result, Worker worker, boolean updateTask, Task task) {
+		WorkflowTaskMetrics.executionException(worker.getTaskDefName(), t);
+		result.setStatus(TaskResult.Status.FAILED);
+		result.setReasonForIncompletion("Error while executing the task: " + t);
+		
+		StringWriter sw = new StringWriter();
+		t.printStackTrace(new PrintWriter(sw));
+		result.log(sw.toString());
+		
+		updateWithRetry(updateRetryCount, task, result, worker);
+	}
+	
 }

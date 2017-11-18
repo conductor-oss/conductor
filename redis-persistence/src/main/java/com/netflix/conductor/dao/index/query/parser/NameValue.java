@@ -23,8 +23,6 @@ import java.io.InputStream;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 
-import com.netflix.conductor.dao.index.query.parser.ComparisonOp.Operators;
-
 /**
  * @author Viren
  * <pre>
@@ -55,9 +53,9 @@ public class NameValue extends AbstractNode implements FilterProvider {
 		this.name = new Name(is);
 		this.op = new ComparisonOp(is);
 		
-		if(this.op.getOperator().equals(Operators.BETWEEN.value())){
+		if(this.op.getOperator().equals(ComparisonOp.Operators.BETWEEN.value())){
 			this.range = new Range(is);
-		}if(this.op.getOperator().equals(Operators.IN.value())){
+		}if(this.op.getOperator().equals(ComparisonOp.Operators.IN.value())){
 			this.valueList = new ListConst(is);
 		}else{
 			this.value = new ConstValue(is);
@@ -92,23 +90,23 @@ public class NameValue extends AbstractNode implements FilterProvider {
 	
 	@Override
 	public QueryBuilder getFilterBuilder(){
-		if(op.getOperator().equals(Operators.EQUALS.value())){
+		if(op.getOperator().equals(ComparisonOp.Operators.EQUALS.value())){
 			return QueryBuilders.queryStringQuery(name.getName() + ":" + value.getValue().toString());
-		}else if(op.getOperator().equals(Operators.BETWEEN.value())){
+		}else if(op.getOperator().equals(ComparisonOp.Operators.BETWEEN.value())){
 			return QueryBuilders.rangeQuery(name.getName()).from(range.getLow()).to(range.getHigh());
-		}else if(op.getOperator().equals(Operators.IN.value())){
+		}else if(op.getOperator().equals(ComparisonOp.Operators.IN.value())){
 			return QueryBuilders.termsQuery(name.getName(), valueList.getList());
-		}else if(op.getOperator().equals(Operators.NOT_EQUALS.value())){
+		}else if(op.getOperator().equals(ComparisonOp.Operators.NOT_EQUALS.value())){
 			return QueryBuilders.queryStringQuery("NOT " + name.getName() + ":" + value.getValue().toString());
-		}else if(op.getOperator().equals(Operators.GREATER_THAN.value())){
+		}else if(op.getOperator().equals(ComparisonOp.Operators.GREATER_THAN.value())){
 			return QueryBuilders.rangeQuery(name.getName()).from(value.getValue()).includeLower(false).includeUpper(false);
-		}else if(op.getOperator().equals(Operators.IS.value())){
+		}else if(op.getOperator().equals(ComparisonOp.Operators.IS.value())){
 			if(value.getSysConstant().equals(ConstValue.SystemConsts.NULL)){
 				return QueryBuilders.boolQuery().mustNot(QueryBuilders.boolQuery().must(QueryBuilders.matchAllQuery()).mustNot(QueryBuilders.existsQuery(name.getName())));
 			} else if(value.getSysConstant().equals(ConstValue.SystemConsts.NOT_NULL)){
 				return QueryBuilders.boolQuery().mustNot(QueryBuilders.boolQuery().must(QueryBuilders.matchAllQuery()).must(QueryBuilders.existsQuery(name.getName())));
 			}
-		}else if(op.getOperator().equals(Operators.LESS_THAN.value())){
+		}else if(op.getOperator().equals(ComparisonOp.Operators.LESS_THAN.value())){
 			return QueryBuilders.rangeQuery(name.getName()).to(value.getValue()).includeLower(false).includeUpper(false);
 		}
 		

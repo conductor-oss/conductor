@@ -57,8 +57,10 @@ public class TestPropertyFactory {
 		
 		assertEquals(42, PropertyFactory.getInteger("workerA", "batchSize", 42).intValue());	//No global value set, so will return the default value supplied
 		assertEquals(84, PropertyFactory.getInteger("workerB", "batchSize", 42).intValue());	//WorkerB's value set to 84
-		
 
+		assertEquals("domainA", PropertyFactory.getString("workerA", "domain", null));	
+		assertEquals("domainB", PropertyFactory.getString("workerB", "domain", null));	
+		assertEquals(null, PropertyFactory.getString("workerC", "domain", null));	// Non Existent
 	}
 	
 	@Test

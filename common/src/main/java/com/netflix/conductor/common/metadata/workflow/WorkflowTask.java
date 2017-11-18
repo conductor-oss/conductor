@@ -59,7 +59,9 @@ public class WorkflowTask {
 	private String name;
 	
 	private String taskReferenceName;
-	
+
+	private String description;
+
 	//Key: Name of the input parameter.  MUST be one of the keys defined in TaskDef (e.g. fileName)
 	//Value: mapping of the parameter from another task (e.g. task1.someOutputParameterAsFileName)
 	private Map<String, Object> inputParameters = new HashMap<String, Object>();
@@ -69,6 +71,8 @@ public class WorkflowTask {
 	private String dynamicTaskNameParam;
 	
 	private String caseValueParam;
+	
+	private String caseExpression;
 	
 	//Populates for the tasks of the decision type
 	private Map<String, List<WorkflowTask>> decisionCases = new LinkedHashMap<>();
@@ -91,6 +95,8 @@ public class WorkflowTask {
 	private List<String> joinOn = new LinkedList<>();
 	
 	private String sink;
+	
+	private Boolean optional;
 	
 	/**
 	 * @return the name
@@ -118,6 +124,20 @@ public class WorkflowTask {
 	 */
 	public void setTaskReferenceName(String taskReferenceName) {
 		this.taskReferenceName = taskReferenceName;
+	}
+
+	/**
+	 * @return the description
+	 */
+	public String getDescription() {
+		return description;
+	}
+
+	/**
+	 * @param description the description to set
+	 */
+	public void setDescription(String description) {
+		this.description = description;
 	}
 
 	/**
@@ -266,6 +286,23 @@ public class WorkflowTask {
 	public void setCaseValueParam(String caseValueParam) {
 		this.caseValueParam = caseValueParam;
 	}
+	
+	/**
+	 * 
+	 * @return A javascript expression for decision cases.  The result should be a scalar value that is used to decide the case branches.
+	 * @see #getDecisionCases()
+	 */
+	public String getCaseExpression() {
+		return caseExpression;
+	}
+	
+	/**
+	 * 
+	 * @param caseExpression A javascript expression for decision cases.  The result should be a scalar value that is used to decide the case branches.
+	 */
+	public void setCaseExpression(String caseExpression) {
+		this.caseExpression = caseExpression;
+	}
 
 	
 	/**
@@ -310,6 +347,30 @@ public class WorkflowTask {
 	 */
 	public void setSink(String sink) {
 		this.sink = sink;
+	}
+	
+	/**
+	 * 
+	 * @return If the task is optional.  When set to true, the workflow execution continues even when the task is in failed status.
+	 */
+	public Boolean getOptional() {
+		return optional;
+	}
+	
+	/**
+	 * 
+	 * @return true if the task is optional.  False otherwise.
+	 */
+	public boolean isOptional() {
+		return (optional != null && optional.booleanValue()); 
+	}
+	
+	/**
+	 * 
+	 * @param optional when set to true, the task is marked as optional
+	 */
+	public void setOptional(Boolean optional) {
+		this.optional = optional;
 	}
 	
 	private Collection<List<WorkflowTask>> children(){

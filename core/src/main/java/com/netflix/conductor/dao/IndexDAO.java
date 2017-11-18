@@ -53,6 +53,18 @@ public interface IndexDAO {
 	 * @return List of workflow ids for the matching query
 	 */
 	public SearchResult<String> searchWorkflows(String query, String freeText, int start, int count, List<String> sort);
+	
+	
+	/**
+	 * 
+	 * @param query SQL like query for task search parameters.
+	 * @param freeText	Additional query in free text.  Lucene syntax
+	 * @param start	start start index for pagination
+	 * @param count	count # of task ids to be returned
+	 * @param sort sort options
+	 * @return List of workflow ids for the matching query
+	 */
+	public SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort);
 
 	/**
 	 * Remove the workflow index
@@ -63,16 +75,31 @@ public interface IndexDAO {
 	/**
 	 * Updates the index
 	 * @param workflowInstanceId id of the workflow
-	 * @param key key to be updated
-	 * @param value value
+	 * @param keys keys to be updated
+	 * @param values values. Number of keys and values MUST match.
 	 */
-	public void update(String workflowInstanceId, String key, Object value);
+	public void update(String workflowInstanceId, String[] keys, Object[] values);
+	
+	/**
+	 * Retrieves a specific field from the index 
+	 * @param workflowInstanceId id of the workflow
+	 * @param key field to be retrieved
+	 * @return value of the field as string
+	 */
+	public String get(String workflowInstanceId, String key);
 
 	/**
 	 * 
-	 * @param log Task Execution log to be indexed
+	 * @param logs Task Execution logs to be indexed
 	 */
-	public void add(TaskExecLog log);
+	public void add(List<TaskExecLog> logs);
+	
+	/**
+	 * 
+	 * @param taskId Id of the task for which to fetch the execution logs
+	 * @return Returns the task execution logs for given task id
+	 */
+	public List<TaskExecLog> getTaskLogs(String taskId);
 	
 	
 	/**

@@ -13,7 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.conductor.server.es;
+package com.netflix.conductor.dao.es5.es;
+
+import org.apache.commons.io.FileUtils;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.node.Node;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -21,18 +28,18 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import org.apache.commons.io.FileUtils;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.common.settings.Settings;
-import org.elasticsearch.node.Node;
-import org.elasticsearch.node.NodeBuilder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.elasticsearch.node.InternalSettingsPreparer;
+import org.elasticsearch.plugins.Plugin;
+import org.elasticsearch.transport.Netty4Plugin;
+
 
 public class EmbeddedElasticSearch {
 
 	private static final String ES_PATH_DATA = "path.data";
-	
+
 	private static final String ES_PATH_HOME = "path.home";
 
 	private static final Logger logger = LoggerFactory.getLogger(EmbeddedElasticSearch.class);
@@ -42,9 +49,15 @@ public class EmbeddedElasticSearch {
 	public static final String DEFAULT_HOST = "127.0.0.1";
 	public static final String DEFAULT_SETTING_FILE = "embedded-es.yml";
 
-	private static Node instance; 
+	private static Node instance;
 	private static Client client;
 	private static File dataDir;
+
+	private static class PluginConfigurableNode extends Node {
+		public PluginConfigurableNode(Settings preparedSettings, Collection<Class<? extends Plugin>> classpathPlugins) {
+			super(InternalSettingsPreparer.prepareEnvironment(preparedSettings, null), classpathPlugins);
+		}
+	}
 
 	public static void start() throws Exception {
 		start(DEFAULT_CLUSTER_NAME, DEFAULT_HOST, DEFAULT_PORT, true);
@@ -61,12 +74,16 @@ public class EmbeddedElasticSearch {
 		setupDataDir(settings);
 
 		logger.info("Starting ElasticSearch for cluster {} ", settings.get("cluster.name"));
-		instance = NodeBuilder.nodeBuilder().data(true).local(enableTransportClient ? false : true).settings(settings).client(false).node();
+		instance = new PluginConfigurableNode(settings, Arrays.asList(Netty4Plugin.class));
 		instance.start();
 		Runtime.getRuntime().addShutdownHook(new Thread() {
 			@Override
 			public void run() {
-				instance.close();
+				try {
+					instance.close();
+				} catch (IOException e) {
+					logger.error("Error closing ElasticSearch");
+				}
 			}
 		});
 		logger.info("ElasticSearch cluster {} started in local mode on port {}", instance.settings().get("cluster.name"), getPort());
@@ -94,16 +111,21 @@ public class EmbeddedElasticSearch {
 	private static Settings getSettings(String clusterName, String host, int port, boolean enableTransportClient) throws IOException {
 		dataDir = Files.createTempDirectory(clusterName+"_"+System.currentTimeMillis()+"data").toFile();
 		File homeDir = Files.createTempDirectory(clusterName+"_"+System.currentTimeMillis()+"-home").toFile();
-		return Settings.settingsBuilder()
+		Settings.Builder settingsBuilder = Settings.builder()
 				.put("cluster.name", clusterName)
 				.put("http.host", host)
 				.put("http.port", port)
 				.put(ES_PATH_DATA, dataDir.getAbsolutePath())
 				.put(ES_PATH_HOME, homeDir.getAbsolutePath())
 				.put("http.enabled", true)
-				.put("script.inline", "on")
-				.put("script.indexed", "on")
-				.build();
+				.put("script.inline", true)
+				.put("script.stored", true)
+				.put("node.data", true)
+				.put("http.enabled", true)
+				.put("http.type", "netty4")
+				.put("transport.type", "netty4");
+
+		return settingsBuilder.build();
 	}
 
 	private static void createDataDir(String dataDirLoc) {
@@ -128,7 +150,7 @@ public class EmbeddedElasticSearch {
 		return instance.settings().get("http.port");
 	}
 
-	public static synchronized void stop() {
+	public static synchronized void stop() throws Exception {
 
 		if (instance != null && !instance.isClosed()) {
 			String port = getPort();

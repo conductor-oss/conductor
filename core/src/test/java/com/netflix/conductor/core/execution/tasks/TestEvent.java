@@ -233,7 +233,51 @@ public class TestEvent {
 		assertEquals(Task.Status.SCHEDULED, task.getStatus());
 		
 		task.setScheduledTime(System.currentTimeMillis() - 610_000);
-		event.execute(workflow, task, null);
+		event.start(workflow, task, null);
 		assertEquals(Task.Status.FAILED, task.getStatus());
 	}
+	
+	@Test
+	public void testDynamicSinks() {
+
+		Event event = new Event();
+		Workflow workflow = new Workflow();
+		workflow.setWorkflowType("testWorkflow");
+		workflow.setVersion(2);
+		
+		Task task = new Task();
+		task.setReferenceTaskName("task0");
+		task.setTaskId("task_id_0");
+		task.setStatus(Status.IN_PROGRESS);
+		task.getInputData().put("sink", "conductor:some_arbitary_queue");
+		
+		
+		ObservableQueue queue = event.getQueue(workflow, task);
+		assertEquals(Task.Status.IN_PROGRESS, task.getStatus());
+		assertNotNull(queue);
+		assertEquals("testWorkflow:some_arbitary_queue", queue.getName());
+		assertEquals("testWorkflow:some_arbitary_queue", queue.getURI());
+		assertEquals("conductor", queue.getType());
+		assertEquals("conductor:testWorkflow:some_arbitary_queue", task.getOutputData().get("event_produced"));
+		
+		task.getInputData().put("sink", "conductor");
+		queue = event.getQueue(workflow, task);
+		assertEquals("not in progress: " + task.getReasonForIncompletion(), Task.Status.IN_PROGRESS, task.getStatus());
+		assertNotNull(queue);
+		assertEquals("testWorkflow:task0", queue.getName());
+		
+		task.getInputData().put("sink", "sqs:my_sqs_queue_name");
+		queue = event.getQueue(workflow, task);
+		assertEquals("not in progress: " + task.getReasonForIncompletion(), Task.Status.IN_PROGRESS, task.getStatus());
+		assertNotNull(queue);
+		assertEquals("my_sqs_queue_name", queue.getName());
+		assertEquals("sqs", queue.getType());
+		
+		task.getInputData().put("sink", "sns:my_sqs_queue_name");
+		queue = event.getQueue(workflow, task);
+		assertEquals(Task.Status.FAILED, task.getStatus());
+		
+		
+	}
+	
 }

@@ -37,6 +37,7 @@ import com.amazonaws.auth.policy.Statement;
 import com.amazonaws.auth.policy.Statement.Effect;
 import com.amazonaws.auth.policy.actions.SQSActions;
 import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.model.ChangeMessageVisibilityRequest;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.CreateQueueResult;
 import com.amazonaws.services.sqs.model.DeleteMessageBatchRequest;
@@ -116,6 +117,13 @@ public class SQSObservableQueue implements ObservableQueue {
 		} catch(Exception e) {
 			return -1;
 		}
+	}
+	
+	@Override
+	public void setUnackTimeout(Message message, long unackTimeout) {
+		int unackTimeoutInSeconds = (int) (unackTimeout / 1000);
+		ChangeMessageVisibilityRequest request = new ChangeMessageVisibilityRequest(queueURL, message.getReceipt(), unackTimeoutInSeconds);
+		client.changeMessageVisibility(request);
 	}
 	
 	@Override
@@ -211,6 +219,10 @@ public class SQSObservableQueue implements ObservableQueue {
 	}
 	
 	private void addPolicy(List<String> accountsToAuthorize) {
+		if(accountsToAuthorize == null || accountsToAuthorize.isEmpty()) {
+			logger.info("No additional security policies attached for the queue " + queueName);
+			return;
+		}
 		logger.info("Authorizing " + accountsToAuthorize + " to the queue " + queueName);
 		Map<String, String> attributes = new HashMap<>();
 		attributes.put("Policy", getPolicy(accountsToAuthorize));

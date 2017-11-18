@@ -207,6 +207,21 @@ export default function workflows(state = initialState, action) {
         fetching: false,
         refetch: false
       };
+    case 'GET_POLL_DATA':
+      return {
+        ...state,
+        error: false,
+        fetching: true,
+        refetch: false
+      };
+    case 'RECEIVED_POLL_DATA':
+      return {
+        ...state,
+        queueData: action.queueData.polldata,
+        error: false,
+        fetching: false,
+        refetch: false
+      };
     case 'REQUEST_ERROR':
     return {
       ...state,
@@ -219,6 +234,20 @@ export default function workflows(state = initialState, action) {
       pausing: false,
       resumign: false
     };
+    case 'GET_TASK_LOGS':
+      return {
+        ...state,
+        fetching: true,
+        error: false
+      };
+    case 'RECEIVED_GET_TASK_LOGS':
+      return {
+        ...state,
+        logs: action.logs,
+        error: false,
+        fetching: false,
+        refetch: false
+      };
     default:
       return state;
     };

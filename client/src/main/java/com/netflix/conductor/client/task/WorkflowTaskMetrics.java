@@ -124,7 +124,7 @@ public class WorkflowTaskMetrics {
 		counter("task_poll_error", "taskType", taskType);		
 	}
 
-	public static void executionException(String taskType, Exception e) {
+	public static void executionException(String taskType, Throwable e) {
 		counter("task_execute_error", "taskType", taskType, "exception", e.getClass().getSimpleName());		
 	}
 

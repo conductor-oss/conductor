@@ -134,8 +134,10 @@ A dynamic fork is same as FORK_JOIN task.  Except that the list of tasks to be f
 
 ```json
 {
-  "dynamicTasks": "${taskA.output.dynamicTasksJSON}",
-  "dynamicTasksInput": "${taskA.output.dynamicTasksInputJSON}",
+  "inputParameters": {
+     "dynamicTasks": "${taskA.output.dynamicTasksJSON}",
+     "dynamicTasksInput": "${taskA.output.dynamicTasksInputJSON}"
+  }
   "type": "FORK_JOIN_DYNAMIC",
   "dynamicForkTasksParam": "dynamicTasks",
   "dynamicForkTasksInputParamName": "dynamicTasksInput"
@@ -153,7 +155,7 @@ Consider **taskA**'s output as:
         "recipe": "jpg"
       }
     },
-    "forkedTask12": {
+    "forkedTask2": {
       "width": 200,
       "height": 200,
       "params": {
@@ -356,4 +358,4 @@ The input given to the event task is made available to the published message as 
 
 
 ### Event Task Output
-`event_produced` Name of the event produced.	
+`event_produced` Name of the event produced.

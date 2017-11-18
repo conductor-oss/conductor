@@ -54,7 +54,7 @@ public class DynoObservableQueue implements ObservableQueue {
 	public DynoObservableQueue(String queueName, QueueDAO queueDAO, Configuration config) {
 		this.queueName = queueName;
 		this.queueDAO = queueDAO;
-		this.pollTimeInMS = config.getIntProperty("workflow.dyno.queues.pollingInterval", 500);
+		this.pollTimeInMS = config.getIntProperty("workflow.dyno.queues.pollingInterval", 100);
 	}
 	
 	@Override
@@ -69,6 +69,10 @@ public class DynoObservableQueue implements ObservableQueue {
 			queueDAO.remove(queueName, msg.getId());
 		}
 		return messages.stream().map(Message::getId).collect(Collectors.toList());
+	}
+	
+	public void setUnackTimeout(Message message, long unackTimeout) {
+		queueDAO.setUnackTimeout(queueName, message.getId(), unackTimeout);
 	}
 	
 	@Override

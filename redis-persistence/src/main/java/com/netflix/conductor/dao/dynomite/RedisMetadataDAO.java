@@ -17,10 +17,13 @@ package com.netflix.conductor.dao.dynomite;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -49,9 +52,14 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 	private final static String EVENT_HANDLERS_BY_EVENT = "EVENT_HANDLERS_BY_EVENT";
 	private final static String LATEST = "latest";
 
+	private Map<String, TaskDef> taskDefCache = new HashMap<>();
+	
 	@Inject
 	public RedisMetadataDAO(DynoProxy dynoClient, ObjectMapper om, Configuration config) {
 		super(dynoClient, om, config);
+		refreshTaskDefs();
+		int cacheRefreshTime = config.getIntProperty("conductor.taskdef.cache.refresh.time.seconds", 60);
+		Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(()->refreshTaskDefs(), cacheRefreshTime, cacheRefreshTime, TimeUnit.SECONDS);
 	}
 
 	@Override
@@ -73,20 +81,34 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
 		// Store all task def in under one key
 		dynoClient.hset(nsKey(ALL_TASK_DEFS), taskDef.getName(), toJson(taskDef));
-
+		refreshTaskDefs();
 		return taskDef.getName();
 	}
 
+	private void refreshTaskDefs() {
+		Map<String, TaskDef> map = new HashMap<>();
+		getAllTaskDefs().forEach(taskDef -> map.put(taskDef.getName(), taskDef));
+		this.taskDefCache = map;
+		logger.debug("Refreshed task defs " + this.taskDefCache.size());
+	}
+	
 	@Override
 	public TaskDef getTaskDef(String name) {
+		TaskDef taskDef = taskDefCache.get(name);
+		if(taskDef == null) {
+			taskDef = getTaskDefFromDB(name);
+		}
+		return taskDef;
+	}
+	
+	public TaskDef getTaskDefFromDB(String name) {
 		Preconditions.checkNotNull(name, "TaskDef name cannot be null");
+		
 		TaskDef taskDef = null;
-
 		String taskDefJsonStr = dynoClient.hget(nsKey(ALL_TASK_DEFS), name);
 		if (taskDefJsonStr != null) {
 			taskDef = readValue(taskDefJsonStr, TaskDef.class);
-		}
-
+		}	
 		return taskDef;
 	}
 
@@ -113,6 +135,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 		if (!result.equals(1L)) {
 			throw new ApplicationException(Code.NOT_FOUND, "Cannot remove the task - no such task definition");
 		}
+		refreshTaskDefs();
 	}
 
 	@Override

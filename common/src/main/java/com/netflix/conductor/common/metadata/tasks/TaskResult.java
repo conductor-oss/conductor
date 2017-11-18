@@ -19,7 +19,9 @@
 package com.netflix.conductor.common.metadata.tasks;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * @author Viren
@@ -47,7 +49,7 @@ public class TaskResult {
 
 	private Map<String, Object> outputData = new HashMap<>();
 	
-	private TaskExecLog log = new TaskExecLog();
+	private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
 
 	public TaskResult(Task task) {
 		this.workflowInstanceId = task.getWorkflowInstanceId();
@@ -57,11 +59,6 @@ public class TaskResult {
 		this.status = Status.valueOf(task.getStatus().name());
 		this.workerId = task.getWorkerId();
 		this.outputData = task.getOutputData();
-	}
-
-	public TaskResult(String workflowInstanceId, String taskId) {
-		this.workflowInstanceId = workflowInstanceId;
-		this.taskId = taskId;
 	}
 
 	public TaskResult() {
@@ -157,23 +154,72 @@ public class TaskResult {
 	}
 
 	/**
-	 * @return the task execution log
+	 * Adds output
+	 * @param key output field
+	 * @param value value
+	 * @return current instance
 	 */
-	public TaskExecLog getLog() {
-		return log;
+	public TaskResult addOutputData(String key, Object value) {
+		this.outputData.put(key, value);
+		return this;
 	}
 
 	/**
-	 * @param log task execution log
 	 * 
+	 * @return Task execution logs
 	 */
-	public void setLog(TaskExecLog log) {
-		this.log = log;
+	public List<TaskExecLog> getLogs() {
+		return logs;
 	}
+	
+	/**
+	 * 
+	 * @param logs Task execution logs
+	 */
+	public void setLogs(List<TaskExecLog> logs) {
+		this.logs = logs;
+	}
+	
 
+	/**
+	 * 
+	 * @param log Log line to be added
+	 * @return Instance of TaskResult
+	 */
+	public TaskResult log(String log) {
+		this.logs.add(new TaskExecLog(log));
+		return this;
+	}
+	
 	@Override
 	public String toString() {
 		return "TaskResult [workflowInstanceId=" + workflowInstanceId + ", taskId=" + taskId + ", status=" + status + "]";
 	}
+	
+	public static TaskResult complete() {
+		return newTaskResult(Status.COMPLETED);
+	}
+	
+	public static TaskResult failed() {
+		return newTaskResult(Status.FAILED);
+	}
+	
+	public static TaskResult failed(String failureReason) {
+		TaskResult result = newTaskResult(Status.FAILED);
+		result.setReasonForIncompletion(failureReason);
+		return result;
+	}
+	
+	public static TaskResult inProgress() {
+		return newTaskResult(Status.IN_PROGRESS);
+	}
+	
+	public static TaskResult newTaskResult(Status status) {
+		TaskResult result = new TaskResult();
+		result.setStatus(status);
+		return result;
+	} 
+	
+	
 	
 }

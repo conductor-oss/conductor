@@ -15,6 +15,8 @@
  */
 package com.netflix.conductor.server.resources;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -36,8 +38,15 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 
@@ -59,19 +68,22 @@ public class TaskResource {
 	private ExecutionService taskService;
 
 	private QueueDAO queues;
+	
+	private int maxSearchSize;
 
 	@Inject
-	public TaskResource(ExecutionService taskService, QueueDAO queues) {
+	public TaskResource(ExecutionService taskService, QueueDAO queues, Configuration config) {
 		this.taskService = taskService;
 		this.queues = queues;
+		this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
 	}
 
 	@GET
 	@Path("/poll/{tasktype}")
 	@ApiOperation("Poll for a task of a certain type")
 	@Consumes({ MediaType.WILDCARD })
-	public Task poll(@PathParam("tasktype") String taskType, @QueryParam("workerid") String workerId) throws Exception {
-		List<Task> tasks = taskService.poll(taskType, workerId, 1, 100);
+	public Task poll(@PathParam("tasktype") String taskType, @QueryParam("workerid") String workerId, @QueryParam("domain") String domain) throws Exception {
+		List<Task> tasks = taskService.poll(taskType, workerId, domain, 1, 100);
 		if(tasks.isEmpty()) {
 			return null;
 		}
@@ -85,11 +97,12 @@ public class TaskResource {
 	public List<Task> batchPoll(
 			@PathParam("tasktype") String taskType, 
 			@QueryParam("workerid") String workerId,
+			@QueryParam("domain") String domain,
 			@DefaultValue("1") @QueryParam("count") Integer count,
 			@DefaultValue("100") @QueryParam("timeout") Integer timeout
 			
 			) throws Exception {
-		return taskService.poll(taskType, workerId, count, timeout);
+		return taskService.poll(taskType, workerId, domain, count, timeout);
 	}
 
 	@GET
@@ -123,6 +136,20 @@ public class TaskResource {
 	@Consumes({ MediaType.WILDCARD })
 	public String ack(@PathParam("taskId") String taskId, @QueryParam("workerid") String workerId) throws Exception {
 		return "" + taskService.ackTaskRecieved(taskId, workerId);
+	}
+	
+	@POST
+	@Path("/{taskId}/log")
+	@ApiOperation("Log Task Execution Details")
+	public void log(@PathParam("taskId") String taskId, String log) throws Exception {
+		taskService.log(taskId, log);		
+	}
+	
+	@GET
+	@Path("/{taskId}/log")
+	@ApiOperation("Get Task Execution Logs")
+	public List<TaskExecLog> getTaskLogs(@PathParam("taskId") String taskId) throws Exception {
+		return taskService.getTaskLogs(taskId);		
 	}
 
 	@GET
@@ -177,6 +204,23 @@ public class TaskResource {
 		return sortedMap;
 	}
 
+	@GET
+	@Path("/queue/polldata")
+	@ApiOperation("Get the last poll data for a given task type")
+	@Consumes({ MediaType.WILDCARD })
+	public List<PollData> getPollData(@QueryParam("taskType") String taskType) throws Exception {
+		return taskService.getPollData(taskType);
+	}
+	
+
+	@GET
+	@Path("/queue/polldata/all")
+	@ApiOperation("Get the last poll data for a given task type")
+	@Consumes({ MediaType.WILDCARD })
+	public List<PollData> getAllPollData() throws Exception {
+		return taskService.getAllPollData();
+	}
+
 	@POST
 	@Path("/queue/requeue")
 	@ApiOperation("Requeue pending tasks for all the running workflows")
@@ -195,4 +239,30 @@ public class TaskResource {
 		return "" + taskService.requeuePendingTasks(taskType);
 	}
 	
+	@ApiOperation(value="Search for tasks based in payload and other parameters", notes="use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC.  If order is not specified, defaults to ASC")
+	@GET
+	@Consumes(MediaType.WILDCARD)
+	@Produces(MediaType.APPLICATION_JSON)
+	@Path("/search")
+    public SearchResult<TaskSummary> search(
+    		@QueryParam("start") @DefaultValue("0") int start,
+    		@QueryParam("size") @DefaultValue("100") int size,
+    		@QueryParam("sort") String sort,
+    		@QueryParam("freeText") @DefaultValue("*") String freeText,
+    		@QueryParam("query") String query
+    		){
+
+		if(size > maxSearchSize) {
+			throw new ApplicationException(Code.INVALID_INPUT, "Cannot return more than " + maxSearchSize + " workflows.  Please use pagination");
+		}
+		return taskService.searchTasks(query , freeText, start, size, convert(sort));
+	}
+
+	private List<String> convert(String sortStr) {
+		List<String> list = new ArrayList<String>();
+		if(sortStr != null && sortStr.length() != 0){
+			list = Arrays.asList(sortStr.split("\\|"));
+		}
+		return list;
+	}
 }

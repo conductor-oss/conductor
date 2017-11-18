@@ -7,4 +7,6 @@ dependencies {
 	compile 'com.netflix.eureka:eureka-client:latest.release'
 	compile 'com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:2.7.5'
 	compile 'com.netflix.archaius:archaius-core:0.7.5' 
+	
+	testCompile 'org.slf4j:slf4j-log4j12:1.8.0-alpha1'
 }

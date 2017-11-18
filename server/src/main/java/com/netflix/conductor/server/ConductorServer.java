@@ -29,6 +29,7 @@ import java.util.Set;
 import javax.servlet.DispatcherType;
 import javax.ws.rs.core.MediaType;
 
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -40,8 +41,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Guice;
 import com.google.inject.servlet.GuiceFilter;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.dao.es.EmbeddedElasticSearch;
 import com.netflix.conductor.redis.utils.JedisMock;
-import com.netflix.conductor.server.es.EmbeddedElasticSearch;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.Host.Status;
 import com.netflix.dyno.connectionpool.HostSupplier;
@@ -51,6 +52,8 @@ import com.netflix.dyno.connectionpool.impl.lb.HostToken;
 import com.netflix.dyno.jedis.DynoJedisClient;
 import com.sun.jersey.api.client.Client;
 
+import redis.clients.jedis.HostAndPort;
+import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.JedisCommands;
 
 /**
@@ -61,8 +64,8 @@ public class ConductorServer {
 
 	private static Logger logger = LoggerFactory.getLogger(ConductorServer.class);
 	
-	private enum DB {
-		redis, dynomite, memory
+	enum DB {
+		redis, dynomite, memory, redis_cluster, mysql
 	}
 	
 	private ServerModule sm;
@@ -82,11 +85,11 @@ public class ConductorServer {
 		try {
 			db = DB.valueOf(dbstring);
 		}catch(IllegalArgumentException ie) {
-			logger.error("Invalid db name: " + dbstring + ", supported values are: redis, dynomite, memory");
+			logger.error("Invalid db name: " + dbstring + ", supported values are: " + Arrays.toString(DB.values()));
 			System.exit(1);
 		}
 		
-		if(!db.equals(DB.memory)) {
+		if(!(db.equals(DB.memory) || db.equals(DB.mysql))) {
 			String hosts = cc.getProperty("workflow.dynomite.cluster.hosts", null);
 			if(hosts == null) {
 				System.err.println("Missing dynomite/redis hosts.  Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied configuration.");
@@ -122,10 +125,10 @@ public class ConductorServer {
 		};
 		
 		JedisCommands jedis = null;
+
 		switch(db) {
-		case redis:	
+		case redis:		
 		case dynomite:
-			
 			ConnectionPoolConfigurationImpl cp = new ConnectionPoolConfigurationImpl(dynoClusterName).withTokenSupplier(new TokenMapSupplier() {
 				
 				HostToken token = new HostToken(1L, dynoHosts.get(0));
@@ -139,7 +142,12 @@ public class ConductorServer {
 				public HostToken getTokenForHost(Host host, Set<Host> activeHosts) {
 					return token;
 				}
+				
+				
 			}).setLocalRack(cc.getAvailabilityZone()).setLocalDataCenter(cc.getRegion());
+			cp.setSocketTimeout(0);
+			cp.setConnectTimeout(0);
+			cp.setMaxConnsPerHost(cc.getIntProperty("workflow.dynomite.connection.maxConnsPerHost", 10));
 			
 			jedis = new DynoJedisClient.Builder()
 				.withHostSupplier(hs)
@@ -148,10 +156,13 @@ public class ConductorServer {
 				.withCPConfig(cp)
 				.build();
 			
-			logger.info("Starting conductor server using dynomite cluster " + dynoClusterName);
+			logger.info("Starting conductor server using dynomite/redis cluster " + dynoClusterName);
 			
 			break;
 			
+		case mysql:
+			logger.info("Starting conductor server using MySQL data store", db);
+			break;
 		case memory:
 			jedis = new JedisMock();
 			try {
@@ -167,9 +178,18 @@ public class ConductorServer {
 			}
 			logger.info("Starting conductor server using in memory data store");
 			break;
+
+		case redis_cluster:
+			Host host = dynoHosts.get(0);
+			GenericObjectPoolConfig poolConfig = new GenericObjectPoolConfig();
+			poolConfig.setMinIdle(5);
+			poolConfig.setMaxTotal(1000);
+			jedis = new JedisCluster(new HostAndPort(host.getHostName(), host.getPort()), poolConfig);
+			logger.info("Starting conductor server using redis_cluster " + dynoClusterName);
+			break;
 		}
 		
-		this.sm = new ServerModule(jedis, hs, cc);
+		this.sm = new ServerModule(jedis, hs, cc, db);
 	}
 	
 	public ServerModule getGuiceModule() {

@@ -20,11 +20,6 @@ package com.netflix.conductor.dao.index.query.parser;
 
 import org.junit.Test;
 
-import com.netflix.conductor.dao.index.query.parser.ConstValue;
-import com.netflix.conductor.dao.index.query.parser.ListConst;
-import com.netflix.conductor.dao.index.query.parser.ParserException;
-import com.netflix.conductor.dao.index.query.parser.Range;
-
 import java.util.List;
 
 import static org.junit.Assert.*;

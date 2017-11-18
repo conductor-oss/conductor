@@ -17,6 +17,7 @@ class Grapher extends Component {
     super(props);
     this.state = {}
     this.state.selectedTask = {};
+    this.state.logs = {};
     this.state.edges = props.edges || [];
     this.state.vertices = props.vertices || {};
     this.state.layout = 'TD';
@@ -170,8 +171,8 @@ class Grapher extends Component {
           let subg = {n : n, vx: vx, layout: layout};
 
           d3.select("#propsdiv").style("left", (window.outerWidth-600) + 'px');
-          div.style.left = (window.outerWidth-600) + "px";
-          p.setState({selectedTask: data.task, showSubGraph:true, showSideBar: false, subGraph: subg, subGraphId: innerGraph[v].id});
+          div.style.left = (window.outerWidth-1200) + "px";
+          p.setState({selectedTask: data.task, showSubGraph:true, showSideBar: true, subGraph: subg, subGraphId: innerGraph[v].id});
           p.setState({showSubGraph: true});
 
         } else if(vertices[v].tooltip != null){
@@ -203,6 +204,10 @@ class Grapher extends Component {
               <Tab eventKey={2} title="JSON"><br/>
                 <i title="copy to clipboard" className="btn fa fa-clipboard" data-clipboard-target="#t_json"></i>
                 <pre id="t_json">{JSON.stringify(this.state.selectedTask, null, 3)}</pre>
+              </Tab>
+              <Tab eventKey={3} title="Logs"><br/>
+                <i title="copy to clipboard" className="btn fa fa-clipboard" data-clipboard-target="#t_logs"></i>
+                <pre id="t_logs">{JSON.stringify(this.state.selectedTask.logs, null, 3)}</pre>
               </Tab>
             </Tabs>
           </div>

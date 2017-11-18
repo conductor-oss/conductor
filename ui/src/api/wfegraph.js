@@ -71,6 +71,10 @@ class Workflow2Graph {
           style = 'stroke: #48a770; fill: #48a770';
           labelStyle = 'fill:#ffffff; stroke-width: 1px';
           break;
+        case 'COMPLETED_WITH_ERRORS':
+          style = 'stroke: #FF8C00; fill: #FF8C00';
+          labelStyle = 'fill:#ffffff; stroke-width: 1px';
+          break;
         case 'SKIPPED':
           style = 'stroke: #cccccc; fill: #ccc';
           labelStyle = 'fill:#ffffff; stroke-width: 1px';

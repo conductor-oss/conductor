@@ -98,6 +98,8 @@ Below are the mandatory minimum parameters required for each task:
 |name|Name of the task.  MUST be registered as a task type with Conductor before starting workflow||
 |taskReferenceName|Alias used to refer the task within the workflow.  MUST be unique.||
 |type|Type of task. SIMPLE for tasks executed by remote workers, or one of the system task types||
+|description|Description of the task|optional|
+|optional|true  or false.  When set to true - workflow continues even if the task fails.  The status of the task is reflected as `COMPLETED_WITH_ERRORS`|Defaults to `false`|
 |inputParameters|JSON template that defines the input given to the task|See "wiring inputs and outputs" for details|
 
 In addition to these parameters, additional parameters specific to the task type are required as documented [here](/metadata/systask/)
@@ -170,7 +172,7 @@ And the output of the _loc_task_ as the following;
 }
 ```
 
-When scheduling the task, Conductor will merge the values from workflow input and loc_tak's output and create the input to the task as follows:
+When scheduling the task, Conductor will merge the values from workflow input and loc_task's output and create the input to the task as follows:
 
 ```json
 {

@@ -78,10 +78,13 @@ public class EventProcessor {
 		this.om = om;
 		
 		int executorThreadCount = config.getIntProperty("workflow.event.processor.thread.count", 2);
-		this.executors = Executors.newFixedThreadPool(executorThreadCount);
-		
-		refresh();
-		Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> refresh(), 60, 60, TimeUnit.SECONDS);
+		if(executorThreadCount > 0) {
+			this.executors = Executors.newFixedThreadPool(executorThreadCount);
+			refresh();
+			Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> refresh(), 60, 60, TimeUnit.SECONDS);
+		} else {
+			logger.warn("Event processing is DISABLED.  executorThreadCount set to {}", executorThreadCount);
+		}
 	}
 	
 	/**
@@ -145,7 +148,7 @@ public class EventProcessor {
 			for(EventHandler handler : handlers) {
 				
 				String condition = handler.getCondition();
-				logger.info("condition: {}", condition);
+				logger.debug("condition: {}", condition);
 				if(!StringUtils.isEmpty(condition)) {
 					Boolean success = ScriptEvaluator.evalBool(condition, payloadObj);
 					if(!success) {

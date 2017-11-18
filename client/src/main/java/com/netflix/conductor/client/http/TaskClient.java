@@ -89,6 +89,21 @@ public class TaskClient extends ClientBase {
 	}
 
 	/**
+	 * Poll for tasks
+	 * @param taskType Type of task to poll for
+	 * @param domain The domain of the task type
+	 * @param workerId Name of the client worker.  Used for logging.
+	 * @param count maximum number of tasks to be returned.  Can be less.
+	 * @param timeoutInMillisecond  Long poll wait timeout.
+	 * @return List of tasks awaiting to be executed.
+	 * 
+	 */
+	public List<Task> poll(String taskType, String domain, String workerId, int count, int timeoutInMillisecond) {
+		Object[] params = new Object[]{"workerid", workerId, "count", count, "timeout", timeoutInMillisecond, "domain", domain};
+		return getForEntity("tasks/poll/batch/{taskType}", params, tasks, taskType);
+	}
+
+	/**
 	 * 
 	 * @param taskId ID of the task
 	 * @return Task details
@@ -127,6 +142,10 @@ public class TaskClient extends ClientBase {
 	 */
 	public void updateTask(TaskResult task)  {
 		postForEntity("tasks", task);
+	}
+	
+	public void log(String taskId, String logMessage) {
+		postForEntity("tasks/"  + taskId + "/log", logMessage);		
 	}
 	
 	/**

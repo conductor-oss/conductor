@@ -48,12 +48,10 @@ public class Event extends WorkflowSystemTask {
 	
 	private ParametersUtils pu = new ParametersUtils();
 	
-	private enum Sink {
-		conductor, sqs
-	}
+	public static final String NAME = "EVENT";
 	
 	public Event() {
-		super("EVENT");
+		super(NAME);
 	}
 	
 	@Override
@@ -71,23 +69,16 @@ public class Event extends WorkflowSystemTask {
 		ObservableQueue queue = getQueue(workflow, task);
 		if(queue != null) {
 			queue.publish(Arrays.asList(message));
+			task.getOutputData().putAll(payload);
 			task.setStatus(Status.COMPLETED);
+		} else {
+			task.setReasonForIncompletion("No queue found to publish.");
+			task.setStatus(Status.FAILED);
 		}
 	}
 
 	@Override
 	public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
-		
-		if (task.getStatus().equals(Status.SCHEDULED)) {
-			long timeSince = System.currentTimeMillis() - task.getScheduledTime();
-			if(timeSince > 600_000) {
-				start(workflow, task, provider);
-				return true;
-			}else {
-				return false;
-			}				
-		}
-
 		return false;
 	}
 	
@@ -106,28 +97,31 @@ public class Event extends WorkflowSystemTask {
 		Map<String, Object> replaced = pu.getTaskInputV2(input, workflow, task.getTaskId(), null);
 		String sinkValue = (String)replaced.get("sink");
 		
-		String queueName = null;
-		Sink sink = null;
-		
-		if("conductor".equals(sinkValue)) {
-			sink = Sink.conductor;
-			queueName = workflow.getWorkflowType() + ":" + task.getReferenceTaskName();
+		String queueName = sinkValue;
+
+		if(sinkValue.startsWith("conductor")) {
 			
-		} else if(sinkValue.startsWith("sqs:")) {
-			sink = Sink.sqs;
-			queueName = sinkValue.substring(4);
+			if("conductor".equals(sinkValue)) {
+				
+				queueName = sinkValue + ":" + workflow.getWorkflowType() + ":" + task.getReferenceTaskName();
+				
+			} else if(sinkValue.startsWith("conductor:")) {
+				
+				queueName = sinkValue.replaceAll("conductor:", "");
+				queueName = "conductor:" + workflow.getWorkflowType() + ":" + queueName;
+				
+			} else {
+				task.setStatus(Status.FAILED);
+				task.setReasonForIncompletion("Invalid / Unsupported sink specified: " + sinkValue);
+				return null;
+			}
 			
-		} else {
-			task.setStatus(Status.FAILED);
-			task.setReasonForIncompletion("Invalid / Unsupported sink specified: " + sinkValue);
-			return null;
 		}
-		
-		String eventProduced = sink.name() + ":" + queueName;
-		task.getOutputData().put("event_produced", eventProduced);
+
+		task.getOutputData().put("event_produced", queueName);
 		
 		try {
-			return EventQueues.getQueue(eventProduced, true);
+			return EventQueues.getQueue(queueName, true);
 		}catch(Exception e) {
 			logger.error(e.getMessage(), e);
 			task.setStatus(Status.FAILED);
@@ -135,5 +129,10 @@ public class Event extends WorkflowSystemTask {
 			return null;			
 		}
 		
+	}
+	
+	@Override
+	public boolean isAsync() {
+		return false;
 	}
 }

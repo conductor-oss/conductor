@@ -41,6 +41,14 @@ public interface Configuration {
 	 */
 	public boolean disableSweep();
 	
+	
+	/**
+	 * 
+	 * @return when set to true, the background task workers executing async system tasks (eg HTTP) are disabled
+	 * 
+	 */
+	public boolean disableAsyncWorkers();
+	
 	/**
 	 * 
 	 * @return ID of the server.  Can be host name, IP address or any other meaningful identifier.  Used for logging

@@ -27,6 +27,7 @@ import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.netflix.conductor.contribs.http.HttpTask;
 import com.netflix.conductor.contribs.http.RestClientManager;
+import com.netflix.conductor.contribs.json.JsonJqTransform;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -39,6 +40,7 @@ import com.netflix.conductor.dao.dynomite.RedisMetadataDAO;
 import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
 import com.netflix.conductor.dao.index.ElasticSearchDAO;
 import com.netflix.conductor.dao.index.ElasticsearchModule;
+import com.netflix.conductor.dao.mysql.MySQLWorkflowModule;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.queues.redis.DynoShardSupplier;
 
@@ -64,12 +66,15 @@ public class ServerModule extends AbstractModule {
 	
 	private ConductorConfig config;
 	
-	public ServerModule(JedisCommands jedis, HostSupplier hs, ConductorConfig config) {
+	private ConductorServer.DB db;
+
+	public ServerModule(JedisCommands jedis, HostSupplier hs, ConductorConfig config, ConductorServer.DB db) {
 		this.dynoConn = jedis;
 		this.hs = hs;
 		this.config = config;
 		this.region = config.getRegion();
 		this.localRack = config.getAvailabilityZone();
+		this.db = db;
 		
 	}
 	
@@ -79,24 +84,33 @@ public class ServerModule extends AbstractModule {
 		configureExecutorService();
 		
 		bind(Configuration.class).toInstance(config);
-		String localDC = localRack;
-		localDC = localDC.replaceAll(region, "");
-		DynoShardSupplier ss = new DynoShardSupplier(hs, region, localDC);
-		DynoQueueDAO queueDao = new DynoQueueDAO(dynoConn, dynoConn, ss, config);
-		
+
+		if (db == ConductorServer.DB.mysql) {
+			install(new MySQLWorkflowModule());
+		} else {
+			String localDC = localRack;
+			localDC = localDC.replaceAll(region, "");
+			DynoShardSupplier ss = new DynoShardSupplier(hs, region, localDC);
+			DynoQueueDAO queueDao = new DynoQueueDAO(dynoConn, dynoConn, ss, config);
+
+			bind(MetadataDAO.class).to(RedisMetadataDAO.class);
+			bind(ExecutionDAO.class).to(RedisExecutionDAO.class);
+			bind(DynoQueueDAO.class).toInstance(queueDao);
+			bind(QueueDAO.class).to(DynoQueueDAO.class);
+
+			DynoProxy proxy = new DynoProxy(dynoConn);
+			bind(DynoProxy.class).toInstance(proxy);
+		}
+
 		install(new ElasticsearchModule());
-		bind(MetadataDAO.class).to(RedisMetadataDAO.class);
-		bind(ExecutionDAO.class).to(RedisExecutionDAO.class);
-		bind(DynoQueueDAO.class).toInstance(queueDao);
-		bind(QueueDAO.class).to(DynoQueueDAO.class);
 		bind(IndexDAO.class).to(ElasticSearchDAO.class);
-		
-		DynoProxy proxy = new DynoProxy(dynoConn);
-		bind(DynoProxy.class).toInstance(proxy);
 		
 		install(new CoreModule());
 		install(new JerseyModule());
+		
 		new HttpTask(new RestClientManager(), config);
+		new JsonJqTransform();
+		
 		List<AbstractModule> additionalModules = config.getAdditionalModules();
 		if(additionalModules != null) {
 			for(AbstractModule additionalModule : additionalModules) {

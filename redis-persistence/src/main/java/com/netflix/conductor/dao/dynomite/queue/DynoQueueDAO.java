@@ -39,6 +39,7 @@ import com.netflix.dyno.queues.DynoQueue;
 import com.netflix.dyno.queues.Message;
 import com.netflix.dyno.queues.ShardSupplier;
 import com.netflix.dyno.queues.redis.DynoShardSupplier;
+import com.netflix.dyno.queues.redis.RedisDynoQueue;
 import com.netflix.dyno.queues.redis.RedisQueues;
 
 import redis.clients.jedis.JedisCommands;
@@ -60,8 +61,6 @@ public class DynoQueueDAO implements QueueDAO {
 
 	private Configuration config;
 
-	private int dynoThreadCount;
-
 	@Inject
 	public DynoQueueDAO(DiscoveryClient dc, Configuration config) {
 		
@@ -70,7 +69,6 @@ public class DynoQueueDAO implements QueueDAO {
 		this.config = config;
 		this.domain = config.getProperty("workflow.dyno.keyspace.domain", null);
 		String cluster = config.getProperty("workflow.dynomite.cluster", null);
-		this.dynoThreadCount = config.getIntProperty("queues.dynomite.threads", 100);
 		final int readConnPort = config.getIntProperty("queues.dynomite.nonQuorum.port", 22122);
 		
 		EurekaHostsSupplier hostSupplier = new EurekaHostsSupplier(cluster, dc) {
@@ -107,7 +105,6 @@ public class DynoQueueDAO implements QueueDAO {
 		this.dynoClientRead = dynoClient;
 		this.ss = ss;
 		this.config = config;
-		this.dynoThreadCount = config.getIntProperty("queues.dynomite.threads", 100);
 		init();
 	}
 
@@ -119,7 +116,7 @@ public class DynoQueueDAO implements QueueDAO {
 		if (domain != null) {
 			prefix = prefix + "." + domain;
 		}
-		queues = new RedisQueues(dynoClient, dynoClientRead, prefix, ss, 60_000, 60_000, dynoThreadCount);
+		queues = new RedisQueues(dynoClient, dynoClientRead, prefix, ss, 60_000, 60_000);
 		logger.info("DynoQueueDAO initialized with prefix " + prefix + "!");
 	}
 
@@ -200,6 +197,17 @@ public class DynoQueueDAO implements QueueDAO {
 		Map<String, Map<String, Map<String, Long>>> map = queues.queues().stream()
 				.collect(Collectors.toMap(queue -> queue.getName(), q -> q.shardSizes()));
 		return map;
+	}
+	
+	public void processUnacks(String queueName) {
+		((RedisDynoQueue)queues.get(queueName)).processUnacks();;
+	}
+
+	@Override
+	public boolean setOffsetTime(String queueName, String id, long offsetTimeInSecond) {
+		DynoQueue queue = queues.get(queueName);
+		return queue.setTimeout(id, offsetTimeInSecond);
+		
 	}
 
 }

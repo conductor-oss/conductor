@@ -40,6 +40,11 @@ public class TestConfiguration implements Configuration {
 	}
 
 	@Override
+	public boolean disableAsyncWorkers() {
+		return false;
+	}
+	
+	@Override
 	public String getServerId() {
 		return "server_id";
 	}

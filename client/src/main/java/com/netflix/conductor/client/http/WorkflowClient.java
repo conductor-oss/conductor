@@ -26,6 +26,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
@@ -101,7 +102,11 @@ public class WorkflowClient extends ClientBase {
 		Object[] params = new Object[]{"version", version, "correlationId", correlationId};
 		return postForEntity("workflow/{name}", input, params, String.class, name);
 	}
-	
+
+	public String startWorkflow (StartWorkflowRequest startWorkflowRequest) {
+		return postForEntity("workflow", startWorkflowRequest, null, String.class, startWorkflowRequest.getName());
+	}
+
 	public Workflow getExecutionStatus(String workflowId, boolean includeTasks) {
 		return getWorkflow(workflowId, includeTasks);
 	}
@@ -135,6 +140,10 @@ public class WorkflowClient extends ClientBase {
 		postForEntity1("workflow/{workflowId}/retry", workflowId);		
 	}
 
+	public void resetCallbacksForInProgressTasks(String workflowId) {
+		postForEntity1("workflow/{workflowId}//{workflowId}/resetcallbacks", workflowId);		
+	}	
+	
 	public void terminateWorkflow(String workflowId, String reason) {
 		delete(new Object[]{"reason", reason}, "workflow/{workflowId}", workflowId);		
 	}
@@ -156,5 +165,9 @@ public class WorkflowClient extends ClientBase {
 		return result;
 	}
 
+	public SearchResult<WorkflowSummary> search(Integer start, Integer size, String sort, String freeText, String query) {
+		Object[] params = new Object[]{"start", start, "size", size, "sort", sort, "freeText", freeText, "query", query};
+		return getForEntity("workflow/search", params, new GenericType<SearchResult<WorkflowSummary>>() {});
+	}
 	
 }

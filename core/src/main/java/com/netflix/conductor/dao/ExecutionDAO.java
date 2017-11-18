@@ -21,7 +21,9 @@ package com.netflix.conductor.dao;
 import java.util.List;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.queue.Message;
@@ -72,6 +74,14 @@ public interface ExecutionDAO {
 	public abstract void updateTask(Task task);
 	
 	/**
+	 * Checks if the number of tasks in progress for the given taskDef will exceed the limit if the task is scheduled to be in progress (given to the worker or for system tasks start() method called)
+	 * @param task The task to be executed.  Limit is set in the Task's definition 
+	 * @return true if by executing this task, the limit is breached.  false otherwise.
+	 * @see TaskDef#concurrencyLimit()
+	 */
+	public abstract boolean exceedsInProgressLimit(Task task);
+	
+	/**
 	 * 
 	 * @param tasks Multiple tasks to be updated
 	 *  
@@ -83,7 +93,7 @@ public interface ExecutionDAO {
 	 * @param log Task Execution Log to be added
 	 *  
 	 */
-	public abstract void addTaskExecLog(TaskExecLog log);
+	public abstract void addTaskExecLog(List<TaskExecLog> log);
 	
 	/**
 	 * 
@@ -193,7 +203,12 @@ public interface ExecutionDAO {
 	 */
 	public abstract long getPendingWorkflowCount(String workflowName);
 
-	
+	/**
+	 * 
+	 * @param taskDefName Name of the task
+	 * @return Number of task currently in IN_PROGRESS status
+	 */
+	public abstract long getInProgressTaskCount(String taskDefName);
 
 	/**
 	 * 
@@ -244,5 +259,11 @@ public interface ExecutionDAO {
 	 * @param msg Message
 	 */
 	public abstract void addMessage(String queue, Message msg);
+	
+	public abstract void updateLastPoll(String taskDefName, String domain, String workerId);
+	
+	public abstract PollData getPollData(String taskDefName, String domain);
+
+	public abstract List<PollData> getPollData(String taskDefName);
 
 }

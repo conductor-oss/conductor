@@ -45,11 +45,16 @@ public class MockIndexDAO implements IndexDAO {
 	}
 	
 	@Override
+	public SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort) {
+		return new SearchResult<>(0, new ArrayList<>());
+	}
+	
+	@Override
 	public void remove(String workflowId) {
 	}
 	
 	@Override
-	public void update(String workflowInstanceId, String key, Object value) {
+	public void update(String workflowInstanceId, String[] key, Object[] value) {
 		
 	}
 	@Override
@@ -58,7 +63,8 @@ public class MockIndexDAO implements IndexDAO {
 	}
 	
 	@Override
-	public void add(TaskExecLog log) {
+	public void add(List<TaskExecLog> logs) {
+		
 	}
 	
 	@Override
@@ -70,5 +76,15 @@ public class MockIndexDAO implements IndexDAO {
 	public void addMessage(String queue, Message msg) {
 		
 	}
+  
+	@Override
+	public String get(String workflowInstanceId, String key) {
+		return null;
+	}
 	
+	
+	@Override
+	public List<TaskExecLog> getTaskLogs(String taskId) {
+		return null;
+	}
 }

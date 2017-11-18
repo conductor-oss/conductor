@@ -19,6 +19,7 @@
 package com.netflix.conductor.contribs.http;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -27,9 +28,11 @@ import static org.mockito.Mockito.when;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -48,10 +51,15 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.contribs.http.HttpTask.Input;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.dao.MetadataDAO;
 
 /**
  * @author Viren
@@ -80,6 +88,7 @@ public class TestHttpTask {
 	
 	@BeforeClass
 	public static void init() throws Exception {
+		
 		Map<String, Object> map = new HashMap<>();
 		map.put("key", "value1");
 		map.put("num", 42);
@@ -239,21 +248,72 @@ public class TestHttpTask {
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		task.setStatus(Status.SCHEDULED);
 		task.setScheduledTime(0);
-		httpTask.execute(workflow, task, executor);
+		boolean executed = httpTask.execute(workflow, task, executor);
+		assertFalse(executed);
 
-		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
-		Object response = hr.get("body");
-		assertEquals(Task.Status.COMPLETED, task.getStatus());
-		assertTrue(response instanceof Map);
-		Map<String, Object> map = (Map<String, Object>) response;
-		assertEquals(JSON_RESPONSE, om.writeValueAsString(map));
+	}
+	
+	@Test
+	public void testOptional() throws Exception {
+ 		Task task = new Task();
+ 		Input input = new Input();
+ 		input.setUri("http://localhost:7009/failure");
+ 		input.setMethod("GET");
+ 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+ 		
+ 		httpTask.start(workflow, task, executor);
+ 		assertEquals("Task output: " + task.getOutputData(), Task.Status.FAILED, task.getStatus());
+ 		assertEquals(ERROR_RESPONSE, task.getReasonForIncompletion());
+ 		assertTrue(!task.getStatus().isSuccessful());
+ 		
+ 		task.setStatus(Status.SCHEDULED);
+ 		task.getInputData().remove(HttpTask.REQUEST_PARAMETER_NAME);
+ 		task.setReferenceTaskName("t1");
+ 		httpTask.start(workflow, task, executor);
+ 		assertEquals(Task.Status.FAILED, task.getStatus());
+ 		assertEquals(HttpTask.MISSING_REQUEST, task.getReasonForIncompletion());
+ 		assertTrue(!task.getStatus().isSuccessful());
+ 		
+ 		Workflow workflow = new Workflow();
+ 		workflow.getTasks().add(task);
+ 		
+ 		WorkflowDef def = new WorkflowDef();
+ 		WorkflowTask wft = new WorkflowTask();
+ 		wft.setOptional(true);
+ 		wft.setName("HTTP");
+ 		wft.setWorkflowTaskType(Type.USER_DEFINED);
+ 		wft.setTaskReferenceName("t1");
+		def.getTasks().add(wft);
+ 		MetadataDAO metadata = mock(MetadataDAO.class);
+ 		new DeciderService(metadata, null).decide(workflow, def);
+ 		
+ 		System.out.println(workflow.getTasks());
+ 		System.out.println(workflow.getStatus());
+ 	}
+
+ 	@Test
+	public void testOAuth() throws Exception {
+		Task task = new Task();
+		Input input = new Input();
+		input.setUri("http://localhost:7009/oauth");
+		input.setMethod("POST");
+		input.setOauthConsumerKey("someKey");
+		input.setOauthConsumerSecret("someSecret");
+		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+
+		httpTask.start(workflow, task, executor);
+
+		Map<String, Object> response = (Map<String, Object>) task.getOutputData().get("response");
+		Map<String, String> body = (Map<String, String>) response.get("body");
+
+		assertEquals("someKey", body.get("oauth_consumer_key"));
+		assertTrue("Should have OAuth nonce", body.containsKey("oauth_nonce"));
+		assertTrue("Should have OAuth signature", body.containsKey("oauth_signature"));
+		assertTrue("Should have OAuth signature method", body.containsKey("oauth_signature_method"));
+		assertTrue("Should have OAuth oauth_timestamp", body.containsKey("oauth_timestamp"));
+		assertTrue("Should have OAuth oauth_version", body.containsKey("oauth_version"));
 		
-		task.setStatus(Status.SCHEDULED);
-		task.setScheduledTime(System.currentTimeMillis()-100);
-		//For a recently scheduled task, execute does NOP
-		httpTask.execute(workflow, task, executor);
-		assertEquals(Task.Status.SCHEDULED, task.getStatus());
-
+		assertEquals("Task output: " + task.getOutputData(), Status.COMPLETED, task.getStatus());
 	}
 	
 	private static class EchoHandler extends AbstractHandler {
@@ -283,7 +343,6 @@ public class TestHttpTask {
 				writer.close();
 			} else if(request.getMethod().equals("POST") && request.getRequestURI().equals("/post")) {
 				response.addHeader("Content-Type", "application/json");
-				
 				BufferedReader reader = request.getReader();
 				Map<String, Object> input = om.readValue(reader, mapOfObj);
 				Set<String> keys = input.keySet();
@@ -308,8 +367,22 @@ public class TestHttpTask {
 				writer.print(NUM_RESPONSE);
 				writer.flush();
 				writer.close();
-			} 
+			} else if(request.getMethod().equals("POST") && request.getRequestURI().equals("/oauth")) {
+				//echo back oauth parameters generated in the Authorization header in the response
+				Map<String, String> params = parseOauthParameters(request);
+				response.addHeader("Content-Type", "application/json");
+				PrintWriter writer = response.getWriter();
+				writer.print(om.writeValueAsString(params));
+				writer.flush();
+				writer.close();
+			}
 		}
-		
+
+		private Map<String, String> parseOauthParameters(HttpServletRequest request) {
+			String paramString = request.getHeader("Authorization").replaceAll("^OAuth (.*)", "$1");
+			return Arrays.stream(paramString.split("\\s*,\\s*"))
+				.map(pair -> pair.split("="))
+				.collect(Collectors.toMap(o -> o[0], o -> o[1].replaceAll("\"","")));
+		}
 	}
 }

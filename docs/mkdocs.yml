@@ -13,6 +13,7 @@ pages:
 - 'Kitchensink Example': metadata/kitchensink.md
 - 'Conductor Server': server/index.md
 - 'Conductor Task Workers': worker/index.md
+- 'Task Domains': domains/index.md
 - 'Extending Conductor': extend/index.md
 - 'APIs': runtime/index.md
 - 'Workflow Metrics':

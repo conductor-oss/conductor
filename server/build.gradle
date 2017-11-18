@@ -23,6 +23,7 @@ dependencies {
 	compile project(':conductor-core')
 	compile project(':conductor-jersey')
 	compile project(':conductor-redis-persistence')
+	compile project(':conductor-mysql-persistence')
 	compile project(':conductor-contribs')
 	
 	//Jetty
@@ -76,6 +77,7 @@ build.dependsOn('shadowJar')
 task server(type: JavaExec) {
   systemProperty 'workflow.elasticsearch.url', 'localhost:9300'
   systemProperty 'loadSample', 'true'
+  systemProperties System.properties
   main = 'com.netflix.conductor.server.Main'
   classpath = sourceSets.test.runtimeClasspath  
 }

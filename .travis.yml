@@ -3,6 +3,8 @@ jdk:
 - oraclejdk8
 install: true
 script: "./buildViaTravis.sh"
+git:
+  depth: 150
 addons:
   apt:
     packages:

@@ -19,15 +19,21 @@
 package com.netflix.conductor.client.task;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.when;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -38,20 +44,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
  *
  */
 public class WorkflowTaskCoordinatorTests {
-
-	@Test
-	public void testLoggingEnvironment() {
-		Worker worker = Worker.create("test", (Task task)-> new TaskResult(task));
-		List<String> keys = worker.getLoggingEnvProps();
-		
-		Map<String, Object> env = WorkflowTaskCoordinator.getEnvData(worker);
-		assertNotNull(env);
-		assertTrue(!env.isEmpty());
-		Set<String> loggedKeys = env.keySet();
-		for(String key : keys) {
-			assertTrue(loggedKeys.contains(key));
-		}
-	}
 	
 	@Test(expected=IllegalArgumentException.class)
 	public void testNoWorkersException() {
@@ -70,7 +62,6 @@ public class WorkflowTaskCoordinatorTests {
 		assertEquals(500, coordinator.getSleepWhenRetry());
 		assertEquals(3, coordinator.getUpdateRetryCount());
 		
-		
 		coordinator = new WorkflowTaskCoordinator.Builder()
 				.withWorkers(worker)
 				.withThreadCount(100)
@@ -78,6 +69,7 @@ public class WorkflowTaskCoordinatorTests {
 				.withSleepWhenRetry(100)
 				.withUpdateRetryCount(10)
 				.withTaskClient(new TaskClient())
+				.withWorkerNamePrefix("test-worker-")
 				.build();
 		assertEquals(100, coordinator.getThreadCount());
 		coordinator.init();
@@ -85,8 +77,43 @@ public class WorkflowTaskCoordinatorTests {
 		assertEquals(400, coordinator.getWorkerQueueSize());
 		assertEquals(100, coordinator.getSleepWhenRetry());
 		assertEquals(10, coordinator.getUpdateRetryCount());
-		
-		
-	
+		assertEquals("test-worker-", coordinator.getWorkerNamePrefix());
+	}
+
+	@Test
+	public void testTaskException() {
+
+		Worker worker = Worker.create("test", task -> {
+            throw new NoSuchMethodError();
+        });
+		TaskClient client = Mockito.mock(TaskClient.class);
+		WorkflowTaskCoordinator coordinator = new WorkflowTaskCoordinator.Builder().withWorkers(worker, worker, worker).withTaskClient(client).build();
+		coordinator = new WorkflowTaskCoordinator.Builder()
+				.withWorkers(worker)
+				.withThreadCount(1)
+				.withWorkerQueueSize(1)
+				.withSleepWhenRetry(100000)
+				.withUpdateRetryCount(1)
+				.withTaskClient(client)
+				.withWorkerNamePrefix("test-worker-")
+				.build();
+		when(client.poll(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(new Task()));
+		when(client.ack(anyString(), anyString())).thenReturn(true);
+		CountDownLatch latch = new CountDownLatch(1);
+		doAnswer(new Answer<Void>() {
+			@Override
+			public Void answer(InvocationOnMock invocation) throws Throwable {
+				assertEquals("test-worker-0", Thread.currentThread().getName());
+				Object[] args = invocation.getArguments();
+				TaskResult result = (TaskResult) args[0];
+				assertEquals(TaskResult.Status.FAILED, result.getStatus());
+				latch.countDown();
+				return null;
+			}
+		}).when(client).updateTask(any());
+		coordinator.init();
+		Uninterruptibles.awaitUninterruptibly(latch);
+		Mockito.verify(client).updateTask(any());
+
 	}
 }

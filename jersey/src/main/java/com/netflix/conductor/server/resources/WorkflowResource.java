@@ -39,6 +39,7 @@ import javax.ws.rs.core.MediaType;
 
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
@@ -81,6 +82,17 @@ public class WorkflowResource {
 		this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
 	}
 
+	@POST
+	@Produces({ MediaType.TEXT_PLAIN })
+	@ApiOperation("Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain")
+	public String startWorkflow (StartWorkflowRequest request) throws Exception {
+		WorkflowDef def = metadata.getWorkflowDef(request.getName(), request.getVersion());
+		if(def == null){
+			throw new ApplicationException(Code.NOT_FOUND, "No such workflow found by name=" + request.getName() + ", version=" + request.getVersion());
+		}
+		return executor.startWorkflow(def.getName(), def.getVersion(), request.getCorrelationId(), request.getInput(), null, request.getTaskToDomain());
+	}
+	
 	@POST
 	@Path("/{name}")
 	@Produces({ MediaType.TEXT_PLAIN })
@@ -194,6 +206,14 @@ public class WorkflowResource {
 	@Consumes(MediaType.WILDCARD)
 	public void retry(@PathParam("workflowId") String workflowId) throws Exception {		
 		executor.retry(workflowId);
+	}
+
+	@POST
+	@Path("/{workflowId}/resetcallbacks")
+	@ApiOperation("Resets callback times of all in_progress tasks to 0")
+	@Consumes(MediaType.WILDCARD)
+	public void reset(@PathParam("workflowId") String workflowId) throws Exception {		
+		executor.resetCallbacksForInProgressTasks(workflowId);
 	}
 	
 	@DELETE

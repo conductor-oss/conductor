@@ -5,13 +5,15 @@ dependencies {
 
 	compile 'com.amazonaws:aws-java-sdk-sqs:latest.release'
 	compile ('com.google.inject:guice:4.1+') { force= true}
-	
+
+	compile 'net.thisptr:jackson-jq:+'
+
+	compile 'com.sun.jersey.contribs.jersey-oauth:oauth-client:1.19.+'
+	compile 'com.sun.jersey.contribs.jersey-oauth:oauth-signature:1.19.+'
+
 	provided 'javax.ws.rs:jsr311-api:1.1.1'
 	provided 'io.swagger:swagger-jaxrs:1.5.9'
-	
-	
+
 	testCompile 'org.eclipse.jetty:jetty-server:9.3.9.+'
 	testCompile 'org.eclipse.jetty:jetty-servlet:9.3.9.+'
-	
-    
 }

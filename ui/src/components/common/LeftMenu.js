@@ -54,6 +54,15 @@ const menuPaths = {
     label: 'Event Handlers',
     href: '/events',
     icon: 'fa-star'
+  },{
+    header: true,
+    label: 'Task Queues',
+    href: '/events',
+    icon: 'fa-star'
+  },{
+    label: 'Poll Data',
+    href: '/workflow/queue/data',
+    icon: 'fa-exchange'
   }]
 };
 
