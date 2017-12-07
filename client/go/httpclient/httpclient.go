@@ -49,7 +49,6 @@ func (c *HttpClient) logResponse(statusCode string, response string) {
 }
 
 func genParamString(paramMap map[string]string) string {
-
     if paramMap == nil || len(paramMap) == 0 {
         return ""
     }
@@ -78,7 +77,6 @@ func (c *HttpClient) httpRequest(url string, requestType string, headers map[str
     if err != nil {
         return "", err
     }
-
     // Default Headers
     for key, value := range c.Headers {
         req.Header.Set(key, value)
