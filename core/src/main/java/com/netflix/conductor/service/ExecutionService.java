@@ -306,8 +306,8 @@ public class ExecutionService {
 		return edao.getRunningWorkflowIds(workflowName);
 	}
 
-	public void removeWorkflow(String workflowId) throws Exception {
-		edao.removeWorkflow(workflowId);
+	public void removeWorkflow(String workflowId, boolean archiveWorkflow) throws Exception {
+		edao.removeWorkflow(workflowId, archiveWorkflow);
 	}
 
 	public SearchResult<WorkflowSummary> search(String query, String freeText, int start, int size, List<String> sortOptions) {

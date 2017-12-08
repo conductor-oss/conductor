@@ -244,12 +244,20 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 	}
 
 	@Override
-	public void removeWorkflow(String workflowId) {
+	public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
 		try {
 			Workflow wf = getWorkflow(workflowId, true);
 
-			//Add to elasticsearch
-			indexer.update(workflowId, new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD}, new Object[]{om.writeValueAsString(wf), true});
+			if (archiveWorkflow) {
+				//Add to elasticsearch
+				indexer.update(workflowId,
+				               new String[] {RAW_JSON_FIELD, ARCHIVED_FIELD},
+				               new Object[] {om.writeValueAsString(wf), true});
+			}
+			else {
+				// Not archiving, also remove workflowId from index
+				indexer.remove(workflowId);
+			}
 
 			withTransaction(connection -> {
 				removeWorkflowDefToWorkflowMapping(connection, wf);

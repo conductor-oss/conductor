@@ -132,8 +132,9 @@ public class WorkflowResource {
 	@Path("/{workflowId}/remove")
 	@ApiOperation("Removes the workflow from the system")
 	@Consumes(MediaType.WILDCARD)
-	public void delete(@PathParam("workflowId") String workflowId) throws Exception {
-		service.removeWorkflow(workflowId);
+	public void delete(@PathParam("workflowId") String workflowId,
+	                   @QueryParam("archiveWorkflow") @DefaultValue("true") boolean archiveWorkflow) throws Exception {
+		service.removeWorkflow(workflowId, archiveWorkflow);
 	}
 	
 	@GET
