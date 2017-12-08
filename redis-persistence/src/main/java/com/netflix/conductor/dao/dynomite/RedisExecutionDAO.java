@@ -306,14 +306,22 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 	
 	@Override
-	public void removeWorkflow(String workflowId) {
+	public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
 
 		try {
 			
 			Workflow wf = getWorkflow(workflowId, true);
-			
-			//Add to elasticsearch
-			indexer.update(workflowId, new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD}, new Object[]{om.writeValueAsString(wf), true});
+
+			if (archiveWorkflow) {
+				//Add to elasticsearch
+				indexer.update(workflowId,
+				               new String[] {RAW_JSON_FIELD, ARCHIVED_FIELD},
+				               new Object[] {om.writeValueAsString(wf), true});
+			}
+			else {
+				// Not archiving, also remove workflowId from index
+				indexer.remove(workflowId);
+			}
 			
 			// Remove from lists
 			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, wf.getWorkflowType(), dateStr(wf.getCreateTime()));
