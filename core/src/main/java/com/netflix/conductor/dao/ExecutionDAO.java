@@ -151,11 +151,12 @@ public interface ExecutionDAO {
 	public abstract String updateWorkflow(Workflow workflow);
 
 	/**
-	 * 
+	 *
 	 * @param workflowId workflow instance id
+	 * @param archiveWorkflow if true, archives the workflow in elasticsearch, else, removes the workflow completely
 	 *  
 	 */
-	public abstract void removeWorkflow(String workflowId);
+	public abstract void removeWorkflow(String workflowId, boolean archiveWorkflow);
 	
 	/**
 	 * 
