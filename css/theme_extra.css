@@ -176,7 +176,7 @@ form .search-query {
 /*
  * Account for wide tables which go off the side.
  * Override borders to avoid wierdness on narrow tables.
- * 
+ *
  * https://github.com/mkdocs/mkdocs/issues/834
  * https://github.com/mkdocs/mkdocs/pull/1034
  */
@@ -191,3 +191,4 @@ td, th {
    border: 1px solid #e1e4e5 !important; /* csslint allow: important */
    border-collapse: collapse;
 }
+
