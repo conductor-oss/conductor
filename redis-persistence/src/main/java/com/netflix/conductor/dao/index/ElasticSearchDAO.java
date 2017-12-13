@@ -27,7 +27,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import javax.inject.Inject;
@@ -118,9 +121,16 @@ public class ElasticSearchDAO implements IndexDAO {
 	private static final TimeZone gmt = TimeZone.getTimeZone("GMT");
 	    
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMWW");
+
+	private static final ExecutorService executorService;
 	
     static {
     	sdf.setTimeZone(gmt);
+	    executorService = new ThreadPoolExecutor(6,
+	                                             12,
+	                                             60L,
+	                                             TimeUnit.SECONDS,
+	                                             new LinkedBlockingQueue<>());
     }
 	
 	@Inject
@@ -149,7 +159,7 @@ public class ElasticSearchDAO implements IndexDAO {
 		} catch (IndexNotFoundException infe) {
 			try {
 				client.admin().indices().prepareCreate(logIndexName).execute().actionGet();
-			} catch (IndexAlreadyExistsException ilee) {
+			} catch (IndexAlreadyExistsException ignored) {
 
 			} catch (Exception e) {
 				log.error(e.getMessage(), e);
@@ -182,7 +192,7 @@ public class ElasticSearchDAO implements IndexDAO {
 		}catch(IndexNotFoundException infe) {
 			try {
 				client.admin().indices().prepareCreate(indexName).execute().actionGet();
-			}catch(IndexAlreadyExistsException done) {}
+			}catch(IndexAlreadyExistsException ignored) {}
 		}
 				
 		//2. Mapping for the workflow document type
@@ -221,20 +231,23 @@ public class ElasticSearchDAO implements IndexDAO {
 	
 	@Override
 	public void index(Task task) {
-		try {
-			
-			String id = task.getTaskId();
-			TaskSummary summary = new TaskSummary(task);
-			byte[] doc = om.writeValueAsBytes(summary);
-			
-			UpdateRequest req = new UpdateRequest(indexName, TASK_DOC_TYPE, id);
-			req.doc(doc);
-			req.upsert(doc);
-			updateWithRetry(req);
- 			
-		} catch (Throwable e) {
-			log.error("Indexing failed {}", e.getMessage(), e);
-		}
+		// Run all indexing other than workflow indexing in a separate threadpool
+		executorService.submit(() -> {
+			try {
+
+				String id = task.getTaskId();
+				TaskSummary summary = new TaskSummary(task);
+				byte[] doc = om.writeValueAsBytes(summary);
+
+				UpdateRequest req = new UpdateRequest(indexName, TASK_DOC_TYPE, id);
+				req.doc(doc);
+				req.upsert(doc);
+				updateWithRetry(req);
+
+			} catch (Throwable e) {
+				log.error("Indexing failed {}", e.getMessage(), e);
+			}
+		});
 	}
 	
 	@Override
@@ -243,31 +256,34 @@ public class ElasticSearchDAO implements IndexDAO {
 		if (taskExecLogs.isEmpty()) {
 			return;
 		}
-		
-		int retry = 3;
-		while(retry > 0) {
-			try {
-				
-				BulkRequestBuilder brb = client.prepareBulk();
-				for(TaskExecLog taskExecLog : taskExecLogs) {
-					IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
-					request.source(om.writeValueAsBytes(taskExecLog));
-					brb.add(request);
-				}
-				BulkResponse response = brb.execute().actionGet();
-				if(!response.hasFailures()) {
-					break;
-				}
-	 			retry--;
-	 			
-			} catch (Throwable e) {
-				log.error("Indexing failed {}", e.getMessage(), e);
-				retry--;
-				if(retry > 0) {
-					Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+
+		// Run all indexing other than workflow indexing in a separate threadpool
+		executorService.submit(() -> {
+			int retry = 3;
+			while(retry > 0) {
+				try {
+
+					BulkRequestBuilder brb = client.prepareBulk();
+					for(TaskExecLog taskExecLog : taskExecLogs) {
+						IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
+						request.source(om.writeValueAsBytes(taskExecLog));
+						brb.add(request);
+					}
+					BulkResponse response = brb.execute().actionGet();
+					if(!response.hasFailures()) {
+						break;
+					}
+		            retry--;
+
+				} catch (Throwable e) {
+					log.error("Indexing failed {}", e.getMessage(), e);
+					retry--;
+					if(retry > 0) {
+						Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+					}
 				}
 			}
-		}
+		});
 		
 	}
 	
@@ -276,7 +292,7 @@ public class ElasticSearchDAO implements IndexDAO {
 		
 		try {
 			
-			QueryBuilder qf = QueryBuilders.matchAllQuery();
+			QueryBuilder qf;
 			Expression expression = Expression.fromString("taskId='" + taskId + "'");
 			qf = expression.getFilterBuilder();
 			
@@ -305,48 +321,54 @@ public class ElasticSearchDAO implements IndexDAO {
 	
 	@Override
 	public void addMessage(String queue, Message msg) {
-		
-		int retry = 3;
-		while(retry > 0) {
-			try {
-				
-				Map<String, Object> doc = new HashMap<>();
-				doc.put("messageId", msg.getId());
-				doc.put("payload", msg.getPayload());
-				doc.put("queue", queue);
-				doc.put("created", System.currentTimeMillis());
-				IndexRequest request = new IndexRequest(logIndexName, MSG_DOC_TYPE);
-				request.source(doc);
-	 			client.index(request).actionGet();
-	 			break;
-	 			
-			} catch (Throwable e) {
-				log.error("Indexing failed {}", e.getMessage(), e);
-				retry--;
-				if(retry > 0) {
-					Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+
+		// Run all indexing other than workflow indexing in a separate threadpool
+		executorService.submit(() -> {
+			int retry = 3;
+			while(retry > 0) {
+				try {
+
+					Map<String, Object> doc = new HashMap<>();
+					doc.put("messageId", msg.getId());
+					doc.put("payload", msg.getPayload());
+					doc.put("queue", queue);
+					doc.put("created", System.currentTimeMillis());
+					IndexRequest request = new IndexRequest(logIndexName, MSG_DOC_TYPE);
+					request.source(doc);
+		            client.index(request).actionGet();
+		            break;
+
+				} catch (Throwable e) {
+					log.error("Indexing failed {}", e.getMessage(), e);
+					retry--;
+					if(retry > 0) {
+						Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+					}
 				}
 			}
-		}
+		});
 		
 	}
 	
 	@Override
 	public void add(EventExecution ee) {
 
-		try {
+		// Run all indexing other than workflow indexing in a separate threadpool
+		executorService.submit(() -> {
+			try {
 
-			byte[] doc = om.writeValueAsBytes(ee);
-			String id = ee.getName() + "." + ee.getEvent() + "." + ee.getMessageId() + "." + ee.getId();
-			UpdateRequest req = new UpdateRequest(logIndexName, EVENT_DOC_TYPE, id);
-			req.doc(doc);
-			req.upsert(doc);
-			req.retryOnConflict(5);
-			updateWithRetry(req);
- 			
-		} catch (Throwable e) {
-			log.error("Indexing failed {}", e.getMessage(), e);
-		}
+				byte[] doc = om.writeValueAsBytes(ee);
+				String id = ee.getName() + "." + ee.getEvent() + "." + ee.getMessageId() + "." + ee.getId();
+				UpdateRequest req = new UpdateRequest(logIndexName, EVENT_DOC_TYPE, id);
+				req.doc(doc);
+				req.upsert(doc);
+				req.retryOnConflict(5);
+				updateWithRetry(req);
+
+			} catch (Throwable e) {
+				log.error("Indexing failed {}", e.getMessage(), e);
+			}
+		});
 	
 		
 	}
@@ -396,17 +418,20 @@ public class ElasticSearchDAO implements IndexDAO {
 
 	@Override
 	public void remove(String workflowId) {
-		try {
+		// Run all indexing other than workflow indexing in a separate threadpool
+		executorService.submit(() -> {
+			try {
 
-			DeleteRequest req = new DeleteRequest(indexName, WORKFLOW_DOC_TYPE, workflowId);
-			DeleteResponse response = client.delete(req).actionGet();
-			if (!response.isFound()) {
-				log.error("Index removal failed - document not found by id " + workflowId);
+				DeleteRequest req = new DeleteRequest(indexName, WORKFLOW_DOC_TYPE, workflowId);
+				DeleteResponse response = client.delete(req).actionGet();
+				if (!response.isFound()) {
+					log.error("Index removal failed - document not found by id " + workflowId);
+				}
+			} catch (Throwable e) {
+				log.error("Index removal failed failed {}", e.getMessage(), e);
+				Monitors.error(className, "remove");
 			}
-		} catch (Throwable e) {
-			log.error("Index removal failed failed {}", e.getMessage(), e);
-			Monitors.error(className, "remove");
-		}
+		});
 	}
 	
 	@Override
@@ -414,19 +439,22 @@ public class ElasticSearchDAO implements IndexDAO {
 		if(keys.length != values.length) {
 			throw new IllegalArgumentException("Number of keys and values should be same.");
 		}
-		
-		UpdateRequest request = new UpdateRequest(indexName, WORKFLOW_DOC_TYPE, workflowInstanceId);
-		Map<String, Object> source = new HashMap<>();
 
-		for (int i = 0; i < keys.length; i++) {
-			String key = keys[i];
-			Object value= values[i];
-			log.debug("updating {} with {} and {}", workflowInstanceId, key, value);
-			source.put(key, value);
-		}
-		request.doc(source);		
-		ActionFuture<UpdateResponse> response = client.update(request);
-		response.actionGet();
+		// Run all indexing other than workflow indexing in a separate threadpool
+		executorService.submit(() -> {
+			UpdateRequest request = new UpdateRequest(indexName, WORKFLOW_DOC_TYPE, workflowInstanceId);
+			Map<String, Object> source = new HashMap<>();
+
+			for (int i = 0; i < keys.length; i++) {
+				String key = keys[i];
+				Object value= values[i];
+				log.debug("updating {} with {} and {}", workflowInstanceId, key, value);
+				source.put(key, value);
+			}
+			request.doc(source);
+			ActionFuture<UpdateResponse> response = client.update(request);
+			response.actionGet();
+		});
 	}
 	
 	@Override
@@ -469,12 +497,10 @@ public class ElasticSearchDAO implements IndexDAO {
 				srb.addSort(field, order);
 			});
 		}
-		List<String> result = new LinkedList<String>();
+		List<String> result = new LinkedList<>();
 		SearchResponse response = srb.execute().actionGet();
-		response.getHits().forEach(hit -> {
-			result.add(hit.getId());
-		});
+		response.getHits().forEach(hit -> result.add(hit.getId()));
 		long count = response.getHits().getTotalHits();
-		return new SearchResult<String>(count, result);
+		return new SearchResult<>(count, result);
 	}
 }
