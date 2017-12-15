@@ -3,14 +3,16 @@ import {render} from 'react-dom';
 import { Router, browserHistory } from 'react-router'
 import routeConfig from './routes';
 import { Provider } from 'react-redux'
-import { createStore, applyMiddleware } from 'redux'
+import { createStore, applyMiddleware, compose } from 'redux'
 import thunkMiddleware from 'redux-thunk'
 import workflowApp from './reducers'
 import { syncHistoryWithStore, routerReducer } from 'react-router-redux'
 
-let store = createStore(workflowApp, applyMiddleware(
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
+
+let store = createStore(workflowApp, composeEnhancers(applyMiddleware(
   thunkMiddleware
-));
+)));
 
 function updateLocation() {
   store.dispatch({

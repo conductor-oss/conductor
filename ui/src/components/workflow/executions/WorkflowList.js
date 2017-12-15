@@ -274,6 +274,7 @@ const Workflow = React.createClass({
           <TableHeaderColumn dataField="updateTime" dataSort={true} dataFormat={formatDate}>Last Updated</TableHeaderColumn>
           <TableHeaderColumn dataField="endTime" hidden={false} dataFormat={formatDate}>End Time</TableHeaderColumn>
           <TableHeaderColumn dataField="reasonForIncompletion" hidden={false}>Failure Reason</TableHeaderColumn>
+          <TableHeaderColumn dataField="failedReferenceTaskNames" hidden={false}>Failed Tasks</TableHeaderColumn>
           <TableHeaderColumn dataField="input" width="300">Input</TableHeaderColumn>
           <TableHeaderColumn dataField="workflowId" width="300" dataFormat={miniDetails}>&nbsp;</TableHeaderColumn>
         </BootstrapTable>
