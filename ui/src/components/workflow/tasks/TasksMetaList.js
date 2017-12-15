@@ -49,6 +49,7 @@ const TaskMetaList = React.createClass({
             </Input><br/>
             <Input type="text" ref="timeoutSeconds" value={row.timeoutSeconds} addonBefore="Time Out" addonAfter="Seconds"></Input><br/>
             <Input type="text" ref="restimeoutSeconds" value={row.responseTimeoutSeconds} addonBefore="Response Time Out" addonAfter="timeoutSeconds"></Input><br/>
+            <Input type="text" ref="concurrentExecLimit" value={row.concurrentExecLimit} addonBefore="Concurrent Exec Limit"></Input><br/>
             <Input type="textarea" label="Task Description" ref="description" value={row.description} readonly={true}/><br/>
           </form>
         </div></Popover>
@@ -64,6 +65,7 @@ const TaskMetaList = React.createClass({
           <TableHeaderColumn dataField="timeoutPolicy" dataSort={true} >Timeout Policy</TableHeaderColumn>
           <TableHeaderColumn dataField="timeoutSeconds" dataSort={true} >Timeout Seconds</TableHeaderColumn>
           <TableHeaderColumn dataField="retryCount" dataSort={true} >Retry Count</TableHeaderColumn>
+          <TableHeaderColumn dataField="concurrentExecLimit" dataSort={true} >Concurrent Exec Limit</TableHeaderColumn>
           <TableHeaderColumn dataField="retryLogic" dataSort={true} dataFormat={retries}>Retry Logic</TableHeaderColumn>
           </BootstrapTable>
       </div>
