@@ -184,6 +184,10 @@ public class Monitors {
 		counter(classQualifier, "task_timeout", "taskType", taskType);
 	}
 
+	public static void recordTaskResponseTimeout(String taskType) {
+		counter(classQualifier, "task_response_timeout", "taskType", taskType);
+	}
+	
 	public static void recordWorkflowTermination(String workflowType, WorkflowStatus status, String ownerApp) {
 		counter(classQualifier, "workflow_failure", "workflowName", workflowType, "status", status.name(), "ownerApp", ""+ownerApp);
 	}

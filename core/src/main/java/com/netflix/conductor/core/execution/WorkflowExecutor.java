@@ -434,7 +434,15 @@ public class WorkflowExecutor {
 		if (task.getStatus().isTerminal()) {
 			task.setEndTime(System.currentTimeMillis());
 		}
+
 		edao.updateTask(task);
+
+		//If the task has failed update the failed task reference name in the workflow.
+		//This gives the ability to look at workflow and see what tasks have failed at a high level.
+		if(Status.FAILED.equals(task.getStatus())) {
+			wf.getFailedReferenceTaskNames().add(task.getReferenceTaskName());
+			edao.updateWorkflow(wf);
+		}
 
 		result.getLogs().forEach(tl -> tl.setTaskId(task.getTaskId()));
 		edao.addTaskExecLog(result.getLogs());
@@ -511,8 +519,12 @@ public class WorkflowExecutor {
 			List<Task> tasksToBeScheduled = outcome.tasksToBeScheduled;
 			setTaskDomains(tasksToBeScheduled, workflow);
 			List<Task> tasksToBeUpdated = outcome.tasksToBeUpdated;
+			List<Task> tasksToBeRequeued = outcome.tasksToBeRequeued;
 			boolean stateChanged = false;
 			
+			if(!tasksToBeRequeued.isEmpty()){
+				addTaskToQueue(tasksToBeRequeued);
+			}
 			workflow.getTasks().addAll(tasksToBeScheduled);
 			for(Task task : tasksToBeScheduled) {
 				if (SystemTaskType.is(task.getTaskType()) && !task.getStatus().isTerminal()) {

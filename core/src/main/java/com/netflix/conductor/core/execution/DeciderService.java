@@ -130,6 +130,10 @@ public class DeciderService {
 			TaskDef taskDef = metadata.getTaskDef(task.getTaskDefName());
 			if(taskDef != null) {
 				checkForTimeout(taskDef, task);
+				// If the task has not been updated for "responseTimeout" then rescheduled it.
+				if(checkForResponseTimeout(taskDef, task)){
+					outcome.tasksToBeRequeued.add(task);
+				}
 			}
 
 			if (!task.getStatus().isSuccessful()) {
@@ -374,6 +378,30 @@ public class DeciderService {
 		return;
 	}
 
+	@VisibleForTesting
+	boolean checkForResponseTimeout(TaskDef taskType, Task task) {
+		
+		if(taskType == null){
+			logger.warn("missing task type " + task.getTaskDefName() + ", workflowId=" + task.getWorkflowInstanceId());
+			return false;
+		}
+		if (task.getStatus().isTerminal() || taskType.getTimeoutSeconds() <= 0 || 
+				!task.getStatus().equals(Status.IN_PROGRESS) || taskType.getResponseTimeoutSeconds() == 0) {
+			return false;
+		}
+
+		long responseTimeout = 1000 * taskType.getResponseTimeoutSeconds();
+		long now = System.currentTimeMillis();
+		long noResponseTime = now - task.getUpdateTime();
+		
+		if (noResponseTime < responseTimeout) {
+			return false;
+		}
+		Monitors.recordTaskResponseTimeout(task.getTaskDefName());
+		
+		return true;
+	}
+	
 	private List<Task> getTasksToBeScheduled(WorkflowDef def, Workflow workflow, WorkflowTask taskToSchedule, int retryCount)  {
 		return getTasksToBeScheduled(def, workflow, taskToSchedule, retryCount, null);
 	}
@@ -672,6 +700,8 @@ public class DeciderService {
 		List<Task> tasksToBeScheduled = new LinkedList<>();
 		
 		List<Task> tasksToBeUpdated = new LinkedList<>();
+
+		List<Task> tasksToBeRequeued = new LinkedList<>();
 		
 		boolean isComplete;
 		

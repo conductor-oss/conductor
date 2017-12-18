@@ -14,4 +14,5 @@ ui/.settings
 .settings
 dump.rdb
 .idea
+*.iml
 out/

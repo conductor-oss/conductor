@@ -21,6 +21,7 @@ package com.netflix.conductor.common.run;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.stream.Collectors;
 
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 
@@ -60,6 +61,8 @@ public class WorkflowSummary {
 	private long executionTime;
 	
 	private String event;
+
+	private String failedReferenceTaskNames = "";
 	
 	public WorkflowSummary() {
 		
@@ -90,6 +93,7 @@ public class WorkflowSummary {
 			this.executionTime = workflow.getEndTime() - workflow.getStartTime();
 		}
 		this.event = workflow.getEvent();
+		this.failedReferenceTaskNames = workflow.getFailedReferenceTaskNames().stream().collect(Collectors.joining(","));
 	}
 
 	/**
@@ -192,5 +196,13 @@ public class WorkflowSummary {
 	 */
 	public void setEvent(String event) {
 		this.event = event;
+	}
+
+	public String getFailedReferenceTaskNames() {
+		return failedReferenceTaskNames;
+	}
+
+	public void setFailedReferenceTaskNames(String failedReferenceTaskNames) {
+		this.failedReferenceTaskNames = failedReferenceTaskNames;
 	}
 }
