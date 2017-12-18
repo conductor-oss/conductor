@@ -16,9 +16,11 @@
 package com.netflix.conductor.common.run;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -50,13 +52,13 @@ public class Workflow extends Auditable{
 	private WorkflowStatus status = WorkflowStatus.RUNNING;
 	
 	private long endTime;
-	
+
 	private String workflowId;
 	
 	private String parentWorkflowId;
-	
+
 	private String parentWorkflowTaskId;
-	
+
 	private List<Task> tasks = new LinkedList<>();
 	
 	private Map<String, Object> input = new HashMap<>();
@@ -78,6 +80,8 @@ public class Workflow extends Auditable{
 	private String event;
 
 	private Map<String, String> taskToDomain = new HashMap<>();
+
+	private Set<String> failedReferenceTaskNames = new HashSet<>();
 
 	public Workflow(){
 		
@@ -301,7 +305,15 @@ public class Workflow extends Auditable{
 	public void setEvent(String event) {
 		this.event = event;
 	}
-	
+
+	public Set<String> getFailedReferenceTaskNames() {
+		return failedReferenceTaskNames;
+	}
+
+	public void setFailedReferenceTaskNames(Set<String> failedReferenceTaskNames) {
+		this.failedReferenceTaskNames = failedReferenceTaskNames;
+	}
+
 	@Override
 	public String toString() {
 		return workflowType + "." + version + "/" + workflowId + "." + status; 
