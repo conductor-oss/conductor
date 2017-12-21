@@ -122,15 +122,10 @@ public class ElasticSearchDAO implements IndexDAO {
 	    
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMWW");
 
-	private static final ExecutorService executorService;
+	private final ExecutorService executorService;
 	
     static {
     	sdf.setTimeZone(gmt);
-	    executorService = new ThreadPoolExecutor(6,
-	                                             12,
-	                                             60L,
-	                                             TimeUnit.SECONDS,
-	                                             new LinkedBlockingQueue<>());
     }
 	
 	@Inject
@@ -148,6 +143,14 @@ public class ElasticSearchDAO implements IndexDAO {
 		} catch (Exception e) {
 			log.error(e.getMessage(), e);
 		}
+		int corePoolSize = 6;
+		int maximumPoolSize = 12;
+		long keepAliveTime = 1L;
+		this.executorService = new ThreadPoolExecutor(corePoolSize,
+		                                              maximumPoolSize,
+		                                              keepAliveTime,
+		                                              TimeUnit.MINUTES,
+		                                              new LinkedBlockingQueue<>());
 	}
 	
 	private void updateIndexName(Configuration config) {
