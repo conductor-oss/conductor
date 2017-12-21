@@ -160,7 +160,7 @@ public class HttpTask extends WorkflowSystemTask {
 			client.addFilter(new OAuthClientFilter(client.getProviders(), params, secrets));
 		}
 
-		Builder builder = client.resource(input.uri).type(MediaType.APPLICATION_JSON);
+		Builder builder = client.resource(input.uri).type(input.contentType);
 
 		if(input.body != null) {
 			builder.entity(input.body);
@@ -297,6 +297,8 @@ public class HttpTask extends WorkflowSystemTask {
 		private Object body;
 		
 		private String accept = MediaType.APPLICATION_JSON;
+
+		private String contentType = MediaType.APPLICATION_JSON;
 		
 		private String oauthConsumerKey;
 
@@ -387,7 +389,21 @@ public class HttpTask extends WorkflowSystemTask {
 		public void setAccept(String accept) {
 			this.accept = accept;
 		}
-		
+
+		/**
+		 * @return the MIME content type to use for the request
+		 */
+		public String getContentType() {
+			return contentType;
+		}
+
+		/**
+		 * @param contentType the MIME content type to set
+		 */
+		public void setContentType(String contentType) {
+			this.contentType = contentType;
+		}
+
 		/**
 		 * @return the OAuth consumer Key
 		 */
