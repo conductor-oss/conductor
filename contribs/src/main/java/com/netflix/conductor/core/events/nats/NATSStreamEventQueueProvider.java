@@ -24,61 +24,48 @@ import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.EventQueues.QueueType;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import io.nats.stan.Connection;
-import io.nats.stan.ConnectionFactory;
+import io.nats.client.Nats;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Oleksiy Lysak
- *
  */
 @Singleton
 public class NATSStreamEventQueueProvider implements EventQueueProvider {
     private static Logger logger = LoggerFactory.getLogger(NATSStreamEventQueueProvider.class);
-    protected Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
-    private Connection connection;
+    protected Map<String, NATSStreamObservableQueue> queues = new ConcurrentHashMap<>();
     private String durableName;
-
+    private String clusterId;
+    private String natsUrl;
+    
     @Inject
     public NATSStreamEventQueueProvider(Configuration config) {
         logger.info("NATS Stream Event Queue Provider init");
-
+        
         // Get NATS Streaming options
-        String clusterId = config.getProperty("io.nats.streaming.clusterId", "test-cluster");
-        String clientId = config.getProperty("io.nats.streaming.clientId", UUID.randomUUID().toString());
-        String natsUrl = config.getProperty("io.nats.streaming.url", "nats://localhost:4222");
+        clusterId = config.getProperty("io.nats.streaming.clusterId", "test-cluster");
         durableName = config.getProperty("io.nats.streaming.durableName", null);
-
+        natsUrl = config.getProperty("io.nats.streaming.url", Nats.DEFAULT_URL);
+        
         logger.info("NATS Streaming clusterId=" + clusterId +
-                ", clientId=" + clientId + ", natsUrl=" + natsUrl +
-                ", durableName=" + durableName);
-
-        // Init NATS Streaming API
-        ConnectionFactory connectionFactory = new ConnectionFactory();
-        connectionFactory.setClusterId(clusterId);
-        connectionFactory.setClientId(clientId);
-        connectionFactory.setNatsUrl(natsUrl);
-
-        try {
-            connection = connectionFactory.createConnection();
-        } catch (Exception e) {
-            logger.error("Unable to create NATS Streaming Connection", e);
-            throw new RuntimeException(e);
-        }
-
+                ", natsUrl=" + natsUrl + ", durableName=" + durableName);
+        
         EventQueues.registerProvider(QueueType.nats_stream, this);
         logger.info("NATS Stream Event Queue Provider initialized...");
     }
-
+    
     @Override
     public ObservableQueue getQueue(String queueURI) {
-        return queues.computeIfAbsent(queueURI, q -> new NATSStreamObservableQueue(connection, queueURI, durableName));
+        NATSStreamObservableQueue queue = queues.computeIfAbsent(queueURI, q -> new NATSStreamObservableQueue(clusterId, natsUrl, durableName, queueURI));
+        if (queue.isClosed()) {
+            queue.open();
+        }
+        return queue;
     }
 }

@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.contribs;
 
@@ -29,12 +29,12 @@ import org.slf4j.LoggerFactory;
  *
  */
 public class NatsModule extends AbstractModule {
-    private static Logger logger = LoggerFactory.getLogger(NatsModule.class);
-
+	private static Logger logger = LoggerFactory.getLogger(NatsModule.class);
+	
 	@Override
 	protected void configure() {
 		bind(NATSEventQueueProvider.class).asEagerSingleton();
 		logger.info("NATS Module configured ...");
 	}
-
+	
 }
