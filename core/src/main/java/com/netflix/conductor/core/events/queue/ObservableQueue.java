@@ -78,4 +78,8 @@ public interface ObservableQueue {
 	 */
 	public long size();
 	
+	/**
+	 *  Used to close queue instance prior to remove from queues
+	 */
+	default  void close() { }
 }
