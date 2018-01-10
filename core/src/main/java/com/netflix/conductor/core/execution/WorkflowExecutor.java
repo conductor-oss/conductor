@@ -434,7 +434,15 @@ public class WorkflowExecutor {
 		if (task.getStatus().isTerminal()) {
 			task.setEndTime(System.currentTimeMillis());
 		}
+
 		edao.updateTask(task);
+
+		//If the task has failed update the failed task reference name in the workflow.
+		//This gives the ability to look at workflow and see what tasks have failed at a high level.
+		if(Status.FAILED.equals(task.getStatus())) {
+			wf.getFailedReferenceTaskNames().add(task.getReferenceTaskName());
+			edao.updateWorkflow(wf);
+		}
 
 		result.getLogs().forEach(tl -> tl.setTaskId(task.getTaskId()));
 		edao.addTaskExecLog(result.getLogs());
