@@ -19,7 +19,8 @@ RUN apk update && apk add \
   libpng \
   libpng-dev \
   libjpeg-turbo \
-  libjpeg-turbo-dev 
+  libjpeg-turbo-dev \
+  python
 
 # Make app folders
 RUN mkdir -p /app/ui
