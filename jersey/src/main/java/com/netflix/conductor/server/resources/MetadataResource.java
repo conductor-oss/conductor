@@ -65,10 +65,17 @@ public class MetadataResource {
 	}
 	
 	@PUT
-	@Path("/workflow")
-	@ApiOperation("Create or update workflow definition")
+	@Path("/workflows")
+	@ApiOperation("Create or update multi  workflow definition")
 	public void update(List<WorkflowDef> defs) throws Exception{
 		service.updateWorkflowDef(defs);
+	}
+
+	@PUT
+	@Path("/workflow")
+	@ApiOperation("Create or update a workflow definition")
+	public void update(WorkflowDef def) throws Exception{
+		service.updateWorkflowDef(def);
 	}
 
 	@GET

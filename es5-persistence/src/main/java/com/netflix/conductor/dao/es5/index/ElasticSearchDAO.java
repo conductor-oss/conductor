@@ -241,6 +241,8 @@ public class ElasticSearchDAO implements IndexDAO {
 
 	@Override
 	public void add(List<TaskExecLog> logs) {
+		if (logs.size() == 0)return;
+
 		int retry = 3;
 		while(retry > 0) {
 			try {
