@@ -1,5 +1,6 @@
 package com.netflix.conductor.dao.mysql;
 
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collections;
 import java.util.Date;
@@ -68,11 +69,23 @@ class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 		return getWithTransaction(tx -> popMessages(tx, queueName, messageIds));
 	}
 
-	@Override
-	public List<Message> pollMessages(String queueName, int count, int timeout) {
-		List<String> poppedMessageIds = pop(queueName, count, timeout);
-		return readMessages(queueName, poppedMessageIds);
-	}
+    @Override
+    public List<Message> pollMessages(String queueName, int count, int timeout) {
+        final long start = System.currentTimeMillis();
+        return getWithTransaction(tx -> {
+            List<String> peekedMessageIds = peekMessages(tx, queueName, count);
+            while(peekedMessageIds.size() < count && ((System.currentTimeMillis() - start) < timeout)) {
+                Uninterruptibles.sleepUninterruptibly(200, TimeUnit.MILLISECONDS);
+                peekedMessageIds = peekMessages(queueName, count);
+            }
+
+            final List<String> msgIds = ImmutableList.copyOf(peekedMessageIds);
+            List<Message> messages = readMessages(tx, queueName, msgIds);
+            popMessages(tx, queueName, msgIds);
+
+            return ImmutableList.copyOf(messages);
+        });
+    }
 
 	@Override
 	public void remove(String queueName, String messageId) {
@@ -220,14 +233,18 @@ class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 		connection.createQuery(REMOVE_MESSAGE).addParameter("queueName", queueName).addParameter("messageId", messageId).executeUpdate();
 	}
 
-	private List<String> peekMessages(String queueName, int count) {
-		if (count < 1) return Collections.emptyList();
-		String PEEK_MESSAGES = "SELECT message_id FROM queue_message WHERE queue_name = :queueName AND popped = false LIMIT :count";
-		return getWithTransaction(tx -> tx.createQuery(PEEK_MESSAGES)
-				.addParameter("queueName", queueName)
-				.addParameter("count", count)
-				.executeScalarList(String.class));
-	}
+    private List<String> peekMessages(Connection tx, String queueName, int count) {
+        if (count < 1) return Collections.emptyList();
+        String PEEK_MESSAGES = "SELECT message_id FROM queue_message WHERE queue_name = :queueName AND popped = false LIMIT :count";
+        return tx.createQuery(PEEK_MESSAGES)
+                 .addParameter("queueName", queueName)
+                 .addParameter("count", count)
+                 .executeScalarList(String.class);
+    }
+
+    private List<String> peekMessages(String queueName, int count) {
+        return getWithTransaction(tx -> peekMessages(tx, queueName, count));
+    }
 
 	private List<String> popMessages(Connection connection, String queueName, List<String> messageIds) {
 		if (messageIds.isEmpty()) return messageIds;
@@ -245,24 +262,24 @@ class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 		return messageIds;
 	}
 
-	private List<Message> readMessages(String queueName, List<String> messageIds) {
-		if (messageIds.isEmpty()) return Collections.emptyList();
+    private List<Message> readMessages(Connection tx, String queueName, List<String> messageIds) {
+        if (messageIds.isEmpty()) return Collections.emptyList();
 
-		String READ_MESSAGES = "SELECT message_id, payload FROM queue_message WHERE queue_name = :queueName AND message_id IN (%s) AND popped = false";
-		String query = generateQueryWithParametersListPlaceholders(READ_MESSAGES, messageIds.size());
+        String READ_MESSAGES = "SELECT message_id, payload FROM queue_message WHERE queue_name = :queueName AND message_id IN (%s) AND popped = false";
+        String query = generateQueryWithParametersListPlaceholders(READ_MESSAGES, messageIds.size());
 
-		List<Message> messages = getWithTransaction(tx -> tx.createQuery(query)
-				.addParameter("queueName", queueName)
-				.addColumnMapping("message_id", "id")
-				.withParams(messageIds.toArray())
-				.executeAndFetch(Message.class));
+        List<Message> messages = tx.createQuery(query)
+                                   .addParameter("queueName", queueName)
+                                   .addColumnMapping("message_id", "id")
+                                   .withParams(messageIds.toArray())
+                                   .executeAndFetch(Message.class);
 
-		if (messages.size() != messageIds.size()) {
-			throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "could not read all messages for given ids: " + messageIds);
-		}
+        if (messages.size() != messageIds.size()) {
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "could not read all messages for given ids: " + messageIds);
+        }
 
-		return messages;
-	}
+        return messages;
+    }
 
 	private void createQueueIfNotExists(Connection connection, String queueName) {
 		String EXISTS_QUEUE = "SELECT EXISTS(SELECT 1 FROM queue WHERE queue_name = :queueName)";
