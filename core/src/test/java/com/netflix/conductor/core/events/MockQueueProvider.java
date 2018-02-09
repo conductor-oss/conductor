@@ -18,7 +18,6 @@
  */
 package com.netflix.conductor.core.events;
 
-import com.netflix.conductor.core.events.EventQueues.QueueType;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 
 /**
@@ -27,9 +26,9 @@ import com.netflix.conductor.core.events.queue.ObservableQueue;
  */
 public class MockQueueProvider implements EventQueueProvider {
 
-	private QueueType type;
+	private String type;
 	
-	public MockQueueProvider(QueueType type) {
+	public MockQueueProvider(String type) {
 		this.type = type;
 		EventQueues.registerProvider(type, this);
 	}
@@ -37,7 +36,7 @@ public class MockQueueProvider implements EventQueueProvider {
 	
 	@Override
 	public ObservableQueue getQueue(String queueURI) {
-		return new MockObservableQueue(queueURI, queueURI, type.name());
+		return new MockObservableQueue(queueURI, queueURI, type);
 	}
 
 }

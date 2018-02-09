@@ -42,7 +42,6 @@ import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action.Type;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.core.events.EventQueues.QueueType;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.execution.TestConfiguration;
@@ -76,7 +75,7 @@ public class TestEventProcessor {
 		when(provider.getQueue(queueURI)).thenReturn(queue);
 		
 		
-		EventQueues.registerProvider(QueueType.sqs, provider);
+		EventQueues.registerProvider("sqs", provider);
 		
 		EventHandler eh = new EventHandler();
 		eh.setName(UUID.randomUUID().toString());
