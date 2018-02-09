@@ -4,6 +4,7 @@ dependencies {
 
 	compile 'io.reactivex:rxjava:1.2.2'
 	compile 'com.google.inject:guice:4.0+'
+	compile 'com.google.inject.extensions:guice-multibindings:4.0'
 	compile 'com.netflix.spectator:spectator-api:0.40.0'
 	compile 'com.netflix.eureka:eureka-client:latest.release'
 	compile ('com.fasterxml.jackson.core:jackson-databind:2.7.5')

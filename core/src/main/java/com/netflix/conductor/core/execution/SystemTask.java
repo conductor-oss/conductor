@@ -54,22 +54,7 @@ public class SystemTask extends Task {
 		st.setWorkflowTask(taskToSchedule);
 		return st;
 	}
-	
-	public static Task forkTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input) {
-		SystemTask st = new SystemTask();
-		st.setTaskType(SystemTaskType.FORK.name());
-		st.setTaskDefName(SystemTaskType.FORK.name());		
-		st.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-		st.setWorkflowInstanceId(workflow.getWorkflowId());
-		st.setCorrelationId(workflow.getCorrelationId());
-		st.setScheduledTime(System.currentTimeMillis());
-		st.setEndTime(System.currentTimeMillis());
-		st.setInputData(input);
-		st.setTaskId(taskId);
-		st.setStatus(Status.COMPLETED);
-		st.setWorkflowTask(taskToSchedule);
-		return st;
-	}	
+
 
 	public static Task forkDynamicTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, List<WorkflowTask> dynTaskList){
 		SystemTask st = new SystemTask();
@@ -104,24 +89,8 @@ public class SystemTask extends Task {
 		st.setWorkflowTask(taskToSchedule);
 		return st;
 	}	
-	
-	public static Task eventTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input, String sink) {
-		SystemTask st = new SystemTask();
-		st.setTaskType(Event.NAME);
-		st.setTaskDefName(taskToSchedule.getName());
-		st.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-		st.setWorkflowInstanceId(workflow.getWorkflowId());
-		st.setCorrelationId(workflow.getCorrelationId());
-		st.setScheduledTime(System.currentTimeMillis());
-		st.setEndTime(System.currentTimeMillis());
-		st.setInputData(input);
-		st.getInputData().put("sink", sink);
-		st.setTaskId(taskId);
-		st.setStatus(Status.SCHEDULED);
-		st.setWorkflowTask(taskToSchedule);
-		return st;
-	}	
-	
+
+	//TODO delete this method after changing the test to refer to the parser
 	public static Task waitTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input) {
 		SystemTask st = new SystemTask();
 		st.setTaskType(Wait.NAME);
@@ -137,24 +106,7 @@ public class SystemTask extends Task {
 		st.setWorkflowTask(taskToSchedule);
 		return st;
 	}	
-	
-	public static Task subWorkflowTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input, String subWorkflowName, Integer subWorkflowVersion) {
-		SystemTask st = new SystemTask();
-		st.setTaskType(SubWorkflow.NAME);
-		st.setTaskDefName(taskToSchedule.getName());
-		st.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-		st.setWorkflowInstanceId(workflow.getWorkflowId());
-		st.setCorrelationId(workflow.getCorrelationId());
-		st.setScheduledTime(System.currentTimeMillis());
-		st.setEndTime(System.currentTimeMillis());
-		st.getInputData().put("subWorkflowName", subWorkflowName);
-		st.getInputData().put("subWorkflowVersion", subWorkflowVersion);
-		st.getInputData().put("workflowInput", input);
-		st.setTaskId(taskId);
-		st.setStatus(Status.SCHEDULED);
-		st.setWorkflowTask(taskToSchedule);
-		return st;
-	}
+
 	
 	public static Task userDefined(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input, TaskDef taskDef, int retryCount) {
 		String taskType = taskToSchedule.getType();
@@ -173,26 +125,7 @@ public class SystemTask extends Task {
 	    st.setWorkflowTask(taskToSchedule);
 		return st;
 	}
-	
-	public static Task createSimpleTask(Workflow workflow, String taskId, WorkflowTask taskToSchedule, Map<String, Object> input, TaskDef taskDef, int retryCount) {
 
-		Task theTask = new Task();
-		theTask.setStartDelayInSeconds(taskToSchedule.getStartDelay());		
-	    theTask.setTaskId(taskId);
-	    theTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
-	    theTask.setInputData(input);
-	    theTask.setWorkflowInstanceId(workflow.getWorkflowId());
-	    theTask.setStatus(Status.SCHEDULED);
-	    theTask.setTaskType(taskToSchedule.getName());
-	    theTask.setTaskDefName(taskToSchedule.getName());
-	    theTask.setCorrelationId(workflow.getCorrelationId());
-	    theTask.setScheduledTime(System.currentTimeMillis());
-	    theTask.setRetryCount(retryCount);
-	    theTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
-	    theTask.setResponseTimeoutSeconds(taskDef.getResponseTimeoutSeconds());
-	    theTask.setWorkflowTask(taskToSchedule);
-		return theTask;
-	}
 	
 
 }

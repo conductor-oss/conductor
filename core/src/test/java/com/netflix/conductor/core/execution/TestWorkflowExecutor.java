@@ -30,9 +30,21 @@ import static org.mockito.Mockito.when;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
+import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
+import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
+import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
+import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
@@ -93,12 +105,24 @@ public class TestWorkflowExecutor {
 		workflow.setWorkflowId("1");
 		
 		TestConfiguration config = new TestConfiguration();
-		MetadataDAO metadata = mock(MetadataDAO.class);
+		MetadataDAO metadataDAO = mock(MetadataDAO.class);
 		ExecutionDAO edao = mock(ExecutionDAO.class);
 		QueueDAO queue = mock(QueueDAO.class);
-		ObjectMapper om = new ObjectMapper();
-		
-		WorkflowExecutor executor = new WorkflowExecutor(metadata, edao, queue, om, config);
+		ObjectMapper objectMapper = new ObjectMapper();
+		ParametersUtils parametersUtils = new ParametersUtils();
+		Map<String, TaskMapper> taskMappers = new HashMap<>();
+		taskMappers.put("DECISION", new DecisionTaskMapper());
+		taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
+		taskMappers.put("JOIN", new JoinTaskMapper());
+		taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper));
+		taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
+		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
+		DeciderService deciderService = new DeciderService(metadataDAO, taskMappers);
+		WorkflowExecutor executor = new WorkflowExecutor(deciderService, metadataDAO, edao, queue, config);
 		List<Task> tasks = new LinkedList<>();
 		
 		WorkflowTask taskToSchedule = new WorkflowTask();

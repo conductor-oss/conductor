@@ -24,7 +24,10 @@ import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 
@@ -195,7 +198,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		if(taskDef == null) {
 			return false;			
 		}
-		int limit = taskDef.concurrencyLimit();		
+		int limit = taskDef.concurrencyLimit();
 		if(limit <= 0) {
 			return false;
 		}
@@ -248,49 +251,33 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	@Override
 	public Task getTask(String taskId) {
 		Preconditions.checkNotNull(taskId, "taskId name cannot be null");
-		Task task = null;
-
-
-		String taskJsonStr = dynoClient.get(nsKey(TASK, taskId));
-		if (taskJsonStr != null) {
-			task = readValue(taskJsonStr, Task.class);
-		}
-
-	
-		return task;
+		return Optional.ofNullable(dynoClient.get(nsKey(TASK, taskId)))
+				.map(jsonString -> readValue(jsonString, Task.class))
+				.orElse(null);
 	}
 
 	@Override
 	public List<Task> getTasks(List<String> taskIds) {
-		List<Task> tasks = new LinkedList<Task>();
-
-		List<String> nsKeys = new ArrayList<String>();
-		taskIds.forEach(taskId -> nsKeys.add(nsKey(TASK, taskId)));
-		for (String key : nsKeys) {
-			String json = dynoClient.get(key);
-			if (json != null) {
-				tasks.add(readValue(json, Task.class));
-			}
-		}
-		return tasks;
+		return taskIds.stream()
+				.map(taskId -> nsKey(TASK, taskId))
+				.map(dynoClient::get)
+				.filter(Objects::nonNull)
+				.map(jsonString -> readValue(jsonString, Task.class))
+				.collect(Collectors.toCollection(LinkedList::new));
 	}
 
 	@Override
 	public List<Task> getTasksForWorkflow(String workflowId) {
 		Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
-		List<Task> tasks = new LinkedList<Task>();
 		Set<String> taskIds = dynoClient.smembers(nsKey(WORKFLOW_TO_TASKS, workflowId));
-		tasks = getTasks(new ArrayList<String>(taskIds));
-		return tasks;
+		return getTasks(new ArrayList<>(taskIds));
 	}
 
 	@Override
 	public List<Task> getPendingTasksForTaskType(String taskName) {
 		Preconditions.checkNotNull(taskName, "task name cannot be null");
-		List<Task> tasks = new LinkedList<Task>();
 		Set<String> taskIds = dynoClient.smembers(nsKey(IN_PROGRESS_TASKS, taskName));
-		tasks = getTasks(new ArrayList<String>(taskIds));
-		return tasks;
+		return getTasks(new ArrayList<>(taskIds));
 	}
 
 	@Override
@@ -359,7 +346,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 				List<Task> tasks = getTasksForWorkflow(workflowId);
 				tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
 				workflow.setTasks(tasks);
-			}	
+			}
 			return workflow;
 		}
 
@@ -441,6 +428,14 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		return workflows;
 	}
 
+	/**
+	 *This isSystemTask not just an insert or update, the terminal state workflow isSystemTask removed from the
+	 * QQ there can be partial updates if the node goes down
+	 * TODO add logger statements for different if conditions
+	 * @param workflow
+	 * @param update
+	 * @return
+	 */
 	private String insertOrUpdateWorkflow(Workflow workflow, boolean update) {
 		Preconditions.checkNotNull(workflow, "workflow object cannot be null");
 
@@ -448,7 +443,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			workflow.setEndTime(System.currentTimeMillis());
 		}
 		List<Task> tasks = workflow.getTasks();
-		workflow.setTasks(new LinkedList<>());
+		workflow.setTasks(new LinkedList<>()); //QQ why are the tasks set to empty list ?
 
 		// Store the workflow object
 		dynoClient.set(nsKey(WORKFLOW, workflow.getWorkflowId()), toJson(workflow));

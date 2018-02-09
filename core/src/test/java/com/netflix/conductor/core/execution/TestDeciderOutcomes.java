@@ -18,25 +18,6 @@
  */
 package com.netflix.conductor.core.execution;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-
-import org.junit.Before;
-import org.junit.Test;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -48,8 +29,37 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
+import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
+import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
+import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
+import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
+import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.dao.MetadataDAO;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Viren
@@ -59,31 +69,44 @@ public class TestDeciderOutcomes {
 
 	private DeciderService ds;
 	
-	private static ObjectMapper om = new ObjectMapper();
+	private static ObjectMapper objectMapper = new ObjectMapper();
 	
 	static {
-		om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-        om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-        om.setSerializationInclusion(Include.NON_NULL);
-        om.setSerializationInclusion(Include.NON_EMPTY);
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+        objectMapper.setSerializationInclusion(Include.NON_NULL);
+        objectMapper.setSerializationInclusion(Include.NON_EMPTY);
 	}
 	
 	
 	@Before
 	public void init() throws Exception {
 		
-		MetadataDAO metadata = mock(MetadataDAO.class);
+		MetadataDAO metadataDAO = mock(MetadataDAO.class);
 		TaskDef td = new TaskDef();
 		td.setRetryCount(1);
-		when(metadata.getTaskDef(any())).thenReturn(td);
-		this.ds = new DeciderService(metadata, om);
+		when(metadataDAO.getTaskDef(any())).thenReturn(td);
+		ParametersUtils parametersUtils = new ParametersUtils();
+		Map<String, TaskMapper> taskMappers = new HashMap<>();
+		taskMappers.put("DECISION", new DecisionTaskMapper());
+		taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
+		taskMappers.put("JOIN", new JoinTaskMapper());
+		taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper));
+		taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
+		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
+
+		this.ds = new DeciderService(metadataDAO, taskMappers);
 	}
 	
 	@Test
 	public void testWorkflowWithNoTasks() throws Exception {
 		InputStream stream = TestDeciderOutcomes.class.getResourceAsStream("/conditional_flow.json");
-		WorkflowDef def = om.readValue(stream, WorkflowDef.class);
+		WorkflowDef def = objectMapper.readValue(stream, WorkflowDef.class);
 		assertNotNull(def);
 		
 		Workflow workflow = new Workflow();

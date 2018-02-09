@@ -38,6 +38,18 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.netflix.conductor.core.execution.ParametersUtils;
+import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
+import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
+import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
+import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
+import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -84,7 +96,7 @@ public class TestHttpTask {
 	
 	private static Server server;
 	
-	private static ObjectMapper om = new ObjectMapper();
+	private static ObjectMapper objectMapper = new ObjectMapper();
 	
 	@BeforeClass
 	public static void init() throws Exception {
@@ -92,7 +104,7 @@ public class TestHttpTask {
 		Map<String, Object> map = new HashMap<>();
 		map.put("key", "value1");
 		map.put("num", 42);
-		JSON_RESPONSE = om.writeValueAsString(map);
+		JSON_RESPONSE = objectMapper.writeValueAsString(map);
 		
 		server = new Server(7009);
 		ServletContextHandler servletContextHandler = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS);
@@ -235,7 +247,7 @@ public class TestHttpTask {
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
 		assertTrue(response instanceof Map);
 		Map<String, Object> map = (Map<String, Object>) response;
-		assertEquals(JSON_RESPONSE, om.writeValueAsString(map));
+		assertEquals(JSON_RESPONSE, objectMapper.writeValueAsString(map));
 	}
 
 	@Test
@@ -284,8 +296,20 @@ public class TestHttpTask {
  		wft.setWorkflowTaskType(Type.USER_DEFINED);
  		wft.setTaskReferenceName("t1");
 		def.getTasks().add(wft);
- 		MetadataDAO metadata = mock(MetadataDAO.class);
- 		new DeciderService(metadata, null).decide(workflow, def);
+ 		MetadataDAO metadataDAO = mock(MetadataDAO.class);
+		ParametersUtils parametersUtils = new ParametersUtils();
+		Map<String, TaskMapper> taskMappers = new HashMap<>();
+		taskMappers.put("DECISION", new DecisionTaskMapper());
+		taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
+		taskMappers.put("JOIN", new JoinTaskMapper());
+		taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper));
+		taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
+		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
+ 		new DeciderService(metadataDAO, taskMappers).decide(workflow, def);
  		
  		System.out.println(workflow.getTasks());
  		System.out.println(workflow.getStatus());
@@ -344,20 +368,20 @@ public class TestHttpTask {
 			} else if(request.getMethod().equals("POST") && request.getRequestURI().equals("/post")) {
 				response.addHeader("Content-Type", "application/json");
 				BufferedReader reader = request.getReader();
-				Map<String, Object> input = om.readValue(reader, mapOfObj);
+				Map<String, Object> input = objectMapper.readValue(reader, mapOfObj);
 				Set<String> keys = input.keySet();
 				for(String key : keys) {
 					input.put(key, key);					
 				}
 				PrintWriter writer = response.getWriter();
-				writer.print(om.writeValueAsString(input));
+				writer.print(objectMapper.writeValueAsString(input));
 				writer.flush();
 				writer.close();
 			} else if(request.getMethod().equals("POST") && request.getRequestURI().equals("/post2")) {
 				response.addHeader("Content-Type", "application/json");
 				response.setStatus(204);
 				BufferedReader reader = request.getReader();
-				Map<String, Object> input = om.readValue(reader, mapOfObj);
+				Map<String, Object> input = objectMapper.readValue(reader, mapOfObj);
 				Set<String> keys = input.keySet();
 				System.out.println(keys);
 				response.getWriter().close();
@@ -372,7 +396,7 @@ public class TestHttpTask {
 				Map<String, String> params = parseOauthParameters(request);
 				response.addHeader("Content-Type", "application/json");
 				PrintWriter writer = response.getWriter();
-				writer.print(om.writeValueAsString(params));
+				writer.print(objectMapper.writeValueAsString(params));
 				writer.flush();
 				writer.close();
 			}

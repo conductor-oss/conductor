@@ -18,11 +18,6 @@
  */
 package com.netflix.conductor.service;
 
-import java.util.List;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -33,6 +28,10 @@ import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.List;
 
 /**
  * @author Viren 
@@ -51,30 +50,30 @@ public class MetadataService {
 
 	/**
 	 * 
-	 * @param taskDefs Task Definitions to register
+	 * @param taskDefinitions Task Definitions to register
 	 */
-	public void registerTaskDef(List<TaskDef> taskDefs) {
-		for (TaskDef taskDef : taskDefs) {
-			taskDef.setCreatedBy(WorkflowContext.get().getClientApp());
-	   		taskDef.setCreateTime(System.currentTimeMillis());
-	   		taskDef.setUpdatedBy(null);
-	   		taskDef.setUpdateTime(null);
-			metadata.createTaskDef(taskDef);
+	public void registerTaskDef(List<TaskDef> taskDefinitions) {
+		for (TaskDef taskDefinition : taskDefinitions) {
+			taskDefinition.setCreatedBy(WorkflowContext.get().getClientApp());
+	   		taskDefinition.setCreateTime(System.currentTimeMillis());
+	   		taskDefinition.setUpdatedBy(null);
+	   		taskDefinition.setUpdateTime(null);
+			metadata.createTaskDef(taskDefinition);
 		}
 	}
 
 	/**
 	 * 
-	 * @param taskDef Task Definition to be updated
+	 * @param taskDefinition Task Definition to be updated
 	 */
-	public void updateTaskDef(TaskDef taskDef) {
-		TaskDef existing = metadata.getTaskDef(taskDef.getName());
+	public void updateTaskDef(TaskDef taskDefinition) {
+		TaskDef existing = metadata.getTaskDef(taskDefinition.getName());
 		if (existing == null) {
-			throw new ApplicationException(Code.NOT_FOUND, "No such task by name " + taskDef.getName());
+			throw new ApplicationException(Code.NOT_FOUND, "No such task by name " + taskDefinition.getName());
 		}
-   		taskDef.setUpdatedBy(WorkflowContext.get().getClientApp());
-   		taskDef.setUpdateTime(System.currentTimeMillis());
-		metadata.updateTaskDef(taskDef);
+   		taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
+   		taskDefinition.setUpdateTime(System.currentTimeMillis());
+		metadata.updateTaskDef(taskDefinition);
 	}
 
 	/**
