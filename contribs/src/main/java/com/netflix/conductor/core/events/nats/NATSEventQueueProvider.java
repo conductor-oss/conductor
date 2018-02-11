@@ -22,7 +22,6 @@ import com.netflix.conductor.contribs.queue.nats.NATSObservableQueue;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.EventQueues;
-import com.netflix.conductor.core.events.EventQueues.QueueType;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import io.nats.client.ConnectionFactory;
 import org.slf4j.Logger;
@@ -65,7 +64,7 @@ public class NATSEventQueueProvider implements EventQueueProvider {
         // Init NATS API
         factory = new ConnectionFactory(props);
         
-        EventQueues.registerProvider(QueueType.nats, this);
+        EventQueues.registerProvider("nats", this);
         logger.info("NATS Event Queue Provider initialized...");
     }
     

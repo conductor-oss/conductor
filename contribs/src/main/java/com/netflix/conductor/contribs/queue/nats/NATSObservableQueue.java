@@ -18,13 +18,13 @@
  */
 package com.netflix.conductor.contribs.queue.nats;
 
-import com.netflix.conductor.core.events.EventQueues;
-import io.nats.client.Connection;
-import io.nats.client.ConnectionFactory;
-import io.nats.client.Subscription;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.nats.client.Connection;
+import io.nats.client.ConnectionFactory;
+import io.nats.client.Subscription;
 
 /**
  * @author Oleksiy Lysak
@@ -36,7 +36,7 @@ public class NATSObservableQueue extends NATSAbstractQueue {
     private Connection conn;
     
     public NATSObservableQueue(ConnectionFactory factory, String queueURI) {
-        super(queueURI, EventQueues.QueueType.nats);
+        super(queueURI, "nats");
         this.fact = factory;
         open();
     }

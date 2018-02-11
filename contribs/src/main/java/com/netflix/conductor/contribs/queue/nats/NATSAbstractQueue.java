@@ -18,14 +18,6 @@
  */
 package com.netflix.conductor.contribs.queue.nats;
 
-import com.netflix.conductor.core.events.EventQueues;
-import com.netflix.conductor.core.events.queue.Message;
-import com.netflix.conductor.core.events.queue.ObservableQueue;
-import io.nats.client.NUID;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import rx.Observable;
-
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,6 +29,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.core.events.queue.Message;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
+
+import io.nats.client.NUID;
+import rx.Observable;
+
 /**
  * @author Oleksiy Lysak
  */
@@ -44,7 +45,7 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
     private static Logger logger = LoggerFactory.getLogger(NATSAbstractQueue.class);
     protected LinkedBlockingQueue<Message> messages = new LinkedBlockingQueue<>();
     protected final Lock mu = new ReentrantLock();
-    private EventQueues.QueueType queueType;
+    private String queueType;
     private ScheduledExecutorService execs;
     String queueURI;
     String subject;
@@ -54,7 +55,7 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
     private boolean observable;
     private boolean isOpened;
     
-    NATSAbstractQueue(String queueURI, EventQueues.QueueType queueType) {
+    NATSAbstractQueue(String queueURI, String queueType) {
         this.queueURI = queueURI;
         this.queueType = queueType;
         
@@ -121,7 +122,7 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
     
     @Override
     public String getType() {
-        return queueType.name();
+        return queueType;
     }
     
     @Override

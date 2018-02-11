@@ -18,16 +18,16 @@
  */
 package com.netflix.conductor.contribs.queue.nats;
 
-import com.netflix.conductor.core.events.EventQueues;
-import io.nats.streaming.StreamingConnection;
-import io.nats.streaming.StreamingConnectionFactory;
-import io.nats.streaming.Subscription;
-import io.nats.streaming.SubscriptionOptions;
+import java.util.UUID;
+
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.UUID;
+import io.nats.streaming.StreamingConnection;
+import io.nats.streaming.StreamingConnectionFactory;
+import io.nats.streaming.Subscription;
+import io.nats.streaming.SubscriptionOptions;
 
 /**
  * @author Oleksiy Lysak
@@ -40,7 +40,7 @@ public class NATSStreamObservableQueue extends NATSAbstractQueue {
     private String durableName;
     
     public NATSStreamObservableQueue(String clusterId, String natsUrl, String durableName, String queueURI) {
-        super(queueURI, EventQueues.QueueType.nats_stream);
+        super(queueURI, "nats_stream");
         this.fact = new StreamingConnectionFactory();
         this.fact.setClusterId(clusterId);
         this.fact.setClientId(UUID.randomUUID().toString());

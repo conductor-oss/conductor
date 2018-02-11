@@ -18,20 +18,22 @@
  */
 package com.netflix.conductor.core.events.nats;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.netflix.conductor.contribs.queue.nats.NATSStreamObservableQueue;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.EventQueues;
-import com.netflix.conductor.core.events.EventQueues.QueueType;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-import io.nats.client.Nats;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import io.nats.client.Nats;
 
 /**
  * @author Oleksiy Lysak
@@ -56,7 +58,7 @@ public class NATSStreamEventQueueProvider implements EventQueueProvider {
         logger.info("NATS Streaming clusterId=" + clusterId +
                 ", natsUrl=" + natsUrl + ", durableName=" + durableName);
         
-        EventQueues.registerProvider(QueueType.nats_stream, this);
+        EventQueues.registerProvider("nats_stream", this);
         logger.info("NATS Stream Event Queue Provider initialized...");
     }
     
