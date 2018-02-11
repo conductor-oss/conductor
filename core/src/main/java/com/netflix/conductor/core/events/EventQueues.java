@@ -38,18 +38,14 @@ public class EventQueues {
 	private static Logger logger = LoggerFactory.getLogger(EventQueues.class);
 	
 	private static ParametersUtils pu = new ParametersUtils();
-	
-	public enum QueueType {
-		sqs, conductor, nats, nats_stream
-	}
-	
-	private static Map<QueueType, EventQueueProvider> providers = new HashMap<>();
+
+	private static Map<String, EventQueueProvider> providers = new HashMap<>();
 
 	private EventQueues() {
 		
 	}
 
-	public static void registerProvider(QueueType type, EventQueueProvider provider) {
+	public static void registerProvider(String type, EventQueueProvider provider) {
 		providers.put(type, provider);
 	}
 	
@@ -59,9 +55,8 @@ public class EventQueues {
 	
 	public static ObservableQueue getQueue(String eventt, boolean throwException) {
 		String event = pu.replace(eventt).toString();
-		String typeVal = event.substring(0, event.indexOf(':'));
+		String type = event.substring(0, event.indexOf(':'));
 		String queueURI = event.substring(event.indexOf(':') + 1);
-		QueueType type = QueueType.valueOf(typeVal);
 		EventQueueProvider provider = providers.get(type);
 		if(provider != null) {
 			try {
@@ -72,6 +67,8 @@ public class EventQueues {
 					throw e;
 				}
 			}
+		} else {
+			throw new IllegalArgumentException("Unknown queue type " + type);
 		}
 		return null;
 		

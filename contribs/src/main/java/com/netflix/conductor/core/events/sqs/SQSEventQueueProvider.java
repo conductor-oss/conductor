@@ -29,7 +29,6 @@ import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue;
 import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.EventQueues;
-import com.netflix.conductor.core.events.EventQueues.QueueType;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 
 /**
@@ -46,7 +45,7 @@ public class SQSEventQueueProvider implements EventQueueProvider {
 	@Inject
 	public SQSEventQueueProvider(AmazonSQSClient client) {
 		this.client = client;
-		EventQueues.registerProvider(QueueType.sqs, this);
+		EventQueues.registerProvider("sqs", this);
 	}
 	
 	@Override
