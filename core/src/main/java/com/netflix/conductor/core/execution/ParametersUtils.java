@@ -225,13 +225,13 @@ public class ParametersUtils {
 		if("CPEWF_TASK_ID".equals(sysParam)) {
 			return taskId;
 		}
-		String value = System.getProperty(sysParam);
+		String value = System.getenv(sysParam);
 		if(value == null) {
-			value = System.getenv(sysParam);
+			value = System.getProperty(sysParam);
 		}
 		return value;
 	}
-	
+
 	private boolean contains(String test) {
 	    for (SystemParameters c : SystemParameters.values()) {
 	        if (c.name().equals(test)) {
