@@ -1,5 +1,5 @@
 /**
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -14,29 +14,27 @@
  * limitations under the License.
  */
 /**
- * 
- */
-package com.netflix.conductor.core.events;
-
-import com.netflix.conductor.core.events.queue.ObservableQueue;
-
-/**
- * @author Viren
  *
  */
-public class MockQueueProvider implements EventQueueProvider {
+package com.netflix.conductor.contribs;
 
-	private String type;
-	
-	public MockQueueProvider(String type) {
-		this.type = type;
-		EventQueues.registerProvider(type, this);
-	}
-	
+import com.google.inject.AbstractModule;
+import com.netflix.conductor.core.events.nats.NATSEventQueueProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+/**
+ * @author Oleksiy Lysak
+ *
+ */
+public class NatsModule extends AbstractModule {
+	private static Logger logger = LoggerFactory.getLogger(NatsModule.class);
 	
 	@Override
-	public ObservableQueue getQueue(String queueURI) {
-		return new MockObservableQueue(queueURI, queueURI, type);
+	protected void configure() {
+		bind(NATSEventQueueProvider.class).asEagerSingleton();
+		logger.info("NATS Module configured ...");
 	}
-
+	
 }

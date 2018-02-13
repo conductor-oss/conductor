@@ -125,8 +125,6 @@ public class ParametersUtils {
         Configuration option = Configuration.defaultConfiguration()
                 .addOptions(Option.SUPPRESS_EXCEPTIONS);
         DocumentContext documentContext = JsonPath.parse(inputMap, option);
-        //taskId will be null for new workflow that being started
-        //QQ what isSystemTask replaced here, the workflow instance already has the input
         Map<String, Object> replaced = replace(inputParams, documentContext, taskId);
         return replaced;
     }
@@ -151,14 +149,14 @@ public class ParametersUtils {
             doc = json;
         }
         Configuration option = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
-        DocumentContext io = JsonPath.parse(doc, option);
-        return replace(input, io, null);
+        DocumentContext documentContext = JsonPath.parse(doc, option);
+        return replace(input, documentContext, null);
     }
 
     public Object replace(String paramString) {
         Configuration option = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
-        DocumentContext io = JsonPath.parse(Collections.emptyMap(), option);
-        return replaceVariables(paramString, io, null);
+        DocumentContext documentContext = JsonPath.parse(Collections.emptyMap(), option);
+        return replaceVariables(paramString, documentContext, null);
     }
 
     @SuppressWarnings("unchecked")
@@ -203,7 +201,6 @@ public class ParametersUtils {
     }
 
     private Object replaceVariables(String paramString, DocumentContext documentContext, String taskId) {
-        //QQ what the heck is this regex doing
         String[] values = paramString.split("(?=\\$\\{)|(?<=\\})");
         Object[] convertedValues = new Object[values.length];
         for (int i = 0; i < values.length; i++) {
@@ -246,9 +243,9 @@ public class ParametersUtils {
         if ("CPEWF_TASK_ID".equals(sysParam)) {
             return taskId;
         }
-        String value = System.getProperty(sysParam);
+        String value = System.getenv(sysParam);
         if (value == null) {
-            value = System.getenv(sysParam);
+            value = System.getProperty(sysParam);
         }
         return value;
     }

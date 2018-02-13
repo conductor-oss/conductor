@@ -125,11 +125,11 @@ public class WorkflowClient extends ClientBase {
 	}
 
 	public void pauseWorkflow(String workflowId) {
-		put("workflow/{workflowId}/pause", null, workflowId);		
+		put("workflow/{workflowId}/pause", null, null, workflowId);		
 	}
 
 	public void resumeWorkflow(String workflowId) {
-		put("workflow/{workflowId}/resume", null, workflowId);		
+		put("workflow/{workflowId}/resume", null, null, workflowId);		
 	}
 	
 	public void restart(String workflowId) {

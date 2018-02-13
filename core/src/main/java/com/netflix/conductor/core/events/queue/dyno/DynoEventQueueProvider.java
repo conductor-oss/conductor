@@ -27,7 +27,6 @@ import javax.inject.Singleton;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.EventQueues;
-import com.netflix.conductor.core.events.EventQueues.QueueType;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.dao.QueueDAO;
 
@@ -48,7 +47,7 @@ public class DynoEventQueueProvider implements EventQueueProvider {
 	public DynoEventQueueProvider(QueueDAO dao, Configuration config) {
 		this.dao = dao;
 		this.config = config;
-		EventQueues.registerProvider(QueueType.conductor, this);
+		EventQueues.registerProvider("conductor", this);
 	}
 	
 	@Override
