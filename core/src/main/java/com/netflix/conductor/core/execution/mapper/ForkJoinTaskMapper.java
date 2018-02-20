@@ -50,7 +50,7 @@ public class ForkJoinTaskMapper implements TaskMapper {
      * Might be any kind of task, but in most cases is a UserDefinedTask with {@link Task.Status#SCHEDULED}
      * </li>
      * </ul>
-     * @throws TerminateWorkflow: When the task after {@link WorkflowTask.Type#FORK_JOIN} is not a {@link WorkflowTask.Type#JOIN}
+     * @throws TerminateWorkflow When the task after {@link WorkflowTask.Type#FORK_JOIN} is not a {@link WorkflowTask.Type#JOIN}
      */
     @Override
     public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) throws TerminateWorkflow {

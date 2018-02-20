@@ -53,7 +53,7 @@ public class UserDefinedTaskMapper implements TaskMapper {
      * to a {@link Task} in a {@link Task.Status#SCHEDULED} state
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId
-     * @throws TerminateWorkflow: In case if the task definition does not exist in the {@link MetadataDAO}
+     * @throws TerminateWorkflow In case if the task definition does not exist in the {@link MetadataDAO}
      * @return: a List with just one User defined task
      */
     @Override

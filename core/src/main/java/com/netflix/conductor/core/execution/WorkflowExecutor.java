@@ -110,19 +110,6 @@ public class WorkflowExecutor {
 
     private final Predicate<Task> isSystemTask = task -> SystemTaskType.is(task.getTaskType());
 
-    /**
-     *
-     * @param workflowName
-     * @param workflowVersion
-     * @param workflowInput
-     * @param correlationId
-     * @param parentWorkflowId
-     * @param parentWorkflowTaskId
-     * @param event
-     * @param taskToDomain ??
-     * @return String representation of workflowId
-     * @throws Exception
-     */
     public String startWorkflow(String workflowName, int workflowVersion, Map<String, Object> workflowInput,
                                 String correlationId, String parentWorkflowId, String parentWorkflowTaskId,
                                 String event, Map<String, String> taskToDomain) throws Exception {

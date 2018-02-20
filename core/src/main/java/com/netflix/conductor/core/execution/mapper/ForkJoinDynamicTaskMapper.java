@@ -63,13 +63,11 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
     /**
      * This method gets the list of tasks that need to scheduled when the the task to scheduled is of type {@link WorkflowTask.Type#FORK_JOIN_DYNAMIC}.
      * Creates a Fork Task, followed by the Dynamic tasks and a final JOIN task.
-     * <p>
      * <p>The definitions of the dynamic forks that need to be scheduled are available in the {@link WorkflowTask#getInputParameters()}
      * which are accessed using the {@link TaskMapperContext#getTaskToSchedule()}. The dynamic fork task definitions are referred by a key value either by
      * {@link WorkflowTask#getDynamicForkTasksParam()} or by {@link WorkflowTask#getDynamicForkJoinTasksParam()}
      * </p>
-     * <p>
-     * <p>When creating the list of tasks to be scheduled a set of preconditions are validated:
+     * When creating the list of tasks to be scheduled a set of preconditions are validated:
      * <ul>
      * <li>If the input parameter representing the Dynamic fork tasks is available as part of {@link WorkflowTask#getDynamicForkTasksParam()} then
      * the input for the dynamic task is validated to be a map by using {@link WorkflowTask#getDynamicForkTasksInputParamName()}</li>
@@ -78,10 +76,10 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
      * </li>
      * <li>A check is performed that the next following task in the {@link WorkflowDef} is a {@link WorkflowTask.Type#JOIN}</li>
      * </ul>
-     * </p>
+     *
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId
-     * @throws TerminateWorkflow: In case of:
+     * @throws TerminateWorkflow In case of:
      *                            <ul>
      *                            <li>
      *                            When the task after {@link WorkflowTask.Type#FORK_JOIN_DYNAMIC} is not a {@link WorkflowTask.Type#JOIN}
