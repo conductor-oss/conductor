@@ -18,33 +18,6 @@
  */
 package com.netflix.conductor.core.execution;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -60,11 +33,48 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
+import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
+import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
+import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
+import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
+import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DefaultRegistry;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 
 /**
@@ -75,18 +85,20 @@ public class TestDeciderService {
 
 	private Workflow workflow;
 	
-	private DeciderService ds;
+	private DeciderService deciderService;
+
+	private ParametersUtils parametersUtils;
 	
 	private static Registry registry;
 	
-	private static ObjectMapper om = new ObjectMapper();
+	private static ObjectMapper objectMapper = new ObjectMapper();
 	
 	static {
-		om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-        om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-        om.setSerializationInclusion(Include.NON_NULL);
-        om.setSerializationInclusion(Include.NON_EMPTY);
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+        objectMapper.setSerializationInclusion(Include.NON_NULL);
+        objectMapper.setSerializationInclusion(Include.NON_EMPTY);
 	}
 	
 	@BeforeClass
@@ -97,12 +109,25 @@ public class TestDeciderService {
 	
 	@Before
 	public void setup(){
-		MetadataDAO mdao = mock(MetadataDAO.class);
+		MetadataDAO metadataDAO = mock(MetadataDAO.class);
 		TaskDef taskDef = new TaskDef();
 		WorkflowDef workflowDef = new WorkflowDef();
-		when(mdao.getTaskDef(any())).thenReturn(taskDef);
-		when(mdao.getLatest(any())).thenReturn(workflowDef);
-		ds = new DeciderService(mdao, new ObjectMapper());
+		when(metadataDAO.getTaskDef(any())).thenReturn(taskDef);
+		when(metadataDAO.getLatest(any())).thenReturn(workflowDef);
+		parametersUtils = new ParametersUtils();
+		Map<String, TaskMapper> taskMappers = new HashMap<>();
+		taskMappers.put("DECISION", new DecisionTaskMapper());
+		taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
+		taskMappers.put("JOIN", new JoinTaskMapper());
+		taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper));
+		taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
+		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
+		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
+
+		deciderService = new DeciderService(metadataDAO, taskMappers);
 		
 		workflow = new Workflow();
 		workflow.getInput().put("requestId", "request id 001");
@@ -152,7 +177,7 @@ public class TestDeciderService {
 		ip.put("nullValue", null);
 		ip.put("task2Status", "${task2.status}");
 		ip.put("channelMap", "${workflow.input.channelMapping}");
-		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null, null);
+		Map<String, Object> taskInput = parametersUtils.getTaskInput(ip , workflow, null, null);
 		
 		assertNotNull(taskInput);
 		assertTrue(taskInput.containsKey("workflowInputParam"));
@@ -218,7 +243,7 @@ public class TestDeciderService {
 		taskDef.getInputTemplate().put("listValues", listParams);
 		
 		
-		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, taskDef, null);
+		Map<String, Object> taskInput = parametersUtils.getTaskInput(ip , workflow, taskDef, null);
 		
 		assertNotNull(taskInput);
 		assertTrue(taskInput.containsKey("workflowInputParam"));
@@ -273,7 +298,7 @@ public class TestDeciderService {
 		task.getOutputData().put("isPersonActive", true);
 		workflow.getTasks().add(task);
 		workflow.setSchemaVersion(2);
-		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null, null);
+		Map<String, Object> taskInput = parametersUtils.getTaskInput(ip , workflow, null, null);
 		System.out.println(taskInput.get("complexJson"));
 		assertNotNull(taskInput);
 		assertTrue(taskInput.containsKey("workflowInputParam"));
@@ -301,7 +326,7 @@ public class TestDeciderService {
 		task.getOutputData().put("isPersonActive", true);
 		workflow.getTasks().add(task);
 		workflow.setSchemaVersion(1);
-		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null, null);
+		Map<String, Object> taskInput = parametersUtils.getTaskInput(ip , workflow, null, null);
 		
 		assertNotNull(taskInput);
 		assertTrue(taskInput.containsKey("workflowInputParam"));
@@ -479,7 +504,7 @@ public class TestDeciderService {
 		wf.setVersion(def.getVersion());
 		wf.setStatus(WorkflowStatus.RUNNING);
 		
-		DeciderOutcome outcome = ds.decide(wf, def);
+		DeciderOutcome outcome = deciderService.decide(wf, def);
 		List<Task> scheduledTasks = outcome.tasksToBeScheduled;
 		assertNotNull(scheduledTasks);
 		assertEquals(2, scheduledTasks.size());
@@ -605,7 +630,7 @@ public class TestDeciderService {
 		task.setTaskType(taskType.getName());
 		task.setStartTime(System.currentTimeMillis() - 2_000);		//2 seconds ago!
 		task.setStatus(Status.IN_PROGRESS);
-		ds.checkForTimeout(taskType, task);
+		deciderService.checkForTimeout(taskType, task);
 		
 		//Task should be marked as timed out
 		assertEquals(Status.TIMED_OUT, task.getStatus());
@@ -615,7 +640,7 @@ public class TestDeciderService {
 		taskType.setTimeoutPolicy(TimeoutPolicy.ALERT_ONLY);
 		task.setStatus(Status.IN_PROGRESS);
 		task.setReasonForIncompletion(null);
-		ds.checkForTimeout(taskType, task);
+		deciderService.checkForTimeout(taskType, task);
 		
 		//Nothing will happen
 		assertEquals(Status.IN_PROGRESS, task.getStatus());
@@ -628,7 +653,7 @@ public class TestDeciderService {
 		task.setReasonForIncompletion(null);
 		
 		try {
-			ds.checkForTimeout(taskType, task);	
+			deciderService.checkForTimeout(taskType, task);
 		}catch(TerminateWorkflow tw) {
 			exception = true;
 		}
@@ -640,7 +665,7 @@ public class TestDeciderService {
 		taskType.setTimeoutPolicy(TimeoutPolicy.TIME_OUT_WF);
 		task.setStatus(Status.IN_PROGRESS);
 		task.setReasonForIncompletion(null);
-		ds.checkForTimeout(null, task);	//this will be a no-op
+		deciderService.checkForTimeout(null, task);	//this will be a no-op
 		
 		assertEquals(Status.IN_PROGRESS, task.getStatus());
 		assertNull(task.getReasonForIncompletion());
@@ -744,7 +769,7 @@ public class TestDeciderService {
 		env.put("env_task_id", "${CPEWF_TASK_ID}");
 		ip.put("env", env);
 		
-		Map<String, Object> taskInput = ds.getTaskInput(ip , workflow, null, "t1");
+		Map<String, Object> taskInput = parametersUtils.getTaskInput(ip , workflow, null, "t1");
 		Task task = new Task();
 		task.getInputData().putAll(taskInput);
 		task.setStatus(Status.FAILED);
@@ -755,7 +780,7 @@ public class TestDeciderService {
 		workflowTask.getInputParameters().put("task_id", "${CPEWF_TASK_ID}");
 		workflowTask.getInputParameters().put("env", env);
 		
-		Task task2 = ds.retry(taskDef, workflowTask, task, workflow);		
+		Task task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
 		System.out.println(task.getTaskId() + ":\n" + task.getInputData());
 		System.out.println(task2.getTaskId() + ":\n" + task2.getInputData());
 		
@@ -771,12 +796,12 @@ public class TestDeciderService {
 	@Test
 	public void testFork() throws Exception {
 		InputStream stream = TestDeciderOutcomes.class.getResourceAsStream("/test.json");
-		Workflow workflow = om.readValue(stream, Workflow.class);
+		Workflow workflow = objectMapper.readValue(stream, Workflow.class);
 		
 		InputStream defs = TestDeciderOutcomes.class.getResourceAsStream("/def.json");
-		WorkflowDef def = om.readValue(defs, WorkflowDef.class);
+		WorkflowDef def = objectMapper.readValue(defs, WorkflowDef.class);
 
-		DeciderOutcome outcome = ds.decide(workflow, def);
+		DeciderOutcome outcome = deciderService.decide(workflow, def);
 		assertFalse(outcome.isComplete);
 		assertEquals(5, outcome.tasksToBeScheduled.size());
 		assertEquals(1, outcome.tasksToBeUpdated.size());

@@ -68,6 +68,5 @@ public class SearchResult<T> {
 		this.results = results;
 	}
 	
-	
 
 }

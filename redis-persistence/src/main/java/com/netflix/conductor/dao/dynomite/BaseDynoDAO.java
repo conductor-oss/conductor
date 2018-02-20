@@ -61,6 +61,8 @@ public class BaseDynoDAO {
 				namespacedKey = namespacedKey + NAMESPACE_SEP;
 			}
 		}
+		//QUES cpewf.devint.test.WORKFLOW.UUID isSystemTask the stack in here same as the NETFLIX_STACK ? and what about the domain?
+		//Looking at the data saved in dynomite cpewf.WORKFLOW.UUID
 		return namespacedKey;
 	}
 

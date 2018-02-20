@@ -34,7 +34,7 @@ import java.util.Set;
  */
 public class WorkflowTask {
 
-	public static enum Type {
+	public enum Type {
 		SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, EVENT, WAIT, USER_DEFINED;
 		
 		private static Set<String> systemTasks = new HashSet<>();
@@ -51,7 +51,7 @@ public class WorkflowTask {
 			//Do NOT add USER_DEFINED here...
 		}
 		
-		public static boolean is(String name) {
+		public static boolean isSystemTask(String name) {
 			return systemTasks.contains(name);
 		}
 	}
@@ -376,7 +376,7 @@ public class WorkflowTask {
 	private Collection<List<WorkflowTask>> children(){
 		Collection<List<WorkflowTask>> v1 = new LinkedList<>();
 		Type tt = Type.USER_DEFINED;
-		if(Type.is(type)) {
+		if(Type.isSystemTask(type)) {
 			tt = Type.valueOf(type);
 		}
 		
@@ -408,7 +408,7 @@ public class WorkflowTask {
 	
 	public WorkflowTask next(String taskReferenceName, WorkflowTask parent){
 		Type tt = Type.USER_DEFINED;
-		if(Type.is(type)) {
+		if(Type.isSystemTask(type)) {
 			tt = Type.valueOf(type);
 		}
 		
@@ -471,7 +471,7 @@ public class WorkflowTask {
 		}
 		
 		Type tt = Type.USER_DEFINED;
-		if(Type.is(type)) {
+		if(Type.isSystemTask(type)) {
 			tt = Type.valueOf(type);
 		}
 		
@@ -501,7 +501,7 @@ public class WorkflowTask {
 			return true;
 		}
 		Type tt = Type.USER_DEFINED;
-		if(Type.is(type)) {
+		if(Type.isSystemTask(type)) {
 			tt = Type.valueOf(type);
 		}
 		

@@ -20,6 +20,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -140,6 +141,10 @@ public class DynoProxy {
 
 	public String hget(String key, String field) {
 		return dynoClient.hget(key, field);
+	}
+
+	public Optional<String> optionalHget(String key, String field) {
+		return Optional.ofNullable(dynoClient.hget(key, field));
 	}
 
 	public Map<String, String> hscan(String key, int count) {

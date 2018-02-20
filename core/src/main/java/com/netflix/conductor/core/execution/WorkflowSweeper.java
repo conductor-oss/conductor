@@ -74,12 +74,9 @@ public class WorkflowSweeper {
 	}
 
 	public void init(WorkflowExecutor executor) {
-		
 		ScheduledExecutorService deciderPool = Executors.newScheduledThreadPool(1);
-		
 		deciderPool.scheduleWithFixedDelay(() -> {
-
-			try{
+			try {
 				boolean disable = config.disableSweep();
 				if (disable) {
 					logger.info("Workflow sweep is disabled.");
@@ -87,14 +84,10 @@ public class WorkflowSweeper {
 				}
 				List<String> workflowIds = queues.pop(WorkflowExecutor.deciderQueue, 2 * executorThreadPoolSize, 2000);
 				sweep(workflowIds, executor);
-				
-			}catch(Exception e){
+			} catch (Exception e) {
 				Monitors.error(className, "sweep");
 				logger.error(e.getMessage(), e);
-				
 			}
-			
-			
 		}, 500, 500, TimeUnit.MILLISECONDS);
 	}
 
