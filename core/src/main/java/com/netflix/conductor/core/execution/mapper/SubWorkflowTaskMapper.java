@@ -1,21 +1,45 @@
+/**
+ * Copyright 2018 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
 package com.netflix.conductor.core.execution.mapper;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflow;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.dao.MetadataDAO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class SubWorkflowTaskMapper implements TaskMapper {
+
+    public static final Logger logger = LoggerFactory.getLogger(SubWorkflowTaskMapper.class);
 
     private ParametersUtils parametersUtils;
 
@@ -29,34 +53,18 @@ public class SubWorkflowTaskMapper implements TaskMapper {
 
     @Override
     public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) {
+        logger.debug("TaskMapperContext {} in SubWorkflowTaskMapper", taskMapperContext);
         WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
         Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
         String taskId = taskMapperContext.getTaskId();
+        //Check if the are sub workflow parameters, if not throw an exception, cannot initiate a sub-workflow without workflow params
+        SubWorkflowParams subWorkflowParams = getSubWorkflowParams(taskToSchedule);
 
-        SubWorkflowParams subWorkflowParams = taskToSchedule.getSubWorkflowParam();
-        if (subWorkflowParams == null) {
-            throw new TerminateWorkflow("Task " + taskToSchedule.getName() + " is defined as sub-workflow and is missing subWorkflowParams.  Please check the blueprint");
-        }
-        String name = subWorkflowParams.getName();
-        Object version = subWorkflowParams.getVersion();
-        Map<String, Object> params = new HashMap<>();
-        params.put("name", name);
-        if (version != null) {
-            params.put("version", version.toString());
-        }
-        Map<String, Object> resolvedParams = parametersUtils.getTaskInputV2(params, workflowInstance, null, null);
+        Map<String, Object> resolvedParams = getSubWorkflowInputParameters(workflowInstance, subWorkflowParams);
+
         String subWorkflowName = resolvedParams.get("name").toString();
-        version = resolvedParams.get("version");
-        int subWorkflowVersion;
-        if (version == null) {
-            try {
-                subWorkflowVersion = metadataDAO.getLatest(subWorkflowName).getVersion();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        } else {
-            subWorkflowVersion = Integer.parseInt(version.toString());
-        }
+
+        Integer subWorkflowVersion = getSubWorkflowVersion(resolvedParams, subWorkflowName);
 
         Task subWorkflowTask = new Task();
         subWorkflowTask.setTaskType(SubWorkflow.NAME);
@@ -72,6 +80,46 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         subWorkflowTask.setTaskId(taskId);
         subWorkflowTask.setStatus(Task.Status.SCHEDULED);
         subWorkflowTask.setWorkflowTask(taskToSchedule);
+        logger.debug("SubWorkflowTask {} created to be Scheduled", subWorkflowTask);
         return Arrays.asList(subWorkflowTask);
     }
+
+    @VisibleForTesting
+    SubWorkflowParams getSubWorkflowParams(WorkflowTask taskToSchedule) {
+        return Optional.ofNullable(taskToSchedule.getSubWorkflowParam())
+                .orElseThrow(() -> {
+                    String reason = String.format("Task %s is defined as sub-workflow and is missing subWorkflowParams. " +
+                            "Please check the blueprint", taskToSchedule.getName());
+                    logger.error(reason);
+                    return new TerminateWorkflow(reason);
+                });
+    }
+
+    @VisibleForTesting
+    Map<String, Object> getSubWorkflowInputParameters(Workflow workflowInstance, SubWorkflowParams subWorkflowParams) {
+        Map<String, Object> params = new HashMap<>();
+        params.put("name", subWorkflowParams.getName());
+
+        Object version = subWorkflowParams.getVersion();
+        if (version != null) {
+            params.put("version", version.toString());
+        }
+        return parametersUtils.getTaskInputV2(params, workflowInstance, null, null);
+    }
+
+    @VisibleForTesting
+    Integer getSubWorkflowVersion(Map<String, Object> resolvedParams, String subWorkflowName) throws TerminateWorkflow {
+        return Optional.ofNullable(resolvedParams.get("version"))
+                .map(Object::toString)
+                .map(Integer::parseInt)
+                .orElseGet(
+                        () -> Optional.ofNullable(metadataDAO.getLatest(subWorkflowName))
+                                .map(WorkflowDef::getVersion)
+                                .orElseThrow(() -> {
+                                    String reason = String.format("The Task %s defined as a sub-workflow has no workflow definition available ", subWorkflowName);
+                                    logger.error(reason);
+                                    return new TerminateWorkflow(reason);
+                                }));
+    }
+
 }

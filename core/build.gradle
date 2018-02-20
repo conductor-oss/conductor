@@ -10,4 +10,9 @@ dependencies {
 	compile ('com.fasterxml.jackson.core:jackson-databind:2.7.5')
 	compile ('com.fasterxml.jackson.core:jackson-core:2.7.5') {force=true}
 	compile 'com.jayway.jsonpath:json-path:2.2.0'
+	compile 'org.slf4j:slf4j-api:1.7.+'
+
+	compile group: 'org.apache.commons', name: 'commons-lang3', version: '3.0'
+
+	testCompile 'org.slf4j:slf4j-log4j12:1.8.0-alpha1'
 }

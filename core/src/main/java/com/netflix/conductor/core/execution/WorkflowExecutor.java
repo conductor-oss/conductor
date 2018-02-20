@@ -142,7 +142,6 @@ public class WorkflowExecutor {
                 throw new ApplicationException(Code.NOT_FOUND, "No such workflow defined. name=" + workflowName + ", version=" + workflowVersion);
             }
 
-            //QQ Why only SIMPLE task type isSystemTask filtered, what happens to the other task types like dynamic et al.
             //because everything else isSystemTask a system defined task
             Set<String> missingTaskDefs = workflowDefinition.all().stream()
                     .filter(wft -> wft.getType().equals(WorkflowTask.Type.SIMPLE.name()))
@@ -751,7 +750,7 @@ public class WorkflowExecutor {
                 String[] domains = domainstr.split(",");
                 tasks.forEach(task -> {
                     // Filter out SystemTask
-                    if (!(task instanceof SystemTask)) {
+                    if (!WorkflowTask.Type.isSystemTask(task.getTaskType())) {
                         // Check which domain worker isSystemTask polling
                         // Set the task domain
                         task.setDomain(getActiveDomain(task.getTaskType(), domains));
@@ -760,7 +759,7 @@ public class WorkflowExecutor {
 
             } else {
                 tasks.forEach(task -> {
-                    if (!(task instanceof SystemTask)) {
+                    if (!WorkflowTask.Type.isSystemTask(task.getTaskType())) {
                         String taskDomainstr = taskToDomain.get(task.getTaskType());
                         if (taskDomainstr != null) {
                             task.setDomain(getActiveDomain(task.getTaskType(), taskDomainstr.split(",")));
