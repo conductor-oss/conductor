@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -52,6 +53,8 @@ import com.netflix.conductor.service.ExecutionService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * 
@@ -64,6 +67,8 @@ import io.swagger.annotations.ApiOperation;
 @Consumes({ MediaType.APPLICATION_JSON })
 @Singleton
 public class TaskResource {
+
+	public static final Logger logger = LoggerFactory.getLogger(TaskResource.class);
 
 	private ExecutionService taskService;
 
@@ -81,28 +86,35 @@ public class TaskResource {
 	@GET
 	@Path("/poll/{tasktype}")
 	@ApiOperation("Poll for a task of a certain type")
-	@Consumes({ MediaType.WILDCARD })
+	@Consumes({MediaType.WILDCARD})
 	public Task poll(@PathParam("tasktype") String taskType, @QueryParam("workerid") String workerId, @QueryParam("domain") String domain) throws Exception {
+		logger.debug("Task being polled: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
 		List<Task> tasks = taskService.poll(taskType, workerId, domain, 1, 100);
-		if(tasks.isEmpty()) {
+		if (tasks.isEmpty()) {
+			logger.debug("No Task available for the poll: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
 			return null;
 		}
-		return tasks.get(0);
+		Task task = tasks.get(0);
+		logger.debug("The Task {} being returned for /tasks/poll/{}?{}&{}", task, taskType, workerId, domain);
+		return task;
 	}
-	
+
 	@GET
 	@Path("/poll/batch/{tasktype}")
 	@ApiOperation("batch Poll for a task of a certain type")
-	@Consumes({ MediaType.WILDCARD })
+	@Consumes({MediaType.WILDCARD})
 	public List<Task> batchPoll(
-			@PathParam("tasktype") String taskType, 
+			@PathParam("tasktype") String taskType,
 			@QueryParam("workerid") String workerId,
 			@QueryParam("domain") String domain,
 			@DefaultValue("1") @QueryParam("count") Integer count,
-			@DefaultValue("100") @QueryParam("timeout") Integer timeout
-			
-			) throws Exception {
-		return taskService.poll(taskType, workerId, domain, count, timeout);
+			@DefaultValue("100") @QueryParam("timeout") Integer timeout) throws Exception {
+		List<Task> polledTasks = taskService.poll(taskType, workerId, domain, count, timeout);
+		logger.debug("The Tasks {} being returned for /tasks/poll/{}?{}&{}",
+				polledTasks.stream()
+						.map(Task::getTaskId)
+						.collect(Collectors.toList()), taskType, workerId, domain);
+		return polledTasks;
 	}
 
 	@GET
@@ -126,7 +138,9 @@ public class TaskResource {
 	@POST
 	@ApiOperation("Update a task")
 	public String updateTask(TaskResult task) throws Exception {
+		logger.debug("Update Task: {} with callback time: {}", task, task.getCallbackAfterSeconds());
 		taskService.updateTask(task);
+		logger.debug("Task: {} updated successfully with callback time: {}", task, task.getCallbackAfterSeconds());
 		return "\"" + task.getTaskId() + "\"";
 	}
 
@@ -187,17 +201,11 @@ public class TaskResource {
 	@GET
 	@Path("/queue/all")
 	@ApiOperation("Get the details about each queue")
-	@Consumes({ MediaType.WILDCARD })
+	@Consumes({MediaType.WILDCARD})
 	public Map<String, Long> all() throws Exception {
 		Map<String, Long> all = queues.queuesDetail();
 		Set<Entry<String, Long>> entries = all.entrySet();
-		Set<Entry<String, Long>> sorted = new TreeSet<>(new Comparator<Entry<String, Long>>() {
-
-			@Override
-			public int compare(Entry<String, Long> o1, Entry<String, Long> o2) {
-				return o1.getKey().compareTo(o2.getKey());
-			}
-		});
+		Set<Entry<String, Long>> sorted = new TreeSet<>(Comparator.comparing(Entry::getKey));
 		sorted.addAll(entries);
 		LinkedHashMap<String, Long> sortedMap = new LinkedHashMap<>();
 		sorted.stream().forEach(e -> sortedMap.put(e.getKey(), e.getValue()));

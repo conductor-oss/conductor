@@ -654,7 +654,7 @@ public class TestDeciderService {
 		
 		try {
 			deciderService.checkForTimeout(taskType, task);
-		}catch(TerminateWorkflow tw) {
+		}catch(TerminateWorkflowException tw) {
 			exception = true;
 		}
 		assertTrue(exception);

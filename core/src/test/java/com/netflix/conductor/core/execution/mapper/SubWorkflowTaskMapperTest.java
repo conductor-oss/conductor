@@ -8,7 +8,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.ParametersUtils;
-import com.netflix.conductor.core.execution.TerminateWorkflow;
+import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -96,7 +96,7 @@ public class SubWorkflowTaskMapperTest {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("FooWorkFLow");
 
-        expectedException.expect(TerminateWorkflow.class);
+        expectedException.expect(TerminateWorkflowException.class);
         expectedException.expectMessage(String.format("Task %s is defined as sub-workflow and is missing subWorkflowParams. " +
                 "Please check the blueprint", workflowTask.getName()));
 
@@ -133,7 +133,7 @@ public class SubWorkflowTaskMapperTest {
         Map<String, Object> subWorkflowParamMap = new HashMap<>();
         when(metadataDAO.getLatest(any())).thenReturn(null);
 
-        expectedException.expect(TerminateWorkflow.class);
+        expectedException.expect(TerminateWorkflowException.class);
         expectedException.expectMessage(String.format("The Task %s defined as a sub-workflow has no workflow definition available ", "FooWorkFlow"));
 
         subWorkflowTaskMapper.getSubWorkflowVersion(subWorkflowParamMap, "FooWorkFlow");

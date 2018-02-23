@@ -70,7 +70,7 @@ public class DeciderService {
     }
 
     //QQ public method validation of the input params
-    public DeciderOutcome decide(Workflow workflow, WorkflowDef def) throws TerminateWorkflow {
+    public DeciderOutcome decide(Workflow workflow, WorkflowDef def) throws TerminateWorkflowException {
 
         workflow.setSchemaVersion(def.getSchemaVersion());
         //In case of a new workflow the list of tasks will be empty
@@ -91,7 +91,7 @@ public class DeciderService {
         return decide(def, workflow, tasksToBeScheduled);
     }
 
-    private DeciderOutcome decide(final WorkflowDef def, final Workflow workflow, List<Task> preScheduledTasks) throws TerminateWorkflow {
+    private DeciderOutcome decide(final WorkflowDef def, final Workflow workflow, List<Task> preScheduledTasks) throws TerminateWorkflowException {
 
         DeciderOutcome outcome = new DeciderOutcome();
 
@@ -193,7 +193,7 @@ public class DeciderService {
 
     }
 
-    private List<Task> startWorkflow(Workflow workflow, WorkflowDef def) throws TerminateWorkflow {
+    private List<Task> startWorkflow(Workflow workflow, WorkflowDef def) throws TerminateWorkflowException {
 
         logger.debug("Starting workflow " + def.getName() + "/" + workflow.getWorkflowId());
         //The tasks will be empty in case of new workflow
@@ -202,7 +202,7 @@ public class DeciderService {
         if (workflow.getReRunFromWorkflowId() == null || tasks.isEmpty()) {
 
             if (def.getTasks().isEmpty()) {
-                throw new TerminateWorkflow("No tasks found to be executed", WorkflowStatus.COMPLETED);
+                throw new TerminateWorkflowException("No tasks found to be executed", WorkflowStatus.COMPLETED);
             }
 
             WorkflowTask taskToSchedule = def.getTasks().getFirst(); //Nothing isSystemTask running yet - so schedule the first task
@@ -227,7 +227,7 @@ public class DeciderService {
                 .orElseThrow(() -> {
                     String reason = String.format("The workflow %s isSystemTask marked for re-run from %s but could not find the starting task",
                             workflow.getWorkflowId(), workflow.getReRunFromWorkflowId());
-                    return new TerminateWorkflow(reason);
+                    return new TerminateWorkflowException(reason);
                 });
 
         return Arrays.asList(rerunFromTask);
@@ -251,7 +251,7 @@ public class DeciderService {
         workflow.setOutput(output);
     }
 
-    private boolean checkForWorkflowCompletion(final WorkflowDef def, final Workflow workflow) throws TerminateWorkflow {
+    private boolean checkForWorkflowCompletion(final WorkflowDef def, final Workflow workflow) throws TerminateWorkflowException {
 
         List<Task> allTasks = workflow.getTasks();
         if (allTasks.isEmpty()) {
@@ -319,13 +319,13 @@ public class DeciderService {
     }
 
     @VisibleForTesting
-    Task retry(TaskDef taskDefinition, WorkflowTask workflowTask, Task task, Workflow workflow) throws TerminateWorkflow {
+    Task retry(TaskDef taskDefinition, WorkflowTask workflowTask, Task task, Workflow workflow) throws TerminateWorkflowException {
 
         int retryCount = task.getRetryCount();
         if (!task.getStatus().isRetriable() || SystemTaskType.isBuiltIn(task.getTaskType()) || taskDefinition == null || taskDefinition.getRetryCount() <= retryCount) {
             WorkflowStatus status = task.getStatus().equals(Status.TIMED_OUT) ? WorkflowStatus.TIMED_OUT : WorkflowStatus.FAILED;
             task.setRetried(true);
-            throw new TerminateWorkflow(task.getReasonForIncompletion(), status, task);
+            throw new TerminateWorkflowException(task.getReasonForIncompletion(), status, task);
         }
 
         // retry... - but not immediately - put a delay...
@@ -393,7 +393,7 @@ public class DeciderService {
             case TIME_OUT_WF:
                 task.setStatus(Status.TIMED_OUT);
                 task.setReasonForIncompletion(reason);
-                throw new TerminateWorkflow(reason, WorkflowStatus.TIMED_OUT, task);
+                throw new TerminateWorkflowException(reason, WorkflowStatus.TIMED_OUT, task);
         }
     }
 
@@ -428,8 +428,10 @@ public class DeciderService {
 
    public List<Task> getTasksToBeScheduled(WorkflowDef workflowDefinition, Workflow workflowInstance,
                                              WorkflowTask taskToSchedule, int retryCount, String retriedTaskId) {
+
        Map<String, Object> input = parametersUtils.getTaskInput(taskToSchedule.getInputParameters(),
                workflowInstance, null, null);
+
         Type taskType = Type.USER_DEFINED;
         String type = taskToSchedule.getType();
         if (Type.isSystemTask(type)) {
@@ -455,7 +457,7 @@ public class DeciderService {
             }
             return retval;
         } catch (Exception e) {
-            throw new TerminateWorkflow(e.getMessage());
+            throw new TerminateWorkflowException(e.getMessage());
         }
 
     }

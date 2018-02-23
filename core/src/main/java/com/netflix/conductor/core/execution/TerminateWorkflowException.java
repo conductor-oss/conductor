@@ -25,21 +25,21 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
  *
  */
 @SuppressWarnings("serial")
-public class TerminateWorkflow extends RuntimeException {
+public class TerminateWorkflowException extends RuntimeException {
 
     WorkflowStatus workflowStatus;
 
     Task task;
 
-    public TerminateWorkflow(String reason) {
+    public TerminateWorkflowException(String reason) {
         this(reason, WorkflowStatus.FAILED);
     }
 
-    public TerminateWorkflow(String reason, WorkflowStatus workflowStatus) {
+    public TerminateWorkflowException(String reason, WorkflowStatus workflowStatus) {
         this(reason, workflowStatus, null);
     }
 
-    public TerminateWorkflow(String reason, WorkflowStatus workflowStatus, Task task) {
+    public TerminateWorkflowException(String reason, WorkflowStatus workflowStatus, Task task) {
         super(reason);
         this.workflowStatus = workflowStatus;
         this.task = task;
