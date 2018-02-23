@@ -11,7 +11,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.SystemTaskType;
-import com.netflix.conductor.core.execution.TerminateWorkflow;
+import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
@@ -120,7 +120,7 @@ public class ForkJoinDynamicTaskMapperTest {
 
         TaskMapperContext taskMapperContext = new TaskMapperContext(def, workflowInstance, dynamicForkJoinToSchedule, null,0, null, taskId, deciderService);
         //then
-        expectedException.expect(TerminateWorkflow.class);
+        expectedException.expect(TerminateWorkflowException.class);
         forkJoinDynamicTaskMapper.getMappedTasks(taskMapperContext);
 
     }
@@ -271,7 +271,7 @@ public class ForkJoinDynamicTaskMapperTest {
         when(objectMapper.convertValue(anyObject(),any(Class.class))).thenReturn(null);
 
         //then
-        expectedException.expect(TerminateWorkflow.class);
+        expectedException.expect(TerminateWorkflowException.class);
 
         forkJoinDynamicTaskMapper.getDynamicForkJoinTasksAndInput(dynamicForkJoinToSchedule, new Workflow());
 
@@ -356,7 +356,7 @@ public class ForkJoinDynamicTaskMapperTest {
 
         when(objectMapper.convertValue(anyMap(),any(TypeReference.class))).thenReturn(Arrays.asList(wt2, wt3));
         //then
-        expectedException.expect(TerminateWorkflow.class);
+        expectedException.expect(TerminateWorkflowException.class);
         //when
         forkJoinDynamicTaskMapper.getDynamicForkTasksAndInput(dynamicForkJoinToSchedule, new Workflow(), "dynamicTasks");
 

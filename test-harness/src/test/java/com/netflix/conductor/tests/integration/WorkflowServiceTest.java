@@ -1606,7 +1606,9 @@ public class WorkflowServiceTest {
 	
 	
 	private void clearWorkflows() throws Exception {
-		List<String> workflows = ms.getWorkflowDefs().stream().map(def -> def.getName()).collect(Collectors.toList());
+		List<String> workflows = ms.getWorkflowDefs().stream()
+				.map(def -> def.getName())
+				.collect(Collectors.toList());
 		for(String wfName : workflows){
 			List<String> running = ess.getRunningWorkflows(wfName);
 			for(String wfid : running){
@@ -2432,7 +2434,7 @@ public class WorkflowServiceTest {
 		for(int i = 0; i < 10; i++){
 			futures.add(executors.submit(()->{
 				long s = System.currentTimeMillis();
-				provider.decide(wfid);				
+				provider.decide(wfid);
 				System.out.println("Took " + (System.currentTimeMillis()-s) + " ms to run decider");
 				return null;
 			}));

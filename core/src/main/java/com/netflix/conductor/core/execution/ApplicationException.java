@@ -32,7 +32,7 @@ import java.util.Map;
 @SuppressWarnings("serial")
 public class ApplicationException extends RuntimeException {
 
-	public static enum Code {
+	public enum Code {
 		INVALID_INPUT(400), INTERNAL_ERROR(500), NOT_FOUND(404), CONFLICT(409), UNAUTHORIZED(403), BACKEND_ERROR(500);
 		
 		private int statusCode;

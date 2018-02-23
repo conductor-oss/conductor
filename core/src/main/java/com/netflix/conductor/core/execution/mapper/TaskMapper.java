@@ -17,11 +17,11 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.core.execution.TerminateWorkflow;
+import com.netflix.conductor.core.execution.TerminateWorkflowException;
 
 import java.util.List;
 
 public interface TaskMapper {
 
-    List<Task> getMappedTasks(TaskMapperContext taskMapperContext) throws TerminateWorkflow;
+    List<Task> getMappedTasks(TaskMapperContext taskMapperContext) throws TerminateWorkflowException;
 }

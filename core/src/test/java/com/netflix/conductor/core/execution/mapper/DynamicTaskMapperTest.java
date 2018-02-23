@@ -6,14 +6,13 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
-import com.netflix.conductor.core.execution.TerminateWorkflow;
+import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Mockito;
 
 import java.util.HashMap;
 import java.util.List;
@@ -82,7 +81,7 @@ public class DynamicTaskMapperTest {
     public void getDynamicTaskNameNotAvailable() throws Exception {
         Map<String, Object> taskInput = new HashMap<>();
 
-        expectedException.expect(TerminateWorkflow.class);
+        expectedException.expect(TerminateWorkflowException.class);
         expectedException.expectMessage(String.format("Cannot map a dynamic task based on the parameter and input. " +
                 "Parameter= %s, input= %s", "dynamicTaskName", taskInput));
 
@@ -114,7 +113,7 @@ public class DynamicTaskMapperTest {
 
         when(metadataDAO.getTaskDef("Foo")).thenReturn(null);
 
-        expectedException.expect(TerminateWorkflow.class);
+        expectedException.expect(TerminateWorkflowException.class);
         expectedException.expectMessage(String.format("Invalid task specified.  Cannot find task by name %s in the task definitions",
                 workflowTask.getName()));
 

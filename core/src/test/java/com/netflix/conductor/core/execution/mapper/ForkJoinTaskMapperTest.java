@@ -6,7 +6,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.SystemTaskType;
-import com.netflix.conductor.core.execution.TerminateWorkflow;
+import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
 import org.junit.Before;
 import org.junit.Rule;
@@ -173,7 +173,7 @@ public class ForkJoinTaskMapperTest {
         String taskId = IDGenerator.generate();
 
         TaskMapperContext taskMapperContext = new TaskMapperContext(def,workflow, forkTask, null, 0 , null, taskId, deciderService);
-        expectedException.expect(TerminateWorkflow.class);
+        expectedException.expect(TerminateWorkflowException.class);
         expectedException.expectMessage("Dynamic join definition is not followed by a join task.  Check the blueprint");
         forkJoinTaskMapper.getMappedTasks(taskMapperContext);
 

@@ -21,7 +21,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.SystemTaskType;
-import com.netflix.conductor.core.execution.TerminateWorkflow;
+import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,10 +50,10 @@ public class ForkJoinTaskMapper implements TaskMapper {
      * Might be any kind of task, but in most cases is a UserDefinedTask with {@link Task.Status#SCHEDULED}
      * </li>
      * </ul>
-     * @throws TerminateWorkflow When the task after {@link WorkflowTask.Type#FORK_JOIN} is not a {@link WorkflowTask.Type#JOIN}
+     * @throws TerminateWorkflowException When the task after {@link WorkflowTask.Type#FORK_JOIN} is not a {@link WorkflowTask.Type#JOIN}
      */
     @Override
-    public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) throws TerminateWorkflow {
+    public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) throws TerminateWorkflowException {
 
         logger.debug("TaskMapperContext {} in ForkJoinTaskMapper", taskMapperContext);
 
@@ -90,7 +90,7 @@ public class ForkJoinTaskMapper implements TaskMapper {
 
         WorkflowTask joinWorkflowTask = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());
         if (joinWorkflowTask == null || !joinWorkflowTask.getType().equals(WorkflowTask.Type.JOIN.name())) {
-            throw new TerminateWorkflow("Dynamic join definition is not followed by a join task.  Check the blueprint");
+            throw new TerminateWorkflowException("Dynamic join definition is not followed by a join task.  Check the blueprint");
         }
         return tasksToBeScheduled;
     }

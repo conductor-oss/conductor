@@ -37,7 +37,7 @@ public class EventQueues {
 	
 	private static Logger logger = LoggerFactory.getLogger(EventQueues.class);
 	
-	private static ParametersUtils pu = new ParametersUtils();
+	private static ParametersUtils parametersUtils = new ParametersUtils();
 
 	private static Map<String, EventQueueProvider> providers = new HashMap<>();
 
@@ -54,7 +54,7 @@ public class EventQueues {
 	}
 	
 	public static ObservableQueue getQueue(String eventt, boolean throwException) {
-		String event = pu.replace(eventt).toString();
+		String event = parametersUtils.replace(eventt).toString();
 		String type = event.substring(0, event.indexOf(':'));
 		String queueURI = event.substring(event.indexOf(':') + 1);
 		EventQueueProvider provider = providers.get(type);

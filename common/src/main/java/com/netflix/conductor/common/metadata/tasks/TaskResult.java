@@ -31,9 +31,8 @@ import java.util.concurrent.CopyOnWriteArrayList;
 public class TaskResult {
 
 	public enum Status {
-
-		IN_PROGRESS, FAILED, COMPLETED, SCHEDULED;		//SCHEDULED is added for the backward compatibility and should NOT be used when updating the task result
-	};
+		IN_PROGRESS, FAILED, COMPLETED, SCHEDULED;        //SCHEDULED is added for the backward compatibility and should NOT be used when updating the task result
+	}
 
 	private String workflowInstanceId;
 	
@@ -100,7 +99,7 @@ public class TaskResult {
 	/**
 	 * When set to non-zero values, the task remains in the queue for the specified seconds before sent back to the worker when polled. 
 	 * Useful for the long running task, where the task is updated as IN_PROGRESS and should not be polled out of the queue for a specified amount of time.  (delayed queue implementation)
-	 * @param callbackAfterSeconds.   Amount of time in seconds the task should be held in the queue before giving it to a polling worker.
+	 * @param callbackAfterSeconds Amount of time in seconds the task should be held in the queue before giving it to a polling worker.
 	 */
 	public void setCallbackAfterSeconds(long callbackAfterSeconds) {
 		this.callbackAfterSeconds = callbackAfterSeconds;
@@ -219,7 +218,6 @@ public class TaskResult {
 		result.setStatus(status);
 		return result;
 	} 
-	
-	
+
 	
 }

@@ -23,7 +23,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
-import com.netflix.conductor.core.execution.TerminateWorkflow;
+import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,11 +56,11 @@ public class SimpleTaskMapper implements TaskMapper {
      * to a {@link Task}
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId
-     * @throws TerminateWorkflow In case if the task definition does not exist in the {@link MetadataDAO}
+     * @throws TerminateWorkflowException In case if the task definition does not exist in the {@link MetadataDAO}
      * @return: a List with just one simple task
      */
     @Override
-    public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) throws TerminateWorkflow {
+    public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) throws TerminateWorkflowException {
 
         logger.debug("TaskMapperContext {} in SimpleTaskMapper", taskMapperContext);
 
@@ -72,7 +72,7 @@ public class SimpleTaskMapper implements TaskMapper {
         TaskDef taskDefinition = Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
                 .orElseThrow(() -> {
                     String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
-                    return new TerminateWorkflow(reason);
+                    return new TerminateWorkflowException(reason);
                 });
 
         Map<String, Object> input = parametersUtils.getTaskInput(taskToSchedule.getInputParameters(), workflowInstance, taskDefinition, taskMapperContext.getTaskId());

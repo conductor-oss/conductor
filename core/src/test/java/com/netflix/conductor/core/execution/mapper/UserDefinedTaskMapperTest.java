@@ -6,14 +6,13 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
-import com.netflix.conductor.core.execution.TerminateWorkflow;
+import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Mockito;
 
 import java.util.HashMap;
 import java.util.List;
@@ -71,7 +70,7 @@ public class UserDefinedTaskMapperTest {
         TaskMapperContext taskMapperContext = new TaskMapperContext(new WorkflowDef(), new Workflow(), taskToSchedule, new HashMap<>(), 0, retriedTaskId, taskId, null);
 
         //then
-        expectedException.expect(TerminateWorkflow.class);
+        expectedException.expect(TerminateWorkflowException.class);
         expectedException.expectMessage(String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName()));
         //when
         userDefinedTaskMapper.getMappedTasks(taskMapperContext);

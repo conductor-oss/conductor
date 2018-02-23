@@ -24,7 +24,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
-import com.netflix.conductor.core.execution.TerminateWorkflow;
+import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
@@ -91,7 +91,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
                     String reason = String.format("Task %s is defined as sub-workflow and is missing subWorkflowParams. " +
                             "Please check the blueprint", taskToSchedule.getName());
                     logger.error(reason);
-                    return new TerminateWorkflow(reason);
+                    return new TerminateWorkflowException(reason);
                 });
     }
 
@@ -108,7 +108,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
     }
 
     @VisibleForTesting
-    Integer getSubWorkflowVersion(Map<String, Object> resolvedParams, String subWorkflowName) throws TerminateWorkflow {
+    Integer getSubWorkflowVersion(Map<String, Object> resolvedParams, String subWorkflowName) throws TerminateWorkflowException {
         return Optional.ofNullable(resolvedParams.get("version"))
                 .map(Object::toString)
                 .map(Integer::parseInt)
@@ -118,7 +118,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
                                 .orElseThrow(() -> {
                                     String reason = String.format("The Task %s defined as a sub-workflow has no workflow definition available ", subWorkflowName);
                                     logger.error(reason);
-                                    return new TerminateWorkflow(reason);
+                                    return new TerminateWorkflowException(reason);
                                 }));
     }
 

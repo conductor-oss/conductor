@@ -41,7 +41,7 @@ public class Join extends WorkflowSystemTask {
 		
 		boolean allDone = true;
 		boolean hasFailures = false;
-		String failureReason = "";
+		StringBuilder failureReason = new StringBuilder();
 		List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
 		for(String joinOnRef : joinOn){
 			Task forkedTask = workflow.getTaskByRefName(joinOnRef);
@@ -53,7 +53,7 @@ public class Join extends WorkflowSystemTask {
 			Status taskStatus = forkedTask.getStatus();
 			hasFailures = !taskStatus.isSuccessful();
 			if(hasFailures){
-				failureReason += forkedTask.getReasonForIncompletion() + " ";
+				failureReason.append(forkedTask.getReasonForIncompletion()).append(" ");
 			}
 			task.getOutputData().put(joinOnRef, forkedTask.getOutputData());
 			allDone = taskStatus.isTerminal();
@@ -63,7 +63,7 @@ public class Join extends WorkflowSystemTask {
 		}
 		if(allDone || hasFailures){
 			if(hasFailures){
-				task.setReasonForIncompletion(failureReason);
+				task.setReasonForIncompletion(failureReason.toString());
 				task.setStatus(Status.FAILED);
 			}else{
 				task.setStatus(Status.COMPLETED);	
