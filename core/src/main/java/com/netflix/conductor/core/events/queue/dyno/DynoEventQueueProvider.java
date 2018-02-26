@@ -47,7 +47,6 @@ public class DynoEventQueueProvider implements EventQueueProvider {
 	public DynoEventQueueProvider(QueueDAO dao, Configuration config) {
 		this.dao = dao;
 		this.config = config;
-		EventQueues.registerProvider("conductor", this);
 	}
 	
 	@Override

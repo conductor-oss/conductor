@@ -30,7 +30,6 @@ public class MockQueueProvider implements EventQueueProvider {
 	
 	public MockQueueProvider(String type) {
 		this.type = type;
-		EventQueues.registerProvider(type, this);
 	}
 	
 	

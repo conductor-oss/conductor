@@ -58,25 +58,27 @@ public class EventProcessor {
 
 	private static Logger logger = LoggerFactory.getLogger(EventProcessor.class);
 	
-	private MetadataService ms;
+	private MetadataService metadataService;
 	
-	private ExecutionService es;
+	private ExecutionService executionService;
 	
-	private ActionProcessor ap;
+	private ActionProcessor actionProcessor;
 	
 	private Map<String, ObservableQueue> queuesMap = new ConcurrentHashMap<>();
 	
 	private ExecutorService executors;
 	
-	private ObjectMapper om;
+	private ObjectMapper objectMapper;
+
 	
 	@Inject
-	public EventProcessor(ExecutionService es, MetadataService ms, ActionProcessor ap, Configuration config, ObjectMapper om) {
-		this.es = es;
-		this.ms = ms;
-		this.ap = ap;
-		this.om = om;
-		
+	public EventProcessor(ExecutionService executionService, MetadataService metadataService,
+						  ActionProcessor actionProcessor, Configuration config, ObjectMapper objectMapper) {
+		this.executionService = executionService;
+		this.metadataService = metadataService;
+		this.actionProcessor = actionProcessor;
+		this.objectMapper = objectMapper;
+
 		int executorThreadCount = config.getIntProperty("workflow.event.processor.thread.count", 2);
 		if(executorThreadCount > 0) {
 			this.executors = Executors.newFixedThreadPool(executorThreadCount);
@@ -108,7 +110,7 @@ public class EventProcessor {
 	}
 	
 	private void refresh() {
-		Set<String> events = ms.getEventHandlers().stream().map(eh -> eh.getEvent()).collect(Collectors.toSet());
+		Set<String> events = metadataService.getEventHandlers().stream().map(eh -> eh.getEvent()).collect(Collectors.toSet());
 		List<ObservableQueue> created = new LinkedList<>();
 		events.stream().forEach(event -> queuesMap.computeIfAbsent(event, s -> {
 			ObservableQueue q = EventQueues.getQueue(event, false);
@@ -134,16 +136,16 @@ public class EventProcessor {
 			Object payloadObj = null;
 			if(payload != null) {
 				try {
-					payloadObj = om.readValue(payload, Object.class);
+					payloadObj = objectMapper.readValue(payload, Object.class);
 				}catch(Exception e) {
 					payloadObj = payload;
 				}
 			}
 			
-			es.addMessage(queue.getName(), msg);
+			executionService.addMessage(queue.getName(), msg);
 			
 			String event = queue.getType() + ":" + queue.getName();
-			List<EventHandler> handlers = ms.getEventHandlersForEvent(event, true);
+			List<EventHandler> handlers = metadataService.getEventHandlersForEvent(event, true);
 			
 			for(EventHandler handler : handlers) {
 				
@@ -160,7 +162,7 @@ public class EventProcessor {
 						ee.setStatus(Status.SKIPPED);
 						ee.getOutput().put("msg", payload);
 						ee.getOutput().put("condition", condition);
-						es.addEventExecution(ee);
+						executionService.addEventExecution(ee);
 						continue;
 					}
 				}
@@ -176,7 +178,7 @@ public class EventProcessor {
 					ee.setName(handler.getName());
 					ee.setAction(action.getAction());
 					ee.setStatus(Status.IN_PROGRESS);
-					if (es.addEventExecution(ee)) {
+					if (executionService.addEventExecution(ee)) {
 						Future<Void> future = execute(ee, action, payload);
 						futures.add(future);
 					} else {
@@ -205,12 +207,12 @@ public class EventProcessor {
 			try {
 				
 				logger.debug("Executing {} with payload {}", action.getAction(), payload);
-				Map<String, Object> output = ap.execute(action, payload, ee.getEvent(), ee.getMessageId());
+				Map<String, Object> output = actionProcessor.execute(action, payload, ee.getEvent(), ee.getMessageId());
 				if(output != null) {
 					ee.getOutput().putAll(output);
 				}
 				ee.setStatus(Status.COMPLETED);
-				es.updateEventExecution(ee);
+				executionService.updateEventExecution(ee);
 				
 				return null;
 			}catch(Exception e) {

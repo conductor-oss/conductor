@@ -27,9 +27,11 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.netflix.conductor.core.events.EventQueues;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
@@ -55,8 +57,9 @@ public class TestEvent {
 
 	@Before
 	public void setup() {
-		new MockQueueProvider("sqs");
-		new MockQueueProvider("conductor");
+		EventQueues.providers = new HashMap<>();
+		EventQueues.providers.put("sqs", new MockQueueProvider("sqs"));
+		EventQueues.providers.put("conductor", new MockQueueProvider("conductor"));
 	}
 	
 	@Test
@@ -185,8 +188,8 @@ public class TestEvent {
 				return null;
 			}
 		}).when(dao).remove(any(), any());
-		
-		new DynoEventQueueProvider(dao, new TestConfiguration());
+
+		EventQueues.providers.put("conductor", new DynoEventQueueProvider(dao, new TestConfiguration()));
 		event.start(workflow, task, null);
 		
 		assertEquals(Task.Status.COMPLETED, task.getStatus());

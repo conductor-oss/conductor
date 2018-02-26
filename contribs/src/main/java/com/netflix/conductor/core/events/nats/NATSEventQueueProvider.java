@@ -63,8 +63,6 @@ public class NATSEventQueueProvider implements EventQueueProvider {
         
         // Init NATS API
         factory = new ConnectionFactory(props);
-        
-        EventQueues.registerProvider("nats", this);
         logger.info("NATS Event Queue Provider initialized...");
     }
     

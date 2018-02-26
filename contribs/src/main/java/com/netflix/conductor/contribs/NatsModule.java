@@ -19,6 +19,12 @@
 package com.netflix.conductor.contribs;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.google.inject.name.Named;
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.nats.NATSEventQueueProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +39,15 @@ public class NatsModule extends AbstractModule {
 	
 	@Override
 	protected void configure() {
-		bind(NATSEventQueueProvider.class).asEagerSingleton();
 		logger.info("NATS Module configured ...");
+	}
+
+	@ProvidesIntoMap
+	@StringMapKey("nats")
+	@Singleton
+	@Named("EventQueueProviders")
+	public EventQueueProvider getNATSEventQueueProvider(Configuration configuration) {
+		return new NATSEventQueueProvider(configuration);
 	}
 	
 }

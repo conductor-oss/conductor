@@ -25,11 +25,16 @@ import com.amazonaws.auth.AWSCredentialsProvider;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
+import com.google.inject.multibindings.ProvidesIntoMap;
+import com.google.inject.multibindings.StringMapKey;
+import com.google.inject.name.Named;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.contribs.queue.QueueManager;
 import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue;
 import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.events.sqs.SQSEventQueueProvider;
 
@@ -43,8 +48,19 @@ public class ContribsModule extends AbstractModule {
 	@Override
 	protected void configure() {
 		bind(QueueManager.class).asEagerSingleton();
-		bind(SQSEventQueueProvider.class).asEagerSingleton();
+		//bind(SQSEventQueueProvider.class).asEagerSingleton();
 	}
+
+
+	@ProvidesIntoMap
+	@StringMapKey("sqs")
+	@Singleton
+	@Named("EventQueueProviders")
+	public EventQueueProvider getSQSEventQueueProvider(AmazonSQSClient amazonSQSClient) {
+		return new SQSEventQueueProvider(amazonSQSClient);
+	}
+
+
 
 	@Provides
 	public AmazonSQSClient getSQSClient(AWSCredentialsProvider acp) {
