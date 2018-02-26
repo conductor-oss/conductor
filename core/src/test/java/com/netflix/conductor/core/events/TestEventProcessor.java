@@ -27,6 +27,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -73,9 +74,9 @@ public class TestEventProcessor {
 		when(queue.getName()).thenReturn(queueURI);
 		when(queue.getType()).thenReturn("sqs");
 		when(provider.getQueue(queueURI)).thenReturn(queue);
+		EventQueues.providers = new HashMap<>();
 		
-		
-		EventQueues.registerProvider("sqs", provider);
+		EventQueues.providers.put("sqs", provider);
 		
 		EventHandler eh = new EventHandler();
 		eh.setName(UUID.randomUUID().toString());

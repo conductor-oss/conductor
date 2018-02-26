@@ -57,8 +57,6 @@ public class NATSStreamEventQueueProvider implements EventQueueProvider {
         
         logger.info("NATS Streaming clusterId=" + clusterId +
                 ", natsUrl=" + natsUrl + ", durableName=" + durableName);
-        
-        EventQueues.registerProvider("nats_stream", this);
         logger.info("NATS Stream Event Queue Provider initialized...");
     }
     

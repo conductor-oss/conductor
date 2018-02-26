@@ -45,7 +45,6 @@ public class SQSEventQueueProvider implements EventQueueProvider {
 	@Inject
 	public SQSEventQueueProvider(AmazonSQSClient client) {
 		this.client = client;
-		EventQueues.registerProvider("sqs", this);
 	}
 	
 	@Override

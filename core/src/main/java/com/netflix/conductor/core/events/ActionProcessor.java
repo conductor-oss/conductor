@@ -18,16 +18,6 @@
  */
 package com.netflix.conductor.core.events;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
@@ -41,6 +31,14 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.service.MetadataService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Viren
@@ -50,7 +48,7 @@ import com.netflix.conductor.service.MetadataService;
 @Singleton
 public class ActionProcessor {
 
-	private static Logger logger = LoggerFactory.getLogger(EventProcessor.class);
+	private static Logger logger = LoggerFactory.getLogger(ActionProcessor.class);
 
 	private WorkflowExecutor executor;
 
