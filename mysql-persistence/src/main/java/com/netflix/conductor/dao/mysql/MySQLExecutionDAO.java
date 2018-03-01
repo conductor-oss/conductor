@@ -174,7 +174,7 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 			return;
 		}
 
-		String taskKey = task.getReferenceTaskName() + "_" + task.getRetryCount();
+		String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
 
 		withTransaction(connection -> {
 			removeScheduledTask(connection, task, taskKey);
