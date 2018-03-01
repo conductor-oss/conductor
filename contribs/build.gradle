@@ -4,7 +4,7 @@ dependencies {
 	compile project(':conductor-core')
 
 	compile 'com.amazonaws:aws-java-sdk-sqs:latest.release'
-	compile ('com.google.inject:guice:4.1+') { force= true}
+	compile ('com.google.inject:guice:4.1.0')
 
 	compile 'net.thisptr:jackson-jq:+'
 

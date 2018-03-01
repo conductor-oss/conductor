@@ -16,8 +16,7 @@ dependencies {
 	testCompile 'org.rarefiedredis.redis:redis-java:0.0.17'
 	testCompile 'com.sun.jersey.contribs:jersey-guice:1.19.+'	
 
-	testCompile 'com.google.inject:guice:4.+'
-	testCompile 'com.google.inject.extensions:guice-servlet:4.+'
+	testCompile 'com.google.inject.extensions:guice-servlet:4.1.0'
 	testCompile 'io.swagger:swagger-jersey-jaxrs:1.5.0'
 }
 

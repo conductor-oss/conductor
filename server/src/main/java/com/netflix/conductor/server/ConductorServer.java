@@ -20,7 +20,6 @@ package com.netflix.conductor.server;
 
 import java.io.InputStream;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
@@ -68,29 +67,29 @@ public class ConductorServer {
 		redis, dynomite, memory, redis_cluster, mysql
 	}
 	
-	private ServerModule sm;
+	private ServerModule serverModule;
 	
 	private Server server;
 	
-	private ConductorConfig cc;
+	private ConductorConfig conductorConfig;
 	
-	private DB db;
+	private DB database;
 	
-	public ConductorServer(ConductorConfig cc) {
-		this.cc = cc;
-		String dynoClusterName = cc.getProperty("workflow.dynomite.cluster.name", "");
+	public ConductorServer(ConductorConfig conductorConfig) {
+		this.conductorConfig = conductorConfig;
+		String dynoClusterName = conductorConfig.getProperty("workflow.dynomite.cluster.name", "");
 		
 		List<Host> dynoHosts = new LinkedList<>();
-		String dbstring = cc.getProperty("db", "memory");
+		String dbstring = conductorConfig.getProperty("db", "memory");
 		try {
-			db = DB.valueOf(dbstring);
+			database = DB.valueOf(dbstring);
 		}catch(IllegalArgumentException ie) {
 			logger.error("Invalid db name: " + dbstring + ", supported values are: " + Arrays.toString(DB.values()));
 			System.exit(1);
 		}
 		
-		if(!(db.equals(DB.memory) || db.equals(DB.mysql))) {
-			String hosts = cc.getProperty("workflow.dynomite.cluster.hosts", null);
+		if(!(database.equals(DB.memory) || database.equals(DB.mysql))) {
+			String hosts = conductorConfig.getProperty("workflow.dynomite.cluster.hosts", null);
 			if(hosts == null) {
 				System.err.println("Missing dynomite/redis hosts.  Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied configuration.");
 				logger.error("Missing dynomite/redis hosts.  Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied configuration.");
@@ -109,59 +108,41 @@ public class ConductorServer {
 				
 		}else {
 			//Create a single shard host supplier
-			Host dynoHost = new Host("localhost", 0, cc.getAvailabilityZone(), Status.Up);
+			Host dynoHost = new Host("localhost", 0, conductorConfig.getAvailabilityZone(), Status.Up);
 			dynoHosts.add(dynoHost);
 		}
 		init(dynoClusterName, dynoHosts);
 	}
 	
 	private void init(String dynoClusterName, List<Host> dynoHosts) {
-		HostSupplier hs = new HostSupplier() {
-			
-			@Override
-			public Collection<Host> getHosts() {
-				return dynoHosts;
-			}
-		};
+		HostSupplier hostSupplier = () -> dynoHosts;
 		
 		JedisCommands jedis = null;
 
-		switch(db) {
+		switch(database) {
 		case redis:		
 		case dynomite:
-			ConnectionPoolConfigurationImpl cp = new ConnectionPoolConfigurationImpl(dynoClusterName).withTokenSupplier(new TokenMapSupplier() {
-				
-				HostToken token = new HostToken(1L, dynoHosts.get(0));
-				
-				@Override
-				public List<HostToken> getTokens(Set<Host> activeHosts) {
-					return Arrays.asList(token);
-				}
-				
-				@Override
-				public HostToken getTokenForHost(Host host, Set<Host> activeHosts) {
-					return token;
-				}
-				
-				
-			}).setLocalRack(cc.getAvailabilityZone()).setLocalDataCenter(cc.getRegion());
-			cp.setSocketTimeout(0);
-			cp.setConnectTimeout(0);
-			cp.setMaxConnsPerHost(cc.getIntProperty("workflow.dynomite.connection.maxConnsPerHost", 10));
-			
+			ConnectionPoolConfigurationImpl connectionPoolConfiguration = new ConnectionPoolConfigurationImpl(dynoClusterName)
+					.withTokenSupplier(getTokenMapSupplier(dynoHosts))
+					.setLocalRack(conductorConfig.getAvailabilityZone())
+					.setLocalDataCenter(conductorConfig.getRegion())
+					.setSocketTimeout(0)
+					.setConnectTimeout(0)
+					.setMaxConnsPerHost(conductorConfig.getIntProperty("workflow.dynomite.connection.maxConnsPerHost", 10));
+
 			jedis = new DynoJedisClient.Builder()
-				.withHostSupplier(hs)
-				.withApplicationName(cc.getAppId())
-				.withDynomiteClusterName(dynoClusterName)
-				.withCPConfig(cp)
-				.build();
+					.withHostSupplier(hostSupplier)
+					.withApplicationName(conductorConfig.getAppId())
+					.withDynomiteClusterName(dynoClusterName)
+					.withCPConfig(connectionPoolConfiguration)
+					.build();
 			
 			logger.info("Starting conductor server using dynomite/redis cluster " + dynoClusterName);
 			
 			break;
 			
 		case mysql:
-			logger.info("Starting conductor server using MySQL data store", db);
+			logger.info("Starting conductor server using MySQL data store", database);
 			break;
 		case memory:
 			jedis = new JedisMock();
@@ -189,11 +170,28 @@ public class ConductorServer {
 			break;
 		}
 		
-		this.sm = new ServerModule(jedis, hs, cc, db);
+		this.serverModule = new ServerModule(jedis, hostSupplier, conductorConfig, database);
 	}
-	
+
+	private TokenMapSupplier getTokenMapSupplier(List<Host> dynoHosts) {
+		return new TokenMapSupplier() {
+
+            HostToken token = new HostToken(1L, dynoHosts.get(0));
+
+            @Override
+            public List<HostToken> getTokens(Set<Host> activeHosts) {
+                return Arrays.asList(token);
+            }
+
+            @Override
+            public HostToken getTokenForHost(Host host, Set<Host> activeHosts) {
+                return token;
+            }
+        };
+	}
+
 	public ServerModule getGuiceModule() {
-		return sm;
+		return serverModule;
 	}
 	
 	public synchronized void start(int port, boolean join) throws Exception {
@@ -202,7 +200,7 @@ public class ConductorServer {
 			throw new IllegalStateException("Server is already running");
 		}
 		
-		Guice.createInjector(sm);
+		Guice.createInjector(serverModule);
 
 		//Swagger
 		String resourceBasePath = Main.class.getResource("/swagger-ui").toExternalForm();

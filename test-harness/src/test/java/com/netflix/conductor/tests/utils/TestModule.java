@@ -21,7 +21,6 @@ package com.netflix.conductor.tests.utils;
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
@@ -51,18 +50,20 @@ public class TestModule extends AbstractModule {
 	
 	private int maxThreads = 50;
 	
-	private ExecutorService es;
+	private ExecutorService executorService;
 	
 	@Override
 	protected void configure() {
+
 		System.setProperty("workflow.system.task.worker.callback.seconds", "0");
 		System.setProperty("workflow.system.task.worker.queue.size", "10000");
 		System.setProperty("workflow.system.task.worker.thread.count", "10");
+
 		configureExecutorService();
+
 		ConductorConfig config = new ConductorConfig();
 		bind(Configuration.class).toInstance(config);
 		JedisCommands jedisMock = new JedisMock();
-		
 
 		DynoQueueDAO queueDao = new DynoQueueDAO(jedisMock, jedisMock, new ShardSupplier() {
 			
@@ -86,24 +87,19 @@ public class TestModule extends AbstractModule {
 		bind(DynoProxy.class).toInstance(proxy);
 		install(new CoreModule());
 		bind(UserTask.class).asEagerSingleton();
-		
 	}
 	
 	@Provides
 	public ExecutorService getExecutorService(){
-		return this.es;
+		return this.executorService;
 	}
 	
 	private void configureExecutorService(){
 		AtomicInteger count = new AtomicInteger(0);
-		this.es = java.util.concurrent.Executors.newFixedThreadPool(maxThreads, new ThreadFactory() {
-			
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread t = new Thread(r);
-				t.setName("workflow-worker-" + count.getAndIncrement());
-				return t;
-			}
-		});
+		this.executorService = java.util.concurrent.Executors.newFixedThreadPool(maxThreads, runnable -> {
+            Thread workflowWorkerThread = new Thread(runnable);
+            workflowWorkerThread.setName(String.format("workflow-worker-%d", count.getAndIncrement()));
+            return workflowWorkerThread;
+        });
 	}
 }

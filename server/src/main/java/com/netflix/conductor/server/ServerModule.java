@@ -20,7 +20,6 @@ package com.netflix.conductor.server;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.google.inject.AbstractModule;
@@ -58,22 +57,22 @@ public class ServerModule extends AbstractModule {
 	
 	private JedisCommands dynoConn;
 	
-	private HostSupplier hs;
+	private HostSupplier hostSupplier;
 	
 	private String region;
 	
 	private String localRack;
 	
-	private ConductorConfig config;
+	private ConductorConfig conductorConfig;
 	
 	private ConductorServer.DB db;
 
-	public ServerModule(JedisCommands jedis, HostSupplier hs, ConductorConfig config, ConductorServer.DB db) {
+	public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, ConductorConfig conductorConfig, ConductorServer.DB db) {
 		this.dynoConn = jedis;
-		this.hs = hs;
-		this.config = config;
-		this.region = config.getRegion();
-		this.localRack = config.getAvailabilityZone();
+		this.hostSupplier = hostSupplier;
+		this.conductorConfig = conductorConfig;
+		this.region = conductorConfig.getRegion();
+		this.localRack = conductorConfig.getAvailabilityZone();
 		this.db = db;
 		
 	}
@@ -83,15 +82,15 @@ public class ServerModule extends AbstractModule {
 		
 		configureExecutorService();
 		
-		bind(Configuration.class).toInstance(config);
+		bind(Configuration.class).toInstance(conductorConfig);
 
 		if (db == ConductorServer.DB.mysql) {
 			install(new MySQLWorkflowModule());
 		} else {
 			String localDC = localRack;
 			localDC = localDC.replaceAll(region, "");
-			DynoShardSupplier ss = new DynoShardSupplier(hs, region, localDC);
-			DynoQueueDAO queueDao = new DynoQueueDAO(dynoConn, dynoConn, ss, config);
+			DynoShardSupplier ss = new DynoShardSupplier(hostSupplier, region, localDC);
+			DynoQueueDAO queueDao = new DynoQueueDAO(dynoConn, dynoConn, ss, conductorConfig);
 
 			bind(MetadataDAO.class).to(RedisMetadataDAO.class);
 			bind(ExecutionDAO.class).to(RedisExecutionDAO.class);
@@ -108,10 +107,10 @@ public class ServerModule extends AbstractModule {
 		install(new CoreModule());
 		install(new JerseyModule());
 		
-		new HttpTask(new RestClientManager(), config);
+		new HttpTask(new RestClientManager(), conductorConfig);
 		new JsonJqTransform();
 		
-		List<AbstractModule> additionalModules = config.getAdditionalModules();
+		List<AbstractModule> additionalModules = conductorConfig.getAdditionalModules();
 		if(additionalModules != null) {
 			for(AbstractModule additionalModule : additionalModules) {
 				install(additionalModule);
@@ -126,14 +125,10 @@ public class ServerModule extends AbstractModule {
 	
 	private void configureExecutorService(){
 		AtomicInteger count = new AtomicInteger(0);
-		this.es = java.util.concurrent.Executors.newFixedThreadPool(maxThreads, new ThreadFactory() {
-			
-			@Override
-			public Thread newThread(Runnable r) {
-				Thread t = new Thread(r);
-				t.setName("conductor-worker-" + count.getAndIncrement());
-				return t;
-			}
-		});
+		this.es = java.util.concurrent.Executors.newFixedThreadPool(maxThreads, runnable -> {
+            Thread conductorWorkerThread = new Thread(runnable);
+            conductorWorkerThread.setName("conductor-worker-" + count.getAndIncrement());
+            return conductorWorkerThread;
+        });
 	}
 }
