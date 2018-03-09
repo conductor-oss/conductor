@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -174,20 +175,18 @@ public class ExecutionService {
 		return executor.getPendingTaskByWorkflow(taskReferenceName, workflowId);
 	}
 
-	public boolean ackTaskRecieved(String taskId, String consumerId) throws Exception {
-		Task task = getTask(taskId);
-
-		if (task != null) {
-			String queueName = QueueUtils.getQueueName(task);
-			if(task.getResponseTimeoutSeconds() > 0) {
-				logger.debug("Adding task " + queueName + "/" + taskId + " to be requeued if no response received " + task.getResponseTimeoutSeconds());
-				return queue.setUnackTimeout(queueName, task.getTaskId(), 1000 * task.getResponseTimeoutSeconds());		//Value is in millisecond
-			}else {
-				return queue.ack(queueName, taskId);
-			}
-		}
-		return false;
-
+	/**
+	 * This method removes the task from the un-acked Queue
+	 *
+	 * @param taskId: the taskId that needs to be updated and removed from the unacked queue
+	 * @throws Exception In case of an error while getting the Task from the executionDao
+	 * @return: True in case of successful removal of the taskId from the un-acked queue
+	 */
+	public boolean ackTaskReceived(String taskId) throws Exception {
+		return Optional.ofNullable(getTask(taskId))
+				.map(QueueUtils::getQueueName)
+				.map(queueName -> queue.ack(queueName, taskId))
+				.orElse(false);
 	}
 
 	public Map<String, Integer> getTaskQueueSizes(List<String> taskDefNames) {

@@ -1,0 +1,1218 @@
+{
+    "testCompile": {
+        "com.amazonaws:aws-java-sdk-sqs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "1.11.291"
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "2.7.5"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject.extensions:guice-servlet": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.archaius:archaius-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "0.7.5"
+        },
+        "com.netflix.conductor:conductor-client": {
+            "project": true
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-contribs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-jersey",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-jersey": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-mysql-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-redis-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-server": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "1.19.4"
+        },
+        "com.sun.jersey.contribs.jersey-oauth:oauth-signature": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "1.19.4"
+        },
+        "com.sun.jersey.contribs:jersey-guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "1.19.4",
+            "requested": "1.19.4"
+        },
+        "com.sun.jersey:jersey-bundle": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "locked": "1.19.1"
+        },
+        "com.sun.jersey:jersey-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "1.19.4"
+        },
+        "com.zaxxer:HikariCP": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "2.6.3"
+        },
+        "commons-io:commons-io": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "2.4"
+        },
+        "io.nats:java-nats-streaming": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "0.5.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "io.swagger:swagger-jaxrs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "locked": "1.5.9"
+        },
+        "io.swagger:swagger-jersey-jaxrs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "1.5.9",
+            "requested": "1.5.0"
+        },
+        "javax.servlet:javax.servlet-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-jersey",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "3.1.0"
+        },
+        "javax.ws.rs:jsr311-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "locked": "1.1.1"
+        },
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
+        },
+        "mysql:mysql-connector-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "5.1.43"
+        },
+        "net.thisptr:jackson-jq": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "0.0.8"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.2.1"
+        },
+        "org.eclipse.jetty:jetty-server": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "9.3.9.v20160517",
+            "requested": "9.3.9.v20160517"
+        },
+        "org.eclipse.jetty:jetty-servlet": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "9.3.9.v20160517",
+            "requested": "9.3.9.v20160517"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "2.4.6"
+        },
+        "org.flywaydb:flyway-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "4.0.3"
+        },
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
+        },
+        "org.rarefiedredis.redis:redis-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "0.0.17",
+            "requested": "0.0.17"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "org.sql2o:sql2o": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "1.5.4"
+        },
+        "redis.clients:jedis": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "2.8.1"
+        }
+    },
+    "testCompileClasspath": {
+        "com.amazonaws:aws-java-sdk-sqs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "1.11.291"
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "2.7.5"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject.extensions:guice-servlet": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.archaius:archaius-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "0.7.5"
+        },
+        "com.netflix.conductor:conductor-client": {
+            "project": true
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-contribs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-jersey",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-jersey": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-mysql-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-redis-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-server": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "1.19.4"
+        },
+        "com.sun.jersey.contribs.jersey-oauth:oauth-signature": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "1.19.4"
+        },
+        "com.sun.jersey.contribs:jersey-guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "1.19.4",
+            "requested": "1.19.4"
+        },
+        "com.sun.jersey:jersey-bundle": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "locked": "1.19.1"
+        },
+        "com.sun.jersey:jersey-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "1.19.4"
+        },
+        "com.zaxxer:HikariCP": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "2.6.3"
+        },
+        "commons-io:commons-io": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "2.4"
+        },
+        "io.nats:java-nats-streaming": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "0.5.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "io.swagger:swagger-jaxrs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "locked": "1.5.9"
+        },
+        "io.swagger:swagger-jersey-jaxrs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "1.5.9",
+            "requested": "1.5.0"
+        },
+        "javax.servlet:javax.servlet-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-jersey",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "3.1.0"
+        },
+        "javax.ws.rs:jsr311-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "locked": "1.1.1"
+        },
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
+        },
+        "mysql:mysql-connector-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "5.1.43"
+        },
+        "net.thisptr:jackson-jq": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "0.0.8"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.2.1"
+        },
+        "org.eclipse.jetty:jetty-server": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "9.3.9.v20160517",
+            "requested": "9.3.9.v20160517"
+        },
+        "org.eclipse.jetty:jetty-servlet": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "9.3.9.v20160517",
+            "requested": "9.3.9.v20160517"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "2.4.6"
+        },
+        "org.flywaydb:flyway-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "4.0.3"
+        },
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
+        },
+        "org.rarefiedredis.redis:redis-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "0.0.17",
+            "requested": "0.0.17"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "org.sql2o:sql2o": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "1.5.4"
+        },
+        "redis.clients:jedis": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "2.8.1"
+        }
+    },
+    "testRuntime": {
+        "com.amazonaws:aws-java-sdk-sqs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "1.11.291"
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "2.7.5"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject.extensions:guice-servlet": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.archaius:archaius-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "0.7.5"
+        },
+        "com.netflix.conductor:conductor-client": {
+            "project": true
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-contribs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-jersey",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-jersey": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-mysql-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-redis-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-server": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "1.19.4"
+        },
+        "com.sun.jersey.contribs.jersey-oauth:oauth-signature": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "1.19.4"
+        },
+        "com.sun.jersey.contribs:jersey-guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "1.19.4",
+            "requested": "1.19.4"
+        },
+        "com.sun.jersey:jersey-bundle": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "locked": "1.19.1"
+        },
+        "com.sun.jersey:jersey-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "1.19.4"
+        },
+        "com.zaxxer:HikariCP": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "2.6.3"
+        },
+        "commons-io:commons-io": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "2.4"
+        },
+        "io.nats:java-nats-streaming": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "0.5.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "io.swagger:swagger-jaxrs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "locked": "1.5.9"
+        },
+        "io.swagger:swagger-jersey-jaxrs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "1.5.9",
+            "requested": "1.5.0"
+        },
+        "javax.servlet:javax.servlet-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-jersey",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "3.1.0"
+        },
+        "javax.ws.rs:jsr311-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "locked": "1.1.1"
+        },
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
+        },
+        "mysql:mysql-connector-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "5.1.43"
+        },
+        "net.thisptr:jackson-jq": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "0.0.8"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.2.1"
+        },
+        "org.eclipse.jetty:jetty-server": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "9.3.9.v20160517",
+            "requested": "9.3.9.v20160517"
+        },
+        "org.eclipse.jetty:jetty-servlet": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "9.3.9.v20160517",
+            "requested": "9.3.9.v20160517"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "2.4.6"
+        },
+        "org.flywaydb:flyway-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "4.0.3"
+        },
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
+        },
+        "org.rarefiedredis.redis:redis-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "0.0.17",
+            "requested": "0.0.17"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "org.sql2o:sql2o": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "1.5.4"
+        },
+        "redis.clients:jedis": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "2.8.1"
+        }
+    },
+    "testRuntimeClasspath": {
+        "com.amazonaws:aws-java-sdk-sqs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "1.11.291"
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "2.7.5"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject.extensions:guice-servlet": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.archaius:archaius-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "0.7.5"
+        },
+        "com.netflix.conductor:conductor-client": {
+            "project": true
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-contribs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-jersey",
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-redis-persistence",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-jersey": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-mysql-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-redis-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-server": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "1.19.4"
+        },
+        "com.sun.jersey.contribs.jersey-oauth:oauth-signature": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "1.19.4"
+        },
+        "com.sun.jersey.contribs:jersey-guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "1.19.4",
+            "requested": "1.19.4"
+        },
+        "com.sun.jersey:jersey-bundle": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "locked": "1.19.1"
+        },
+        "com.sun.jersey:jersey-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client"
+            ],
+            "locked": "1.19.4"
+        },
+        "com.zaxxer:HikariCP": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "2.6.3"
+        },
+        "commons-io:commons-io": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "2.4"
+        },
+        "io.nats:java-nats-streaming": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "0.5.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "io.swagger:swagger-jaxrs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "locked": "1.5.9"
+        },
+        "io.swagger:swagger-jersey-jaxrs": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "1.5.9",
+            "requested": "1.5.0"
+        },
+        "javax.servlet:javax.servlet-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-jersey",
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "3.1.0"
+        },
+        "javax.ws.rs:jsr311-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs",
+                "com.netflix.conductor:conductor-jersey"
+            ],
+            "locked": "1.1.1"
+        },
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
+        },
+        "mysql:mysql-connector-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "5.1.43"
+        },
+        "net.thisptr:jackson-jq": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-contribs"
+            ],
+            "locked": "0.0.8"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.2.1"
+        },
+        "org.eclipse.jetty:jetty-server": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "9.3.9.v20160517",
+            "requested": "9.3.9.v20160517"
+        },
+        "org.eclipse.jetty:jetty-servlet": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "9.3.9.v20160517",
+            "requested": "9.3.9.v20160517"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "2.4.6"
+        },
+        "org.flywaydb:flyway-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "4.0.3"
+        },
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
+        },
+        "org.rarefiedredis.redis:redis-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "locked": "0.0.17",
+            "requested": "0.0.17"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-client",
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "org.sql2o:sql2o": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-mysql-persistence"
+            ],
+            "locked": "1.5.4"
+        },
+        "redis.clients:jedis": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-redis-persistence"
+            ],
+            "locked": "2.8.1"
+        }
+    }
+}

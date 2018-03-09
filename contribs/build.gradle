@@ -4,18 +4,18 @@ dependencies {
 	compile project(':conductor-core')
 
 	compile 'com.amazonaws:aws-java-sdk-sqs:latest.release'
-	compile ('com.google.inject:guice:4.1.0')
+	compile "com.google.inject:guice:${revGuice}"
 
-	compile 'net.thisptr:jackson-jq:+'
+	compile "net.thisptr:jackson-jq:${revJq}"
 
-	compile 'com.sun.jersey.contribs.jersey-oauth:oauth-client:1.19.+'
-	compile 'com.sun.jersey.contribs.jersey-oauth:oauth-signature:1.19.+'
+	compile "com.sun.jersey.contribs.jersey-oauth:oauth-client:${revOauthClient}"
+	compile "com.sun.jersey.contribs.jersey-oauth:oauth-signature:${revOauthSignature}"
 
-	compile 'io.nats:java-nats-streaming:0.5.0'
+	compile "io.nats:java-nats-streaming:${revNatsStreaming}"
 
-	provided 'javax.ws.rs:jsr311-api:1.1.1'
-	provided 'io.swagger:swagger-jaxrs:1.5.9'
+	provided "javax.ws.rs:jsr311-api:${revJsr311Api}"
+	provided "io.swagger:swagger-jaxrs:${revSwagger}"
 
-	testCompile 'org.eclipse.jetty:jetty-server:9.3.9.+'
-	testCompile 'org.eclipse.jetty:jetty-servlet:9.3.9.+'
+	testCompile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
+	testCompile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
 }

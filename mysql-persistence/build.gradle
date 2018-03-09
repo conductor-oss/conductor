@@ -1,15 +1,16 @@
 dependencies {
 	compile project(':conductor-core')
-	compile 'com.google.inject:guice:3.0'
-	compile 'org.elasticsearch:elasticsearch:2.+'
+	compile "com.google.inject:guice:${revGuice}"
+	compile "org.elasticsearch:elasticsearch:${revElasticSearch2}"
 
-	compile 'org.sql2o:sql2o:1.5.4'
-	compile 'commons-io:commons-io:2.4+'
-	compile 'mysql:mysql-connector-java:5.1.43'
-	compile 'com.zaxxer:HikariCP:2.6.3'
-	compile 'org.flywaydb:flyway-core:4.0.3'
+	compile "org.sql2o:sql2o:${revSql2o}"
+	compile "commons-io:commons-io:${revCommonsIo}"
+	compile "mysql:mysql-connector-java:${revMySqlConnector}"
+	compile "com.zaxxer:HikariCP:${revHikariCP}"
+	compile "org.flywaydb:flyway-core:${revFlywayCore}"
 
-	testCompile 'ch.vorburger.mariaDB4j:mariaDB4j:2.2.3'
+	testCompile "ch.vorburger.mariaDB4j:mariaDB4j:${revMariaDB4j}"
+	//TODO Change the below deps to use the same version as one in versionsOfDependencies.gradle
 	testCompile 'ch.qos.logback:logback-core:1.2.3'
 	testCompile 'ch.qos.logback:logback-classic:1.2.3'
 }

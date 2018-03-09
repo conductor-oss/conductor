@@ -1,0 +1,42 @@
+{
+    "testCompile": {
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
+        },
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
+        }
+    },
+    "testCompileClasspath": {
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
+        },
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
+        }
+    },
+    "testRuntime": {
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
+        },
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
+        }
+    },
+    "testRuntimeClasspath": {
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
+        },
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
+        }
+    }
+}

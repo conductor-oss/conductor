@@ -17,6 +17,7 @@ plugins {
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
 apply plugin: 'project-report'
+apply from: "$rootDir/versionsOfDependencies.gradle"
 
 
 subprojects {
@@ -36,8 +37,8 @@ subprojects {
     }
 
     dependencies {
-    	testCompile 'junit:junit-dep:4.10'
-    	testCompile 'org.mockito:mockito-all:1.10.0'
+    	testCompile "junit:junit-dep:${revJUnit}"
+    	testCompile "org.mockito:mockito-all:${revMockito}"
     }
 
     group = "com.netflix.${githubProjectName}"
