@@ -354,10 +354,10 @@ public class WorkflowServiceTest {
 		printTaskStatuses(wfid, "initiated");
 		
 		Task t1 = ess.poll("junit_task_1", "test");
-		assertTrue(ess.ackTaskRecieved(t1.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t1.getTaskId()));
 		
 		Task t2 = ess.poll("junit_task_2", "test");
-		assertTrue(ess.ackTaskRecieved(t2.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
 		
 		Task t3 = ess.poll("junit_task_3", "test");
 		assertNull(t3);
@@ -466,13 +466,13 @@ public class WorkflowServiceTest {
 
 		
 		Task t1 = ess.poll("junit_task_11", "test");
-		assertTrue(ess.ackTaskRecieved(t1.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t1.getTaskId()));
 
 		Task t2 = ess.poll("junit_task_12", "test");
-		assertTrue(ess.ackTaskRecieved(t2.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
 		
 		Task t3 = ess.poll("junit_task_13", "test");
-		assertTrue(ess.ackTaskRecieved(t3.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t3.getTaskId()));
 		
 		assertNotNull(t1);
 		assertNotNull(t2);
@@ -558,10 +558,10 @@ public class WorkflowServiceTest {
 		
 		Task t1 = ess.poll("junit_task_2", "test");
 		assertNotNull(t1);
-		assertTrue(ess.ackTaskRecieved(t1.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t1.getTaskId()));
 
 		Task t2 = ess.poll("junit_task_1", "test");
-		assertTrue(ess.ackTaskRecieved(t2.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
 		
 		Task t3 = ess.poll("junit_task_3", "test");
 		assertNull(t3);
@@ -622,7 +622,7 @@ public class WorkflowServiceTest {
 		ess.updateTask(t1);
 		
 		Task t2 = ess.poll("junit_task_2", "test");
-		assertTrue(ess.ackTaskRecieved(t2.getTaskId(), "test"));		
+		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
 		assertEquals("xdt1", t2.getReferenceTaskName());
 		assertTrue(t2.getInputData().containsKey("k1"));
 		assertEquals("v1", t2.getInputData().get("k1"));
@@ -633,7 +633,7 @@ public class WorkflowServiceTest {
 		ess.updateTask(t2);
 
 		Task t3 = ess.poll("junit_task_3", "test");
-		assertTrue(ess.ackTaskRecieved(t3.getTaskId(), "test"));	
+		assertTrue(ess.ackTaskReceived(t3.getTaskId()));
 		assertEquals("xdt2", t3.getReferenceTaskName());
 		assertTrue(t3.getInputData().containsKey("k2"));
 		assertEquals("v2", t3.getInputData().get("k2"));
@@ -682,7 +682,7 @@ public class WorkflowServiceTest {
 		assertEquals(1, es.getTasks().size());
 		Task t1 = ess.poll("junit_task_1", "test");
 		assertNotNull(t1);
-		assertTrue(ess.ackTaskRecieved(t1.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t1.getTaskId()));
 		assertEquals("dt1", t1.getReferenceTaskName());
 		
 		
@@ -709,7 +709,7 @@ public class WorkflowServiceTest {
 		ess.updateTask(t1);
 		
 		Task t2 = ess.poll("junit_task_2", "test");
-		assertTrue(ess.ackTaskRecieved(t2.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
 		assertEquals("xdt1", t2.getReferenceTaskName());
 		assertTrue(t2.getInputData().containsKey("k1"));
 		assertEquals("v1", t2.getInputData().get("k1"));
@@ -726,7 +726,7 @@ public class WorkflowServiceTest {
 		assertTrue(es.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_2")).allMatch(t -> t.getWorkflowTask() != null));
 		
 		t2 = ess.poll("junit_task_2", "test");
-		assertTrue(ess.ackTaskRecieved(t2.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
 		assertEquals("xdt1", t2.getReferenceTaskName());
 		assertTrue(t2.getInputData().containsKey("k1"));
 		assertEquals("v1", t2.getInputData().get("k1"));
@@ -736,7 +736,7 @@ public class WorkflowServiceTest {
 		
 
 		Task t3 = ess.poll("junit_task_3", "test");
-		assertTrue(ess.ackTaskRecieved(t3.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t3.getTaskId()));
 		assertEquals("xdt2", t3.getReferenceTaskName());
 		assertTrue(t3.getInputData().containsKey("k2"));
 		assertEquals("v2", t3.getInputData().get("k2"));
@@ -1145,7 +1145,7 @@ public class WorkflowServiceTest {
 		Task task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
 		assertEquals("junit_task_1", task.getTaskType());
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertEquals(wfid, task.getWorkflowInstanceId());
 		
 		provider.decide(wfid);
@@ -1172,7 +1172,7 @@ public class WorkflowServiceTest {
 		task = ess.poll("junit_task_2", "task2.junit.worker");
 		assertNotNull(task);
 		assertEquals("junit_task_2", task.getTaskType());
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		String task2Input = (String) task.getInputData().get("tp2");
 		assertNotNull("Found=" + task.getInputData(), task2Input);
 		assertEquals(task1Op, task2Input);
@@ -1223,7 +1223,7 @@ public class WorkflowServiceTest {
 		Task task = ess.poll("task_rt", "task1.junit.worker");
 		assertNotNull(task);
 		assertEquals("task_rt", task.getTaskType());
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertEquals(wfid, task.getWorkflowInstanceId());
 		
 		// As the task_rt is out of the queue, the next poll should not get it		
@@ -1247,7 +1247,7 @@ public class WorkflowServiceTest {
 		task = ess.poll("junit_task_2", "task2.junit.worker");
 		assertNotNull(task);
 		assertEquals("junit_task_2", task.getTaskType());
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		
 		task.setStatus(Status.COMPLETED);
 		task.setReasonForIncompletion("unit test failure");
@@ -1326,7 +1326,7 @@ public class WorkflowServiceTest {
 		// Now execute the task
 		Task task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertEquals(task.getInputData().get("p1").toString(), "1");
 		assertEquals(task.getInputData().get("p2").toString(), "2");
 		task.getOutputData().put("op", "junit_task_1.done");
@@ -1341,7 +1341,7 @@ public class WorkflowServiceTest {
 		// Poll for second task of the sub workflow and execute it
 		task = ess.poll("junit_task_2", "task2.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		task.getOutputData().put("op", "junit_task_2.done");
 		task.setStatus(Status.COMPLETED);
 		ess.updateTask(task);
@@ -1411,7 +1411,7 @@ public class WorkflowServiceTest {
 		task = ess.poll("junit_task_3", "task1.junit.worker", "domain1");
 		assertNotNull(task);
 		assertEquals("junit_task_3", task.getTaskType());
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertEquals(wfid, task.getWorkflowInstanceId());
 		
 		String task1Op = "task1.Done";
@@ -1437,7 +1437,7 @@ public class WorkflowServiceTest {
 		assertNotNull(task);
 		assertEquals("junit_task_1", task.getTaskType());
 		Workflow essw = ess.getExecutionStatus(task.getWorkflowInstanceId(), false);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertNotNull(essw.getTaskToDomain());
 		assertEquals(essw.getTaskToDomain().size(), 2);
 		
@@ -1449,7 +1449,7 @@ public class WorkflowServiceTest {
 		task = ess.poll("junit_task_2", "task2.junit.worker", "domain1");
 		assertNotNull(task);
 		assertEquals("junit_task_2", task.getTaskType());
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 				
 		task.setStatus(Status.COMPLETED);
 		task.setReasonForIncompletion("unit test failure");
@@ -1543,7 +1543,7 @@ public class WorkflowServiceTest {
 		assertNotNull(task);
 		assertEquals("junit_task_3", task.getTaskType());
 		assertEquals("domain11", task.getDomain());
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertEquals(wfid, task.getWorkflowInstanceId());
 		
 		String task1Op = "task1.Done";
@@ -1569,7 +1569,7 @@ public class WorkflowServiceTest {
 		assertNotNull(task);
 		assertEquals("junit_task_1", task.getTaskType());
 		Workflow essw = ess.getExecutionStatus(task.getWorkflowInstanceId(), false);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertNotNull(essw.getTaskToDomain());
 		assertEquals(essw.getTaskToDomain().size(), 1);
 		
@@ -1584,7 +1584,7 @@ public class WorkflowServiceTest {
 		assertNotNull(task);
 		assertEquals("junit_task_2", task.getTaskType());
 		assertEquals("domain12", task.getDomain());
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 				
 		task.setStatus(Status.COMPLETED);
 		task.setReasonForIncompletion("unit test failure");
@@ -1652,7 +1652,7 @@ public class WorkflowServiceTest {
 		
 		Task task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 
 		String param1 = (String) task.getInputData().get("p1");
 		String param2 = (String) task.getInputData().get("p2");
@@ -1690,7 +1690,7 @@ public class WorkflowServiceTest {
 		// Polling for the first task should return the same task as before
 		task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertEquals(task.getTaskId(), taskId);
 		
 		task1Op = "task1.Done";
@@ -1705,7 +1705,7 @@ public class WorkflowServiceTest {
 
 		task = ess.poll("junit_task_2", "task2.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		String task2Input = (String) task.getInputData().get("tp2");
 		assertNotNull(task2Input);
 		assertEquals(task1Op, task2Input);
@@ -1761,7 +1761,7 @@ public class WorkflowServiceTest {
 		
 		Task task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 
 		String param1 = (String) task.getInputData().get("p1");
 		String param2 = (String) task.getInputData().get("p2");
@@ -1803,7 +1803,7 @@ public class WorkflowServiceTest {
 		// Now Polling for the first task should return the same task as before
 		task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertEquals(task.getTaskId(), taskId);
 		assertEquals(task.getCallbackAfterSeconds(), 0);
 		
@@ -1819,7 +1819,7 @@ public class WorkflowServiceTest {
 
 		task = ess.poll("junit_task_2", "task2.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		String task2Input = (String) task.getInputData().get("tp2");
 		assertNotNull(task2Input);
 		assertEquals(task1Op, task2Input);
@@ -1882,7 +1882,7 @@ public class WorkflowServiceTest {
 			
 			Task task = ess.poll("junit_task_1", "task1.junit.worker");
 			assertNotNull(task);
-			assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));			
+			assertTrue(ess.ackTaskReceived(task.getTaskId()));
 			String param1 = (String) task.getInputData().get("p1");
 			String param2 = (String) task.getInputData().get("p2");
 			
@@ -1900,7 +1900,7 @@ public class WorkflowServiceTest {
 		for(int i = 0; i < count; i++){
 			Task task = ess.poll("junit_task_2", "task2.junit.worker");
 			assertNotNull(task);
-			assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));			
+			assertTrue(ess.ackTaskReceived(task.getTaskId()));
 			String task2Input = (String) task.getInputData().get("tp2");
 			assertNotNull(task2Input);
 			assertEquals(task1Op, task2Input);
@@ -2039,7 +2039,7 @@ public class WorkflowServiceTest {
 			
 		}while(task == null);
 		if(task != null){
-			ess.ackTaskRecieved(task.getTaskId(), "junit");
+			ess.ackTaskReceived(task.getTaskId());
 		}
 		return task;
 	}
@@ -2082,7 +2082,7 @@ public class WorkflowServiceTest {
 		
 		Task task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));			
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 
 		String param1 = (String) task.getInputData().get("p1");
 		String param2 = (String) task.getInputData().get("p2");
@@ -2168,7 +2168,7 @@ public class WorkflowServiceTest {
 		assertEquals(Status.SCHEDULED, t.getStatus());
 		
 		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		
 		assertNotNull(task);
 		assertEquals(t.getTaskId(), task.getTaskId());
@@ -2201,7 +2201,7 @@ public class WorkflowServiceTest {
 		});
 		
 		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertNotNull(task);
 		String task2Input = (String) task.getInputData().get("tp2");
 		assertNotNull(task2Input);
@@ -2283,7 +2283,7 @@ public class WorkflowServiceTest {
 		assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
 
 		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		String taskId = task.getTaskId();
 		
 		String task1Op = "task1.output";
@@ -2306,7 +2306,7 @@ public class WorkflowServiceTest {
 		});
 		
 		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertNotNull(task);
 		String task2Input = (String) task.getInputData().get("tp2");
 		assertNotNull(task2Input);
@@ -2398,7 +2398,7 @@ public class WorkflowServiceTest {
 		assertEquals(Status.SCHEDULED, t.getStatus());
 		
 		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		
 		assertNotNull(task);
 		assertEquals(t.getTaskId(), task.getTaskId());
@@ -2451,7 +2451,7 @@ public class WorkflowServiceTest {
 		System.out.println("Workflow tasks=" + es.getTasks());
 		
 		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertNotNull(task);
 		String task2Input = (String) task.getInputData().get("tp2");
 		assertNotNull(task2Input);
@@ -2528,11 +2528,11 @@ public class WorkflowServiceTest {
 		printTaskStatuses(wf, "After retry called");
 		
 		Task t2 = ess.poll("junit_task_0_RT_2", "test");
-		assertTrue(ess.ackTaskRecieved(t2.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
 		
 		Task t3 = ess.poll("junit_task_0_RT_3", "test");
 		assertNotNull(t3);
-		assertTrue(ess.ackTaskRecieved(t3.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t3.getTaskId()));
 
 		t2.setStatus(Status.COMPLETED);
 		t3.setStatus(Status.COMPLETED);
@@ -2755,7 +2755,7 @@ public class WorkflowServiceTest {
 		Task task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
 		assertEquals(wfid, task.getWorkflowInstanceId());
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));			
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		
 		
 		//Ensure that we have a workflow queued up for evaluation here...
@@ -2777,7 +2777,7 @@ public class WorkflowServiceTest {
 		task = ess.poll(task2.getTaskDefName(), "task1.junit.worker");
 		assertNotNull(task);
 		assertEquals(wfid, task.getWorkflowInstanceId());
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		
 		Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
 		provider.decide(wfid);
@@ -2822,7 +2822,7 @@ public class WorkflowServiceTest {
 		
 		Task task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));			
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertEquals(t.getTaskId(), task.getTaskId());
 	
 		String param1 = (String) task.getInputData().get("p1");
@@ -2850,7 +2850,7 @@ public class WorkflowServiceTest {
 		
 		task = ess.poll("junit_task_2", "task2.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));			
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		String task2Input = (String) task.getInputData().get("tp2");
 		assertNotNull(task2Input);
 		assertEquals(task1Op, task2Input);
@@ -2886,7 +2886,7 @@ public class WorkflowServiceTest {
 	
 		task = ess.poll("junit_task_2", "task2.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));			
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		task2Input = (String) task.getInputData().get("tp2");
 		assertNotNull(task2Input);
 		assertEquals(task1Op, task2Input);
@@ -2918,7 +2918,7 @@ public class WorkflowServiceTest {
 		
 		task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));			
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 	
 		task.getOutputData().put("op", task1Op);
 		task.setStatus(Status.COMPLETED);
@@ -2926,7 +2926,7 @@ public class WorkflowServiceTest {
 		
 		task = ess.poll("junit_task_2", "task2.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));			
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 
 		task.setStatus(Status.COMPLETED);
 		ess.updateTask(task);
@@ -2975,7 +2975,7 @@ public class WorkflowServiceTest {
 		
 		Task task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));			
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 
 		assertEquals("t1", task.getReferenceTaskName());
 	
@@ -3007,7 +3007,7 @@ public class WorkflowServiceTest {
 		task = ess.poll("junit_task_3", "task3.junit.worker");
 		assertNotNull(task);
 		assertEquals(Status.IN_PROGRESS, task.getStatus());
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task3.junit.worker"));			
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 
 		task.setStatus(Status.COMPLETED);
 		ess.updateTask(task);
@@ -3061,7 +3061,7 @@ public class WorkflowServiceTest {
 		
 		Task task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));			
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		assertEquals(t.getTaskId(), task.getTaskId());
 
 		String param1 = (String) task.getInputData().get("p1");
@@ -3104,7 +3104,7 @@ public class WorkflowServiceTest {
 		// Now polling should get the second task
 		task = ess.poll("junit_task_2", "task2.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));			
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 
 		
 		String task2Input = (String) task.getInputData().get("tp2");
@@ -3462,7 +3462,7 @@ public class WorkflowServiceTest {
 	private void verify(String inputParam1, String wfid, String task1Op, boolean fail) throws Exception {
 		Task task = ess.poll("junit_task_2", "task2.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));			
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		
 		String task2Input = (String) task.getInputData().get("tp2");
 		assertNotNull(task2Input);
@@ -3618,7 +3618,7 @@ public class WorkflowServiceTest {
 		// Poll for first task and execute it
 		Task task = ess.poll("junit_task_3", "task3.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task3.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		task.getOutputData().put("op", "junit_task_3.done");
 		task.setStatus(Status.COMPLETED);
 		ess.updateTask(task);
@@ -3646,7 +3646,7 @@ public class WorkflowServiceTest {
 		// Poll for first task of the sub workflow and execute it
 		task = ess.poll("junit_task_1", "task1.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task1.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		task.getOutputData().put("op", "junit_task_1.done");
 		task.setStatus(Status.COMPLETED);
 		ess.updateTask(task);
@@ -3664,7 +3664,7 @@ public class WorkflowServiceTest {
 		// Poll for second task of the sub workflow and execute it
 		task = ess.poll("junit_task_2", "task2.junit.worker");
 		assertNotNull(task);
-		assertTrue(ess.ackTaskRecieved(task.getTaskId(), "task2.junit.worker"));
+		assertTrue(ess.ackTaskReceived(task.getTaskId()));
 		task.getOutputData().put("op", "junit_task_2.done");
 		task.setStatus(Status.COMPLETED);
 		ess.updateTask(task);
@@ -3692,10 +3692,10 @@ public class WorkflowServiceTest {
 		String wfid = provider.startWorkflow(FORK_JOIN_WF +"_2", 1, "fanouttest", input );
 		System.out.println("testForkJoin.wfid=" + wfid);
 		Task t1 = ess.poll("junit_task_0_RT_1", "test");
-		assertTrue(ess.ackTaskRecieved(t1.getTaskId(), "test"));
+		assertTrue(ess.ackTaskReceived(t1.getTaskId()));
 		
 		Task t2 = ess.poll("junit_task_0_RT_2", "test");
-		assertTrue(ess.ackTaskRecieved(t2.getTaskId(), "test"));		
+		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
 		assertNotNull(t1);
 		assertNotNull(t2);
 		
