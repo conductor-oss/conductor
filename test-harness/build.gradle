@@ -11,13 +11,13 @@ dependencies {
 	testCompile project(':conductor-client')
 	testCompile project(':conductor-server')
 	
-	testCompile 'org.eclipse.jetty:jetty-server:9.3.9.+'
-	testCompile 'org.eclipse.jetty:jetty-servlet:9.3.9.+'
-	testCompile 'org.rarefiedredis.redis:redis-java:0.0.17'
-	testCompile 'com.sun.jersey.contribs:jersey-guice:1.19.+'	
+	testCompile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
+	testCompile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
+	testCompile "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
+	testCompile "com.sun.jersey.contribs:jersey-guice:${revJerseyGuice}"
 
-	testCompile 'com.google.inject.extensions:guice-servlet:4.1.0'
-	testCompile 'io.swagger:swagger-jersey-jaxrs:1.5.0'
+	testCompile "com.google.inject.extensions:guice-servlet:${revGuiceServlet}"
+	testCompile "io.swagger:swagger-jersey-jaxrs:${revSwaggerJersey}"
 }
 
 task server(type: JavaExec) {

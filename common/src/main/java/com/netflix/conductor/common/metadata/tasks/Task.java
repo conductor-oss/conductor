@@ -393,9 +393,8 @@ public class Task {
 	 * 
 	 * @return the timeout for task to send response.  After this timeout, the task will be re-queued
 	 */
-	@Deprecated
 	public int getResponseTimeoutSeconds() {
-		return 0;
+		return responseTimeoutSeconds;
 	}
 	
 	/**
@@ -552,10 +551,37 @@ public class Task {
 		copy.setDomain(domain);
 		return copy;
 	}
-	
+
 
 	@Override
 	public String toString() {
-		return "type="+ taskType + ", name=" + taskDefName + ", refName=" + referenceTaskName + ", taskId=" + getTaskId() + ", retry=" + retryCount + ", status=" + status;
+		return "Task{" +
+				"taskType='" + taskType + '\'' +
+				", status=" + status +
+				", inputData=" + inputData +
+				", referenceTaskName='" + referenceTaskName + '\'' +
+				", retryCount=" + retryCount +
+				", seq=" + seq +
+				", correlationId='" + correlationId + '\'' +
+				", pollCount=" + pollCount +
+				", taskDefName='" + taskDefName + '\'' +
+				", scheduledTime=" + scheduledTime +
+				", startTime=" + startTime +
+				", endTime=" + endTime +
+				", updateTime=" + updateTime +
+				", startDelayInSeconds=" + startDelayInSeconds +
+				", retriedTaskId='" + retriedTaskId + '\'' +
+				", retried=" + retried +
+				", callbackFromWorker=" + callbackFromWorker +
+				", responseTimeoutSeconds=" + responseTimeoutSeconds +
+				", workflowInstanceId='" + workflowInstanceId + '\'' +
+				", taskId='" + taskId + '\'' +
+				", reasonForIncompletion='" + reasonForIncompletion + '\'' +
+				", callbackAfterSeconds=" + callbackAfterSeconds +
+				", workerId='" + workerId + '\'' +
+				", outputData=" + outputData +
+				", workflowTask=" + workflowTask +
+				", domain='" + domain + '\'' +
+				'}';
 	}
 }

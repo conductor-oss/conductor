@@ -1,0 +1,878 @@
+{
+    "compile": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "locked": "1.0.8",
+            "requested": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.0"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "locked": "2.4.6",
+            "requested": "2.4.6"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "redis.clients:jedis": {
+            "locked": "2.8.1",
+            "requested": "2.8.1"
+        }
+    },
+    "compileClasspath": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "locked": "1.0.8",
+            "requested": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.0"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "locked": "2.4.6",
+            "requested": "2.4.6"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "redis.clients:jedis": {
+            "locked": "2.8.1",
+            "requested": "2.8.1"
+        }
+    },
+    "default": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "locked": "1.0.8",
+            "requested": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.0"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "locked": "2.4.6",
+            "requested": "2.4.6"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "redis.clients:jedis": {
+            "locked": "2.8.1",
+            "requested": "2.8.1"
+        }
+    },
+    "runtime": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "locked": "1.0.8",
+            "requested": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.0"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "locked": "2.4.6",
+            "requested": "2.4.6"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "redis.clients:jedis": {
+            "locked": "2.8.1",
+            "requested": "2.8.1"
+        }
+    },
+    "runtimeClasspath": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "locked": "1.0.8",
+            "requested": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.0"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "locked": "2.4.6",
+            "requested": "2.4.6"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "redis.clients:jedis": {
+            "locked": "2.8.1",
+            "requested": "2.8.1"
+        }
+    },
+    "testCompile": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "locked": "1.0.8",
+            "requested": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.0"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "locked": "2.4.6",
+            "requested": "2.4.6"
+        },
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
+        },
+        "org.rarefiedredis.redis:redis-java": {
+            "locked": "0.0.17",
+            "requested": "0.0.17"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "redis.clients:jedis": {
+            "locked": "2.8.1",
+            "requested": "2.8.1"
+        }
+    },
+    "testCompileClasspath": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "locked": "1.0.8",
+            "requested": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.0"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "locked": "2.4.6",
+            "requested": "2.4.6"
+        },
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
+        },
+        "org.rarefiedredis.redis:redis-java": {
+            "locked": "0.0.17",
+            "requested": "0.0.17"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "redis.clients:jedis": {
+            "locked": "2.8.1",
+            "requested": "2.8.1"
+        }
+    },
+    "testRuntime": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "locked": "1.0.8",
+            "requested": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.0"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "locked": "2.4.6",
+            "requested": "2.4.6"
+        },
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
+        },
+        "org.rarefiedredis.redis:redis-java": {
+            "locked": "0.0.17",
+            "requested": "0.0.17"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "redis.clients:jedis": {
+            "locked": "2.8.1",
+            "requested": "2.8.1"
+        }
+    },
+    "testRuntimeClasspath": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0"
+        },
+        "com.google.inject:guice": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "4.1.0",
+            "requested": "4.1.0"
+        },
+        "com.jayway.jsonpath:json-path": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "2.2.0"
+        },
+        "com.netflix.conductor:conductor-common": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-core": {
+            "project": true
+        },
+        "com.netflix.dyno-queues:dyno-queues-redis": {
+            "locked": "1.0.8",
+            "requested": "1.0.8"
+        },
+        "com.netflix.dyno:dyno-core": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.dyno:dyno-jedis": {
+            "locked": "1.5.9",
+            "requested": "1.5.9"
+        },
+        "com.netflix.eureka:eureka-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.8.7"
+        },
+        "com.netflix.spectator:spectator-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.40.0"
+        },
+        "io.reactivex:rxjava": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.2.2"
+        },
+        "junit:junit-dep": {
+            "locked": "4.10",
+            "requested": "4.10"
+        },
+        "org.apache.commons:commons-lang3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "3.0"
+        },
+        "org.elasticsearch:elasticsearch": {
+            "locked": "2.4.6",
+            "requested": "2.4.6"
+        },
+        "org.mockito:mockito-all": {
+            "locked": "1.10.0",
+            "requested": "1.10.0"
+        },
+        "org.rarefiedredis.redis:redis-java": {
+            "locked": "0.0.17",
+            "requested": "0.0.17"
+        },
+        "org.slf4j:slf4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.7.25"
+        },
+        "redis.clients:jedis": {
+            "locked": "2.8.1",
+            "requested": "2.8.1"
+        }
+    }
+}
