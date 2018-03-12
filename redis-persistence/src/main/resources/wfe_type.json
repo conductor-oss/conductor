@@ -1,6 +1,9 @@
 {
   "workflow": {
     "properties": {
+      "archived": {
+        "type": "boolean"
+      },
       "correlationId": {
         "type": "string",
         "index": "not_analyzed",
