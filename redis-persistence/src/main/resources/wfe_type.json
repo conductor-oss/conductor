@@ -18,6 +18,11 @@
         "type": "long",
         "doc_values": true
       },
+      "failedReferenceTaskNames": {
+        "type": "string",
+        "index": "no",
+        "include_in_all": false
+      },
       "input": {
         "type": "string",
         "index": "analyzed"
