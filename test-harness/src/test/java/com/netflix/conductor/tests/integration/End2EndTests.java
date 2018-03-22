@@ -135,11 +135,11 @@ public class End2EndTests {
 		assertEquals(1, runningIds.size());
 		assertEquals(workflowId, runningIds.get(0));
 		
-		List<Task> polled = tc.poll("non existing task", "test", 1, 100);
+		List<Task> polled = tc.batchPollTasksByTaskType("non existing task", "test", 1, 100);
 		assertNotNull(polled);
 		assertEquals(0, polled.size());
 		
-		polled = tc.poll(t0.getName(), "test", 1, 100);
+		polled = tc.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
 		assertNotNull(polled);
 		assertEquals(1, polled.size());
 		assertEquals(t0.getName(), polled.get(0).getTaskDefName());
@@ -153,7 +153,7 @@ public class End2EndTests {
 		task.setStatus(Status.COMPLETED);
 		tc.updateTask(new TaskResult(task));
 		
-		polled = tc.poll(t0.getName(), "test", 1, 100);
+		polled = tc.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
 		assertNotNull(polled);
 		assertTrue(polled.toString(), polled.isEmpty());
 		
@@ -166,17 +166,17 @@ public class End2EndTests {
 		assertEquals(Task.Status.COMPLETED, wf.getTasks().get(0).getStatus());
 		assertEquals(Task.Status.SCHEDULED, wf.getTasks().get(1).getStatus());
 		
-		Task taskById = tc.get(task.getTaskId());
+		Task taskById = tc.getTaskDetails(task.getTaskId());
 		assertNotNull(taskById);
 		assertEquals(task.getTaskId(), taskById.getTaskId());
 		
 		
-		List<Task> getTasks = tc.getTasks(t0.getName(), null, 1);
+		List<Task> getTasks = tc.getPendingTasksByType(t0.getName(), null, 1);
 		assertNotNull(getTasks);
 		assertEquals(0, getTasks.size());		//getTasks only gives pending tasks
 		
 		
-		getTasks = tc.getTasks(t1.getName(), null, 1);
+		getTasks = tc.getPendingTasksByType(t1.getName(), null, 1);
 		assertNotNull(getTasks);
 		assertEquals(1, getTasks.size());
 		

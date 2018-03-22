@@ -68,7 +68,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class TaskResource {
 
-	public static final Logger logger = LoggerFactory.getLogger(TaskResource.class);
+	private static final Logger logger = LoggerFactory.getLogger(TaskResource.class);
 
 	private ExecutionService taskService;
 
@@ -149,6 +149,7 @@ public class TaskResource {
 	@ApiOperation("Ack Task is recieved")
 	@Consumes({ MediaType.WILDCARD })
 	public String ack(@PathParam("taskId") String taskId, @QueryParam("workerid") String workerId) throws Exception {
+		logger.debug("Ack received for task: {} from worker: {}", taskId, workerId);
 		return "" + taskService.ackTaskReceived(taskId);
 	}
 	

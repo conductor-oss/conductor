@@ -2,6 +2,7 @@
 * Common place to define all the version dependencies */
 
 ext {
+    revAwsSdk = '1.11.86'
     revArchaius = '0.7.5'
     revCommonsLang3 = '3.0'
     revCommonsIo = '2.4'
@@ -47,5 +48,4 @@ ext {
     revSlf4jlog4j = '1.8.0-alpha1'
     revSpectator = '0.40.0'
     revSql2o = '1.5.4'
-
 }

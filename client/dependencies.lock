@@ -1,5 +1,9 @@
 {
     "compile": {
+        "com.amazonaws:aws-java-sdk": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -29,6 +33,10 @@
         }
     },
     "compileClasspath": {
+        "com.amazonaws:aws-java-sdk": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -58,6 +66,10 @@
         }
     },
     "default": {
+        "com.amazonaws:aws-java-sdk": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -86,7 +98,23 @@
             "requested": "1.7.25"
         }
     },
+    "findbugs": {
+        "com.google.code.findbugs:findbugs": {
+            "locked": "3.0.1",
+            "requested": "3.0.1"
+        }
+    },
+    "pmd": {
+        "net.sourceforge.pmd:pmd-java": {
+            "locked": "5.6.1",
+            "requested": "5.6.1"
+        }
+    },
     "runtime": {
+        "com.amazonaws:aws-java-sdk": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -116,6 +144,10 @@
         }
     },
     "runtimeClasspath": {
+        "com.amazonaws:aws-java-sdk": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -145,6 +177,10 @@
         }
     },
     "testCompile": {
+        "com.amazonaws:aws-java-sdk": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -186,6 +222,10 @@
         }
     },
     "testCompileClasspath": {
+        "com.amazonaws:aws-java-sdk": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -227,6 +267,10 @@
         }
     },
     "testRuntime": {
+        "com.amazonaws:aws-java-sdk": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -268,6 +312,10 @@
         }
     },
     "testRuntimeClasspath": {
+        "com.amazonaws:aws-java-sdk": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"

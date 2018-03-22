@@ -97,7 +97,7 @@ public class WorkflowTaskCoordinatorTests {
 				.withTaskClient(client)
 				.withWorkerNamePrefix("test-worker-")
 				.build();
-		when(client.poll(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(new Task()));
+		when(client.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(new Task()));
 		when(client.ack(anyString(), anyString())).thenReturn(true);
 		CountDownLatch latch = new CountDownLatch(1);
 		doAnswer(new Answer<Void>() {
