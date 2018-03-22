@@ -109,7 +109,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		List<Task> tasks = new LinkedList<>();
 
 		List<Task> pendingTasks = getPendingTasksForTaskType(taskDefName);
-		boolean startKeyFound = (startKey == null) ? true : false;
+		boolean startKeyFound = startKey == null;
 		int foundcount = 0;
 		for (int i = 0; i < pendingTasks.size(); i++) {
 			if (!startKeyFound) {
@@ -438,15 +438,18 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	@Override
 	public List<Workflow> getWorkflowsByCorrelationId(String correlationId) {
-
 		Preconditions.checkNotNull(correlationId, "correlationId cannot be null");
-		List<Workflow> workflows = new LinkedList<Workflow>();
+		List<Workflow> workflows = new LinkedList<>();
 		SearchResult<String> result = indexDAO.searchWorkflows("correlationId='" + correlationId + "'", "*", 0, 10000, null);
 		List<String> workflowIds = result.getResults();
-		for(String wfId : workflowIds) {
-			workflows.add(getWorkflow(wfId));
+		for (String wfId : workflowIds) {
+			try {
+				workflows.add(getWorkflow(wfId));
+			} catch (ApplicationException applicationException) {
+				//This might happen when the workflow archival failed and the workflow was removed from dynomite
+				logger.error("Error getting the workflowId: {}  for correlationId: {} from Dynomite/Archival", wfId, correlationId, applicationException);
+			}
 		}
-
 		return workflows;
 	}
 
