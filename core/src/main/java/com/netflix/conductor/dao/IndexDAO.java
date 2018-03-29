@@ -16,6 +16,7 @@
 package com.netflix.conductor.dao;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -32,16 +33,26 @@ import com.netflix.conductor.core.events.queue.Message;
 public interface IndexDAO {
 
 	/**
-	 * 
+	 * TODO sync/async - there are 2 different kinds of update responses that are returned from ES2 and ES5.
+	 * TODO Evaluate and see if there is a chance of converging them by looking at the getResult in each of the update responses.
+	 * This method should return an unique identifier of the indexed doc
 	 * @param workflow Workflow to be indexed
+	 *
 	 */
-	public void index(Workflow workflow);
+	void indexWorkflow(Workflow workflow);
+
+	//TODO add java doc
+	CompletableFuture<Void> asyncIndexWorkflow(Workflow workflow);
 	
 	/**
-	 * 
+	 * TODO sync/async - there are 2 different kinds of update responses that are returned from ES2 and ES5.
+	 * TODO Evaluate and see if there is a chance of converging them by looking at the getResult in each of the update responses.
 	 * @param task Task to be indexed
 	 */
-	public void index(Task task);
+	void indexTask(Task task);
+
+	//TODO add java doc
+	CompletableFuture<Void> asyncIndexTask(Task task);
 
 	/**
 	 * 
@@ -52,7 +63,7 @@ public interface IndexDAO {
 	 * @param sort sort options
 	 * @return List of workflow ids for the matching query
 	 */
-	public SearchResult<String> searchWorkflows(String query, String freeText, int start, int count, List<String> sort);
+	SearchResult<String> searchWorkflows(String query, String freeText, int start, int count, List<String> sort);
 	
 	
 	/**
@@ -64,55 +75,75 @@ public interface IndexDAO {
 	 * @param sort sort options
 	 * @return List of workflow ids for the matching query
 	 */
-	public SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort);
+	SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort);
 
 	/**
+	 * TODO sync/async there are 2 different kinds of delete responses that are returned from ES2 and ES5.
+	 * TODO Evaluate and see if there is a chance of converging them by looking at the Builder available in each of the delete responses.
 	 * Remove the workflow index
 	 * @param workflowId workflow to be removed
 	 */
-	public void remove(String workflowId);
+	void removeWorkflow(String workflowId);
+
+	CompletableFuture<Void> asyncRemoveWorkflow(String workflowId);
+
 
 	/**
+	 *
+	 * TODO sync/async - there are 2 different kinds of update responses that are returned from ES2 and ES5.
+	 * TODO Evaluate and see if there is a chance of converging them by looking at the getResult in each of the update responses.
 	 * Updates the index
 	 * @param workflowInstanceId id of the workflow
 	 * @param keys keys to be updated
 	 * @param values values. Number of keys and values MUST match.
 	 */
-	public void update(String workflowInstanceId, String[] keys, Object[] values);
-	
+	void updateWorkflow(String workflowInstanceId, String[] keys, Object[] values);
+
+	CompletableFuture<Void> asyncUpdateWorkflow(String workflowInstanceId, String[] keys, Object[] values);
+
+
 	/**
 	 * Retrieves a specific field from the index 
 	 * @param workflowInstanceId id of the workflow
 	 * @param key field to be retrieved
 	 * @return value of the field as string
 	 */
-	public String get(String workflowInstanceId, String key);
+	String get(String workflowInstanceId, String key);
 
 	/**
-	 * 
+	 * TODO sync/async - there are 2 different kinds of bulk responses that are returned from ES2 and ES5.
+	 * TODO Evaluate and see if there is a chance of converging them by looking at the BulkItemResponse in each of the update responses.
 	 * @param logs Task Execution logs to be indexed
 	 */
-	public void add(List<TaskExecLog> logs);
-	
+	void addTaskExecutionLogs(List<TaskExecLog> logs);
+
+	CompletableFuture<Void> asyncAddTaskExecutionLogs(List<TaskExecLog> logs);
+
 	/**
 	 * 
 	 * @param taskId Id of the task for which to fetch the execution logs
 	 * @return Returns the task execution logs for given task id
 	 */
-	public List<TaskExecLog> getTaskLogs(String taskId);
+	List<TaskExecLog> getTaskExecutionLogs(String taskId);
 	
 	
 	/**
-	 * 
-	 * @param ee Event Execution to be indexed
+	 * TODO sync/async - there are 2 different kinds of update responses that are returned from ES2 and ES5.
+	 * TODO Evaluate and see if there is a chance of converging them by looking at the getResult in each of the update responses.
+	 * @param eventExecution Event Execution to be indexed
 	 */
-	public void add(EventExecution ee);
+	void addEventExecution(EventExecution eventExecution);
+
+
+	CompletableFuture<Void> asyncAddEventExecution(EventExecution eventExecution);
 
 	/**
+	 * TODO sync/async - there are 2 different kinds of index responses that are returned from ES2 and ES5.
+	 * TODO Evaluate and see if there is a chance of converging them by looking at the getResult in each of the update responses.
 	 * Adds an incoming external message into the index
 	 * @param queue Name of the registered queue
 	 * @param msg Message
 	 */
-	public void addMessage(String queue, Message msg);
+	void addMessage(String queue, Message msg);
 
 }

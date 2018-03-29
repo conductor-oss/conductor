@@ -162,7 +162,7 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
 	@Override
 	public void addTaskExecLog(List<TaskExecLog> log) {
-		indexer.add(log);
+		indexer.addTaskExecutionLogs(log);
 	}
 
 	@Override
@@ -250,13 +250,13 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
 			if (archiveWorkflow) {
 				//Add to elasticsearch
-				indexer.update(workflowId,
+				indexer.updateWorkflow(workflowId,
 				               new String[] {RAW_JSON_FIELD, ARCHIVED_FIELD},
 				               new Object[] {om.writeValueAsString(wf), true});
 			}
 			else {
 				// Not archiving, also remove workflowId from index
-				indexer.remove(workflowId);
+				indexer.removeWorkflow(workflowId);
 			}
 
 			withTransaction(connection -> {
@@ -382,7 +382,7 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 		try {
 			boolean added = getWithTransaction(tx -> insertEventExecution(tx, eventExecution));
 			if (added) {
-				indexer.add(eventExecution);
+				indexer.addEventExecution(eventExecution);
 				return true;
 			}
 			return false;
@@ -395,7 +395,7 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 	public void updateEventExecution(EventExecution eventExecution) {
 		try {
 			withTransaction(tx -> updateEventExecution(tx, eventExecution));
-			indexer.add(eventExecution);
+			indexer.addEventExecution(eventExecution);
 		} catch (Exception e) {
 			throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "Unable to update event execution " + eventExecution.getId(), e);
 		}
@@ -472,7 +472,7 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 		});
 
 		workflow.setTasks(tasks);
-		indexer.index(workflow);
+		indexer.indexWorkflow(workflow);
 		return workflow.getWorkflowId();
 	}
 
@@ -495,7 +495,7 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 			removeTaskInProgress(connection, task);
 		}
 
-		indexer.index(task);
+		indexer.indexTask(task);
 	}
 
 	private Workflow readWorkflow(Connection connection, String workflowId) {
