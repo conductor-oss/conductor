@@ -38,27 +38,26 @@ import java.util.function.Supplier;
 /**
  * Utility class that deals with retries in case of transient failures.
  * <p>
- *     <b>Note:</b>
- *           Create a new {@link RetryUtil} for every operation that needs to retried for the stated retries.
- * </p>
+ * <b>Note:</b>
+ * Create a new {@link RetryUtil} for every operation that needs to retried for the stated retries.
  * <p>
- *     <b>Limitations:</b>
- *     <ul>
- *         <li>
- *              The current implementation does not make a distinction between transient and non transient errors.
- *             There is no categorization of transient and non transient failure in Conductor.
- *             Once the exception hierarchy is available in Conductor, this class implementation can be changed to
- *             short circuit the non transient errors.
- *         </li>
- *         <li>
- *              Currently only couple of wait strategies are implemented {@link WaitStrategies#exponentialWait()} and
- *              {@link WaitStrategies#randomWait(long, TimeUnit)} with fixed attributes for each of teh strategies.
- *         </li>
- *         <li>
- *             The retry limit is not configurable and is hard coded to 3
- *         </li>
- *     </ul>
- * </p>
+ * <b>Limitations:</b>
+ * <ul>
+ * <li>
+ * The current implementation does not make a distinction between transient and non transient errors.
+ * There is no categorization of transient and non transient failure in Conductor.
+ * Once the exception hierarchy is available in Conductor, this class implementation can be changed to
+ * short circuit the non transient errors.
+ * </li>
+ * <li>
+ * Currently only couple of wait strategies are implemented {@link WaitStrategies#exponentialWait()} and
+ * {@link WaitStrategies#randomWait(long, TimeUnit)} with fixed attributes for each of teh strategies.
+ * </li>
+ * <li>
+ * The retry limit is not configurable and is hard coded to 3
+ * </li>
+ * </ul>
+ *
  * @param <T> The type of the object that will be returned by the flaky supplier function
  */
 public class RetryUtil<T> {
@@ -68,23 +67,22 @@ public class RetryUtil<T> {
     private AtomicInteger internalNumberOfRetries = new AtomicInteger();
 
     /**
-     *A helper method which has the ability to execute a flaky supplier function and retry in case of failures.
+     * A helper method which has the ability to execute a flaky supplier function and retry in case of failures.
      *
-     * @param supplierCommand: Any function that is flaky and needs multiple retries.
-     * @param throwablePredicate: A Guava {@link Predicate} housing the exceptional
-     *                                  criteria to perform informed filtering before retrying.
+     * @param supplierCommand:      Any function that is flaky and needs multiple retries.
+     * @param throwablePredicate:   A Guava {@link Predicate} housing the exceptional
+     *                              criteria to perform informed filtering before retrying.
      * @param resultRetryPredicate: a predicate to be evaluated for a valid condition of the expected result
-     * @param shortDescription: A short description of the function that will be used in logging and error propagation.
-     *                        The intention of this description is to provide context for Operability.
-     * @param operationName: The name of the function for traceability in logs
+     * @param shortDescription:     A short description of the function that will be used in logging and error propagation.
+     *                              The intention of this description is to provide context for Operability.
+     * @param operationName:        The name of the function for traceability in logs
      * @return an instance of return type of the supplierCommand
      * @throws RuntimeException in case of failed attempts to get T, which needs to be returned by the supplierCommand.
      *                          The instance of the returned exception has:
      *                          <ul>
-     *                              <li>A message with shortDescription and operationName with the number of retries made</li>
-     *                              <li>And a reference to the original exception generated during the last {@link Attempt} of the retry</li>
+     *                          <li>A message with shortDescription and operationName with the number of retries made</li>
+     *                          <li>And a reference to the original exception generated during the last {@link Attempt} of the retry</li>
      *                          </ul>
-     *
      */
     public T retryOnException(Supplier<T> supplierCommand,
                               Predicate<Throwable> throwablePredicate,
