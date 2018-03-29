@@ -33,25 +33,31 @@ import com.netflix.conductor.core.events.queue.Message;
 public interface IndexDAO {
 
 	/**
-	 * TODO sync/async - there are 2 different kinds of update responses that are returned from ES2 and ES5.
-	 * TODO Evaluate and see if there is a chance of converging them by looking at the getResult in each of the update responses.
 	 * This method should return an unique identifier of the indexed doc
 	 * @param workflow Workflow to be indexed
 	 *
 	 */
 	void indexWorkflow(Workflow workflow);
 
-	//TODO add java doc
+	/**
+	 *
+	 * /**
+	 * This method should return an unique identifier of the indexed doc
+	 * @param workflow Workflow to be indexed
+	 * @return CompletableFuture of type void
+	 */
 	CompletableFuture<Void> asyncIndexWorkflow(Workflow workflow);
 	
 	/**
-	 * TODO sync/async - there are 2 different kinds of update responses that are returned from ES2 and ES5.
-	 * TODO Evaluate and see if there is a chance of converging them by looking at the getResult in each of the update responses.
 	 * @param task Task to be indexed
 	 */
 	void indexTask(Task task);
 
-	//TODO add java doc
+	/**
+	 *
+	 * @param task Task to be indexed asynchronously
+	 * @return CompletableFuture of type void
+	 */
 	CompletableFuture<Void> asyncIndexTask(Task task);
 
 	/**
@@ -78,20 +84,21 @@ public interface IndexDAO {
 	SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort);
 
 	/**
-	 * TODO sync/async there are 2 different kinds of delete responses that are returned from ES2 and ES5.
-	 * TODO Evaluate and see if there is a chance of converging them by looking at the Builder available in each of the delete responses.
 	 * Remove the workflow index
 	 * @param workflowId workflow to be removed
 	 */
 	void removeWorkflow(String workflowId);
 
+	/**
+	 * Remove the workflow index
+	 * @param workflowId workflow to be removed
+	 * @return CompletableFuture of type void
+	 */
 	CompletableFuture<Void> asyncRemoveWorkflow(String workflowId);
 
 
 	/**
 	 *
-	 * TODO sync/async - there are 2 different kinds of update responses that are returned from ES2 and ES5.
-	 * TODO Evaluate and see if there is a chance of converging them by looking at the getResult in each of the update responses.
 	 * Updates the index
 	 * @param workflowInstanceId id of the workflow
 	 * @param keys keys to be updated
@@ -99,6 +106,13 @@ public interface IndexDAO {
 	 */
 	void updateWorkflow(String workflowInstanceId, String[] keys, Object[] values);
 
+	/**
+	 * Updates the index
+	 * @param workflowInstanceId id of the workflow
+	 * @param keys keys to be updated
+	 * @param values values. Number of keys and values MUST match.
+	 * @return CompletableFuture of type void
+	 */
 	CompletableFuture<Void> asyncUpdateWorkflow(String workflowInstanceId, String[] keys, Object[] values);
 
 
@@ -111,12 +125,15 @@ public interface IndexDAO {
 	String get(String workflowInstanceId, String key);
 
 	/**
-	 * TODO sync/async - there are 2 different kinds of bulk responses that are returned from ES2 and ES5.
-	 * TODO Evaluate and see if there is a chance of converging them by looking at the BulkItemResponse in each of the update responses.
 	 * @param logs Task Execution logs to be indexed
 	 */
 	void addTaskExecutionLogs(List<TaskExecLog> logs);
 
+	/**
+	 *
+	 * @param logs Task Execution logs to be indexed
+	 * @return CompletableFuture of type void
+	 */
 	CompletableFuture<Void> asyncAddTaskExecutionLogs(List<TaskExecLog> logs);
 
 	/**
@@ -128,18 +145,19 @@ public interface IndexDAO {
 	
 	
 	/**
-	 * TODO sync/async - there are 2 different kinds of update responses that are returned from ES2 and ES5.
-	 * TODO Evaluate and see if there is a chance of converging them by looking at the getResult in each of the update responses.
 	 * @param eventExecution Event Execution to be indexed
 	 */
 	void addEventExecution(EventExecution eventExecution);
 
 
+	/**
+	 *
+	 * @param eventExecution Event Execution to be indexed
+	 * @return CompletableFuture of type void
+	 */
 	CompletableFuture<Void> asyncAddEventExecution(EventExecution eventExecution);
 
 	/**
-	 * TODO sync/async - there are 2 different kinds of index responses that are returned from ES2 and ES5.
-	 * TODO Evaluate and see if there is a chance of converging them by looking at the getResult in each of the update responses.
 	 * Adds an incoming external message into the index
 	 * @param queue Name of the registered queue
 	 * @param msg Message
