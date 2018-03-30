@@ -147,6 +147,7 @@ public class SystemTaskWorkerCoordinator {
 			Monitors.recordTaskPoll(className);
 			logger.debug("Polling for {}, got {}", name, polled.size());
 			for(String task : polled) {
+				logger.debug("Task: {} being sent to the workflow executor", task);
 				try {
 					es.submit(()->executor.executeSystemTask(systemTask, task, unackTimeout));
 				}catch(RejectedExecutionException ree) {

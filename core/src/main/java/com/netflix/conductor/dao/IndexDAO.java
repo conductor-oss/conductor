@@ -16,6 +16,7 @@
 package com.netflix.conductor.dao;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -32,16 +33,32 @@ import com.netflix.conductor.core.events.queue.Message;
 public interface IndexDAO {
 
 	/**
-	 * 
+	 * This method should return an unique identifier of the indexed doc
 	 * @param workflow Workflow to be indexed
+	 *
 	 */
-	public void index(Workflow workflow);
+	void indexWorkflow(Workflow workflow);
+
+	/**
+	 *
+	 * /**
+	 * This method should return an unique identifier of the indexed doc
+	 * @param workflow Workflow to be indexed
+	 * @return CompletableFuture of type void
+	 */
+	CompletableFuture<Void> asyncIndexWorkflow(Workflow workflow);
 	
 	/**
-	 * 
 	 * @param task Task to be indexed
 	 */
-	public void index(Task task);
+	void indexTask(Task task);
+
+	/**
+	 *
+	 * @param task Task to be indexed asynchronously
+	 * @return CompletableFuture of type void
+	 */
+	CompletableFuture<Void> asyncIndexTask(Task task);
 
 	/**
 	 * 
@@ -52,7 +69,7 @@ public interface IndexDAO {
 	 * @param sort sort options
 	 * @return List of workflow ids for the matching query
 	 */
-	public SearchResult<String> searchWorkflows(String query, String freeText, int start, int count, List<String> sort);
+	SearchResult<String> searchWorkflows(String query, String freeText, int start, int count, List<String> sort);
 	
 	
 	/**
@@ -64,55 +81,87 @@ public interface IndexDAO {
 	 * @param sort sort options
 	 * @return List of workflow ids for the matching query
 	 */
-	public SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort);
+	SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort);
 
 	/**
 	 * Remove the workflow index
 	 * @param workflowId workflow to be removed
 	 */
-	public void remove(String workflowId);
+	void removeWorkflow(String workflowId);
+
+	/**
+	 * Remove the workflow index
+	 * @param workflowId workflow to be removed
+	 * @return CompletableFuture of type void
+	 */
+	CompletableFuture<Void> asyncRemoveWorkflow(String workflowId);
+
+
+	/**
+	 *
+	 * Updates the index
+	 * @param workflowInstanceId id of the workflow
+	 * @param keys keys to be updated
+	 * @param values values. Number of keys and values MUST match.
+	 */
+	void updateWorkflow(String workflowInstanceId, String[] keys, Object[] values);
 
 	/**
 	 * Updates the index
 	 * @param workflowInstanceId id of the workflow
 	 * @param keys keys to be updated
 	 * @param values values. Number of keys and values MUST match.
+	 * @return CompletableFuture of type void
 	 */
-	public void update(String workflowInstanceId, String[] keys, Object[] values);
-	
+	CompletableFuture<Void> asyncUpdateWorkflow(String workflowInstanceId, String[] keys, Object[] values);
+
+
 	/**
 	 * Retrieves a specific field from the index 
 	 * @param workflowInstanceId id of the workflow
 	 * @param key field to be retrieved
 	 * @return value of the field as string
 	 */
-	public String get(String workflowInstanceId, String key);
+	String get(String workflowInstanceId, String key);
 
 	/**
-	 * 
 	 * @param logs Task Execution logs to be indexed
 	 */
-	public void add(List<TaskExecLog> logs);
-	
+	void addTaskExecutionLogs(List<TaskExecLog> logs);
+
+	/**
+	 *
+	 * @param logs Task Execution logs to be indexed
+	 * @return CompletableFuture of type void
+	 */
+	CompletableFuture<Void> asyncAddTaskExecutionLogs(List<TaskExecLog> logs);
+
 	/**
 	 * 
 	 * @param taskId Id of the task for which to fetch the execution logs
 	 * @return Returns the task execution logs for given task id
 	 */
-	public List<TaskExecLog> getTaskLogs(String taskId);
+	List<TaskExecLog> getTaskExecutionLogs(String taskId);
 	
 	
 	/**
-	 * 
-	 * @param ee Event Execution to be indexed
+	 * @param eventExecution Event Execution to be indexed
 	 */
-	public void add(EventExecution ee);
+	void addEventExecution(EventExecution eventExecution);
+
+
+	/**
+	 *
+	 * @param eventExecution Event Execution to be indexed
+	 * @return CompletableFuture of type void
+	 */
+	CompletableFuture<Void> asyncAddEventExecution(EventExecution eventExecution);
 
 	/**
 	 * Adds an incoming external message into the index
 	 * @param queue Name of the registered queue
 	 * @param msg Message
 	 */
-	public void addMessage(String queue, Message msg);
+	void addMessage(String queue, Message msg);
 
 }

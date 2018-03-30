@@ -211,7 +211,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 					nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType(), task.getStatus().name());
 		}
 
-		indexDAO.index(task);
+		indexDAO.indexTask(task);
 	}
 
 	@Override
@@ -249,7 +249,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	@Override
 	public void addTaskExecLog(List<TaskExecLog> log) {
-		indexDAO.add(log);
+		indexDAO.addTaskExecutionLogs(log);
 	}
 
 	@Override
@@ -323,13 +323,13 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 			if (archiveWorkflow) {
 				//Add to elasticsearch
-				indexDAO.update(workflowId,
+				indexDAO.updateWorkflow(workflowId,
 				               new String[] {RAW_JSON_FIELD, ARCHIVED_FIELD},
 				               new Object[] {om.writeValueAsString(wf), true});
 			}
 			else {
 				// Not archiving, also remove workflowId from index
-				indexDAO.remove(workflowId);
+				indexDAO.removeWorkflow(workflowId);
 			}
 
 			// Remove from lists
@@ -489,7 +489,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		}
 
 		workflow.setTasks(tasks);
-		indexDAO.index(workflow);
+		indexDAO.indexWorkflow(workflow);
 
 		return workflow.getWorkflowId();
 
@@ -537,7 +537,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			String key = nsKey(EVENT_EXECUTION, ee.getName(), ee.getEvent(), ee.getMessageId());
 			String json = om.writeValueAsString(ee);
 			if(dynoClient.hsetnx(key, ee.getId(), json) == 1L) {
-				indexDAO.add(ee);
+				indexDAO.addEventExecution(ee);
 				return true;
 			}
 			return false;
@@ -555,7 +555,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			String json = om.writeValueAsString(ee);
 			logger.info("updating event execution {}", key);
 			dynoClient.hset(key, ee.getId(), json);
-			indexDAO.add(ee);
+			indexDAO.addEventExecution(ee);
 
 		} catch (Exception e) {
 			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);

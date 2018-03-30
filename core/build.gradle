@@ -5,6 +5,8 @@ dependencies {
     compile "io.reactivex:rxjava:${revRxJava}"
     compile "com.google.inject:guice:${revGuice}"
     compile "com.google.inject.extensions:guice-multibindings:${revGuiceMultiBindings}"
+
+    compile "com.github.rholder:guava-retrying:${revGuavaRetrying}"
     compile "com.netflix.spectator:spectator-api:${revSpectator}"
     compile 'com.netflix.eureka:eureka-client:latest.release'
     compile "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
