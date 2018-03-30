@@ -51,7 +51,7 @@ import java.util.function.Supplier;
  * </li>
  * <li>
  * Currently only couple of wait strategies are implemented {@link WaitStrategies#exponentialWait()} and
- * {@link WaitStrategies#randomWait(long, TimeUnit)} with fixed attributes for each of teh strategies.
+ * {@link WaitStrategies#randomWait(long, TimeUnit)} with fixed attributes for each of the strategies.
  * </li>
  * <li>
  * The retry limit is not configurable and is hard coded to 3
