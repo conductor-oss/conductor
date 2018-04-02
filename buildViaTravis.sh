@@ -1,6 +1,6 @@
 #!/bin/bash
 # This script will build the project.
-if ["$TRAVIS_BRANCH" == "master"]; then
+if [[ $TRAVIS_BRANCH == 'master' ]]; then
   echo -e "Build Release Branch: [$TRAVIS_BRANCH]"
   ./gradlew -Prelease.travisci=true -PbintrayUser="${bintrayUser}" -PbintrayKey="${bintrayKey}" -PsonatypeUsername="${sonatypeUsername}" -PsonatypePassword="${sonatypePassword}" final --info --stacktrace
 elif [ "$TRAVIS_PULL_REQUEST" != "false" ]; then
