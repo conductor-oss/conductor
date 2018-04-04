@@ -17,16 +17,16 @@ from __future__ import print_function
 import requests
 import json
 import sys
-import time
 import socket
 
 
 hostname = socket.gethostname()
 
 
-class BaseClient:
+class BaseClient(object):
     printUrl = False
     headers = {'Content-Type': 'application/json', 'Accept': 'application/json'}
+
     def __init__(self, baseURL, baseResource):
         self.baseURL = baseURL
         self.baseResource = baseResource
@@ -69,7 +69,6 @@ class BaseClient:
         self.__print(resp)
         self.__checkForSuccess(resp)
 
-
     def delete(self, resPath, queryParams):
         theUrl = "{}/{}".format(self.baseURL, resPath)
         resp = requests.delete(theUrl, params=queryParams)
@@ -98,19 +97,21 @@ class BaseClient:
     def __checkForSuccess(self, resp):
         try:
             resp.raise_for_status()
-        except:
+        except requests.HTTPError:
             print("ERROR: " + resp.text)
             raise
 
+
 class MetadataClient(BaseClient):
     BASE_RESOURCE = 'metadata'
+
     def __init__(self, baseURL):
         BaseClient.__init__(self, baseURL, self.BASE_RESOURCE)
 
     def getWorkflowDef(self, wfname, version=1):
         url = self.makeUrl('workflow/{}', wfname)
         params = {}
-        params['version']=version
+        params['version'] = version
         return self.get(url, params)
 
     def createWorkflowDef(self, wfdObj):
@@ -145,8 +146,10 @@ class MetadataClient(BaseClient):
         url = self.makeUrl('taskdefs')
         return self.get(url)
 
+
 class TaskClient(BaseClient):
     BASE_RESOURCE = 'tasks'
+
     def __init__(self, baseURL):
         BaseClient.__init__(self, baseURL, self.BASE_RESOURCE)
 
@@ -158,10 +161,29 @@ class TaskClient(BaseClient):
         url = self.makeUrl('')
         self.post(url, None, taskObj)
 
-    def pollForTask(self, taskType, workerid):
+    def pollForTask(self, taskType, workerid, domain=None):
         url = self.makeUrl('poll/{}', taskType)
         params = {}
-        params['workerid']=workerid
+        params['workerid'] = workerid
+        if domain is not None:
+            params['domain'] = domain
+
+        try:
+            return self.get(url, params)
+        except Exception as err:
+            print('Error while polling ' + str(err))
+            return None
+
+    def pollForBatch(self, taskType, count, timeout, workerid, domain=None):
+        url = self.makeUrl('poll/batch/{}', taskType)
+        params = {}
+        params['workerid'] = workerid
+        params['count'] = count
+        params['timeout'] = timeout
+
+        if domain is not None:
+            params['domain'] = domain
+
         try:
             return self.get(url, params)
         except Exception as err:
@@ -171,7 +193,7 @@ class TaskClient(BaseClient):
     def ackTask(self, taskId, workerid):
         url = self.makeUrl('{}/ack', taskId)
         params = {}
-        params['workerid']=workerid
+        params['workerid'] = workerid
         headers = {'Accept': 'text/plain'}
         value = self.post(url, params, None, headers)
         return value == 'true'
@@ -191,35 +213,36 @@ class TaskClient(BaseClient):
 
 class WorkflowClient(BaseClient):
     BASE_RESOURCE = 'workflow'
+
     def __init__(self, baseURL):
         BaseClient.__init__(self, baseURL, self.BASE_RESOURCE)
 
     def getWorkflow(self, wfId, includeTasks=True):
         url = self.makeUrl('{}', wfId)
         params = {}
-        params['includeTasks']=includeTasks
+        params['includeTasks'] = includeTasks
         return self.get(url, params)
 
     def getRunningWorkflows(self, wfName, version=1, startTime=None, endTime=None):
         url = self.makeUrl('running/{}', wfName)
         params = {}
-        params['version']=version
-        params['startTime']=startTime
-        params['endTime']=endTime
+        params['version'] = version
+        params['startTime'] = startTime
+        params['endTime'] = endTime
         return self.get(url, params)
 
     def startWorkflow(self, wfName, inputjson, version=1, correlationId=None):
         url = self.makeUrl('{}', wfName)
         params = {}
-        params['version']=version
-        params['correlationId']=correlationId
+        params['version'] = version
+        params['correlationId'] = correlationId
         headers = {'Accept': 'text/plain'}
         return self.post(url, params, inputjson, headers)
 
     def terminateWorkflow(self, wfId, reason=None):
         url = self.makeUrl('{}', wfId)
         params = {}
-        params['reason']=reason
+        params['reason'] = reason
         self.delete(url, params)
 
     def pauseWorkflow(self, wfId):
@@ -241,7 +264,7 @@ class WorkflowClient(BaseClient):
     def restartWorkflow(self, wfId, taskRefName, fromTaskRef):
         url = self.makeUrl('{}/restart', wfId)
         params = {}
-        params['from']=fromTaskRef
+        params['from'] = fromTaskRef
         self.post(url, params, None)
 
 
@@ -251,8 +274,9 @@ class WFClientMgr:
         self.taskClient = TaskClient(server_url)
         self.metadataClient = MetadataClient(server_url)
 
+
 def main():
-    if len(sys.argv) < 3 :
+    if len(sys.argv) < 3:
         print("Usage - python conductor server_url command parameters...")
         return None
 
@@ -263,9 +287,8 @@ def main():
     if command == 'start':
         if len(sys.argv) < 7:
             print('python conductor server_url start workflow_name input_json [version] [correlationId]')
-            return None;
+            return None
         wfName = sys.argv[3]
-        version = sys.argv[4]
         input = json.loads(sys.argv[5])
         correlationId = sys.argv[6]
         workflowId = wfc.startWorkflow(wfName, input, 1, correlationId)
@@ -287,5 +310,7 @@ def main():
         wfjson = wfc.terminateWorkflow(wfId)
         print('OK')
         return wfId
+
+
 if __name__ == '__main__':
     main()
