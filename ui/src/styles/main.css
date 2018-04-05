@@ -609,7 +609,8 @@ table tbody {
   padding: 10px 5px 5px 15px;
   z-index: 1000;
 }
-#propsdiv {
+
+.right-prop-overlay {
   min-height: 100%;
   min-width: 600px;
   top: 5px;
@@ -617,6 +618,12 @@ table tbody {
   background-color: #ffffff;
   box-shadow: 0 5px 55px rgba(0,0,0,.7);
   padding-right: 10px;
+}
+
+
+
+#propsdiv {
+
 }
 #abcd {
   min-height: 100%;
