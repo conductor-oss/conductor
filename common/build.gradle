@@ -1,3 +1,4 @@
 dependencies {
-	
+    compile "com.github.rholder:guava-retrying:${revGuavaRetrying}"
+    compile "org.slf4j:slf4j-api:${revSlf4j}"
 }

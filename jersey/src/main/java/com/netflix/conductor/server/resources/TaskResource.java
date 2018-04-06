@@ -179,7 +179,7 @@ public class TaskResource {
 	@Path("/queue/{taskType}/{taskId}")
 	@ApiOperation("Remove Task from a Task type queue")
 	@Consumes({ MediaType.WILDCARD })
-	public void remvoeTaskFromQueue(@PathParam("taskType") String taskType, @PathParam("taskId") String taskId) throws Exception {
+	public void removeTaskFromQueue(@PathParam("taskType") String taskType, @PathParam("taskId") String taskId) throws Exception {
 		taskService.removeTaskfromQueue(taskType, taskId);
 	}
 
@@ -204,13 +204,9 @@ public class TaskResource {
 	@ApiOperation("Get the details about each queue")
 	@Consumes({MediaType.WILDCARD})
 	public Map<String, Long> all() throws Exception {
-		Map<String, Long> all = queues.queuesDetail();
-		Set<Entry<String, Long>> entries = all.entrySet();
-		Set<Entry<String, Long>> sorted = new TreeSet<>(Comparator.comparing(Entry::getKey));
-		sorted.addAll(entries);
-		LinkedHashMap<String, Long> sortedMap = new LinkedHashMap<>();
-		sorted.stream().forEach(e -> sortedMap.put(e.getKey(), e.getValue()));
-		return sortedMap;
+		return queues.queuesDetail().entrySet().stream()
+				.sorted(Comparator.comparing(Entry::getKey))
+				.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (v1, v2) -> v1, LinkedHashMap::new));
 	}
 
 	@GET
@@ -224,7 +220,7 @@ public class TaskResource {
 
 	@GET
 	@Path("/queue/polldata/all")
-	@ApiOperation("Get the last poll data for a given task type")
+	@ApiOperation("Get the last poll data for all task types")
 	@Consumes({ MediaType.WILDCARD })
 	public List<PollData> getAllPollData() throws Exception {
 		return taskService.getAllPollData();

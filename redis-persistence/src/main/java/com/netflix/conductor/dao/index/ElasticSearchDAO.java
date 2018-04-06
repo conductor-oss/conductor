@@ -31,7 +31,7 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
-import com.netflix.conductor.core.utils.RetryUtil;
+import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.index.query.parser.Expression;
 import com.netflix.conductor.dao.index.query.parser.ParserException;
@@ -106,6 +106,8 @@ public class ElasticSearchDAO implements IndexDAO {
 	private static final String MSG_DOC_TYPE = "message";
 	
 	private static final String className = ElasticSearchDAO.class.getSimpleName();
+
+	private static final int RETRY_COUNT = 3;
 	
 	private String indexName;
 	
@@ -270,7 +272,7 @@ public class ElasticSearchDAO implements IndexDAO {
 				bulkRequestBuilder.add(request);
 			}
 			new RetryUtil<BulkResponse>().retryOnException(() -> bulkRequestBuilder.execute().actionGet(),
-					null, BulkResponse::hasFailures, "Indexing all execution logs into doc_type task", "addTaskExecutionLogs");
+					null, BulkResponse::hasFailures, RETRY_COUNT,"Indexing all execution logs into doc_type task", "addTaskExecutionLogs");
 		} catch (Throwable e) {
 			logger.error("Indexing failed {}", e.getMessage(), e);
 		}
@@ -326,7 +328,7 @@ public class ElasticSearchDAO implements IndexDAO {
 		IndexRequest request = new IndexRequest(logIndexName, MSG_DOC_TYPE);
 		request.source(doc);
 		new RetryUtil<>().retryOnException(() -> elasticSearchClient.index(request).actionGet(), null,
-				null, "Indexing document in  for docType: message", "addMessage");
+				null, RETRY_COUNT, "Indexing document in  for docType: message", "addMessage");
 		
 	}
 
@@ -354,7 +356,7 @@ public class ElasticSearchDAO implements IndexDAO {
 	private void updateWithRetry(UpdateRequest request, String operationDescription) {
 		try {
 			new RetryUtil<UpdateResponse>().retryOnException(() -> elasticSearchClient.update(request).actionGet(), null,
-					null, operationDescription, "updateWithRetry");
+					null, RETRY_COUNT, operationDescription, "updateWithRetry");
 		} catch (Exception e) {
 			Monitors.error(className, "index");
 			logger.error("Indexing failed for {}, {}", request.index(), request.type(), e.getMessage());
@@ -411,7 +413,7 @@ public class ElasticSearchDAO implements IndexDAO {
 		request.doc(source);
 		logger.debug("Updating workflow {} with {}", workflowInstanceId, source);
 		new RetryUtil<>().retryOnException(() -> elasticSearchClient.update(request).actionGet(), null, null,
-				"Updating index for doc_type workflow", "updateWorkflow");
+				RETRY_COUNT, "Updating index for doc_type workflow", "updateWorkflow");
 
 	}
 

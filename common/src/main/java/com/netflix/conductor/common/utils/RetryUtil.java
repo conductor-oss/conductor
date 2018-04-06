@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.conductor.core.utils;
+package com.netflix.conductor.common.utils;
 
 import com.github.rholder.retry.Attempt;
 import com.github.rholder.retry.BlockStrategies;
@@ -24,7 +24,6 @@ import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.RetryerBuilder;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Predicate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,10 +36,10 @@ import java.util.function.Supplier;
 
 /**
  * Utility class that deals with retries in case of transient failures.
- * <p>
+ *
  * <b>Note:</b>
  * Create a new {@link RetryUtil} for every operation that needs to retried for the stated retries.
- * <p>
+ *
  * <b>Limitations:</b>
  * <ul>
  * <li>
@@ -73,6 +72,7 @@ public class RetryUtil<T> {
      * @param throwablePredicate:   A Guava {@link Predicate} housing the exceptional
      *                              criteria to perform informed filtering before retrying.
      * @param resultRetryPredicate: a predicate to be evaluated for a valid condition of the expected result
+     * @param retryCount:           Number of times the function is to be retried before failure
      * @param shortDescription:     A short description of the function that will be used in logging and error propagation.
      *                              The intention of this description is to provide context for Operability.
      * @param operationName:        The name of the function for traceability in logs
@@ -87,6 +87,7 @@ public class RetryUtil<T> {
     public T retryOnException(Supplier<T> supplierCommand,
                               Predicate<Throwable> throwablePredicate,
                               Predicate<T> resultRetryPredicate,
+                              int retryCount,
                               String shortDescription, String operationName) throws RuntimeException {
 
         Retryer<T> retryer = RetryerBuilder.<T>newBuilder()
@@ -96,7 +97,7 @@ public class RetryUtil<T> {
                         WaitStrategies.exponentialWait(1000, 90, TimeUnit.SECONDS),
                         WaitStrategies.randomWait(100, TimeUnit.MILLISECONDS, 500, TimeUnit.MILLISECONDS)
                 ))
-                .withStopStrategy(StopStrategies.stopAfterAttempt(3)) // TODO Is there a need to make it configurable ?
+                .withStopStrategy(StopStrategies.stopAfterAttempt(retryCount))
                 .withBlockStrategy(BlockStrategies.threadSleepStrategy())
                 .withRetryListener(new RetryListener() {
                     @Override
@@ -122,5 +123,4 @@ public class RetryUtil<T> {
             throw new RuntimeException(errorMessage, retryException.getLastFailedAttempt().getExceptionCause());
         }
     }
-
 }

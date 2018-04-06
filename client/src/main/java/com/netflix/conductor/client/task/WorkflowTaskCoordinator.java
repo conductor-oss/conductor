@@ -21,6 +21,7 @@ import com.netflix.conductor.client.worker.PropertyFactory;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.discovery.EurekaClient;
 import com.netflix.servo.monitor.Stopwatch;
 import org.slf4j.Logger;
@@ -50,7 +51,7 @@ public class WorkflowTaskCoordinator {
 
 	private static final Logger logger = LoggerFactory.getLogger(WorkflowTaskCoordinator.class);
 
-	private TaskClient client;
+	private TaskClient taskClient;
 
 	private ExecutorService executorService;
 
@@ -78,7 +79,7 @@ public class WorkflowTaskCoordinator {
 
 	/**
 	 * @param eurekaClient Eureka client - used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is terminated. If passed null, discovery check is not done.
-	 * @param client TaskClient used to communicate to the Conductor server
+	 * @param taskClient TaskClient used to communicate to the Conductor server
 	 * @param threadCount # of threads assigned to the workers. Should be at-least the size of taskWorkers to avoid starvation in a busy system.
 	 * @param sleepWhenRetry sleep time in millisecond for Conductor server retries (poll, ack, update task)
 	 * @param updateRetryCount number of times to retry the failed updateTask operation
@@ -90,11 +91,11 @@ public class WorkflowTaskCoordinator {
 	 * </p>
 	 * @see Builder
 	 */
-	public WorkflowTaskCoordinator(EurekaClient eurekaClient, TaskClient client, int threadCount, int sleepWhenRetry,
+	public WorkflowTaskCoordinator(EurekaClient eurekaClient, TaskClient taskClient, int threadCount, int sleepWhenRetry,
 								   int updateRetryCount, int workerQueueSize, Iterable<Worker> taskWorkers,
 								   String workerNamePrefix) {
 		this.eurekaClient = eurekaClient;
-		this.client = client;
+		this.taskClient = taskClient;
 		this.threadCount = threadCount;
 		this.sleepWhenRetry = sleepWhenRetry;
 		this.updateRetryCount = updateRetryCount;
@@ -124,7 +125,7 @@ public class WorkflowTaskCoordinator {
 
 		private EurekaClient eurekaClient;
 
-		private TaskClient client;
+		private TaskClient taskClient;
 
 		/**
 		 *
@@ -186,7 +187,7 @@ public class WorkflowTaskCoordinator {
 		 * @return Builder instance
 		 */
 		public Builder withTaskClient(TaskClient client) {
-			this.client = client;
+			this.taskClient = client;
 			return this;
 		}
 
@@ -231,10 +232,10 @@ public class WorkflowTaskCoordinator {
 				throw new IllegalArgumentException("No task workers are specified. use withWorkers() to add one mor more task workers");
 			}
 
-			if(client == null) {
+			if(taskClient == null) {
 				throw new IllegalArgumentException("No TaskClient provided. use withTaskClient() to provide one");
 			}
-			return new WorkflowTaskCoordinator(eurekaClient, client, threadCount, sleepWhenRetry, updateRetryCount,
+			return new WorkflowTaskCoordinator(eurekaClient, taskClient, threadCount, sleepWhenRetry, updateRetryCount,
 											   workerQueueSize, taskWorkers, workerNamePrefix);
 		}
 	}
@@ -273,7 +274,6 @@ public class WorkflowTaskCoordinator {
 	}
 
 	private void pollForTask(Worker worker) {
-
 		if(eurekaClient != null && !eurekaClient.getInstanceRemoteStatus().equals(InstanceStatus.UP)) {
 			logger.debug("Instance is NOT UP in discovery - will not poll");
 			return;
@@ -284,6 +284,7 @@ public class WorkflowTaskCoordinator {
 			logger.debug("Worker {} has been paused. Not polling anymore!", worker.getClass());
 			return;
 		}
+
 		String domain = PropertyFactory.getString(worker.getTaskDefName(), DOMAIN, null);
 		if(domain == null){
 			domain = PropertyFactory.getString(ALL_WORKERS, DOMAIN, null);
@@ -299,7 +300,7 @@ public class WorkflowTaskCoordinator {
             }
 			String taskType = worker.getTaskDefName();
 			Stopwatch sw = WorkflowTaskMetrics.startPollTimer(worker.getTaskDefName());
-			List<Task> tasks = client.batchPollTasksInDomain(taskType, domain, worker.getIdentity(), realPollCount, worker.getLongPollTimeoutInMS());
+			List<Task> tasks = taskClient.batchPollTasksInDomain(taskType, domain, worker.getIdentity(), realPollCount, worker.getLongPollTimeoutInMS());
             sw.stop();
             logger.debug("Polled {}, domain {}, received {} tasks in worker - {}", worker.getTaskDefName(), domain, tasks.size(), worker.getIdentity());
 
@@ -332,7 +333,7 @@ public class WorkflowTaskCoordinator {
 				return;
 			}
 
-			if (!client.ack(task.getTaskId(), worker.getIdentity())) {
+			if (!taskClient.ack(task.getTaskId(), worker.getIdentity())) {
 				WorkflowTaskMetrics.taskAckFailedCounter(worker.getTaskDefName());
 				logger.error("Ack failed for {}, taskId = {}", taskType, task.getTaskId());
 				return;
@@ -410,25 +411,18 @@ public class WorkflowTaskCoordinator {
 	}
 
 	private void updateWithRetry(int count, Task task, TaskResult result, Worker worker) {
-
-		if(count < 0) {
+		try {
+			String description = String.format("Retry updating task result: %s for task: %s in worker: %s", result.toString(), task.getTaskDefName(), worker.getIdentity());
+			String methodName = "updateWithRetry";
+            new RetryUtil<>().retryOnException(() ->
+            {
+                taskClient.updateTask(result);
+                return null;
+            }, null, null, count, description, methodName);
+		} catch (Exception e) {
 			worker.onErrorUpdate(task);
-			return;
-		}
-
-		try{
-			client.updateTask(result);
-		}catch(Exception e) {
 			WorkflowTaskMetrics.taskUpdateErrorCounter(worker.getTaskDefName(), e);
-			logger.error(String.format("Unable to update %s, count = %d", result.toString(), count), e);
-			try {
-				Thread.sleep(sleepWhenRetry);
-				updateWithRetry(--count, task, result, worker);
-			} catch (InterruptedException ie) {
-				// exit retry loop and propagate
-				logger.debug("Update interrupted", ie);
-				Thread.currentThread().interrupt();
-			}
+			logger.error(String.format("Failed to update result: %s for task: %s in worker: %s", result.toString(), task.getTaskDefName(), worker.getIdentity()), e);
 		}
 	}
 
