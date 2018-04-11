@@ -122,8 +122,8 @@ public class TaskClient extends ClientBase {
      */
     public List<Task> batchPollTasksInDomain(String taskType, String domain, String workerId, int count, int timeoutInMillisecond) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-        Preconditions.checkArgument(StringUtils.isNotBlank(domain), "Domain cannot be blank");
         Preconditions.checkArgument(StringUtils.isNotBlank(workerId), "Worker id cannot be blank");
+        Preconditions.checkArgument(count > 0, "Count must be greater than 0");
 
         Object[] params = new Object[]{"workerid", workerId, "count", count, "timeout", timeoutInMillisecond, "domain", domain};
         return getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
