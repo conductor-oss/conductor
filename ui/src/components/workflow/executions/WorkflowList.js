@@ -1,11 +1,52 @@
 import React, { Component } from 'react';
 import { Link, browserHistory } from 'react-router';
-import { Breadcrumb, BreadcrumbItem, Input, Well, Button, Panel, DropdownButton, MenuItem, Popover, OverlayTrigger, ButtonGroup, Grid, Row, Col, Table  } from 'react-bootstrap';
+import { Input, Button, Panel, Popover, OverlayTrigger, ButtonGroup, Grid, Row, Col  } from 'react-bootstrap';
 import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 import { connect } from 'react-redux';
 import { searchWorkflows, getWorkflowDefs } from '../../../actions/WorkflowActions';
-import WorkflowAction  from './WorkflowAction';
 import Typeahead from 'react-bootstrap-typeahead';
+
+
+function linkMaker(cell) {
+    return <Link to={`/workflow/id/${cell}`}>{cell}</Link>;
+}
+
+function zeroPad(num) {
+    return ('0' + num).slice(-2);
+}
+
+function formatDate(cell){
+    if(cell == null || !cell.split) {
+        return '';
+    }
+    let c = cell.split("T");
+    let time = c[1].split(":");
+    let hh = zeroPad(time[0]);
+    let mm = zeroPad(time[1]);
+    let ss = zeroPad(time[2].replace("Z",""));
+
+    let dt = c[0] + "T" + hh + ":" + mm + ":" + ss + "Z";
+
+    if(dt == null || dt === ''){
+        return '';
+    }
+
+    return new Date(dt).toLocaleString('en-US');
+}
+
+function miniDetails(cell, row){
+    return (<ButtonGroup><OverlayTrigger trigger="click" rootClose placement="left" overlay={
+        <Popover title="Workflow Details" width={400}>
+            <span className="red">{row.reasonForIncompletion == null?'':<span>{row.reasonForIncompletion}<hr/></span>}</span>
+            <b>Input</b><br/>
+            <span className="small" style={{maxWidth:'400px'}}>{row.input}</span>
+            <hr/><b>Output</b><br/>
+            <span className="small">{row.output}</span>
+            <hr/><br/>
+        </Popover>
+
+    }><Button bsSize="xsmall">details</Button></OverlayTrigger></ButtonGroup>);
+}
 
 const Workflow = React.createClass({
 
@@ -189,46 +230,6 @@ const Workflow = React.createClass({
     }
     const workflowNames = this.state.workflows?this.state.workflows:[];
     const statusList = ['RUNNING','COMPLETED','FAILED','TIMED_OUT','TERMINATED','PAUSED'];
-    function linkMaker(cell, row) {
-      return <Link to={`/workflow/id/${cell}`}>{cell}</Link>;
-    };
-    function zeroPad(num) {
-      return ('0' + num).slice(-2);
-    }
-    function formatDate(cell, row){
-      if(cell == null || !cell.split) {
-        return '';
-      }
-      let cll = cell;
-      let c = cll.split("T");
-      let time = c[1].split(":");
-      let hh = zeroPad(time[0]);
-      let mm = zeroPad(time[1]);
-      let ss = zeroPad(time[2].replace("Z",""));
-
-      let dt = c[0] + "T" + hh + ":" + mm + ":" + ss + "Z";
-
-      if(dt == null || dt == ''){
-        return '';
-      }
-      return new Date(dt).toLocaleString('en-US');
-    };
-
-    function miniDetails(cell, row){
-      return (<ButtonGroup><OverlayTrigger trigger="click" rootClose placement="left" overlay={
-        <Popover title="Workflow Details" width={400}>
-          <span className="red">{row.reasonForIncompletion == null?'':<span>{row.reasonForIncompletion}<hr/></span>}</span>
-          <b>Input</b><br/>
-          <span className="small" style={{maxWidth:'400px'}}>{row.input}</span>
-          <hr/><b>Output</b><br/>
-          <span className="small">{row.output}</span>
-          <hr/><br/>
-        </Popover>
-
-      }><Button bsSize="xsmall">details</Button></OverlayTrigger></ButtonGroup>);
-    };
-
-    const innerGlyphicon = (<i className="fa fa-search"></i>);
 
     return (
       <div className="ui-content">
@@ -238,21 +239,21 @@ const Workflow = React.createClass({
             <Row className="show-grid">
               <Col md={4}>
                 <Input type="input" placeholder="Search" groupClassName="" ref="search" value={this.state.search} labelClassName="" onKeyPress={this.keyPress} onChange={this.searchChange}/>
-                &nbsp;<i className="fa fa-angle-up fa-1x"></i>&nbsp;&nbsp;<label className="small nobold">Free Text Query</label>
+                &nbsp;<i className="fa fa-angle-up fa-1x"/>&nbsp;&nbsp;<label className="small nobold">Free Text Query</label>
                 &nbsp;&nbsp;<input type="checkbox" checked={this.state.fullstr} onChange={this.prefChange} ref="fullstr"/><label className="small nobold">&nbsp;Search for entire string</label>
                 </Col>
               <Col md={4}>
                 <Typeahead ref="workflowTypes" onChange={this.workflowTypeChange} options={workflowNames} placeholder="Filter by workflow type" multiple={true} selected={this.state.workflowTypes}/>
-                &nbsp;<i className="fa fa-angle-up fa-1x"></i>&nbsp;&nbsp;<label className="small nobold">Filter by Workflow Type</label>
+                &nbsp;<i className="fa fa-angle-up fa-1x"/>&nbsp;&nbsp;<label className="small nobold">Filter by Workflow Type</label>
               </Col>
               <Col md={2}>
                 <Typeahead ref="status" onChange={this.statusChange} options={statusList} placeholder="Filter by status" selected={this.state.status} multiple={true}/>
-                &nbsp;<i className="fa fa-angle-up fa-1x"></i>&nbsp;&nbsp;<label className="small nobold">Filter by Workflow Status</label>
+                &nbsp;<i className="fa fa-angle-up fa-1x"/>&nbsp;&nbsp;<label className="small nobold">Filter by Workflow Status</label>
               </Col>
               <Col md={2}>
                 <Input className="number-input" type="text" ref="h" groupClassName="inline" labelClassName="" label="" value={this.state.h} onChange={this.hourChange}/>
-                &nbsp;&nbsp;&nbsp;<Button bsSize="medium" bsStyle="success" onClick={this.searchBtnClick} className="fa fa-search search-label">&nbsp;&nbsp;Search</Button>
-                <br/>&nbsp;&nbsp;&nbsp;<i className="fa fa-angle-up fa-1x"></i>&nbsp;&nbsp;<label className="small nobold">Created (in past hours)</label>
+                &nbsp;&nbsp;&nbsp;<Button bsStyle="success" onClick={this.searchBtnClick} className="search-label btn"><i className="fa fa-search"/>&nbsp;&nbsp;Search</Button>
+                <br/>&nbsp;&nbsp;&nbsp;<i className="fa fa-angle-up fa-1x"/>&nbsp;&nbsp;<label className="small nobold">Created (in past hours)</label>
               </Col>
             </Row>
           </Grid>
@@ -263,8 +264,8 @@ const Workflow = React.createClass({
         </div>
         <span>Total Workflows Found: <b>{totalHits}</b>, Displaying {this.state.start} <b>to</b> {max}</span>
         <span style={{float:'right'}}>
-          {parseInt(this.state.start) >= 100?<a onClick={this.prevPage}><i className="fa fa-backward"></i>&nbsp;Previous Page</a>:''}
-          {parseInt(this.state.start) + 100 <= totalHits?<a onClick={this.nextPage}>&nbsp;&nbsp;Next Page&nbsp;<i className="fa fa-forward"></i></a>:''}
+          {parseInt(this.state.start) >= 100?<a onClick={this.prevPage}><i className="fa fa-backward"/>&nbsp;Previous Page</a>:''}
+          {parseInt(this.state.start) + 100 <= totalHits?<a onClick={this.nextPage}>&nbsp;&nbsp;Next Page&nbsp;<i className="fa fa-forward"/></a>:''}
         </span>
         <BootstrapTable data={wfs} striped={true} hover={true} search={false} exportCSV={false} pagination={false} options={{sizePerPage:100}}>
           <TableHeaderColumn dataField="workflowType" isKey={true} dataAlign="left" dataSort={true}>Workflow</TableHeaderColumn>
