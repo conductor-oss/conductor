@@ -22,7 +22,7 @@ import socket
 hostname = socket.gethostname()
 
 
-class ConductorWorker(object):
+class ConductorWorker:
     def __init__(self, server_url, thread_count, polling_interval, worker_id=None):
         wfcMgr = WFClientMgr(server_url)
         self.workflowClient = wfcMgr.workflowClient
@@ -45,18 +45,18 @@ class ConductorWorker(object):
             task['status'] = 'FAILED'
             self.taskClient.updateTask(task)
 
-    def poll_and_execute(self, taskType, exec_function):
+    def poll_and_execute(self, taskType, exec_function, domain=None):
         while True:
             time.sleep(float(self.polling_interval))
-            polled = self.taskClient.pollForTask(taskType, self.worker_id)
+            polled = self.taskClient.pollForTask(taskType, self.worker_id, domain)
             if polled is not None:
                 self.taskClient.ackTask(polled['taskId'], self.worker_id)
                 self.execute(polled, exec_function)
 
-    def start(self, taskType, exec_function, wait):
-        print('Polling for task ' + taskType + ' at a ' + str(self.polling_interval) + ' ms interval with ' + str(self.thread_count) + ' threads for task execution, with worker id as ' + self.worker_id)
+    def start(self, taskType, exec_function, wait, domain=None):
+        print('Polling for task %s at a %f ms interval with %d threads for task execution, with worker id as %s' % (taskType, self.polling_interval * 1000, self.thread_count, self.worker_id))
         for x in range(0, int(self.thread_count)):
-            thread = Thread(target=self.poll_and_execute, args=(taskType, exec_function, ))
+            thread = Thread(target=self.poll_and_execute, args=(taskType, exec_function, domain,))
             thread.daemon = True
             thread.start()
         if wait:
