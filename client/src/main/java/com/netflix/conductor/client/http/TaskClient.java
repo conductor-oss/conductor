@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,9 +16,13 @@
 package com.netflix.conductor.client.http;
 
 import com.google.common.base.Preconditions;
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.TaskSummary;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.config.ClientConfig;
@@ -26,18 +30,29 @@ import com.sun.jersey.api.client.filter.ClientFilter;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * @author visingh
  * @author Viren
  * Client for conductor task management including polling for task, updating task status etc.
  */
+@SuppressWarnings("unchecked")
 public class TaskClient extends ClientBase {
 
     private static GenericType<List<Task>> taskList = new GenericType<List<Task>>() {
     };
 
     private static GenericType<List<TaskDef>> taskDefList = new GenericType<List<TaskDef>>() {
+    };
+
+    private static GenericType<List<TaskExecLog>> taskExecLogList = new GenericType<List<TaskExecLog>>() {
+    };
+
+    private static GenericType<List<PollData>> pollDataList = new GenericType<List<PollData>>() {
+    };
+
+    private static GenericType<SearchResult<TaskSummary>> searchResultTaskSummary = new GenericType<SearchResult<TaskSummary>>() {
     };
 
     /**
@@ -72,6 +87,23 @@ public class TaskClient extends ClientBase {
         for (ClientFilter filter : filters) {
             super.client.addFilter(filter);
         }
+    }
+
+    /**
+     * Perform a poll for a task of a specific task type.
+     *
+     * @param taskType The taskType to poll for
+     * @param domain   The domain of the task type
+     * @param workerId Name of the client worker. Used for logging.
+     * @return Task waiting to be executed.
+     */
+    public Task pollTask(String taskType, String workerId, String domain) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        Preconditions.checkArgument(StringUtils.isNotBlank(domain), "Domain cannot be blank");
+        Preconditions.checkArgument(StringUtils.isNotBlank(workerId), "Worker id cannot be blank");
+
+        Object[] params = new Object[]{"workerid", workerId, "domain", domain};
+        return getForEntity("tasks/poll/{taskType}", params, Task.class, taskType);
     }
 
     /**
@@ -131,26 +163,6 @@ public class TaskClient extends ClientBase {
 
     /**
      * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link #getTaskDetails(String)} instead
-     */
-    @Deprecated
-    public Task get(String taskId) {
-        return getTaskDetails(taskId);
-    }
-
-    /**
-     * Retrieve information about the task
-     *
-     * @param taskId ID of the task
-     * @return Task details
-     */
-    public Task getTaskDetails(String taskId) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
-        return getForEntity("tasks/{taskId}", null, Task.class, taskId);
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
      * use {@link #getPendingTasksByType(String, String, Integer)} instead
      */
     @Deprecated
@@ -187,7 +199,6 @@ public class TaskClient extends ClientBase {
         return getForEntity("tasks/in_progress/{workflowId}/{taskRefName}", null, Task.class, workflowId, taskReferenceName);
     }
 
-
     /**
      * Updates the result of a task execution.
      *
@@ -196,26 +207,6 @@ public class TaskClient extends ClientBase {
     public void updateTask(TaskResult taskResult) {
         Preconditions.checkNotNull(taskResult, "Task result cannot be null");
         postForEntity("tasks", taskResult);
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link #logMessageForTask(String, String)} instead
-     */
-    @Deprecated
-    public void log(String taskId, String logMessage) {
-        logMessageForTask(taskId, logMessage);
-    }
-
-    /**
-     * Log messages for a task.
-     *
-     * @param taskId     id of the task
-     * @param logMessage the message to be logged
-     */
-    public void logMessageForTask(String taskId, String logMessage) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
-        postForEntity("tasks/" + taskId + "/log", logMessage);
     }
 
     /**
@@ -233,43 +224,180 @@ public class TaskClient extends ClientBase {
     }
 
     /**
-     * Retrieve all task definitions
-     *
-     * @return List of all the task definitions registered with the server
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link #logMessageForTask(String, String)} instead
      */
+    @Deprecated
+    public void log(String taskId, String logMessage) {
+        logMessageForTask(taskId, logMessage);
+    }
+
+    /**
+     * Log execution messages for a task.
+     *
+     * @param taskId     id of the task
+     * @param logMessage the message to be logged
+     */
+    public void logMessageForTask(String taskId, String logMessage) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
+        postForEntity("tasks/" + taskId + "/log", logMessage);
+    }
+
+    /**
+     * Fetch execution logs for a task.
+     *
+     * @param taskId id of the task.
+     */
+    public List<TaskExecLog> getTaskLogs(String taskId) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
+        return getForEntity("tasks/{taskId}/log", null, taskExecLogList, taskId);
+    }
+
+    /**
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link #getTaskDetails(String)} instead
+     */
+    @Deprecated
+    public Task get(String taskId) {
+        return getTaskDetails(taskId);
+    }
+
+    /**
+     * Retrieve information about the task
+     *
+     * @param taskId ID of the task
+     * @return Task details
+     */
+    public Task getTaskDetails(String taskId) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
+        return getForEntity("tasks/{taskId}", null, Task.class, taskId);
+    }
+
+    /**
+     * Removes a task from a taskType queue
+     *
+     * @param taskType the taskType to identify the queue
+     * @param taskId   the id of the task to be removed
+     */
+    public void removeTaskFromQueue(String taskType, String taskId) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
+
+        delete("tasks/queue/{taskType}/{taskId}", taskType, taskId);
+    }
+
+    public int getQueueSizeForTask(String taskType) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+
+        Map<String, Integer> queueSizeMap = getForEntity("tasks/queue/sizes", new Object[]{"taskType", taskType}, Map.class);
+        if (queueSizeMap.keySet().contains(taskType)) {
+            return queueSizeMap.get(taskType);
+        }
+        return 0;
+    }
+
+    /**
+     * Get last poll data for a given task type
+     *
+     * @param taskType the task type for which poll data is to be fetched
+     * @return returns the list of poll data for the task type
+     */
+    public List<PollData> getPollData(String taskType) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+
+        Object[] params = new Object[]{"taskType", taskType};
+        return getForEntity("tasks/queue/polldata", params, pollDataList);
+    }
+
+    /**
+     * Get the last poll data for all task types
+     *
+     * @return returns a list of poll data for all task types
+     */
+    public List<PollData> getAllPollData() {
+        return getForEntity("tasks/queue/polldata/all", null, pollDataList);
+    }
+
+    /**
+     * Requeue pending tasks for all running workflows
+     *
+     * @return returns the  number of tasks that have been requeued
+     */
+    public String requeueAllPendingTasks() {
+        return postForEntity("tasks/queue/requeue", null, null, String.class);
+    }
+
+    /**
+     * Requeue pending tasks of a specific task type
+     *
+     * @return returns the number of tasks that have been requeued
+     */
+    public String requeuePendingTasksByTaskType(String taskType) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        return postForEntity("tasks/queue/requeue/{taskType}", null, null, String.class, taskType);
+    }
+
+    /**
+     * Search for tasks based on payload
+     *
+     * @param query the search string
+     * @return returns the {@link SearchResult} containing the {@link TaskSummary} matching the query
+     */
+    public SearchResult<TaskSummary> search(String query) {
+        return getForEntity("tasks/search", new Object[]{"query", query}, searchResultTaskSummary);
+    }
+
+    /**
+     * Paginated search for tasks based on payload
+     *
+     * @param start    start value of page
+     * @param size     number of tasks to be returned
+     * @param sort     sort order
+     * @param freeText additional free text query
+     * @param query    the search query
+     * @return the {@link SearchResult} containing the {@link TaskSummary} that match the query
+     */
+    public SearchResult<TaskSummary> search(Integer start, Integer size, String sort, String freeText, String query) {
+        Object[] params = new Object[]{"start", start, "size", size, "sort", sort, "freeText", freeText, "query", query};
+        return getForEntity("tasks/search", params, searchResultTaskSummary);
+    }
+
+    /**
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link MetadataClient#getAllTaskDefs()} instead
+     */
+    @Deprecated
     public List<TaskDef> getTaskDef() {
         return getForEntity("metadata/taskdefs", null, taskDefList);
     }
 
     /**
-     * Retrieve the task definition of a given task type
-     *
-     * @param taskType type of task for which to retrieve the definition
-     * @return Task Definition for the given task type
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link MetadataClient#getTaskDef(String)} instead
      */
+    @Deprecated
     public TaskDef getTaskDef(String taskType) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
         return getForEntity("metadata/taskdefs/{tasktype}", null, TaskDef.class, taskType);
     }
 
     /**
-     * Deletes a task type from the conductor server. Use with caution.
-     *
-     * @param taskType Task type to be unregistered.
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link MetadataClient#unregisterTaskDef(String)} instead
      */
+    @Deprecated
     public void unregisterTaskDef(String taskType) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
         delete("metadata/taskdefs/{tasktype}", taskType);
     }
 
     /**
-     * Registers a set of task types with the conductor server
-     *
-     * @param taskDefs List of task types to be registered.
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link MetadataClient#registerTaskDefs(List)} instead
      */
+    @Deprecated
     public void registerTaskDefs(List<TaskDef> taskDefs) {
         Preconditions.checkNotNull(taskDefs, "Task defs cannot be null");
         postForEntity("metadata/taskdefs", taskDefs);
     }
-
 }
