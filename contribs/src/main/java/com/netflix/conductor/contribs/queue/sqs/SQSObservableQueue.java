@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.contribs.queue.sqs;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -26,6 +27,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -264,23 +266,33 @@ public class SQSObservableQueue implements ObservableQueue {
 		SendMessageBatchResult result = client.sendMessageBatch(batch);
 		logger.info("send result {}", result.getFailed().toString());
 	}
-	
+
 	@VisibleForTesting
 	List<Message> receiveMessages() {
-        ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest()
-                .withQueueUrl(queueURL)
-                .withVisibilityTimeout(visibilityTimeout)
-                .withMaxNumberOfMessages(batchSize);
-        ReceiveMessageResult result = client.receiveMessage(receiveMessageRequest);
-        return result.getMessages().stream().map(msg -> new Message(msg.getMessageId(), msg.getBody(), msg.getReceiptHandle())).collect(Collectors.toList());
-    }
+		try {
+			ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest()
+					.withQueueUrl(queueURL)
+					.withVisibilityTimeout(visibilityTimeout)
+					.withMaxNumberOfMessages(batchSize);
+
+			ReceiveMessageResult result = client.receiveMessage(receiveMessageRequest);
+
+			return result.getMessages().stream()
+					.map(msg -> new Message(msg.getMessageId(), msg.getBody(), msg.getReceiptHandle()))
+					.collect(Collectors.toList());
+		} catch (Exception exception) {
+			logger.error("Exception while getting messages from SQS ", exception);
+			Monitors.recordObservableQMessageReceivedErrors("sqs");
+		}
+		return new ArrayList<>();
+	}
 	
 	@VisibleForTesting
 	OnSubscribe<Message> getOnSubscribe() {
 		OnSubscribe<Message> subscriber = new Observable.OnSubscribe<Message>() {
 			@Override
 			public void call(Subscriber<? super Message> subscriber) {
-				Observable<Long> interval = Observable.interval(pollTimeInMS, TimeUnit.MILLISECONDS);		
+				Observable<Long> interval = Observable.interval(pollTimeInMS, TimeUnit.MILLISECONDS);
 				interval.flatMap((Long x)->{
 					List<Message> msgs = receiveMessages();
 		            return Observable.from(msgs);

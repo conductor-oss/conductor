@@ -398,25 +398,30 @@ public class DeciderService {
     }
 
     @VisibleForTesting
-    boolean isResponseTimedOut(TaskDef taskType, Task task) {
+    boolean isResponseTimedOut(TaskDef taskDefinition, Task task) {
 
-        if (taskType == null) {
-            logger.warn("missing task type " + task.getTaskDefName() + ", workflowId=" + task.getWorkflowInstanceId());
+        logger.debug("Evaluating responseTimeOut for Task: {}, with Task Definition: {} ", task, taskDefinition);
+
+        if (taskDefinition == null) {
+            logger.warn("missing task type : {}, workflowId= {}", task.getTaskDefName(), task.getWorkflowInstanceId());
             return false;
         }
-        if (task.getStatus().isTerminal() || !task.getStatus().equals(Status.IN_PROGRESS) || taskType.getResponseTimeoutSeconds() == 0) {
+        if (task.getStatus().isTerminal() || !task.getStatus().equals(Status.IN_PROGRESS) || taskDefinition.getResponseTimeoutSeconds() == 0) {
             return false;
         }
 
-        long responseTimeout = 1000 * taskType.getResponseTimeoutSeconds();
+        long responseTimeout = 1000 * taskDefinition.getResponseTimeoutSeconds();
         long now = System.currentTimeMillis();
         long noResponseTime = now - task.getUpdateTime();
 
         if (noResponseTime < responseTimeout) {
+            logger.debug("Current responseTime: {} has not exceeded the configured responseTimeout of {} " +
+                    "for the Task: {} with Task Definition: {}", noResponseTime, responseTimeout, task, taskDefinition);
             return false;
         }
-        Monitors.recordTaskResponseTimeout(task.getTaskDefName());
 
+        Monitors.recordTaskResponseTimeout(task.getTaskDefName());
+        logger.debug("responseTimeout of {} exceeded for the Task: {} with Task Definition: {}", responseTimeout, task, taskDefinition);
         return true;
     }
 
