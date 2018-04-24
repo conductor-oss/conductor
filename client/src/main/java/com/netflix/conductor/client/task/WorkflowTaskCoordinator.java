@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -43,9 +44,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * Manages the Task workers thread pool and server communication (poll, task update and acknowledgement).
  *
  * @author Viren
- * Manages the Task workers thread pool and server communication (poll, task update and acknowledgement).
  */
 public class WorkflowTaskCoordinator {
 
@@ -246,7 +247,6 @@ public class WorkflowTaskCoordinator {
      * or the builder {@link Builder#build()} method
 	 */
 	public synchronized void init() {
-
 		if(threadCount == -1) {
 			threadCount = workers.size();
 		}
@@ -258,15 +258,11 @@ public class WorkflowTaskCoordinator {
 		this.executorService = new ThreadPoolExecutor(threadCount, threadCount,
                 0L, TimeUnit.MILLISECONDS,
                 workerQueue,
-                new ThreadFactory() {
-
-			@Override
-			public Thread newThread(Runnable runnable) {
-				Thread thread = new Thread(runnable);
-				thread.setName(workerNamePrefix + count.getAndIncrement());
-				return thread;
-			}
-		});
+				(runnable) -> {
+					Thread thread = new Thread(runnable);
+					thread.setName(workerNamePrefix + count.getAndIncrement());
+					return thread;
+				});
 		this.scheduledExecutorService = Executors.newScheduledThreadPool(workers.size());
 		workers.forEach(worker -> {
 			scheduledExecutorService.scheduleWithFixedDelay(()->pollForTask(worker), worker.getPollingInterval(), worker.getPollingInterval(), TimeUnit.MILLISECONDS);
@@ -291,6 +287,7 @@ public class WorkflowTaskCoordinator {
 		}
 		logger.debug("Polling {}, domain={}, count = {} timeout = {} ms", worker.getTaskDefName(), domain, worker.getPollCount(), worker.getLongPollTimeoutInMS());
 
+		List<Task> tasks = Collections.emptyList();
 		try{
             // get the remaining capacity of worker queue to prevent queue full exception
             int realPollCount = Math.min(workerQueue.remainingCapacity(), worker.getPollCount());
@@ -300,27 +297,31 @@ public class WorkflowTaskCoordinator {
             }
 			String taskType = worker.getTaskDefName();
 			Stopwatch sw = WorkflowTaskMetrics.startPollTimer(worker.getTaskDefName());
-			List<Task> tasks = taskClient.batchPollTasksInDomain(taskType, domain, worker.getIdentity(), realPollCount, worker.getLongPollTimeoutInMS());
-            sw.stop();
+			tasks = taskClient.batchPollTasksInDomain(taskType, domain, worker.getIdentity(), realPollCount, worker.getLongPollTimeoutInMS());
+			sw.stop();
             logger.debug("Polled {}, domain {}, received {} tasks in worker - {}", worker.getTaskDefName(), domain, tasks.size(), worker.getIdentity());
+		} catch (Exception e) {
+			WorkflowTaskMetrics.taskPollErrorCounter(worker.getTaskDefName(), e);
+			logger.error("Error when polling for tasks", e);
+		}
 
-			tasks.forEach(task -> executorService.submit(() -> {
+		for (Task task : tasks) {
+			try {
+				executorService.submit(() -> {
 					try {
-					    logger.debug("Executing task {}, taskId - {} in worker - {}", task.getTaskDefName(), task.getTaskId(), worker.getIdentity());
+						logger.debug("Executing task {}, taskId - {} in worker - {}", task.getTaskDefName(), task.getTaskId(), worker.getIdentity());
 						execute(worker, task);
 					} catch (Throwable t) {
 						task.setStatus(Task.Status.FAILED);
 						TaskResult result = new TaskResult(task);
-						handleException(t, result, worker, true, task);
+						handleException(t, result, worker, task);
 					}
-				})
-			);
-		}catch(RejectedExecutionException qfe) {
-			WorkflowTaskMetrics.taskExecutionQueueFullCounter(worker.getTaskDefName());
-			logger.error("Execution queue is full", qfe);
-		} catch (Exception e) {
-			WorkflowTaskMetrics.taskPollErrorCounter(worker.getTaskDefName(), e);
-			logger.error("Error when polling for task", e);
+				});
+			} catch (RejectedExecutionException e) {
+				WorkflowTaskMetrics.taskExecutionQueueFullCounter(worker.getTaskDefName());
+				logger.error("Execution queue is full, returning task: {}", task.getTaskId(), e);
+				returnTask(worker, task);
+			}
 		}
 	}
 
@@ -336,12 +337,14 @@ public class WorkflowTaskCoordinator {
 			if (!taskClient.ack(task.getTaskId(), worker.getIdentity())) {
 				WorkflowTaskMetrics.taskAckFailedCounter(worker.getTaskDefName());
 				logger.error("Ack failed for {}, taskId = {}", taskType, task.getTaskId());
+				returnTask(worker, task);
 				return;
 			}
 
 		} catch (Exception e) {
 			logger.error(String.format("ack exception for task %s, taskId = %s in worker - %s", task.getTaskDefName(), task.getTaskId(), worker.getIdentity()), e);
 			WorkflowTaskMetrics.taskAckErrorCounter(worker.getTaskDefName(), e);
+			returnTask(worker, task);
 			return;
 		}
 
@@ -360,7 +363,7 @@ public class WorkflowTaskCoordinator {
 				task.setStatus(Task.Status.FAILED);
 				result = new TaskResult(task);
 			}
-			handleException(e, result, worker, false, task);
+			handleException(e, result, worker, task);
 		} finally {
 			sw.stop();
 		}
@@ -426,7 +429,7 @@ public class WorkflowTaskCoordinator {
 		}
 	}
 
-	private void handleException(Throwable t, TaskResult result, Worker worker, boolean updateTask, Task task) {
+	private void handleException(Throwable t, TaskResult result, Worker worker, Task task) {
 		logger.error(String.format("Error while executing task %s", task.toString()), t);
 		WorkflowTaskMetrics.taskExecutionErrorCounter(worker.getTaskDefName(), t);
 		result.setStatus(TaskResult.Status.FAILED);
@@ -437,5 +440,17 @@ public class WorkflowTaskCoordinator {
 		result.log(stringWriter.toString());
 
 		updateWithRetry(updateRetryCount, task, result, worker);
+	}
+
+	/**
+	 * Returns task back to conductor by calling updateTask API without any change to task for error scenarios where
+	 * worker can't work on the task due to ack failures,  {@code executorService.submit} throwing {@link RejectedExecutionException},
+	 * etc. This guarantees that task will be picked up by any worker again after task's {@code callbackAfterSeconds}.
+	 * This is critical especially for tasks without responseTimeoutSeconds setting in which case task will get stuck
+	 * in IN_PROGRESS status forever when these errors occur if task is not returned.
+	 */
+	private void returnTask(Worker worker, Task task) {
+		logger.error("Returning task back to conductor");
+		updateWithRetry(updateRetryCount, task, new TaskResult(task), worker);
 	}
 }
