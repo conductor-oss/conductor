@@ -450,7 +450,7 @@ public class WorkflowTaskCoordinator {
 	 * in IN_PROGRESS status forever when these errors occur if task is not returned.
 	 */
 	private void returnTask(Worker worker, Task task) {
-		logger.error("Returning task back to conductor");
+		logger.warn("Returning task {} back to conductor", task.getTaskId());
 		updateWithRetry(updateRetryCount, task, new TaskResult(task), worker);
 	}
 }
