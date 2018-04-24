@@ -26,8 +26,9 @@ import java.util.stream.Collectors;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 
 /**
- * @author Viren
+ * Captures workflow summary info to be indexed in Elastic Search.
  *
+ * @author Viren
  */
 public class WorkflowSummary {
 
@@ -151,8 +152,12 @@ public class WorkflowSummary {
 	public String getInput() {
 		return input;
 	}
-	
-	/**
+
+    public long getInputSize() {
+        return input != null ? input.length() : 0;
+    }
+
+    /**
 	 * 
 	 * @return the output
 	 */
@@ -160,7 +165,11 @@ public class WorkflowSummary {
 		return output;
 	}
 
-	/**
+    public long getOutputSize() {
+        return output != null ? output.length() : 0;
+    }
+
+    /**
 	 * @return the reasonForIncompletion
 	 */
 	public String getReasonForIncompletion() {
