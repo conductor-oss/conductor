@@ -82,7 +82,7 @@ public class DeciderService {
 
         List<Task> tasksToBeScheduled = new LinkedList<>();
         if (executedTasks.isEmpty()) {
-            //this isSystemTask the flow that the new workflow will go through
+            //this is the flow that the new workflow will go through
             tasksToBeScheduled = startWorkflow(workflow, def);
             if (tasksToBeScheduled == null) {
                 tasksToBeScheduled = new LinkedList<>();
@@ -141,7 +141,7 @@ public class DeciderService {
             if (taskDefinition != null) {//QQ what happens when the task definition is null at this time ??
                 checkForTimeout(taskDefinition, pendingTask);
                 // If the task has not been updated for "responseTimeout" then rescheduled it.
-                if (checkForResponseTimeout(taskDefinition, pendingTask)) {
+                if (isResponseTimedOut(taskDefinition, pendingTask)) {
                     outcome.tasksToBeRequeued.add(pendingTask);
                 }
             }
@@ -398,14 +398,13 @@ public class DeciderService {
     }
 
     @VisibleForTesting
-    boolean checkForResponseTimeout(TaskDef taskType, Task task) {
+    boolean isResponseTimedOut(TaskDef taskType, Task task) {
 
         if (taskType == null) {
             logger.warn("missing task type " + task.getTaskDefName() + ", workflowId=" + task.getWorkflowInstanceId());
             return false;
         }
-        if (task.getStatus().isTerminal() || taskType.getTimeoutSeconds() <= 0 ||
-                !task.getStatus().equals(Status.IN_PROGRESS) || taskType.getResponseTimeoutSeconds() == 0) {
+        if (task.getStatus().isTerminal() || !task.getStatus().equals(Status.IN_PROGRESS) || taskType.getResponseTimeoutSeconds() == 0) {
             return false;
         }
 
