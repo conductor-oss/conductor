@@ -82,7 +82,7 @@ public class DeciderService {
 
         List<Task> tasksToBeScheduled = new LinkedList<>();
         if (executedTasks.isEmpty()) {
-            //this isSystemTask the flow that the new workflow will go through
+            //this is the flow that the new workflow will go through
             tasksToBeScheduled = startWorkflow(workflow, def);
             if (tasksToBeScheduled == null) {
                 tasksToBeScheduled = new LinkedList<>();
@@ -141,7 +141,7 @@ public class DeciderService {
             if (taskDefinition != null) {//QQ what happens when the task definition is null at this time ??
                 checkForTimeout(taskDefinition, pendingTask);
                 // If the task has not been updated for "responseTimeout" then rescheduled it.
-                if (checkForResponseTimeout(taskDefinition, pendingTask)) {
+                if (isResponseTimedOut(taskDefinition, pendingTask)) {
                     outcome.tasksToBeRequeued.add(pendingTask);
                 }
             }
@@ -398,26 +398,30 @@ public class DeciderService {
     }
 
     @VisibleForTesting
-    boolean checkForResponseTimeout(TaskDef taskType, Task task) {
+    boolean isResponseTimedOut(TaskDef taskDefinition, Task task) {
 
-        if (taskType == null) {
-            logger.warn("missing task type " + task.getTaskDefName() + ", workflowId=" + task.getWorkflowInstanceId());
+        logger.debug("Evaluating responseTimeOut for Task: {}, with Task Definition: {} ", task, taskDefinition);
+
+        if (taskDefinition == null) {
+            logger.warn("missing task type : {}, workflowId= {}", task.getTaskDefName(), task.getWorkflowInstanceId());
             return false;
         }
-        if (task.getStatus().isTerminal() || taskType.getTimeoutSeconds() <= 0 ||
-                !task.getStatus().equals(Status.IN_PROGRESS) || taskType.getResponseTimeoutSeconds() == 0) {
+        if (task.getStatus().isTerminal() || !task.getStatus().equals(Status.IN_PROGRESS) || taskDefinition.getResponseTimeoutSeconds() == 0) {
             return false;
         }
 
-        long responseTimeout = 1000 * taskType.getResponseTimeoutSeconds();
+        long responseTimeout = 1000 * taskDefinition.getResponseTimeoutSeconds();
         long now = System.currentTimeMillis();
         long noResponseTime = now - task.getUpdateTime();
 
         if (noResponseTime < responseTimeout) {
+            logger.debug("Current responseTime: {} has not exceeded the configured responseTimeout of {} " +
+                    "for the Task: {} with Task Definition: {}", noResponseTime, responseTimeout, task, taskDefinition);
             return false;
         }
-        Monitors.recordTaskResponseTimeout(task.getTaskDefName());
 
+        Monitors.recordTaskResponseTimeout(task.getTaskDefName());
+        logger.debug("responseTimeout of {} exceeded for the Task: {} with Task Definition: {}", responseTimeout, task, taskDefinition);
         return true;
     }
 
