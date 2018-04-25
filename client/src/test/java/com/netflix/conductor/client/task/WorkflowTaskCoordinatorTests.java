@@ -18,26 +18,28 @@
  */
 package com.netflix.conductor.client.task;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.when;
-
-import java.util.concurrent.CountDownLatch;
-
-import org.junit.Test;
-import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Viren
@@ -49,10 +51,9 @@ public class WorkflowTaskCoordinatorTests {
 	public void testNoWorkersException() {
 		new WorkflowTaskCoordinator.Builder().build();
 	}
-	
+
 	@Test
 	public void testThreadPool() {
-		
 		Worker worker = Worker.create("test", (Task task)-> new TaskResult(task));
 		WorkflowTaskCoordinator coordinator = new WorkflowTaskCoordinator.Builder().withWorkers(worker, worker, worker).withTaskClient(new TaskClient()).build();
 		assertEquals(-1, coordinator.getThreadCount());		//Not initialized yet
@@ -82,13 +83,11 @@ public class WorkflowTaskCoordinatorTests {
 
 	@Test
 	public void testTaskException() {
-
 		Worker worker = Worker.create("test", task -> {
             throw new NoSuchMethodError();
         });
 		TaskClient client = Mockito.mock(TaskClient.class);
-		WorkflowTaskCoordinator coordinator = new WorkflowTaskCoordinator.Builder().withWorkers(worker, worker, worker).withTaskClient(client).build();
-		coordinator = new WorkflowTaskCoordinator.Builder()
+		WorkflowTaskCoordinator coordinator = new WorkflowTaskCoordinator.Builder()
 				.withWorkers(worker)
 				.withThreadCount(1)
 				.withWorkerQueueSize(1)
@@ -97,12 +96,10 @@ public class WorkflowTaskCoordinatorTests {
 				.withTaskClient(client)
 				.withWorkerNamePrefix("test-worker-")
 				.build();
-		when(client.poll(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(new Task()));
+		when(client.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(new Task()));
 		when(client.ack(anyString(), anyString())).thenReturn(true);
 		CountDownLatch latch = new CountDownLatch(1);
-		doAnswer(new Answer<Void>() {
-			@Override
-			public Void answer(InvocationOnMock invocation) throws Throwable {
+		doAnswer(invocation -> {
 				assertEquals("test-worker-0", Thread.currentThread().getName());
 				Object[] args = invocation.getArguments();
 				TaskResult result = (TaskResult) args[0];
@@ -110,10 +107,141 @@ public class WorkflowTaskCoordinatorTests {
 				latch.countDown();
 				return null;
 			}
-		}).when(client).updateTask(any());
+		).when(client).updateTask(any());
 		coordinator.init();
 		Uninterruptibles.awaitUninterruptibly(latch);
 		Mockito.verify(client).updateTask(any());
+	}
 
+	@Test
+	public void testReturnTaskWhenAckFailed() {
+		Worker worker = mock(Worker.class);
+		when(worker.getPollingInterval()).thenReturn(1000);
+		when(worker.getPollCount()).thenReturn(1);
+		when(worker.getTaskDefName()).thenReturn("test");
+		when(worker.preAck(any())).thenReturn(true);
+
+		TaskClient client = Mockito.mock(TaskClient.class);
+		WorkflowTaskCoordinator coordinator = new WorkflowTaskCoordinator.Builder()
+				.withWorkers(worker)
+				.withThreadCount(1)
+				.withWorkerQueueSize(1)
+				.withSleepWhenRetry(100000)
+				.withUpdateRetryCount(1)
+				.withTaskClient(client)
+				.withWorkerNamePrefix("test-worker-")
+				.build();
+		Task testTask = new Task();
+		testTask.setStatus(Task.Status.IN_PROGRESS);
+		when(client.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask));
+		when(client.ack(anyString(), anyString())).thenReturn(false);
+		CountDownLatch latch = new CountDownLatch(1);
+
+		doAnswer(invocation -> {
+					Object[] args = invocation.getArguments();
+					TaskResult result = (TaskResult) args[0];
+					assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
+					latch.countDown();
+					return null;
+				}
+		).when(client).updateTask(any());
+
+		coordinator.init();
+		Uninterruptibles.awaitUninterruptibly(latch);
+
+		// then worker.execute must not be called and task must be updated with IN_PROGRESS status
+		verify(worker, never()).execute(any());
+		Mockito.verify(client).updateTask(any());
+	}
+
+	@Test
+	public void testReturnTaskWhenAckThrowsException() {
+		Worker worker = mock(Worker.class);
+		when(worker.getPollingInterval()).thenReturn(1000);
+		when(worker.getPollCount()).thenReturn(1);
+		when(worker.getTaskDefName()).thenReturn("test");
+		when(worker.preAck(any())).thenReturn(true);
+
+		TaskClient client = Mockito.mock(TaskClient.class);
+		WorkflowTaskCoordinator coordinator = new WorkflowTaskCoordinator.Builder()
+				.withWorkers(worker)
+				.withThreadCount(1)
+				.withWorkerQueueSize(1)
+				.withSleepWhenRetry(100000)
+				.withUpdateRetryCount(1)
+				.withTaskClient(client)
+				.withWorkerNamePrefix("test-worker-")
+				.build();
+		Task testTask = new Task();
+		testTask.setStatus(Task.Status.IN_PROGRESS);
+		when(client.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask));
+		when(client.ack(anyString(), anyString())).thenThrow(new RuntimeException("Ack failed"));
+		CountDownLatch latch = new CountDownLatch(1);
+
+		doAnswer(invocation -> {
+					assertEquals("test-worker-0", Thread.currentThread().getName());
+					Object[] args = invocation.getArguments();
+					TaskResult result = (TaskResult) args[0];
+					assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
+					latch.countDown();
+					return null;
+				}
+		).when(client).updateTask(any());
+
+		coordinator.init();
+		Uninterruptibles.awaitUninterruptibly(latch);
+
+		// then worker.execute must not be called and task must be updated with IN_PROGRESS status
+		verify(worker, never()).execute(any());
+		Mockito.verify(client).updateTask(any());
+	}
+
+	@Test
+	public void testReturnTaskWhenRejectedExecutionExceptionThrown() {
+		Task testTask = new Task();
+		testTask.setStatus(Task.Status.IN_PROGRESS);
+
+		Worker worker = mock(Worker.class);
+		when(worker.getPollingInterval()).thenReturn(3000);
+		when(worker.getPollCount()).thenReturn(1);
+		when(worker.getTaskDefName()).thenReturn("test");
+		when(worker.preAck(any())).thenReturn(true);
+		when(worker.execute(any())).thenAnswer(invocation -> {
+			// Sleep for 2 seconds to trigger RejectedExecutionException
+			Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+			return new TaskResult(testTask);
+		});
+
+		TaskClient client = Mockito.mock(TaskClient.class);
+		WorkflowTaskCoordinator coordinator = new WorkflowTaskCoordinator.Builder()
+				.withWorkers(worker)
+				.withThreadCount(1)
+				.withWorkerQueueSize(1)
+				.withSleepWhenRetry(100000)
+				.withUpdateRetryCount(1)
+				.withTaskClient(client)
+				.withWorkerNamePrefix("test-worker-")
+				.build();
+		when(client.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask, testTask, testTask));
+		when(client.ack(anyString(), anyString())).thenReturn(true);
+		CountDownLatch latch = new CountDownLatch(3);
+		doAnswer(invocation -> {
+					Object[] args = invocation.getArguments();
+					TaskResult result = (TaskResult) args[0];
+					assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
+					latch.countDown();
+					return null;
+				}
+		).when(client).updateTask(any());
+		coordinator.init();
+		Uninterruptibles.awaitUninterruptibly(latch);
+
+		// With worker queue set to 1, first two tasks can be submitted, and third one would get
+		// RejectedExceptionExcpetion, so worker.execute() should be called twice.
+		verify(worker, times(2)).execute(any());
+
+		// task must be updated with IN_PROGRESS status three times, two from worker.execute() and
+		// one from returnTask caused by RejectedExecutionException.
+		verify(client, times(3)).updateTask(any());
 	}
 }

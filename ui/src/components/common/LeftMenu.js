@@ -107,7 +107,7 @@ const LeftMenu = React.createClass({
       if(cv['header'] == true) {
         menuItems.push((
           <div className="" key={`key-${(keyVal += 1)}`}>
-            <div className='menuHeader'><i className='fa fa-angle-right'></i>&nbsp;{cv['label']}</div>
+            <div className='menuHeader'><i className='fa fa-angle-down'></i>&nbsp;{cv['label']}</div>
           </div>
         ));
       } else {

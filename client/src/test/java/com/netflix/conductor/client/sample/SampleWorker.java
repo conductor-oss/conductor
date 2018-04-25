@@ -43,7 +43,7 @@ public class SampleWorker implements Worker {
 	@Override
 	public TaskResult execute(Task task) {
 		
-		System.out.printf("Executing %s\n", taskDefName);
+		System.out.printf("Executing %s%n", taskDefName);
 		
 		TaskResult result = new TaskResult(task);
 		result.setStatus(Status.COMPLETED);

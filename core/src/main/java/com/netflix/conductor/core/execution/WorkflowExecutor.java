@@ -429,7 +429,7 @@ public class WorkflowExecutor {
         if (workflowInstance.getStatus().isTerminal()) {
             // Workflow is in terminal state
             queueDAO.remove(taskQueueName, result.getTaskId());
-            logger.debug("Workflow: {} is in terminal state Task: {} removed from Queue: {} during update task", task, workflowInstance, taskQueueName);
+            logger.debug("Workflow: {} is in terminal state Task: {} removed from Queue: {} during update task", workflowInstance, task, taskQueueName);
             if (!task.getStatus().isTerminal()) {
                 task.setStatus(Status.COMPLETED);
             }
@@ -685,6 +685,7 @@ public class WorkflowExecutor {
         try {
 
             Task task = executionDAO.getTask(taskId);
+            logger.info("Task: {} fetched from execution DAO for TaskId: {}", task, taskId);
             if (task.getStatus().isTerminal()) {
                 //Tune the SystemTaskWorkerCoordinator's queues - if the queue size is very big this can happen!
                 logger.info("Task {}/{} was already completed.", task.getTaskType(), task.getTaskId());

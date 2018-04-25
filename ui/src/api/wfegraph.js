@@ -1,3 +1,5 @@
+import clone from "lodash/fp/clone";
+
 class Workflow2Graph {
 
   constructor() {
@@ -7,16 +9,16 @@ class Workflow2Graph {
     this._convert(wfe, meta);
     return {edges: this.edges, vertices: this.vertices, id: wfe.workflowId};
   }
-  _convert(wfe, meta) {
-
-    let subworkflows = {};
-    let metaTasks = meta.tasks;
+  _convert(wfe = {}, meta = {}) {
+    const subworkflows = {};
+    const metaTasks = meta.tasks && clone(meta.tasks) || [];
     metaTasks.push({type:'final', name:'final', label: '', taskReferenceName: 'final', system: true});
     metaTasks.unshift({type:'start', name:'start', label: '', taskReferenceName: 'start', system: true});
 
-    let forks = [];
-    wfe.tasks.forEach(tt=>{
-      if(tt.taskType == 'FORK'){
+    const forks = [];
+    const tasks = wfe.tasks || [];
+    tasks.forEach(tt=>{
+      if(tt.taskType === 'FORK'){
         let wfts = [];
         let forkedTasks = tt.inputData && tt.inputData.forkedTasks || [];
         forkedTasks.forEach(ft =>{
@@ -33,7 +35,7 @@ class Workflow2Graph {
     let joins = {};
     wfe.tasks.forEach(t => {
       this.executedTasks[t.referenceTaskName] = {status: t.status, input: t.inputData, output: t.outputData, taskType: t.taskType, reasonForIncompletion: t.reasonForIncompletion, task: t};
-      if(t.taskType == 'JOIN' ){
+      if(t.taskType === 'JOIN' ){
         joins[t.referenceTaskName] = t.inputData.joinOn;
       }
     });

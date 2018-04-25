@@ -392,7 +392,7 @@ public class ExecutionService {
 	 * @return Execution Logs (logged by the worker)
 	 */
 	public List<TaskExecLog> getTaskLogs(String taskId) {
-		return indexer.getTaskLogs(taskId);		
+		return indexer.getTaskExecutionLogs(taskId);
 	}
 	
 }

@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Netflix, Inc.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,12 +23,16 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.metrics.Monitors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -40,83 +44,91 @@ import java.util.stream.Collectors;
 @Singleton
 public class DynoObservableQueue implements ObservableQueue {
 
-	private static final String TYPE = "conductor";
-	
-	private String queueName;
-	
-	private QueueDAO queueDAO;
-	
-	private int pollTimeInMS;
+    private static final Logger logger = LoggerFactory.getLogger(DynoObservableQueue.class);
 
-	private int longPollTimeout;
+    private static final String TYPE = "conductor";
 
-	private int pollCount;
-	
-	@Inject
-	DynoObservableQueue(String queueName, QueueDAO queueDAO, Configuration config) {
-		this.queueName = queueName;
-		this.queueDAO = queueDAO;
-		this.pollTimeInMS = config.getIntProperty("workflow.dyno.queues.pollingInterval", 100);
-		this.pollCount = config.getIntProperty("workflow.dyno.queues.pollCount", 10);
-		this.longPollTimeout = config.getIntProperty("workflow.dyno.queues.longPollTimeout", 1000);
-	}
-	
-	@Override
-	public Observable<Message> observe() {
-		OnSubscribe<Message> subscriber = getOnSubscribe();
-		return Observable.create(subscriber);
-	}
+    private String queueName;
 
-	@Override
-	public List<String> ack(List<Message> messages) {
-		for(Message msg : messages) {
-			queueDAO.remove(queueName, msg.getId());
-		}
-		return messages.stream().map(Message::getId).collect(Collectors.toList());
-	}
-	
-	public void setUnackTimeout(Message message, long unackTimeout) {
-		queueDAO.setUnackTimeout(queueName, message.getId(), unackTimeout);
-	}
-	
-	@Override
-	public void publish(List<Message> messages) {
-		queueDAO.push(queueName, messages);
-	}
-	
-	@Override
-	public long size() {
-		return queueDAO.getSize(queueName);
-	}
-	
-	@Override
-	public String getType() {
-		return TYPE;
-	}
+    private QueueDAO queueDAO;
 
-	@Override
-	public String getName() {
-		return queueName;
-	}
-	
-	@Override
-	public String getURI() {
-		return queueName;
-	}
+    private int pollTimeInMS;
 
-	@VisibleForTesting
-	private List<Message> receiveMessages() {
-		return queueDAO.pollMessages(queueName, pollCount, longPollTimeout);
+    private int longPollTimeout;
+
+    private int pollCount;
+
+    @Inject
+    DynoObservableQueue(String queueName, QueueDAO queueDAO, Configuration config) {
+        this.queueName = queueName;
+        this.queueDAO = queueDAO;
+        this.pollTimeInMS = config.getIntProperty("workflow.dyno.queues.pollingInterval", 100);
+        this.pollCount = config.getIntProperty("workflow.dyno.queues.pollCount", 10);
+        this.longPollTimeout = config.getIntProperty("workflow.dyno.queues.longPollTimeout", 1000);
     }
-	
-	@VisibleForTesting
-	private OnSubscribe<Message> getOnSubscribe() {
-		return subscriber -> {
+
+    @Override
+    public Observable<Message> observe() {
+        OnSubscribe<Message> subscriber = getOnSubscribe();
+        return Observable.create(subscriber);
+    }
+
+    @Override
+    public List<String> ack(List<Message> messages) {
+        for (Message msg : messages) {
+            queueDAO.remove(queueName, msg.getId());
+        }
+        return messages.stream().map(Message::getId).collect(Collectors.toList());
+    }
+
+    public void setUnackTimeout(Message message, long unackTimeout) {
+        queueDAO.setUnackTimeout(queueName, message.getId(), unackTimeout);
+    }
+
+    @Override
+    public void publish(List<Message> messages) {
+        queueDAO.push(queueName, messages);
+    }
+
+    @Override
+    public long size() {
+        return queueDAO.getSize(queueName);
+    }
+
+    @Override
+    public String getType() {
+        return TYPE;
+    }
+
+    @Override
+    public String getName() {
+        return queueName;
+    }
+
+    @Override
+    public String getURI() {
+        return queueName;
+    }
+
+    @VisibleForTesting
+    private List<Message> receiveMessages() {
+        try {
+            return queueDAO.pollMessages(queueName, pollCount, longPollTimeout);
+        } catch (Exception exception) {
+            logger.error("Exception while getting messages from  queueDAO", exception);
+            Monitors.recordObservableQMessageReceivedErrors("dyno");
+        }
+        return new ArrayList<>();
+    }
+
+    @VisibleForTesting
+    private OnSubscribe<Message> getOnSubscribe() {
+        return subscriber -> {
             Observable<Long> interval = Observable.interval(pollTimeInMS, TimeUnit.MILLISECONDS);
             interval.flatMap((Long x) -> {
                 List<Message> msgs = receiveMessages();
                 return Observable.from(msgs);
             }).subscribe(subscriber::onNext, subscriber::onError);
         };
-	}
+    }
 }

@@ -43,7 +43,7 @@ import java.util.Map;
 /**
  * @author Viren
  * Action Processor subscribes to the Event Actions queue and processes the actions (e.g. start workflow etc)
- * <p><font color=red>Warning</font> This is a work in progress and may be changed in future.  Not ready for production yet.
+ * <p><b>Warning:</b> This is a work in progress and may be changed in future.  Not ready for production yet.
  */
 @Singleton
 public class ActionProcessor {

@@ -1,51 +1,42 @@
-import React, { Component } from 'react';
-import { Link } from 'react-router';
-import { connect } from 'react-redux';
+import React, {Component} from 'react';
 import Grapher from '../common/Grapher'
-import  Workflow2Graph  from '../../api/wfegraph'
+import Workflow2Graph from '../../api/wfegraph'
+import defaultTo from "lodash/fp/defaultTo"
+
 
 class WorkflowMetaDia extends Component {
-
-  constructor(props) {
-    super(props);
-    this.state = {}
-    this.state.edges = [];
-    this.state.vertices = {};
-    this.state.executedTasks = [];
-    this.state.subworkflows = [];
-    this.wfe2graph = new Workflow2Graph();
-  };
-
-  componentWillReceiveProps(nextProps) {
-    let subworkflows = nextProps.subworkflows || {};
-    let wfe = nextProps.wfe || {tasks: []};
-    let metaTasks = nextProps.meta?nextProps.meta.tasks:[];
-    let r = this.wfe2graph.convert(wfe, nextProps.meta);
-    this.state.edges = r.edges;
-    this.state.vertices = r.vertices;
-    this.state.subworkflows = {};
-
-    for(let refname  in subworkflows){
-      let submeta = subworkflows[refname].meta;
-      let subwfe = subworkflows[refname].wfe;
-      let subr = this.wfe2graph.convert(subwfe, submeta);
-      this.state.subworkflows[refname] = subr;
+    constructor(props) {
+        super(props);
+        
+        this.state = WorkflowMetaDia.getGraphState(props);
     }
-  };
 
-  render() {
+    static getGraphState(props) {
+        const wfe2graph = new Workflow2Graph();
+        const subwfs = defaultTo({})(props.subworkflows);
+        const wfe = defaultTo({tasks: []})(props.wfe);
+        const {edges, vertices} = wfe2graph.convert(wfe, props.meta);
+        const subworkflows = {};
 
-    let edges = this.state.edges;
-    let vertices = this.state.vertices;
-    let layout = 'TD-auto';
-    let subworkflows = this.state.subworkflows;
+        for (const refname in subwfs) {
+            let submeta = subwfs[refname].meta;
+            let subwfe = subwfs[refname].wfe;
+            subworkflows[refname] = wfe2graph.convert(subwfe, submeta);
+        }
 
-    return (
-      <div id="workflowmeta">
-        <Grapher edges={edges} vertices={vertices} layout={layout} parentElem="workflowmeta" innerGraph={subworkflows}/>
-      </div>
-    );
-  }
-};
+        return {edges, vertices, subworkflows};
+
+    }
+
+    componentWillReceiveProps(nextProps) {
+        this.setState(WorkflowMetaDia.getGraphState(nextProps));
+    };
+
+    render() {
+        const {edges, vertices, subworkflows} = this.state;
+
+        return <Grapher edges={edges} vertices={vertices} layout="TD-auto" innerGraph={subworkflows}/>;
+    }
+}
 
 export default WorkflowMetaDia;

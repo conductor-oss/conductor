@@ -2,6 +2,7 @@
 * Common place to define all the version dependencies */
 
 ext {
+    revAwsSdk = '1.11.86'
     revArchaius = '0.7.5'
     revCommonsLang3 = '3.0'
     revCommonsIo = '2.4'
@@ -12,6 +13,7 @@ ext {
     revElasticSearch5 = '5.6.8'
     revElasticSearch5Client = '5.6.8'
     revFlywayCore ='4.0.3'
+    revGuavaRetrying = '2.0.0'
     revGuice = '4.1.0'
     revGuiceMultiBindings = '4.1.0'
     revGuiceServlet = '4.1.0'
@@ -46,5 +48,4 @@ ext {
     revSlf4jlog4j = '1.8.0-alpha1'
     revSpectator = '0.40.0'
     revSql2o = '1.5.4'
-
 }
