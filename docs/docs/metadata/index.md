@@ -28,9 +28,9 @@ Conductor maintains a registry of worker task types.  A task type MUST be regist
 |name|Task Type|Unique|
 |retryCount|No. of retries to attempt when a task is marked as failure||
 |retryLogic|Mechanism for the retries|see possible values below|
-|timeoutSeconds|Time in milliseconds, after which the task is marked as TIMED_OUT if not completed after transiting to ```IN_PROGRESS``` status|No timeouts if set to 0|
+|timeoutSeconds|Time in milliseconds, after which the task is marked as TIMED_OUT if not completed after transitioning to ```IN_PROGRESS``` status for the first time|No timeouts if set to 0|
 |timeoutPolicy|Task's timeout policy|see possible values below|
-|responseTimeoutSeconds|if greater than 0, the task is rescheduled if not updated with a status after this time.  Useful when the worker polls for the task but fails to complete due to errors/network failure.
+|responseTimeoutSeconds|If greater than 0, the task is rescheduled if not updated with a status after this time (heartbeat mechanism). Useful when the worker polls for the task but fails to complete due to errors/network failure.
 ||
 |outputKeys|Set of keys of task's output.  Used for documenting task's output||
 
