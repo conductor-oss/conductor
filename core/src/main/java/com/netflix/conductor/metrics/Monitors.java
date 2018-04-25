@@ -212,6 +212,10 @@ public class Monitors {
 		gauge(classQualifier, "task_rate_limited", limit, "taskType", taskDefName);
 	}
 
+	public static void recordEventQueueMessagesProcessed(String queueType, String queueName, int count) {
+		getCounter(classQualifier, "event_queue_messages_processed", "queueType", queueType, "queueName", queueName).increment(count);
+	}
+
 	public static void recordObservableQMessageReceivedErrors(String queueType) {
 		counter(classQualifier, "observable_queue_error", "queueType", queueType);
 	}
