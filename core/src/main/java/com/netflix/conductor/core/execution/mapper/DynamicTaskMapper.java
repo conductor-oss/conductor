@@ -80,6 +80,7 @@ public class DynamicTaskMapper implements TaskMapper {
         dynamicTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         dynamicTask.setInputData(input);
         dynamicTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
+        dynamicTask.setWorkflowType(workflowInstance.getWorkflowType());
         dynamicTask.setStatus(Task.Status.SCHEDULED);
         dynamicTask.setTaskType(taskToSchedule.getType());
         dynamicTask.setTaskDefName(taskToSchedule.getName());

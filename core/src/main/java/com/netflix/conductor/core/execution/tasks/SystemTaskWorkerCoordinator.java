@@ -61,7 +61,7 @@ public class SystemTaskWorkerCoordinator {
 	
 	//Number of items to poll for
 	private int pollCount;
-	
+
 	//Interval in ms at which the polling is done
 	private int pollInterval;
 	
@@ -122,18 +122,17 @@ public class SystemTaskWorkerCoordinator {
 	}
 	
 	private void listen(WorkflowSystemTask systemTask) {
-		Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(()->pollAndExecute(systemTask), 1000, pollInterval, TimeUnit.MILLISECONDS);
+		if(config.disableAsyncWorkers()) {
+			logger.warn("System Task Worker is DISABLED.  Not polling for system task: {}", systemTask.getName());
+			return;
+		}
+
+		Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(() -> pollAndExecute(systemTask), 1000, pollInterval, TimeUnit.MILLISECONDS);
 		logger.info("Started listening {}", systemTask.getName());
 	}
 
 	private void pollAndExecute(WorkflowSystemTask systemTask) {
 		try {
-			
-			if(config.disableAsyncWorkers()) {
-				logger.warn("System Task Worker is DISABLED.  Not polling.");
-				return;
-			}
-
 			// get the remaining capacity of worker queue to prevent queue full exception
 			int realPollCount = Math.min(workerQueue.remainingCapacity(), pollCount);
 			if (realPollCount <= 0) {				

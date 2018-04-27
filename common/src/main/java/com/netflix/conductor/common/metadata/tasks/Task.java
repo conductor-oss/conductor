@@ -108,6 +108,8 @@ public class Task {
 	private int responseTimeoutSeconds;
 	
 	private String workflowInstanceId;
+
+	private String workflowType;
 	
 	private String taskId;
 	
@@ -419,6 +421,19 @@ public class Task {
 	 */
 	public void setWorkflowInstanceId(String workflowInstanceId) {
 		this.workflowInstanceId = workflowInstanceId;
+	}
+
+	public String getWorkflowType() {
+		return workflowType;
+	}
+
+
+	/**
+	 * @param workflowType workflow type
+	 */
+	public Task setWorkflowType(String workflowType) {
+		this.workflowType = workflowType;
+		return this;
 	}
 
 	/**
