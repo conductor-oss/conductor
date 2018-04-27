@@ -7,8 +7,7 @@
   <root level="info">
     <appender-ref ref="STDOUT"/>
   </root>
-
-  <logger name="org.sql2o" level="INFO"/>
+  
   <logger name="com.netflix.conductor.dao.jdbc" level="TRACE"/>
   <logger name="com.netflix.conductor.dao.mysql" level="DEBUG"/>
   <logger name="org.flywaydb" level="WARN"/>
