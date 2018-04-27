@@ -102,7 +102,7 @@ public class RetryUtil<T> {
                 .withRetryListener(new RetryListener() {
                     @Override
                     public <V> void onRetry(Attempt<V> attempt) {
-                        logger.debug("Attempt # {}, millis since first attempt {}. Operation {}:{}",
+                        logger.debug("Attempt # {}, {} millis since first attempt. Operation: {}, description:{}",
                                 attempt.getAttemptNumber(), attempt.getDelaySinceFirstAttempt(), operationName, shortDescription);
                         internalNumberOfRetries.incrementAndGet();
                     }

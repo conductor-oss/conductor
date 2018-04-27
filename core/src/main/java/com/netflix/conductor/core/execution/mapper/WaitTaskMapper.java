@@ -60,6 +60,7 @@ public class WaitTaskMapper implements TaskMapper {
         waitTask.setTaskDefName(taskMapperContext.getTaskToSchedule().getName());
         waitTask.setReferenceTaskName(taskMapperContext.getTaskToSchedule().getTaskReferenceName());
         waitTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
+        waitTask.setWorkflowType(workflowInstance.getWorkflowType());
         waitTask.setCorrelationId(workflowInstance.getCorrelationId());
         waitTask.setScheduledTime(System.currentTimeMillis());
         waitTask.setEndTime(System.currentTimeMillis());

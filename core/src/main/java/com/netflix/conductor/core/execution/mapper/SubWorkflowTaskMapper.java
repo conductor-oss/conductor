@@ -71,6 +71,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         subWorkflowTask.setTaskDefName(taskToSchedule.getName());
         subWorkflowTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         subWorkflowTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
+        subWorkflowTask.setWorkflowType(workflowInstance.getWorkflowType());
         subWorkflowTask.setCorrelationId(workflowInstance.getCorrelationId());
         subWorkflowTask.setScheduledTime(System.currentTimeMillis());
         subWorkflowTask.setEndTime(System.currentTimeMillis());
