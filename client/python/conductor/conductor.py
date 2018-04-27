@@ -250,6 +250,13 @@ class WorkflowClient(BaseClient):
         params['reason'] = reason
         self.delete(url, params)
 
+    def removeWorkflow(self, wfId, archiveWorkflow, reason=None):
+        url = self.makeUrl('{}/remove', wfId)
+        params = {}
+        params['archiveWorkflow'] = archiveWorkflow
+        params['reason'] = reason
+        self.delete(url, params)
+
     def pauseWorkflow(self, wfId):
         url = self.makeUrl('{}/pause', wfId)
         self.put(url)
