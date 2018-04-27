@@ -44,7 +44,7 @@ class BaseClient(object):
         theUrl = "{}/{}".format(self.baseURL, resPath)
         theHeader = self.headers
         if headers is not None:
-            theHeader = dict(self.headers.items() + headers.items())
+            theHeader = self.mergeTwoDicts(self.headers, headers)
         if body is not None:
             jsonBody = json.dumps(body, ensure_ascii=False)
             resp = requests.post(theUrl, params=queryParams, data=jsonBody, headers=theHeader)
@@ -58,7 +58,7 @@ class BaseClient(object):
         theUrl = "{}/{}".format(self.baseURL, resPath)
         theHeader = self.headers
         if headers is not None:
-            theHeader = dict(self.headers.items() + headers.items())
+            theHeader = self.mergeTwoDicts(self.headers, headers)
 
         if body is not None:
             jsonBody = json.dumps(body, ensure_ascii=False)
@@ -78,6 +78,11 @@ class BaseClient(object):
     def makeUrl(self, urlformat, *argv):
         url = self.baseResource + '/' + urlformat.format(*argv)
         return url
+
+    def mergeTwoDicts(self, x, y):
+        z = x.copy()
+        z.update(y)
+        return z
 
     def __print(self, resp):
         if self.printUrl:
