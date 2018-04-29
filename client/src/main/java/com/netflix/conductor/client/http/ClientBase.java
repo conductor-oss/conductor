@@ -38,17 +38,14 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
 import java.net.URI;
 import java.util.Collection;
+import java.util.function.Function;
 
 /**
  * Abstract client for the REST template
  */
 public abstract class ClientBase {
     private static Logger logger = LoggerFactory.getLogger(ClientBase.class);
-
-    private ObjectMapper objectMapper;
-
-    protected Client client;
-
+    protected final Client client;
     protected String root = "";
 
     protected ClientBase() {
@@ -60,7 +57,7 @@ public abstract class ClientBase {
     }
 
     protected ClientBase(ClientConfig clientConfig, ClientHandler handler) {
-        JacksonJsonProvider provider = new JacksonJsonProvider(getObjectMapper());
+        JacksonJsonProvider provider = new JacksonJsonProvider(createObjectMapper());
         clientConfig.getSingletons().add(provider);
         if (handler == null) {
             this.client = Client.create(clientConfig);
@@ -71,6 +68,149 @@ public abstract class ClientBase {
 
     public void setRootURI(String root) {
         this.root = root;
+    }
+
+    protected void delete(String url, Object... uriVariables) {
+        delete(null, url, uriVariables);
+    }
+
+    protected void delete(Object[] queryParams, String url, Object... uriVariables) {
+        URI uri = null;
+        try {
+            uri = getURIBuilder(root + url, queryParams).build(uriVariables);
+            client.resource(uri).delete();
+        } catch (RuntimeException e) {
+            handleException(uri, e);
+        }
+    }
+
+    protected void put(String url, Object[] queryParams, Object request, Object... uriVariables) {
+        URI uri = null;
+        try {
+            uri = getURIBuilder(root + url, queryParams).build(uriVariables);
+            getWebResourceBuilder(uri, request).put();
+        } catch (RuntimeException e) {
+            handleException(uri, e);
+        }
+    }
+
+    /**
+     * @deprecated replaced by {@link #postForEntityWithRequestOnly(String, Object)} ()}
+     */
+    @Deprecated
+    protected void postForEntity(String url, Object request) {
+        postForEntityWithRequestOnly(url, request);
+    }
+
+
+    protected void postForEntityWithRequestOnly(String url, Object request) {
+        Class<?> type = null;
+        postForEntity(url, request, null, type);
+    }
+
+    /**
+     * @deprecated replaced by {@link #postForEntityWithUriVariablesOnly(String, Object...)} ()}
+     */
+    @Deprecated
+    protected void postForEntity1(String url, Object... uriVariables) {
+        postForEntityWithUriVariablesOnly(url, uriVariables);
+    }
+
+    protected void postForEntityWithUriVariablesOnly(String url, Object... uriVariables) {
+        Class<?> type = null;
+        postForEntity(url, null, null, type, uriVariables);
+    }
+
+
+    protected <T> T postForEntity(String url, Object request, Object[] queryParams, Class<T> responseType, Object... uriVariables) {
+        return postForEntity(url, request, queryParams, responseType, builder -> builder.post(responseType), uriVariables);
+    }
+
+    protected <T> T postForEntity(String url, Object request, Object[] queryParams, GenericType<T> responseType, Object... uriVariables) {
+        return postForEntity(url, request, queryParams, responseType, builder -> builder.post(responseType), uriVariables);
+    }
+
+    private <T> T postForEntity(String url, Object request, Object[] queryParams, Object responseType, Function<Builder, T> postWithEntity, Object... uriVariables) {
+        URI uri = null;
+        try {
+            uri = getURIBuilder(root + url, queryParams).build(uriVariables);
+            Builder webResourceBuilder = getWebResourceBuilder(uri, request);
+            if (responseType == null) {
+                webResourceBuilder.post();
+                return null;
+            }
+            return postWithEntity.apply(webResourceBuilder);
+        } catch (RuntimeException e) {
+            handleException(uri, e);
+        }
+        return null;
+    }
+
+    protected <T> T getForEntity(String url, Object[] queryParams, Class<T> responseType, Object... uriVariables) {
+        return getForEntity(url, queryParams, response -> response.getEntity(responseType), uriVariables);
+    }
+
+    protected <T> T getForEntity(String url, Object[] queryParams, GenericType<T> responseType, Object... uriVariables) {
+        return getForEntity(url, queryParams, response -> response.getEntity(responseType), uriVariables);
+    }
+
+    private <T> T getForEntity(String url, Object[] queryParams, Function<ClientResponse, T> entityPvoider, Object... uriVariables) {
+        URI uri = null;
+        try {
+            uri = getURIBuilder(root + url, queryParams).build(uriVariables);
+            ClientResponse response = client.resource(uri)
+                    .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
+                    .get(ClientResponse.class);
+            if (response.getStatus() < 300) {
+                return entityPvoider.apply(response);
+            } else {
+                throw new UniformInterfaceException(response); // let handleException to handle unexpected response consistently
+            }
+        } catch (RuntimeException e) {
+            handleException(uri, e);
+        }
+        return null;
+    }
+
+    private Builder getWebResourceBuilder(URI URI, Object entity) {
+        return client.resource(URI).type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON);
+    }
+
+    private void handleException(URI uri, RuntimeException e) {
+        if (e instanceof ClientHandlerException) {
+            logger.error("Unable to invoke Conductor API with uri: {}, failure to process request or response", uri, e);
+        } else if (e instanceof UniformInterfaceException) {
+            logger.error("Unable to invoke Conductor API with uri: {}, unexpected response from server: {}", uri, clientResponseToString(((UniformInterfaceException) e).getResponse()), e);
+        } else {
+            logger.error("Unable to invoke Conductor API with uri: {}, runtime exception occurred", uri, e);
+        }
+        throw e;
+    }
+
+    /**
+     * Converts ClientResponse object to string with detailed debug information including status code, media type,
+     * response headers, and response body if exists.
+     */
+    private String clientResponseToString(ClientResponse response) {
+        if (response == null) {
+            return null;
+        }
+        StringBuilder builder = new StringBuilder();
+        builder.append("[status: ").append(response.getStatus());
+        builder.append(", media type: ").append(response.getType());
+        if (response.getStatus() != 404) {
+            try {
+                String responseBody = response.getEntity(String.class);
+                if (responseBody != null) {
+                    builder.append(", response body: ").append(responseBody);
+                }
+            } catch (RuntimeException ignore) {
+                // Ignore if there is no response body, or IO error - it may have already been read in certain scenario.
+            }
+        }
+        builder.append(", response headers: ").append(response.getHeaders());
+        builder.append("]");
+        return builder.toString();
     }
 
     private UriBuilder getURIBuilder(String path, Object[] queryParams) {
@@ -95,119 +235,15 @@ public abstract class ClientBase {
         return builder;
     }
 
-    protected void delete(String url, Object... uriVariables) {
-        delete(null, url, uriVariables);
-    }
+    private ObjectMapper createObjectMapper() {
+        ObjectMapper objectMapper = new ObjectMapper();
 
-    protected void delete(Object[] queryParams, String url, Object... uriVariables) {
-        try {
-            URI URI = getURIBuilder(root + url, queryParams).build(uriVariables);
-            client.resource(URI).delete();
-        } catch (Exception e) {
-            handleException(e);
-        }
-
-    }
-
-    protected void put(String url, Object[] queryParams, Object request, Object... uriVariables) {
-        try {
-            URI URI = getURIBuilder(root + url, queryParams).build(uriVariables);
-            getWebResourceBuilder(URI, request).put();
-        } catch (Exception e) {
-            handleException(e);
-        }
-
-    }
-
-    protected void postForEntity(String url, Object request) {
-        Class<?> type = null;
-        postForEntity(url, request, null, type);
-    }
-
-    protected void postForEntity1(String url, Object... uriVariables) {
-        Class<?> type = null;
-        postForEntity(url, null, null, type, uriVariables);
-    }
-
-    protected <T> T postForEntity(String url, Object request, Object[] queryParams, Class<T> responseType, Object... uriVariables) {
-        try {
-            URI URI = getURIBuilder(root + url, queryParams).build(uriVariables);
-            if (responseType == null) {
-                getWebResourceBuilder(URI, request).post();
-                return null;
-            }
-            return getWebResourceBuilder(URI, request).post(responseType);
-        } catch (Exception e) {
-            handleException(e);
-        }
-        return null;
-    }
-
-    protected <T> T postForEntity(String url, Object request, Object[] queryParams, GenericType<T> responseType, Object... uriVariables) {
-        try {
-            URI URI = getURIBuilder(root + url, queryParams).build(uriVariables);
-            if (responseType == null) {
-                getWebResourceBuilder(URI, request).post();
-                return null;
-            }
-            return getWebResourceBuilder(URI, request).post(responseType);
-        } catch (Exception e) {
-            handleException(e);
-        }
-        return null;
-    }
-
-
-    protected <T> T getForEntity(String url, Object[] queryParams, Class<T> responseType, Object... uriVariables) {
-        try {
-            URI URI = getURIBuilder(root + url, queryParams).build(uriVariables);
-            ClientResponse response = client.resource(URI)
-                    .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
-                    .get(ClientResponse.class);
-            return response.getEntity(responseType);
-        } catch (Exception e) {
-            handleException(e);
-        }
-        return null;
-    }
-
-    protected <T> T getForEntity(String url, Object[] queryParams, GenericType<T> responseType, Object... uriVariables) {
-        try {
-            URI URI = getURIBuilder(root + url, queryParams).build(uriVariables);
-            ClientResponse response = client.resource(URI)
-                    .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
-                    .get(ClientResponse.class);
-            return response.getEntity(responseType);
-        } catch (Exception e) {
-            handleException(e);
-        }
-        return null;
-    }
-
-    private Builder getWebResourceBuilder(URI URI, Object entity) {
-        return client.resource(URI).type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON);
-    }
-
-    private void handleException(Exception e) {
-        if (e instanceof ClientHandlerException) {
-            logger.error("Unable to process the request", e);
-        } else if (e instanceof UniformInterfaceException) {
-            logger.error("Error processing response: {}", ((UniformInterfaceException) e).getResponse());
-            logger.error("Unexpected response from server", e);
-        }
-        throw new RuntimeException(e);
-    }
-
-    private ObjectMapper getObjectMapper() {
-        if (objectMapper != null) {
-            return objectMapper;
-        }
-        objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.setSerializationInclusion(Include.NON_EMPTY);
+
         return objectMapper;
     }
 }
