@@ -47,7 +47,7 @@ public final class JerseyModule extends JerseyServletModule {
 	
     @Override
     protected void configureServlets() {
-   
+
 
     	filter("/*").through(apiOriginFilter());
         
@@ -62,17 +62,15 @@ public final class JerseyModule extends JerseyServletModule {
     @Provides 
 	@Singleton
 	public ObjectMapper objectMapper() {
-	    final ObjectMapper om = new ObjectMapper();
-        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-        om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-        om.setSerializationInclusion(Include.NON_NULL);
-        om.setSerializationInclusion(Include.NON_EMPTY);
-	    return om;
+	    final ObjectMapper objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+        objectMapper.setSerializationInclusion(Include.NON_NULL);
+        objectMapper.setSerializationInclusion(Include.NON_EMPTY);
+	    return objectMapper;
 	}
-	
-    
-    
+
 	@Provides 
 	@Singleton
 	JacksonJsonProvider jacksonJsonProvider(ObjectMapper mapper) {
@@ -112,6 +110,6 @@ public final class JerseyModule extends JerseyServletModule {
     public int hashCode() {
         return getClass().hashCode();
     }
-    
-    
+
+
 }
