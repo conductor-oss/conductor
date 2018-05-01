@@ -284,7 +284,7 @@ public class ElasticSearchDAO implements IndexDAO {
 		return CompletableFuture.runAsync(() -> addTaskExecutionLogs(logs), executorService);
 	}
 
-
+	@Override
 	public List<TaskExecLog> getTaskExecutionLogs(String taskId) {
 		
 		try {
@@ -359,7 +359,7 @@ public class ElasticSearchDAO implements IndexDAO {
 					null, RETRY_COUNT, operationDescription, "updateWithRetry");
 		} catch (Exception e) {
 			Monitors.error(className, "index");
-			logger.error("Indexing failed for {}, {}", request.index(), request.type(), e.getMessage());
+			logger.error("Indexing failed for {}, {}", request.index(), request.type(), e);
 		}
 	}
 	
