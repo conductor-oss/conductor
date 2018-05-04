@@ -362,24 +362,19 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	@Override
 	public Workflow getWorkflow(String workflowId, boolean includeTasks) {
 		String json = dynoClient.get(nsKey(WORKFLOW, workflowId));
-		if(json != null) {
-			Workflow workflow = readValue(json, Workflow.class);
-			if (includeTasks) {
-				List<Task> tasks = getTasksForWorkflow(workflowId);
-				tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
-				workflow.setTasks(tasks);
+		if(json == null || json.isEmpty()) {
+			//try from the archive
+			json = indexDAO.get(workflowId, RAW_JSON_FIELD);
+			if (json == null) {
+				throw new ApplicationException(Code.NOT_FOUND, "No such workflow found by id: " + workflowId);
 			}
-			return workflow;
 		}
 
-		//try from the archive
-		json = indexDAO.get(workflowId, RAW_JSON_FIELD);
-		if (json == null) {
-			throw new ApplicationException(Code.NOT_FOUND, "No such workflow found by id: " + workflowId);
-		}
 		Workflow workflow = readValue(json, Workflow.class);
-
-		if(!includeTasks) {
+		if (includeTasks) {
+			workflow.setTasks(getWorkflowTasksSorted(workflowId));
+		}
+		else {
 			workflow.getTasks().clear();
 		}
 		return workflow;
@@ -437,14 +432,14 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 
 	@Override
-	public List<Workflow> getWorkflowsByCorrelationId(String correlationId) {
+	public List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks) {
 		Preconditions.checkNotNull(correlationId, "correlationId cannot be null");
 		List<Workflow> workflows = new LinkedList<>();
 		SearchResult<String> result = indexDAO.searchWorkflows("correlationId='" + correlationId + "'", "*", 0, 10000, null);
 		List<String> workflowIds = result.getResults();
 		for (String wfId : workflowIds) {
 			try {
-				workflows.add(getWorkflow(wfId));
+				workflows.add(getWorkflow(wfId, includeTasks));
 			} catch (ApplicationException applicationException) {
 				//This might happen when the workflow archival failed and the workflow was removed from dynomite
 				logger.error("Error getting the workflowId: {}  for correlationId: {} from Dynomite/Archival", wfId, correlationId, applicationException);
