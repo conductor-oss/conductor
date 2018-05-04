@@ -388,7 +388,7 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 			dao.createWorkflow(workflow);
 		}
 
-		List<Workflow> bycorrelationId = dao.getWorkflowsByCorrelationId("corr001");
+		List<Workflow> bycorrelationId = dao.getWorkflowsByCorrelationId("corr001", true);
 		assertNotNull(bycorrelationId);
 		assertEquals(10, bycorrelationId.size());
 
