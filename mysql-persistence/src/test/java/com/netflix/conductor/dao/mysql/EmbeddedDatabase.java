@@ -18,7 +18,7 @@ public enum EmbeddedDatabase {
 
 	private DB startEmbeddedDatabase() {
 		try {
-			DB db = DB.newEmbeddedDB(33306);
+			DB db = DB.newEmbeddedDB(33307);
 			db.start();
 			db.createDB("conductor");
 			return db;

@@ -6,6 +6,14 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
+import com.netflix.conductor.common.metadata.tasks.PollData;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.dao.IndexDAO;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -15,21 +23,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-import com.netflix.conductor.common.metadata.tasks.PollData;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
-import com.netflix.conductor.dao.IndexDAO;
-
+@SuppressWarnings("Duplicates")
 public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 
 	private MySQLMetadataDAO metadata;
@@ -37,8 +37,8 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 
 	@Before
 	public void setup() throws Exception {
-		metadata = new MySQLMetadataDAO(objectMapper, testSql2o, testConfiguration);
-		dao = new MySQLExecutionDAO(mock(IndexDAO.class), metadata, objectMapper, testSql2o);
+		metadata = new MySQLMetadataDAO(objectMapper, dataSource, testConfiguration);
+		dao = new MySQLExecutionDAO(mock(IndexDAO.class), metadata, objectMapper, dataSource);
 		resetAllData();
 	}
 
@@ -83,12 +83,12 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 		task.setTaskId("t1");
 		task.setTaskDefName("task1");
 
-		expected.expect(NullPointerException.class);
+		expected.expect(ApplicationException.class);
 		expected.expectMessage("Workflow instance id cannot be null");
 		dao.createTasks(Collections.singletonList(task));
 
 		task.setWorkflowInstanceId("wfid");
-		expected.expect(NullPointerException.class);
+		expected.expect(ApplicationException.class);
 		expected.expectMessage("Task reference name cannot be null");
 		dao.createTasks(Collections.singletonList(task));
 	}
@@ -102,7 +102,7 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 		task.setTaskDefName("task1");
 		task.setWorkflowInstanceId("wfid");
 
-		expected.expect(NullPointerException.class);
+		expected.expect(ApplicationException.class);
 		expected.expectMessage("Task reference name cannot be null");
 		dao.createTasks(Collections.singletonList(task));
 	}
@@ -146,7 +146,7 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 			task.setRetryCount(0);
 			task.setWorkflowInstanceId(workflowId);
 			task.setTaskDefName("task" + i);
-			task.setStatus(Task.Status.IN_PROGRESS);
+			task.setStatus(Status.IN_PROGRESS);
 			tasks.add(task);
 		}
 
@@ -159,7 +159,7 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 		task.setRetryCount(1);
 		task.setWorkflowInstanceId(workflowId);
 		task.setTaskDefName("task" + 2);
-		task.setStatus(Task.Status.IN_PROGRESS);
+		task.setStatus(Status.IN_PROGRESS);
 		tasks.add(task);
 
 		//Duplicate task!
@@ -171,7 +171,7 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 		task.setRetryCount(0);
 		task.setWorkflowInstanceId(workflowId);
 		task.setTaskDefName("task" + 1);
-		task.setStatus(Task.Status.IN_PROGRESS);
+		task.setStatus(Status.IN_PROGRESS);
 		tasks.add(task);
 
 		List<Task> created = dao.createTasks(tasks);
@@ -207,7 +207,7 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 			task.setRetryCount(0);
 			task.setWorkflowInstanceId(workflowId);
 			task.setTaskDefName("testTaskOps" + i);
-			task.setStatus(Task.Status.IN_PROGRESS);
+			task.setStatus(Status.IN_PROGRESS);
 			tasks.add(task);
 		}
 
@@ -220,7 +220,7 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 			task.setRetryCount(0);
 			task.setWorkflowInstanceId("x" + workflowId);
 			task.setTaskDefName("testTaskOps" + i);
-			task.setStatus(Task.Status.IN_PROGRESS);
+			task.setStatus(Status.IN_PROGRESS);
 			dao.createTasks(Arrays.asList(task));
 		}
 
@@ -240,7 +240,7 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 			Task found = dao.getTask(workflowId + "_t" + i);
 			assertNotNull(found);
 			found.getOutputData().put("updated", true);
-			found.setStatus(Task.Status.COMPLETED);
+			found.setStatus(Status.COMPLETED);
 			update.add(found);
 		}
 		dao.updateTasks(update);
@@ -401,5 +401,4 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 		count = dao.getPendingWorkflowCount(workflowName);
 		assertEquals(0, count);
 	}
-
 }
