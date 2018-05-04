@@ -288,22 +288,20 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 	public Workflow getWorkflow(String workflowId, boolean includeTasks) {
 		Workflow workflow = getWithTransaction(tx -> readWorkflow(tx, workflowId));
 
-		if (workflow != null) {
-			if (includeTasks) {
-				List<Task> tasks = getTasksForWorkflow(workflowId);
-				tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
-				workflow.setTasks(tasks);
+		if(workflow == null){
+			//try from the archive
+			workflow = readWorkflowFromArchive(workflowId);
+			if(workflow == null){
+				throw new ApplicationException(ApplicationException.Code.NOT_FOUND, "No such workflow found by id: " + workflowId);
 			}
-			return workflow;
 		}
 
-		//try from the archive
-		workflow = readWorkflowFromArchive(workflowId);
-
-		if(!includeTasks) {
+		if (includeTasks) {
+			workflow.setTasks(getWorkflowTasksSorted(workflowId));
+		}
+		else {
 			workflow.getTasks().clear();
 		}
-
 		return workflow;
 	}
 
@@ -367,13 +365,13 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 	}
 
 	@Override
-	public List<Workflow> getWorkflowsByCorrelationId(String correlationId) {
+	public List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks) {
 		Preconditions.checkNotNull(correlationId, "correlationId cannot be null");
 		String GET_WORKFLOWS_BY_CORRELATION_ID = "SELECT workflow_id FROM workflow WHERE correlation_id = :correlationId";
 		return getWithTransaction(tx -> tx.createQuery(GET_WORKFLOWS_BY_CORRELATION_ID)
 				.addParameter("correlationId", correlationId)
 				.executeScalarList(String.class)).stream()
-				.map(this::getWorkflow)
+				.map(wfid -> getWorkflow(wfid, includeTasks))
 				.collect(Collectors.toList());
 	}
 
