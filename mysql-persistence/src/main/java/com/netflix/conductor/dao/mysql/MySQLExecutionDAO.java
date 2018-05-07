@@ -288,18 +288,30 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 	public Workflow getWorkflow(String workflowId, boolean includeTasks) {
 		Workflow workflow = getWithTransaction(tx -> readWorkflow(tx, workflowId));
 
+<<<<<<< HEAD
 		if (workflow != null) {
+=======
+		if(workflow != null){
+>>>>>>> MWI-233: includeTasks Flag: Updated per code review.
 			if (includeTasks) {
 				List<Task> tasks = getTasksForWorkflow(workflowId);
 				tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
 				workflow.setTasks(tasks);
 			}
 		}
+<<<<<<< HEAD
 		else {
             // try from the archive
             // expected to include tasks.
             workflow = readWorkflowFromArchive(workflowId);
         }
+=======
+		else{
+			// try from the archive
+			// Expected to include tasks.
+			workflow = readWorkflowFromArchive(workflowId);
+		}
+>>>>>>> MWI-233: includeTasks Flag: Updated per code review.
 
 		if(!includeTasks) {
 			workflow.getTasks().clear();
@@ -367,6 +379,7 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 		return workflows;
 	}
 
+<<<<<<< HEAD
     @Override
     public List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks) {
         Preconditions.checkNotNull(correlationId, "correlationId cannot be null");
@@ -379,6 +392,18 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
                 .map(workflowId -> getWorkflow(workflowId, includeTasks))
                 .collect(Collectors.toList()));
     }
+=======
+	@Override
+	public List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks) {
+		Preconditions.checkNotNull(correlationId, "correlationId cannot be null");
+		String GET_WORKFLOWS_BY_CORRELATION_ID = "SELECT workflow_id FROM workflow WHERE correlation_id = :correlationId";
+		return getWithTransaction(tx -> tx.createQuery(GET_WORKFLOWS_BY_CORRELATION_ID)
+				.addParameter("correlationId", correlationId)
+				.executeScalarList(String.class)).stream()
+				.map(workflowId -> getWorkflow(workflowId, includeTasks))
+				.collect(Collectors.toList());
+	}
+>>>>>>> MWI-233: includeTasks Flag: Updated per code review.
 
 	@Override
 	public boolean addEventExecution(EventExecution eventExecution) {
