@@ -288,18 +288,20 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 	public Workflow getWorkflow(String workflowId, boolean includeTasks) {
 		Workflow workflow = getWithTransaction(tx -> readWorkflow(tx, workflowId));
 
-		if(workflow == null){
-			//try from the archive
-			workflow = readWorkflowFromArchive(workflowId);
-			if(workflow == null){
-				throw new ApplicationException(ApplicationException.Code.NOT_FOUND, "No such workflow found by id: " + workflowId);
+		if(workflow != null){
+			if (includeTasks) {
+				List<Task> tasks = getTasksForWorkflow(workflowId);
+				tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
+				workflow.setTasks(tasks);
 			}
 		}
-
-		if (includeTasks) {
-			workflow.setTasks(getWorkflowTasksSorted(workflowId));
+		else{
+			// try from the archive
+			// Expected to include tasks.
+			workflow = readWorkflowFromArchive(workflowId);
 		}
-		else {
+
+		if(!includeTasks) {
 			workflow.getTasks().clear();
 		}
 		return workflow;
@@ -371,7 +373,7 @@ class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 		return getWithTransaction(tx -> tx.createQuery(GET_WORKFLOWS_BY_CORRELATION_ID)
 				.addParameter("correlationId", correlationId)
 				.executeScalarList(String.class)).stream()
-				.map(wfid -> getWorkflow(wfid, includeTasks))
+				.map(workflowId -> getWorkflow(workflowId, includeTasks))
 				.collect(Collectors.toList());
 	}
 

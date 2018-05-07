@@ -224,22 +224,11 @@ public interface ExecutionDAO {
 	/**
 	 * 
 	 * @param correlationId Correlation Id
+	 * @param includeTasks Option to includeTasks in results
 	 * @return List of workflows by correlation id
 	 *  
 	 */
 	List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks);
-
-
-	/**
-	 *
-	 * @param workflowId
-	 * @return List of Tasks for given Workflow, in sorted order.
-	 */
-	default List<Task> getWorkflowTasksSorted(String workflowId) {
-		List<Task> tasks = getTasksForWorkflow(workflowId);
-		tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
-		return tasks;
-	}
 
 
 	//Events
