@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.dao;
 
+import java.util.Comparator;
 import java.util.List;
 
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -41,7 +42,7 @@ public interface ExecutionDAO {
 	 * @return List of pending tasks (in_progress) 
 	 * 
 	 */
-	public abstract List<Task> getPendingTasksByWorkflow(String taskName, String workflowId);
+	List<Task> getPendingTasksByWorkflow(String taskName, String workflowId);
 
 	/**
 	 * 
@@ -51,7 +52,7 @@ public interface ExecutionDAO {
 	 * @return List of tasks starting from startKey
 	 * 
 	 */
-	public abstract List<Task> getTasks(String taskType, String startKey, int count);
+	List<Task> getTasks(String taskType, String startKey, int count);
 
 	/**
 	 * 
@@ -64,14 +65,14 @@ public interface ExecutionDAO {
 	 * </p>  
 	 *  
 	 */
-	public abstract List<Task> createTasks(List<Task> tasks);
+	List<Task> createTasks(List<Task> tasks);
 
 	/**
 	 * 
 	 * @param task Task to be updated
 	 *  
 	 */
-	public abstract void updateTask(Task task);
+	void updateTask(Task task);
 	
 	/**
 	 * Checks if the number of tasks in progress for the given taskDef will exceed the limit if the task is scheduled to be in progress (given to the worker or for system tasks start() method called)
@@ -79,28 +80,28 @@ public interface ExecutionDAO {
 	 * @return true if by executing this task, the limit is breached.  false otherwise.
 	 * @see TaskDef#concurrencyLimit()
 	 */
-	public abstract boolean exceedsInProgressLimit(Task task);
+	boolean exceedsInProgressLimit(Task task);
 	
 	/**
 	 * 
 	 * @param tasks Multiple tasks to be updated
 	 *  
 	 */
-	public abstract void updateTasks(List<Task> tasks);
+	void updateTasks(List<Task> tasks);
 
 	/**
 	 * 
 	 * @param log Task Execution Log to be added
 	 *  
 	 */
-	public abstract void addTaskExecLog(List<TaskExecLog> log);
+	void addTaskExecLog(List<TaskExecLog> log);
 	
 	/**
 	 * 
 	 * @param taskId id of the task to be removed.
 	 *  
 	 */
-	public abstract void removeTask(String taskId);
+	void removeTask(String taskId);
 
 	/**
 	 * 
@@ -108,7 +109,7 @@ public interface ExecutionDAO {
 	 * @return Task
 	 *  
 	 */
-	public abstract Task getTask(String taskId);
+	Task getTask(String taskId);
 
 	/**
 	 * 
@@ -116,7 +117,7 @@ public interface ExecutionDAO {
 	 * @return List of tasks
 	 * 
 	 */
-	public abstract List<Task> getTasks(List<String> taskIds);
+	List<Task> getTasks(List<String> taskIds);
 	
 	/**
 	 * 
@@ -132,7 +133,7 @@ public interface ExecutionDAO {
 	 * @return List of tasks for the given workflow instance id
 	 *  
 	 */
-	public abstract List<Task> getTasksForWorkflow(String workflowId);
+	List<Task> getTasksForWorkflow(String workflowId);
 	
 	/**
 	 * 
@@ -140,7 +141,7 @@ public interface ExecutionDAO {
 	 * @return Id of the newly created workflow
 	 *  
 	 */
-	public abstract String createWorkflow(Workflow workflow);
+	String createWorkflow(Workflow workflow);
 
 	/**
 	 * 
@@ -148,7 +149,7 @@ public interface ExecutionDAO {
 	 * @return Id of the updated workflow
 	 *  
 	 */
-	public abstract String updateWorkflow(Workflow workflow);
+	String updateWorkflow(Workflow workflow);
 
 	/**
 	 *
@@ -156,14 +157,14 @@ public interface ExecutionDAO {
 	 * @param archiveWorkflow if true, archives the workflow in elasticsearch, else, removes the workflow completely
 	 *  
 	 */
-	public abstract void removeWorkflow(String workflowId, boolean archiveWorkflow);
+	void removeWorkflow(String workflowId, boolean archiveWorkflow);
 	
 	/**
 	 * 
 	 * @param workflowType Workflow Type
 	 * @param workflowId workflow instance id
 	 */
-	public abstract void removeFromPendingWorkflow(String workflowType, String workflowId);
+	void removeFromPendingWorkflow(String workflowType, String workflowId);
 
 	/**
 	 * 
@@ -171,7 +172,7 @@ public interface ExecutionDAO {
 	 * @return Workflow
 	 *  
 	 */
-	public abstract Workflow getWorkflow(String workflowId);
+	Workflow getWorkflow(String workflowId);
 
 	/**
 	 * 
@@ -180,14 +181,14 @@ public interface ExecutionDAO {
 	 * @return Workflow instance details
 	 *  
 	 */
-	public abstract Workflow getWorkflow(String workflowId, boolean includeTasks);
+	Workflow getWorkflow(String workflowId, boolean includeTasks);
 
 	/**
 	 * 
 	 * @param workflowName Name of the workflow
 	 * @return List of workflow ids which are running
 	 */
-	public abstract List<String> getRunningWorkflowIds(String workflowName);
+	List<String> getRunningWorkflowIds(String workflowName);
 
 	/**
 	 * 
@@ -195,21 +196,21 @@ public interface ExecutionDAO {
 	 * @return List of workflows that are running
 	 *  
 	 */
-	public abstract List<Workflow> getPendingWorkflowsByType(String workflowName);
+	List<Workflow> getPendingWorkflowsByType(String workflowName);
 
 	/**
 	 * 
 	 * @param workflowName Name of the workflow
 	 * @return No. of running workflows
 	 */
-	public abstract long getPendingWorkflowCount(String workflowName);
+	long getPendingWorkflowCount(String workflowName);
 
 	/**
 	 * 
 	 * @param taskDefName Name of the task
 	 * @return Number of task currently in IN_PROGRESS status
 	 */
-	public abstract long getInProgressTaskCount(String taskDefName);
+	long getInProgressTaskCount(String taskDefName);
 
 	/**
 	 * 
@@ -218,15 +219,16 @@ public interface ExecutionDAO {
 	 * @param endTime epoch time
 	 * @return List of workflows between start and end time
 	 */
-	public abstract List<Workflow> getWorkflowsByType(String workflowName, Long startTime, Long endTime);
+	List<Workflow> getWorkflowsByType(String workflowName, Long startTime, Long endTime);
 
 	/**
 	 * 
 	 * @param correlationId Correlation Id
+	 * @param includeTasks Option to includeTasks in results
 	 * @return List of workflows by correlation id
 	 *  
 	 */
-	public abstract List<Workflow> getWorkflowsByCorrelationId(String correlationId);
+	List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks);
 
 
 	//Events
@@ -236,13 +238,13 @@ public interface ExecutionDAO {
 	 * @param ee Event Execution to be stored
 	 * @return true if the event was added.  false otherwise when the event by id is already already stored.
 	 */
-	public abstract boolean addEventExecution(EventExecution ee);
+	boolean addEventExecution(EventExecution ee);
 	
 	/**
 	 * 
 	 * @param ee Event execution to be updated
 	 */
-	public abstract void updateEventExecution(EventExecution ee);
+	void updateEventExecution(EventExecution ee);
 
 	/**
 	 * 
@@ -252,19 +254,19 @@ public interface ExecutionDAO {
 	 * @param max max number of executions to return
 	 * @return list of matching events
 	 */
-	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max);
+	List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max);
 
 	/**
 	 * Adds an incoming external message into the store/index
 	 * @param queue Name of the registered queue
 	 * @param msg Message
 	 */
-	public abstract void addMessage(String queue, Message msg);
+	void addMessage(String queue, Message msg);
 	
-	public abstract void updateLastPoll(String taskDefName, String domain, String workerId);
+	void updateLastPoll(String taskDefName, String domain, String workerId);
 	
-	public abstract PollData getPollData(String taskDefName, String domain);
+	PollData getPollData(String taskDefName, String domain);
 
-	public abstract List<PollData> getPollData(String taskDefName);
+	List<PollData> getPollData(String taskDefName);
 
 }

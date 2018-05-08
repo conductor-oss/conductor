@@ -286,24 +286,24 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     public Workflow getWorkflow(String workflowId, boolean includeTasks) {
         Workflow workflow = getWithTransaction(tx -> readWorkflow(tx, workflowId));
 
-        if (workflow != null) {
-            if (includeTasks) {
-                List<Task> tasks = getTasksForWorkflow(workflowId);
-                tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
-                workflow.setTasks(tasks);
-            }
-            return workflow;
-        }
+		if(workflow != null){
+			if (includeTasks) {
+				List<Task> tasks = getTasksForWorkflow(workflowId);
+				tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
+				workflow.setTasks(tasks);
+			}
+		}
+		else{
+			// try from the archive
+			// Expected to include tasks.
+			workflow = readWorkflowFromArchive(workflowId);
+		}
 
-        //try from the archive
-        workflow = readWorkflowFromArchive(workflowId);
-
-        if (!includeTasks) {
-            workflow.getTasks().clear();
-        }
-
-        return workflow;
-    }
+		if(!includeTasks) {
+			workflow.getTasks().clear();
+		}
+		return workflow;
+	}
 
     @Override
     public List<String> getRunningWorkflowIds(String workflowName) {
@@ -374,7 +374,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     }
 
     @Override
-    public List<Workflow> getWorkflowsByCorrelationId(String correlationId) {
+    public List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks) {
         Preconditions.checkNotNull(correlationId, "correlationId cannot be null");
         String GET_WORKFLOWS_BY_CORRELATION_ID =
                 "SELECT workflow_id FROM workflow WHERE correlation_id = ?";
@@ -382,7 +382,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
         return queryWithTransaction(GET_WORKFLOWS_BY_CORRELATION_ID, q -> q.addParameter(correlationId)
                 .executeScalarList(String.class)
                 .stream()
-                .map(this::getWorkflow)
+				.map(workflowId -> getWorkflow(workflowId, includeTasks))
                 .collect(Collectors.toList()));
     }
 

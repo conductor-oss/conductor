@@ -297,20 +297,6 @@ public class WorkflowExecutor {
 
     }
 
-    public List<Workflow> getStatusByCorrelationId(String workflowName, String correlationId, boolean includeClosed) throws Exception {
-        Preconditions.checkNotNull(correlationId, "correlation id is missing");
-        Preconditions.checkNotNull(workflowName, "workflow name is missing");
-        List<Workflow> workflows = executionDAO.getWorkflowsByCorrelationId(correlationId);
-        List<Workflow> result = new LinkedList<>();
-        for (Workflow wf : workflows) {
-            if (wf.getWorkflowType().equals(workflowName) && (includeClosed || wf.getStatus().equals(WorkflowStatus.RUNNING))) {
-                result.add(wf);
-            }
-        }
-
-        return result;
-    }
-
     public Task getPendingTaskByWorkflow(String taskReferenceName, String workflowId) {
         return executionDAO.getTasksForWorkflow(workflowId).stream()
                 .filter(isNonTerminalTask)

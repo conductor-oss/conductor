@@ -70,14 +70,14 @@ public abstract class MySQLBaseDAO {
 
     /**
      * Initialize a new transactional {@link Connection} from {@link #dataSource} and pass it to {@literal function}.
-     * <p/>
+     * <p>
      * Successful executions of {@literal function} will result in a commit and return of
      * {@link TransactionalFunction#apply(Connection)}.
-     * <p/>
+     * <p>
      * If any {@link Throwable} thrown from {@code TransactionalFunction#apply(Connection)} will result in a rollback
      * of the transaction
      * and will be wrapped in an {@link ApplicationException} if it is not already one.
-     * <p/>
+     * <p>
      * Generally this is used to wrap multiple {@link #execute(Connection, String, ExecuteFunction)} or
      * {@link #query(Connection, String, QueryFunction)} invocations that produce some expected return value.
      *
@@ -113,7 +113,7 @@ public abstract class MySQLBaseDAO {
 
     /**
      * Wraps {@link #getWithTransaction(TransactionalFunction)} with no return value.
-     * <p/>
+     * <p>
      * Generally this is used to wrap multiple {@link #execute(Connection, String, ExecuteFunction)} or
      * {@link #query(Connection, String, QueryFunction)} invocations that produce no expected return value.
      *
