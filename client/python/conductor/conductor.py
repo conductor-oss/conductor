@@ -283,6 +283,41 @@ class WorkflowClient(BaseClient):
         params['from'] = fromTaskRef
         self.post(url, params, None)
 
+class EventServicesClient(BaseClient):
+    BASE_RESOURCE = 'event'
+
+    def __init__(self, baseURL):
+        BaseClient.__init__(self, baseURL, self.BASE_RESOURCE)
+
+    def getEventHandlerDef(self, event, activeOnly=True):
+        url = self.makeUrl('{}', event)
+        params = {}
+        params['activeOnly'] = activeOnly
+        return self.get(url, params)
+
+    def getEventHandlerDefs(self):
+        url = self.makeUrl('')
+        return self.get(url)
+
+    def createEventHandlerDef(self, ehObj):
+        url = self.makeUrl('')
+        return self.post(url, None, ehObj)
+
+    def updateEventHandlerDef(self, ehObj):
+        url = self.makeUrl('')
+        return self.put(url, None, ehObj)
+
+    def removeEventHandler(self, ehName):
+        url = self.makeUrl('{}', ehName)
+        self.delete(url, {})
+
+    def getEventHandlerQueues(self):
+        url = self.makeUrl('queues')
+        return self.get(url)
+
+    def getEventHandlerQueuesProviders(self):
+        url = self.makeUrl('queues/providers')
+        return self.get(url)
 
 class WFClientMgr:
     def __init__(self, server_url='http://localhost:8080/api/'):
