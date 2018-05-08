@@ -143,9 +143,11 @@ class MetadataClient(BaseClient):
         url = self.makeUrl('taskdefs')
         self.put(url, None, taskDefObj)
 
-    def unRegisterTaskDef(self, tdName):
+    def unRegisterTaskDef(self, tdName, reason=None):
         url = self.makeUrl('taskdefs/{}', tdName)
-        self.delete(url)
+        params = {}
+        params['reason'] = reason
+        self.delete(url, params)
 
     def getAllTaskDefs(self):
         url = self.makeUrl('taskdefs')
@@ -207,9 +209,11 @@ class TaskClient(BaseClient):
         url = self.makeUrl('queue/{}', taskName)
         return self.get(url)
 
-    def removeTaskFromQueue(self, taskId):
+    def removeTaskFromQueue(self, taskId, reason=None):
         url = self.makeUrl('queue/{}', taskId)
-        self.delete(url)
+        params = {}
+        params['reason'] = reason
+        self.delete(url, params)
 
     def getTaskQueueSizes(self, listOfTaskName):
         url = self.makeUrl('queue/sizes')
