@@ -23,7 +23,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Represents a {@link PreparedStatement} that is wrapped with convenience methods and utilities.
- * <p/>
+ * <p>
  * This class simulates a parameter building pattern and all {@literal addParameter(*)} methods must be called in the
  * proper order of their expected binding sequence.
  *
@@ -194,7 +194,7 @@ public class Query implements AutoCloseable {
     /**
      * Utility method for evaluating the prepared statement as a query to check the existence of a record using a
      * numeric count or boolean return value.
-     * <p/>
+     * <p>
      * The {@link #rawQuery} provided must result in a {@link Number} or {@link Boolean} result.
      *
      * @return {@literal true} If a count query returned more than 0 or an exists query returns {@literal true}.
@@ -276,7 +276,7 @@ public class Query implements AutoCloseable {
 
     /**
      * Execute a query from the PreparedStatement and return the ResultSet.
-     * <p />
+     * <p>
      *
      * <em>NOTE:</em> The returned ResultSet must be closed/managed by the calling methods.
      *
@@ -320,6 +320,7 @@ public class Query implements AutoCloseable {
      * Execute the PreparedStatement and return a single 'primitive' value from the ResultSet.
      *
      * @param returnType The type to return.
+     * @param <V> The type parameter to return a List of.
      * @return A single result from the execution of the statement, as a type of {@literal returnType}.
      *
      * @throws ApplicationException {@literal returnType} is unsupported, cannot be cast to from the result, or any SQL
