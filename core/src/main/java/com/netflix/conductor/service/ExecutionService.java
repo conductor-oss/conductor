@@ -21,12 +21,14 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -318,12 +320,32 @@ public class ExecutionService {
 				logger.error(e.getMessage(), e);
 				return null;
 			}
-		}).filter(summary -> summary != null).collect(Collectors.toList());
+		}).filter(Objects::nonNull).collect(Collectors.toList());
 		int missing = result.getResults().size() - workflows.size();
 		long totalHits = result.getTotalHits() - missing;
 		SearchResult<WorkflowSummary> sr = new SearchResult<>(totalHits, workflows);
 		
 		return sr;
+	}
+
+	public SearchResult<WorkflowSummary> searchWorkflowByTasks(String query, String freeText, int start, int size, List<String> sortOptions) {
+		SearchResult<TaskSummary> taskSummarySearchResult = searchTasks(query, freeText, start, size, sortOptions);
+		List<WorkflowSummary> workflowSummaries = taskSummarySearchResult.getResults().stream()
+				.parallel()
+				.map(taskSummary -> {
+					try {
+						String workflowId = taskSummary.getWorkflowId();
+						return new WorkflowSummary(executionDAO.getWorkflow(workflowId, false));
+					} catch (Exception e) {
+						logger.error("Error fetching workflow by id: ", e);
+						return null;
+					}
+				})
+				.filter(Objects::nonNull)
+				.collect(Collectors.toList());
+		int missing = taskSummarySearchResult.getResults().size() - workflowSummaries.size();
+		long totalHits = taskSummarySearchResult.getTotalHits() - missing;
+		return new SearchResult<>(totalHits, workflowSummaries);
 	}
 	
 	public SearchResult<TaskSummary> searchTasks(String query, String freeText, int start, int size, List<String> sortOptions) {
