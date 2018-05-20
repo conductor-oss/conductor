@@ -59,17 +59,7 @@ public class Task {
             return retriable;
         }
 
-        @Override
-        public String toString() {
-            return "Status{" +
-                    "name=" + name() +
-                    ", terminal=" + terminal +
-                    ", successful=" + successful +
-                    ", retriable=" + retriable +
-                    '}';
-        }
     }
-
     ;
 
     private String taskType;
