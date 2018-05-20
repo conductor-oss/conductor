@@ -47,6 +47,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.*;
+
 /**
  * @author Viren
  * @author Vikram
@@ -77,7 +79,7 @@ public class DeciderService {
         final List<Task> tasks = workflow.getTasks();
         //In case of a new workflow the list of executedTasks will also be empty
         List<Task> executedTasks = tasks.stream()
-                .filter(t -> !t.getStatus().equals(Status.SKIPPED) && !t.getStatus().equals(Status.READY_FOR_RERUN))
+                .filter(t -> !t.getStatus().equals(SKIPPED) && !t.getStatus().equals(READY_FOR_RERUN))
                 .collect(Collectors.toList());
 
         List<Task> tasksToBeScheduled = new LinkedList<>();
@@ -111,14 +113,14 @@ public class DeciderService {
         //This list will be empty for a new workflow being started
         List<Task> pendingTasks = workflow.getTasks()
                 .stream()
-                .filter(t -> (!t.isRetried() && !t.getStatus().equals(Status.SKIPPED)) || SystemTaskType.isBuiltIn(t.getTaskType()))
+                .filter(task -> (!task.isRetried() && !task.getStatus().equals(SKIPPED)) || SystemTaskType.isBuiltIn(task.getTaskType()))
                 .collect(Collectors.toList());
 
         //Get all the tasks that are ready to rerun or not marked to be skipped
         //This list will be empty for a new workflow
         Set<String> executedTaskRefNames = workflow.getTasks()
                 .stream()
-                .filter(t -> !t.getStatus().equals(Status.SKIPPED) && !t.getStatus().equals(Status.READY_FOR_RERUN))
+                .filter(task -> !task.getStatus().equals(SKIPPED) && !task.getStatus().equals(READY_FOR_RERUN))
                 .map(Task::getReferenceTaskName)
                 .collect(Collectors.toSet());
 
@@ -152,7 +154,7 @@ public class DeciderService {
                     workflowTask = def.getTaskByRefName(pendingTask.getReferenceTaskName());
                 }
                 if (workflowTask != null && workflowTask.isOptional()) {
-                    pendingTask.setStatus(Status.COMPLETED_WITH_ERRORS);
+                    pendingTask.setStatus(COMPLETED_WITH_ERRORS);
                 } else {
                     Task rt = retry(taskDefinition, workflowTask, pendingTask, workflow);
                     tasksToBeScheduled.put(rt.getReferenceTaskName(), rt);
@@ -217,10 +219,10 @@ public class DeciderService {
 
         // Get the first task to schedule
         Task rerunFromTask = tasks.stream()
-                .filter(task -> Status.READY_FOR_RERUN.equals(task.getStatus()))
+                .filter(task -> READY_FOR_RERUN.equals(task.getStatus()))
                 .findFirst()
                 .map(task -> {
-                    task.setStatus(Status.SCHEDULED);
+                    task.setStatus(SCHEDULED);
                     task.setRetried(true);
                     task.setRetryCount(0);
                     return task; })
@@ -323,7 +325,7 @@ public class DeciderService {
 
         int retryCount = task.getRetryCount();
         if (!task.getStatus().isRetriable() || SystemTaskType.isBuiltIn(task.getTaskType()) || taskDefinition == null || taskDefinition.getRetryCount() <= retryCount) {
-            WorkflowStatus status = task.getStatus().equals(Status.TIMED_OUT) ? WorkflowStatus.TIMED_OUT : WorkflowStatus.FAILED;
+            WorkflowStatus status = task.getStatus().equals(TIMED_OUT) ? WorkflowStatus.TIMED_OUT : WorkflowStatus.FAILED;
             task.setRetried(true);
             throw new TerminateWorkflowException(task.getReasonForIncompletion(), status, task);
         }
@@ -348,7 +350,7 @@ public class DeciderService {
         rescheduled.setRetried(false);
         rescheduled.setTaskId(IDGenerator.generate());
         rescheduled.setRetriedTaskId(task.getTaskId());
-        rescheduled.setStatus(Status.SCHEDULED);
+        rescheduled.setStatus(SCHEDULED);
         rescheduled.setPollCount(0);
         rescheduled.setInputData(new HashMap<>());
         rescheduled.getInputData().putAll(task.getInputData());
@@ -368,7 +370,7 @@ public class DeciderService {
             logger.warn("missing task type " + task.getTaskDefName() + ", workflowId=" + task.getWorkflowInstanceId());
             return;
         }
-        if (task.getStatus().isTerminal() || taskType.getTimeoutSeconds() <= 0 || !task.getStatus().equals(Status.IN_PROGRESS)) {
+        if (task.getStatus().isTerminal() || taskType.getTimeoutSeconds() <= 0 || !task.getStatus().equals(IN_PROGRESS)) {
             return;
         }
 
@@ -387,11 +389,11 @@ public class DeciderService {
             case ALERT_ONLY:
                 return;
             case RETRY:
-                task.setStatus(Status.TIMED_OUT);
+                task.setStatus(TIMED_OUT);
                 task.setReasonForIncompletion(reason);
                 return;
             case TIME_OUT_WF:
-                task.setStatus(Status.TIMED_OUT);
+                task.setStatus(TIMED_OUT);
                 task.setReasonForIncompletion(reason);
                 throw new TerminateWorkflowException(reason, WorkflowStatus.TIMED_OUT, task);
         }
@@ -406,7 +408,7 @@ public class DeciderService {
             logger.warn("missing task type : {}, workflowId= {}", task.getTaskDefName(), task.getWorkflowInstanceId());
             return false;
         }
-        if (task.getStatus().isTerminal() || !task.getStatus().equals(Status.IN_PROGRESS) || taskDefinition.getResponseTimeoutSeconds() == 0) {
+        if (task.getStatus().isTerminal() || !task.getStatus().equals(IN_PROGRESS) || taskDefinition.getResponseTimeoutSeconds() == 0) {
             return false;
         }
 
@@ -455,7 +457,7 @@ public class DeciderService {
                 Task t = workflow.getTaskByRefName(taskToSchedule.getTaskReferenceName());
                 if (t == null) {
                     retval = false;
-                } else if (t.getStatus().equals(Status.SKIPPED)) {
+                } else if (t.getStatus().equals(SKIPPED)) {
                     retval = true;
                 }
             }
