@@ -759,7 +759,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
                 + "json_data = ?, "
                 + "modified_on = CURRENT_TIMESTAMP "
                 + "WHERE event_handler_name = ? "
-                + "AND execution_event = ? "
+                + "AND event_name = ? "
                 + "AND message_id = ? "
                 + "AND execution_id = ?";
         //@formatter:on
