@@ -48,5 +48,5 @@ ext {
     revSwaggerJersey = '1.5.0'
     revSlf4j = '1.7.25'
     revSlf4jlog4j = '1.8.0-alpha1'
-    revSpectator = '0.40.0'
+    revSpectator = '0.68.0'
 }
