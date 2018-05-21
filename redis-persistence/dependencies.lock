@@ -68,7 +68,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -166,7 +166,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -264,7 +264,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -362,7 +362,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -460,7 +460,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -558,7 +558,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -668,7 +668,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -778,7 +778,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -888,7 +888,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
