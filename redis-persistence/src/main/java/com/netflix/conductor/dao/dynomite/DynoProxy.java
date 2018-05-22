@@ -59,7 +59,10 @@ public class DynoProxy {
 		this.dc = dc;
 		String cluster = config.getProperty("workflow.dynomite.cluster", null);
 		String applicationName = config.getAppId();
-		this.dynoClient = new DynoJedisClient.Builder().withApplicationName(applicationName).withDynomiteClusterName(cluster).withDiscoveryClient(dc)
+		this.dynoClient = new DynoJedisClient.Builder()
+				.withApplicationName(applicationName)
+				.withDynomiteClusterName(cluster)
+				.withDiscoveryClient(dc)
 				.build();
 	}
 

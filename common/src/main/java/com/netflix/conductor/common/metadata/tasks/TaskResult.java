@@ -193,7 +193,16 @@ public class TaskResult {
 
     @Override
     public String toString() {
-        return "TaskResult [workflowInstanceId=" + workflowInstanceId + ", taskId=" + taskId + ", status=" + status + "]";
+        return "TaskResult{" +
+                "workflowInstanceId='" + workflowInstanceId + '\'' +
+                ", taskId='" + taskId + '\'' +
+                ", reasonForIncompletion='" + reasonForIncompletion + '\'' +
+                ", callbackAfterSeconds=" + callbackAfterSeconds +
+                ", workerId='" + workerId + '\'' +
+                ", status=" + status +
+                ", outputData=" + outputData +
+                ", logs=" + logs +
+                '}';
     }
 
     public static TaskResult complete() {

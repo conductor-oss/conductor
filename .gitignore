@@ -1,6 +1,7 @@
 **/node_modules
 **/npm-debug.log
 ui/dist
+ui/package-lock.json
 .gradle
 .project
 bin
