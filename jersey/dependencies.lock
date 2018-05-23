@@ -55,7 +55,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
@@ -148,7 +148,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
@@ -241,7 +241,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
@@ -340,7 +340,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
@@ -433,7 +433,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
@@ -526,7 +526,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
@@ -627,7 +627,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
@@ -728,7 +728,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
@@ -829,7 +829,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
