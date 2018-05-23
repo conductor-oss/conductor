@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.metrics;
 
@@ -37,7 +37,7 @@ import com.netflix.spectator.api.Timer;
 import com.netflix.spectator.api.histogram.PercentileTimer;
 
 /**
- * @author Viren 
+ * @author Viren
  *
  */
 public class Monitors {
@@ -57,10 +57,10 @@ public class Monitors {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param className Name of the class
 	 * @param methodName Method name
-	 *            
+	 *
 	 */
 	public static void error(String className, String methodName) {
 		getCounter(className, "workflow_server_error", "methodName", methodName).increment();
@@ -74,7 +74,7 @@ public class Monitors {
 	 * Increment a counter that is used to measure the rate at which some event
 	 * is occurring. Consider a simple queue, counters would be used to measure
 	 * things like the rate at which items are being inserted and removed.
-	 * 
+	 *
 	 * @param className
 	 * @param name
 	 * @param additionalTags
@@ -88,7 +88,7 @@ public class Monitors {
 	 * gauges would be the size of a queue or number of threads in the running
 	 * state. Since gauges are sampled, there is no information about what might
 	 * have occurred between samples.
-	 * 
+	 *
 	 * @param className
 	 * @param name
 	 * @param measurement
@@ -132,8 +132,8 @@ public class Monitors {
 			String tk = additionalTags[j];
 			String tv = "" + additionalTags[j + 1];
 			if(!tv.isEmpty()) {
-				tags.put(tk, tv);	
-			}			
+				tags.put(tk, tv);
+			}
 			j++;
 		}
 		return tags;
@@ -170,7 +170,7 @@ public class Monitors {
 	public static void recordQueueDepth(String taskType, long size, String ownerApp) {
 		gauge(classQualifier, "task_queue_depth", size, "taskType", taskType, "ownerApp", ""+ownerApp);
 	}
-	
+
 	public static void recordTaskInProgress(String taskType, long size, String ownerApp) {
 		gauge(classQualifier, "task_in_progress", size, "taskType", taskType, "ownerApp", ""+ownerApp);
 	}
@@ -187,7 +187,7 @@ public class Monitors {
 	public static void recordTaskResponseTimeout(String taskType) {
 		counter(classQualifier, "task_response_timeout", "taskType", taskType);
 	}
-	
+
 	public static void recordWorkflowTermination(String workflowType, WorkflowStatus status, String ownerApp) {
 		counter(classQualifier, "workflow_failure", "workflowName", workflowType, "status", status.name(), "ownerApp", ""+ownerApp);
 	}
@@ -195,7 +195,7 @@ public class Monitors {
 	public static void recordWorkflowStartError(String workflowType, String ownerApp) {
 		counter(classQualifier, "workflow_start_error", "workflowName", workflowType, "ownerApp", ""+ownerApp);
 	}
-	
+
 	public static void recordUpdateConflict(String taskType, String workflowType, WorkflowStatus status) {
 		counter(classQualifier, "task_update_conflict", "workflowName", workflowType, "taskType", taskType, "workflowStatus", status.name());
 	}
@@ -219,4 +219,16 @@ public class Monitors {
 	public static void recordObservableQMessageReceivedErrors(String queueType) {
 		counter(classQualifier, "observable_queue_error", "queueType", queueType);
 	}
+
+	public static void recordDaoRequests(String dao, String action, String taskType, String workflowType) {
+		counter(classQualifier, "dao_requests", "dao", dao, "action", action, "taskType", taskType, "workflowType", workflowType);
+	}
+
+	public static void recordDaoEventRequests(String dao, String action, String event) {
+		counter(classQualifier, "dao_requests", "dao", dao, "action", action, "event", event);
+	}
+
+	public static void recordDaoPayloadSize(String dao, String action, int size) {
+	    gauge(classQualifier, "dao_payload_size", size, "dao", dao, "action", action);
+    }
 }
