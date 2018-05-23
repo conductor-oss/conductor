@@ -36,8 +36,8 @@ import com.netflix.conductor.dao.dynomite.DynoProxy;
 import com.netflix.conductor.dao.dynomite.RedisExecutionDAO;
 import com.netflix.conductor.dao.dynomite.RedisMetadataDAO;
 import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
-import com.netflix.conductor.redis.utils.JedisMock;
-import com.netflix.conductor.server.ConductorConfig;
+import com.netflix.conductor.jedis.JedisMock;
+import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
 import com.netflix.dyno.queues.ShardSupplier;
 
 import redis.clients.jedis.JedisCommands;
@@ -61,7 +61,7 @@ public class TestModule extends AbstractModule {
 
 		configureExecutorService();
 
-		ConductorConfig config = new ConductorConfig();
+		SystemPropertiesConfiguration config = new SystemPropertiesConfiguration();
 		bind(Configuration.class).toInstance(config);
 		JedisCommands jedisMock = new JedisMock();
 

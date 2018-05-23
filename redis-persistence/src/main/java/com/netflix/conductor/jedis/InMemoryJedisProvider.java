@@ -1,6 +1,4 @@
-package com.netflix.conductor.server;
-
-import com.netflix.conductor.redis.utils.JedisMock;
+package com.netflix.conductor.jedis;
 
 import javax.inject.Provider;
 

@@ -37,9 +37,6 @@ dependencies {
 	
 	//Swagger
 	compile "io.swagger:swagger-jersey-jaxrs:${revSwagger}"
-	
-	//In memory
-	compile "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
 }
 
 shadowJar {

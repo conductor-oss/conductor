@@ -1,6 +1,6 @@
-package com.netflix.conductor.server;
+package com.netflix.conductor.jedis;
 
-import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.dyno.DynomiteConfiguration;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
 
@@ -17,10 +17,10 @@ import javax.inject.Provider;
 public class ConfigurationHostSupplierProvider implements Provider<HostSupplier> {
     private static Logger logger = LoggerFactory.getLogger(ConfigurationHostSupplierProvider.class);
 
-    private final Configuration configuration;
+    private final DynomiteConfiguration configuration;
 
     @Inject
-    public ConfigurationHostSupplierProvider(Configuration configuration) {
+    public ConfigurationHostSupplierProvider(DynomiteConfiguration configuration) {
         this.configuration = configuration;
     }
 
@@ -29,11 +29,16 @@ public class ConfigurationHostSupplierProvider implements Provider<HostSupplier>
         return () -> parseHostsFromConfig(configuration);
     }
 
-    private List<Host> parseHostsFromConfig(Configuration configuration) {
-        String hosts = configuration.getProperty("workflow.dynomite.cluster.hosts", null);
+    private List<Host> parseHostsFromConfig(DynomiteConfiguration configuration) {
+        String hosts = configuration.getHosts();
         if(hosts == null) {
-            System.err.println("Missing dynomite/redis hosts.  Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied configuration.");
-            logger.error("Missing dynomite/redis hosts.  Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied configuration.");
+            // FIXME This type of validation probably doesn't belong here.
+            String message = String.format(
+                    "Missing dynomite/redis hosts.  Ensure '%s' has been set in the supplied configuration.",
+                    DynomiteConfiguration.HOSTS_PROPERTY_NAME
+            );
+            System.err.println(message);
+            logger.error(message);
             System.exit(1);
         }
         return parseHostsFrom(hosts);

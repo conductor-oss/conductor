@@ -1,6 +1,6 @@
-package com.netflix.conductor.server;
+package com.netflix.conductor.jedis;
 
-import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.dyno.DynomiteConfiguration;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.connectionpool.TokenMapSupplier;
 import com.netflix.dyno.connectionpool.impl.ConnectionPoolConfigurationImpl;
@@ -12,46 +12,39 @@ import javax.inject.Provider;
 import redis.clients.jedis.JedisCommands;
 
 public class DynomiteJedisProvider implements Provider<JedisCommands> {
-    public static final String DYNOMITE_CLUSTER_NAME_PROPERTY_NAME = "workflow.dynomite.cluster.name";
-    public static final String DYNOMITE_MAX_CONNECTIONS_PROPERTY_NAME = "workflow.dynomite.connection.maxConnsPerHost";
-    public static final int DYNOMITE_MAX_CONNECTIONS_DEFAULT_VALUE = 10;
 
     private final HostSupplier hostSupplier;
     private final TokenMapSupplier tokenMapSupplier;
-    private final Configuration configuration;
-    private final String clusterName;
+    private final DynomiteConfiguration configuration;
 
     @Inject
     public DynomiteJedisProvider(
-            Configuration configuration,
+            DynomiteConfiguration configuration,
             HostSupplier hostSupplier,
             TokenMapSupplier tokenMapSupplier
     ){
         this.configuration = configuration;
         this.hostSupplier = hostSupplier;
         this.tokenMapSupplier = tokenMapSupplier;
-        this.clusterName = configuration.getProperty(DYNOMITE_CLUSTER_NAME_PROPERTY_NAME, "");
     }
 
     @Override
     public JedisCommands get() {
-        ConnectionPoolConfigurationImpl connectionPoolConfiguration = new ConnectionPoolConfigurationImpl(clusterName)
+        ConnectionPoolConfigurationImpl connectionPoolConfiguration =
+                new ConnectionPoolConfigurationImpl(configuration.getClusterName())
                 .withTokenSupplier(tokenMapSupplier)
                 .setLocalRack(configuration.getAvailabilityZone())
                 .setLocalDataCenter(configuration.getRegion())
                 .setSocketTimeout(0)
                 .setConnectTimeout(0)
                 .setMaxConnsPerHost(
-                        configuration.getIntProperty(
-                                DYNOMITE_MAX_CONNECTIONS_PROPERTY_NAME,
-                                DYNOMITE_MAX_CONNECTIONS_DEFAULT_VALUE
-                        )
+                        configuration.getMaxConnectionsPerHost()
                 );
 
         return new DynoJedisClient.Builder()
                 .withHostSupplier(hostSupplier)
                 .withApplicationName(configuration.getAppId())
-                .withDynomiteClusterName(clusterName)
+                .withDynomiteClusterName(configuration.getClusterName())
                 .withCPConfig(connectionPoolConfiguration)
                 .build();
     }

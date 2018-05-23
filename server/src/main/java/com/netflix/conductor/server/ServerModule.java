@@ -18,31 +18,25 @@
  */
 package com.netflix.conductor.server;
 
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+
 import com.netflix.conductor.contribs.http.HttpTask;
 import com.netflix.conductor.contribs.http.RestClientManager;
 import com.netflix.conductor.contribs.json.JsonJqTransform;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
-import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
 import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.RedisESWorkflowModule;
-import com.netflix.conductor.dao.dynomite.DynoProxy;
-import com.netflix.conductor.dao.dynomite.RedisExecutionDAO;
-import com.netflix.conductor.dao.dynomite.RedisMetadataDAO;
-import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
 import com.netflix.conductor.dao.index.ElasticSearchDAO;
 import com.netflix.conductor.dao.index.ElasticsearchModule;
 import com.netflix.conductor.dao.mysql.MySQLWorkflowModule;
 import com.netflix.dyno.connectionpool.HostSupplier;
-import com.netflix.dyno.queues.redis.DynoShardSupplier;
+
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import redis.clients.jedis.JedisCommands;
 
@@ -64,16 +58,16 @@ public class ServerModule extends AbstractModule {
 	
 	private String localRack;
 	
-	private ConductorConfig conductorConfig;
+	private SystemPropertiesConfiguration systemPropertiesConfiguration;
 	
 	private ConductorServer.DB db;
 
-	public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, ConductorConfig conductorConfig, ConductorServer.DB db) {
+	public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, SystemPropertiesConfiguration systemPropertiesConfiguration, ConductorServer.DB db) {
 		this.dynoConn = jedis;
 		this.hostSupplier = hostSupplier;
-		this.conductorConfig = conductorConfig;
-		this.region = conductorConfig.getRegion();
-		this.localRack = conductorConfig.getAvailabilityZone();
+		this.systemPropertiesConfiguration = systemPropertiesConfiguration;
+		this.region = systemPropertiesConfiguration.getRegion();
+		this.localRack = systemPropertiesConfiguration.getAvailabilityZone();
 		this.db = db;
 		
 	}
@@ -83,12 +77,12 @@ public class ServerModule extends AbstractModule {
 		
 		configureExecutorService();
 		
-		bind(Configuration.class).toInstance(conductorConfig);
+		bind(Configuration.class).toInstance(systemPropertiesConfiguration);
 
 		if (db == ConductorServer.DB.mysql) {
 			install(new MySQLWorkflowModule());
 		} else {
-		    install(new RedisESWorkflowModule(conductorConfig, dynoConn, hostSupplier));
+		    install(new RedisESWorkflowModule(systemPropertiesConfiguration, dynoConn, hostSupplier));
 		}
 
 		install(new ElasticsearchModule());
@@ -97,10 +91,10 @@ public class ServerModule extends AbstractModule {
 		install(new CoreModule());
 		install(new JerseyModule());
 		
-		new HttpTask(new RestClientManager(), conductorConfig);
+		new HttpTask(new RestClientManager(), systemPropertiesConfiguration);
 		new JsonJqTransform();
 		
-		List<AbstractModule> additionalModules = conductorConfig.getAdditionalModules();
+		List<AbstractModule> additionalModules = systemPropertiesConfiguration.getAdditionalModules();
 		if(additionalModules != null) {
 			for(AbstractModule additionalModule : additionalModules) {
 				install(additionalModule);

@@ -43,7 +43,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.server.ConductorConfig;
+import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
 import com.netflix.conductor.server.ConductorServer;
 
 /**
@@ -68,7 +68,7 @@ public class End2EndTests {
 	@BeforeClass
 	public static void setup() throws Exception {
 		
-		ConductorServer server = new ConductorServer(new ConductorConfig());
+		ConductorServer server = new ConductorServer(new SystemPropertiesConfiguration());
 		server.start(8080, false);
 		
 		tc = new TaskClient();

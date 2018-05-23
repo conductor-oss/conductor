@@ -18,6 +18,8 @@
  */
 package com.netflix.conductor.server;
 
+import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -40,7 +42,7 @@ public class Main {
 			PropertyConfigurator.configure(new FileInputStream(new File(args[1])));
 		}
 
-		ConductorConfig config = new ConductorConfig();
+		SystemPropertiesConfiguration config = new SystemPropertiesConfiguration();
 		ConductorServer server = new ConductorServer(config);
 		
 		System.out.println("\n\n\n");

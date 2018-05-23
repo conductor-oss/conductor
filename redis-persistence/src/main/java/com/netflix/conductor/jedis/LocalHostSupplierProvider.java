@@ -1,4 +1,4 @@
-package com.netflix.conductor.server;
+package com.netflix.conductor.jedis;
 
 import com.google.common.collect.Lists;
 
