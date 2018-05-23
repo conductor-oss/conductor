@@ -1,5 +1,59 @@
 {
+    "compile": {
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0",
+            "requested": "2.0.0"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.25",
+            "requested": "1.7.25"
+        }
+    },
+    "compileClasspath": {
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0",
+            "requested": "2.0.0"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.25",
+            "requested": "1.7.25"
+        }
+    },
+    "default": {
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0",
+            "requested": "2.0.0"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.25",
+            "requested": "1.7.25"
+        }
+    },
+    "runtime": {
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0",
+            "requested": "2.0.0"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.25",
+            "requested": "1.7.25"
+        }
+    },
+    "runtimeClasspath": {
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0",
+            "requested": "2.0.0"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.25",
+            "requested": "1.7.25"
+        }
+    },
     "testCompile": {
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0",
+            "requested": "2.0.0"
+        },
         "junit:junit-dep": {
             "locked": "4.10",
             "requested": "4.10"
@@ -7,9 +61,17 @@
         "org.mockito:mockito-all": {
             "locked": "1.10.0",
             "requested": "1.10.0"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.25",
+            "requested": "1.7.25"
         }
     },
     "testCompileClasspath": {
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0",
+            "requested": "2.0.0"
+        },
         "junit:junit-dep": {
             "locked": "4.10",
             "requested": "4.10"
@@ -17,9 +79,17 @@
         "org.mockito:mockito-all": {
             "locked": "1.10.0",
             "requested": "1.10.0"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.25",
+            "requested": "1.7.25"
         }
     },
     "testRuntime": {
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0",
+            "requested": "2.0.0"
+        },
         "junit:junit-dep": {
             "locked": "4.10",
             "requested": "4.10"
@@ -27,9 +97,17 @@
         "org.mockito:mockito-all": {
             "locked": "1.10.0",
             "requested": "1.10.0"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.25",
+            "requested": "1.7.25"
         }
     },
     "testRuntimeClasspath": {
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0",
+            "requested": "2.0.0"
+        },
         "junit:junit-dep": {
             "locked": "4.10",
             "requested": "4.10"
@@ -37,6 +115,10 @@
         "org.mockito:mockito-all": {
             "locked": "1.10.0",
             "requested": "1.10.0"
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.25",
+            "requested": "1.7.25"
         }
     }
 }

@@ -8,6 +8,9 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.QueueDAO;
+
+import org.apache.commons.lang3.time.DateUtils;
+
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -18,7 +21,6 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import javax.inject.Inject;
 import javax.sql.DataSource;
-import org.apache.commons.lang.time.DateUtils;
 
 public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 

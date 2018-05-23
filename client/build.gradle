@@ -10,10 +10,10 @@ dependencies {
     compile project(':conductor-common')
     compile "com.sun.jersey:jersey-client:${revJerseyClient}"
     compile "com.netflix.spectator:spectator-api:${revSpectator}"
-    compile 'com.netflix.eureka:eureka-client:latest.release'
+    compile "com.netflix.eureka:eureka-client:${revEurekaClient}"
     compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:${revJaxrsJackson}"
     compile "com.netflix.archaius:archaius-core:${revArchaius}"
-    compile "com.amazonaws:aws-java-sdk:${revAwsSdk}"
+    compile "com.amazonaws:aws-java-sdk-core:${revAwsSdk}"
 
     testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
 }
