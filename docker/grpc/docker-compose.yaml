@@ -6,7 +6,14 @@ services:
     image: mysql:5.6
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: 12345
+      MYSQL_DATABASE: conductor
+      MYSQL_USER: conductor
+      MYSQL_PASSWORD: password
+    volumes:
+      - type: volume
+        source: conductor_mysql
+        target: /var/lib/mysql
     ports:
       - 3306:3306
 
@@ -14,3 +21,6 @@ services:
     image: elasticsearch:2.4
     ports:
       - 9200:9200
+
+volumes:
+  conductor_mysql:
