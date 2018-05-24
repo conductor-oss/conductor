@@ -33,6 +33,7 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.RedisESWorkflowModule;
 import com.netflix.conductor.dao.dynomite.DynoProxy;
 import com.netflix.conductor.dao.dynomite.RedisExecutionDAO;
 import com.netflix.conductor.dao.dynomite.RedisMetadataDAO;
@@ -87,18 +88,7 @@ public class ServerModule extends AbstractModule {
 		if (db == ConductorServer.DB.mysql) {
 			install(new MySQLWorkflowModule());
 		} else {
-			String localDC = localRack;
-			localDC = localDC.replaceAll(region, "");
-			DynoShardSupplier ss = new DynoShardSupplier(hostSupplier, region, localDC);
-			DynoQueueDAO queueDao = new DynoQueueDAO(dynoConn, dynoConn, ss, conductorConfig);
-
-			bind(MetadataDAO.class).to(RedisMetadataDAO.class);
-			bind(ExecutionDAO.class).to(RedisExecutionDAO.class);
-			bind(DynoQueueDAO.class).toInstance(queueDao);
-			bind(QueueDAO.class).to(DynoQueueDAO.class);
-
-			DynoProxy proxy = new DynoProxy(dynoConn);
-			bind(DynoProxy.class).toInstance(proxy);
+		    install(new RedisESWorkflowModule(conductorConfig, dynoConn, hostSupplier));
 		}
 
 		install(new ElasticsearchModule());

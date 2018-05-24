@@ -109,6 +109,9 @@ public class TaskResource {
 			@QueryParam("domain") String domain,
 			@DefaultValue("1") @QueryParam("count") Integer count,
 			@DefaultValue("100") @QueryParam("timeout") Integer timeout) throws Exception {
+		if (timeout > 5000) {
+			throw new ApplicationException(Code.INVALID_INPUT, "Long Poll Timeout value cannot be more than 5 seconds");
+		}
 		List<Task> polledTasks = taskService.poll(taskType, workerId, domain, count, timeout);
 		logger.debug("The Tasks {} being returned for /tasks/poll/{}?{}&{}",
 				polledTasks.stream()

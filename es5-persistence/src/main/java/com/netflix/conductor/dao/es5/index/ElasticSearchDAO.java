@@ -37,7 +37,7 @@ import com.netflix.conductor.dao.es5.index.query.parser.Expression;
 import com.netflix.conductor.dao.es5.index.query.parser.ParserException;
 import com.netflix.conductor.metrics.Monitors;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.ResourceAlreadyExistsException;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;

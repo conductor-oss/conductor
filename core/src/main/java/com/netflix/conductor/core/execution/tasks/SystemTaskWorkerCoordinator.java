@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.core.execution.tasks;
 
@@ -50,33 +50,33 @@ import com.netflix.conductor.metrics.Monitors;
 public class SystemTaskWorkerCoordinator {
 
 	private static Logger logger = LoggerFactory.getLogger(SystemTaskWorkerCoordinator.class);
-	
+
 	private QueueDAO taskQueues;
-	
+
 	private WorkflowExecutor executor;
-	
+
 	private ExecutorService es;
-	
+
 	private int workerQueueSize;
-	
+
 	//Number of items to poll for
 	private int pollCount;
-	
+
 	//Interval in ms at which the polling is done
 	private int pollInterval;
-	
+
 	private LinkedBlockingQueue<Runnable> workerQueue;
-	
+
 	private int unackTimeout;
-	
+
 	private Configuration config;
-	
+
 	private static BlockingQueue<WorkflowSystemTask> queue = new LinkedBlockingQueue<>();
-	
+
 	private static Set<WorkflowSystemTask> listeningTasks = new HashSet<>();
-	
+
 	private static final String className = SystemTaskWorkerCoordinator.class.getName();
-		
+
 	@Inject
 	public SystemTaskWorkerCoordinator(QueueDAO taskQueues, WorkflowExecutor executor, Configuration config) {
 		this.taskQueues = taskQueues;
@@ -106,11 +106,11 @@ public class SystemTaskWorkerCoordinator {
 		logger.info("Adding system task {}", systemTask.getName());
 		queue.add(systemTask);
 	}
-	
+
 	private void listen() {
 		try {
 			for(;;) {
-				WorkflowSystemTask st = queue.poll(60, TimeUnit.SECONDS);				
+				WorkflowSystemTask st = queue.poll(60, TimeUnit.SECONDS);
 				if(st != null && st.isAsync() && !listeningTasks.contains(st)) {
 					listen(st);
 					listeningTasks.add(st);
@@ -120,23 +120,21 @@ public class SystemTaskWorkerCoordinator {
 			logger.warn(ie.getMessage(), ie);
 		}
 	}
-	
+
 	private void listen(WorkflowSystemTask systemTask) {
-		Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(()->pollAndExecute(systemTask), 1000, pollInterval, TimeUnit.MILLISECONDS);
+		Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(() -> pollAndExecute(systemTask), 1000, pollInterval, TimeUnit.MILLISECONDS);
 		logger.info("Started listening {}", systemTask.getName());
 	}
 
 	private void pollAndExecute(WorkflowSystemTask systemTask) {
 		try {
-			
 			if(config.disableAsyncWorkers()) {
-				logger.warn("System Task Worker is DISABLED.  Not polling.");
+				logger.warn("System Task Worker is DISABLED.  Not polling for system task: {}", systemTask.getName());
 				return;
 			}
-
 			// get the remaining capacity of worker queue to prevent queue full exception
 			int realPollCount = Math.min(workerQueue.remainingCapacity(), pollCount);
-			if (realPollCount <= 0) {				
+			if (realPollCount <= 0) {
                 logger.warn("All workers are busy, not polling.  queue size {}, max {}", workerQueue.size(), workerQueueSize);
                 return;
 			}
@@ -154,11 +152,11 @@ public class SystemTaskWorkerCoordinator {
 					logger.warn("Queue full for workers {}", workerQueue.size());
 				}
 			}
-			
+
 		} catch (Exception e) {
 			Monitors.error(className, "pollAndExecute");
 			logger.error(e.getMessage(), e);
 		}
 	}
-	
+
 }	

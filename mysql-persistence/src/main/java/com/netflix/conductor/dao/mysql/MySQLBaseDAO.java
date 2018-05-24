@@ -1,91 +1,185 @@
 package com.netflix.conductor.dao.mysql;
 
-import static java.sql.Connection.TRANSACTION_READ_COMMITTED;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.collect.ImmutableList;
+import com.netflix.conductor.core.execution.ApplicationException;
 import java.io.IOException;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-
+import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sql2o.Connection;
-import org.sql2o.Sql2o;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.collect.ImmutableList;
 
-abstract class MySQLBaseDAO {
+/**
+ * @author mustafa
+ */
+public abstract class MySQLBaseDAO {
+    private static final List<String> EXCLUDED_STACKTRACE_CLASS = ImmutableList.of(
+            MySQLBaseDAO.class.getName(),
+            Thread.class.getName()
+    );
 
-	private static final List<String> EXCLUDED_STACKTRACE_CLASS = ImmutableList.of("com.netflix.conductor.dao.mysql.MySQLBaseDAO", "java.lang.Thread");
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final ObjectMapper objectMapper;
+    protected final DataSource dataSource;
 
-	protected final Sql2o sql2o;
-	protected final ObjectMapper om;
-	protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected MySQLBaseDAO(ObjectMapper om, DataSource dataSource) {
+        this.objectMapper = om;
+        this.dataSource = dataSource;
+    }
 
-	protected MySQLBaseDAO(ObjectMapper om, Sql2o sql2o) {
-		this.om = om;
-		this.sql2o = sql2o;
-	}
+    protected final LazyToString getCallingMethod() {
+        return new LazyToString(() -> Arrays.stream(Thread.currentThread().getStackTrace())
+                .filter(ste -> !EXCLUDED_STACKTRACE_CLASS.contains(ste.getClassName()))
+                .findFirst()
+                .map(StackTraceElement::getMethodName)
+                .orElseThrow(() -> new NullPointerException("Cannot find Caller")));
+    }
 
-	protected String toJson(Object value) {
-		try {
-			return om.writeValueAsString(value);
-		} catch (JsonProcessingException e) {
-			throw new RuntimeException(e);
-		}
-	}
+    protected String toJson(Object value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException ex) {
+            throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, ex);
+        }
+    }
 
-	protected <T>T readValue(String json, Class<T> clazz) {
-		try {
-			return om.readValue(json, clazz);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
+    protected <T> T readValue(String json, Class<T> tClass) {
+        try {
+            return objectMapper.readValue(json, tClass);
+        } catch (IOException ex) {
+            throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, ex);
+        }
+    }
 
-	protected <R> R getWithTransaction(Function<Connection, R> function) {
-		Instant start = Instant.now();
-		StackTraceElement caller = Arrays.stream(Thread.currentThread().getStackTrace()).filter(ste -> !EXCLUDED_STACKTRACE_CLASS.contains(ste.getClassName())).findFirst().get();
-		logger.debug("{} : starting transaction", caller.getMethodName());
-		try (Connection connection = sql2o.beginTransaction(TRANSACTION_READ_COMMITTED)) {
-			final R result = function.apply(connection);
-			connection.commit();
-			return result;
-		} finally {
-			Instant end = Instant.now();
-			logger.debug("{} : took {}ms", caller.getMethodName(), Duration.between(start, end).toMillis());
-		}
-	}
+    protected <T> T readValue(String json, TypeReference<T> typeReference) {
+        try {
+            return objectMapper.readValue(json, typeReference);
+        } catch (IOException ex) {
+            throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, ex);
+        }
+    }
 
-	protected void withTransaction(Consumer<Connection> consumer) {
-		getWithTransaction(connection -> {
-			consumer.accept(connection);
-			return null;
-		});
-	}
+    /**
+     * Initialize a new transactional {@link Connection} from {@link #dataSource} and pass it to {@literal function}.
+     * <p>
+     * Successful executions of {@literal function} will result in a commit and return of
+     * {@link TransactionalFunction#apply(Connection)}.
+     * <p>
+     * If any {@link Throwable} thrown from {@code TransactionalFunction#apply(Connection)} will result in a rollback
+     * of the transaction
+     * and will be wrapped in an {@link ApplicationException} if it is not already one.
+     * <p>
+     * Generally this is used to wrap multiple {@link #execute(Connection, String, ExecuteFunction)} or
+     * {@link #query(Connection, String, QueryFunction)} invocations that produce some expected return value.
+     *
+     * @param function The function to apply with a new transactional {@link Connection}
+     * @param <R>      The return type.
+     * @return The result of {@code TransactionalFunction#apply(Connection)}
+     * @throws ApplicationException If any errors occur.
+     */
+    protected <R> R getWithTransaction(TransactionalFunction<R> function) {
+        Instant start = Instant.now();
+        LazyToString callingMethod = getCallingMethod();
+        logger.trace("{} : starting transaction", callingMethod);
 
-	/**
-	 * This will inject a series of p1, p2, ... placeholders in the given query template so it can then be used
-	 * in conjunction with the withParams method on the Sql2o Query object.
-	 *
-	 * The withParams method in the Query class loops through each element in the given array and adds a prepared statement for each.
-	 * For each element found in the array, a pN placeholder should exists in the query.
-	 *
-	 * This is useful for generating the IN clause since Sql2o does not support passing directly a list
-	 *
-	 * @param queryTemplate a query template with a %s placeholder where the variable size parameters placeholders should be injected
-	 * @param numPlaceholders the number of placeholders to generated
-	 * @return
-	 */
-	protected String generateQueryWithParametersListPlaceholders(String queryTemplate, int numPlaceholders) {
-		String paramsPlaceholders = String.join(",", IntStream.rangeClosed(1, numPlaceholders).mapToObj(paramNumber -> ":p" + paramNumber).collect(Collectors.toList()));
-		return String.format(queryTemplate, paramsPlaceholders);
-	}
+        try(Connection tx = dataSource.getConnection()) {
+            boolean previousAutoCommitMode = tx.getAutoCommit();
+            tx.setAutoCommit(false);
+            try {
+                R result = function.apply(tx);
+                tx.commit();
+                return result;
+            } catch (Throwable th) {
+                tx.rollback();
+                throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, th.getMessage(), th);
+            } finally {
+                tx.setAutoCommit(previousAutoCommitMode);
+            }
+        } catch (SQLException ex) {
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, ex.getMessage(), ex);
+        } finally {
+            logger.trace("{} : took {}ms", callingMethod, Duration.between(start, Instant.now()).toMillis());
+        }
+    }
+
+    /**
+     * Wraps {@link #getWithTransaction(TransactionalFunction)} with no return value.
+     * <p>
+     * Generally this is used to wrap multiple {@link #execute(Connection, String, ExecuteFunction)} or
+     * {@link #query(Connection, String, QueryFunction)} invocations that produce no expected return value.
+     *
+     * @param consumer The {@link Consumer} callback to pass a transactional {@link Connection} to.
+     * @throws ApplicationException If any errors occur.
+     * @see #getWithTransaction(TransactionalFunction)
+     */
+    protected void withTransaction(Consumer<Connection> consumer) {
+        getWithTransaction(connection -> {
+            consumer.accept(connection);
+            return null;
+        });
+    }
+
+    /**
+     * Initiate a new transaction and execute a {@link Query} within that context,
+     * then return the results of {@literal function}.
+     *
+     * @param query    The query string to prepare.
+     * @param function The functional callback to pass a {@link Query} to.
+     * @param <R>      The expected return type of {@literal function}.
+     * @return The results of applying {@literal function}.
+     */
+    protected <R> R queryWithTransaction(String query, QueryFunction<R> function) {
+        return getWithTransaction(tx -> query(tx, query, function));
+    }
+
+    /**
+     * Execute a {@link Query} within the context of a given transaction and return the results of {@literal function}.
+     *
+     * @param tx       The transactional {@link Connection} to use.
+     * @param query    The query string to prepare.
+     * @param function The functional callback to pass a {@link Query} to.
+     * @param <R>      The expected return type of {@literal function}.
+     * @return The results of applying {@literal function}.
+     */
+    protected <R> R query(Connection tx, String query, QueryFunction<R> function) {
+        try (Query q = new Query(objectMapper, tx, query)) {
+            return function.apply(q);
+        } catch (SQLException ex) {
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, ex);
+        }
+    }
+
+    /**
+     * Execute a statement with no expected return value within a given transaction.
+     *
+     * @param tx       The transactional {@link Connection} to use.
+     * @param query    The query string to prepare.
+     * @param function The functional callback to pass a {@link Query} to.
+     */
+    protected void execute(Connection tx, String query, ExecuteFunction function) {
+        try (Query q = new Query(objectMapper, tx, query)) {
+            function.apply(q);
+        } catch (SQLException ex) {
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, ex);
+        }
+    }
+
+    /**
+     * Instantiates a new transactional connection and invokes {@link #execute(Connection, String, ExecuteFunction)}
+     *
+     * @param query    The query string to prepare.
+     * @param function The functional callback to pass a {@link Query} to.
+     */
+    protected void executeWithTransaction(String query, ExecuteFunction function) {
+        withTransaction(tx -> execute(tx, query, function));
+    }
 }

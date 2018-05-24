@@ -12,6 +12,12 @@
             ],
             "locked": "2.8.7"
         },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
         "com.google.inject.extensions:guice-multibindings": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -52,17 +58,17 @@
             "locked": "1.5.9",
             "requested": "1.5.9"
         },
-        "com.netflix.eureka:eureka-client": {
+        "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.8.7"
+            "locked": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -82,7 +88,7 @@
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
         },
@@ -104,6 +110,12 @@
             ],
             "locked": "2.8.7"
         },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
         "com.google.inject.extensions:guice-multibindings": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -144,17 +156,17 @@
             "locked": "1.5.9",
             "requested": "1.5.9"
         },
-        "com.netflix.eureka:eureka-client": {
+        "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.8.7"
+            "locked": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -174,7 +186,7 @@
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
         },
@@ -196,6 +208,12 @@
             ],
             "locked": "2.8.7"
         },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
         "com.google.inject.extensions:guice-multibindings": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -236,17 +254,17 @@
             "locked": "1.5.9",
             "requested": "1.5.9"
         },
-        "com.netflix.eureka:eureka-client": {
+        "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.8.7"
+            "locked": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -266,7 +284,7 @@
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
         },
@@ -288,6 +306,12 @@
             ],
             "locked": "2.8.7"
         },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
         "com.google.inject.extensions:guice-multibindings": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -328,17 +352,17 @@
             "locked": "1.5.9",
             "requested": "1.5.9"
         },
-        "com.netflix.eureka:eureka-client": {
+        "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.8.7"
+            "locked": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -358,7 +382,7 @@
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
         },
@@ -380,6 +404,12 @@
             ],
             "locked": "2.8.7"
         },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
         "com.google.inject.extensions:guice-multibindings": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -420,17 +450,17 @@
             "locked": "1.5.9",
             "requested": "1.5.9"
         },
-        "com.netflix.eureka:eureka-client": {
+        "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.8.7"
+            "locked": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -450,7 +480,7 @@
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
         },
@@ -472,6 +502,12 @@
             ],
             "locked": "2.8.7"
         },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
         "com.google.inject.extensions:guice-multibindings": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -512,17 +548,17 @@
             "locked": "1.5.9",
             "requested": "1.5.9"
         },
-        "com.netflix.eureka:eureka-client": {
+        "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.8.7"
+            "locked": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -554,7 +590,7 @@
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
         },
@@ -576,6 +612,12 @@
             ],
             "locked": "2.8.7"
         },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
         "com.google.inject.extensions:guice-multibindings": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -616,17 +658,17 @@
             "locked": "1.5.9",
             "requested": "1.5.9"
         },
-        "com.netflix.eureka:eureka-client": {
+        "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.8.7"
+            "locked": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -658,7 +700,7 @@
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
         },
@@ -680,6 +722,12 @@
             ],
             "locked": "2.8.7"
         },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
         "com.google.inject.extensions:guice-multibindings": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -720,17 +768,17 @@
             "locked": "1.5.9",
             "requested": "1.5.9"
         },
-        "com.netflix.eureka:eureka-client": {
+        "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.8.7"
+            "locked": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -762,7 +810,7 @@
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
         },
@@ -784,6 +832,12 @@
             ],
             "locked": "2.8.7"
         },
+        "com.github.rholder:guava-retrying": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.0.0"
+        },
         "com.google.inject.extensions:guice-multibindings": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -824,17 +878,17 @@
             "locked": "1.5.9",
             "requested": "1.5.9"
         },
-        "com.netflix.eureka:eureka-client": {
+        "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "1.8.7"
+            "locked": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "firstLevelTransitive": [
@@ -866,7 +920,7 @@
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
         },

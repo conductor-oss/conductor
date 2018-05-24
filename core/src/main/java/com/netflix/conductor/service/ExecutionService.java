@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -67,7 +68,7 @@ public class ExecutionService {
 
 	private WorkflowExecutor executor;
 
-	private ExecutionDAO edao;
+	private ExecutionDAO executionDAO;
 	
 	private IndexDAO indexer;
 
@@ -79,9 +80,9 @@ public class ExecutionService {
 	
 
 	@Inject
-	public ExecutionService(WorkflowExecutor wfProvider, ExecutionDAO edao, QueueDAO queue, MetadataDAO metadata, IndexDAO indexer, Configuration config) {
+	public ExecutionService(WorkflowExecutor wfProvider, ExecutionDAO executionDAO, QueueDAO queue, MetadataDAO metadata, IndexDAO indexer, Configuration config) {
 		this.executor = wfProvider;
-		this.edao = edao;
+		this.executionDAO = executionDAO;
 		this.queue = queue;
 		this.metadata = metadata;
 		this.indexer = indexer;
@@ -115,7 +116,7 @@ public class ExecutionService {
 				continue;
 			}
 
-			if(edao.exceedsInProgressLimit(task)) {
+			if(executionDAO.exceedsInProgressLimit(task)) {
 				continue;
 			}
 			
@@ -126,16 +127,16 @@ public class ExecutionService {
 			}
 			task.setWorkerId(workerId);
 			task.setPollCount(task.getPollCount() + 1);			
-			edao.updateTask(task);
+			executionDAO.updateTask(task);
 			tasks.add(task);
 		}
-		edao.updateLastPoll(taskType, domain, workerId);
+		executionDAO.updateLastPoll(taskType, domain, workerId);
 		Monitors.recordTaskPoll(queueName);
 		return tasks;
 	}
 	
 	public List<PollData> getPollData(String taskType) throws Exception{
-		return edao.getPollData(taskType);
+		return executionDAO.getPollData(taskType);
 	}
 
 	public List<PollData> getAllPollData() throws Exception{
@@ -168,7 +169,7 @@ public class ExecutionService {
 	}
 
 	public Task getTask(String taskId) throws Exception {
-		return edao.getTask(taskId);
+		return executionDAO.getTask(taskId);
 	}
 
 	public Task getPendingTaskForWorkflow(String taskReferenceName, String workflowId) {
@@ -198,7 +199,7 @@ public class ExecutionService {
 	}
 
 	public void removeTaskfromQueue(String taskType, String taskId) {
-		Task task = edao.getTask(taskId);
+		Task task = executionDAO.getTask(taskId);
 		queue.remove(QueueUtils.getQueueName(task), taskId);
 	}
 
@@ -280,33 +281,29 @@ public class ExecutionService {
 		return queue.pushIfNotExists(QueueUtils.getQueueName(pending), pending.getTaskId(), callback);
 	}
 
-	public List<Workflow> getWorkflowInstances(String workflowName, String correlationId, boolean includeClosed, boolean includeTasks)
-			throws Exception {
-		List<Workflow> workflows = executor.getStatusByCorrelationId(workflowName, correlationId, includeClosed);
-		if (includeTasks) {
-			workflows.forEach(wf -> {
-				List<Task> tasks;
-				try {
-					tasks = edao.getTasksForWorkflow(wf.getWorkflowId());
-				} catch (Exception e) {
-					throw new RuntimeException(e);
-				}
-				wf.setTasks(tasks);
-			});
+	public List<Workflow> getWorkflowInstances(String workflowName, String correlationId, boolean includeClosed, boolean includeTasks) {
+
+		List<Workflow> workflows = executionDAO.getWorkflowsByCorrelationId(correlationId, includeTasks);
+		List<Workflow> result = new LinkedList<>();
+		for (Workflow wf : workflows) {
+			if (wf.getWorkflowType().equals(workflowName) && (includeClosed || wf.getStatus().equals(Workflow.WorkflowStatus.RUNNING))) {
+				result.add(wf);
+			}
 		}
-		return workflows;
+
+		return result;
 	}
 
 	public Workflow getExecutionStatus(String workflowId, boolean includeTasks) throws Exception {
-		return edao.getWorkflow(workflowId, includeTasks);
+		return executionDAO.getWorkflow(workflowId, includeTasks);
 	}
 
 	public List<String> getRunningWorkflows(String workflowName) {
-		return edao.getRunningWorkflowIds(workflowName);
+		return executionDAO.getRunningWorkflowIds(workflowName);
 	}
 
 	public void removeWorkflow(String workflowId, boolean archiveWorkflow) throws Exception {
-		edao.removeWorkflow(workflowId, archiveWorkflow);
+		executionDAO.removeWorkflow(workflowId, archiveWorkflow);
 	}
 
 	public SearchResult<WorkflowSummary> search(String query, String freeText, int start, int size, List<String> sortOptions) {
@@ -315,19 +312,39 @@ public class ExecutionService {
 		List<WorkflowSummary> workflows = result.getResults().stream().parallel().map(workflowId -> {
 			try {
 				
-				WorkflowSummary summary = new WorkflowSummary(edao.getWorkflow(workflowId, false));
+				WorkflowSummary summary = new WorkflowSummary(executionDAO.getWorkflow(workflowId, false));
 				return summary;
 				
 			} catch(Exception e) {
 				logger.error(e.getMessage(), e);
 				return null;
 			}
-		}).filter(summary -> summary != null).collect(Collectors.toList());
+		}).filter(Objects::nonNull).collect(Collectors.toList());
 		int missing = result.getResults().size() - workflows.size();
 		long totalHits = result.getTotalHits() - missing;
 		SearchResult<WorkflowSummary> sr = new SearchResult<>(totalHits, workflows);
 		
 		return sr;
+	}
+
+	public SearchResult<WorkflowSummary> searchWorkflowByTasks(String query, String freeText, int start, int size, List<String> sortOptions) {
+		SearchResult<TaskSummary> taskSummarySearchResult = searchTasks(query, freeText, start, size, sortOptions);
+		List<WorkflowSummary> workflowSummaries = taskSummarySearchResult.getResults().stream()
+				.parallel()
+				.map(taskSummary -> {
+					try {
+						String workflowId = taskSummary.getWorkflowId();
+						return new WorkflowSummary(executionDAO.getWorkflow(workflowId, false));
+					} catch (Exception e) {
+						logger.error("Error fetching workflow by id: ", e);
+						return null;
+					}
+				})
+				.filter(Objects::nonNull)
+				.collect(Collectors.toList());
+		int missing = taskSummarySearchResult.getResults().size() - workflowSummaries.size();
+		long totalHits = taskSummarySearchResult.getTotalHits() - missing;
+		return new SearchResult<>(totalHits, workflowSummaries);
 	}
 	
 	public SearchResult<TaskSummary> searchTasks(String query, String freeText, int start, int size, List<String> sortOptions) {
@@ -336,7 +353,7 @@ public class ExecutionService {
 		List<TaskSummary> workflows = result.getResults().stream().parallel().map(taskId -> {
 			try {
 				
-				TaskSummary summary = new TaskSummary(edao.getTask(taskId));
+				TaskSummary summary = new TaskSummary(executionDAO.getTask(taskId));
 				return summary;
 				
 			} catch(Exception e) {
@@ -352,16 +369,16 @@ public class ExecutionService {
 	}
 
 	public List<Task> getPendingTasksForTaskType(String taskType) throws Exception {
-		return edao.getPendingTasksForTaskType(taskType);
+		return executionDAO.getPendingTasksForTaskType(taskType);
 	}
 	
 	public boolean addEventExecution(EventExecution ee) {
-		return edao.addEventExecution(ee);
+		return executionDAO.addEventExecution(ee);
 	}
 	
 
 	public void updateEventExecution(EventExecution ee) {
-		edao.updateEventExecution(ee);
+		executionDAO.updateEventExecution(ee);
 	}
 
 	/**
@@ -370,7 +387,7 @@ public class ExecutionService {
 	 * @param msg Message
 	 */
 	public void addMessage(String queue, Message msg) {	
-		edao.addMessage(queue, msg);
+		executionDAO.addMessage(queue, msg);
 	}
 
 	/**
@@ -383,7 +400,7 @@ public class ExecutionService {
 		executionLog.setTaskId(taskId);
 		executionLog.setLog(log);
 		executionLog.setCreatedTime(System.currentTimeMillis());
-		edao.addTaskExecLog(Arrays.asList(executionLog));
+		executionDAO.addTaskExecLog(Arrays.asList(executionLog));
 	}
 	
 	/**

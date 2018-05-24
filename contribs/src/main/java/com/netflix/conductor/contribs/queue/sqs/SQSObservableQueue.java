@@ -18,20 +18,6 @@
  */
 package com.netflix.conductor.contribs.queue.sqs;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import com.amazonaws.services.sqs.model.BatchResultErrorEntry;
-import com.netflix.conductor.metrics.Monitors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.amazonaws.auth.policy.Action;
 import com.amazonaws.auth.policy.Policy;
 import com.amazonaws.auth.policy.Principal;
@@ -40,6 +26,7 @@ import com.amazonaws.auth.policy.Statement;
 import com.amazonaws.auth.policy.Statement.Effect;
 import com.amazonaws.auth.policy.actions.SQSActions;
 import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.amazonaws.services.sqs.model.BatchResultErrorEntry;
 import com.amazonaws.services.sqs.model.ChangeMessageVisibilityRequest;
 import com.amazonaws.services.sqs.model.CreateQueueRequest;
 import com.amazonaws.services.sqs.model.CreateQueueResult;
@@ -58,9 +45,20 @@ import com.amazonaws.services.sqs.model.SetQueueAttributesResult;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
-
+import com.netflix.conductor.metrics.Monitors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author Viren
@@ -278,12 +276,14 @@ public class SQSObservableQueue implements ObservableQueue {
 
 			ReceiveMessageResult result = client.receiveMessage(receiveMessageRequest);
 
-			return result.getMessages().stream()
+			List<Message> messages = result.getMessages().stream()
 					.map(msg -> new Message(msg.getMessageId(), msg.getBody(), msg.getReceiptHandle()))
 					.collect(Collectors.toList());
+			Monitors.recordEventQueueMessagesProcessed(QUEUE_TYPE, this.queueName, messages.size());
+			return messages;
 		} catch (Exception e) {
 			logger.error("Exception while getting messages from SQS ", e);
-			Monitors.recordObservableQMessageReceivedErrors("sqs");
+			Monitors.recordObservableQMessageReceivedErrors(QUEUE_TYPE);
 		}
 		return new ArrayList<>();
 	}

@@ -37,6 +37,8 @@ public class TaskSummary {
 	private static final TimeZone gmt = TimeZone.getTimeZone("GMT");
 	
 	private String workflowId;
+
+	private String workflowType;
 	
 	private String correlationId;
 	
@@ -75,6 +77,7 @@ public class TaskSummary {
     	this.taskDefName = task.getTaskDefName();
     	this.taskType = task.getTaskType();
 		this.workflowId = task.getWorkflowInstanceId();
+		this.workflowType = task.getWorkflowType();
 		this.correlationId = task.getCorrelationId();
 		this.scheduledTime = sdf.format(new Date(task.getScheduledTime()));
 		this.startTime = sdf.format(new Date(task.getStartTime()));
@@ -102,6 +105,10 @@ public class TaskSummary {
 	 */
 	public String getWorkflowId() {
 		return workflowId;
+	}
+
+	public String getWorkflowType() {
+		return workflowType;
 	}
 
 	/**

@@ -46,7 +46,7 @@ public class DynoObservableQueue implements ObservableQueue {
 
     private static final Logger logger = LoggerFactory.getLogger(DynoObservableQueue.class);
 
-    private static final String TYPE = "conductor";
+    private static final String QUEUE_TYPE = "conductor";
 
     private String queueName;
 
@@ -97,7 +97,7 @@ public class DynoObservableQueue implements ObservableQueue {
 
     @Override
     public String getType() {
-        return TYPE;
+        return QUEUE_TYPE;
     }
 
     @Override
@@ -113,10 +113,12 @@ public class DynoObservableQueue implements ObservableQueue {
     @VisibleForTesting
     private List<Message> receiveMessages() {
         try {
-            return queueDAO.pollMessages(queueName, pollCount, longPollTimeout);
+            List<Message> messages = queueDAO.pollMessages(queueName, pollCount, longPollTimeout);
+            Monitors.recordEventQueueMessagesProcessed(QUEUE_TYPE, queueName, messages.size());
+            return messages;
         } catch (Exception exception) {
             logger.error("Exception while getting messages from  queueDAO", exception);
-            Monitors.recordObservableQMessageReceivedErrors("dyno");
+            Monitors.recordObservableQMessageReceivedErrors(QUEUE_TYPE);
         }
         return new ArrayList<>();
     }
