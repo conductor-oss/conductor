@@ -29,22 +29,16 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.dao.index.ElasticSearchDAO;
+import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.redis.JedisMock;
 import org.apache.commons.lang.builder.EqualsBuilder;
-import org.elasticsearch.action.ActionFuture;
-import org.elasticsearch.action.ListenableActionFuture;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.common.unit.TimeValue;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import redis.clients.jedis.JedisCommands;
 
 import java.util.Arrays;
@@ -55,9 +49,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -65,19 +56,21 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doNothing;
 
 /**
  * @author Viren
  *
  */
+@RunWith(MockitoJUnitRunner.class)
 public class RedisExecutionDAOTest {
 
 	private RedisMetadataDAO metadataDAO;
 
 	private RedisExecutionDAO executionDAO;
+
+	@Mock
+	private IndexDAO indexDAO;
 
 	private static ObjectMapper objectMapper = new ObjectMapper();
 
@@ -96,79 +89,11 @@ public class RedisExecutionDAOTest {
 		JedisCommands jedisMock = new JedisMock();
 		DynoProxy dynoClient = new DynoProxy(jedisMock);
 
-		Client client = mock(Client.class);
-		BulkItemResponse[] responses = new BulkItemResponse[0];
-		BulkResponse response = new BulkResponse(responses, 1);
-		BulkRequestBuilder brb = mock(BulkRequestBuilder.class);
-
-		when(brb.add(any(IndexRequest.class))).thenReturn(brb);
-		ListenableActionFuture<BulkResponse> laf = mock(ListenableActionFuture.class);
-		when(laf.actionGet()).thenReturn(response);
-		when(brb.execute()).thenReturn(laf);
-		when(client.prepareBulk()).thenReturn(brb);
-		final UpdateResponse ur = new UpdateResponse();
-		when(client.update(any())).thenReturn(new ActionFuture<UpdateResponse>() {
-
-			@Override
-			public boolean isDone() {
-				return true;
-			}
-
-			@Override
-			public boolean isCancelled() {
-				return false;
-			}
-
-			@Override
-			public UpdateResponse get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse get() throws InterruptedException, ExecutionException {
-				return ur;
-			}
-
-			@Override
-			public boolean cancel(boolean mayInterruptIfRunning) {
-				return false;
-			}
-
-			@Override
-			public UpdateResponse actionGet(long timeout, TimeUnit unit) {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse actionGet(TimeValue timeout) {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse actionGet(long timeoutMillis) {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse actionGet(String timeout) {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse actionGet() {
-				return ur;
-			}
-		});
-		BulkRequestBuilder bulk = client.prepareBulk();
-		bulk = bulk.add(any(IndexRequest.class));
-		bulk.execute().actionGet();
-
-		when(client.prepareBulk().add(any(IndexRequest.class)).execute().actionGet()).thenReturn(response);
-
-		ElasticSearchDAO indexer = spy(new ElasticSearchDAO(client, config, objectMapper));
 		metadataDAO = new RedisMetadataDAO(dynoClient, objectMapper, config);
-		executionDAO = new RedisExecutionDAO(dynoClient, objectMapper, indexer, metadataDAO, config);
+		executionDAO = new RedisExecutionDAO(dynoClient, objectMapper, indexDAO, metadataDAO, config);
 
+		// Ignore indexing in Redis tests.
+		doNothing().when(indexDAO).indexTask(any(Task.class));
 	}
 
 	@Rule

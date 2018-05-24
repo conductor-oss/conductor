@@ -41,6 +41,7 @@ import com.google.inject.Guice;
 import com.google.inject.servlet.GuiceFilter;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.dao.es.EmbeddedElasticSearch;
+import com.netflix.conductor.dao.es5.EmbeddedElasticSearchV5;
 import com.netflix.conductor.redis.utils.JedisMock;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.Host.Status;
@@ -147,7 +148,13 @@ public class ConductorServer {
 		case memory:
 			jedis = new JedisMock();
 			try {
-				EmbeddedElasticSearch.start();
+				if (conductorConfig.getProperty("workflow.elasticsearch.version", "2").equals("5")){
+					EmbeddedElasticSearchV5.start();
+				}
+				else {
+					// Use ES2 as default.
+					EmbeddedElasticSearch.start();
+				}
 				if(System.getProperty("workflow.elasticsearch.url") == null) {
 					System.setProperty("workflow.elasticsearch.url", "localhost:9300");
 				}

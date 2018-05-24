@@ -20,11 +20,6 @@ package com.netflix.conductor.dao.es5.index.query.parser;
 
 import org.junit.Test;
 
-import com.netflix.conductor.dao.es5.index.query.parser.ConstValue;
-import com.netflix.conductor.dao.es5.index.query.parser.Expression;
-import com.netflix.conductor.dao.es5.index.query.parser.GroupedExpression;
-import com.netflix.conductor.dao.es5.index.query.parser.NameValue;
-
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
