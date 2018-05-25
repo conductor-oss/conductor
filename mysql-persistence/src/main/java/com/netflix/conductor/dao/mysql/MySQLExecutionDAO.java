@@ -528,6 +528,8 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
             removeTaskInProgress(connection, task);
         }
 
+        addWorkflowToTaskMapping(connection, task);
+
         indexer.indexTask(task);
     }
 
