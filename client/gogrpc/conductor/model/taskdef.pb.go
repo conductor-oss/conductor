@@ -39,7 +39,7 @@ func (x TaskDef_RetryLogic) String() string {
 	return proto.EnumName(TaskDef_RetryLogic_name, int32(x))
 }
 func (TaskDef_RetryLogic) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_taskdef_eb59d906db8eb198, []int{0, 0}
+	return fileDescriptor_taskdef_9dd365e0d8e63269, []int{0, 0}
 }
 
 type TaskDef_TimeoutPolicy int32
@@ -65,7 +65,7 @@ func (x TaskDef_TimeoutPolicy) String() string {
 	return proto.EnumName(TaskDef_TimeoutPolicy_name, int32(x))
 }
 func (TaskDef_TimeoutPolicy) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_taskdef_eb59d906db8eb198, []int{0, 1}
+	return fileDescriptor_taskdef_9dd365e0d8e63269, []int{0, 1}
 }
 
 type TaskDef struct {
@@ -90,7 +90,7 @@ func (m *TaskDef) Reset()         { *m = TaskDef{} }
 func (m *TaskDef) String() string { return proto.CompactTextString(m) }
 func (*TaskDef) ProtoMessage()    {}
 func (*TaskDef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_taskdef_eb59d906db8eb198, []int{0}
+	return fileDescriptor_taskdef_9dd365e0d8e63269, []int{0}
 }
 func (m *TaskDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TaskDef.Unmarshal(m, b)
@@ -201,9 +201,9 @@ func init() {
 	proto.RegisterEnum("com.netflix.conductor.proto.TaskDef_TimeoutPolicy", TaskDef_TimeoutPolicy_name, TaskDef_TimeoutPolicy_value)
 }
 
-func init() { proto.RegisterFile("model/taskdef.proto", fileDescriptor_taskdef_eb59d906db8eb198) }
+func init() { proto.RegisterFile("model/taskdef.proto", fileDescriptor_taskdef_9dd365e0d8e63269) }
 
-var fileDescriptor_taskdef_eb59d906db8eb198 = []byte{
+var fileDescriptor_taskdef_9dd365e0d8e63269 = []byte{
 	// 566 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x93, 0x4f, 0x6f, 0xd3, 0x40,
 	0x10, 0xc5, 0xeb, 0xa6, 0x69, 0xc9, 0x84, 0xa6, 0x66, 0x23, 0x8a, 0x55, 0x40, 0x58, 0xbd, 0xe0,

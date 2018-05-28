@@ -63,7 +63,7 @@ func (x WorkflowTask_Type) String() string {
 	return proto.EnumName(WorkflowTask_Type_name, int32(x))
 }
 func (WorkflowTask_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_workflowtask_5168db1c2690070f, []int{0, 0}
+	return fileDescriptor_workflowtask_24620b75c66c94aa, []int{0, 0}
 }
 
 type WorkflowTask struct {
@@ -94,7 +94,7 @@ func (m *WorkflowTask) Reset()         { *m = WorkflowTask{} }
 func (m *WorkflowTask) String() string { return proto.CompactTextString(m) }
 func (*WorkflowTask) ProtoMessage()    {}
 func (*WorkflowTask) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflowtask_5168db1c2690070f, []int{0}
+	return fileDescriptor_workflowtask_24620b75c66c94aa, []int{0}
 }
 func (m *WorkflowTask) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowTask.Unmarshal(m, b)
@@ -251,7 +251,7 @@ func (m *WorkflowTask_WorkflowTaskList) Reset()         { *m = WorkflowTask_Work
 func (m *WorkflowTask_WorkflowTaskList) String() string { return proto.CompactTextString(m) }
 func (*WorkflowTask_WorkflowTaskList) ProtoMessage()    {}
 func (*WorkflowTask_WorkflowTaskList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflowtask_5168db1c2690070f, []int{0, 0}
+	return fileDescriptor_workflowtask_24620b75c66c94aa, []int{0, 0}
 }
 func (m *WorkflowTask_WorkflowTaskList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowTask_WorkflowTaskList.Unmarshal(m, b)
@@ -287,10 +287,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/workflowtask.proto", fileDescriptor_workflowtask_5168db1c2690070f)
+	proto.RegisterFile("model/workflowtask.proto", fileDescriptor_workflowtask_24620b75c66c94aa)
 }
 
-var fileDescriptor_workflowtask_5168db1c2690070f = []byte{
+var fileDescriptor_workflowtask_24620b75c66c94aa = []byte{
 	// 774 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xa4, 0x55, 0xef, 0x6b, 0xdb, 0x3a,
 	0x14, 0x7d, 0x6e, 0x7e, 0x5f, 0xa7, 0xa9, 0xab, 0xd7, 0xbe, 0x9a, 0xbc, 0xf7, 0xb6, 0xd0, 0x7d,

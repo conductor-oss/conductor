@@ -51,7 +51,7 @@ func (x Workflow_WorkflowStatus) String() string {
 	return proto.EnumName(Workflow_WorkflowStatus_name, int32(x))
 }
 func (Workflow_WorkflowStatus) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_544173e0c7375d2a, []int{0, 0}
+	return fileDescriptor_workflow_827faed39aedc44b, []int{0, 0}
 }
 
 type Workflow struct {
@@ -81,7 +81,7 @@ func (m *Workflow) Reset()         { *m = Workflow{} }
 func (m *Workflow) String() string { return proto.CompactTextString(m) }
 func (*Workflow) ProtoMessage()    {}
 func (*Workflow) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_544173e0c7375d2a, []int{0}
+	return fileDescriptor_workflow_827faed39aedc44b, []int{0}
 }
 func (m *Workflow) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Workflow.Unmarshal(m, b)
@@ -228,9 +228,9 @@ func init() {
 	proto.RegisterEnum("com.netflix.conductor.proto.Workflow_WorkflowStatus", Workflow_WorkflowStatus_name, Workflow_WorkflowStatus_value)
 }
 
-func init() { proto.RegisterFile("model/workflow.proto", fileDescriptor_workflow_544173e0c7375d2a) }
+func init() { proto.RegisterFile("model/workflow.proto", fileDescriptor_workflow_827faed39aedc44b) }
 
-var fileDescriptor_workflow_544173e0c7375d2a = []byte{
+var fileDescriptor_workflow_827faed39aedc44b = []byte{
 	// 688 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0x6f, 0x4f, 0xd3, 0x40,
 	0x18, 0x77, 0x8c, 0x0d, 0xf6, 0x8c, 0xcd, 0x72, 0x4e, 0xa9, 0x60, 0xe2, 0xc4, 0x98, 0xec, 0x05,

@@ -60,7 +60,7 @@ func (x Task_Status) String() string {
 	return proto.EnumName(Task_Status_name, int32(x))
 }
 func (Task_Status) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_task_c6cd754250bb9501, []int{0, 0}
+	return fileDescriptor_task_64f7e1feb6072ed5, []int{0, 0}
 }
 
 type Task struct {
@@ -100,7 +100,7 @@ func (m *Task) Reset()         { *m = Task{} }
 func (m *Task) String() string { return proto.CompactTextString(m) }
 func (*Task) ProtoMessage()    {}
 func (*Task) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_c6cd754250bb9501, []int{0}
+	return fileDescriptor_task_64f7e1feb6072ed5, []int{0}
 }
 func (m *Task) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Task.Unmarshal(m, b)
@@ -316,9 +316,9 @@ func init() {
 	proto.RegisterEnum("com.netflix.conductor.proto.Task_Status", Task_Status_name, Task_Status_value)
 }
 
-func init() { proto.RegisterFile("model/task.proto", fileDescriptor_task_c6cd754250bb9501) }
+func init() { proto.RegisterFile("model/task.proto", fileDescriptor_task_64f7e1feb6072ed5) }
 
-var fileDescriptor_task_c6cd754250bb9501 = []byte{
+var fileDescriptor_task_64f7e1feb6072ed5 = []byte{
 	// 899 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0x5d, 0x6f, 0xdb, 0x36,
 	0x14, 0x9d, 0xf2, 0xe1, 0x8f, 0xab, 0xd8, 0x56, 0x99, 0xc4, 0x61, 0x9c, 0x0d, 0x35, 0x32, 0x74,

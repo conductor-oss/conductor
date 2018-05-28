@@ -52,25 +52,25 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     }
 
     @Override
-    public StreamObserver<TaskServicePb.PollRequest> pollStream(StreamObserver<TaskPb.Task> observer) {
+    public StreamObserver<TaskServicePb.StreamingPollRequest> pollStream(StreamObserver<TaskPb.Task> observer) {
         final ServerCallStreamObserver<TaskPb.Task> responseObserver =
                 (ServerCallStreamObserver<TaskPb.Task>) observer;
 
-        return new StreamObserver<TaskServicePb.PollRequest>() {
-            int pending = 0;
-
+        return new StreamObserver<TaskServicePb.StreamingPollRequest>() {
             @Override
-            public void onNext(TaskServicePb.PollRequest req) {
-                pending += req.getTaskCount();
-
+            public void onNext(TaskServicePb.StreamingPollRequest req) {
                 try {
-                    List<Task> tasks = taskService.poll(
-                            req.getTaskType(), req.getWorkerId(), req.getDomain(),
-                            pending, POLL_TIMEOUT_MS);
+                    for (TaskResultPb.TaskResult result : req.getCompletedList()) {
+                        TaskResult task = ProtoMapper.fromProto(result);
+                        taskService.updateTask(task);
+                    }
 
-                    for (Task task : tasks) {
+                    List<Task> newTasks = taskService.poll(
+                            req.getTaskType(), req.getWorkerId(), req.getDomain(),
+                            req.getCapacity(), POLL_TIMEOUT_MS);
+
+                    for (Task task : newTasks) {
                         responseObserver.onNext(ProtoMapper.toProto(task));
-                        pending--;
                     }
                 } catch (Exception e) {
                     responseObserver.onError(e);
