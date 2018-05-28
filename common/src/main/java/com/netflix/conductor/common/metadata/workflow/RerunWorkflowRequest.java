@@ -15,18 +15,27 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
+
 import java.util.Map;
 
+@ProtoMessage(toProto = false)
 public class RerunWorkflowRequest {
 
+    @ProtoField(id = 1)
 	private String reRunFromWorkflowId;
 
+    @ProtoField(id = 2)
 	private Map<String, Object> workflowInput;
-	
+
+    @ProtoField(id = 3)
 	private String reRunFromTaskId;
 
+    @ProtoField(id = 4)
 	private Map<String, Object> taskInput;
 
+    @ProtoField(id = 5)
 	private String correlationId;
 
 	public String getReRunFromWorkflowId() {

@@ -23,6 +23,8 @@ import java.util.Date;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
 
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 
 /**
@@ -30,39 +32,54 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
  *
  * @author Viren
  */
+@ProtoMessage(fromProto = false)
 public class WorkflowSummary {
 
 	/**
 	 * The time should be stored as GMT
 	 */
 	private static final TimeZone gmt = TimeZone.getTimeZone("GMT");
-	
+
+	@ProtoField(id = 1)
 	private String workflowType;
-	
+
+	@ProtoField(id = 2)
 	private int version;
-	
+
+	@ProtoField(id = 3)
 	private String workflowId;
-	
+
+	@ProtoField(id = 4)
 	private String correlationId;
-	
+
+	@ProtoField(id = 5)
 	private String startTime;
-	
+
+	@ProtoField(id = 6)
 	private String updateTime;
-	
+
+	@ProtoField(id = 7)
 	private String endTime;
-	
+
+	@ProtoField(id = 8)
 	private WorkflowStatus status;
-	
+
+	@ProtoField(id = 9)
 	private String input;
-	
+
+	@ProtoField(id = 10)
 	private String output;
-	
+
+	@ProtoField(id = 11)
 	private String reasonForIncompletion;
-	
+
+	@ProtoField(id = 12)
 	private long executionTime;
-	
+
+	@ProtoField(id = 13)
 	private String event;
 
+	@ProtoField(id = 14)
 	private String failedReferenceTaskNames = "";
 	
 	public WorkflowSummary() {

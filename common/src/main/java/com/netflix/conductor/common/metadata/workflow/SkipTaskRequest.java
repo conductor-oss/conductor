@@ -15,11 +15,17 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
+
 import java.util.Map;
 
+@ProtoMessage(toProto = false)
 public class SkipTaskRequest {
+	@ProtoField(id = 1)
 	private Map<String, Object> taskInput;
-	
+
+	@ProtoField(id = 2)
 	private Map<String, Object> taskOutput;
 
 	public Map<String, Object> getTaskInput() {

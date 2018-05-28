@@ -25,28 +25,39 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.Auditable;
 
 /**
  * @author Viren
  *
  */
+@ProtoMessage
 public class WorkflowDef extends Auditable {
 
+	@ProtoField(id = 1)
 	private String name;
-	
+
+	@ProtoField(id = 2)
 	private String description;
-	
+
+	@ProtoField(id = 3)
 	private int version = 1;
-	
+
+	@ProtoField(id = 4)
 	private LinkedList<WorkflowTask> tasks = new LinkedList<WorkflowTask>();
-	
+
+	@ProtoField(id = 5)
 	private List<String> inputParameters = new LinkedList<String>();
-	
+
+	@ProtoField(id = 6)
 	private Map<String, Object> outputParameters = new HashMap<>();
 
+	@ProtoField(id = 7)
 	private String failureWorkflow;
-	
+
+	@ProtoField(id = 8)
 	private int schemaVersion = 1;
 	
 	/**

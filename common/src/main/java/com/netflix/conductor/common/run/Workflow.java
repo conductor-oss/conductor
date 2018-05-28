@@ -22,12 +22,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.netflix.conductor.common.annotations.ProtoEnum;
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.tasks.Task;
 
 
+@ProtoMessage
 public class Workflow extends Auditable{
-	
+
+	@ProtoEnum
 	public enum  WorkflowStatus {
 		RUNNING(false, false), COMPLETED(true, true), FAILED(true, false), TIMED_OUT(true, false), TERMINATED(true, false), PAUSED(false, true);
 		
@@ -48,39 +53,56 @@ public class Workflow extends Auditable{
 			return successful;
 		}
 	}
-	
+
+	@ProtoField(id = 1)
 	private WorkflowStatus status = WorkflowStatus.RUNNING;
-	
+
+	@ProtoField(id = 2)
 	private long endTime;
 
+	@ProtoField(id = 3)
 	private String workflowId;
-	
+
+	@ProtoField(id = 4)
 	private String parentWorkflowId;
 
+	@ProtoField(id = 5)
 	private String parentWorkflowTaskId;
 
+	@ProtoField(id = 6)
 	private List<Task> tasks = new LinkedList<>();
-	
+
+	@ProtoField(id = 8)
 	private Map<String, Object> input = new HashMap<>();
-	
+
+	@ProtoField(id = 9)
 	private Map<String, Object> output = new HashMap<>();;
-	
+
+	@ProtoField(id = 10)
 	private String workflowType;
-	
+
+	@ProtoField(id = 11)
 	private int version;
-	
+
+	@ProtoField(id = 12)
 	private String correlationId;
-	
+
+	@ProtoField(id = 13)
 	private String reRunFromWorkflowId;
-	
+
+	@ProtoField(id = 14)
 	private String reasonForIncompletion;
-	
+
+	@ProtoField(id = 15)
 	private int schemaVersion;
-	
+
+	@ProtoField(id = 16)
 	private String event;
 
+	@ProtoField(id = 17)
 	private Map<String, String> taskToDomain = new HashMap<>();
 
+	@ProtoField(id = 18)
 	private Set<String> failedReferenceTaskNames = new HashSet<>();
 
 	public Workflow(){

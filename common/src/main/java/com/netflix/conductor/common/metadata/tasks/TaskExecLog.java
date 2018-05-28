@@ -18,16 +18,23 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
+
 /**
  * @author Viren
  * Model that represents the task's execution log.
  */
+@ProtoMessage
 public class TaskExecLog {
-	
+
+	@ProtoField(id = 1)
 	private String log;
-	
+
+	@ProtoField(id = 2)
 	private String taskId;
-	
+
+	@ProtoField(id = 3)
 	private long createdTime;
 	
 	public TaskExecLog() {}

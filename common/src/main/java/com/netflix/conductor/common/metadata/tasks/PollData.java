@@ -1,5 +1,8 @@
 package com.netflix.conductor.common.metadata.tasks;
 
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
+
 /**
  * Copyright 2016 Netflix, Inc.
  *
@@ -15,10 +18,18 @@ package com.netflix.conductor.common.metadata.tasks;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+@ProtoMessage
 public class PollData {
+	@ProtoField(id = 1)
 	String queueName;
+
+	@ProtoField(id = 2)
 	String domain;
+
+	@ProtoField(id = 3)
 	String workerId;
+
+	@ProtoField(id = 4)
 	long lastPollTime;
 	
 	public PollData() {

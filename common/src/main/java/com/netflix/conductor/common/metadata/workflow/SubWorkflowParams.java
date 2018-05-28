@@ -18,15 +18,21 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
+
 /**
  * @author Viren
  *
  */
+@ProtoMessage
 public class SubWorkflowParams {
 
+    @ProtoField(id = 1)
     private String name;
 
     //QQ why is this an object ??
+    @ProtoField(id = 2)
     private Object version;
 
     /**
