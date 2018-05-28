@@ -1,0 +1,12 @@
+syntax = "proto3";
+package com.netflix.conductor.proto;
+
+import "google/protobuf/struct.proto";
+
+option java_outer_classname = "SkipTaskRequestPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message SkipTaskRequest {
+    map<string, google.protobuf.Value> task_input = 1;
+    map<string, google.protobuf.Value> task_output = 2;
+}

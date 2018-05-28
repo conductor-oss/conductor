@@ -1,0 +1,70 @@
+syntax = "proto3";
+package com.netflix.conductor.grpc;
+
+import "google/protobuf/empty.proto";
+import "model/taskexeclog.proto";
+import "model/taskresult.proto";
+import "model/task.proto";
+
+option java_outer_classname = "TaskServicePb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
+
+service TaskService {
+    rpc Poll(PollRequest) returns (com.netflix.conductor.proto.Task);
+    rpc PollStream(stream PollRequest) returns (stream com.netflix.conductor.proto.Task);
+    rpc GetTasksInProgress(TasksInProgressRequest) returns (TasksInProgressResponse);
+    rpc GetPendingTaskForWorkflow(PendingTaskRequest) returns (com.netflix.conductor.proto.Task);
+    rpc UpdateTask(com.netflix.conductor.proto.TaskResult) returns (TaskUpdateResponse);
+    rpc AckTask(AckTaskRequest) returns (AckTaskResponse);
+
+    rpc AddLog(AddLogRequest) returns (google.protobuf.Empty);
+    rpc GetLogs(TaskId) returns (GetLogsResponse);
+}
+
+message PollRequest {
+    string task_type = 1;
+    string worker_id = 2;
+    string domain = 3;
+    int32 task_count = 4;
+}
+
+message TasksInProgressRequest {
+    string task_type = 1;
+    string start_key = 2;
+    int32 count = 3;
+}
+
+message TasksInProgressResponse {
+    repeated com.netflix.conductor.proto.Task tasks = 1;
+}
+
+message PendingTaskRequest {
+    string workflow_id = 1;
+    string task_ref_name = 2;
+}
+
+message TaskUpdateResponse {
+    string task_id = 1;
+}
+
+message AckTaskRequest {
+    string task_id = 1;
+    string worker_id = 2;
+}
+
+message AckTaskResponse {
+    bool ack = 1;
+}
+
+message AddLogRequest {
+    string task_id = 1;
+    string log = 2;
+}
+
+message TaskId {
+    string task_id = 1;
+}
+
+message GetLogsResponse {
+    repeated com.netflix.conductor.proto.TaskExecLog logs = 1;
+}

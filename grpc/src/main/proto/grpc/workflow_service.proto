@@ -1,0 +1,110 @@
+syntax = "proto3";
+package com.netflix.conductor.grpc;
+
+import "google/protobuf/empty.proto";
+import "grpc/search.proto";
+import "model/workflow.proto";
+import "model/skiptaskrequest.proto";
+import "model/startworkflowrequest.proto";
+import "model/rerunworkflowrequest.proto";
+
+option java_outer_classname = "WorkflowServicePb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
+
+service WorkflowService {
+    // POST /
+    rpc StartWorkflow(com.netflix.conductor.proto.StartWorkflowRequest) returns (WorkflowId);
+
+    // GET /{name}/correlated/{correlationId}
+    rpc GetWorkflows(GetWorkflowsRequest) returns (GetWorkflowsResponse);
+
+    // GET /{workflowId}
+    rpc GetWorkflowStatus(GetWorkflowStatusRequest) returns (com.netflix.conductor.proto.Workflow);
+
+    // DELETE /{workflodId}/remove
+    rpc RemoveWorkflow(RemoveWorkflowRequest) returns (google.protobuf.Empty);
+
+    // GET /running/{name}
+    rpc GetRunningWorkflows(GetRunningWorkflowsRequest) returns (GetRunningWorkflowsResponse);
+
+    // PUT /decide/{workflowId}
+    rpc DecideWorkflow(WorkflowId) returns (google.protobuf.Empty);
+
+    // PUT /{workflowId}/pause
+    rpc PauseWorkflow(WorkflowId) returns (google.protobuf.Empty);
+
+    // PUT /{workflowId}/pause
+    rpc ResumeWorkflow(WorkflowId) returns (google.protobuf.Empty);
+
+    // PUT /{workflowId}/skiptask/{taskReferenceName}
+    rpc SkipTaskFromWorkflow(SkipTaskRequest) returns (google.protobuf.Empty);
+
+    // POST /{workflowId}/rerun
+    rpc RerunWorkflow(com.netflix.conductor.proto.RerunWorkflowRequest) returns (WorkflowId);
+
+    // POST /{workflowId}/restart
+    rpc RestartWorkflow(WorkflowId) returns (google.protobuf.Empty);
+
+    // POST /{workflowId}retry
+    rpc RetryWorkflow(WorkflowId) returns (google.protobuf.Empty);
+
+    // POST /{workflowId}/resetcallbacks
+    rpc ResetWorkflowCallbacks(WorkflowId) returns (google.protobuf.Empty);
+
+    // DELETE /{workflowId}
+    rpc TerminateWorkflow(TerminateWorkflowRequest) returns (google.protobuf.Empty);
+
+    // GET /search
+    rpc Search(SearchRequest) returns (WorkflowSummarySearchResult);
+    rpc SearchByTasks(SearchRequest) returns (WorkflowSummarySearchResult);
+}
+
+message GetWorkflowsRequest {
+    string name = 1;
+    repeated string correlation_id = 2;
+    bool include_closed = 3;
+    bool include_tasks = 4;
+}
+
+message GetWorkflowsResponse {
+    message Workflows {
+        repeated com.netflix.conductor.proto.Workflow workflows = 1;
+    }
+    map<string, Workflows> workflows_by_id = 1;
+}
+
+message GetWorkflowStatusRequest {
+    string workflow_id = 1;
+    bool include_tasks = 2;
+}
+
+message RemoveWorkflowRequest {
+    string workflod_id = 1;
+    bool archive_workflow = 2;
+}
+
+message GetRunningWorkflowsRequest {
+    string name = 1;
+    int32 version = 2;
+    int64 start_time = 3;
+    int64 end_time = 4;
+}
+
+message GetRunningWorkflowsResponse {
+    repeated string workflow_ids = 1;
+}
+
+message WorkflowId {
+    string workflow_id = 1;
+}
+
+message SkipTaskRequest {
+    string workflow_id = 1;
+    string task_reference_name = 2;
+    com.netflix.conductor.proto.SkipTaskRequest request = 3;
+}
+
+message TerminateWorkflowRequest {
+    string workflow_id = 1;
+    string reason = 2;
+}

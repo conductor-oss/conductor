@@ -3,5 +3,6 @@ rootProject.name='conductor'
 include 'client','common','contribs','core','es5-persistence','jersey','mysql-persistence'
 include 'redis-persistence','server','test-harness','ui'
 include 'protogen'
+include 'grpc'
 
 rootProject.children.each {it.name="conductor-${it.name}"}

@@ -1,0 +1,55 @@
+syntax = "proto3";
+package com.netflix.conductor.grpc;
+
+import "google/protobuf/empty.proto";
+import "model/taskdef.proto";
+import "model/workflowdef.proto";
+
+option java_outer_classname = "MetadataServicePb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
+
+service MetadataService {
+    // POST /workflow
+    rpc CreateWorkflow(com.netflix.conductor.proto.WorkflowDef) returns (google.protobuf.Empty);
+
+    // PUT /workflow
+    rpc UpdateWorkflows(UpdateWorkflowsRequest) returns (google.protobuf.Empty);
+
+    // GET /workflow/{name}
+    rpc GetWorkflow(GetWorkflowRequest) returns (com.netflix.conductor.proto.WorkflowDef);
+
+    // GET /workflow
+    rpc GetAllWorkflows(google.protobuf.Empty) returns (stream com.netflix.conductor.proto.WorkflowDef);
+
+    // POST /taskdefs
+    rpc CreateTasks(CreateTasksRequest) returns (google.protobuf.Empty);
+
+    // PUT /taskdefs
+    rpc UpdateTask(com.netflix.conductor.proto.TaskDef) returns (google.protobuf.Empty);
+
+    // GET /taskdefs/{tasktype}
+    rpc GetTask(GetTaskRequest) returns (com.netflix.conductor.proto.TaskDef);
+
+    // GET /taskdefs
+    rpc GetAllTasks(google.protobuf.Empty) returns (stream com.netflix.conductor.proto.TaskDef);
+
+    // DELETE /taskdefs/{tasktype}
+    rpc DeleteTask(GetTaskRequest) returns (google.protobuf.Empty);
+}
+
+message UpdateWorkflowsRequest {
+    repeated com.netflix.conductor.proto.WorkflowDef defs = 1;
+}
+
+message CreateTasksRequest {
+    repeated com.netflix.conductor.proto.TaskDef defs = 1;
+}
+
+message GetWorkflowRequest {
+    string name = 1;
+    int32 version = 2;
+}
+
+message GetTaskRequest {
+    string task_type = 1;
+}
