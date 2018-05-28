@@ -1,0 +1,6 @@
+dependencies {
+    compile project(':conductor-common')
+    compile 'com.squareup:javapoet:1.11.1'
+    compile 'com.google.guava:guava:25.0-jre'
+    compile 'com.github.jknack:handlebars:4.0.6'
+}
