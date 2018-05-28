@@ -1,0 +1,15 @@
+plugins {
+    id 'net.ltgt.apt' version '0.8'
+}
+
+dependencies {
+    compile project(':conductor-common')
+    compile project(':conductor-core')
+    compile project(':conductor-grpc')
+
+    //FIXME Right now this brings a lot of stuff along for the ride. :-(
+    compile project(':conductor-server')
+
+    compile "io.grpc:grpc-netty:${revGrpc}"
+    compile "log4j:log4j:1.2.17"
+}
