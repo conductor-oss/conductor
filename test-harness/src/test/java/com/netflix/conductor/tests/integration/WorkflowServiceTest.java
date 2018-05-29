@@ -1161,6 +1161,9 @@ public class WorkflowServiceTest {
         TaskResult taskResult = new TaskResult(task);
         taskResult.setReasonForIncompletion("NON TRANSIENT ERROR OCCURRED: An integration point required to complete the task is down");
         taskResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
+        /*Map<String, Object> outputData = new HashMap<>();
+        outputData.put("TERMINAL_ERROR", "Integration endpoint down: FOOBAR");*/
+        taskResult.addOutputData("TERMINAL_ERROR", "Integration endpoint down: FOOBAR");
 
         workflowExecutionService.updateTask(taskResult);
         workflowExecutor.decide(workflowInstanceId);
@@ -1173,6 +1176,8 @@ public class WorkflowServiceTest {
         assertEquals("NON TRANSIENT ERROR OCCURRED: An integration point required to complete the task is down",es.getReasonForIncompletion());
         assertEquals(1 ,junit_task_1.getRetryCount()); //Configured retries at the task definition level
         assertEquals(0, t1.getRetryCount()); //Actual retries done on the task
+        assertEquals(true, es.getOutput().containsKey("TERMINAL_ERROR"));
+        assertEquals("Integration endpoint down: FOOBAR", es.getOutput().get("TERMINAL_ERROR"));
 
     }
 
