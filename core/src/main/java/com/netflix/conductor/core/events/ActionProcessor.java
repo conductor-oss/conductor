@@ -68,19 +68,19 @@ public class ActionProcessor {
 
 		logger.debug("Executing {}", action.getAction());
 		Object jsonObj = om.readValue(payload, Object.class);
-		if(action.isExpandInlineJSON()) {
+		if(action.isExpandInlineJson()) {
 			jsonObj = expand(jsonObj);
 		}
 
 		switch (action.getAction()) {
-			case start_workflow:
+			case START_WORKFLOW:
 				Map<String, Object> op = startWorkflow(action, jsonObj, event, messageId);
 				return op;
-			case complete_task:
-				op = completeTask(action, jsonObj, action.getComplete_task(), Status.COMPLETED, event, messageId);
+			case COMPLETE_TASK:
+				op = completeTask(action, jsonObj, action.getCompleteTask(), Status.COMPLETED, event, messageId);
 				return op;
-			case fail_task:
-				op = completeTask(action, jsonObj, action.getFail_task(), Status.FAILED, event, messageId);
+			case FAIL_TASK:
+				op = completeTask(action, jsonObj, action.getFailTask(), Status.FAILED, event, messageId);
 				return op;
 			default:
 				break;
@@ -125,7 +125,7 @@ public class ActionProcessor {
 	}
 
 	private Map<String, Object> startWorkflow(Action action, Object payload, String event, String messageId) throws Exception {
-		StartWorkflow params = action.getStart_workflow();
+		StartWorkflow params = action.getStartWorkflow();
 		Map<String, Object> op = new HashMap<>();
 		try {
 			

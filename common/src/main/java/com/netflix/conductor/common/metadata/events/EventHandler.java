@@ -18,6 +18,10 @@
  */
 package com.netflix.conductor.common.metadata.events;
 
+import com.netflix.conductor.common.annotations.ProtoEnum;
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,16 +31,22 @@ import java.util.Map;
  * @author Viren
  * Defines an event handler
  */
+@ProtoMessage
 public class EventHandler {
 
+	@ProtoField(id = 1)
 	private String name;
-	
+
+	@ProtoField(id = 2)
 	private String event;
-	
+
+	@ProtoField(id = 3)
 	private String condition;
 	
+	@ProtoField(id = 4)
 	private List<Action> actions = new LinkedList<>();
-	
+
+	@ProtoField(id = 5)
 	private boolean active;
 	
 	public EventHandler() {
@@ -119,19 +129,26 @@ public class EventHandler {
 	}
 
 
+	@ProtoMessage
 	public static class Action {
-		
-		public enum Type { start_workflow, complete_task, fail_task }
-		
+
+		@ProtoEnum
+		public enum Type { START_WORKFLOW, COMPLETE_TASK, FAIL_TASK }
+
+		@ProtoField(id = 1)
 		private Type action;
-		
-		private StartWorkflow start_workflow;
-		
-		private TaskDetails complete_task;
-		
-		private TaskDetails fail_task;
-		
-		private boolean expandInlineJSON;
+
+		@ProtoField(id = 2)
+		private StartWorkflow startWorkflow;
+
+		@ProtoField(id = 3)
+		private TaskDetails completeTask;
+
+		@ProtoField(id = 4)
+		private TaskDetails failTask;
+
+		@ProtoField(id = 5)
+		private boolean expandInlineJson;
 
 		/**
 		 * @return the action
@@ -149,73 +166,77 @@ public class EventHandler {
 		}
 
 		/**
-		 * @return the start_workflow
+		 * @return the startWorkflow
 		 */
-		public StartWorkflow getStart_workflow() {
-			return start_workflow;
+		public StartWorkflow getStartWorkflow() {
+			return startWorkflow;
 		}
 
 		/**
-		 * @param start_workflow the start_workflow to set
+		 * @param startWorkflow the startWorkflow to set
 		 * 
 		 */
-		public void setStart_workflow(StartWorkflow start_workflow) {
-			this.start_workflow = start_workflow;
+		public void setStartWorkflow(StartWorkflow startWorkflow) {
+			this.startWorkflow = startWorkflow;
 		}
 
 		/**
-		 * @return the complete_task
+		 * @return the completeTask
 		 */
-		public TaskDetails getComplete_task() {
-			return complete_task;
+		public TaskDetails getCompleteTask() {
+			return completeTask;
 		}
 
 		/**
-		 * @param complete_task the complete_task to set
+		 * @param completeTask the completeTask to set
 		 * 
 		 */
-		public void setComplete_task(TaskDetails complete_task) {
-			this.complete_task = complete_task;
+		public void setCompleteTask(TaskDetails completeTask) {
+			this.completeTask = completeTask;
 		}
 
 		/**
-		 * @return the fail_task
+		 * @return the failTask
 		 */
-		public TaskDetails getFail_task() {
-			return fail_task;
+		public TaskDetails getFailTask() {
+			return failTask;
 		}
 
 		/**
-		 * @param fail_task the fail_task to set
+		 * @param failTask the failTask to set
 		 * 
 		 */
-		public void setFail_task(TaskDetails fail_task) {
-			this.fail_task = fail_task;
+		public void setFailTask(TaskDetails failTask) {
+			this.failTask = failTask;
 		}
 		
 		/**
 		 * 
-		 * @param expandInlineJSON when set to true, the in-lined JSON strings are expanded to a full json document 
+		 * @param expandInlineJson when set to true, the in-lined JSON strings are expanded to a full json document
 		 */
-		public void setExpandInlineJSON(boolean expandInlineJSON) {
-			this.expandInlineJSON = expandInlineJSON;
+		public void setExpandInlineJson(boolean expandInlineJson) {
+			this.expandInlineJson = expandInlineJson;
 		}
 		
 		/**
 		 * 
 		 * @return true if the json strings within the payload should be expanded.
 		 */
-		public boolean isExpandInlineJSON() {
-			return expandInlineJSON;
+		public boolean isExpandInlineJson() {
+			return expandInlineJson;
 		}
 	}
-	
+
+	@ProtoMessage
 	public static class TaskDetails {
-		
+
+		@ProtoField(id = 1)
 		private String workflowId;
-		
+
+		@ProtoField(id = 2)
 		private String taskRefName;
-		
+
+		@ProtoField(id = 3)
 		private Map<String, Object> output = new HashMap<>();
 
 		/**
@@ -266,15 +287,20 @@ public class EventHandler {
 		
 		
 	}
-	
+
+	@ProtoMessage
 	public static class StartWorkflow {
-		
+
+		@ProtoField(id = 1)
 		private String name;
-		
+
+		@ProtoField(id = 2)
 		private Integer version;
-		
+
+		@ProtoField(id = 3)
 		private String correlationId;
-		
+
+		@ProtoField(id = 4)
 		private Map<String, Object> input = new HashMap<>();
 
 		/**

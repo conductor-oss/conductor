@@ -54,7 +54,7 @@ public class EventExecution {
 	@ProtoField(id = 6)
 	private Status status;
 
-	// TODO: Proto
+	@ProtoField(id = 7)
 	private Action.Type action;
 
 	@ProtoField(id = 8)
