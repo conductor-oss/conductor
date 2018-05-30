@@ -30,7 +30,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
             service.registerWorkflowDef(ProtoMapper.fromProto(req));
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -45,7 +45,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
             service.updateWorkflowDef(workflows);
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 

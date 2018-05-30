@@ -74,7 +74,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             response.onNext(newWorkflowId(id));
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -106,7 +106,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             response.onNext(ProtoMapper.toProto(workflow));
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -116,7 +116,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             service.removeWorkflow(req.getWorkflodId(), req.getArchiveWorkflow());
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -138,7 +138,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             );
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -148,7 +148,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.decide(req.getWorkflowId());
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -158,7 +158,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.pauseWorkflow(req.getWorkflowId());
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -168,7 +168,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.resumeWorkflow(req.getWorkflowId());
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -179,7 +179,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.skipTaskFromWorkflow(req.getWorkflowId(), req.getTaskReferenceName(), skipTask);
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -190,7 +190,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             response.onNext(newWorkflowId(id));
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -200,7 +200,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.rewind(req.getWorkflowId());
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -210,7 +210,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.retry(req.getWorkflowId());
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -220,7 +220,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.resetCallbacksForInProgressTasks(req.getWorkflowId());
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -230,7 +230,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.terminateWorkflow(req.getWorkflowId(), req.getReason());
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 

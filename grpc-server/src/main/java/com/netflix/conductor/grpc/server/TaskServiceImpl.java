@@ -47,7 +47,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             }
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -73,7 +73,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
                         responseObserver.onNext(ProtoMapper.toProto(task));
                     }
                 } catch (Exception e) {
-                    responseObserver.onError(e);
+                    GRPCUtil.onError(observer, e);
                 }
             }
 
@@ -105,7 +105,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             response.onNext(builder.build());
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -116,7 +116,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             response.onNext(ProtoMapper.toProto(t));
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -133,7 +133,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             response.onNext(resp);
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
@@ -146,7 +146,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             response.onNext(resp);
             response.onCompleted();
         } catch (Exception e) {
-            response.onError(e);
+            GRPCUtil.onError(response, e);
         }
     }
 
