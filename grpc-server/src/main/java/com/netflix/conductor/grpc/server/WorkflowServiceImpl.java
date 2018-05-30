@@ -250,15 +250,20 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             return;
         }
 
-        SearchResult<WorkflowSummary> searchResult;
+        SearchResult<WorkflowSummary> search;
         if (searchByTask) {
-            searchResult = service.searchWorkflowByTasks(query, freeText, start, size, sort);
+            search = service.searchWorkflowByTasks(query, freeText, start, size, sort);
         } else {
-            searchResult = service.search(query, freeText, start, size, sort);
+            search = service.search(query, freeText, start, size, sort);
         }
 
-        // TODO
-        // response.onNext(ProtoMapper.toProto(searchResult));
+        response.onNext(
+            SearchPb.WorkflowSummarySearchResult.newBuilder()
+                .setTotalHits(search.getTotalHits())
+                .addAllResults(
+                    search.getResults().stream().map(ProtoMapper::toProto)::iterator
+                ).build()
+        );
         response.onCompleted();
     }
 
