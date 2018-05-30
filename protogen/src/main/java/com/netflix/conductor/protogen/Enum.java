@@ -61,7 +61,7 @@ public class Enum extends Element {
 
         @Override
         public String getProtoTypeDeclaration() {
-            return String.format("%s = %d", getName(), getProtoIndex());
+            return String.format("%s = %d", getName().toUpperCase(), getProtoIndex());
         }
     }
 }

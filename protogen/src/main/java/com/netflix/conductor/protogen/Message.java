@@ -1,6 +1,5 @@
 package com.netflix.conductor.protogen;
 
-import com.google.common.base.CaseFormat;
 import com.netflix.conductor.common.annotations.ProtoField;
 import com.netflix.conductor.common.annotations.ProtoMessage;
 import com.netflix.conductor.protogen.types.AbstractType;
@@ -11,6 +10,8 @@ import com.squareup.javapoet.TypeSpec;
 
 import javax.lang.model.element.Modifier;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Message extends Element {
     public Message(Class cls, MessageType parent) {
@@ -96,11 +97,22 @@ public class Message extends Element {
             return type;
         }
 
+        private static Pattern CAMEL_CASE_RE = Pattern.compile("(?<=[a-z])[A-Z]");
+        private static String toUnderscoreCase(String input) {
+            Matcher m = CAMEL_CASE_RE.matcher(input);
+            StringBuffer sb = new StringBuffer();
+            while (m.find()) {
+                m.appendReplacement(sb, "_" + m.group());
+            }
+            m.appendTail(sb);
+            return sb.toString().toLowerCase();
+        }
+
         @Override
         public String getProtoTypeDeclaration() {
             return String.format("%s %s = %d",
                     getAbstractType().getProtoType(),
-                    CaseFormat.LOWER_CAMEL.to(CaseFormat.LOWER_UNDERSCORE, getName()),
+                    toUnderscoreCase(getName()),
                     getProtoIndex());
         }
 

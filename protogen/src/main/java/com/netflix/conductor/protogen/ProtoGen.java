@@ -31,6 +31,7 @@ public class ProtoGen {
         ProtoGen generator = new ProtoGen();
 
         generator.process(com.netflix.conductor.common.metadata.events.EventExecution.class);
+        generator.process(com.netflix.conductor.common.metadata.events.EventHandler.class);
 
         generator.process(com.netflix.conductor.common.metadata.tasks.PollData.class);
         generator.process(com.netflix.conductor.common.metadata.tasks.Task.class);
