@@ -2,6 +2,7 @@ package com.netflix.conductor.grpc.server;
 
 import com.google.protobuf.Value;
 import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -21,6 +22,7 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.proto.DynamicForkJoinTaskListPb;
 import com.netflix.conductor.proto.DynamicForkJoinTaskPb;
 import com.netflix.conductor.proto.EventExecutionPb;
+import com.netflix.conductor.proto.EventHandlerPb;
 import com.netflix.conductor.proto.PollDataPb;
 import com.netflix.conductor.proto.RerunWorkflowRequestPb;
 import com.netflix.conductor.proto.SkipTaskRequestPb;
@@ -57,6 +59,7 @@ public final class ProtoMapper extends ProtoMapperBase {
         to.setEvent( from.getEvent() );
         to.setCreated( from.getCreated() );
         to.setStatus( toProto( from.getStatus() ) );
+        to.setAction( toProto( from.getAction() ) );
         for (Map.Entry<String, Object> pair : from.getOutput().entrySet()) {
             to.putOutput( pair.getKey(), toProto( pair.getValue() ) );
         }
@@ -71,6 +74,7 @@ public final class ProtoMapper extends ProtoMapperBase {
         to.setEvent( from.getEvent() );
         to.setCreated( from.getCreated() );
         to.setStatus( fromProto( from.getStatus() ) );
+        to.setAction( fromProto( from.getAction() ) );
         Map<String, Object> outputMap = new HashMap<String, Object>();
         for (Map.Entry<String, Value> pair : from.getOutputMap().entrySet()) {
             outputMap.put( pair.getKey(), fromProto( pair.getValue() ) );
@@ -98,6 +102,118 @@ public final class ProtoMapper extends ProtoMapperBase {
             case COMPLETED: to = EventExecution.Status.COMPLETED; break;
             case FAILED: to = EventExecution.Status.FAILED; break;
             case SKIPPED: to = EventExecution.Status.SKIPPED; break;
+            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        }
+        return to;
+    }
+
+    public static EventHandlerPb.EventHandler toProto(EventHandler from) {
+        EventHandlerPb.EventHandler.Builder to = EventHandlerPb.EventHandler.newBuilder();
+        to.setName( from.getName() );
+        to.setEvent( from.getEvent() );
+        to.setCondition( from.getCondition() );
+        for (EventHandler.Action elem : from.getActions()) {
+            to.addActions( toProto(elem) );
+        }
+        to.setActive( from.isActive() );
+        return to.build();
+    }
+
+    public static EventHandler fromProto(EventHandlerPb.EventHandler from) {
+        EventHandler to = new EventHandler();
+        to.setName( from.getName() );
+        to.setEvent( from.getEvent() );
+        to.setCondition( from.getCondition() );
+        to.setActions( from.getActionsList().stream().map(ProtoMapper::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
+        to.setActive( from.getActive() );
+        return to;
+    }
+
+    public static EventHandlerPb.EventHandler.StartWorkflow toProto(
+            EventHandler.StartWorkflow from) {
+        EventHandlerPb.EventHandler.StartWorkflow.Builder to = EventHandlerPb.EventHandler.StartWorkflow.newBuilder();
+        to.setName( from.getName() );
+        to.setVersion( from.getVersion() );
+        to.setCorrelationId( from.getCorrelationId() );
+        for (Map.Entry<String, Object> pair : from.getInput().entrySet()) {
+            to.putInput( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        return to.build();
+    }
+
+    public static EventHandler.StartWorkflow fromProto(
+            EventHandlerPb.EventHandler.StartWorkflow from) {
+        EventHandler.StartWorkflow to = new EventHandler.StartWorkflow();
+        to.setName( from.getName() );
+        to.setVersion( from.getVersion() );
+        to.setCorrelationId( from.getCorrelationId() );
+        Map<String, Object> inputMap = new HashMap<String, Object>();
+        for (Map.Entry<String, Value> pair : from.getInputMap().entrySet()) {
+            inputMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setInput(inputMap);
+        return to;
+    }
+
+    public static EventHandlerPb.EventHandler.TaskDetails toProto(EventHandler.TaskDetails from) {
+        EventHandlerPb.EventHandler.TaskDetails.Builder to = EventHandlerPb.EventHandler.TaskDetails.newBuilder();
+        to.setWorkflowId( from.getWorkflowId() );
+        to.setTaskRefName( from.getTaskRefName() );
+        for (Map.Entry<String, Object> pair : from.getOutput().entrySet()) {
+            to.putOutput( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        return to.build();
+    }
+
+    public static EventHandler.TaskDetails fromProto(EventHandlerPb.EventHandler.TaskDetails from) {
+        EventHandler.TaskDetails to = new EventHandler.TaskDetails();
+        to.setWorkflowId( from.getWorkflowId() );
+        to.setTaskRefName( from.getTaskRefName() );
+        Map<String, Object> outputMap = new HashMap<String, Object>();
+        for (Map.Entry<String, Value> pair : from.getOutputMap().entrySet()) {
+            outputMap.put( pair.getKey(), fromProto( pair.getValue() ) );
+        }
+        to.setOutput(outputMap);
+        return to;
+    }
+
+    public static EventHandlerPb.EventHandler.Action toProto(EventHandler.Action from) {
+        EventHandlerPb.EventHandler.Action.Builder to = EventHandlerPb.EventHandler.Action.newBuilder();
+        to.setAction( toProto( from.getAction() ) );
+        to.setStartWorkflow( toProto( from.getStartWorkflow() ) );
+        to.setCompleteTask( toProto( from.getCompleteTask() ) );
+        to.setFailTask( toProto( from.getFailTask() ) );
+        to.setExpandInlineJson( from.isExpandInlineJson() );
+        return to.build();
+    }
+
+    public static EventHandler.Action fromProto(EventHandlerPb.EventHandler.Action from) {
+        EventHandler.Action to = new EventHandler.Action();
+        to.setAction( fromProto( from.getAction() ) );
+        to.setStartWorkflow( fromProto( from.getStartWorkflow() ) );
+        to.setCompleteTask( fromProto( from.getCompleteTask() ) );
+        to.setFailTask( fromProto( from.getFailTask() ) );
+        to.setExpandInlineJson( from.getExpandInlineJson() );
+        return to;
+    }
+
+    public static EventHandlerPb.EventHandler.Action.Type toProto(EventHandler.Action.Type from) {
+        EventHandlerPb.EventHandler.Action.Type to;
+        switch (from) {
+            case START_WORKFLOW: to = EventHandlerPb.EventHandler.Action.Type.START_WORKFLOW; break;
+            case COMPLETE_TASK: to = EventHandlerPb.EventHandler.Action.Type.COMPLETE_TASK; break;
+            case FAIL_TASK: to = EventHandlerPb.EventHandler.Action.Type.FAIL_TASK; break;
+            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        }
+        return to;
+    }
+
+    public static EventHandler.Action.Type fromProto(EventHandlerPb.EventHandler.Action.Type from) {
+        EventHandler.Action.Type to;
+        switch (from) {
+            case START_WORKFLOW: to = EventHandler.Action.Type.START_WORKFLOW; break;
+            case COMPLETE_TASK: to = EventHandler.Action.Type.COMPLETE_TASK; break;
+            case FAIL_TASK: to = EventHandler.Action.Type.FAIL_TASK; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
         return to;

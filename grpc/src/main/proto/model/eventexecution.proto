@@ -1,6 +1,7 @@
 syntax = "proto3";
 package com.netflix.conductor.proto;
 
+import "model/eventhandler.proto";
 import "google/protobuf/struct.proto";
 
 option java_outer_classname = "EventExecutionPb";
@@ -19,5 +20,6 @@ message EventExecution {
     string event = 4;
     int64 created = 5;
     EventExecution.Status status = 6;
+    EventHandler.Action.Type action = 7;
     map<string, google.protobuf.Value> output = 8;
 }
