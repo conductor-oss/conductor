@@ -16,8 +16,8 @@ import java.util.Map;
 public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
     private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
 
-    private MetadataService service;
-    private EventProcessor ep;
+    private final MetadataService service;
+    private final EventProcessor ep;
 
     @Inject
     public EventServiceImpl(MetadataService service, EventProcessor ep) {

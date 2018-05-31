@@ -26,20 +26,15 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImplBase {
     private static final Logger logger = LoggerFactory.getLogger(TaskServiceImpl.class);
     private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
 
-    private WorkflowExecutor executor;
-
-    private ExecutionService service;
-
-    private MetadataService metadata;
-
-    private int maxSearchSize;
+    private final WorkflowExecutor executor;
+    private final ExecutionService service;
+    private final MetadataService metadata;
+    private final int maxSearchSize;
 
     @Inject
     public WorkflowServiceImpl(WorkflowExecutor executor, ExecutionService service, MetadataService metadata, Configuration config) {

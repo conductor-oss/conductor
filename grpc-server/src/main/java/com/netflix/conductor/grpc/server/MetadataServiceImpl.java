@@ -19,7 +19,7 @@ import java.util.List;
 public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImplBase {
     private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
 
-    private MetadataService service;
+    private final MetadataService service;
 
     @Inject
     public MetadataServiceImpl(MetadataService service) {
