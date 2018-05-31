@@ -95,15 +95,12 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
         final int count = (req.getCount() != 0) ? req.getCount() : MAX_TASK_COUNT;
 
         try {
-            List<Task> tasks = taskService.getTasks(req.getTaskType(), req.getStartKey(), count);
-            TaskServicePb.TasksInProgressResponse.Builder builder =
-                    TaskServicePb.TasksInProgressResponse.newBuilder();
-
-            for (Task t : tasks) {
-                builder.addTasks(protoMapper.toProto(t));
-            }
-
-            response.onNext(builder.build());
+            response.onNext(
+                    TaskServicePb.TasksInProgressResponse.newBuilder().addAllTasks(
+                        taskService.getTasks(req.getTaskType(), req.getStartKey(), count).stream()
+                            .map(protoMapper::toProto)::iterator
+                    ).build()
+            );
             response.onCompleted();
         } catch (Exception e) {
             GRPCUtil.onError(response, e);
@@ -127,11 +124,10 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             TaskResult task = protoMapper.fromProto(req);
             taskService.updateTask(task);
 
-            TaskServicePb.TaskUpdateResponse resp = TaskServicePb.TaskUpdateResponse
-                    .newBuilder()
-                    .setTaskId(task.getTaskId())
-                    .build();
-            response.onNext(resp);
+            response.onNext(
+                    TaskServicePb.TaskUpdateResponse.newBuilder()
+                    .setTaskId(task.getTaskId()).build()
+            );
             response.onCompleted();
         } catch (Exception e) {
             GRPCUtil.onError(response, e);
@@ -142,9 +138,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     public void ackTask(TaskServicePb.AckTaskRequest req, StreamObserver<TaskServicePb.AckTaskResponse> response) {
         try {
             boolean ack = taskService.ackTaskReceived(req.getTaskId());
-            TaskServicePb.AckTaskResponse resp = TaskServicePb.AckTaskResponse
-                    .newBuilder().setAck(ack).build();
-            response.onNext(resp);
+            response.onNext(TaskServicePb.AckTaskResponse.newBuilder().setAck(ack).build());
             response.onCompleted();
         } catch (Exception e) {
             GRPCUtil.onError(response, e);
@@ -160,13 +154,10 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     @Override
     public void getLogs(TaskServicePb.TaskId req, StreamObserver<TaskServicePb.GetLogsResponse> response) {
         List<TaskExecLog> logs = taskService.getTaskLogs(req.getTaskId());
-        TaskServicePb.GetLogsResponse.Builder builder = TaskServicePb.GetLogsResponse.newBuilder();
-
-        for (TaskExecLog l : logs) {
-            builder.addLogs(protoMapper.toProto(l));
-        }
-
-        response.onNext(builder.build());
+        response.onNext(TaskServicePb.GetLogsResponse.newBuilder()
+                .addAllLogs(logs.stream().map(protoMapper::toProto)::iterator)
+                .build()
+        );
         response.onCompleted();
     }
 }

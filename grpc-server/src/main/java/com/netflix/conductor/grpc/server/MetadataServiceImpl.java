@@ -15,6 +15,7 @@ import io.grpc.stub.StreamObserver;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImplBase {
     private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
@@ -38,10 +39,8 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
 
     @Override
     public void updateWorkflows(MetadataServicePb.UpdateWorkflowsRequest req, StreamObserver<Empty> response) {
-        List<WorkflowDef> workflows = new ArrayList<>();
-        for (WorkflowDefPb.WorkflowDef def : req.getDefsList()) {
-            workflows.add(protoMapper.fromProto(def));
-        }
+        List<WorkflowDef> workflows = req.getDefsList().stream()
+                .map(protoMapper::fromProto).collect(Collectors.toList());
 
         try {
             service.updateWorkflowDef(workflows);
@@ -68,19 +67,15 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
 
     @Override
     public void getAllWorkflows(Empty _request, StreamObserver<WorkflowDefPb.WorkflowDef> response) {
-        for (WorkflowDef def : service.getWorkflowDefs()) {
-            response.onNext(protoMapper.toProto(def));
-        }
+        service.getWorkflowDefs().stream().map(protoMapper::toProto).forEach(response::onNext);
         response.onCompleted();
     }
 
     @Override
     public void createTasks(MetadataServicePb.CreateTasksRequest req, StreamObserver<Empty> response) {
-        List<TaskDef> allTasks = new ArrayList<>();
-        for (TaskDefPb.TaskDef task : req.getDefsList()) {
-            allTasks.add(protoMapper.fromProto(task));
-        }
-        service.registerTaskDef(allTasks);
+        service.registerTaskDef(
+                req.getDefsList().stream().map(protoMapper::fromProto).collect(Collectors.toList())
+        );
         response.onCompleted();
     }
 
@@ -92,9 +87,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
 
     @Override
     public void getAllTasks(Empty _request, StreamObserver<TaskDefPb.TaskDef> response) {
-        for (TaskDef def : service.getTaskDefs()) {
-            response.onNext(protoMapper.toProto(def));
-        }
+        service.getTaskDefs().stream().map(protoMapper::toProto).forEach(response::onNext);
         response.onCompleted();
     }
 

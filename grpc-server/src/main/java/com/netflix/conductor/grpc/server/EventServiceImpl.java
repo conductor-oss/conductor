@@ -44,17 +44,14 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
 
     @Override
     public void getEventHandlers(Empty req, StreamObserver<EventHandlerPb.EventHandler> response) {
-        for (EventHandler eh : service.getEventHandlers()) {
-            response.onNext(protoMapper.toProto(eh));
-        }
+        service.getEventHandlers().stream().map(protoMapper::toProto).forEach(response::onNext);
         response.onCompleted();
     }
 
     @Override
     public void getEventHandlersForEvent(EventServicePb.GetEventHandlersRequest req, StreamObserver<EventHandlerPb.EventHandler> response) {
-        for (EventHandler eh : service.getEventHandlersForEvent(req.getEvent(), req.getActiveOnly())) {
-            response.onNext(protoMapper.toProto(eh));
-        }
+        service.getEventHandlersForEvent(req.getEvent(), req.getActiveOnly())
+                .stream().map(protoMapper::toProto).forEach(response::onNext);
         response.onCompleted();
     }
 
@@ -72,11 +69,10 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
     public void getQueueSizes(Empty req, StreamObserver<EventServicePb.GetQueueSizesResponse> response) {
         EventServicePb.GetQueueSizesResponse.Builder builder = EventServicePb.GetQueueSizesResponse.newBuilder();
         for (Map.Entry<String, Map<String, Long>> pair : ep.getQueueSizes().entrySet()) {
-            EventServicePb.GetQueueSizesResponse.QueueInfo info =
+            builder.putEventToQueueInfo(pair.getKey(),
                     EventServicePb.GetQueueSizesResponse.QueueInfo.newBuilder()
-                            .putAllQueueSizes(pair.getValue())
-                            .build();
-            builder.putEventToQueueInfo(pair.getKey(), info);
+                            .putAllQueueSizes(pair.getValue()).build()
+            );
         }
         response.onNext(builder.build());
         response.onCompleted();

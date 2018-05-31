@@ -17,6 +17,7 @@ import com.netflix.conductor.grpc.WorkflowServiceGrpc;
 import com.netflix.conductor.grpc.WorkflowServicePb;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
+import com.sun.corba.se.spi.orbutil.threadpool.Work;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -83,12 +84,12 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
         WorkflowServicePb.GetWorkflowsResponse.Builder builder = WorkflowServicePb.GetWorkflowsResponse.newBuilder();
 
         for (String correlationId : req.getCorrelationIdList()) {
-            WorkflowServicePb.GetWorkflowsResponse.Workflows.Builder pbWorkflows =
-                    WorkflowServicePb.GetWorkflowsResponse.Workflows.newBuilder();
-            for (Workflow wf : service.getWorkflowInstances(name, correlationId, includeClosed, includeTasks)) {
-                pbWorkflows.addWorkflows(protoMapper.toProto(wf));
-            }
-            builder.putWorkflowsById(correlationId, pbWorkflows.build());
+            List<Workflow> workflows = service.getWorkflowInstances(name, correlationId, includeClosed, includeTasks);
+            builder.putWorkflowsById(correlationId,
+                    WorkflowServicePb.GetWorkflowsResponse.Workflows.newBuilder()
+                            .addAllWorkflows(workflows.stream().map(protoMapper::toProto)::iterator)
+                            .build()
+            );
         }
 
         response.onNext(builder.build());
