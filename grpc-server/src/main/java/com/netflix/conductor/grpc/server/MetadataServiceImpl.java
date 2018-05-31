@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImplBase {
+    private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
+
     private MetadataService service;
 
     @Inject
@@ -27,7 +29,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     @Override
     public void createWorkflow(WorkflowDefPb.WorkflowDef req, StreamObserver<Empty> response) {
         try {
-            service.registerWorkflowDef(ProtoMapper.fromProto(req));
+            service.registerWorkflowDef(protoMapper.fromProto(req));
             response.onCompleted();
         } catch (Exception e) {
             GRPCUtil.onError(response, e);
@@ -38,7 +40,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     public void updateWorkflows(MetadataServicePb.UpdateWorkflowsRequest req, StreamObserver<Empty> response) {
         List<WorkflowDef> workflows = new ArrayList<>();
         for (WorkflowDefPb.WorkflowDef def : req.getDefsList()) {
-            workflows.add(ProtoMapper.fromProto(def));
+            workflows.add(protoMapper.fromProto(def));
         }
 
         try {
@@ -54,7 +56,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
         // TODO: req.getVersion optional
         WorkflowDef def = service.getWorkflowDef(req.getName(), req.getVersion());
         if (def != null) {
-            response.onNext(ProtoMapper.toProto(def));
+            response.onNext(protoMapper.toProto(def));
             response.onCompleted();
         } else {
             response.onError(Status.NOT_FOUND
@@ -67,7 +69,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     @Override
     public void getAllWorkflows(Empty _request, StreamObserver<WorkflowDefPb.WorkflowDef> response) {
         for (WorkflowDef def : service.getWorkflowDefs()) {
-            response.onNext(ProtoMapper.toProto(def));
+            response.onNext(protoMapper.toProto(def));
         }
         response.onCompleted();
     }
@@ -76,7 +78,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     public void createTasks(MetadataServicePb.CreateTasksRequest req, StreamObserver<Empty> response) {
         List<TaskDef> allTasks = new ArrayList<>();
         for (TaskDefPb.TaskDef task : req.getDefsList()) {
-            allTasks.add(ProtoMapper.fromProto(task));
+            allTasks.add(protoMapper.fromProto(task));
         }
         service.registerTaskDef(allTasks);
         response.onCompleted();
@@ -84,14 +86,14 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
 
     @Override
     public void updateTask(TaskDefPb.TaskDef req, StreamObserver<Empty> response) {
-        service.updateTaskDef(ProtoMapper.fromProto(req));
+        service.updateTaskDef(protoMapper.fromProto(req));
         response.onCompleted();
     }
 
     @Override
     public void getAllTasks(Empty _request, StreamObserver<TaskDefPb.TaskDef> response) {
         for (TaskDef def : service.getTaskDefs()) {
-            response.onNext(ProtoMapper.toProto(def));
+            response.onNext(protoMapper.toProto(def));
         }
         response.onCompleted();
     }
@@ -100,7 +102,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     public void getTask(MetadataServicePb.GetTaskRequest req, StreamObserver<TaskDefPb.TaskDef> response) {
         TaskDef def = service.getTaskDef(req.getTaskType());
         if (def != null) {
-            response.onNext(ProtoMapper.toProto(def));
+            response.onNext(protoMapper.toProto(def));
             response.onCompleted();
         } else {
             response.onError(Status.NOT_FOUND

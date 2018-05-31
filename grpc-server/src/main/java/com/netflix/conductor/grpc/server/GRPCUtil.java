@@ -10,11 +10,11 @@ public class GRPCUtil {
     private GRPCUtil() {}
 
     private static String stacktraceToString(Throwable e) {
-    StringWriter stringWriter = new StringWriter();
-    PrintWriter printWriter = new PrintWriter(stringWriter);
-    e.printStackTrace(printWriter);
-    return stringWriter.toString();
-}
+        StringWriter stringWriter = new StringWriter();
+        PrintWriter printWriter = new PrintWriter(stringWriter);
+        e.printStackTrace(printWriter);
+        return stringWriter.toString();
+    }
 
     public static void onError(StreamObserver<?> response, Throwable t) {
         response.onError(Status.INTERNAL

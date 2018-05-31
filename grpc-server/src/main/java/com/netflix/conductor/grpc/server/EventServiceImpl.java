@@ -14,6 +14,8 @@ import javax.inject.Inject;
 import java.util.Map;
 
 public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
+    private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
+
     private MetadataService service;
     private EventProcessor ep;
 
@@ -25,13 +27,13 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
 
     @Override
     public void addEventHandler(EventHandlerPb.EventHandler req, StreamObserver<Empty> response) {
-        service.addEventHandler(ProtoMapper.fromProto(req));
+        service.addEventHandler(protoMapper.fromProto(req));
         response.onCompleted();
     }
 
     @Override
     public void updateEventHandler(EventHandlerPb.EventHandler req, StreamObserver<Empty> response) {
-        service.updateEventHandler(ProtoMapper.fromProto(req));
+        service.updateEventHandler(protoMapper.fromProto(req));
         response.onCompleted();
     }
 
@@ -43,7 +45,7 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
     @Override
     public void getEventHandlers(Empty req, StreamObserver<EventHandlerPb.EventHandler> response) {
         for (EventHandler eh : service.getEventHandlers()) {
-            response.onNext(ProtoMapper.toProto(eh));
+            response.onNext(protoMapper.toProto(eh));
         }
         response.onCompleted();
     }
@@ -51,7 +53,7 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
     @Override
     public void getEventHandlersForEvent(EventServicePb.GetEventHandlersRequest req, StreamObserver<EventHandlerPb.EventHandler> response) {
         for (EventHandler eh : service.getEventHandlersForEvent(req.getEvent(), req.getActiveOnly())) {
-            response.onNext(ProtoMapper.toProto(eh));
+            response.onNext(protoMapper.toProto(eh));
         }
         response.onCompleted();
     }

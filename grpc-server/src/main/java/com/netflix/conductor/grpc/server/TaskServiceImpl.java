@@ -24,6 +24,7 @@ import javax.inject.Inject;
 
 public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     private static final Logger logger = LoggerFactory.getLogger(TaskServiceImpl.class);
+    private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
 
     private static final int MAX_TASK_COUNT = 100;
     private static final int POLL_TIMEOUT_MS = 100;
@@ -42,7 +43,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
         try {
             List<Task> tasks = taskService.poll(req.getTaskType(), req.getWorkerId(), req.getDomain(), 1, POLL_TIMEOUT_MS);
             if (!tasks.isEmpty()) {
-                TaskPb.Task t = ProtoMapper.toProto(tasks.get(0));
+                TaskPb.Task t = protoMapper.toProto(tasks.get(0));
                 response.onNext(t);
             }
             response.onCompleted();
@@ -61,7 +62,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             public void onNext(TaskServicePb.StreamingPollRequest req) {
                 try {
                     for (TaskResultPb.TaskResult result : req.getCompletedList()) {
-                        TaskResult task = ProtoMapper.fromProto(result);
+                        TaskResult task = protoMapper.fromProto(result);
                         taskService.updateTask(task);
                     }
 
@@ -70,7 +71,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
                             req.getCapacity(), POLL_TIMEOUT_MS);
 
                     for (Task task : newTasks) {
-                        responseObserver.onNext(ProtoMapper.toProto(task));
+                        responseObserver.onNext(protoMapper.toProto(task));
                     }
                 } catch (Exception e) {
                     GRPCUtil.onError(observer, e);
@@ -99,7 +100,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
                     TaskServicePb.TasksInProgressResponse.newBuilder();
 
             for (Task t : tasks) {
-                builder.addTasks(ProtoMapper.toProto(t));
+                builder.addTasks(protoMapper.toProto(t));
             }
 
             response.onNext(builder.build());
@@ -113,7 +114,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     public void getPendingTaskForWorkflow(TaskServicePb.PendingTaskRequest req, StreamObserver<TaskPb.Task> response) {
         try {
             Task t = taskService.getPendingTaskForWorkflow(req.getTaskRefName(), req.getWorkflowId());
-            response.onNext(ProtoMapper.toProto(t));
+            response.onNext(protoMapper.toProto(t));
             response.onCompleted();
         } catch (Exception e) {
             GRPCUtil.onError(response, e);
@@ -123,7 +124,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     @Override
     public void updateTask(TaskResultPb.TaskResult req, StreamObserver<TaskServicePb.TaskUpdateResponse> response) {
         try {
-            TaskResult task = ProtoMapper.fromProto(req);
+            TaskResult task = protoMapper.fromProto(req);
             taskService.updateTask(task);
 
             TaskServicePb.TaskUpdateResponse resp = TaskServicePb.TaskUpdateResponse
@@ -162,7 +163,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
         TaskServicePb.GetLogsResponse.Builder builder = TaskServicePb.GetLogsResponse.newBuilder();
 
         for (TaskExecLog l : logs) {
-            builder.addLogs(ProtoMapper.toProto(l));
+            builder.addLogs(protoMapper.toProto(l));
         }
 
         response.onNext(builder.build());

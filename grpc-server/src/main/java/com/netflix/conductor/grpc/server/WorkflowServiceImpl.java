@@ -31,6 +31,7 @@ import java.util.stream.Collectors;
 
 public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImplBase {
     private static final Logger logger = LoggerFactory.getLogger(TaskServiceImpl.class);
+    private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
 
     private WorkflowExecutor executor;
 
@@ -57,7 +58,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
 
     @Override
     public void startWorkflow(StartWorkflowRequestPb.StartWorkflowRequest pbRequest, StreamObserver<WorkflowServicePb.WorkflowId> response) {
-        StartWorkflowRequest request = ProtoMapper.fromProto(pbRequest);
+        StartWorkflowRequest request = protoMapper.fromProto(pbRequest);
         WorkflowDef def = metadata.getWorkflowDef(request.getName(), request.getVersion());
         if(def == null){
             response.onError(Status.NOT_FOUND
@@ -90,7 +91,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             WorkflowServicePb.GetWorkflowsResponse.Workflows.Builder pbWorkflows =
                     WorkflowServicePb.GetWorkflowsResponse.Workflows.newBuilder();
             for (Workflow wf : service.getWorkflowInstances(name, correlationId, includeClosed, includeTasks)) {
-                pbWorkflows.addWorkflows(ProtoMapper.toProto(wf));
+                pbWorkflows.addWorkflows(protoMapper.toProto(wf));
             }
             builder.putWorkflowsById(correlationId, pbWorkflows.build());
         }
@@ -103,7 +104,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     public void getWorkflowStatus(WorkflowServicePb.GetWorkflowStatusRequest req, StreamObserver<WorkflowPb.Workflow> response) {
         try {
             Workflow workflow = service.getExecutionStatus(req.getWorkflowId(), req.getIncludeTasks());
-            response.onNext(ProtoMapper.toProto(workflow));
+            response.onNext(protoMapper.toProto(workflow));
             response.onCompleted();
         } catch (Exception e) {
             GRPCUtil.onError(response, e);
@@ -175,7 +176,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void skipTaskFromWorkflow(WorkflowServicePb.SkipTaskRequest req, StreamObserver<Empty> response) {
         try {
-            SkipTaskRequest skipTask = ProtoMapper.fromProto(req.getRequest());
+            SkipTaskRequest skipTask = protoMapper.fromProto(req.getRequest());
             executor.skipTaskFromWorkflow(req.getWorkflowId(), req.getTaskReferenceName(), skipTask);
             response.onCompleted();
         } catch (Exception e) {
@@ -186,7 +187,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void rerunWorkflow(RerunWorkflowRequestPb.RerunWorkflowRequest req, StreamObserver<WorkflowServicePb.WorkflowId> response) {
         try {
-            String id = executor.rerun(ProtoMapper.fromProto(req));
+            String id = executor.rerun(protoMapper.fromProto(req));
             response.onNext(newWorkflowId(id));
             response.onCompleted();
         } catch (Exception e) {
@@ -261,7 +262,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             SearchPb.WorkflowSummarySearchResult.newBuilder()
                 .setTotalHits(search.getTotalHits())
                 .addAllResults(
-                    search.getResults().stream().map(ProtoMapper::toProto)::iterator
+                    search.getResults().stream().map(protoMapper::toProto)::iterator
                 ).build()
         );
         response.onCompleted();
