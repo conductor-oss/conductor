@@ -1,7 +1,7 @@
 package com.netflix.conductor.protogen.types;
 
-import com.netflix.conductor.protogen.types.AbstractType;
 import com.squareup.javapoet.ClassName;
+import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 
 import java.lang.reflect.ParameterizedType;
@@ -41,6 +41,11 @@ abstract class GenericType extends AbstractType {
     @Override
     public void getDependencies(Set<String> deps) {
         getValueType().getDependencies(deps);
+    }
+
+    @Override
+    public void generateAbstractMethods(Set<MethodSpec> specs) {
+        getValueType().generateAbstractMethods(specs);
     }
 
     @Override

@@ -42,7 +42,7 @@ public class Message extends Element {
 
         ClassName javaProtoType = (ClassName)this.type.getJavaProtoType();
         MethodSpec.Builder method = MethodSpec.methodBuilder("toProto");
-        method.addModifiers(Modifier.STATIC, Modifier.PUBLIC);
+        method.addModifiers(Modifier.PUBLIC);
         method.returns(javaProtoType);
         method.addParameter(this.clazz, "from");
 
@@ -66,7 +66,7 @@ public class Message extends Element {
             return;
 
         MethodSpec.Builder method = MethodSpec.methodBuilder("fromProto");
-        method.addModifiers(Modifier.STATIC, Modifier.PUBLIC);
+        method.addModifiers(Modifier.PUBLIC);
         method.returns(this.clazz);
         method.addParameter(this.type.getJavaProtoType(), "from");
 
@@ -119,6 +119,11 @@ public class Message extends Element {
         @Override
         public void getDependencies(Set<String> deps) {
             getAbstractType().getDependencies(deps);
+        }
+
+        @Override
+        public void generateAbstractMethods(Set<MethodSpec> specs) {
+            getAbstractType().generateAbstractMethods(specs);
         }
     }
 }

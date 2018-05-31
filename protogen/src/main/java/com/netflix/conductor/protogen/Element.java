@@ -4,6 +4,7 @@ import com.netflix.conductor.common.annotations.ProtoEnum;
 import com.netflix.conductor.common.annotations.ProtoMessage;
 import com.netflix.conductor.protogen.types.AbstractType;
 import com.netflix.conductor.protogen.types.MessageType;
+import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeSpec;
 
 import java.util.*;
@@ -53,6 +54,16 @@ public abstract class Element {
         }
     }
 
+    public void generateAbstractMethods(Set<MethodSpec> specs) {
+        for (Field field : fields) {
+            field.generateAbstractMethods(specs);
+        }
+
+        for (Element elem : nested) {
+            elem.generateAbstractMethods(specs);
+        }
+    }
+
     public void findDependencies(Set<String> dependencies) {
         for (Field field : fields) {
             field.getDependencies(dependencies);
@@ -95,5 +106,6 @@ public abstract class Element {
         }
 
         public void getDependencies(Set<String> deps) {}
+        public void generateAbstractMethods(Set<MethodSpec> specs) {}
     }
 }

@@ -25,7 +25,7 @@ public class Enum extends Element {
 
     private MethodSpec javaMap(String methodName, TypeName from, TypeName to) {
         MethodSpec.Builder method = MethodSpec.methodBuilder(methodName);
-        method.addModifiers(Modifier.STATIC, Modifier.PUBLIC);
+        method.addModifiers(Modifier.PUBLIC);
         method.returns(to);
         method.addParameter(from, "from");
 

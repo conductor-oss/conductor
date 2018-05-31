@@ -5,7 +5,9 @@ import com.netflix.conductor.protogen.*;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
+import com.squareup.javapoet.TypeSpec;
 
+import javax.lang.model.element.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
@@ -101,52 +103,11 @@ public abstract class AbstractType {
     public abstract void mapToProto(String field, MethodSpec.Builder method);
     public abstract void mapFromProto(String field, MethodSpec.Builder method);
 
-    public void getDependencies(Set<String> deps) {}
+    public abstract void getDependencies(Set<String> deps);
+    public abstract void generateAbstractMethods(Set<MethodSpec> specs);
 
     protected String fieldMethod(String m, String field) {
         return m + CaseFormat.LOWER_CAMEL.to(CaseFormat.UPPER_CAMEL, field);
     }
 
-    public static class WrappedType extends AbstractType {
-        private AbstractType realType;
-        private MessageType wrappedType;
-
-        public static WrappedType wrap(GenericType realType) {
-            Type valueType = realType.getValueType().getJavaType();
-            if (!(valueType instanceof Class))
-                throw new IllegalArgumentException("cannot wrap primitive type: "+ valueType);
-
-            String className = ((Class) valueType).getSimpleName() + realType.getWrapperSuffix();
-            MessageType wrappedType = AbstractType.get(className);
-            if (wrappedType == null)
-                throw new IllegalArgumentException("missing wrapper class: "+className);
-            return new WrappedType(realType, wrappedType);
-        }
-
-        public WrappedType(AbstractType realType, MessageType wrappedType) {
-            super(realType.getJavaType(), wrappedType.getJavaProtoType());
-            this.realType = realType;
-            this.wrappedType = wrappedType;
-        }
-
-        @Override
-        public String getProtoType() {
-            return wrappedType.getProtoType();
-        }
-
-        @Override
-        public TypeName getRawJavaType() {
-            return realType.getRawJavaType();
-        }
-
-        @Override
-        public void mapToProto(String field, MethodSpec.Builder method) {
-            wrappedType.mapToProto(field, method);
-        }
-
-        @Override
-        public void mapFromProto(String field, MethodSpec.Builder method) {
-            wrappedType.mapFromProto(field, method);
-        }
-    }
 }

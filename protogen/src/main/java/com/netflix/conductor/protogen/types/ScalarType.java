@@ -5,6 +5,7 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
 
 import java.lang.reflect.Type;
+import java.util.Set;
 
 public class ScalarType extends AbstractType {
     private String protoType;
@@ -40,4 +41,10 @@ public class ScalarType extends AbstractType {
                 getJavaType().equals(Boolean.class)) ? "is" : "get";
         mapCode(field, method, getter);
     }
+
+    @Override
+    public void getDependencies(Set<String> deps) {}
+
+    @Override
+    public void generateAbstractMethods(Set<MethodSpec> specs) {}
 }

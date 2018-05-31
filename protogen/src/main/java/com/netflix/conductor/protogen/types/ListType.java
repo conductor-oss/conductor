@@ -59,7 +59,7 @@ public class ListType extends GenericType {
                         fieldMethod("set", field), fieldMethod("get", field) + "List");
             }
         } else {
-            method.addStatement("to.$L( from.$L().stream().map(ProtoMapper::fromProto).collect($T.toCollection($T::new)) )",
+            method.addStatement("to.$L( from.$L().stream().map(this::fromProto).collect($T.toCollection($T::new)) )",
                     fieldMethod("set", field), fieldMethod("get", field)+"List",
                     Collectors.class, collector);
         }

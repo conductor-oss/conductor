@@ -49,4 +49,7 @@ public class MessageType extends AbstractType {
     public void getDependencies(Set<String> deps) {
         deps.add(getProtoFile().getFilePath());
     }
+
+    @Override
+    public void generateAbstractMethods(Set<MethodSpec> specs) {}
 }
