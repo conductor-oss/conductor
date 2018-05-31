@@ -37,9 +37,8 @@ public class ConfigurationHostSupplierProvider implements Provider<HostSupplier>
                     "Missing dynomite/redis hosts.  Ensure '%s' has been set in the supplied configuration.",
                     DynomiteConfiguration.HOSTS_PROPERTY_NAME
             );
-            System.err.println(message);
             logger.error(message);
-            System.exit(1);
+            throw new RuntimeException(message);
         }
         return parseHostsFrom(hosts);
     }
