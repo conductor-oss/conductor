@@ -3,7 +3,8 @@ package com.netflix.conductor.grpc.server;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.dao.index.ElasticsearchModule;
+import com.netflix.conductor.grpc.EventServiceGrpc;
+import com.netflix.conductor.grpc.MetadataServiceGrpc;
 import com.netflix.conductor.grpc.TaskServiceGrpc;
 import com.netflix.conductor.grpc.WorkflowServiceGrpc;
 
@@ -25,10 +26,12 @@ public class GRPCModule extends AbstractModule {
     protected void configure() {
         configureExecutorService();
 
-        install(new ElasticsearchModule());
         bind(Configuration.class).toInstance(configuration);
         bind(TaskServiceGrpc.TaskServiceImplBase.class).to(TaskServiceImpl.class);
+        bind(MetadataServiceGrpc.MetadataServiceImplBase.class).to(MetadataServiceImpl.class);
         bind(WorkflowServiceGrpc.WorkflowServiceImplBase.class).to(WorkflowServiceImpl.class);
+        bind(EventServiceGrpc.EventServiceImplBase.class).to(EventServiceImpl.class);
+
         bind(GRPCServer.class).to(GRPCServer.class);
     }
 

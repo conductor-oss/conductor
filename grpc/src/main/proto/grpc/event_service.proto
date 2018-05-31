@@ -1,0 +1,56 @@
+syntax = "proto3";
+package com.netflix.conductor.grpc;
+
+import "google/protobuf/empty.proto";
+import "model/eventhandler.proto";
+
+option java_outer_classname = "EventServicePb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
+
+service EventService {
+    // POST /
+    rpc AddEventHandler(com.netflix.conductor.proto.EventHandler) returns (google.protobuf.Empty);
+
+    // PUT /
+    rpc UpdateEventHandler(com.netflix.conductor.proto.EventHandler) returns (google.protobuf.Empty);
+
+    // DELETE /{name}
+    rpc RemoveEventHandler(RemoveEventHandlerRequest) returns (google.protobuf.Empty);
+
+    // GET /
+    rpc GetEventHandlers(google.protobuf.Empty) returns (stream com.netflix.conductor.proto.EventHandler);
+
+    // GET /{name}
+    rpc GetEventHandlersForEvent(GetEventHandlersRequest) returns (stream com.netflix.conductor.proto.EventHandler);
+
+    // GET /queues
+    rpc GetQueues(google.protobuf.Empty) returns (GetQueuesResponse);
+    rpc GetQueueSizes(google.protobuf.Empty) returns (GetQueueSizesResponse);
+
+    // GET /queues/providers
+    rpc GetQueueProviders(google.protobuf.Empty) returns (GetQueueProvidersResponse);
+}
+
+message RemoveEventHandlerRequest {
+    string name = 1;
+}
+
+message GetEventHandlersRequest {
+    string event = 1;
+    bool active_only = 2;
+}
+
+message GetQueuesResponse {
+    map<string, string> event_to_queue_uri = 1;
+}
+
+message GetQueueSizesResponse {
+    message QueueInfo {
+        map<string, int64> queue_sizes = 1;
+    }
+    map<string, QueueInfo> event_to_queue_info = 2;
+}
+
+message GetQueueProvidersResponse {
+    repeated string providers = 1;
+}

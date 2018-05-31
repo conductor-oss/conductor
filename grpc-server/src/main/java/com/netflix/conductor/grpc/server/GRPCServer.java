@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.grpc.TaskServiceGrpc;
 import com.netflix.conductor.grpc.WorkflowServiceGrpc;
+import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import org.slf4j.Logger;
@@ -22,14 +23,15 @@ public class GRPCServer {
     public final static int CONFIG_PORT_DEFAULT = 8080;
 
     @Inject
-    public GRPCServer(TaskServiceGrpc.TaskServiceImplBase taskImpl,
-                      WorkflowServiceGrpc.WorkflowServiceImplBase workflowImpl,
-                      Configuration conf) {
+    public GRPCServer(Configuration conf, BindableService... services) {
         final int port = conf.getIntProperty(CONFIG_PORT, CONFIG_PORT_DEFAULT);
-        server = ServerBuilder.forPort(port)
-                .addService(taskImpl)
-                .addService(workflowImpl)
-                .build();
+
+        ServerBuilder<?> builder = ServerBuilder.forPort(port);
+        for (BindableService s : services) {
+            builder.addService(s);
+        }
+
+        server = builder.build();
     }
 
     public void start() throws IOException {
