@@ -1,7 +1,6 @@
 package com.netflix.conductor.grpc.server;
 
 import com.google.protobuf.Empty;
-import com.netflix.conductor.common.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.grpc.MetadataServiceGrpc;
@@ -11,14 +10,17 @@ import com.netflix.conductor.proto.WorkflowDefPb;
 import com.netflix.conductor.service.MetadataService;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImplBase {
+    private static final Logger logger = LoggerFactory.getLogger(MetadataServiceImpl.class);
     private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
+    private static final GRPCHelper grpcHelper = new GRPCHelper(logger);
 
     private final MetadataService service;
 
@@ -33,7 +35,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
             service.registerWorkflowDef(protoMapper.fromProto(req));
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -46,7 +48,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
             service.updateWorkflowDef(workflows);
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 

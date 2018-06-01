@@ -25,6 +25,7 @@ import javax.inject.Inject;
 public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     private static final Logger logger = LoggerFactory.getLogger(TaskServiceImpl.class);
     private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
+    private static final GRPCHelper grpcHelper = new GRPCHelper(logger);
 
     private static final int MAX_TASK_COUNT = 100;
     private static final int POLL_TIMEOUT_MS = 100;
@@ -48,7 +49,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             }
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -74,7 +75,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
                         responseObserver.onNext(protoMapper.toProto(task));
                     }
                 } catch (Exception e) {
-                    GRPCUtil.onError(observer, e);
+                    grpcHelper.onError(observer, e);
                 }
             }
 
@@ -103,7 +104,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             );
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -114,7 +115,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             response.onNext(protoMapper.toProto(t));
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -130,7 +131,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             );
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -141,7 +142,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             response.onNext(TaskServicePb.AckTaskResponse.newBuilder().setAck(ack).build());
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 

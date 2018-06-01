@@ -17,7 +17,6 @@ import com.netflix.conductor.grpc.WorkflowServiceGrpc;
 import com.netflix.conductor.grpc.WorkflowServicePb;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
-import com.sun.corba.se.spi.orbutil.threadpool.Work;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -31,6 +30,7 @@ import java.util.List;
 public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImplBase {
     private static final Logger logger = LoggerFactory.getLogger(TaskServiceImpl.class);
     private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
+    private static final GRPCHelper grpcHelper = new GRPCHelper(logger);
 
     private final WorkflowExecutor executor;
     private final ExecutionService service;
@@ -71,7 +71,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             response.onNext(newWorkflowId(id));
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -103,7 +103,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             response.onNext(protoMapper.toProto(workflow));
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -113,7 +113,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             service.removeWorkflow(req.getWorkflodId(), req.getArchiveWorkflow());
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -135,7 +135,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             );
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -145,7 +145,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.decide(req.getWorkflowId());
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -155,7 +155,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.pauseWorkflow(req.getWorkflowId());
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -165,7 +165,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.resumeWorkflow(req.getWorkflowId());
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -176,7 +176,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.skipTaskFromWorkflow(req.getWorkflowId(), req.getTaskReferenceName(), skipTask);
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -187,7 +187,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             response.onNext(newWorkflowId(id));
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -197,7 +197,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.rewind(req.getWorkflowId());
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -207,7 +207,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.retry(req.getWorkflowId());
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -217,7 +217,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.resetCallbacksForInProgressTasks(req.getWorkflowId());
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
@@ -227,7 +227,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
             executor.terminateWorkflow(req.getWorkflowId(), req.getReason());
             response.onCompleted();
         } catch (Exception e) {
-            GRPCUtil.onError(response, e);
+            grpcHelper.onError(response, e);
         }
     }
 
