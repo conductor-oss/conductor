@@ -2,8 +2,6 @@ package com.netflix.conductor.grpc.server;
 
 import com.google.inject.Inject;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.grpc.TaskServiceGrpc;
-import com.netflix.conductor.grpc.WorkflowServiceGrpc;
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
@@ -12,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import java.io.IOException;
+import java.util.Arrays;
 
 @Singleton
 public class GRPCServer {
@@ -27,10 +26,7 @@ public class GRPCServer {
         final int port = conf.getIntProperty(CONFIG_PORT, CONFIG_PORT_DEFAULT);
 
         ServerBuilder<?> builder = ServerBuilder.forPort(port);
-        for (BindableService s : services) {
-            builder.addService(s);
-        }
-
+        Arrays.stream(services).forEach(builder::addService);
         server = builder.build();
     }
 
