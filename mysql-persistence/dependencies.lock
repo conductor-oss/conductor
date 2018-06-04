@@ -56,7 +56,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.zaxxer:HikariCP": {
             "locked": "2.6.3",
@@ -154,7 +154,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.zaxxer:HikariCP": {
             "locked": "2.6.3",
@@ -252,7 +252,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.zaxxer:HikariCP": {
             "locked": "2.6.3",
@@ -350,7 +350,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.zaxxer:HikariCP": {
             "locked": "2.6.3",
@@ -448,7 +448,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.zaxxer:HikariCP": {
             "locked": "2.6.3",
@@ -558,7 +558,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.zaxxer:HikariCP": {
             "locked": "2.6.3",
@@ -676,7 +676,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.zaxxer:HikariCP": {
             "locked": "2.6.3",
@@ -794,7 +794,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.zaxxer:HikariCP": {
             "locked": "2.6.3",
@@ -912,7 +912,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "0.40.0"
+            "locked": "0.68.0"
         },
         "com.zaxxer:HikariCP": {
             "locked": "2.6.3",

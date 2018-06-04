@@ -57,6 +57,7 @@ public class End2EndTests {
 		System.setProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
 		System.setProperty("workflow.elasticsearch.url", "localhost:9300");
 		System.setProperty("workflow.elasticsearch.index.name", "conductor");
+		System.setProperty("workflow.namespace.prefix", "integration-test");
 		System.setProperty("db", "memory");
 	}
 	

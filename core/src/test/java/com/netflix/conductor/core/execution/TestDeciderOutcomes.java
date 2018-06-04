@@ -67,7 +67,7 @@ import static org.mockito.Mockito.when;
  */
 public class TestDeciderOutcomes {
 
-	private DeciderService ds;
+	private DeciderService deciderService;
 	
 	private static ObjectMapper objectMapper = new ObjectMapper();
 	
@@ -100,7 +100,7 @@ public class TestDeciderOutcomes {
 		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
 		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 
-		this.ds = new DeciderService(metadataDAO, taskMappers);
+		this.deciderService = new DeciderService(metadataDAO, taskMappers);
 	}
 	
 	@Test
@@ -115,7 +115,7 @@ public class TestDeciderOutcomes {
 		workflow.getInput().put("param1", "nested");
 		workflow.getInput().put("param2", "one");
 		
-		DeciderOutcome outcome = ds.decide(workflow, def);
+		DeciderOutcome outcome = deciderService.decide(workflow, def);
 		assertNotNull(outcome);
 		assertFalse(outcome.isComplete);
 		assertTrue(outcome.tasksToBeUpdated.isEmpty());
@@ -124,7 +124,7 @@ public class TestDeciderOutcomes {
 		
 		outcome.tasksToBeScheduled.forEach(t -> t.setStatus(Status.COMPLETED));
 		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
-		outcome = ds.decide(workflow, def);
+		outcome = deciderService.decide(workflow, def);
 		assertFalse(outcome.isComplete);
 		assertEquals(outcome.tasksToBeUpdated.toString(), 3, outcome.tasksToBeUpdated.size());
 		assertEquals(1, outcome.tasksToBeScheduled.size());
@@ -151,7 +151,7 @@ public class TestDeciderOutcomes {
 		Workflow workflow = new Workflow();
 		workflow.getInput().put("requestId", 123);
 		workflow.setStartTime(System.currentTimeMillis());
-		DeciderOutcome outcome = ds.decide(workflow, def);
+		DeciderOutcome outcome = deciderService.decide(workflow, def);
 		assertNotNull(outcome);
 		
 		assertEquals(1, outcome.tasksToBeScheduled.size());
@@ -164,7 +164,7 @@ public class TestDeciderOutcomes {
 		outcome.tasksToBeScheduled.get(0).setStatus(Status.FAILED);
 		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
 
-		outcome = ds.decide(workflow, def);
+		outcome = deciderService.decide(workflow, def);
 		assertNotNull(outcome);
 		
 		assertEquals(1, outcome.tasksToBeUpdated.size());
@@ -217,7 +217,7 @@ public class TestDeciderOutcomes {
 		workflow.getInput().put("forks", forks);
 		workflow.getInput().put("forkedInputs", forkedInputs);
 		
-		outcome = ds.decide(workflow, def);
+		outcome = deciderService.decide(workflow, def);
 		assertNotNull(outcome);
 		assertEquals(3, outcome.tasksToBeScheduled.size());
 		assertEquals(0, outcome.tasksToBeUpdated.size());
@@ -231,7 +231,7 @@ public class TestDeciderOutcomes {
 		outcome.tasksToBeScheduled.get(1).setStatus(Status.FAILED);
 		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
 
-		outcome = ds.decide(workflow, def);
+		outcome = deciderService.decide(workflow, def);
 		assertEquals("v", outcome.tasksToBeScheduled.get(1).getInputData().get("k"));
 		assertEquals(1, outcome.tasksToBeScheduled.get(1).getInputData().get("k1"));
 		assertEquals(outcome.tasksToBeScheduled.get(1).getTaskId(), outcome.tasksToBeScheduled.get(1).getInputData().get("taskId"));
@@ -265,7 +265,7 @@ public class TestDeciderOutcomes {
 		
 		Workflow workflow = new Workflow();
 		workflow.setStartTime(System.currentTimeMillis());
-		DeciderOutcome outcome = ds.decide(workflow, def);
+		DeciderOutcome outcome = deciderService.decide(workflow, def);
 		assertNotNull(outcome);
 		
 		System.out.println("Schedule after starting: " + outcome.tasksToBeScheduled);
@@ -278,7 +278,7 @@ public class TestDeciderOutcomes {
 		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
 		workflow.getTasks().get(0).setStatus(Status.FAILED);
 		
-		outcome = ds.decide(workflow, def);
+		outcome = deciderService.decide(workflow, def);
 		
 		assertNotNull(outcome);
 		System.out.println("Schedule: " + outcome.tasksToBeScheduled);
@@ -336,7 +336,7 @@ public class TestDeciderOutcomes {
 		
 		
 		workflow.setStartTime(System.currentTimeMillis());
-		DeciderOutcome outcome = ds.decide(workflow, def);
+		DeciderOutcome outcome = deciderService.decide(workflow, def);
 		assertNotNull(outcome);
 		assertEquals(5, outcome.tasksToBeScheduled.size());
 		assertEquals(0, outcome.tasksToBeUpdated.size());
@@ -352,7 +352,7 @@ public class TestDeciderOutcomes {
 		workflow.getTasks().clear();		
 		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
 		
-		outcome = ds.decide(workflow, def);
+		outcome = deciderService.decide(workflow, def);
 		assertNotNull(outcome);
 		assertEquals(SystemTaskType.JOIN.name(), outcome.tasksToBeScheduled.get(0).getTaskType());
 		for(int i = 1; i < 4; i++) {
@@ -406,7 +406,7 @@ public class TestDeciderOutcomes {
 		
 		Workflow workflow = new Workflow();
 		workflow.setStartTime(System.currentTimeMillis());
-		DeciderOutcome outcome = ds.decide(workflow, def);
+		DeciderOutcome outcome = deciderService.decide(workflow, def);
 		assertNotNull(outcome);
 		
 		System.out.println("Schedule after starting: " + outcome.tasksToBeScheduled);
@@ -418,7 +418,7 @@ public class TestDeciderOutcomes {
 		
 		workflow.getInput().put("Id", 9);		
 		workflow.getInput().put("location", "usa");
-		outcome = ds.decide(workflow, def);
+		outcome = deciderService.decide(workflow, def);
 		assertEquals(2, outcome.tasksToBeScheduled.size());
 		assertEquals(decide.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
 		assertEquals(even.getTaskReferenceName(), outcome.tasksToBeScheduled.get(1).getReferenceTaskName());		//even because of location == usa
@@ -426,7 +426,7 @@ public class TestDeciderOutcomes {
 		
 		workflow.getInput().put("Id", 9);		
 		workflow.getInput().put("location", "canada");
-		outcome = ds.decide(workflow, def);
+		outcome = deciderService.decide(workflow, def);
 		assertEquals(2, outcome.tasksToBeScheduled.size());
 		assertEquals(decide.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
 		assertEquals(odd.getTaskReferenceName(), outcome.tasksToBeScheduled.get(1).getReferenceTaskName());			//odd

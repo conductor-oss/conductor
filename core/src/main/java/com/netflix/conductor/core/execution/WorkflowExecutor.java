@@ -23,7 +23,6 @@ import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
@@ -42,7 +41,6 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,13 +49,21 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.CANCELED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED_WITH_TERMINAL_ERROR;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
 
 /**
  * @author Viren Workflow services provider interface
@@ -184,7 +190,7 @@ public class WorkflowExecutor {
         // Get tasks that are in progress and have callbackAfterSeconds > 0
         // and set the callbackAfterSeconds to 0;
         for (Task t : workflow.getTasks()) {
-            if (t.getStatus().equals(Status.IN_PROGRESS) &&
+            if (t.getStatus().equals(IN_PROGRESS) &&
                     t.getCallbackAfterSeconds() > 0) {
                 if (queueDAO.setOffsetTime(QueueUtils.getQueueName(t), t.getTaskId(), 0)) {
                     t.setCallbackAfterSeconds(0);
@@ -234,16 +240,14 @@ public class WorkflowExecutor {
 
         // First get the failed task and the cancelled task
         Task failedTask = null;
-        List<Task> cancelledTasks = new ArrayList<Task>();
+        List<Task> cancelledTasks = new ArrayList<>();
         for (Task t : workflow.getTasks()) {
-            if (t.getStatus().equals(Status.FAILED)) {
+            if (t.getStatus().equals(FAILED)) {
                 failedTask = t;
-            } else if (t.getStatus().equals(Status.CANCELED)) {
+            } else if (t.getStatus().equals(CANCELED)) {
                 cancelledTasks.add(t);
-
             }
         }
-        ;
         if (failedTask != null && !failedTask.getStatus().isTerminal()) {
             throw new ApplicationException(Code.CONFLICT,
                     "The last task is still not completed!  I can only retry the last failed task.  Use restart if you want to attempt entire workflow execution again.");
@@ -253,39 +257,34 @@ public class WorkflowExecutor {
                     "The last task has not failed!  I can only retry the last failed task.  Use restart if you want to attempt entire workflow execution again.");
         }
 
-        // Below is the situation where currently when the task failure causes
-        // workflow to fail, the task's retried flag is not updated. This is to
-        // update for these old tasks.
-        List<Task> update = workflow.getTasks().stream()
-                .filter(task -> !task.isRetried())
-                .collect(Collectors.toList());
-
-        update.forEach(task -> task.setRetried(true));
-        executionDAO.updateTasks(update);
-
-        List<Task> rescheduledTasks = new ArrayList<Task>();
+        List<Task> rescheduledTasks = new ArrayList<>();
         // Now reschedule the failed task
-        Task retried = failedTask.copy();
-        retried.setTaskId(IDGenerator.generate());
-        retried.setRetriedTaskId(failedTask.getTaskId());
-        retried.setStatus(Status.SCHEDULED);
-        retried.setRetryCount(failedTask.getRetryCount() + 1);
-        rescheduledTasks.add(retried);
+        Task taskToBeRetried = failedTask.copy();
+        taskToBeRetried.setTaskId(IDGenerator.generate());
+        taskToBeRetried.setRetriedTaskId(failedTask.getTaskId());
+        taskToBeRetried.setStatus(SCHEDULED);
+        taskToBeRetried.setRetryCount(failedTask.getRetryCount() + 1);
+        rescheduledTasks.add(taskToBeRetried);
+
+        // update the failed task in the DAO
+        failedTask.setRetried(true);
+        executionDAO.updateTask(failedTask);
 
         // Reschedule the cancelled task but if the join is cancelled set that to in progress
-        cancelledTasks.forEach(t -> {
-            if (t.getTaskType().equalsIgnoreCase(WorkflowTask.Type.JOIN.toString())) {
-                t.setStatus(Status.IN_PROGRESS);
-                t.setRetried(false);
-                executionDAO.updateTask(t);
+        cancelledTasks.forEach(task -> {
+            if (task.getTaskType().equalsIgnoreCase(WorkflowTask.Type.JOIN.toString())) {
+                task.setStatus(IN_PROGRESS);
+                executionDAO.updateTask(task);
             } else {
-                //executionDAO.removeTask(t.getTaskId());
-                Task copy = t.copy();
-                copy.setTaskId(IDGenerator.generate());
-                copy.setRetriedTaskId(t.getTaskId());
-                copy.setStatus(Status.SCHEDULED);
-                copy.setRetryCount(t.getRetryCount() + 1);
-                rescheduledTasks.add(copy);
+                Task taskToBeRescheduled = task.copy();
+                taskToBeRescheduled.setTaskId(IDGenerator.generate());
+                taskToBeRescheduled.setRetriedTaskId(task.getTaskId());
+                taskToBeRescheduled.setStatus(SCHEDULED);
+                taskToBeRescheduled.setRetryCount(task.getRetryCount() + 1);
+                rescheduledTasks.add(taskToBeRescheduled);
+                // since the canceled task is being retried, update this
+                task.setRetried(true);
+                executionDAO.updateTask(task);
             }
         });
 
@@ -293,6 +292,7 @@ public class WorkflowExecutor {
 
         workflow.setStatus(WorkflowStatus.RUNNING);
         executionDAO.updateWorkflow(workflow);
+        executionDAO.updateTasks(workflow.getTasks());
 
         decide(workflowId);
 
@@ -323,6 +323,7 @@ public class WorkflowExecutor {
         workflow.setStatus(WorkflowStatus.COMPLETED);
         workflow.setOutput(wf.getOutput());
         executionDAO.updateWorkflow(workflow);
+        executionDAO.updateTasks(wf.getTasks());
 
         // If the following task, for some reason fails, the sweep will take
         // care of this again!
@@ -354,7 +355,7 @@ public class WorkflowExecutor {
         for (Task task : tasks) {
             if (!task.getStatus().isTerminal()) {
                 // Cancel the ones which are not completed yet....
-                task.setStatus(Status.CANCELED);
+                task.setStatus(CANCELED);
                 if (isSystemTask.test(task)) {
                     WorkflowSystemTask stt = WorkflowSystemTask.get(task.getTaskType());
                     stt.cancel(workflow, task, this);
@@ -418,7 +419,7 @@ public class WorkflowExecutor {
             queueDAO.remove(taskQueueName, result.getTaskId());
             logger.debug("Workflow: {} is in terminal state Task: {} removed from Queue: {} during update task", workflowInstance, task, taskQueueName);
             if (!task.getStatus().isTerminal()) {
-                task.setStatus(Status.COMPLETED);
+                task.setStatus(COMPLETED);
             }
             task.setOutputData(result.getOutputData());
             task.setReasonForIncompletion(result.getReasonForIncompletion());
@@ -442,7 +443,7 @@ public class WorkflowExecutor {
             return;
         }
 
-        task.setStatus(Status.valueOf(result.getStatus().name()));
+        task.setStatus(valueOf(result.getStatus().name()));
         task.setOutputData(result.getOutputData());
         task.setReasonForIncompletion(result.getReasonForIncompletion());
         task.setWorkerId(result.getWorkerId());
@@ -456,13 +457,18 @@ public class WorkflowExecutor {
 
         //If the task has failed update the failed task reference name in the workflow.
         //This gives the ability to look at workflow and see what tasks have failed at a high level.
-        if (Status.FAILED.equals(task.getStatus())) {
+        if (FAILED.equals(task.getStatus()) || FAILED_WITH_TERMINAL_ERROR.equals(task.getStatus())) {
             workflowInstance.getFailedReferenceTaskNames().add(task.getReferenceTaskName());
+            //In case of a FAILED_WITH_TERMINAL_ERROR the workflow will be terminated and the output of the task is never copied
+            //ensuring the task output is copied to the workflow here
+            if(FAILED_WITH_TERMINAL_ERROR.equals(task.getStatus())) {
+                workflowInstance.setOutput(task.getOutputData());
+            }
             executionDAO.updateWorkflow(workflowInstance);
-            logger.debug("Task: {} has a FAILED status and the Workflow has been updated with failed task reference", task);
+            logger.debug("Task: {} has a {} status and the Workflow has been updated with failed task reference", task, task.getStatus());
         }
 
-        result.getLogs().forEach(tl -> tl.setTaskId(task.getTaskId()));
+        result.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
         executionDAO.addTaskExecLog(result.getLogs());
 
         switch (task.getStatus()) {
@@ -471,12 +477,15 @@ public class WorkflowExecutor {
                 queueDAO.remove(taskQueueName, result.getTaskId());
                 logger.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
                 break;
-
             case CANCELED:
                 queueDAO.remove(taskQueueName, result.getTaskId());
                 logger.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
                 break;
             case FAILED:
+                queueDAO.remove(taskQueueName, result.getTaskId());
+                logger.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
+                break;
+            case FAILED_WITH_TERMINAL_ERROR:
                 queueDAO.remove(taskQueueName, result.getTaskId());
                 logger.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
                 break;
@@ -513,10 +522,10 @@ public class WorkflowExecutor {
     }
 
     public List<String> getWorkflows(String name, Integer version, Long startTime, Long endTime) {
-        List<Workflow> allwf = executionDAO.getWorkflowsByType(name, startTime, endTime);
-        return allwf.stream()
-                .filter(wf -> wf.getVersion() == version)
-                .map(wf -> wf.getWorkflowId())
+        List<Workflow> workflowsByType = executionDAO.getWorkflowsByType(name, startTime, endTime);
+        return workflowsByType.stream()
+                .filter(workflow -> workflow.getVersion() == version)
+                .map(Workflow::getWorkflowId)
                 .collect(Collectors.toList());
 
     }
@@ -526,7 +535,6 @@ public class WorkflowExecutor {
     }
 
     /**
-     *
      * @param workflowId ID of the workflow to evaluate the state for
      * @return true if the workflow has completed (success or failed), false otherwise.
      * @throws Exception If there was an error - caller should retry in this case.
@@ -558,8 +566,8 @@ public class WorkflowExecutor {
 
             for (Task task : tasksToBeScheduled) {
                 if (isSystemTask.and(isNonTerminalTask).test(task)) {
-                    WorkflowSystemTask stt = WorkflowSystemTask.get(task.getTaskType());
-                    if (!stt.isAsync() && stt.execute(workflow, task, this)) {
+                    WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
+                    if (!workflowSystemTask.isAsync() && workflowSystemTask.execute(workflow, task, this)) {
                         tasksToBeUpdated.add(task);
                         stateChanged = true;
                     }
@@ -637,7 +645,7 @@ public class WorkflowExecutor {
         theTask.setTaskId(IDGenerator.generate());
         theTask.setReferenceTaskName(taskReferenceName);
         theTask.setWorkflowInstanceId(workflowId);
-        theTask.setStatus(Status.SKIPPED);
+        theTask.setStatus(SKIPPED);
         theTask.setTaskType(wft.getName());
         theTask.setCorrelationId(wf.getCorrelationId());
         if (skipTaskRequest != null) {
@@ -691,14 +699,14 @@ public class WorkflowExecutor {
             if (workflow.getStatus().isTerminal()) {
                 logger.warn("Workflow {} has been completed for {}/{}", workflow.getWorkflowId(), systemTask.getName(), task.getTaskId());
                 if (!task.getStatus().isTerminal()) {
-                    task.setStatus(Status.CANCELED);
+                    task.setStatus(CANCELED);
                 }
                 executionDAO.updateTask(task);
                 queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId());
                 return;
             }
 
-            if (task.getStatus().equals(Status.SCHEDULED)) {
+            if (task.getStatus().equals(SCHEDULED)) {
 
                 if (executionDAO.exceedsInProgressLimit(task)) {
                     logger.warn("Rate limited for {}", task.getTaskDefName());
@@ -806,42 +814,42 @@ public class WorkflowExecutor {
             }
         }
 
-        //Save the tasks in the DAO
+        // Save the tasks in the DAO
         List<Task> created = executionDAO.createTasks(tasks);
 
         List<Task> createdSystemTasks = created.stream()
                 .filter(isSystemTask)
                 .collect(Collectors.toList());
 
-        List<Task> toBeQueued = created.stream()
+        List<Task> tasksToBeQueued = created.stream()
                 .filter(isSystemTask.negate())
                 .collect(Collectors.toList());
 
         boolean startedSystemTasks = false;
 
-        //Traverse through all the system tasks, start the sync tasks, in case of async queue the tasks
+        // Traverse through all the system tasks, start the sync tasks, in case of async queue the tasks
         for (Task task : createdSystemTasks) {
-            WorkflowSystemTask stt = WorkflowSystemTask.get(task.getTaskType());
-            if (stt == null) {
+            WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
+            if (workflowSystemTask == null) {
                 throw new RuntimeException("No system task found by name " + task.getTaskType());
             }
             task.setStartTime(System.currentTimeMillis());
-            if (!stt.isAsync()) {
-                stt.start(workflow, task, this);
+            if (!workflowSystemTask.isAsync()) {
+                workflowSystemTask.start(workflow, task, this);
                 startedSystemTasks = true;
                 executionDAO.updateTask(task);
             } else {
-                toBeQueued.add(task);
+                tasksToBeQueued.add(task);
             }
         }
 
-        addTaskToQueue(toBeQueued);
+        addTaskToQueue(tasksToBeQueued);
         return startedSystemTasks;
     }
 
     private void addTaskToQueue(final List<Task> tasks) throws Exception {
-        for (Task t : tasks) {
-            addTaskToQueue(t);
+        for (Task task : tasks) {
+            addTaskToQueue(task);
         }
     }
 
@@ -874,7 +882,7 @@ public class WorkflowExecutor {
         // If the task Id is null it implies that the entire workflow has to be rerun
         if (taskId == null) {
             // remove all tasks
-            workflow.getTasks().forEach(t -> executionDAO.removeTask(t.getTaskId()));
+            workflow.getTasks().forEach(task -> executionDAO.removeTask(task.getTaskId()));
             // Set workflow as RUNNING
             workflow.setStatus(WorkflowStatus.RUNNING);
             if (correlationId != null) {
@@ -890,18 +898,18 @@ public class WorkflowExecutor {
             return true;
         }
 
-        // Now iterate thru the tasks and find the "specific" task
-        Task theTask = null;
-        for (Task t : workflow.getTasks()) {
-            if (t.getTaskId().equals(taskId)) {
-                theTask = t;
+        // Now iterate through the tasks and find the "specific" task
+        Task rerunFromTask = null;
+        for (Task task : workflow.getTasks()) {
+            if (task.getTaskId().equals(taskId)) {
+                rerunFromTask = task;
                 break;
             } else {
                 // If not found look into sub workflows
-                if (t.getTaskType().equalsIgnoreCase("SUB_WORKFLOW")) {
-                    String subWorkflowId = t.getInputData().get("subWorkflowId").toString();
+                if (task.getTaskType().equalsIgnoreCase("SUB_WORKFLOW")) {
+                    String subWorkflowId = task.getInputData().get("subWorkflowId").toString();
                     if (rerunWF(subWorkflowId, taskId, taskInput, null, null)) {
-                        theTask = t;
+                        rerunFromTask = task;
                         break;
                     }
                 }
@@ -909,28 +917,28 @@ public class WorkflowExecutor {
         }
 
 
-        if (theTask != null) {
-            // Remove all later tasks from the "theTask"
-            for (Task t : workflow.getTasks()) {
-                if (t.getSeq() > theTask.getSeq()) {
-                    executionDAO.removeTask(t.getTaskId());
+        if (rerunFromTask != null) {
+            // Remove all tasks after the "rerunFromTask"
+            for (Task task : workflow.getTasks()) {
+                if (task.getSeq() > rerunFromTask.getSeq()) {
+                    executionDAO.removeTask(task.getTaskId());
                 }
             }
-            if (theTask.getTaskType().equalsIgnoreCase("SUB_WORKFLOW")) {
+            if (rerunFromTask.getTaskType().equalsIgnoreCase("SUB_WORKFLOW")) {
                 // if task is sub workflow set task as IN_PROGRESS
-                theTask.setStatus(Status.IN_PROGRESS);
-                executionDAO.updateTask(theTask);
+                rerunFromTask.setStatus(IN_PROGRESS);
+                executionDAO.updateTask(rerunFromTask);
             } else {
                 // Set the task to rerun
-                theTask.setStatus(Status.SCHEDULED);
+                rerunFromTask.setStatus(SCHEDULED);
                 if (taskInput != null) {
-                    theTask.setInputData(taskInput);
+                    rerunFromTask.setInputData(taskInput);
                 }
-                theTask.setRetried(false);
-                executionDAO.updateTask(theTask);
-                addTaskToQueue(theTask);
+                rerunFromTask.setExecuted(false);
+                executionDAO.updateTask(rerunFromTask);
+                addTaskToQueue(rerunFromTask);
             }
-            // and workflow as RUNNING
+            // and set workflow as RUNNING
             workflow.setStatus(WorkflowStatus.RUNNING);
             if (correlationId != null) {
                 workflow.setCorrelationId(correlationId);

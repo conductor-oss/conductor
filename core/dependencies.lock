@@ -34,8 +34,8 @@
             "requested": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
-            "locked": "0.40.0",
-            "requested": "0.40.0"
+            "locked": "0.68.0",
+            "requested": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
@@ -87,8 +87,8 @@
             "requested": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
-            "locked": "0.40.0",
-            "requested": "0.40.0"
+            "locked": "0.68.0",
+            "requested": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
@@ -140,8 +140,8 @@
             "requested": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
-            "locked": "0.40.0",
-            "requested": "0.40.0"
+            "locked": "0.68.0",
+            "requested": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
@@ -193,8 +193,8 @@
             "requested": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
-            "locked": "0.40.0",
-            "requested": "0.40.0"
+            "locked": "0.68.0",
+            "requested": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
@@ -246,8 +246,8 @@
             "requested": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
-            "locked": "0.40.0",
-            "requested": "0.40.0"
+            "locked": "0.68.0",
+            "requested": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
@@ -299,8 +299,8 @@
             "requested": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
-            "locked": "0.40.0",
-            "requested": "0.40.0"
+            "locked": "0.68.0",
+            "requested": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
@@ -364,8 +364,8 @@
             "requested": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
-            "locked": "0.40.0",
-            "requested": "0.40.0"
+            "locked": "0.68.0",
+            "requested": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
@@ -429,8 +429,8 @@
             "requested": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
-            "locked": "0.40.0",
-            "requested": "0.40.0"
+            "locked": "0.68.0",
+            "requested": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
@@ -494,8 +494,8 @@
             "requested": "0.12.17"
         },
         "com.netflix.spectator:spectator-api": {
-            "locked": "0.40.0",
-            "requested": "0.40.0"
+            "locked": "0.68.0",
+            "requested": "0.68.0"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",

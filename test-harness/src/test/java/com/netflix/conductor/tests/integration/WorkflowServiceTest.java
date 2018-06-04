@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Netflix, Inc.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,36 +14,9 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.tests.integration;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-
-import org.apache.commons.lang.StringUtils;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -72,2078 +45,2176 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.tests.utils.TestRunner;
+import org.apache.commons.lang.StringUtils;
+import org.junit.Before;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Viren
- *
  */
 @RunWith(TestRunner.class)
 public class WorkflowServiceTest {
-	
-	private static final String COND_TASK_WF = "ConditionalTaskWF";
-	
-	private static final String FORK_JOIN_NESTED_WF = "FanInOutNestedTest";
-	
-	private static final String FORK_JOIN_WF = "FanInOutTest";
-	
-	private static final String DYNAMIC_FORK_JOIN_WF = "DynamicFanInOutTest";
-	
-	private static final String DYNAMIC_FORK_JOIN_WF_LEGACY = "DynamicFanInOutTestLegacy";
-
-	private static final int RETRY_COUNT = 1;
-
-	@Inject
-	private ExecutionService ess;
-	
-	@Inject
-	private SubWorkflow subworkflow;
-	
-	@Inject
-	private MetadataService ms;
-	
-	
-	@Inject
-	private WorkflowSweeper sweeper;
-	
-	@Inject 
-	private QueueDAO queue;
-	
-	@Inject
-	private WorkflowExecutor provider;
-
-	private static boolean registered;
-	
-	private static List<TaskDef> taskDefs;
-
-	private static final String LINEAR_WORKFLOW_T1_T2 = "junit_test_wf";
-	
-	private static final String LINEAR_WORKFLOW_T1_T2_SW = "junit_test_wf_sw";
-	
-	private static final String LONG_RUNNING = "longRunningWf";
-	
-	private static final String TEST_WORKFLOW_NAME_3 = "junit_test_wf3";
-	
-	@Before
-	public void init() throws Exception {
-		System.setProperty("EC2_REGION", "us-east-1");
-		System.setProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");		
-		if(registered){
-			return;
-		}
-		
-		
-		WorkflowContext.set(new WorkflowContext("junit_app"));
-		for(int i = 0; i < 21; i++){
-			
-			String name = "junit_task_" + i;
-			if(ms.getTaskDef(name) != null){
-				continue;
-			}
-			
-			TaskDef task = new TaskDef();
-			task.setName(name);
-			task.setTimeoutSeconds(120);
-			task.setRetryCount(RETRY_COUNT);
-			ms.registerTaskDef(Arrays.asList(task));
-		}
-
-		for(int i = 0; i < 5; i++){
-			
-			String name = "junit_task_0_RT_" + i;
-			if(ms.getTaskDef(name) != null){
-				continue;
-			}
-			
-			TaskDef task = new TaskDef();
-			task.setName(name);
-			task.setTimeoutSeconds(120);
-			task.setRetryCount(0);
-			ms.registerTaskDef(Arrays.asList(task));
-		}
-		
-		TaskDef task = new TaskDef();
-		task.setName("short_time_out");
-		task.setTimeoutSeconds(5);
-		task.setRetryCount(RETRY_COUNT);
-		ms.registerTaskDef(Arrays.asList(task));
-		
-		WorkflowDef def = new WorkflowDef();
-		def.setName(LINEAR_WORKFLOW_T1_T2);
-		def.setDescription(def.getName());
-		def.setVersion(1);
-		def.setInputParameters(Arrays.asList("param1", "param2"));
-		Map<String, Object> outputParameters = new HashMap<>();
-		outputParameters.put("o1", "${workflow.input.param1}");
-		outputParameters.put("o2", "${t2.output.uuid}");
-		outputParameters.put("o3", "${t1.output.op}");
-		def.setOutputParameters(outputParameters);
-		def.setFailureWorkflow("$workflow.input.failureWfName");
-		def.setSchemaVersion(2);
-		LinkedList<WorkflowTask> wftasks = new LinkedList<>();
-		
-		WorkflowTask wft1 = new WorkflowTask();
-		wft1.setName("junit_task_1");
-		Map<String, Object> ip1 = new HashMap<>();
-		ip1.put("p1", "${workflow.input.param1}");
-		ip1.put("p2", "${workflow.input.param2}");
-		wft1.setInputParameters(ip1);
-		wft1.setTaskReferenceName("t1");
-		
-		WorkflowTask wft2 = new WorkflowTask();
-		wft2.setName("junit_task_2");
-		Map<String, Object> ip2 = new HashMap<>();
-		ip2.put("tp1", "${workflow.input.param1}");
-		ip2.put("tp2", "${t1.output.op}");
-		wft2.setInputParameters(ip2);
-		wft2.setTaskReferenceName("t2");
-				
-		wftasks.add(wft1);
-		wftasks.add(wft2);
-		def.setTasks(wftasks);
-		
-		WorkflowTask wft3 = new WorkflowTask();
-		wft3.setName("junit_task_3");
-		Map<String, Object> ip3 = new HashMap<>();
-		ip3.put("tp1", "${workflow.input.param1}");
-		ip3.put("tp2", "${t1.output.op}");
-		wft3.setInputParameters(ip3);
-		wft3.setTaskReferenceName("t3");
-		
-		WorkflowDef def2 = new WorkflowDef();
-		def2.setName(TEST_WORKFLOW_NAME_3);
-		def2.setDescription(def2.getName());
-		def2.setVersion(1);
-		def2.setInputParameters(Arrays.asList("param1", "param2"));
-		LinkedList<WorkflowTask> wftasks2 = new LinkedList<>();
-
-		wftasks2.add(wft1);
-		wftasks2.add(wft2);
-		wftasks2.add(wft3);
-		def2.setSchemaVersion(2);
-		def2.setTasks(wftasks2);
-		
-		try {
-			
-			WorkflowDef[] wdsf = new WorkflowDef[] { def, def2 };
-			for (WorkflowDef wd : wdsf) {
-				ms.updateWorkflowDef(wd);
-			}
-			createForkJoinWorkflow();
-			def.setName(LONG_RUNNING);
-			ms.updateWorkflowDef(def);
-		} catch (Exception e) {}
-		
-		taskDefs = ms.getTaskDefs();
-		
-		registered = true;
-	}
-	
-	@Test
-	public void testWorkflowWithNoTasks() throws Exception {
-
-		WorkflowDef empty = new WorkflowDef();
-		empty.setName("empty_workflow");
-		empty.setSchemaVersion(2);
-		ms.registerWorkflowDef(empty);
-		
-		String id = provider.startWorkflow(empty.getName(), 1, "testWorkflowWithNoTasks", new HashMap<>());
-		assertNotNull(id);
-		Workflow workflow = ess.getExecutionStatus(id, true);
-		assertNotNull(workflow);
-		assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
-		assertEquals(0, workflow.getTasks().size());
-	}
-	
-	@Test
-	public void testTaskDefTemplate() throws Exception {
-		
-		System.setProperty("STACK2", "test_stack");
-		TaskDef templatedTask = new TaskDef();
-		templatedTask.setName("templated_task");
-		Map<String, Object> httpRequest = new HashMap<>();
-		httpRequest.put("method", "GET");
-		httpRequest.put("vipStack", "${STACK2}");
-		httpRequest.put("uri", "/get/something");
-		Map<String, Object> body = new HashMap<>();
-		body.put("inputPaths", Arrays.asList("${workflow.input.path1}", "${workflow.input.path2}"));
-		body.put("requestDetails", "${workflow.input.requestDetails}");
-		body.put("outputPath", "${workflow.input.outputPath}");
-		httpRequest.put("body", body);
-		templatedTask.getInputTemplate().put("http_request", httpRequest);
-		ms.registerTaskDef(Arrays.asList(templatedTask));
-		
-		WorkflowDef templateWf = new WorkflowDef();
-		templateWf.setName("template_workflow");
-		WorkflowTask wft = new WorkflowTask();
-		wft.setName(templatedTask.getName());
-		wft.setWorkflowTaskType(Type.SIMPLE);
-		wft.setTaskReferenceName("t0");
-		templateWf.getTasks().add(wft);
-		templateWf.setSchemaVersion(2);
-		ms.registerWorkflowDef(templateWf);
-		
-		Map<String, Object> requestDetails = new HashMap<>();
-		requestDetails.put("key1", "value1");
-		requestDetails.put("key2", 42);
-		
-		Map<String, Object> input = new HashMap<>();
-		input.put("path1", "file://path1");
-		input.put("path2", "file://path2");
-		input.put("outputPath", "s3://bucket/outputPath");
-		input.put("requestDetails", requestDetails);
-		
-		String id = provider.startWorkflow(templateWf.getName(), 1, "testTaskDefTemplate", input);
-		assertNotNull(id);
-		Workflow workflow = ess.getExecutionStatus(id, true);
-		assertNotNull(workflow);
-		assertTrue(workflow.getReasonForIncompletion(), !workflow.getStatus().isTerminal());
-		assertEquals(1, workflow.getTasks().size());
-		Task task = workflow.getTasks().get(0);
-		Map<String, Object> taskInput = task.getInputData();
-		assertNotNull(taskInput);
-		assertTrue(taskInput.containsKey("http_request"));
-		assertTrue(taskInput.get("http_request") instanceof Map);
-		
-		ObjectMapper om = new ObjectMapper();
-	
-		//Use the commented sysout to get the string value
-		//System.out.println(om.writeValueAsString(om.writeValueAsString(taskInput)));
-		String expected = "{\"http_request\":{\"method\":\"GET\",\"vipStack\":\"test_stack\",\"body\":{\"requestDetails\":{\"key1\":\"value1\",\"key2\":42},\"outputPath\":\"s3://bucket/outputPath\",\"inputPaths\":[\"file://path1\",\"file://path2\"]},\"uri\":\"/get/something\"}}";
-		assertEquals(expected, om.writeValueAsString(taskInput));
-	}
-	
-	
-	@Test
-	public void testWorkflowSchemaVersion() throws Exception {
-		WorkflowDef ver2 = new WorkflowDef();
-		ver2.setSchemaVersion(2);
-		ver2.setName("Test_schema_version2");
-		ver2.setVersion(1);
-		
-		WorkflowDef ver1 = new WorkflowDef();
-		ver1.setName("Test_schema_version1");
-		ver1.setVersion(1);
-		
-		ms.updateWorkflowDef(ver1);
-		ms.updateWorkflowDef(ver2);
-		
-		WorkflowDef found = ms.getWorkflowDef(ver2.getName(), 1);
-		assertNotNull(found);
-		assertEquals(2, found.getSchemaVersion());
-		
-		WorkflowDef found1 = ms.getWorkflowDef(ver1.getName(), 1);
-		assertNotNull(found1);
-		assertEquals(1, found1.getSchemaVersion());
-		
-	}
-	
-	@Test
-	public void testForkJoin() throws Exception {
-		try{
-			createForkJoinWorkflow();
-		}catch(Exception e){}
-		String taskName = "junit_task_1";
-		TaskDef taskDef = ms.getTaskDef(taskName);
-		taskDef.setRetryCount(0);
-		taskDef.setTimeoutSeconds(0);
-		ms.updateTaskDef(taskDef);
-		
-		Map<String, Object> input = new HashMap<String, Object>();
-		String wfid = provider.startWorkflow(FORK_JOIN_WF, 1, "fanouttest", input );
-		System.out.println("testForkJoin.wfid=" + wfid);
-		printTaskStatuses(wfid, "initiated");
-		
-		Task t1 = ess.poll("junit_task_1", "test");
-		assertTrue(ess.ackTaskReceived(t1.getTaskId()));
-		
-		Task t2 = ess.poll("junit_task_2", "test");
-		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
-		
-		Task t3 = ess.poll("junit_task_3", "test");
-		assertNull(t3);
-		
-		assertNotNull(t1);
-		assertNotNull(t2);
-		
-		t1.setStatus(Status.COMPLETED);
-		ess.updateTask(t1);
-
-		Workflow wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals("Found " + wf.getTasks(), WorkflowStatus.RUNNING, wf.getStatus());
-		printTaskStatuses(wf, "T1 completed");
-		
-		t3 = ess.poll("junit_task_3", "test");
-		assertNotNull(t3);
-		
-		t2.setStatus(Status.COMPLETED);
-		t3.setStatus(Status.COMPLETED);
-
-		ExecutorService es = Executors.newFixedThreadPool(2);
-		Future<?> future1 = es.submit(()->{
-			try {
-				ess.updateTask(t2);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-				
-		});
-		final Task _t3 = t3;
-		Future<?> future2 = es.submit(()->{
-			try {
-				ess.updateTask(_t3);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-				
-		});
-		future1.get();
-		future2.get();
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		printTaskStatuses(wf, "T2 T3 completed");
-		assertEquals("Found " + wf.getTasks(), WorkflowStatus.RUNNING, wf.getStatus());
-		if (!wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t3"))) {
-			provider.decide(wfid);
-			wf = ess.getExecutionStatus(wfid, true);
-			assertNotNull(wf);
-		}else {
-			provider.decide(wfid);
-		}
-		assertTrue("Found " + wf.getTasks().stream().map(t -> t.getTaskType()).collect(Collectors.toList()), wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t3")));
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals("Found " + wf.getTasks(), WorkflowStatus.RUNNING, wf.getStatus());
-		assertTrue("Found  " + wf.getTasks().stream().map(t -> t.getReferenceTaskName() + "." + t.getStatus()).collect(Collectors.toList()), wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t4")));		
-		assertEquals("Found " + wf.getTasks().stream().map(t -> t.getTaskType()).collect(Collectors.toList()), 6, wf.getTasks().size());
-		
-		provider.decide(wfid);
-		provider.decide(wfid);
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals("Found " + wf.getTasks(), WorkflowStatus.RUNNING, wf.getStatus());
-		//fanout, t1, t2, t3, t4, join
-		assertEquals("Found " + wf.getTasks().stream().map(t -> t.getTaskType()).collect(Collectors.toList()), 6, wf.getTasks().size());
-		
-		Task t4 = ess.poll("junit_task_4", "test");
-		assertNotNull(t4);
-		t4.setStatus(Status.COMPLETED);
-		ess.updateTask(t4);
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals("Found " + wf.getTasks(), WorkflowStatus.COMPLETED, wf.getStatus());
-		printTaskStatuses(wf, "All completed");
-	}
-	
-	@Test
-	public void testForkJoinNested() throws Exception {
-		
-		createForkJoinNestedWorkflow();
-
-		Map<String, Object> input = new HashMap<String, Object>();
-		input.put("case", "a");		//This should execute t16 and t19
-		String wfid = provider.startWorkflow(FORK_JOIN_NESTED_WF, 1, "fork_join_nested_test", input );
-		System.out.println("testForkJoinNested.wfid=" + wfid);
-		
-		Workflow wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
-		
-		assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t11")));
-		assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t12")));
-		assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t13")));
-		assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("sw1")));
-		assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("fork1")));
-		assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("fork2")));
-		
-		assertFalse(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t16")));
-		assertFalse(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t1")));
-		assertFalse(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t2")));
-
-		
-		Task t1 = ess.poll("junit_task_11", "test");
-		assertTrue(ess.ackTaskReceived(t1.getTaskId()));
-
-		Task t2 = ess.poll("junit_task_12", "test");
-		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
-		
-		Task t3 = ess.poll("junit_task_13", "test");
-		assertTrue(ess.ackTaskReceived(t3.getTaskId()));
-		
-		assertNotNull(t1);
-		assertNotNull(t2);
-		assertNotNull(t3);
-		
-		t1.setStatus(Status.COMPLETED);
-		t2.setStatus(Status.COMPLETED);
-		t3.setStatus(Status.COMPLETED);
-		
-		ess.updateTask(t1);
-		ess.updateTask(t2);
-		ess.updateTask(t3);
-		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		
-		assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t16")));
-		assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t14")));
-		
-		String[] tasks = new String[]{"junit_task_1","junit_task_2","junit_task_14","junit_task_16"};
-		for(String tt : tasks){
-			Task polled = ess.poll(tt, "test");
-			assertNotNull("poll resulted empty for task: " + tt, polled);
-			polled.setStatus(Status.COMPLETED);
-			ess.updateTask(polled);
-		}
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
-		
-		assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t19")));
-		assertFalse(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t15")));		//Not there yet
-		assertFalse(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t20")));		//Not there yet
-		
-		Task task19 = ess.poll("junit_task_19", "test");
-		assertNotNull(task19);
-		task19.setStatus(Status.COMPLETED);
-		ess.updateTask(task19);
-		
-		Task task20 = ess.poll("junit_task_20", "test");
-		assertNotNull(task20);
-		task20.setStatus(Status.COMPLETED);
-		ess.updateTask(task20);
-		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
-		
-		Set<String> pendingTasks = wf.getTasks().stream().filter(t -> !t.getStatus().isTerminal()).map(t -> t.getReferenceTaskName()).collect(Collectors.toSet());
-		assertTrue("Found only this: " + pendingTasks, wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("join1")));
-		
-		pendingTasks = wf.getTasks().stream().filter(t -> !t.getStatus().isTerminal()).map(t -> t.getReferenceTaskName()).collect(Collectors.toSet());
-		assertTrue("Found only this: " + pendingTasks, wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t15")));
-		Task task15 = ess.poll("junit_task_15", "test");
-		assertNotNull(task15);
-		task15.setStatus(Status.COMPLETED);
-		ess.updateTask(task15);
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
-
-	}
-	
-	@Test
-	public void testForkJoinFailure() throws Exception {
-		
-		try{
-			createForkJoinWorkflow();
-		}catch(Exception e){}
-		
-		String taskName = "junit_task_2";
-		TaskDef taskDef = ms.getTaskDef(taskName);
-		int retryCount = taskDef.getRetryCount();
-		taskDef.setRetryCount(0);
-		ms.updateTaskDef(taskDef);
-		
-		
-		Map<String, Object> input = new HashMap<String, Object>();
-		String wfid = provider.startWorkflow(FORK_JOIN_WF, 1, "fanouttest", input );
-		System.out.println("testForkJoinFailure.wfid=" + wfid);
-		
-		Task t1 = ess.poll("junit_task_2", "test");
-		assertNotNull(t1);
-		assertTrue(ess.ackTaskReceived(t1.getTaskId()));
-
-		Task t2 = ess.poll("junit_task_1", "test");
-		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
-		
-		Task t3 = ess.poll("junit_task_3", "test");
-		assertNull(t3);
-		
-		assertNotNull(t1);
-		assertNotNull(t2);
-		t1.setStatus(Status.FAILED);
-		t2.setStatus(Status.COMPLETED);
-		
-		ess.updateTask(t2);
-		Workflow wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals("Found " + wf.getTasks(), WorkflowStatus.RUNNING, wf.getStatus());
-		
-		t3 = ess.poll("junit_task_3", "test");
-		assertNotNull(t3);
-		
-		
-		ess.updateTask(t1);
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals("Found " + wf.getTasks(), WorkflowStatus.FAILED, wf.getStatus());
-		
-		
-		taskDef = ms.getTaskDef(taskName);
-		taskDef.setRetryCount(retryCount);
-		ms.updateTaskDef(taskDef);
-	}
-	
-	@SuppressWarnings("unchecked")
-	@Test
-	public void testDynamicForkJoinLegacy() throws Exception { 
-
-		try{
-			createDynamicForkJoinWorkflowDefsLegacy();
-		}catch(Exception e){}
-		
-		Map<String, Object> input = new HashMap<String, Object>();
-		String wfid = provider.startWorkflow(DYNAMIC_FORK_JOIN_WF_LEGACY, 1, "dynfanouttest1", input );
-		System.out.println("testDynamicForkJoinLegacy.wfid=" + wfid);
-		
-		Task t1 = ess.poll("junit_task_1", "test");
-		//assertTrue(ess.ackTaskRecieved(t1.getTaskId(), "test"));
-
-		DynamicForkJoinTaskList dtasks = new DynamicForkJoinTaskList();
-		
-		input = new HashMap<String, Object>();
-		input.put("k1", "v1");
-		dtasks.add("junit_task_2", null, "xdt1", input);
-
-		HashMap<String, Object> input2 = new HashMap<String, Object>();
-		input2.put("k2", "v2");
-		dtasks.add("junit_task_3", null, "xdt2", input2);
-		
-		t1.getOutputData().put("dynamicTasks", dtasks);
-		t1.setStatus(Status.COMPLETED);
-		
-		ess.updateTask(t1);
-		
-		Task t2 = ess.poll("junit_task_2", "test");
-		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
-		assertEquals("xdt1", t2.getReferenceTaskName());
-		assertTrue(t2.getInputData().containsKey("k1"));
-		assertEquals("v1", t2.getInputData().get("k1"));
-		Map<String, Object> output = new HashMap<String, Object>();
-		output.put("ok1", "ov1");
-		t2.setOutputData(output);
-		t2.setStatus(Status.COMPLETED);
-		ess.updateTask(t2);
-
-		Task t3 = ess.poll("junit_task_3", "test");
-		assertTrue(ess.ackTaskReceived(t3.getTaskId()));
-		assertEquals("xdt2", t3.getReferenceTaskName());
-		assertTrue(t3.getInputData().containsKey("k2"));
-		assertEquals("v2", t3.getInputData().get("k2"));
-		
-		output = new HashMap<String, Object>();
-		output.put("ok1", "ov1");
-		t3.setOutputData(output);
-		t3.setStatus(Status.COMPLETED);
-		ess.updateTask(t3);
-
-		Workflow wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
-		
-		// Check the output
-		Task joinTask = wf.getTaskByRefName("dynamicfanouttask_join");
-		assertEquals("Found:" + joinTask.getOutputData(), 2, joinTask.getOutputData().keySet().size());
-		Set<String> joinTaskOutput = joinTask.getOutputData().keySet();
-		System.out.println("joinTaskOutput=" + joinTaskOutput);
-		for(String key: joinTask.getOutputData().keySet()){
-			assertTrue(key.equals("xdt1") || key.equals("xdt2"));
-			assertEquals("ov1", ((Map<String, Object>)joinTask.getOutputData().get(key)).get("ok1"));
-		}
-	}
-
-	@SuppressWarnings("unchecked")
-	@Test
-	public void testDynamicForkJoin() throws Exception {
-		
-		createDynamicForkJoinWorkflowDefs();
-		
-		String taskName = "junit_task_2";
-		TaskDef taskDef = ms.getTaskDef(taskName);
-		int retryCount = taskDef.getRetryCount();
-		taskDef.setRetryCount(2);
-		taskDef.setRetryDelaySeconds(0);
-		taskDef.setRetryLogic(RetryLogic.FIXED);
-		ms.updateTaskDef(taskDef);
-		
-		Map<String, Object> input = new HashMap<String, Object>();
-		String wfid = provider.startWorkflow(DYNAMIC_FORK_JOIN_WF, 1, "dynfanouttest1", input );
-		System.out.println("testDynamicForkJoin.wfid=" + wfid);
-		Workflow es = provider.getWorkflow(wfid, true);
-		assertNotNull(es);
-		assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals(1, es.getTasks().size());
-		Task t1 = ess.poll("junit_task_1", "test");
-		assertNotNull(t1);
-		assertTrue(ess.ackTaskReceived(t1.getTaskId()));
-		assertEquals("dt1", t1.getReferenceTaskName());
-		
-		
-		Map<String, Object> input1 = new HashMap<String, Object>();
-		input1.put("k1", "v1");
-		WorkflowTask wt2 = new WorkflowTask();
-		wt2.setName("junit_task_2");
-		wt2.setTaskReferenceName("xdt1");
-
-		Map<String, Object> input2 = new HashMap<String, Object>();
-		input2.put("k2", "v2");
-		
-		WorkflowTask wt3 = new WorkflowTask();
-		wt3.setName("junit_task_3");
-		wt3.setTaskReferenceName("xdt2");
-		
-		HashMap<String, Object> dynamicTasksInput = new HashMap<>();
-		dynamicTasksInput.put("xdt1", input1);
-		dynamicTasksInput.put("xdt2", input2);
-		t1.getOutputData().put("dynamicTasks", Arrays.asList(wt2, wt3));
-		t1.getOutputData().put("dynamicTasksInput", dynamicTasksInput);
-		t1.setStatus(Status.COMPLETED);
-		
-		ess.updateTask(t1);
-		
-		Task t2 = ess.poll("junit_task_2", "test");
-		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
-		assertEquals("xdt1", t2.getReferenceTaskName());
-		assertTrue(t2.getInputData().containsKey("k1"));
-		assertEquals("v1", t2.getInputData().get("k1"));
-		Map<String, Object> output = new HashMap<String, Object>();
-		output.put("ok1", "ov1");
-		t2.setOutputData(output);
-		t2.setStatus(Status.FAILED);
-		ess.updateTask(t2);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals(2, es.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_2")).count());
-		assertTrue(es.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_2")).allMatch(t -> t.getWorkflowTask() != null));
-		
-		t2 = ess.poll("junit_task_2", "test");
-		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
-		assertEquals("xdt1", t2.getReferenceTaskName());
-		assertTrue(t2.getInputData().containsKey("k1"));
-		assertEquals("v1", t2.getInputData().get("k1"));
-		t2.setOutputData(output);
-		t2.setStatus(Status.COMPLETED);
-		ess.updateTask(t2);
-		
-
-		Task t3 = ess.poll("junit_task_3", "test");
-		assertTrue(ess.ackTaskReceived(t3.getTaskId()));
-		assertEquals("xdt2", t3.getReferenceTaskName());
-		assertTrue(t3.getInputData().containsKey("k2"));
-		assertEquals("v2", t3.getInputData().get("k2"));
-		output = new HashMap<String, Object>();
-		output.put("ok1", "ov1");
-		t3.setOutputData(output);
-		t3.setStatus(Status.COMPLETED);
-		ess.updateTask(t3);
-		
-		Workflow wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
-		
-		// Check the output
-		Task joinTask = wf.getTaskByRefName("dynamicfanouttask_join");
-		assertEquals("Found:" + joinTask.getOutputData(), 2, joinTask.getOutputData().keySet().size());
-		Set<String> joinTaskOutput = joinTask.getOutputData().keySet();
-		System.out.println("joinTaskOutput=" + joinTaskOutput);
-		for(String key: joinTask.getOutputData().keySet()){
-			assertTrue(key.equals("xdt1") || key.equals("xdt2"));
-			assertEquals("ov1", ((Map<String, Object>)joinTask.getOutputData().get(key)).get("ok1"));
-		}
-		
-		taskDef = ms.getTaskDef(taskName);
-		taskDef.setRetryCount(retryCount);
-		taskDef.setRetryDelaySeconds(1);
-		ms.updateTaskDef(taskDef);
-		
-		
-	}
-
-	private void createForkJoinWorkflow() throws Exception {
-		
-		WorkflowDef def = new WorkflowDef();
-		def.setName(FORK_JOIN_WF);
-		def.setDescription(def.getName());
-		def.setVersion(1);
-		def.setInputParameters(Arrays.asList("param1", "param2"));
-		
-		WorkflowTask fanout = new WorkflowTask();
-		fanout.setType(Type.FORK_JOIN.name());
-		fanout.setTaskReferenceName("fanouttask");
-		
-		WorkflowTask wft1 = new WorkflowTask();
-		wft1.setName("junit_task_1");
-		Map<String, Object> ip1 = new HashMap<>();
-		ip1.put("p1", "workflow.input.param1");
-		ip1.put("p2", "workflow.input.param2");
-		wft1.setInputParameters(ip1);
-		wft1.setTaskReferenceName("t1");
-		
-		WorkflowTask wft3 = new WorkflowTask();
-		wft3.setName("junit_task_3");
-		wft3.setInputParameters(ip1);
-		wft3.setTaskReferenceName("t3");
-		
-		WorkflowTask wft2 = new WorkflowTask();
-		wft2.setName("junit_task_2");
-		Map<String, Object> ip2 = new HashMap<>();
-		ip2.put("tp1", "workflow.input.param1");
-		wft2.setInputParameters(ip2);
-		wft2.setTaskReferenceName("t2");
-		
-		WorkflowTask wft4 = new WorkflowTask();
-		wft4.setName("junit_task_4");
-		wft4.setInputParameters(ip2);
-		wft4.setTaskReferenceName("t4");
-		
-		fanout.getForkTasks().add(Arrays.asList(wft1, wft3));
-		fanout.getForkTasks().add(Arrays.asList(wft2));
-		
-		def.getTasks().add(fanout);
-		
-		WorkflowTask join = new WorkflowTask();
-		join.setType(Type.JOIN.name());
-		join.setTaskReferenceName("fanouttask_join");
-		join.setJoinOn(Arrays.asList("t3","t2"));
-		
-		def.getTasks().add(join);
-		def.getTasks().add(wft4);
-		ms.updateWorkflowDef(def);
-
-	}
-	
-	
-	private void createForkJoinWorkflowWithZeroRetry() throws Exception {
-		
-		WorkflowDef def = new WorkflowDef();
-		def.setName(FORK_JOIN_WF + "_2");
-		def.setDescription(def.getName());
-		def.setVersion(1);
-		def.setInputParameters(Arrays.asList("param1", "param2"));
-		
-		WorkflowTask fanout = new WorkflowTask();
-		fanout.setType(Type.FORK_JOIN.name());
-		fanout.setTaskReferenceName("fanouttask");
-		
-		WorkflowTask wft1 = new WorkflowTask();
-		wft1.setName("junit_task_0_RT_1");
-		Map<String, Object> ip1 = new HashMap<>();
-		ip1.put("p1", "workflow.input.param1");
-		ip1.put("p2", "workflow.input.param2");
-		wft1.setInputParameters(ip1);
-		wft1.setTaskReferenceName("t1");
-		
-		WorkflowTask wft3 = new WorkflowTask();
-		wft3.setName("junit_task_0_RT_3");
-		wft3.setInputParameters(ip1);
-		wft3.setTaskReferenceName("t3");
-		
-		WorkflowTask wft2 = new WorkflowTask();
-		wft2.setName("junit_task_0_RT_2");
-		Map<String, Object> ip2 = new HashMap<>();
-		ip2.put("tp1", "workflow.input.param1");
-		wft2.setInputParameters(ip2);
-		wft2.setTaskReferenceName("t2");
-		
-		WorkflowTask wft4 = new WorkflowTask();
-		wft4.setName("junit_task_0_RT_4");
-		wft4.setInputParameters(ip2);
-		wft4.setTaskReferenceName("t4");
-		
-		fanout.getForkTasks().add(Arrays.asList(wft1, wft3));
-		fanout.getForkTasks().add(Arrays.asList(wft2));
-		
-		def.getTasks().add(fanout);
-		
-		WorkflowTask join = new WorkflowTask();
-		join.setType(Type.JOIN.name());
-		join.setTaskReferenceName("fanouttask_join");
-		join.setJoinOn(Arrays.asList("t3","t2"));
-		
-		def.getTasks().add(join);
-		def.getTasks().add(wft4);
-		ms.updateWorkflowDef(def);
-
-	}
-	private void createForkJoinNestedWorkflow() throws Exception {
-		
-		WorkflowDef def = new WorkflowDef();
-		def.setName(FORK_JOIN_NESTED_WF);
-		def.setDescription(def.getName());
-		def.setVersion(1);
-		def.setInputParameters(Arrays.asList("param1", "param2"));
-		
-		Map<String, Object> ip1 = new HashMap<>();
-		ip1.put("p1", "workflow.input.param1");
-		ip1.put("p2", "workflow.input.param2");
-		ip1.put("case", "workflow.input.case");
-		
-		WorkflowTask[] tasks = new WorkflowTask[21];
-		
-		for(int i = 10; i < 21; i++){
-			WorkflowTask wft = new WorkflowTask();
-			wft.setName("junit_task_" + i);
-			wft.setInputParameters(ip1);
-			wft.setTaskReferenceName("t" + i);
-			tasks[i] = wft;
-		}
-		
-		WorkflowTask d1 = new WorkflowTask();
-		d1.setType(Type.DECISION.name());
-		d1.setName("Decision");
-		d1.setTaskReferenceName("d1");
-		d1.setInputParameters(ip1);
-		d1.setDefaultCase(Arrays.asList(tasks[18], tasks[20]));
-		d1.setCaseValueParam("case");
-		Map<String, List<WorkflowTask>> decisionCases = new HashMap<>();
-		decisionCases.put("a", Arrays.asList(tasks[16], tasks[19], tasks[20]));
-		decisionCases.put("b", Arrays.asList(tasks[17], tasks[20]));
-		d1.setDecisionCases(decisionCases);
-		
-		WorkflowTask subWorkflow = new WorkflowTask();
-		subWorkflow.setType(Type.SUB_WORKFLOW.name());
-		SubWorkflowParams sw = new SubWorkflowParams();
-		sw.setName(LINEAR_WORKFLOW_T1_T2);
-		subWorkflow.setSubWorkflowParam(sw);
-		subWorkflow.setTaskReferenceName("sw1");
-
-		WorkflowTask fork2 = new WorkflowTask();
-		fork2.setType(Type.FORK_JOIN.name());
-		fork2.setName("fork2");
-		fork2.setTaskReferenceName("fork2");		
-		fork2.getForkTasks().add(Arrays.asList(tasks[12], tasks[14]));
-		fork2.getForkTasks().add(Arrays.asList(tasks[13], d1));
-		
-		WorkflowTask join2 = new WorkflowTask();
-		join2.setType(Type.JOIN.name());
-		join2.setTaskReferenceName("join2");
-		join2.setJoinOn(Arrays.asList("t14","t20"));
-		
-		WorkflowTask fork1 = new WorkflowTask();
-		fork1.setType(Type.FORK_JOIN.name());
-		fork1.setTaskReferenceName("fork1");
-		fork1.getForkTasks().add(Arrays.asList(tasks[11]));
-		fork1.getForkTasks().add(Arrays.asList(fork2, join2));
-		fork1.getForkTasks().add(Arrays.asList(subWorkflow));
-		
-		
-		WorkflowTask join1 = new WorkflowTask();
-		join1.setType(Type.JOIN.name());
-		join1.setTaskReferenceName("join1");
-		join1.setJoinOn(Arrays.asList("t11","join2","sw1"));
-		
-		def.getTasks().add(fork1);
-		def.getTasks().add(join1);
-		def.getTasks().add(tasks[15]);
-		
-		ms.updateWorkflowDef(def);
-
-	
-	}
-	
-	private void createDynamicForkJoinWorkflowDefs() throws Exception {
-		
-		WorkflowDef def = new WorkflowDef();
-		def.setName(DYNAMIC_FORK_JOIN_WF);
-		def.setDescription(def.getName());
-		def.setVersion(1);
-		def.setInputParameters(Arrays.asList("param1", "param2"));
-
-		WorkflowTask wft1 = new WorkflowTask();
-		wft1.setName("junit_task_1");
-		Map<String, Object> ip1 = new HashMap<>();
-		ip1.put("p1", "workflow.input.param1");
-		ip1.put("p2", "workflow.input.param2");
-		wft1.setInputParameters(ip1);
-		wft1.setTaskReferenceName("dt1");
-
-		WorkflowTask fanout = new WorkflowTask();
-		fanout.setType(Type.FORK_JOIN_DYNAMIC.name());
-		fanout.setTaskReferenceName("dynamicfanouttask");
-		fanout.setDynamicForkTasksParam("dynamicTasks");
-		fanout.setDynamicForkTasksInputParamName("dynamicTasksInput");
-		fanout.getInputParameters().put("dynamicTasks", "dt1.output.dynamicTasks");
-		fanout.getInputParameters().put("dynamicTasksInput", "dt1.output.dynamicTasksInput");
-		
-		WorkflowTask join = new WorkflowTask();
-		join.setType(Type.JOIN.name());
-		join.setTaskReferenceName("dynamicfanouttask_join");
-		
-		def.getTasks().add(wft1);
-		def.getTasks().add(fanout);
-		def.getTasks().add(join);		
-		
-		ms.updateWorkflowDef(def);
-
-	}
-	
-	@SuppressWarnings("deprecation")
-	private void createDynamicForkJoinWorkflowDefsLegacy() throws Exception {
-		
-		WorkflowDef def = new WorkflowDef();
-		def.setName(DYNAMIC_FORK_JOIN_WF_LEGACY);
-		def.setDescription(def.getName());
-		def.setVersion(1);
-		def.setInputParameters(Arrays.asList("param1", "param2"));
-
-		WorkflowTask wft1 = new WorkflowTask();
-		wft1.setName("junit_task_1");
-		Map<String, Object> ip1 = new HashMap<>();
-		ip1.put("p1", "workflow.input.param1");
-		ip1.put("p2", "workflow.input.param2");
-		wft1.setInputParameters(ip1);
-		wft1.setTaskReferenceName("dt1");
-
-		WorkflowTask fanout = new WorkflowTask();
-		fanout.setType(Type.FORK_JOIN_DYNAMIC.name());
-		fanout.setTaskReferenceName("dynamicfanouttask");
-		fanout.setDynamicForkJoinTasksParam("dynamicTasks");		
-		fanout.getInputParameters().put("dynamicTasks", "dt1.output.dynamicTasks");
-		fanout.getInputParameters().put("dynamicTasksInput", "dt1.output.dynamicTasksInput");
-		
-		WorkflowTask join = new WorkflowTask();
-		join.setType(Type.JOIN.name());
-		join.setTaskReferenceName("dynamicfanouttask_join");
-		
-		def.getTasks().add(wft1);
-		def.getTasks().add(fanout);
-		def.getTasks().add(join);		
-		
-		ms.updateWorkflowDef(def);
-
-	}
-	
-	private void createConditionalWF() throws Exception {
-		
-		WorkflowTask wft1 = new WorkflowTask();
-		wft1.setName("junit_task_1");
-		Map<String, Object> ip1 = new HashMap<>();
-		ip1.put("p1", "workflow.input.param1");
-		ip1.put("p2", "workflow.input.param2");
-		wft1.setInputParameters(ip1);
-		wft1.setTaskReferenceName("t1");
-		
-		WorkflowTask wft2 = new WorkflowTask();
-		wft2.setName("junit_task_2");
-		Map<String, Object> ip2 = new HashMap<>();
-		ip2.put("tp1", "workflow.input.param1");
-		wft2.setInputParameters(ip2);
-		wft2.setTaskReferenceName("t2");
-		
-		WorkflowTask wft3 = new WorkflowTask();
-		wft3.setName("junit_task_3");
-		Map<String, Object> ip3 = new HashMap<>();
-		ip2.put("tp3", "workflow.input.param2");
-		wft3.setInputParameters(ip3);
-		wft3.setTaskReferenceName("t3");
-				
-		WorkflowDef def2 = new WorkflowDef();
-		def2.setName(COND_TASK_WF);
-		def2.setDescription(COND_TASK_WF);
-		def2.setInputParameters(Arrays.asList("param1", "param2"));
-		
-		WorkflowTask c2 = new WorkflowTask();
-		c2.setType(Type.DECISION.name());
-		c2.setCaseValueParam("case");
-		c2.setName("conditional2");
-		c2.setTaskReferenceName("conditional2");
-		Map<String, List<WorkflowTask>> dc = new HashMap<>();
-		dc.put("one", Arrays.asList(wft1, wft3));
-		dc.put("two", Arrays.asList(wft2));
-		c2.setDecisionCases(dc);
-		c2.getInputParameters().put("case", "workflow.input.param2");
-		
-		
-		WorkflowTask condition = new WorkflowTask();
-		condition.setType(Type.DECISION.name());
-		condition.setCaseValueParam("case");
-		condition.setName("conditional");
-		condition.setTaskReferenceName("conditional");
-		Map<String, List<WorkflowTask>> decisionCases = new HashMap<>();
-		decisionCases.put("nested", Arrays.asList(c2));
-		decisionCases.put("three", Arrays.asList(wft3));
-		condition.setDecisionCases(decisionCases);
-		condition.getInputParameters().put("case", "workflow.input.param1");
-		condition.getDefaultCase().add(wft2);
-		def2.getTasks().add(condition);
-		
-		WorkflowTask notifyTask = new WorkflowTask();
-		notifyTask.setName("junit_task_4");
-		notifyTask.setTaskReferenceName("junit_task_4");
-		
-		WorkflowTask finalTask = new WorkflowTask();
-		finalTask.setName("finalcondition");
-		finalTask.setTaskReferenceName("tf");
-		finalTask.setType(Type.DECISION.name());
-		finalTask.setCaseValueParam("finalCase");
-		Map<String, Object> fi = new HashMap<>();
-		fi.put("finalCase", "workflow.input.finalCase");
-		finalTask.setInputParameters(fi);
-		finalTask.getDecisionCases().put("notify", Arrays.asList(notifyTask));
-		
-		def2.getTasks().add(finalTask );
-		ms.updateWorkflowDef(def2);
-		
-	}
-	
-	
-	@Test
-	public void testDefDAO() throws Exception {
-		List<TaskDef> taskDefs = ms.getTaskDefs();
-		assertNotNull(taskDefs);
-		assertTrue(!taskDefs.isEmpty());
-	}
-	
-	
-	
-	@Test
-	public void testSimpleWorkflow() throws Exception {
-		
-		clearWorkflows();
-		
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_1";
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
-		System.out.println("testSimpleWorkflow.wfid=" + wfid);
-		assertNotNull(wfid);
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
-		
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals(1, es.getTasks().size());		//The very first task is the one that should be scheduled.
-		
-		
-		boolean failed = false;
-		try{
-			provider.rewind(wfid);
-		}catch(ApplicationException ae){
-			failed = true;
-		}
-		assertTrue(failed);
-				
-		// Polling for the first task should return the same task as before
-		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertEquals("junit_task_1", task.getTaskType());
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		
-		provider.decide(wfid);
-		
-		String task1Op = "task1.Done";
-		List<Task> tasks = ess.getTasks(task.getTaskType(), null, 1);
-		assertNotNull(tasks);
-		assertEquals(1, tasks.size());
-		task = tasks.get(0);
-		
-		Workflow workflow = ess.getExecutionStatus(task.getWorkflowInstanceId(), false);
-		System.out.println("task workflow = " + workflow.getWorkflowType() + "," + workflow.getInput());
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, false);
-		assertNotNull(es);
-		assertNotNull(es.getOutput());
-		assertTrue("Found "  +es.getOutput().toString(), es.getOutput().containsKey("o3"));
-		assertEquals("task1.Done", es.getOutput().get("o3"));
-		
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNotNull(task);
-		assertEquals("junit_task_2", task.getTaskType());
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		String task2Input = (String) task.getInputData().get("tp2");
-		assertNotNull("Found=" + task.getInputData(), task2Input);
-		assertEquals(task1Op, task2Input);
-		
-		
-		task2Input = (String) task.getInputData().get("tp1");
-		assertNotNull(task2Input);
-		assertEquals(inputParam1, task2Input);
-		
-		task.setStatus(Status.COMPLETED);
-		task.setReasonForIncompletion("unit test failure");
-		ess.updateTask(task);
-		
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		tasks = es.getTasks();
-		assertNotNull(tasks);
-		assertEquals(2, tasks.size());
-		
-		assertTrue("Found "  +es.getOutput().toString(), es.getOutput().containsKey("o3"));
-		assertEquals("task1.Done", es.getOutput().get("o3"));
-
-	}
-
-	@Test
-	public void testSimpleWorkflowWithResponseTimeout() throws Exception {
-		
-		createWFWithResponseTimeout();
-		
-		String correlationId = "unit_test_1";
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow("RTOWF", 1, correlationId , input);
-		System.out.println("testSimpleWorkflowWithResponseTimeout.wfid=" + wfid);
-		assertNotNull(wfid);
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals(1, es.getTasks().size());		//The very first task is the one that should be scheduled.
-		
-						
-		// Polling for the first task should return the same task as before
-		Task task = ess.poll("task_rt", "task1.junit.worker");
-		assertNotNull(task);
-		assertEquals("task_rt", task.getTaskType());
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		
-		// As the task_rt is out of the queue, the next poll should not get it		
-		Task nullTask = ess.poll("task_rt", "task1.junit.worker");
-		assertNull(nullTask);
-		
-		// Now since the ResponseTimeOut is set to 15 secs, sleep
-		Thread.sleep(15000);
-		provider.decide(wfid);
-		
-		// Polling now should get the same task back because it should have been put back in the queue
-		Task taskAgain = ess.poll("task_rt", "task1.junit.worker");
-		assertNotNull(taskAgain);
-		assertEquals(task.getTaskId(), taskAgain.getTaskId());
-				
-		String task1Op = "task1.Done";
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNotNull(task);
-		assertEquals("junit_task_2", task.getTaskType());
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		
-		task.setStatus(Status.COMPLETED);
-		task.setReasonForIncompletion("unit test failure");
-		ess.updateTask(task);
-		
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-
-	}
-	
-	@Test
-	public void testWorkflowRerunWithSubWorkflows() throws Exception {
-		// Execute a workflow
-		String wfid = this.runWorkflowWithSubworkflow();
-		// Check it completed 
-		Workflow wf  = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
-		assertEquals(2, wf.getTasks().size());
-		
-		// Now lets pickup the first task in the sub workflow and rerun it from there
-		String subWorkflowId = null;
-		for(Task t: wf.getTasks()){
-			if(t.getTaskType().equalsIgnoreCase("SUB_WORKFLOW")){
-				subWorkflowId = t.getOutputData().get("subWorkflowId").toString();
-			}
-		}
-		assertNotNull(subWorkflowId);
-		Workflow subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
-		Task swT1 = null;
-		for(Task t: subWorkflow.getTasks()){
-			if(t.getTaskDefName().equalsIgnoreCase("junit_task_1")){
-				swT1 = t;
-			}
-		}
-		assertNotNull(swT1);
-		
-		RerunWorkflowRequest request = new RerunWorkflowRequest();
-		request.setReRunFromTaskId(swT1.getTaskId());
-		
-		Map<String, Object> newInput = new HashMap<String, Object>();
-		newInput.put("p1", "1");
-		newInput.put("p2", "2");
-		request.setTaskInput(newInput);
-		
-		String correlationId = "unit_test_sw_new";
-		Map<String, Object> input = new HashMap<String, Object>();
-		input.put("param1", "New p1 value");
-		input.put("param2", "New p2 value");
-		request.setCorrelationId(correlationId);
-		request.setWorkflowInput(input);
-		
-		request.setReRunFromWorkflowId(wfid);
-		request.setReRunFromTaskId(swT1.getTaskId());
-		// Rerun
-		provider.rerun(request);
-		// The main WF and the sub WF should be in RUNNING state
-		wf  = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
-		assertEquals(2, wf.getTasks().size());
-		assertEquals(correlationId, wf.getCorrelationId());
-		assertEquals("New p1 value", wf.getInput().get("param1"));
-		assertEquals("New p2 value", wf.getInput().get("param2"));
-		
-		subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
-		assertNotNull(subWorkflow);
-		assertEquals(WorkflowStatus.RUNNING, subWorkflow.getStatus());
-		// Since we are re running from the sub workflow task, there
-		// should be only 1 task that is SCHEDULED
-		assertEquals(1, subWorkflow.getTasks().size());
-		assertEquals(Status.SCHEDULED, subWorkflow.getTasks().get(0).getStatus());
-		
-		// Now execute the task
-		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertEquals(task.getInputData().get("p1").toString(), "1");
-		assertEquals(task.getInputData().get("p2").toString(), "2");
-		task.getOutputData().put("op", "junit_task_1.done");
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
-		assertNotNull(subWorkflow);
-		assertEquals(WorkflowStatus.RUNNING, subWorkflow.getStatus());
-		assertEquals(2, subWorkflow.getTasks().size());
-		
-		// Poll for second task of the sub workflow and execute it
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		task.getOutputData().put("op", "junit_task_2.done");
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		// Now the sub workflow and the main workflow must have finished
-		subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
-		assertNotNull(subWorkflow);
-		assertEquals(WorkflowStatus.COMPLETED, subWorkflow.getStatus());
-		assertEquals(2, subWorkflow.getTasks().size());
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
-		assertEquals(2, wf.getTasks().size());
-	}
-
-	@Test
-	public void testSimpleWorkflowWithTaskSpecificDomain() throws Exception {
-		
-		clearWorkflows();
-		createWorkflowDefForDomain();
-		
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_sw";
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		Map<String, String> taskToDomain = new HashMap<String, String>();
-		taskToDomain.put("junit_task_3", "domain1");
-		taskToDomain.put("junit_task_2", "domain1");
-		
-		// Poll before so that a polling for this task is "active"
-		Task task = ess.poll("junit_task_3", "task1.junit.worker", "domain1");
-		assertNull(task);
-		task = ess.poll("junit_task_2", "task1.junit.worker", "domain1");
-		assertNull(task);
-
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2_SW, 1, correlationId , input, null, taskToDomain);
-		System.out.println("testSimpleWorkflow.wfid=" + wfid);
-		assertNotNull(wfid);
-		Workflow wf = provider.getWorkflow(wfid, false);
-		assertNotNull(wf);
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
-		
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals(1, es.getTasks().size());		//The very first task is the one that should be scheduled.
-		
-		
-				
-		// Check Size 
-		Map<String, Integer> sizes = ess.getTaskQueueSizes(Arrays.asList("domain1:junit_task_3","junit_task_3"));
-		assertEquals(sizes.get("domain1:junit_task_3").intValue(), 1);
-		assertEquals(sizes.get("junit_task_3").intValue(), 0);
-		
-		// Polling for the first task should return the same task as before
-		task = ess.poll("junit_task_3", "task1.junit.worker");
-		assertNull(task);
-		task = ess.poll("junit_task_3", "task1.junit.worker", "domain1");
-		assertNotNull(task);
-		assertEquals("junit_task_3", task.getTaskType());
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		
-		String task1Op = "task1.Done";
-		List<Task> tasks = ess.getTasks(task.getTaskType(), null, 1);
-		assertNotNull(tasks);
-		assertEquals(1, tasks.size());
-		task = tasks.get(0);
-		
-		Workflow workflow = ess.getExecutionStatus(task.getWorkflowInstanceId(), false);
-		System.out.println("task workflow = " + workflow.getWorkflowType() + "," + workflow.getInput());
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, false);
-		assertNotNull(es);
-		assertNotNull(es.getOutput());
-		assertTrue("Found "  +es.getOutput().toString(), es.getOutput().containsKey("o3"));
-		assertEquals("task1.Done", es.getOutput().get("o3"));
-		
-		task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertEquals("junit_task_1", task.getTaskType());
-		Workflow essw = ess.getExecutionStatus(task.getWorkflowInstanceId(), false);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertNotNull(essw.getTaskToDomain());
-		assertEquals(essw.getTaskToDomain().size(), 2);
-		
-		task.setStatus(Status.COMPLETED);
-		task.setReasonForIncompletion("unit test failure");
-		ess.updateTask(task);
-		
-		
-		task = ess.poll("junit_task_2", "task2.junit.worker", "domain1");
-		assertNotNull(task);
-		assertEquals("junit_task_2", task.getTaskType());
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-				
-		task.setStatus(Status.COMPLETED);
-		task.setReasonForIncompletion("unit test failure");
-		ess.updateTask(task);
-
-		
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		tasks = es.getTasks();
-		assertNotNull(tasks);
-		assertEquals(2, tasks.size());
-		
-		assertTrue("Found "  +es.getOutput().toString(), es.getOutput().containsKey("o3"));
-		assertEquals("task1.Done", es.getOutput().get("o3"));
-
-		List<PollData> pddata = ess.getPollData("junit_task_3");
-		assertTrue(pddata.size() == 2);
-		for(PollData pd: pddata){
-			assertEquals(pd.getQueueName(), "junit_task_3");
-			assertEquals(pd.getWorkerId(), "task1.junit.worker");
-			assertTrue(pd.getLastPollTime() != 0);
-			if(pd.getDomain() != null){
-				assertEquals(pd.getDomain(), "domain1");
-			}
-		}
-		
-		
-		List<PollData> pdList = ess.getAllPollData();
-		int count = 0;
-		for(PollData pd: pdList){
-			if(pd.getQueueName().equals("junit_task_3")){
-				count++;
-			}
-		}
-		assertTrue(count == 2);
-
-	}	
-
-	@Test
-	public void testSimpleWorkflowWithAllTaskInOneDomain() throws Exception {
-		
-		clearWorkflows();
-		createWorkflowDefForDomain();
-		
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_sw";
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		Map<String, String> taskToDomain = new HashMap<String, String>();
-		taskToDomain.put("*", "domain11,, domain12");
-		
-		// Poll before so that a polling for this task is "active"
-		Task task = ess.poll("junit_task_3", "task1.junit.worker", "domain11");
-		assertNull(task);
-		task = ess.poll("junit_task_2", "task1.junit.worker", "domain12");
-		assertNull(task);
-
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2_SW, 1, correlationId , input, null, taskToDomain);
-		System.out.println("testSimpleWorkflow.wfid=" + wfid);
-		assertNotNull(wfid);
-		Workflow wf = provider.getWorkflow(wfid, false);
-		assertNotNull(wf);
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
-		
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals(1, es.getTasks().size());		//The very first task is the one that should be scheduled.
-		
-		
-				
-		// Check Size 
-		Map<String, Integer> sizes = ess.getTaskQueueSizes(Arrays.asList("domain11:junit_task_3","junit_task_3"));
-		assertEquals(sizes.get("domain11:junit_task_3").intValue(), 1);
-		assertEquals(sizes.get("junit_task_3").intValue(), 0);
-		
-		// Polling for the first task should return the same task as before
-		task = ess.poll("junit_task_3", "task1.junit.worker");
-		assertNull(task);
-		task = ess.poll("junit_task_3", "task1.junit.worker", "domain11");
-		assertNotNull(task);
-		assertEquals("junit_task_3", task.getTaskType());
-		assertEquals("domain11", task.getDomain());
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		
-		String task1Op = "task1.Done";
-		List<Task> tasks = ess.getTasks(task.getTaskType(), null, 1);
-		assertNotNull(tasks);
-		assertEquals(1, tasks.size());
-		task = tasks.get(0);
-		
-		Workflow workflow = ess.getExecutionStatus(task.getWorkflowInstanceId(), false);
-		System.out.println("task workflow = " + workflow.getWorkflowType() + "," + workflow.getInput());
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, false);
-		assertNotNull(es);
-		assertNotNull(es.getOutput());
-		assertTrue("Found "  +es.getOutput().toString(), es.getOutput().containsKey("o3"));
-		assertEquals("task1.Done", es.getOutput().get("o3"));
-		
-		task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertEquals("junit_task_1", task.getTaskType());
-		Workflow essw = ess.getExecutionStatus(task.getWorkflowInstanceId(), false);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertNotNull(essw.getTaskToDomain());
-		assertEquals(essw.getTaskToDomain().size(), 1);
-		
-		task.setStatus(Status.COMPLETED);
-		task.setReasonForIncompletion("unit test failure");
-		ess.updateTask(task);
-		
-		
-		task = ess.poll("junit_task_2", "task2.junit.worker", "domain11");
-		assertNull(task);
-		task = ess.poll("junit_task_2", "task2.junit.worker", "domain12");
-		assertNotNull(task);
-		assertEquals("junit_task_2", task.getTaskType());
-		assertEquals("domain12", task.getDomain());
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-				
-		task.setStatus(Status.COMPLETED);
-		task.setReasonForIncompletion("unit test failure");
-		ess.updateTask(task);
-
-		
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		tasks = es.getTasks();
-		assertNotNull(tasks);
-		assertEquals(2, tasks.size());
-		
-		assertTrue("Found "  +es.getOutput().toString(), es.getOutput().containsKey("o3"));
-		assertEquals("task1.Done", es.getOutput().get("o3"));
-
-	}	
-	
-	
-	private void clearWorkflows() throws Exception {
-		List<String> workflows = ms.getWorkflowDefs().stream()
-				.map(def -> def.getName())
-				.collect(Collectors.toList());
-		for(String wfName : workflows){
-			List<String> running = ess.getRunningWorkflows(wfName);
-			for(String wfid : running){
-				provider.terminateWorkflow(wfid, "cleanup");
-			}
-		}
-		queue.queuesDetail().keySet().stream().forEach(queueName -> {
-			queue.flush(queueName);
-		});
-	}
-	
-	@Test	
-	public void testLongRunning() throws Exception {
-		
-		clearWorkflows();
-		
-		WorkflowDef found = ms.getWorkflowDef(LONG_RUNNING, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_1";
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LONG_RUNNING, 1, correlationId , input);
-		System.out.println("testLongRunning.wfid=" + wfid);
-		assertNotNull(wfid);
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		// Check the queue
-		assertEquals(Integer.valueOf(1), ess.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
-		///
-		
-		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-
-		String param1 = (String) task.getInputData().get("p1");
-		String param2 = (String) task.getInputData().get("p2");
-		
-		assertNotNull(param1);
-		assertNotNull(param2);
-		assertEquals("p1 value", param1);
-		assertEquals("p2 value", param2);
-		
-		
-		String task1Op = "task1.In.Progress";
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.IN_PROGRESS);
-		task.setCallbackAfterSeconds(5);
-		ess.updateTask(task);
-		String taskId = task.getTaskId();
-
-		// Check the queue
-		assertEquals(Integer.valueOf(1), ess.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
-		///
-		
-
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-
-		// Polling for next task should not return anything
-		Task task2 = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNull(task2);
-		
-		task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNull(task);
-		
-		Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
-		// Polling for the first task should return the same task as before
-		task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertEquals(task.getTaskId(), taskId);
-		
-		task1Op = "task1.Done";
-		List<Task> tasks = ess.getTasks(task.getTaskType(), null, 1);
-		assertNotNull(tasks);
-		assertEquals(1, tasks.size());
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		task = tasks.get(0);
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		String task2Input = (String) task.getInputData().get("tp2");
-		assertNotNull(task2Input);
-		assertEquals(task1Op, task2Input);
-		
-		task2Input = (String) task.getInputData().get("tp1");
-		assertNotNull(task2Input);
-		assertEquals(inputParam1, task2Input);
-		
-		task.setStatus(Status.COMPLETED);
-		task.setReasonForIncompletion("unit test failure");
-		ess.updateTask(task);
-		
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		tasks = es.getTasks();
-		assertNotNull(tasks);
-		assertEquals(2, tasks.size());
-		
-
-	}
-	
-	@Test	
-	public void testResetWorkflowInProgressTasks() throws Exception {
-		
-		clearWorkflows();
-		
-		WorkflowDef found = ms.getWorkflowDef(LONG_RUNNING, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_1";
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LONG_RUNNING, 1, correlationId , input);
-		System.out.println("testLongRunning.wfid=" + wfid);
-		assertNotNull(wfid);
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		// Check the queue
-		assertEquals(Integer.valueOf(1), ess.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
-		///
-		
-		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-
-		String param1 = (String) task.getInputData().get("p1");
-		String param2 = (String) task.getInputData().get("p2");
-		
-		assertNotNull(param1);
-		assertNotNull(param2);
-		assertEquals("p1 value", param1);
-		assertEquals("p2 value", param2);
-		
-		
-		String task1Op = "task1.In.Progress";
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.IN_PROGRESS);
-		task.setCallbackAfterSeconds(3600);
-		ess.updateTask(task);
-		String taskId = task.getTaskId();
-
-		// Check the queue
-		assertEquals(Integer.valueOf(1), ess.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
-		///
-		
-
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-
-		// Polling for next task should not return anything
-		Task task2 = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNull(task2);
-		
-		task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNull(task);
-		
-		//Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
-		// Reset
-		provider.resetCallbacksForInProgressTasks(wfid);
-		
-		
-		// Now Polling for the first task should return the same task as before
-		task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertEquals(task.getTaskId(), taskId);
-		assertEquals(task.getCallbackAfterSeconds(), 0);
-		
-		task1Op = "task1.Done";
-		List<Task> tasks = ess.getTasks(task.getTaskType(), null, 1);
-		assertNotNull(tasks);
-		assertEquals(1, tasks.size());
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		task = tasks.get(0);
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		String task2Input = (String) task.getInputData().get("tp2");
-		assertNotNull(task2Input);
-		assertEquals(task1Op, task2Input);
-		
-		task2Input = (String) task.getInputData().get("tp1");
-		assertNotNull(task2Input);
-		assertEquals(inputParam1, task2Input);
-		
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		tasks = es.getTasks();
-		assertNotNull(tasks);
-		assertEquals(2, tasks.size());
-		
-
-	}
-	
-	
-	@Test
-	public void testConcurrentWorkflowExecutions() throws Exception {
-
-		int count = 3;
-
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_concurrrent";
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String[] wfids = new String[count];
-		
-		for(int i = 0; i < count; i++){
-			String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
-			System.out.println("testConcurrentWorkflowExecutions.wfid=" + wfid);
-			assertNotNull(wfid);
-			
-			List<String> ids = ess.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
-			assertNotNull(ids);
-			assertTrue("found no ids: " + ids, ids.size() > 0);		//if there are concurrent tests running, this would be more than 1
-			boolean foundId = false;
-			for(String id : ids){
-				if(id.equals(wfid)){
-					foundId = true;
-				}
-			}
-			assertTrue(foundId);
-			wfids[i] = wfid;
-		}
-		
-		
-		String task1Op = "";
-		for(int i = 0; i < count; i++){
-			
-			Task task = ess.poll("junit_task_1", "task1.junit.worker");
-			assertNotNull(task);
-			assertTrue(ess.ackTaskReceived(task.getTaskId()));
-			String param1 = (String) task.getInputData().get("p1");
-			String param2 = (String) task.getInputData().get("p2");
-			
-			assertNotNull(param1);
-			assertNotNull(param2);
-			assertEquals("p1 value", param1);
-			assertEquals("p2 value", param2);
-			
-			task1Op = "task1.output->" + param1 + "." + param2;
-			task.getOutputData().put("op", task1Op);
-			task.setStatus(Status.COMPLETED);
-			ess.updateTask(task);		
-		}
-		
-		for(int i = 0; i < count; i++){
-			Task task = ess.poll("junit_task_2", "task2.junit.worker");
-			assertNotNull(task);
-			assertTrue(ess.ackTaskReceived(task.getTaskId()));
-			String task2Input = (String) task.getInputData().get("tp2");
-			assertNotNull(task2Input);
-			assertEquals(task1Op, task2Input);
-			
-			task2Input = (String) task.getInputData().get("tp1");
-			assertNotNull(task2Input);
-			assertEquals(inputParam1, task2Input);
-			
-			task.setStatus(Status.COMPLETED);
-			ess.updateTask(task);
-		}
-
-		List<Workflow> wfs = ess.getWorkflowInstances(LINEAR_WORKFLOW_T1_T2, correlationId, false, false);
-		wfs.forEach(wf -> { 
-			assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
-		});
-	
-		
-	}
-	
-	@Test
-	public void testCaseStatements() throws Exception {
-		createConditionalWF();
-		
-		String correlationId = "testCaseStatements: " + System.currentTimeMillis();
-		Map<String, Object> input = new HashMap<String, Object>();
-		String wfid;
-		String[] sequence;
-
-		
-		//default case
-		input.put("param1", "xxx");
-		input.put("param2", "two");
-		wfid = provider.startWorkflow(COND_TASK_WF, 1, correlationId, input);
-		System.out.println("testCaseStatements.wfid=" + wfid);
-		assertNotNull(wfid);
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		Task task = ess.poll("junit_task_2", "junit");
-		assertNotNull(task);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		assertEquals(3, es.getTasks().size());
-		
-		///
-		
-		
-		//nested - one
-		input.put("param1", "nested");
-		input.put("param2", "one");
-		wfid = provider.startWorkflow(COND_TASK_WF, 1, correlationId, input);
-		System.out.println("testCaseStatements.wfid=" + wfid);
-		assertNotNull(wfid);
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		sequence = new String[]{"junit_task_1","junit_task_3"};
-		
-		validate(wfid, sequence, new String[]{SystemTaskType.DECISION.name(),SystemTaskType.DECISION.name(), "junit_task_1","junit_task_3",SystemTaskType.DECISION.name()}, 5);
-		//
-		
-		//nested - two
-		input.put("param1", "nested");
-		input.put("param2", "two");
-		wfid = provider.startWorkflow(COND_TASK_WF, 1, correlationId, input);
-		System.out.println("testCaseStatements.wfid=" + wfid);
-		assertNotNull(wfid);
-		sequence = new String[]{"junit_task_2"};
-		validate(wfid, sequence, new String[]{SystemTaskType.DECISION.name(),SystemTaskType.DECISION.name(), "junit_task_2",SystemTaskType.DECISION.name()}, 4);
-		//
-		
-		//three
-		input.put("param1", "three");
-		input.put("param2", "two");
-		input.put("finalCase","notify");
-		wfid = provider.startWorkflow(COND_TASK_WF, 1, correlationId, input);
-		System.out.println("testCaseStatements.wfid=" + wfid);
-		assertNotNull(wfid);
-		sequence = new String[]{"junit_task_3","junit_task_4"};
-		validate(wfid, sequence, new String[]{SystemTaskType.DECISION.name(),"junit_task_3",SystemTaskType.DECISION.name(), "junit_task_4"}, 3);
-		//
-		
-	}
-
-	private void validate(String wfid, String[] sequence, String[] executedTasks, int expectedTotalTasks) throws Exception {
-		for(int i = 0; i < sequence.length; i++){
-			String t = sequence[i];
-			Task task = getTask(t);
-			if(task == null){
-				System.out.println("Missing task for " + t + ", below are the workflow tasks completed...");
-				Workflow workflow = ess.getExecutionStatus(wfid, true);
-				for(Task x : workflow.getTasks()){
-					System.out.println(x.getTaskType() + "/" + x.getReferenceTaskName());
-				}
-			}
-			assertNotNull("No task for " + t, task);
-			assertEquals(wfid, task.getWorkflowInstanceId());
-			task.setStatus(Status.COMPLETED);
-			ess.updateTask(task);
-			
-			Workflow workflow = ess.getExecutionStatus(wfid, true);
-			assertNotNull(workflow);
-			assertTrue(!workflow.getTasks().isEmpty());
-			if(i < sequence.length-1){
-				assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
-			}else{
-				workflow = ess.getExecutionStatus(wfid, true);
-				List<Task> workflowTasks = workflow.getTasks();
-				assertEquals(workflowTasks.toString(), 	executedTasks.length, workflowTasks.size());
-				for(int k = 0; k < executedTasks.length; k++){
-					assertEquals("Tasks: " + workflowTasks.toString() + "\n", executedTasks[k], workflowTasks.get(k).getTaskType());
-				}
-				
-				assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
-			}
-		}
-	}
-
-	
-	private Task getTask(String tt) throws Exception {
-		Task task = null;
-		int count = 2;
-		do{
-			task = ess.poll(tt, "junit");
-			if(task == null){
-				count--;
-			}
-			if(count < 0){
-				break;
-			}
-			
-		}while(task == null);
-		if(task != null){
-			ess.ackTaskReceived(task.getTaskId());
-		}
-		return task;
-	}
-	
-	@Test
-	public void testRetries() throws Exception {
-
-		String taskName = "junit_task_2";
-		TaskDef taskDef = ms.getTaskDef(taskName);
-		taskDef.setRetryCount(2);
-		taskDef.setRetryDelaySeconds(1);
-		ms.updateTaskDef(taskDef);
-
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_1";
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
-		System.out.println("testRetries.wfid=" + wfid);
-		assertNotNull(wfid);
-		
-		List<String> ids = ess.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
-		assertNotNull(ids);
-		assertTrue("found no ids: " + ids, ids.size() > 0);		//if there are concurrent tests running, this would be more than 1
-		boolean foundId = false;
-		for(String id : ids){
-			if(id.equals(wfid)){
-				foundId = true;
-			}
-		}
-		assertTrue(foundId);
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-
-		String param1 = (String) task.getInputData().get("p1");
-		String param2 = (String) task.getInputData().get("p2");
-		
-		assertNotNull(param1);
-		assertNotNull(param2);
-		assertEquals("p1 value", param1);
-		assertEquals("p2 value", param2);
-		
-		String task1Op = "task1.output->" + param1 + "." + param2;
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		//fail the task twice and then succeed
-		verify(inputParam1, wfid, task1Op, true);
-		Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
-		verify(inputParam1, wfid, task1Op, false);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		assertEquals(3, es.getTasks().size());		//task 1, and 2 of the task 2
-
-		assertEquals("junit_task_1", es.getTasks().get(0).getTaskType());
-		assertEquals("junit_task_2", es.getTasks().get(1).getTaskType());
-		assertEquals("junit_task_2", es.getTasks().get(2).getTaskType());
-		assertEquals(Status.COMPLETED, es.getTasks().get(0).getStatus());
-		assertEquals(Status.FAILED, es.getTasks().get(1).getStatus());
-		assertEquals(Status.COMPLETED, es.getTasks().get(2).getStatus());
-		assertEquals(es.getTasks().get(1).getTaskId(), es.getTasks().get(2).getRetriedTaskId());
-		
-
-	
-	}
-	
-	@Test
-	public void testSuccess() throws Exception {
-
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_1" + UUID.randomUUID().toString();
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
-		assertNotNull(wfid);
-		
-		List<String> ids = ess.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
-		assertNotNull(ids);
-		assertTrue("found no ids: " + ids, ids.size() > 0);		//if there are concurrent tests running, this would be more than 1
-		boolean foundId = false;
-		for(String id : ids){
-			if(id.equals(wfid)){
-				foundId = true;
-			}
-		}
-		assertTrue(foundId);
-		
+
+
+    private static final Logger logger = LoggerFactory.getLogger(WorkflowServiceTest.class);
+
+    private static final String COND_TASK_WF = "ConditionalTaskWF";
+
+    private static final String FORK_JOIN_NESTED_WF = "FanInOutNestedTest";
+
+    private static final String FORK_JOIN_WF = "FanInOutTest";
+
+    private static final String DYNAMIC_FORK_JOIN_WF = "DynamicFanInOutTest";
+
+    private static final String DYNAMIC_FORK_JOIN_WF_LEGACY = "DynamicFanInOutTestLegacy";
+
+    private static final int RETRY_COUNT = 1;
+
+    @Inject
+    private ExecutionService workflowExecutionService;
+
+    @Inject
+    private SubWorkflow subworkflow;
+
+    @Inject
+    private MetadataService metadataService;
+
+    @Inject
+    private WorkflowSweeper workflowSweeper;
+
+    @Inject
+    private QueueDAO queueDAO;
+
+    @Inject
+    private WorkflowExecutor workflowExecutor;
+
+    private static boolean registered;
+
+    private static List<TaskDef> taskDefs;
+
+    private static final String LINEAR_WORKFLOW_T1_T2 = "junit_test_wf";
+
+    private static final String LINEAR_WORKFLOW_T1_T2_SW = "junit_test_wf_sw";
+
+    private static final String LONG_RUNNING = "longRunningWf";
+
+    private static final String TEST_WORKFLOW_NAME_3 = "junit_test_wf3";
+
+    @Before
+    public void init() throws Exception {
+        System.setProperty("EC2_REGION", "us-east-1");
+        System.setProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
+        if (registered) {
+            return;
+        }
+
+
+        WorkflowContext.set(new WorkflowContext("junit_app"));
+        for (int i = 0; i < 21; i++) {
+
+            String name = "junit_task_" + i;
+            if (metadataService.getTaskDef(name) != null) {
+                continue;
+            }
+
+            TaskDef task = new TaskDef();
+            task.setName(name);
+            task.setTimeoutSeconds(120);
+            task.setRetryCount(RETRY_COUNT);
+            metadataService.registerTaskDef(Collections.singletonList(task));
+        }
+
+        for (int i = 0; i < 5; i++) {
+
+            String name = "junit_task_0_RT_" + i;
+            if (metadataService.getTaskDef(name) != null) {
+                continue;
+            }
+
+            TaskDef task = new TaskDef();
+            task.setName(name);
+            task.setTimeoutSeconds(120);
+            task.setRetryCount(0);
+            metadataService.registerTaskDef(Collections.singletonList(task));
+        }
+
+        TaskDef task = new TaskDef();
+        task.setName("short_time_out");
+        task.setTimeoutSeconds(5);
+        task.setRetryCount(RETRY_COUNT);
+        metadataService.registerTaskDef(Collections.singletonList(task));
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(LINEAR_WORKFLOW_T1_T2);
+        def.setDescription(def.getName());
+        def.setVersion(1);
+        def.setInputParameters(Arrays.asList("param1", "param2"));
+        Map<String, Object> outputParameters = new HashMap<>();
+        outputParameters.put("o1", "${workflow.input.param1}");
+        outputParameters.put("o2", "${t2.output.uuid}");
+        outputParameters.put("o3", "${t1.output.op}");
+        def.setOutputParameters(outputParameters);
+        def.setFailureWorkflow("$workflow.input.failureWfName");
+        def.setSchemaVersion(2);
+        LinkedList<WorkflowTask> wftasks = new LinkedList<>();
+
+        WorkflowTask wft1 = new WorkflowTask();
+        wft1.setName("junit_task_1");
+        Map<String, Object> ip1 = new HashMap<>();
+        ip1.put("p1", "${workflow.input.param1}");
+        ip1.put("p2", "${workflow.input.param2}");
+        wft1.setInputParameters(ip1);
+        wft1.setTaskReferenceName("t1");
+
+        WorkflowTask wft2 = new WorkflowTask();
+        wft2.setName("junit_task_2");
+        Map<String, Object> ip2 = new HashMap<>();
+        ip2.put("tp1", "${workflow.input.param1}");
+        ip2.put("tp2", "${t1.output.op}");
+        wft2.setInputParameters(ip2);
+        wft2.setTaskReferenceName("t2");
+
+        wftasks.add(wft1);
+        wftasks.add(wft2);
+        def.setTasks(wftasks);
+
+        WorkflowTask wft3 = new WorkflowTask();
+        wft3.setName("junit_task_3");
+        Map<String, Object> ip3 = new HashMap<>();
+        ip3.put("tp1", "${workflow.input.param1}");
+        ip3.put("tp2", "${t1.output.op}");
+        wft3.setInputParameters(ip3);
+        wft3.setTaskReferenceName("t3");
+
+        WorkflowDef def2 = new WorkflowDef();
+        def2.setName(TEST_WORKFLOW_NAME_3);
+        def2.setDescription(def2.getName());
+        def2.setVersion(1);
+        def2.setInputParameters(Arrays.asList("param1", "param2"));
+        LinkedList<WorkflowTask> wftasks2 = new LinkedList<>();
+
+        wftasks2.add(wft1);
+        wftasks2.add(wft2);
+        wftasks2.add(wft3);
+        def2.setSchemaVersion(2);
+        def2.setTasks(wftasks2);
+
+        try {
+
+            WorkflowDef[] wdsf = new WorkflowDef[]{def, def2};
+            for (WorkflowDef wd : wdsf) {
+                metadataService.updateWorkflowDef(wd);
+            }
+            createForkJoinWorkflow();
+            def.setName(LONG_RUNNING);
+            metadataService.updateWorkflowDef(def);
+        } catch (Exception e) {
+        }
+
+        taskDefs = metadataService.getTaskDefs();
+
+        registered = true;
+    }
+
+    @Test
+    public void testWorkflowWithNoTasks() throws Exception {
+
+        WorkflowDef empty = new WorkflowDef();
+        empty.setName("empty_workflow");
+        empty.setSchemaVersion(2);
+        metadataService.registerWorkflowDef(empty);
+
+        String id = workflowExecutor.startWorkflow(empty.getName(), 1, "testWorkflowWithNoTasks", new HashMap<>());
+        assertNotNull(id);
+        Workflow workflow = workflowExecutionService.getExecutionStatus(id, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals(0, workflow.getTasks().size());
+    }
+
+    @Test
+    public void testTaskDefTemplate() throws Exception {
+
+        System.setProperty("STACK2", "test_stack");
+        TaskDef templatedTask = new TaskDef();
+        templatedTask.setName("templated_task");
+        Map<String, Object> httpRequest = new HashMap<>();
+        httpRequest.put("method", "GET");
+        httpRequest.put("vipStack", "${STACK2}");
+        httpRequest.put("uri", "/get/something");
+        Map<String, Object> body = new HashMap<>();
+        body.put("inputPaths", Arrays.asList("${workflow.input.path1}", "${workflow.input.path2}"));
+        body.put("requestDetails", "${workflow.input.requestDetails}");
+        body.put("outputPath", "${workflow.input.outputPath}");
+        httpRequest.put("body", body);
+        templatedTask.getInputTemplate().put("http_request", httpRequest);
+        metadataService.registerTaskDef(Arrays.asList(templatedTask));
+
+        WorkflowDef templateWf = new WorkflowDef();
+        templateWf.setName("template_workflow");
+        WorkflowTask wft = new WorkflowTask();
+        wft.setName(templatedTask.getName());
+        wft.setWorkflowTaskType(Type.SIMPLE);
+        wft.setTaskReferenceName("t0");
+        templateWf.getTasks().add(wft);
+        templateWf.setSchemaVersion(2);
+        metadataService.registerWorkflowDef(templateWf);
+
+        Map<String, Object> requestDetails = new HashMap<>();
+        requestDetails.put("key1", "value1");
+        requestDetails.put("key2", 42);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("path1", "file://path1");
+        input.put("path2", "file://path2");
+        input.put("outputPath", "s3://bucket/outputPath");
+        input.put("requestDetails", requestDetails);
+
+        String id = workflowExecutor.startWorkflow(templateWf.getName(), 1, "testTaskDefTemplate", input);
+        assertNotNull(id);
+        Workflow workflow = workflowExecutionService.getExecutionStatus(id, true);
+        assertNotNull(workflow);
+        assertTrue(workflow.getReasonForIncompletion(), !workflow.getStatus().isTerminal());
+        assertEquals(1, workflow.getTasks().size());
+        Task task = workflow.getTasks().get(0);
+        Map<String, Object> taskInput = task.getInputData();
+        assertNotNull(taskInput);
+        assertTrue(taskInput.containsKey("http_request"));
+        assertTrue(taskInput.get("http_request") instanceof Map);
+
+        ObjectMapper om = new ObjectMapper();
+
+        //Use the commented sysout to get the string value
+        //System.out.println(om.writeValueAsString(om.writeValueAsString(taskInput)));
+        String expected = "{\"http_request\":{\"method\":\"GET\",\"vipStack\":\"test_stack\",\"body\":{\"requestDetails\":{\"key1\":\"value1\",\"key2\":42},\"outputPath\":\"s3://bucket/outputPath\",\"inputPaths\":[\"file://path1\",\"file://path2\"]},\"uri\":\"/get/something\"}}";
+        assertEquals(expected, om.writeValueAsString(taskInput));
+    }
+
+
+    @Test
+    public void testWorkflowSchemaVersion() throws Exception {
+        WorkflowDef ver2 = new WorkflowDef();
+        ver2.setSchemaVersion(2);
+        ver2.setName("Test_schema_version2");
+        ver2.setVersion(1);
+
+        WorkflowDef ver1 = new WorkflowDef();
+        ver1.setName("Test_schema_version1");
+        ver1.setVersion(1);
+
+        metadataService.updateWorkflowDef(ver1);
+        metadataService.updateWorkflowDef(ver2);
+
+        WorkflowDef found = metadataService.getWorkflowDef(ver2.getName(), 1);
+        assertNotNull(found);
+        assertEquals(2, found.getSchemaVersion());
+
+        WorkflowDef found1 = metadataService.getWorkflowDef(ver1.getName(), 1);
+        assertNotNull(found1);
+        assertEquals(1, found1.getSchemaVersion());
+
+    }
+
+    @Test
+    public void testForkJoin() throws Exception {
+        try {
+            createForkJoinWorkflow();
+        } catch (Exception e) {
+        }
+        String taskName = "junit_task_1";
+        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        taskDef.setRetryCount(0);
+        taskDef.setTimeoutSeconds(0);
+        metadataService.updateTaskDef(taskDef);
+
+        taskName = "junit_task_2";
+        taskDef = metadataService.getTaskDef(taskName);
+        taskDef.setRetryCount(0);
+        taskDef.setTimeoutSeconds(0);
+        metadataService.updateTaskDef(taskDef);
+
+        taskName = "junit_task_3";
+        taskDef = metadataService.getTaskDef(taskName);
+        taskDef.setRetryCount(0);
+        taskDef.setTimeoutSeconds(0);
+        metadataService.updateTaskDef(taskDef);
+
+        taskName = "junit_task_4";
+        taskDef = metadataService.getTaskDef(taskName);
+        taskDef.setRetryCount(0);
+        taskDef.setTimeoutSeconds(0);
+        metadataService.updateTaskDef(taskDef);
+
+        Map<String, Object> input = new HashMap<>();
+        String workflowId = workflowExecutor.startWorkflow(FORK_JOIN_WF, 1, "fanouttest", input);
+        System.out.println("testForkJoin.wfid=" + workflowId);
+        printTaskStatuses(workflowId, "initiated");
+
+        Task task1 = workflowExecutionService.poll("junit_task_1", "test");
+        assertNotNull(task1);
+        assertTrue(workflowExecutionService.ackTaskReceived(task1.getTaskId()));
+
+        Task task2 = workflowExecutionService.poll("junit_task_2", "test");
+        assertNotNull(task2);
+        assertTrue(workflowExecutionService.ackTaskReceived(task2.getTaskId()));
+
+        Task task3 = workflowExecutionService.poll("junit_task_3", "test");
+        assertNull(task3);
+
+        task1.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task1);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("Found " + workflow.getTasks(), WorkflowStatus.RUNNING, workflow.getStatus());
+        printTaskStatuses(workflow, "T1 completed");
+
+        task3 = workflowExecutionService.poll("junit_task_3", "test");
+        assertNotNull(task3);
+
+        task2.setStatus(COMPLETED);
+        task3.setStatus(COMPLETED);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        Future<?> future1 = executorService.submit(() -> {
+            try {
+                workflowExecutionService.updateTask(task2);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+        });
+        future1.get();
+
+        final Task _t3 = task3;
+        Future<?> future2 = executorService.submit(() -> {
+            try {
+                workflowExecutionService.updateTask(_t3);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+        });
+        future2.get();
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        printTaskStatuses(workflow, "T2 T3 completed");
+        assertEquals("Found " + workflow.getTasks(), WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals("Found " + workflow.getTasks().stream().map(Task::getTaskType).collect(Collectors.toList()),6, workflow.getTasks().size());
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("Found " + workflow.getTasks(), WorkflowStatus.RUNNING, workflow.getStatus());
+        assertTrue("Found  " + workflow.getTasks().stream().map(t -> t.getReferenceTaskName() + "." + t.getStatus()).collect(Collectors.toList()), workflow.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t4")));
+
+        Task t4 = workflowExecutionService.poll("junit_task_4", "test");
+        assertNotNull(t4);
+        t4.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(t4);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("Found " + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+        printTaskStatuses(workflow, "All completed");
+    }
+
+    @Test
+    public void testForkJoinNested() throws Exception {
+
+        createForkJoinNestedWorkflow();
+
+        Map<String, Object> input = new HashMap<String, Object>();
+        input.put("case", "a");        //This should execute t16 and t19
+        String wfid = workflowExecutor.startWorkflow(FORK_JOIN_NESTED_WF, 1, "fork_join_nested_test", input);
+        System.out.println("testForkJoinNested.wfid=" + wfid);
+
+        Workflow wf = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(wf);
+        assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
+
+        assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t11")));
+        assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t12")));
+        assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t13")));
+        assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("sw1")));
+        assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("fork1")));
+        assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("fork2")));
+
+        assertFalse(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t16")));
+        assertFalse(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t1")));
+        assertFalse(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t2")));
+
+
+        Task t1 = workflowExecutionService.poll("junit_task_11", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t1.getTaskId()));
+
+        Task t2 = workflowExecutionService.poll("junit_task_12", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t2.getTaskId()));
+
+        Task t3 = workflowExecutionService.poll("junit_task_13", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t3.getTaskId()));
+
+        assertNotNull(t1);
+        assertNotNull(t2);
+        assertNotNull(t3);
+
+        t1.setStatus(COMPLETED);
+        t2.setStatus(COMPLETED);
+        t3.setStatus(COMPLETED);
+
+        workflowExecutionService.updateTask(t1);
+        workflowExecutionService.updateTask(t2);
+        workflowExecutionService.updateTask(t3);
+        Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+
+        wf = workflowExecutionService.getExecutionStatus(wfid, true);
+
+        assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t16")));
+        assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t14")));
+
+        String[] tasks = new String[]{"junit_task_1", "junit_task_2", "junit_task_14", "junit_task_16"};
+        for (String tt : tasks) {
+            Task polled = workflowExecutionService.poll(tt, "test");
+            assertNotNull("poll resulted empty for task: " + tt, polled);
+            polled.setStatus(COMPLETED);
+            workflowExecutionService.updateTask(polled);
+        }
+
+        wf = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(wf);
+        assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
+
+        assertTrue(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t19")));
+        assertFalse(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t15")));        //Not there yet
+        assertFalse(wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t20")));        //Not there yet
+
+        Task task19 = workflowExecutionService.poll("junit_task_19", "test");
+        assertNotNull(task19);
+        task19.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task19);
+
+        Task task20 = workflowExecutionService.poll("junit_task_20", "test");
+        assertNotNull(task20);
+        task20.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task20);
+        Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+        wf = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(wf);
+        assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
+
+        Set<String> pendingTasks = wf.getTasks().stream().filter(t -> !t.getStatus().isTerminal()).map(t -> t.getReferenceTaskName()).collect(Collectors.toSet());
+        assertTrue("Found only this: " + pendingTasks, wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("join1")));
+
+        pendingTasks = wf.getTasks().stream().filter(t -> !t.getStatus().isTerminal()).map(t -> t.getReferenceTaskName()).collect(Collectors.toSet());
+        assertTrue("Found only this: " + pendingTasks, wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t15")));
+        Task task15 = workflowExecutionService.poll("junit_task_15", "test");
+        assertNotNull(task15);
+        task15.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task15);
+
+        wf = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(wf);
+        assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
+
+    }
+
+    @Test
+    public void testForkJoinFailure() throws Exception {
+
+        try {
+            createForkJoinWorkflow();
+        } catch (Exception e) {
+        }
+
+        String taskName = "junit_task_2";
+        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        int retryCount = taskDef.getRetryCount();
+        taskDef.setRetryCount(0);
+        metadataService.updateTaskDef(taskDef);
+
+
+        Map<String, Object> input = new HashMap<String, Object>();
+        String wfid = workflowExecutor.startWorkflow(FORK_JOIN_WF, 1, "fanouttest", input);
+        System.out.println("testForkJoinFailure.wfid=" + wfid);
+
+        Task t1 = workflowExecutionService.poll("junit_task_2", "test");
+        assertNotNull(t1);
+        assertTrue(workflowExecutionService.ackTaskReceived(t1.getTaskId()));
+
+        Task t2 = workflowExecutionService.poll("junit_task_1", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t2.getTaskId()));
+
+        Task t3 = workflowExecutionService.poll("junit_task_3", "test");
+        assertNull(t3);
+
+        assertNotNull(t1);
+        assertNotNull(t2);
+        t1.setStatus(Status.FAILED);
+        t2.setStatus(COMPLETED);
+
+        workflowExecutionService.updateTask(t2);
+        Workflow wf = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(wf);
+        assertEquals("Found " + wf.getTasks(), WorkflowStatus.RUNNING, wf.getStatus());
+
+        t3 = workflowExecutionService.poll("junit_task_3", "test");
+        assertNotNull(t3);
+
+
+        workflowExecutionService.updateTask(t1);
+        wf = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(wf);
+        assertEquals("Found " + wf.getTasks(), WorkflowStatus.FAILED, wf.getStatus());
+
+
+        taskDef = metadataService.getTaskDef(taskName);
+        taskDef.setRetryCount(retryCount);
+        metadataService.updateTaskDef(taskDef);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testDynamicForkJoinLegacy() throws Exception {
+
+        try {
+            createDynamicForkJoinWorkflowDefsLegacy();
+        } catch (Exception e) {
+        }
+
+        Map<String, Object> input = new HashMap<String, Object>();
+        String wfid = workflowExecutor.startWorkflow(DYNAMIC_FORK_JOIN_WF_LEGACY, 1, "dynfanouttest1", input);
+        System.out.println("testDynamicForkJoinLegacy.wfid=" + wfid);
+
+        Task t1 = workflowExecutionService.poll("junit_task_1", "test");
+        //assertTrue(ess.ackTaskRecieved(t1.getTaskId(), "test"));
+
+        DynamicForkJoinTaskList dtasks = new DynamicForkJoinTaskList();
+
+        input = new HashMap<String, Object>();
+        input.put("k1", "v1");
+        dtasks.add("junit_task_2", null, "xdt1", input);
+
+        HashMap<String, Object> input2 = new HashMap<String, Object>();
+        input2.put("k2", "v2");
+        dtasks.add("junit_task_3", null, "xdt2", input2);
+
+        t1.getOutputData().put("dynamicTasks", dtasks);
+        t1.setStatus(COMPLETED);
+
+        workflowExecutionService.updateTask(t1);
+
+        Task t2 = workflowExecutionService.poll("junit_task_2", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t2.getTaskId()));
+        assertEquals("xdt1", t2.getReferenceTaskName());
+        assertTrue(t2.getInputData().containsKey("k1"));
+        assertEquals("v1", t2.getInputData().get("k1"));
+        Map<String, Object> output = new HashMap<String, Object>();
+        output.put("ok1", "ov1");
+        t2.setOutputData(output);
+        t2.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(t2);
+
+        Task t3 = workflowExecutionService.poll("junit_task_3", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t3.getTaskId()));
+        assertEquals("xdt2", t3.getReferenceTaskName());
+        assertTrue(t3.getInputData().containsKey("k2"));
+        assertEquals("v2", t3.getInputData().get("k2"));
+
+        output = new HashMap<String, Object>();
+        output.put("ok1", "ov1");
+        t3.setOutputData(output);
+        t3.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(t3);
+
+        Workflow wf = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(wf);
+        assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
+
+        // Check the output
+        Task joinTask = wf.getTaskByRefName("dynamicfanouttask_join");
+        assertEquals("Found:" + joinTask.getOutputData(), 2, joinTask.getOutputData().keySet().size());
+        Set<String> joinTaskOutput = joinTask.getOutputData().keySet();
+        System.out.println("joinTaskOutput=" + joinTaskOutput);
+        for (String key : joinTask.getOutputData().keySet()) {
+            assertTrue(key.equals("xdt1") || key.equals("xdt2"));
+            assertEquals("ov1", ((Map<String, Object>) joinTask.getOutputData().get(key)).get("ok1"));
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testDynamicForkJoin() throws Exception {
+
+        createDynamicForkJoinWorkflowDefs();
+
+        String taskName = "junit_task_2";
+        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        int retryCount = taskDef.getRetryCount();
+        taskDef.setRetryCount(2);
+        taskDef.setRetryDelaySeconds(0);
+        taskDef.setRetryLogic(RetryLogic.FIXED);
+        metadataService.updateTaskDef(taskDef);
+
+        Map<String, Object> input = new HashMap<String, Object>();
+        String wfid = workflowExecutor.startWorkflow(DYNAMIC_FORK_JOIN_WF, 1, "dynfanouttest1", input);
+        System.out.println("testDynamicForkJoin.wfid=" + wfid);
+        Workflow es = workflowExecutor.getWorkflow(wfid, true);
+        assertNotNull(es);
+        assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
+        assertEquals(1, es.getTasks().size());
+        Task t1 = workflowExecutionService.poll("junit_task_1", "test");
+        assertNotNull(t1);
+        assertTrue(workflowExecutionService.ackTaskReceived(t1.getTaskId()));
+        assertEquals("dt1", t1.getReferenceTaskName());
+
+
+        Map<String, Object> input1 = new HashMap<String, Object>();
+        input1.put("k1", "v1");
+        WorkflowTask wt2 = new WorkflowTask();
+        wt2.setName("junit_task_2");
+        wt2.setTaskReferenceName("xdt1");
+
+        Map<String, Object> input2 = new HashMap<String, Object>();
+        input2.put("k2", "v2");
+
+        WorkflowTask wt3 = new WorkflowTask();
+        wt3.setName("junit_task_3");
+        wt3.setTaskReferenceName("xdt2");
+
+        HashMap<String, Object> dynamicTasksInput = new HashMap<>();
+        dynamicTasksInput.put("xdt1", input1);
+        dynamicTasksInput.put("xdt2", input2);
+        t1.getOutputData().put("dynamicTasks", Arrays.asList(wt2, wt3));
+        t1.getOutputData().put("dynamicTasksInput", dynamicTasksInput);
+        t1.setStatus(COMPLETED);
+
+        workflowExecutionService.updateTask(t1);
+
+        Task t2 = workflowExecutionService.poll("junit_task_2", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t2.getTaskId()));
+        assertEquals("xdt1", t2.getReferenceTaskName());
+        assertTrue(t2.getInputData().containsKey("k1"));
+        assertEquals("v1", t2.getInputData().get("k1"));
+        Map<String, Object> output = new HashMap<String, Object>();
+        output.put("ok1", "ov1");
+        t2.setOutputData(output);
+        t2.setStatus(Status.FAILED);
+        workflowExecutionService.updateTask(t2);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
+        assertEquals(2, es.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_2")).count());
+        assertTrue(es.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_2")).allMatch(t -> t.getWorkflowTask() != null));
+
+        t2 = workflowExecutionService.poll("junit_task_2", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t2.getTaskId()));
+        assertEquals("xdt1", t2.getReferenceTaskName());
+        assertTrue(t2.getInputData().containsKey("k1"));
+        assertEquals("v1", t2.getInputData().get("k1"));
+        t2.setOutputData(output);
+        t2.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(t2);
+
+
+        Task t3 = workflowExecutionService.poll("junit_task_3", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t3.getTaskId()));
+        assertEquals("xdt2", t3.getReferenceTaskName());
+        assertTrue(t3.getInputData().containsKey("k2"));
+        assertEquals("v2", t3.getInputData().get("k2"));
+        output = new HashMap<String, Object>();
+        output.put("ok1", "ov1");
+        t3.setOutputData(output);
+        t3.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(t3);
+
+        Workflow wf = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(wf);
+        assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
+
+        // Check the output
+        Task joinTask = wf.getTaskByRefName("dynamicfanouttask_join");
+        assertEquals("Found:" + joinTask.getOutputData(), 2, joinTask.getOutputData().keySet().size());
+        Set<String> joinTaskOutput = joinTask.getOutputData().keySet();
+        System.out.println("joinTaskOutput=" + joinTaskOutput);
+        for (String key : joinTask.getOutputData().keySet()) {
+            assertTrue(key.equals("xdt1") || key.equals("xdt2"));
+            assertEquals("ov1", ((Map<String, Object>) joinTask.getOutputData().get(key)).get("ok1"));
+        }
+
+        taskDef = metadataService.getTaskDef(taskName);
+        taskDef.setRetryCount(retryCount);
+        taskDef.setRetryDelaySeconds(1);
+        metadataService.updateTaskDef(taskDef);
+
+
+    }
+
+    private void createForkJoinWorkflow() throws Exception {
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName(FORK_JOIN_WF);
+        workflowDef.setDescription(workflowDef.getName());
+        workflowDef.setVersion(1);
+        workflowDef.setInputParameters(Arrays.asList("param1", "param2"));
+
+        WorkflowTask fanoutTask = new WorkflowTask();
+        fanoutTask.setType(Type.FORK_JOIN.name());
+        fanoutTask.setTaskReferenceName("fanouttask");
+
+        WorkflowTask workflowTask1 = new WorkflowTask();
+        workflowTask1.setName("junit_task_1");
+        Map<String, Object> inputParams1 = new HashMap<>();
+        inputParams1.put("p1", "workflow.input.param1");
+        inputParams1.put("p2", "workflow.input.param2");
+        workflowTask1.setInputParameters(inputParams1);
+        workflowTask1.setTaskReferenceName("t1");
+
+        WorkflowTask workflowTask3 = new WorkflowTask();
+        workflowTask3.setName("junit_task_3");
+        workflowTask3.setInputParameters(inputParams1);
+        workflowTask3.setTaskReferenceName("t3");
+
+        WorkflowTask workflowTask2 = new WorkflowTask();
+        workflowTask2.setName("junit_task_2");
+        Map<String, Object> inputParams2 = new HashMap<>();
+        inputParams2.put("tp1", "workflow.input.param1");
+        workflowTask2.setInputParameters(inputParams2);
+        workflowTask2.setTaskReferenceName("t2");
+
+        WorkflowTask workflowTask4 = new WorkflowTask();
+        workflowTask4.setName("junit_task_4");
+        workflowTask4.setInputParameters(inputParams2);
+        workflowTask4.setTaskReferenceName("t4");
+
+        fanoutTask.getForkTasks().add(Arrays.asList(workflowTask1, workflowTask3));
+        fanoutTask.getForkTasks().add(Collections.singletonList(workflowTask2));
+
+        workflowDef.getTasks().add(fanoutTask);
+
+        WorkflowTask joinTask = new WorkflowTask();
+        joinTask.setType(Type.JOIN.name());
+        joinTask.setTaskReferenceName("fanouttask_join");
+        joinTask.setJoinOn(Arrays.asList("t3", "t2"));
+
+        workflowDef.getTasks().add(joinTask);
+        workflowDef.getTasks().add(workflowTask4);
+        metadataService.updateWorkflowDef(workflowDef);
+    }
+
+
+    private void createForkJoinWorkflowWithZeroRetry() throws Exception {
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(FORK_JOIN_WF + "_2");
+        def.setDescription(def.getName());
+        def.setVersion(1);
+        def.setInputParameters(Arrays.asList("param1", "param2"));
+
+        WorkflowTask fanout = new WorkflowTask();
+        fanout.setType(Type.FORK_JOIN.name());
+        fanout.setTaskReferenceName("fanouttask");
+
+        WorkflowTask wft1 = new WorkflowTask();
+        wft1.setName("junit_task_0_RT_1");
+        Map<String, Object> ip1 = new HashMap<>();
+        ip1.put("p1", "workflow.input.param1");
+        ip1.put("p2", "workflow.input.param2");
+        wft1.setInputParameters(ip1);
+        wft1.setTaskReferenceName("t1");
+
+        WorkflowTask wft3 = new WorkflowTask();
+        wft3.setName("junit_task_0_RT_3");
+        wft3.setInputParameters(ip1);
+        wft3.setTaskReferenceName("t3");
+
+        WorkflowTask wft2 = new WorkflowTask();
+        wft2.setName("junit_task_0_RT_2");
+        Map<String, Object> ip2 = new HashMap<>();
+        ip2.put("tp1", "workflow.input.param1");
+        wft2.setInputParameters(ip2);
+        wft2.setTaskReferenceName("t2");
+
+        WorkflowTask wft4 = new WorkflowTask();
+        wft4.setName("junit_task_0_RT_4");
+        wft4.setInputParameters(ip2);
+        wft4.setTaskReferenceName("t4");
+
+        fanout.getForkTasks().add(Arrays.asList(wft1, wft3));
+        fanout.getForkTasks().add(Arrays.asList(wft2));
+
+        def.getTasks().add(fanout);
+
+        WorkflowTask join = new WorkflowTask();
+        join.setType(Type.JOIN.name());
+        join.setTaskReferenceName("fanouttask_join");
+        join.setJoinOn(Arrays.asList("t3", "t2"));
+
+        def.getTasks().add(join);
+        def.getTasks().add(wft4);
+        metadataService.updateWorkflowDef(def);
+
+    }
+
+    private void createForkJoinNestedWorkflow() throws Exception {
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(FORK_JOIN_NESTED_WF);
+        def.setDescription(def.getName());
+        def.setVersion(1);
+        def.setInputParameters(Arrays.asList("param1", "param2"));
+
+        Map<String, Object> ip1 = new HashMap<>();
+        ip1.put("p1", "workflow.input.param1");
+        ip1.put("p2", "workflow.input.param2");
+        ip1.put("case", "workflow.input.case");
+
+        WorkflowTask[] tasks = new WorkflowTask[21];
+
+        for (int i = 10; i < 21; i++) {
+            WorkflowTask wft = new WorkflowTask();
+            wft.setName("junit_task_" + i);
+            wft.setInputParameters(ip1);
+            wft.setTaskReferenceName("t" + i);
+            tasks[i] = wft;
+        }
+
+        WorkflowTask d1 = new WorkflowTask();
+        d1.setType(Type.DECISION.name());
+        d1.setName("Decision");
+        d1.setTaskReferenceName("d1");
+        d1.setInputParameters(ip1);
+        d1.setDefaultCase(Arrays.asList(tasks[18], tasks[20]));
+        d1.setCaseValueParam("case");
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap<>();
+        decisionCases.put("a", Arrays.asList(tasks[16], tasks[19], tasks[20]));
+        decisionCases.put("b", Arrays.asList(tasks[17], tasks[20]));
+        d1.setDecisionCases(decisionCases);
+
+        WorkflowTask subWorkflow = new WorkflowTask();
+        subWorkflow.setType(Type.SUB_WORKFLOW.name());
+        SubWorkflowParams sw = new SubWorkflowParams();
+        sw.setName(LINEAR_WORKFLOW_T1_T2);
+        subWorkflow.setSubWorkflowParam(sw);
+        subWorkflow.setTaskReferenceName("sw1");
+
+        WorkflowTask fork2 = new WorkflowTask();
+        fork2.setType(Type.FORK_JOIN.name());
+        fork2.setName("fork2");
+        fork2.setTaskReferenceName("fork2");
+        fork2.getForkTasks().add(Arrays.asList(tasks[12], tasks[14]));
+        fork2.getForkTasks().add(Arrays.asList(tasks[13], d1));
+
+        WorkflowTask join2 = new WorkflowTask();
+        join2.setType(Type.JOIN.name());
+        join2.setTaskReferenceName("join2");
+        join2.setJoinOn(Arrays.asList("t14", "t20"));
+
+        WorkflowTask fork1 = new WorkflowTask();
+        fork1.setType(Type.FORK_JOIN.name());
+        fork1.setTaskReferenceName("fork1");
+        fork1.getForkTasks().add(Arrays.asList(tasks[11]));
+        fork1.getForkTasks().add(Arrays.asList(fork2, join2));
+        fork1.getForkTasks().add(Arrays.asList(subWorkflow));
+
+
+        WorkflowTask join1 = new WorkflowTask();
+        join1.setType(Type.JOIN.name());
+        join1.setTaskReferenceName("join1");
+        join1.setJoinOn(Arrays.asList("t11", "join2", "sw1"));
+
+        def.getTasks().add(fork1);
+        def.getTasks().add(join1);
+        def.getTasks().add(tasks[15]);
+
+        metadataService.updateWorkflowDef(def);
+
+
+    }
+
+    private void createDynamicForkJoinWorkflowDefs() throws Exception {
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(DYNAMIC_FORK_JOIN_WF);
+        def.setDescription(def.getName());
+        def.setVersion(1);
+        def.setInputParameters(Arrays.asList("param1", "param2"));
+
+        WorkflowTask wft1 = new WorkflowTask();
+        wft1.setName("junit_task_1");
+        Map<String, Object> ip1 = new HashMap<>();
+        ip1.put("p1", "workflow.input.param1");
+        ip1.put("p2", "workflow.input.param2");
+        wft1.setInputParameters(ip1);
+        wft1.setTaskReferenceName("dt1");
+
+        WorkflowTask fanout = new WorkflowTask();
+        fanout.setType(Type.FORK_JOIN_DYNAMIC.name());
+        fanout.setTaskReferenceName("dynamicfanouttask");
+        fanout.setDynamicForkTasksParam("dynamicTasks");
+        fanout.setDynamicForkTasksInputParamName("dynamicTasksInput");
+        fanout.getInputParameters().put("dynamicTasks", "dt1.output.dynamicTasks");
+        fanout.getInputParameters().put("dynamicTasksInput", "dt1.output.dynamicTasksInput");
+
+        WorkflowTask join = new WorkflowTask();
+        join.setType(Type.JOIN.name());
+        join.setTaskReferenceName("dynamicfanouttask_join");
+
+        def.getTasks().add(wft1);
+        def.getTasks().add(fanout);
+        def.getTasks().add(join);
+
+        metadataService.updateWorkflowDef(def);
+
+    }
+
+    @SuppressWarnings("deprecation")
+    private void createDynamicForkJoinWorkflowDefsLegacy() throws Exception {
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(DYNAMIC_FORK_JOIN_WF_LEGACY);
+        def.setDescription(def.getName());
+        def.setVersion(1);
+        def.setInputParameters(Arrays.asList("param1", "param2"));
+
+        WorkflowTask wft1 = new WorkflowTask();
+        wft1.setName("junit_task_1");
+        Map<String, Object> ip1 = new HashMap<>();
+        ip1.put("p1", "workflow.input.param1");
+        ip1.put("p2", "workflow.input.param2");
+        wft1.setInputParameters(ip1);
+        wft1.setTaskReferenceName("dt1");
+
+        WorkflowTask fanout = new WorkflowTask();
+        fanout.setType(Type.FORK_JOIN_DYNAMIC.name());
+        fanout.setTaskReferenceName("dynamicfanouttask");
+        fanout.setDynamicForkJoinTasksParam("dynamicTasks");
+        fanout.getInputParameters().put("dynamicTasks", "dt1.output.dynamicTasks");
+        fanout.getInputParameters().put("dynamicTasksInput", "dt1.output.dynamicTasksInput");
+
+        WorkflowTask join = new WorkflowTask();
+        join.setType(Type.JOIN.name());
+        join.setTaskReferenceName("dynamicfanouttask_join");
+
+        def.getTasks().add(wft1);
+        def.getTasks().add(fanout);
+        def.getTasks().add(join);
+
+        metadataService.updateWorkflowDef(def);
+
+    }
+
+    private void createConditionalWF() throws Exception {
+
+        WorkflowTask wft1 = new WorkflowTask();
+        wft1.setName("junit_task_1");
+        Map<String, Object> ip1 = new HashMap<>();
+        ip1.put("p1", "workflow.input.param1");
+        ip1.put("p2", "workflow.input.param2");
+        wft1.setInputParameters(ip1);
+        wft1.setTaskReferenceName("t1");
+
+        WorkflowTask wft2 = new WorkflowTask();
+        wft2.setName("junit_task_2");
+        Map<String, Object> ip2 = new HashMap<>();
+        ip2.put("tp1", "workflow.input.param1");
+        wft2.setInputParameters(ip2);
+        wft2.setTaskReferenceName("t2");
+
+        WorkflowTask wft3 = new WorkflowTask();
+        wft3.setName("junit_task_3");
+        Map<String, Object> ip3 = new HashMap<>();
+        ip2.put("tp3", "workflow.input.param2");
+        wft3.setInputParameters(ip3);
+        wft3.setTaskReferenceName("t3");
+
+        WorkflowDef def2 = new WorkflowDef();
+        def2.setName(COND_TASK_WF);
+        def2.setDescription(COND_TASK_WF);
+        def2.setInputParameters(Arrays.asList("param1", "param2"));
+
+        WorkflowTask c2 = new WorkflowTask();
+        c2.setType(Type.DECISION.name());
+        c2.setCaseValueParam("case");
+        c2.setName("conditional2");
+        c2.setTaskReferenceName("conditional2");
+        Map<String, List<WorkflowTask>> dc = new HashMap<>();
+        dc.put("one", Arrays.asList(wft1, wft3));
+        dc.put("two", Arrays.asList(wft2));
+        c2.setDecisionCases(dc);
+        c2.getInputParameters().put("case", "workflow.input.param2");
+
+
+        WorkflowTask condition = new WorkflowTask();
+        condition.setType(Type.DECISION.name());
+        condition.setCaseValueParam("case");
+        condition.setName("conditional");
+        condition.setTaskReferenceName("conditional");
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap<>();
+        decisionCases.put("nested", Arrays.asList(c2));
+        decisionCases.put("three", Arrays.asList(wft3));
+        condition.setDecisionCases(decisionCases);
+        condition.getInputParameters().put("case", "workflow.input.param1");
+        condition.getDefaultCase().add(wft2);
+        def2.getTasks().add(condition);
+
+        WorkflowTask notifyTask = new WorkflowTask();
+        notifyTask.setName("junit_task_4");
+        notifyTask.setTaskReferenceName("junit_task_4");
+
+        WorkflowTask finalTask = new WorkflowTask();
+        finalTask.setName("finalcondition");
+        finalTask.setTaskReferenceName("tf");
+        finalTask.setType(Type.DECISION.name());
+        finalTask.setCaseValueParam("finalCase");
+        Map<String, Object> fi = new HashMap<>();
+        fi.put("finalCase", "workflow.input.finalCase");
+        finalTask.setInputParameters(fi);
+        finalTask.getDecisionCases().put("notify", Arrays.asList(notifyTask));
+
+        def2.getTasks().add(finalTask);
+        metadataService.updateWorkflowDef(def2);
+
+    }
+
+
+    @Test
+    public void testDefDAO() throws Exception {
+        List<TaskDef> taskDefs = metadataService.getTaskDefs();
+        assertNotNull(taskDefs);
+        assertTrue(!taskDefs.isEmpty());
+    }
+
+    @Test
+    public void testSimpleWorkflowFailureWithTerminalError() throws Exception {
+
+        clearWorkflows();
+
+        TaskDef taskDef = metadataService.getTaskDef("junit_task_1");
+        taskDef.setRetryCount(1);
+        metadataService.updateTaskDef(taskDef);
+
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
+
+        String correlationId = "unit_test_1";
+        Map<String, Object> input = new HashMap<>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        logger.info("testSimpleWorkflow.wfid= {}", workflowInstanceId);
+        assertNotNull(workflowInstanceId);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
+        assertNotNull(es);
+        assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
+
+        es = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        assertEquals(1, es.getTasks().size());        //The very first task is the one that should be scheduled.
+
+        boolean failed = false;
+        try {
+            workflowExecutor.rewind(workflowInstanceId);
+        } catch (ApplicationException ae) {
+            failed = true;
+        }
+        assertTrue(failed);
+
+        // Polling for the first task should return the same task as before
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertEquals("junit_task_1", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(workflowInstanceId, task.getWorkflowInstanceId());
+
+        TaskResult taskResult = new TaskResult(task);
+        taskResult.setReasonForIncompletion("NON TRANSIENT ERROR OCCURRED: An integration point required to complete the task is down");
+        taskResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
+        /*Map<String, Object> outputData = new HashMap<>();
+        outputData.put("TERMINAL_ERROR", "Integration endpoint down: FOOBAR");*/
+        taskResult.addOutputData("TERMINAL_ERROR", "Integration endpoint down: FOOBAR");
+
+        workflowExecutionService.updateTask(taskResult);
+        workflowExecutor.decide(workflowInstanceId);
+
+        es = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
+        TaskDef junit_task_1 = metadataService.getTaskDef("junit_task_1");
+        Task t1 = es.getTaskByRefName("t1");
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.FAILED, es.getStatus());
+        assertEquals("NON TRANSIENT ERROR OCCURRED: An integration point required to complete the task is down", es.getReasonForIncompletion());
+        assertEquals(1, junit_task_1.getRetryCount()); //Configured retries at the task definition level
+        assertEquals(0, t1.getRetryCount()); //Actual retries done on the task
+        assertEquals(true, es.getOutput().containsKey("TERMINAL_ERROR"));
+        assertEquals("Integration endpoint down: FOOBAR", es.getOutput().get("TERMINAL_ERROR"));
+
+    }
+
+
+    @Test
+    public void testSimpleWorkflow() throws Exception {
+
+        clearWorkflows();
+
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
+
+        String correlationId = "unit_test_1";
+        Map<String, Object> input = new HashMap<>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        logger.info("testSimpleWorkflow.wfid= {}", workflowInstanceId);
+        assertNotNull(workflowInstanceId);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
+        assertNotNull(es);
+        assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
+
+
+        es = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        assertEquals(1, es.getTasks().size());        //The very first task is the one that should be scheduled.
+
+
+        boolean failed = false;
+        try {
+            workflowExecutor.rewind(workflowInstanceId);
+        } catch (ApplicationException ae) {
+            failed = true;
+        }
+        assertTrue(failed);
+
+        // Polling for the first task should return the same task as before
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertEquals("junit_task_1", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(workflowInstanceId, task.getWorkflowInstanceId());
+
+        workflowExecutor.decide(workflowInstanceId);
+
+        String task1Op = "task1.Done";
+        List<Task> tasks = workflowExecutionService.getTasks(task.getTaskType(), null, 1);
+        assertNotNull(tasks);
+        assertEquals(1, tasks.size());
+        task = tasks.get(0);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(task.getWorkflowInstanceId(), false);
+        System.out.println("task workflow = " + workflow.getWorkflowType() + "," + workflow.getInput());
+        assertEquals(workflowInstanceId, task.getWorkflowInstanceId());
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(workflowInstanceId, false);
+        assertNotNull(es);
+        assertNotNull(es.getOutput());
+        assertTrue("Found " + es.getOutput().toString(), es.getOutput().containsKey("o3"));
+        assertEquals("task1.Done", es.getOutput().get("o3"));
+
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertEquals("junit_task_2", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        String task2Input = (String) task.getInputData().get("tp2");
+        assertNotNull("Found=" + task.getInputData(), task2Input);
+        assertEquals(task1Op, task2Input);
+
+
+        task2Input = (String) task.getInputData().get("tp1");
+        assertNotNull(task2Input);
+        assertEquals(inputParam1, task2Input);
+
+        task.setStatus(COMPLETED);
+        task.setReasonForIncompletion("unit test failure");
+        workflowExecutionService.updateTask(task);
+
+
+        es = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        tasks = es.getTasks();
+        assertNotNull(tasks);
+        assertEquals(2, tasks.size());
+
+        assertTrue("Found " + es.getOutput().toString(), es.getOutput().containsKey("o3"));
+        assertEquals("task1.Done", es.getOutput().get("o3"));
+
+    }
+
+    @Test
+    public void testSimpleWorkflowWithResponseTimeout() throws Exception {
+
+        createWFWithResponseTimeout();
+
+        String correlationId = "unit_test_1";
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String wfid = workflowExecutor.startWorkflow("RTOWF", 1, correlationId, input);
+        System.out.println("testSimpleWorkflowWithResponseTimeout.wfid=" + wfid);
+        assertNotNull(wfid);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        assertEquals(1, es.getTasks().size());        //The very first task is the one that should be scheduled.
+
+
+        // Polling for the first task should return the same task as before
+        Task task = workflowExecutionService.poll("task_rt", "task1.junit.worker");
+        assertNotNull(task);
+        assertEquals("task_rt", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(wfid, task.getWorkflowInstanceId());
+
+        // As the task_rt is out of the queue, the next poll should not get it
+        Task nullTask = workflowExecutionService.poll("task_rt", "task1.junit.worker");
+        assertNull(nullTask);
+
+        // Now since the ResponseTimeOut is set to 15 secs, sleep
+        Thread.sleep(15000);
+        workflowExecutor.decide(wfid);
+
+        // Polling now should get the same task back because it should have been put back in the queue
+        Task taskAgain = workflowExecutionService.poll("task_rt", "task1.junit.worker");
+        assertNotNull(taskAgain);
+        assertEquals(task.getTaskId(), taskAgain.getTaskId());
+
+        String task1Op = "task1.Done";
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertEquals("junit_task_2", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        task.setReasonForIncompletion("unit test failure");
+        workflowExecutionService.updateTask(task);
+
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+
+    }
+
+    @Test
+    public void testWorkflowRerunWithSubWorkflows() throws Exception {
+        // Execute a workflow
+        String workflowId = this.runWorkflowWithSubworkflow();
+        // Check it completed
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+
+        // Now lets pickup the first task in the sub workflow and rerun it from there
+        String subWorkflowId = null;
+        for (Task task : workflow.getTasks()) {
+            if (task.getTaskType().equalsIgnoreCase("SUB_WORKFLOW")) {
+                subWorkflowId = task.getOutputData().get("subWorkflowId").toString();
+            }
+        }
+        assertNotNull(subWorkflowId);
+        Workflow subWorkflow = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        Task subWorkflowTask1 = null;
+        for (Task task : subWorkflow.getTasks()) {
+            if (task.getTaskDefName().equalsIgnoreCase("junit_task_1")) {
+                subWorkflowTask1 = task;
+            }
+        }
+        assertNotNull(subWorkflowTask1);
+
+        RerunWorkflowRequest request = new RerunWorkflowRequest();
+        request.setReRunFromTaskId(subWorkflowTask1.getTaskId());
+
+        Map<String, Object> newInput = new HashMap<>();
+        newInput.put("p1", "1");
+        newInput.put("p2", "2");
+        request.setTaskInput(newInput);
+
+        String correlationId = "unit_test_sw_new";
+        Map<String, Object> input = new HashMap<>();
+        input.put("param1", "New p1 value");
+        input.put("param2", "New p2 value");
+        request.setCorrelationId(correlationId);
+        request.setWorkflowInput(input);
+
+        request.setReRunFromWorkflowId(workflowId);
+        request.setReRunFromTaskId(subWorkflowTask1.getTaskId());
+        // Rerun
+        workflowExecutor.rerun(request);
+
+        // The main WF and the sub WF should be in RUNNING state
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+        assertEquals(correlationId, workflow.getCorrelationId());
+        assertEquals("New p1 value", workflow.getInput().get("param1"));
+        assertEquals("New p2 value", workflow.getInput().get("param2"));
+
+        subWorkflow = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertNotNull(subWorkflow);
+        assertEquals(WorkflowStatus.RUNNING, subWorkflow.getStatus());
+        // Since we are re running from the sub workflow task, there
+        // should be only 1 task that is SCHEDULED
+        assertEquals(1, subWorkflow.getTasks().size());
+        assertEquals(Status.SCHEDULED, subWorkflow.getTasks().get(0).getStatus());
+
+        // Now execute the task
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(task.getInputData().get("p1").toString(), "1");
+        assertEquals(task.getInputData().get("p2").toString(), "2");
+        task.getOutputData().put("op", "junit_task_1.done");
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        subWorkflow = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertNotNull(subWorkflow);
+        assertEquals(WorkflowStatus.RUNNING, subWorkflow.getStatus());
+        assertEquals(2, subWorkflow.getTasks().size());
+
+        // Poll for second task of the sub workflow and execute it
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        task.getOutputData().put("op", "junit_task_2.done");
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        // Now the sub workflow and the main workflow must have finished
+        subWorkflow = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertNotNull(subWorkflow);
+        assertEquals(WorkflowStatus.COMPLETED, subWorkflow.getStatus());
+        assertEquals(2, subWorkflow.getTasks().size());
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+    }
+
+    @Test
+    public void testSimpleWorkflowWithTaskSpecificDomain() throws Exception {
+
+        clearWorkflows();
+        createWorkflowDefForDomain();
+
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
+        assertNotNull(found);
+
+        String correlationId = "unit_test_sw";
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        Map<String, String> taskToDomain = new HashMap<String, String>();
+        taskToDomain.put("junit_task_3", "domain1");
+        taskToDomain.put("junit_task_2", "domain1");
+
+        // Poll before so that a polling for this task is "active"
+        Task task = workflowExecutionService.poll("junit_task_3", "task1.junit.worker", "domain1");
+        assertNull(task);
+        task = workflowExecutionService.poll("junit_task_2", "task1.junit.worker", "domain1");
+        assertNull(task);
+
+        String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2_SW, 1, correlationId, input, null, taskToDomain);
+        System.out.println("testSimpleWorkflow.wfid=" + wfid);
+        assertNotNull(wfid);
+        Workflow wf = workflowExecutor.getWorkflow(wfid, false);
+        assertNotNull(wf);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
+
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        assertEquals(1, es.getTasks().size());        //The very first task is the one that should be scheduled.
+
+
+        // Check Size
+        Map<String, Integer> sizes = workflowExecutionService.getTaskQueueSizes(Arrays.asList("domain1:junit_task_3", "junit_task_3"));
+        assertEquals(sizes.get("domain1:junit_task_3").intValue(), 1);
+        assertEquals(sizes.get("junit_task_3").intValue(), 0);
+
+        // Polling for the first task should return the same task as before
+        task = workflowExecutionService.poll("junit_task_3", "task1.junit.worker");
+        assertNull(task);
+        task = workflowExecutionService.poll("junit_task_3", "task1.junit.worker", "domain1");
+        assertNotNull(task);
+        assertEquals("junit_task_3", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(wfid, task.getWorkflowInstanceId());
+
+        String task1Op = "task1.Done";
+        List<Task> tasks = workflowExecutionService.getTasks(task.getTaskType(), null, 1);
+        assertNotNull(tasks);
+        assertEquals(1, tasks.size());
+        task = tasks.get(0);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(task.getWorkflowInstanceId(), false);
+        System.out.println("task workflow = " + workflow.getWorkflowType() + "," + workflow.getInput());
+        assertEquals(wfid, task.getWorkflowInstanceId());
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, false);
+        assertNotNull(es);
+        assertNotNull(es.getOutput());
+        assertTrue("Found " + es.getOutput().toString(), es.getOutput().containsKey("o3"));
+        assertEquals("task1.Done", es.getOutput().get("o3"));
+
+        task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertEquals("junit_task_1", task.getTaskType());
+        Workflow essw = workflowExecutionService.getExecutionStatus(task.getWorkflowInstanceId(), false);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertNotNull(essw.getTaskToDomain());
+        assertEquals(essw.getTaskToDomain().size(), 2);
+
+        task.setStatus(COMPLETED);
+        task.setReasonForIncompletion("unit test failure");
+        workflowExecutionService.updateTask(task);
+
+
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker", "domain1");
+        assertNotNull(task);
+        assertEquals("junit_task_2", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        task.setReasonForIncompletion("unit test failure");
+        workflowExecutionService.updateTask(task);
+
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        tasks = es.getTasks();
+        assertNotNull(tasks);
+        assertEquals(2, tasks.size());
+
+        assertTrue("Found " + es.getOutput().toString(), es.getOutput().containsKey("o3"));
+        assertEquals("task1.Done", es.getOutput().get("o3"));
+
+        List<PollData> pddata = workflowExecutionService.getPollData("junit_task_3");
+        assertTrue(pddata.size() == 2);
+        for (PollData pd : pddata) {
+            assertEquals(pd.getQueueName(), "junit_task_3");
+            assertEquals(pd.getWorkerId(), "task1.junit.worker");
+            assertTrue(pd.getLastPollTime() != 0);
+            if (pd.getDomain() != null) {
+                assertEquals(pd.getDomain(), "domain1");
+            }
+        }
+
+
+        List<PollData> pdList = workflowExecutionService.getAllPollData();
+        int count = 0;
+        for (PollData pd : pdList) {
+            if (pd.getQueueName().equals("junit_task_3")) {
+                count++;
+            }
+        }
+        assertTrue(count == 2);
+
+    }
+
+    @Test
+    public void testSimpleWorkflowWithAllTaskInOneDomain() throws Exception {
+
+        clearWorkflows();
+        createWorkflowDefForDomain();
+
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
+        assertNotNull(found);
+
+        String correlationId = "unit_test_sw";
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        Map<String, String> taskToDomain = new HashMap<String, String>();
+        taskToDomain.put("*", "domain11,, domain12");
+
+        // Poll before so that a polling for this task is "active"
+        Task task = workflowExecutionService.poll("junit_task_3", "task1.junit.worker", "domain11");
+        assertNull(task);
+        task = workflowExecutionService.poll("junit_task_2", "task1.junit.worker", "domain12");
+        assertNull(task);
+
+        String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2_SW, 1, correlationId, input, null, taskToDomain);
+        System.out.println("testSimpleWorkflow.wfid=" + wfid);
+        assertNotNull(wfid);
+        Workflow wf = workflowExecutor.getWorkflow(wfid, false);
+        assertNotNull(wf);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
+
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        assertEquals(1, es.getTasks().size());        //The very first task is the one that should be scheduled.
+
+
+        // Check Size
+        Map<String, Integer> sizes = workflowExecutionService.getTaskQueueSizes(Arrays.asList("domain11:junit_task_3", "junit_task_3"));
+        assertEquals(sizes.get("domain11:junit_task_3").intValue(), 1);
+        assertEquals(sizes.get("junit_task_3").intValue(), 0);
+
+        // Polling for the first task should return the same task as before
+        task = workflowExecutionService.poll("junit_task_3", "task1.junit.worker");
+        assertNull(task);
+        task = workflowExecutionService.poll("junit_task_3", "task1.junit.worker", "domain11");
+        assertNotNull(task);
+        assertEquals("junit_task_3", task.getTaskType());
+        assertEquals("domain11", task.getDomain());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(wfid, task.getWorkflowInstanceId());
+
+        String task1Op = "task1.Done";
+        List<Task> tasks = workflowExecutionService.getTasks(task.getTaskType(), null, 1);
+        assertNotNull(tasks);
+        assertEquals(1, tasks.size());
+        task = tasks.get(0);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(task.getWorkflowInstanceId(), false);
+        System.out.println("task workflow = " + workflow.getWorkflowType() + "," + workflow.getInput());
+        assertEquals(wfid, task.getWorkflowInstanceId());
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, false);
+        assertNotNull(es);
+        assertNotNull(es.getOutput());
+        assertTrue("Found " + es.getOutput().toString(), es.getOutput().containsKey("o3"));
+        assertEquals("task1.Done", es.getOutput().get("o3"));
+
+        task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertEquals("junit_task_1", task.getTaskType());
+        Workflow essw = workflowExecutionService.getExecutionStatus(task.getWorkflowInstanceId(), false);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertNotNull(essw.getTaskToDomain());
+        assertEquals(essw.getTaskToDomain().size(), 1);
+
+        task.setStatus(COMPLETED);
+        task.setReasonForIncompletion("unit test failure");
+        workflowExecutionService.updateTask(task);
+
+
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker", "domain11");
+        assertNull(task);
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker", "domain12");
+        assertNotNull(task);
+        assertEquals("junit_task_2", task.getTaskType());
+        assertEquals("domain12", task.getDomain());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        task.setReasonForIncompletion("unit test failure");
+        workflowExecutionService.updateTask(task);
+
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        tasks = es.getTasks();
+        assertNotNull(tasks);
+        assertEquals(2, tasks.size());
+
+        assertTrue("Found " + es.getOutput().toString(), es.getOutput().containsKey("o3"));
+        assertEquals("task1.Done", es.getOutput().get("o3"));
+
+    }
+
+
+    private void clearWorkflows() throws Exception {
+        List<String> workflows = metadataService.getWorkflowDefs().stream()
+                .map(WorkflowDef::getName)
+                .collect(Collectors.toList());
+        for (String wfName : workflows) {
+            List<String> running = workflowExecutionService.getRunningWorkflows(wfName);
+            for (String wfid : running) {
+                workflowExecutor.terminateWorkflow(wfid, "cleanup");
+            }
+        }
+        queueDAO.queuesDetail().keySet().forEach(queueName -> {
+            queueDAO.flush(queueName);
+        });
+    }
+
+    @Test
+    public void testLongRunning() throws Exception {
+
+        clearWorkflows();
+
+        WorkflowDef found = metadataService.getWorkflowDef(LONG_RUNNING, 1);
+        assertNotNull(found);
+
+        String correlationId = "unit_test_1";
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String wfid = workflowExecutor.startWorkflow(LONG_RUNNING, 1, correlationId, input);
+        System.out.println("testLongRunning.wfid=" + wfid);
+        assertNotNull(wfid);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+        // Check the queue
+        assertEquals(Integer.valueOf(1), workflowExecutionService.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
+        ///
+
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        String param1 = (String) task.getInputData().get("p1");
+        String param2 = (String) task.getInputData().get("p2");
+
+        assertNotNull(param1);
+        assertNotNull(param2);
+        assertEquals("p1 value", param1);
+        assertEquals("p2 value", param2);
+
+
+        String task1Op = "task1.In.Progress";
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(Status.IN_PROGRESS);
+        task.setCallbackAfterSeconds(5);
+        workflowExecutionService.updateTask(task);
+        String taskId = task.getTaskId();
+
+        // Check the queue
+        assertEquals(Integer.valueOf(1), workflowExecutionService.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
+        ///
+
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+        // Polling for next task should not return anything
+        Task task2 = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNull(task2);
+
+        task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNull(task);
+
+        Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
+        // Polling for the first task should return the same task as before
+        task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(task.getTaskId(), taskId);
+
+        task1Op = "task1.Done";
+        List<Task> tasks = workflowExecutionService.getTasks(task.getTaskType(), null, 1);
+        assertNotNull(tasks);
+        assertEquals(1, tasks.size());
+        assertEquals(wfid, task.getWorkflowInstanceId());
+        task = tasks.get(0);
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        String task2Input = (String) task.getInputData().get("tp2");
+        assertNotNull(task2Input);
+        assertEquals(task1Op, task2Input);
+
+        task2Input = (String) task.getInputData().get("tp1");
+        assertNotNull(task2Input);
+        assertEquals(inputParam1, task2Input);
+
+        task.setStatus(COMPLETED);
+        task.setReasonForIncompletion("unit test failure");
+        workflowExecutionService.updateTask(task);
+
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        tasks = es.getTasks();
+        assertNotNull(tasks);
+        assertEquals(2, tasks.size());
+
+
+    }
+
+    @Test
+    public void testResetWorkflowInProgressTasks() throws Exception {
+
+        clearWorkflows();
+
+        WorkflowDef found = metadataService.getWorkflowDef(LONG_RUNNING, 1);
+        assertNotNull(found);
+
+        String correlationId = "unit_test_1";
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String wfid = workflowExecutor.startWorkflow(LONG_RUNNING, 1, correlationId, input);
+        System.out.println("testLongRunning.wfid=" + wfid);
+        assertNotNull(wfid);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+        // Check the queue
+        assertEquals(Integer.valueOf(1), workflowExecutionService.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
+        ///
+
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        String param1 = (String) task.getInputData().get("p1");
+        String param2 = (String) task.getInputData().get("p2");
+
+        assertNotNull(param1);
+        assertNotNull(param2);
+        assertEquals("p1 value", param1);
+        assertEquals("p2 value", param2);
+
+
+        String task1Op = "task1.In.Progress";
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(Status.IN_PROGRESS);
+        task.setCallbackAfterSeconds(3600);
+        workflowExecutionService.updateTask(task);
+        String taskId = task.getTaskId();
+
+        // Check the queue
+        assertEquals(Integer.valueOf(1), workflowExecutionService.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
+        ///
+
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+        // Polling for next task should not return anything
+        Task task2 = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNull(task2);
+
+        task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNull(task);
+
+        //Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
+        // Reset
+        workflowExecutor.resetCallbacksForInProgressTasks(wfid);
+
+
+        // Now Polling for the first task should return the same task as before
+        task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(task.getTaskId(), taskId);
+        assertEquals(task.getCallbackAfterSeconds(), 0);
+
+        task1Op = "task1.Done";
+        List<Task> tasks = workflowExecutionService.getTasks(task.getTaskType(), null, 1);
+        assertNotNull(tasks);
+        assertEquals(1, tasks.size());
+        assertEquals(wfid, task.getWorkflowInstanceId());
+        task = tasks.get(0);
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        String task2Input = (String) task.getInputData().get("tp2");
+        assertNotNull(task2Input);
+        assertEquals(task1Op, task2Input);
+
+        task2Input = (String) task.getInputData().get("tp1");
+        assertNotNull(task2Input);
+        assertEquals(inputParam1, task2Input);
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        tasks = es.getTasks();
+        assertNotNull(tasks);
+        assertEquals(2, tasks.size());
+
+
+    }
+
+
+    @Test
+    public void testConcurrentWorkflowExecutions() throws Exception {
+
+        int count = 3;
+
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
+
+        String correlationId = "unit_test_concurrrent";
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String[] wfids = new String[count];
+
+        for (int i = 0; i < count; i++) {
+            String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+            System.out.println("testConcurrentWorkflowExecutions.wfid=" + wfid);
+            assertNotNull(wfid);
+
+            List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
+            assertNotNull(ids);
+            assertTrue("found no ids: " + ids, ids.size() > 0);        //if there are concurrent tests running, this would be more than 1
+            boolean foundId = false;
+            for (String id : ids) {
+                if (id.equals(wfid)) {
+                    foundId = true;
+                }
+            }
+            assertTrue(foundId);
+            wfids[i] = wfid;
+        }
+
+
+        String task1Op = "";
+        for (int i = 0; i < count; i++) {
+
+            Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+            assertNotNull(task);
+            assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+            String param1 = (String) task.getInputData().get("p1");
+            String param2 = (String) task.getInputData().get("p2");
+
+            assertNotNull(param1);
+            assertNotNull(param2);
+            assertEquals("p1 value", param1);
+            assertEquals("p2 value", param2);
+
+            task1Op = "task1.output->" + param1 + "." + param2;
+            task.getOutputData().put("op", task1Op);
+            task.setStatus(COMPLETED);
+            workflowExecutionService.updateTask(task);
+        }
+
+        for (int i = 0; i < count; i++) {
+            Task task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+            assertNotNull(task);
+            assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+            String task2Input = (String) task.getInputData().get("tp2");
+            assertNotNull(task2Input);
+            assertEquals(task1Op, task2Input);
+
+            task2Input = (String) task.getInputData().get("tp1");
+            assertNotNull(task2Input);
+            assertEquals(inputParam1, task2Input);
+
+            task.setStatus(COMPLETED);
+            workflowExecutionService.updateTask(task);
+        }
+
+        List<Workflow> wfs = workflowExecutionService.getWorkflowInstances(LINEAR_WORKFLOW_T1_T2, correlationId, false, false);
+        wfs.forEach(wf -> {
+            assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
+        });
+
+
+    }
+
+    @Test
+    public void testCaseStatements() throws Exception {
+        createConditionalWF();
+
+        String correlationId = "testCaseStatements: " + System.currentTimeMillis();
+        Map<String, Object> input = new HashMap<String, Object>();
+        String wfid;
+        String[] sequence;
+
+
+        //default case
+        input.put("param1", "xxx");
+        input.put("param2", "two");
+        wfid = workflowExecutor.startWorkflow(COND_TASK_WF, 1, correlationId, input);
+        System.out.println("testCaseStatements.wfid=" + wfid);
+        assertNotNull(wfid);
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        Task task = workflowExecutionService.poll("junit_task_2", "junit");
+        assertNotNull(task);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        assertEquals(3, es.getTasks().size());
+
+        ///
+
+
+        //nested - one
+        input.put("param1", "nested");
+        input.put("param2", "one");
+        wfid = workflowExecutor.startWorkflow(COND_TASK_WF, 1, correlationId, input);
+        System.out.println("testCaseStatements.wfid=" + wfid);
+        assertNotNull(wfid);
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        sequence = new String[]{"junit_task_1", "junit_task_3"};
+
+        validate(wfid, sequence, new String[]{SystemTaskType.DECISION.name(), SystemTaskType.DECISION.name(), "junit_task_1", "junit_task_3", SystemTaskType.DECISION.name()}, 5);
+        //
+
+        //nested - two
+        input.put("param1", "nested");
+        input.put("param2", "two");
+        wfid = workflowExecutor.startWorkflow(COND_TASK_WF, 1, correlationId, input);
+        System.out.println("testCaseStatements.wfid=" + wfid);
+        assertNotNull(wfid);
+        sequence = new String[]{"junit_task_2"};
+        validate(wfid, sequence, new String[]{SystemTaskType.DECISION.name(), SystemTaskType.DECISION.name(), "junit_task_2", SystemTaskType.DECISION.name()}, 4);
+        //
+
+        //three
+        input.put("param1", "three");
+        input.put("param2", "two");
+        input.put("finalCase", "notify");
+        wfid = workflowExecutor.startWorkflow(COND_TASK_WF, 1, correlationId, input);
+        System.out.println("testCaseStatements.wfid=" + wfid);
+        assertNotNull(wfid);
+        sequence = new String[]{"junit_task_3", "junit_task_4"};
+        validate(wfid, sequence, new String[]{SystemTaskType.DECISION.name(), "junit_task_3", SystemTaskType.DECISION.name(), "junit_task_4"}, 3);
+        //
+
+    }
+
+    private void validate(String wfid, String[] sequence, String[] executedTasks, int expectedTotalTasks) throws Exception {
+        for (int i = 0; i < sequence.length; i++) {
+            String t = sequence[i];
+            Task task = getTask(t);
+            if (task == null) {
+                System.out.println("Missing task for " + t + ", below are the workflow tasks completed...");
+                Workflow workflow = workflowExecutionService.getExecutionStatus(wfid, true);
+                for (Task x : workflow.getTasks()) {
+                    System.out.println(x.getTaskType() + "/" + x.getReferenceTaskName());
+                }
+            }
+            assertNotNull("No task for " + t, task);
+            assertEquals(wfid, task.getWorkflowInstanceId());
+            task.setStatus(COMPLETED);
+            workflowExecutionService.updateTask(task);
+
+            Workflow workflow = workflowExecutionService.getExecutionStatus(wfid, true);
+            assertNotNull(workflow);
+            assertTrue(!workflow.getTasks().isEmpty());
+            if (i < sequence.length - 1) {
+                assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+            } else {
+                workflow = workflowExecutionService.getExecutionStatus(wfid, true);
+                List<Task> workflowTasks = workflow.getTasks();
+                assertEquals(workflowTasks.toString(), executedTasks.length, workflowTasks.size());
+                for (int k = 0; k < executedTasks.length; k++) {
+                    assertEquals("Tasks: " + workflowTasks.toString() + "\n", executedTasks[k], workflowTasks.get(k).getTaskType());
+                }
+
+                assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+            }
+        }
+    }
+
+
+    private Task getTask(String taskType) throws Exception {
+        Task task;
+        int count = 2;
+        do {
+            task = workflowExecutionService.poll(taskType, "junit");
+            if (task == null) {
+                count--;
+            }
+            if (count < 0) {
+                break;
+            }
+
+        } while (task == null);
+        if (task != null) {
+            workflowExecutionService.ackTaskReceived(task.getTaskId());
+        }
+        return task;
+    }
+
+    @Test
+    public void testRetries() throws Exception {
+
+        String taskName = "junit_task_2";
+        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        taskDef.setRetryCount(2);
+        taskDef.setRetryDelaySeconds(1);
+        metadataService.updateTaskDef(taskDef);
+
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
+
+        String correlationId = "unit_test_1";
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        System.out.println("testRetries.wfid=" + wfid);
+        assertNotNull(wfid);
+
+        List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
+        assertNotNull(ids);
+        assertTrue("found no ids: " + ids, ids.size() > 0);        //if there are concurrent tests running, this would be more than 1
+        boolean foundId = false;
+        for (String id : ids) {
+            if (id.equals(wfid)) {
+                foundId = true;
+            }
+        }
+        assertTrue(foundId);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        String param1 = (String) task.getInputData().get("p1");
+        String param2 = (String) task.getInputData().get("p2");
+
+        assertNotNull(param1);
+        assertNotNull(param2);
+        assertEquals("p1 value", param1);
+        assertEquals("p2 value", param2);
+
+        String task1Op = "task1.output->" + param1 + "." + param2;
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        //fail the task twice and then succeed
+        verify(inputParam1, wfid, task1Op, true);
+        Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+        verify(inputParam1, wfid, task1Op, false);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        assertEquals(3, es.getTasks().size());        //task 1, and 2 of the task 2
+
+        assertEquals("junit_task_1", es.getTasks().get(0).getTaskType());
+        assertEquals("junit_task_2", es.getTasks().get(1).getTaskType());
+        assertEquals("junit_task_2", es.getTasks().get(2).getTaskType());
+        assertEquals(COMPLETED, es.getTasks().get(0).getStatus());
+        assertEquals(Status.FAILED, es.getTasks().get(1).getStatus());
+        assertEquals(COMPLETED, es.getTasks().get(2).getStatus());
+        assertEquals(es.getTasks().get(1).getTaskId(), es.getTasks().get(2).getRetriedTaskId());
+
+
+    }
+
+    @Test
+    public void testSuccess() throws Exception {
+
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
+
+        String correlationId = "unit_test_1" + UUID.randomUUID().toString();
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        assertNotNull(wfid);
+
+        List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
+        assertNotNull(ids);
+        assertTrue("found no ids: " + ids, ids.size() > 0);        //if there are concurrent tests running, this would be more than 1
+        boolean foundId = false;
+        for (String id : ids) {
+            if (id.equals(wfid)) {
+                foundId = true;
+            }
+        }
+        assertTrue(foundId);
+
 		/*
 		 * @correlationId
 		List<Workflow> byCorrelationId = ess.getWorkflowInstances(LINEAR_WORKFLOW_T1_T2, correlationId, false, false);
@@ -2151,1617 +2222,1590 @@ public class WorkflowServiceTest {
 		assertTrue(!byCorrelationId.isEmpty());
 		assertEquals(1, byCorrelationId.size());
 		*/
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		// The first task would be marked as scheduled
-		assertEquals(1, es.getTasks().size());
-		assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
 
-		// decideNow should be idempotent if re-run on the same state!
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals(1, es.getTasks().size());
-		Task t = es.getTasks().get(0);
-		assertEquals(Status.SCHEDULED, t.getStatus());
-		
-		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		
-		assertNotNull(task);
-		assertEquals(t.getTaskId(), task.getTaskId());
-		es = ess.getExecutionStatus(wfid, true);
-		t = es.getTasks().get(0);
-		assertEquals(Status.IN_PROGRESS, t.getStatus());
-		String taskId = t.getTaskId();
-		
-		String param1 = (String) task.getInputData().get("p1");
-		String param2 = (String) task.getInputData().get("p2");
-		
-		assertNotNull(param1);
-		assertNotNull(param2);
-		assertEquals("p1 value", param1);
-		assertEquals("p2 value", param2);
-		
-		String task1Op = "task1.output->" + param1 + "." + param2;
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		// If we get the full workflow here then, last task should be completed and the next task should be scheduled
-		es = ess.getExecutionStatus(wfid, true);
-		es.getTasks().forEach(wfTask -> {
-			if(wfTask.getTaskId().equals(taskId)){
-				assertEquals(Status.COMPLETED, wfTask.getStatus());
-			} else {
-				assertEquals(Status.SCHEDULED, wfTask.getStatus());
-			}
-		});
-		
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertNotNull(task);
-		String task2Input = (String) task.getInputData().get("tp2");
-		assertNotNull(task2Input);
-		assertEquals(task1Op, task2Input);
-		
-		task2Input = (String) task.getInputData().get("tp1");
-		assertNotNull(task2Input);
-		assertEquals(inputParam1, task2Input);
-		
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		// Check the tasks, at this time there should be 2 task
-		assertEquals(es.getTasks().size(), 2);
-		es.getTasks().forEach(wfTask -> {
-				assertEquals(wfTask.getStatus(), Status.COMPLETED);
-		});
-		
-		System.out.println("Total tasks=" + es.getTasks().size());
-		assertTrue(es.getTasks().size() < 10);
-		
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        // The first task would be marked as scheduled
+        assertEquals(1, es.getTasks().size());
+        assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
 
-	}
-	
-	@Test
-	public void testDeciderUpdate() throws Exception {
+        // decideNow should be idempotent if re-run on the same state!
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        assertEquals(1, es.getTasks().size());
+        Task t = es.getTasks().get(0);
+        assertEquals(Status.SCHEDULED, t.getStatus());
 
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_1" + UUID.randomUUID().toString();
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
-		assertNotNull(wfid);
-		
-		Workflow workflow = provider.getWorkflow(wfid, false);
-		long updated1 = workflow.getUpdateTime();
-		Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
-		provider.decide(wfid);
-		workflow = provider.getWorkflow(wfid, false);
-		long updated2 = workflow.getUpdateTime();
-		assertEquals(updated1, updated2);
-		
-		Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
-		provider.terminateWorkflow(wfid, "done");
-		workflow = provider.getWorkflow(wfid, false);
-		updated2 = workflow.getUpdateTime();
-		assertTrue("updated1[" + updated1 + "] >? updated2[" + updated2 + "]", updated2 > updated1);
-		
-	}
-	
-	@Test
-	@Ignore
-	//Ignore for now, will improve this in the future
-	public void testFailurePoints() throws Exception {
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
 
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_1" + UUID.randomUUID().toString();
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
-		assertNotNull(wfid);
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		// The first task would be marked as scheduled
-		assertEquals(1, es.getTasks().size());
-		assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
+        assertNotNull(task);
+        assertEquals(t.getTaskId(), task.getTaskId());
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        t = es.getTasks().get(0);
+        assertEquals(Status.IN_PROGRESS, t.getStatus());
+        String taskId = t.getTaskId();
 
-		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		String taskId = task.getTaskId();
-		
-		String task1Op = "task1.output";
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		try{
-			ess.updateTask(task);
-		}catch(Exception e){
-			ess.updateTask(task);
-		}
-		
-		// If we get the full workflow here then, last task should be completed and the next task should be scheduled
-		es = ess.getExecutionStatus(wfid, true);
-		es.getTasks().forEach(wfTask -> {
-			if(wfTask.getTaskId().equals(taskId)){
-				assertEquals(Status.COMPLETED, wfTask.getStatus());
-			} else {
-				assertEquals(Status.SCHEDULED, wfTask.getStatus());
-			}
-		});
-		
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertNotNull(task);
-		String task2Input = (String) task.getInputData().get("tp2");
-		assertNotNull(task2Input);
-		assertEquals(task1Op, task2Input);
-		
-		task2Input = (String) task.getInputData().get("tp1");
-		assertNotNull(task2Input);
-		assertEquals(inputParam1, task2Input);
-		
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		// Check the tasks, at this time there should be 2 task
-		assertEquals(es.getTasks().size(), 2);
-		es.getTasks().forEach(wfTask -> {
-				assertEquals(wfTask.getStatus(), Status.COMPLETED);
-		});
-		
-		System.out.println("Total tasks=" + es.getTasks().size());
-		assertTrue(es.getTasks().size() < 10);
-		
+        String param1 = (String) task.getInputData().get("p1");
+        String param2 = (String) task.getInputData().get("p2");
 
-	}
-	
-	@Test
-	public void testDeciderMix() throws Exception {
+        assertNotNull(param1);
+        assertNotNull(param2);
+        assertEquals("p1 value", param1);
+        assertEquals("p2 value", param2);
 
-		ExecutorService executors = Executors.newFixedThreadPool(3);
-		
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_1" + UUID.randomUUID().toString();
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
-		assertNotNull(wfid);
-		
-		List<String> ids = ess.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
-		assertNotNull(ids);
-		assertTrue("found no ids: " + ids, ids.size() > 0);		//if there are concurrent tests running, this would be more than 1
-		boolean foundId = false;
-		for(String id : ids){
-			if(id.equals(wfid)){
-				foundId = true;
-			}
-		}
-		assertTrue(foundId);
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		// The first task would be marked as scheduled
-		assertEquals(1, es.getTasks().size());
-		assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
-		
-		List<Future<Void>> futures = new LinkedList<>();
-		for(int i = 0; i < 10; i++){
-			futures.add(executors.submit(()->{
-				provider.decide(wfid);
-				return null;
-			}));
-		}
-		for(Future<Void> future : futures){
-			future.get();
-		}
-		futures.clear();
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		// The first task would be marked as scheduled
-		assertEquals(1, es.getTasks().size());
-		assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
-		
+        String task1Op = "task1.output->" + param1 + "." + param2;
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
 
-		// decideNow should be idempotent if re-run on the same state!
-		provider.decide(wfid);
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals(1, es.getTasks().size());
-		Task t = es.getTasks().get(0);
-		assertEquals(Status.SCHEDULED, t.getStatus());
-		
-		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		
-		assertNotNull(task);
-		assertEquals(t.getTaskId(), task.getTaskId());
-		es = ess.getExecutionStatus(wfid, true);
-		t = es.getTasks().get(0);
-		assertEquals(Status.IN_PROGRESS, t.getStatus());
-		String taskId = t.getTaskId();
-		
-		String param1 = (String) task.getInputData().get("p1");
-		String param2 = (String) task.getInputData().get("p2");
-		
-		assertNotNull(param1);
-		assertNotNull(param2);
-		assertEquals("p1 value", param1);
-		assertEquals("p2 value", param2);
-		
-		String task1Op = "task1.output->" + param1 + "." + param2;
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		// If we get the full workflow here then, last task should be completed and the next task should be scheduled
-		es = ess.getExecutionStatus(wfid, true);
-		es.getTasks().forEach(wfTask -> {
-			if(wfTask.getTaskId().equals(taskId)){
-				assertEquals(Status.COMPLETED, wfTask.getStatus());
-			} else {
-				assertEquals(Status.SCHEDULED, wfTask.getStatus());
-			}
-		});
-		
-		//Run sweep 10 times!		
-		for(int i = 0; i < 10; i++){
-			futures.add(executors.submit(()->{
-				long s = System.currentTimeMillis();
-				provider.decide(wfid);
-				System.out.println("Took " + (System.currentTimeMillis()-s) + " ms to run decider");
-				return null;
-			}));
-		}
-		for(Future<Void> future : futures){
-			future.get();
-		}
-		futures.clear();
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals(2, es.getTasks().size());
-		
-		System.out.println("Workflow tasks=" + es.getTasks());
-		
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertNotNull(task);
-		String task2Input = (String) task.getInputData().get("tp2");
-		assertNotNull(task2Input);
-		assertEquals(task1Op, task2Input);
-		
-		task2Input = (String) task.getInputData().get("tp1");
-		assertNotNull(task2Input);
-		assertEquals(inputParam1, task2Input);
-		
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		// Check the tasks, at this time there should be 2 task
-		assertEquals(es.getTasks().size(), 2);
-		es.getTasks().forEach(wfTask -> {
-				assertEquals(wfTask.getStatus(), Status.COMPLETED);
-		});
-		
-		System.out.println("Total tasks=" + es.getTasks().size());
-		assertTrue(es.getTasks().size() < 10);
-	}
-	
-	@Test
-	public void testFailures() throws Exception {
-		WorkflowDef errorWorkflow = ms.getWorkflowDef(FORK_JOIN_WF, 1);
-		assertNotNull("Error workflow is not defined", errorWorkflow);
-		
-		String taskName = "junit_task_1";
-		TaskDef taskDef = ms.getTaskDef(taskName);
-		taskDef.setRetryCount(0);
-		ms.updateTaskDef(taskDef);
-		
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		assertNotNull(found.getFailureWorkflow());
-		assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
-		
-		String correlationId = "unit_test_1" + UUID.randomUUID().toString();
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		input.put("failureWfName", "FanInOutTest");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
-		assertNotNull(wfid);
+        // If we get the full workflow here then, last task should be completed and the next task should be scheduled
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        es.getTasks().forEach(wfTask -> {
+            if (wfTask.getTaskId().equals(taskId)) {
+                assertEquals(COMPLETED, wfTask.getStatus());
+            } else {
+                assertEquals(Status.SCHEDULED, wfTask.getStatus());
+            }
+        });
 
-		Task task = getTask("junit_task_1");
-		assertNotNull(task);
-		task.setStatus(Status.FAILED);
-		ess.updateTask(task);
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertNotNull(task);
+        String task2Input = (String) task.getInputData().get("tp2");
+        assertNotNull(task2Input);
+        assertEquals(task1Op, task2Input);
 
-		// If we get the full workflow here then, last task should be completed and the next task should be scheduled
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.FAILED, es.getStatus());
-		
-		taskDef.setRetryCount(RETRY_COUNT);
-		ms.updateTaskDef(taskDef);
-	
-	}
-	
-	@Test
-	public void testRetryWithForkJoin() throws Exception {
-		String wfid = this.runAFailedForkJoinWF();
-		
-		provider.retry(wfid);
-		
-		Workflow wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		
-		printTaskStatuses(wf, "After retry called");
-		
-		Task t2 = ess.poll("junit_task_0_RT_2", "test");
-		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
-		
-		Task t3 = ess.poll("junit_task_0_RT_3", "test");
-		assertNotNull(t3);
-		assertTrue(ess.ackTaskReceived(t3.getTaskId()));
+        task2Input = (String) task.getInputData().get("tp1");
+        assertNotNull(task2Input);
+        assertEquals(inputParam1, task2Input);
 
-		t2.setStatus(Status.COMPLETED);
-		t3.setStatus(Status.COMPLETED);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
 
-		ExecutorService es = Executors.newFixedThreadPool(2);
-		Future<?> future1 = es.submit(()->{
-			try {
-				ess.updateTask(t2);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-				
-		});
-		final Task _t3 = t3;
-		Future<?> future2 = es.submit(()->{
-			try {
-				ess.updateTask(_t3);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-				
-		});
-		future1.get();
-		future2.get();
-		
-		provider.decide(wfid);
-		provider.decide(wfid);
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		
-		printTaskStatuses(wf, "T2, T3 complete");
-		provider.decide(wfid);
-		
-		Task t4 = ess.poll("junit_task_0_RT_4", "test");
-		assertNotNull(t4);
-		t4.setStatus(Status.COMPLETED);
-		ess.updateTask(t4);
-		
-		printTaskStatuses(wfid, "After complete");
-	}
-	
-	@Test
-	public void testRetry() throws Exception {
-		WorkflowDef errorWorkflow = ms.getWorkflowDef(FORK_JOIN_WF, 1);
-		assertNotNull("Error workflow is not defined", errorWorkflow);
-		
-		String taskName = "junit_task_1";
-		TaskDef taskDef = ms.getTaskDef(taskName);
-		int retryCount = taskDef.getRetryCount();
-		taskDef.setRetryCount(1);
-		int retryDelay = taskDef.getRetryDelaySeconds();
-		taskDef.setRetryDelaySeconds(0);
-		ms.updateTaskDef(taskDef);
-		
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		assertNotNull(found.getFailureWorkflow());
-		assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
-		
-		String correlationId = "unit_test_1" + UUID.randomUUID().toString();
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
-		assertNotNull(wfid);
-		printTaskStatuses(wfid, "initial");
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        // Check the tasks, at this time there should be 2 task
+        assertEquals(es.getTasks().size(), 2);
+        es.getTasks().forEach(wfTask -> {
+            assertEquals(wfTask.getStatus(), COMPLETED);
+        });
 
-		Task task = getTask("junit_task_1");
-		assertNotNull(task);
-		task.setStatus(Status.FAILED);
-		ess.updateTask(task);
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		task = getTask("junit_task_1");
-		assertNotNull(task);
-		task.setStatus(Status.FAILED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.FAILED, es.getStatus());
-		
-		printTaskStatuses(wfid, "before retry");
-		
-		provider.retry(wfid);
-		
-		printTaskStatuses(wfid, "after retry");
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		task = getTask("junit_task_1");
-		assertNotNull(task);
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		task = getTask("junit_task_2");
-		assertNotNull(task);
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		
-		assertEquals(3, es.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_1")).count());
-		
-		taskDef.setRetryCount(retryCount);
-		taskDef.setRetryDelaySeconds(retryDelay);
-		ms.updateTaskDef(taskDef);
-		
-		printTaskStatuses(wfid, "final");
-	
-	}
-	
-	@Test
-	public void testRestart() throws Exception {
-		String taskName = "junit_task_1";
-		TaskDef taskDef = ms.getTaskDef(taskName);
-		taskDef.setRetryCount(0);
-		ms.updateTaskDef(taskDef);
-		
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		assertNotNull(found.getFailureWorkflow());
-		assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
-		
-		String correlationId = "unit_test_1" + UUID.randomUUID().toString();
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
-		assertNotNull(wfid);
+        System.out.println("Total tasks=" + es.getTasks().size());
+        assertTrue(es.getTasks().size() < 10);
 
-		Task task = getTask("junit_task_1");
-		task.setStatus(Status.FAILED);
-		ess.updateTask(task);
 
-		// If we get the full workflow here then, last task should be completed and the next task should be scheduled
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.FAILED, es.getStatus());
-		
-		provider.rewind(es.getWorkflowId());
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		task = getTask("junit_task_1");
-		assertNotNull(task);
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		task = getTask("junit_task_2");
-		assertNotNull(task);
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		
-	
-	}
-	
-	
-	@Test
-	public void testTimeout() throws Exception {
-		
-		String taskName = "junit_task_1";
-		TaskDef taskDef = ms.getTaskDef(taskName);
-		taskDef.setRetryCount(1);
-		taskDef.setTimeoutSeconds(1);
-		taskDef.setRetryDelaySeconds(0);
-		taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
-		ms.updateTaskDef(taskDef);
-		
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		assertNotNull(found.getFailureWorkflow());
-		assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
-		
-		String correlationId = "unit_test_1" + UUID.randomUUID().toString();
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		input.put("failureWfName", "FanInOutTest");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
-		assertNotNull(wfid);
-		
-		//Ensure that we have a workflow queued up for evaluation here...
-		long size = queue.getSize(WorkflowExecutor.deciderQueue);
-		assertEquals(1, size);
-		
-		// If we get the full workflow here then, last task should be completed and the next task should be scheduled
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals("fond: " +es.getTasks().stream().map(Task::toString).collect(Collectors.toList()), 1, es.getTasks().size());
+    }
 
-		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		
-		
-		//Ensure that we have a workflow queued up for evaluation here...
-		size = queue.getSize(WorkflowExecutor.deciderQueue);
-		assertEquals(1, size);
-				
-				
-		Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
-		sweeper.sweep(Arrays.asList(wfid), provider);		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals("fond: " +es.getTasks().stream().map(Task::toString).collect(Collectors.toList()), 2, es.getTasks().size());
-		
-		Task task1 = es.getTasks().get(0);
-		assertEquals(Status.TIMED_OUT, task1.getStatus());
-		Task task2 = es.getTasks().get(1);
-		assertEquals(Status.SCHEDULED, task2.getStatus());
-		
-		task = ess.poll(task2.getTaskDefName(), "task1.junit.worker");
-		assertNotNull(task);
-		assertEquals(wfid, task.getWorkflowInstanceId());
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		
-		Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
-		provider.decide(wfid);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(2, es.getTasks().size());
-		
-		assertEquals(Status.TIMED_OUT, es.getTasks().get(0).getStatus());
-		assertEquals(Status.TIMED_OUT, es.getTasks().get(1).getStatus());
-		assertEquals(WorkflowStatus.TIMED_OUT, es.getStatus());
+    @Test
+    public void testDeciderUpdate() throws Exception {
 
-		assertEquals(1, queue.getSize(WorkflowExecutor.deciderQueue));		
-		
-		taskDef.setTimeoutSeconds(0);
-		taskDef.setRetryCount(RETRY_COUNT);
-		ms.updateTaskDef(taskDef);
-	
-	}
-	
-	@Test
-	public void testReruns() throws Exception {
-	
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_1" + UUID.randomUUID().toString();
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
-		assertNotNull(wfid);
-				
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		// Check the tasks, at this time there should be 1 task
-		assertEquals(es.getTasks().size(), 1);
-		Task t = es.getTasks().get(0);
-		assertEquals(Status.SCHEDULED, t.getStatus());
-		
-		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertEquals(t.getTaskId(), task.getTaskId());
-	
-		String param1 = (String) task.getInputData().get("p1");
-		String param2 = (String) task.getInputData().get("p2");
-		
-		assertNotNull(param1);
-		assertNotNull(param2);
-		assertEquals("p1 value", param1);
-		assertEquals("p2 value", param2);
-		
-		String task1Op = "task1.output->" + param1 + "." + param2;
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-			
-		// If we get the full workflow here then, last task should be completed and the next task should be scheduled
-		es = ess.getExecutionStatus(wfid, true);
-		es.getTasks().forEach(wfTask -> {
-			if(wfTask.getTaskId().equals(t.getTaskId())){
-				assertEquals(wfTask.getStatus(), Status.COMPLETED);
-			} else {
-				assertEquals(wfTask.getStatus(), Status.SCHEDULED);
-			}
-		});
-		
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		String task2Input = (String) task.getInputData().get("tp2");
-		assertNotNull(task2Input);
-		assertEquals(task1Op, task2Input);
-		
-		task2Input = (String) task.getInputData().get("tp1");
-		assertNotNull(task2Input);
-		assertEquals(inputParam1, task2Input);
-		
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		
-		// Now rerun lets rerun the workflow from the second task
-		RerunWorkflowRequest request = new RerunWorkflowRequest();
-		request.setReRunFromWorkflowId(wfid);
-		request.setReRunFromTaskId(es.getTasks().get(1).getTaskId());
-		
-		String reRunwfid = provider.rerun(request);
-		
-		Workflow esRR = ess.getExecutionStatus(reRunwfid, true);
-		assertNotNull(esRR);
-		assertEquals(esRR.getReasonForIncompletion(), WorkflowStatus.RUNNING, esRR.getStatus());
-		// Check the tasks, at this time there should be 2 tasks
-		// first one is skipped and the second one is scheduled
-		assertEquals(esRR.getTasks().toString(), 2, esRR.getTasks().size());
-		assertEquals(Status.COMPLETED, esRR.getTasks().get(0).getStatus());
-		Task tRR = esRR.getTasks().get(1);
-		assertEquals(esRR.getTasks().toString(), Status.SCHEDULED, tRR.getStatus());
-		assertEquals(tRR.getTaskType(), "junit_task_2");
-	
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		task2Input = (String) task.getInputData().get("tp2");
-		assertNotNull(task2Input);
-		assertEquals(task1Op, task2Input);
-		
-		task2Input = (String) task.getInputData().get("tp1");
-		assertNotNull(task2Input);
-		assertEquals(inputParam1, task2Input);
-		
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(reRunwfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		
-		//////////////////////
-		// Now rerun the entire workflow 
-		RerunWorkflowRequest request1 = new RerunWorkflowRequest();
-		request1.setReRunFromWorkflowId(wfid);
-		
-		String reRunwfid1 = provider.rerun(request1);
-		
-		es = ess.getExecutionStatus(reRunwfid1, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		// Check the tasks, at this time there should be 1 task
-		assertEquals(es.getTasks().size(), 1);
-		assertEquals(Status.SCHEDULED, es.getTasks().get(0).getStatus());
-		
-		task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-	
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
 
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        String correlationId = "unit_test_1" + UUID.randomUUID().toString();
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        assertNotNull(wfid);
 
-		
+        Workflow workflow = workflowExecutor.getWorkflow(wfid, false);
+        long updated1 = workflow.getUpdateTime();
+        Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+        workflowExecutor.decide(wfid);
+        workflow = workflowExecutor.getWorkflow(wfid, false);
+        long updated2 = workflow.getUpdateTime();
+        assertEquals(updated1, updated2);
 
-		
-	}
-	
+        Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+        workflowExecutor.terminateWorkflow(wfid, "done");
+        workflow = workflowExecutor.getWorkflow(wfid, false);
+        updated2 = workflow.getUpdateTime();
+        assertTrue("updated1[" + updated1 + "] >? updated2[" + updated2 + "]", updated2 > updated1);
 
-	@Test
-	public void testTaskSkipping() throws Exception {
-	
-		String taskName = "junit_task_1";
-		TaskDef taskDef = ms.getTaskDef(taskName);
-		taskDef.setRetryCount(0);
-		taskDef.setTimeoutSeconds(0);
-		ms.updateTaskDef(taskDef);
-		
-		
-		WorkflowDef found = ms.getWorkflowDef(TEST_WORKFLOW_NAME_3, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_1" + UUID.randomUUID().toString();
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(TEST_WORKFLOW_NAME_3, 1, correlationId , input);
-		assertNotNull(wfid);
-		
-		// Now Skip the second task
-		provider.skipTaskFromWorkflow(wfid, "t2", null);
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		// Check the tasks, at this time there should be 3 task
-		assertEquals(2, es.getTasks().size());
-		assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
-		assertEquals(Task.Status.SKIPPED, es.getTasks().get(1).getStatus());
-		
-		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
+    }
 
-		assertEquals("t1", task.getReferenceTaskName());
-	
-		String param1 = (String) task.getInputData().get("p1");
-		String param2 = (String) task.getInputData().get("p2");
-		
-		assertNotNull(param1);
-		assertNotNull(param2);
-		assertEquals("p1 value", param1);
-		assertEquals("p2 value", param2);
-		
-		String task1Op = "task1.output->" + param1 + "." + param2;
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-	
-		// If we get the full workflow here then, last task should be completed and the next task should be scheduled
-		es = ess.getExecutionStatus(wfid, true);
-		es.getTasks().forEach(wfTask -> {
-			if(wfTask.getReferenceTaskName().equals("t1")){
-				assertEquals(Status.COMPLETED, wfTask.getStatus());
-			} else if(wfTask.getReferenceTaskName().equals("t2")){
-				assertEquals(Status.SKIPPED, wfTask.getStatus());
-			} else {
-				assertEquals(Status.SCHEDULED, wfTask.getStatus());
-			}
-		});
-		
-		task = ess.poll("junit_task_3", "task3.junit.worker");
-		assertNotNull(task);
-		assertEquals(Status.IN_PROGRESS, task.getStatus());
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
+    @Test
+    @Ignore
+    //Ignore for now, will improve this in the future
+    public void testFailurePoints() throws Exception {
 
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());	
-		
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
 
-	}
+        String correlationId = "unit_test_1" + UUID.randomUUID().toString();
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        assertNotNull(wfid);
 
-	@Test
-	public void testPauseResume() throws Exception {
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        // The first task would be marked as scheduled
+        assertEquals(1, es.getTasks().size());
+        assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
 
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_1" + System.nanoTime();
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId , input);
-		assertNotNull(wfid);
-		
-		List<String> ids = ess.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
-		assertNotNull(ids);
-		assertTrue("found no ids: " + ids, ids.size() > 0);		//if there are concurrent tests running, this would be more than 1
-		boolean foundId = false;
-		for(String id : ids){
-			if(id.equals(wfid)){
-				foundId = true;
-			}
-		}
-		assertTrue(foundId);
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        String taskId = task.getTaskId();
 
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		Task t = es.getTasks().get(0);
-		assertEquals(Status.SCHEDULED, t.getStatus());
+        String task1Op = "task1.output";
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        try {
+            workflowExecutionService.updateTask(task);
+        } catch (Exception e) {
+            workflowExecutionService.updateTask(task);
+        }
 
-		// PAUSE
-		provider.pauseWorkflow(wfid);
-		
-		// The workflow is paused but the scheduled task should be pollable
-		
-		Task task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		assertEquals(t.getTaskId(), task.getTaskId());
+        // If we get the full workflow here then, last task should be completed and the next task should be scheduled
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        es.getTasks().forEach(wfTask -> {
+            if (wfTask.getTaskId().equals(taskId)) {
+                assertEquals(COMPLETED, wfTask.getStatus());
+            } else {
+                assertEquals(Status.SCHEDULED, wfTask.getStatus());
+            }
+        });
 
-		String param1 = (String) task.getInputData().get("p1");
-		String param2 = (String) task.getInputData().get("p2");
-		
-		assertNotNull(param1);
-		assertNotNull(param2);
-		assertEquals("p1 value", param1);
-		assertEquals("p2 value", param2);
-		
-		String task1Op = "task1.output->" + param1 + "." + param2;
-		task.getOutputData().put("op", task1Op);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertNotNull(task);
+        String task2Input = (String) task.getInputData().get("tp2");
+        assertNotNull(task2Input);
+        assertEquals(task1Op, task2Input);
 
-		// This decide should not schedule the next task
-		//ds.decideNow(wfid, task);
-		
-		// If we get the full workflow here then, last task should be completed and the rest (including PAUSE task) should be scheduled
-		es = ess.getExecutionStatus(wfid, true);
-		es.getTasks().forEach(wfTask -> {
-			if(wfTask.getTaskId().equals(t.getTaskId())){
-				assertEquals(wfTask.getStatus(), Status.COMPLETED);
-			}
-		});
+        task2Input = (String) task.getInputData().get("tp1");
+        assertNotNull(task2Input);
+        assertEquals(inputParam1, task2Input);
 
-		// This should return null as workflow is paused
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNull("Found: " + task, task);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
 
-		// Even if decide is run again the next task will not be scheduled as the workflow is still paused--
-		provider.decide(wfid);
-		
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertTrue(task == null);
-		
-		// RESUME
-		provider.resumeWorkflow(wfid);
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        // Check the tasks, at this time there should be 2 task
+        assertEquals(es.getTasks().size(), 2);
+        es.getTasks().forEach(wfTask -> {
+            assertEquals(wfTask.getStatus(), COMPLETED);
+        });
 
-		// Now polling should get the second task
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
+        System.out.println("Total tasks=" + es.getTasks().size());
+        assertTrue(es.getTasks().size() < 10);
 
-		
-		String task2Input = (String) task.getInputData().get("tp2");
-		assertNotNull(task2Input);
-		assertEquals(task1Op, task2Input);
-		
-		Task byRefName = ess.getPendingTaskForWorkflow("t2", wfid);
-		assertNotNull(byRefName);
-		assertEquals(task.getTaskId(), byRefName.getTaskId());
-		
-		task2Input = (String) task.getInputData().get("tp1");
-		assertNotNull(task2Input);
-		assertEquals(inputParam1, task2Input);
-		
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
 
-	}
-	
-	private static final String WF_WITH_SUB_WF = "WorkflowWithSubWorkflow";
-	
-	@Test
-	public void testSubWorkflow() throws Exception {
+    }
 
-		createSubWorkflow();
-		WorkflowDef found = ms.getWorkflowDef(WF_WITH_SUB_WF, 1);
-		assertNotNull(found);
-		Map<String, Object> input = new HashMap<>();
-		input.put("param1", "param 1 value");
-		input.put("param3", "param 2 value");
-		input.put("wfName", LINEAR_WORKFLOW_T1_T2);
-		String wfId = provider.startWorkflow(WF_WITH_SUB_WF, 1, "test", input);
-		assertNotNull(wfId);
-		
-		Workflow es = ess.getExecutionStatus(wfId, true);
-		assertNotNull(es);
-		
-		Task task = ess.poll("junit_task_5", "test");
-		assertNotNull(task);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
-		
-		es = ess.getExecutionStatus(wfId, true);
-		assertNotNull(es);
-		assertNotNull(es.getTasks());
-		
-		task = es.getTasks().stream().filter(t -> t.getTaskType().equals(Type.SUB_WORKFLOW.name().toString())).findAny().get();
-		assertNotNull(task);
-		assertNotNull(task.getOutputData());
-		assertNotNull("Output: " + task.getOutputData().toString() + ", status: " + task.getStatus(), task.getOutputData().get("subWorkflowId"));
-		String subWorkflowId = task.getOutputData().get("subWorkflowId").toString();
-		
-		es = ess.getExecutionStatus(subWorkflowId, true);
-		assertNotNull(es);
-		assertNotNull(es.getTasks());
-		assertEquals(wfId, es.getParentWorkflowId());
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		task = ess.poll("junit_task_1", "test");
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		task = ess.poll("junit_task_2", "test");
-		assertEquals(subWorkflowId, task.getWorkflowInstanceId());
-		String uuid = UUID.randomUUID().toString();
-		task.getOutputData().put("uuid", uuid);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(subWorkflowId, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		assertNotNull(es.getOutput());
-		assertTrue(es.getOutput().containsKey("o1"));
-		assertTrue(es.getOutput().containsKey("o2"));
-		assertEquals("sub workflow input param1", es.getOutput().get("o1"));
-		assertEquals(uuid, es.getOutput().get("o2"));
-		es = ess.getExecutionStatus(wfId, true);
-	}
-	
-	@Test
-	public void testSubWorkflowFailure() throws Exception {
+    @Test
+    public void testDeciderMix() throws Exception {
 
-		TaskDef taskDef = ms.getTaskDef("junit_task_1");
-		assertNotNull(taskDef);
-		taskDef.setRetryCount(0);
-		taskDef.setTimeoutSeconds(2);
-		ms.updateTaskDef(taskDef);
-		
-		
-		createSubWorkflow();
-		WorkflowDef found = ms.getWorkflowDef(WF_WITH_SUB_WF, 1);
-		assertNotNull(found);
-		
-		Map<String, Object> input = new HashMap<>();
-		input.put("param1", "param 1 value");
-		input.put("param3", "param 2 value");
-		input.put("wfName", LINEAR_WORKFLOW_T1_T2);
-		String wfId = provider.startWorkflow(WF_WITH_SUB_WF, 1, "test", input);
-		assertNotNull(wfId);
-		
-		Workflow es = ess.getExecutionStatus(wfId, true);
-		assertNotNull(es);
-		
-		Task task = ess.poll("junit_task_5", "test");
-		assertNotNull(task);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
-		
-		es = ess.getExecutionStatus(wfId, true);
-		assertNotNull(es);
-		assertNotNull(es.getTasks());
-		task = es.getTasks().stream().filter(t -> t.getTaskType().equals(Type.SUB_WORKFLOW.name().toString())).findAny().get();
-		assertNotNull(task);
-		assertNotNull(task.getOutputData());
-		assertNotNull(task.getOutputData().get("subWorkflowId"));
-		String subWorkflowId = task.getOutputData().get("subWorkflowId").toString();
-		
-		es = ess.getExecutionStatus(subWorkflowId, true);
-		assertNotNull(es);
-		assertNotNull(es.getTasks());
-		
-		assertEquals(wfId, es.getParentWorkflowId());
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		task = ess.poll("junit_task_1", "test");
-		assertNotNull(task);
-		task.setStatus(Status.FAILED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(subWorkflowId, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.FAILED, es.getStatus());
-		provider.executeSystemTask(subworkflow, es.getParentWorkflowTaskId(), 1);
-		es = ess.getExecutionStatus(wfId, true);
-		assertEquals(WorkflowStatus.FAILED, es.getStatus());
-		
-		taskDef.setTimeoutSeconds(0);
-		taskDef.setRetryCount(RETRY_COUNT);
-		ms.updateTaskDef(taskDef);
+        ExecutorService executors = Executors.newFixedThreadPool(3);
 
-	}
-	
-	@Test
-	public void testSubWorkflowFailureInverse() throws Exception {
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
 
-		TaskDef taskDef = ms.getTaskDef("junit_task_1");
-		assertNotNull(taskDef);
-		taskDef.setRetryCount(0);
-		taskDef.setTimeoutSeconds(2);
-		ms.updateTaskDef(taskDef);
-		
-		
-		createSubWorkflow();
-		
-		WorkflowDef found = ms.getWorkflowDef(WF_WITH_SUB_WF, 1);
-		assertNotNull(found);
-		Map<String, Object> input = new HashMap<>();
-		input.put("param1", "param 1 value");
-		input.put("param3", "param 2 value");
-		input.put("wfName", LINEAR_WORKFLOW_T1_T2);
-		String wfId = provider.startWorkflow(WF_WITH_SUB_WF, 1, "test", input);
-		assertNotNull(wfId);
-		
-		Workflow es = ess.getExecutionStatus(wfId, true);
-		assertNotNull(es);
-		
-		Task task = ess.poll("junit_task_5", "test");
-		assertNotNull(task);
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
-		
-		es = ess.getExecutionStatus(wfId, true);
-		assertNotNull(es);
-		assertNotNull(es.getTasks());
-		task = es.getTasks().stream().filter(t -> t.getTaskType().equals(Type.SUB_WORKFLOW.name().toString())).findAny().get();
-		assertNotNull(task);
-		assertNotNull(task.getOutputData());
-		assertNotNull(task.getOutputData().get("subWorkflowId"));
-		String subWorkflowId = task.getOutputData().get("subWorkflowId").toString();
-		
-		es = ess.getExecutionStatus(subWorkflowId, true);
-		assertNotNull(es);
-		assertNotNull(es.getTasks());
-		assertEquals(wfId, es.getParentWorkflowId());
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		
-		provider.terminateWorkflow(wfId, "fail");
-		es = ess.getExecutionStatus(wfId, true);
-		assertEquals(WorkflowStatus.TERMINATED, es.getStatus());
-		
-		es = ess.getExecutionStatus(subWorkflowId, true);
-		assertEquals(WorkflowStatus.TERMINATED, es.getStatus());
+        String correlationId = "unit_test_1" + UUID.randomUUID().toString();
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        assertNotNull(wfid);
 
-	}
-	
-	@Test
-	public void testWait() throws Exception {
+        List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
+        assertNotNull(ids);
+        assertTrue("found no ids: " + ids, ids.size() > 0);        //if there are concurrent tests running, this would be more than 1
+        boolean foundId = false;
+        for (String id : ids) {
+            if (id.equals(wfid)) {
+                foundId = true;
+            }
+        }
+        assertTrue(foundId);
 
-		
-		WorkflowDef def = new WorkflowDef();
-		def.setName("test_wait");
-		def.setSchemaVersion(2);
-		WorkflowTask wait = new WorkflowTask();
-		wait.setWorkflowTaskType(Type.WAIT);
-		wait.setName("wait");
-		wait.setTaskReferenceName("wait0");
-		def.getTasks().add(wait);
-		ms.registerWorkflowDef(def);
-		
-		String id = provider.startWorkflow(def.getName(), def.getVersion(), "", new HashMap<>());
-		Workflow workflow = provider.getWorkflow(id, true);
-		assertNotNull(workflow);
-		assertEquals(1, workflow.getTasks().size());
-		assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
-		Task waitTask = workflow.getTasks().get(0);
-		assertEquals(WorkflowTask.Type.WAIT.name(), waitTask.getTaskType());
-		waitTask.setStatus(Status.COMPLETED);
-		provider.updateTask(new TaskResult(waitTask));
-		
-		workflow = provider.getWorkflow(id, true);
-		assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
-	}
-	
-	@Test
-	public void testEvent() throws Exception {
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        // The first task would be marked as scheduled
+        assertEquals(1, es.getTasks().size());
+        assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
 
-		TaskDef td = new TaskDef();
-		td.setName("eventX");
-		td.setTimeoutSeconds(1);
-		
-		ms.registerTaskDef(Arrays.asList(td));
-		
-		WorkflowDef def = new WorkflowDef();
-		def.setName("test_event");
-		def.setSchemaVersion(2);
-		WorkflowTask event = new WorkflowTask();
-		event.setWorkflowTaskType(Type.EVENT);
-		event.setName("eventX");
-		event.setTaskReferenceName("wait0");
-		event.setSink("conductor");
-		def.getTasks().add(event);
-		ms.registerWorkflowDef(def);
-		
-		String id = provider.startWorkflow(def.getName(), def.getVersion(), "", new HashMap<>());
-		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
-		Workflow workflow = provider.getWorkflow(id, true);
-		assertNotNull(workflow);
-		assertEquals(1, workflow.getTasks().size());
-		
-		Task eventTask = workflow.getTasks().get(0);
-		assertEquals(WorkflowTask.Type.EVENT.name(), eventTask.getTaskType());
-		assertEquals(Task.Status.COMPLETED, eventTask.getStatus());
-		assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
-		assertTrue(!eventTask.getOutputData().isEmpty());
-		assertNotNull(eventTask.getOutputData().get("event_produced"));
-	}
-	
-	
-	//@Test
-	public void testRateLimiting() throws Exception {
-		
-		TaskDef td = new TaskDef();
-		td.setName("eventX1");
-		td.setTimeoutSeconds(1);
-		td.setConcurrentExecLimit(1);
-		
-		ms.registerTaskDef(Arrays.asList(td));
-		
-		WorkflowDef def = new WorkflowDef();
-		def.setName("test_rate_limit");
-		def.setSchemaVersion(2);
-		
-		WorkflowTask event = new WorkflowTask();
-		event.setType("USER_TASK");
-		event.setName("eventX1");
-		event.setTaskReferenceName("event0");
-		event.setSink("conductor");
-		
-		def.getTasks().add(event);
-		ms.registerWorkflowDef(def);
-		
-		Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
-			queue.processUnacks("USER_TASK");	
-		}, 2, 2, TimeUnit.SECONDS);
-		
-		String[] ids = new String[100];
-		ExecutorService es = Executors.newFixedThreadPool(10);
-		for(int i = 0; i < 10; i++) {
-			final int index = i;
-			es.submit(()->{
-				try {
-					String id = provider.startWorkflow(def.getName(), def.getVersion(), "", new HashMap<>());
-					ids[index] = id;
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-				
-			});
-		}		
-		Uninterruptibles.sleepUninterruptibly(20, TimeUnit.SECONDS);
-		for(int i = 0; i < 10; i++) {
-			String id = ids[i];
-			Workflow workflow = provider.getWorkflow(id, true);
-			assertNotNull(workflow);
-			assertEquals(1, workflow.getTasks().size());
-			
-			Task eventTask = workflow.getTasks().get(0);
-			assertEquals(Task.Status.COMPLETED, eventTask.getStatus());
-			assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
-			assertTrue(!eventTask.getOutputData().isEmpty());
-			assertNotNull(eventTask.getOutputData().get("event_produced"));
-		}
-	}
-	
-	private void createSubWorkflow() throws Exception {
-		
-		WorkflowTask wft1 = new WorkflowTask();
-		wft1.setName("junit_task_5");
-		Map<String, Object> ip1 = new HashMap<>();
-		ip1.put("p1", "${workflow.input.param1}");
-		ip1.put("p2", "${workflow.input.param2}");
-		wft1.setInputParameters(ip1);
-		wft1.setTaskReferenceName("a1");
-		
-		WorkflowTask wft2 = new WorkflowTask();
-		wft2.setName("subWorkflowTask");
-		wft2.setType(Type.SUB_WORKFLOW.name());
-		SubWorkflowParams swp = new SubWorkflowParams();
-		swp.setName(LINEAR_WORKFLOW_T1_T2);
-		wft2.setSubWorkflowParam(swp);
-		Map<String, Object> ip2 = new HashMap<>();
-		ip2.put("test", "test value");
-		ip2.put("param1", "sub workflow input param1");
-		wft2.setInputParameters(ip2);
-		wft2.setTaskReferenceName("a2");
-				
-		WorkflowDef main = new WorkflowDef();
-		main.setSchemaVersion(2);
-		main.setInputParameters(Arrays.asList("param1", "param2"));
-		main.setName(WF_WITH_SUB_WF);
-		main.getTasks().addAll(Arrays.asList(wft1, wft2));
-		
-		ms.updateWorkflowDef(Arrays.asList(main));
-	
-	}
+        List<Future<Void>> futures = new LinkedList<>();
+        for (int i = 0; i < 10; i++) {
+            futures.add(executors.submit(() -> {
+                workflowExecutor.decide(wfid);
+                return null;
+            }));
+        }
+        for (Future<Void> future : futures) {
+            future.get();
+        }
+        futures.clear();
 
-	private void verify(String inputParam1, String wfid, String task1Op, boolean fail) throws Exception {
-		Task task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		
-		String task2Input = (String) task.getInputData().get("tp2");
-		assertNotNull(task2Input);
-		assertEquals(task1Op, task2Input);
-		task2Input = (String) task.getInputData().get("tp1");
-		assertNotNull(task2Input);
-		assertEquals(inputParam1, task2Input);
-		if(fail){
-			task.setStatus(Status.FAILED);
-			task.setReasonForIncompletion("failure...0");
-		}else{
-			task.setStatus(Status.COMPLETED);	
-		}
-		
-		ess.updateTask(task);
-		
-		Workflow es = ess.getExecutionStatus(wfid, false);
-		assertNotNull(es);
-		if(fail){
-			assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		}else{
-			assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		}
-	}
-	
-	@Before
-	public void flushAllTaskQueues(){
-		queue.queuesDetail().keySet().stream().forEach(queueName -> {
-			queue.flush(queueName);
-		});
-		
-		if(taskDefs == null){
-			return;
-		}
-		for(TaskDef td: taskDefs){
-			queue.flush(td.getName());
-		}
-	}
-	
-	private void createWorkflowDefForDomain(){
-		WorkflowDef defSW = new WorkflowDef();
-	    defSW.setName(LINEAR_WORKFLOW_T1_T2_SW);
-	    defSW.setDescription(defSW.getName());
-	    defSW.setVersion(1);
-	    defSW.setInputParameters(Arrays.asList("param1", "param2"));
-	    Map<String, Object> outputParameters = new HashMap<>();
-	    outputParameters.put("o1", "${workflow.input.param1}");
-	    outputParameters.put("o2", "${t2.output.uuid}");
-	    outputParameters.put("o3", "${t1.output.op}");
-	    defSW.setOutputParameters(outputParameters);
-	    defSW.setFailureWorkflow("$workflow.input.failureWfName");
-	    defSW.setSchemaVersion(2);
-	    LinkedList<WorkflowTask> wftasks = new LinkedList<>();
-	    
-	    WorkflowTask wft1 = new WorkflowTask();
-	    wft1.setName("junit_task_3");
-	    Map<String, Object> ip1 = new HashMap<>();
-	    ip1.put("p1", "${workflow.input.param1}");
-	    ip1.put("p2", "${workflow.input.param2}");
-	    wft1.setInputParameters(ip1);
-	    wft1.setTaskReferenceName("t1");
-	    
-	    WorkflowTask subWorkflow = new WorkflowTask();
-	    subWorkflow.setType(Type.SUB_WORKFLOW.name());
-	    SubWorkflowParams sw = new SubWorkflowParams();
-	    sw.setName(LINEAR_WORKFLOW_T1_T2);
-	    subWorkflow.setSubWorkflowParam(sw);
-	    subWorkflow.setTaskReferenceName("sw1");
-	    
-	    wftasks.add(wft1);
-	    wftasks.add(subWorkflow);
-	    defSW.setTasks(wftasks);
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        // The first task would be marked as scheduled
+        assertEquals(1, es.getTasks().size());
+        assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
 
-	    try {			
-			ms.updateWorkflowDef(defSW);
-		} catch (Exception e) {}
-	}
-	
-	private void createWFWithResponseTimeout() throws Exception{
-		TaskDef task = new TaskDef();
-		task.setName("task_rt");
-		task.setTimeoutSeconds(120);
-		task.setRetryCount(RETRY_COUNT);
-		task.setResponseTimeoutSeconds(15);
-		ms.registerTaskDef(Arrays.asList(task));
-		
-		WorkflowDef def = new WorkflowDef();
-		def.setName("RTOWF");
-		def.setDescription(def.getName());
-		def.setVersion(1);
-		def.setInputParameters(Arrays.asList("param1", "param2"));
-		Map<String, Object> outputParameters = new HashMap<>();
-		outputParameters.put("o1", "${workflow.input.param1}");
-		outputParameters.put("o2", "${t2.output.uuid}");
-		outputParameters.put("o3", "${t1.output.op}");
-		def.setOutputParameters(outputParameters);
-		def.setFailureWorkflow("$workflow.input.failureWfName");
-		def.setSchemaVersion(2);
-		LinkedList<WorkflowTask> wftasks = new LinkedList<>();
-		
-		WorkflowTask wft1 = new WorkflowTask();
-		wft1.setName("task_rt");
-		Map<String, Object> ip1 = new HashMap<>();
-		ip1.put("p1", "${workflow.input.param1}");
-		ip1.put("p2", "${workflow.input.param2}");
-		wft1.setInputParameters(ip1);
-		wft1.setTaskReferenceName("task_rt_t1");
-		
-		WorkflowTask wft2 = new WorkflowTask();
-		wft2.setName("junit_task_2");
-		Map<String, Object> ip2 = new HashMap<>();
-		ip2.put("tp1", "${workflow.input.param1}");
-		ip2.put("tp2", "${t1.output.op}");
-		wft2.setInputParameters(ip2);
-		wft2.setTaskReferenceName("t2");
-				
-		wftasks.add(wft1);
-		wftasks.add(wft2);
-		def.setTasks(wftasks);
-		
-		ms.updateWorkflowDef(def);
-	}
-	
-	private String runWorkflowWithSubworkflow() throws Exception{
-		clearWorkflows();
-		createWorkflowDefForDomain();
-		
-		WorkflowDef found = ms.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
-		assertNotNull(found);
-		
-		String correlationId = "unit_test_sw";
-		Map<String, Object> input = new HashMap<String, Object>();
-		String inputParam1 = "p1 value";
-		input.put("param1", inputParam1);
-		input.put("param2", "p2 value");
-		
-		String wfid = provider.startWorkflow(LINEAR_WORKFLOW_T1_T2_SW, 1, correlationId , input, null);
-		System.out.println("testSimpleWorkflow.wfid=" + wfid);
-		assertNotNull(wfid);
-		Workflow wf = provider.getWorkflow(wfid, false);
-		assertNotNull(wf);
-		
-		Workflow es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(es.getReasonForIncompletion(), WorkflowStatus.RUNNING, es.getStatus());
-		
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals(1, es.getTasks().size());		//The very first task is the one that should be scheduled.
-		
-		// Poll for first task and execute it
-		Task task = ess.poll("junit_task_3", "task3.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		task.getOutputData().put("op", "junit_task_3.done");
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals(2, es.getTasks().size());	
-		
-		// Get the sub workflow id
-		String subWorkflowId = null;
-		for(Task t: es.getTasks()){
-			if(t.getTaskType().equalsIgnoreCase("SUB_WORKFLOW")){
-				subWorkflowId = t.getOutputData().get("subWorkflowId").toString();
-			}
-		}
-		assertNotNull(subWorkflowId);
-		
-		Workflow subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
-		assertNotNull(subWorkflow);
-		assertEquals(WorkflowStatus.RUNNING, subWorkflow.getStatus());
-		assertEquals(1, subWorkflow.getTasks().size());
-		
-		// Now the Sub workflow is triggers
-		// Poll for first task of the sub workflow and execute it
-		task = ess.poll("junit_task_1", "task1.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		task.getOutputData().put("op", "junit_task_1.done");
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
-		assertNotNull(subWorkflow);
-		assertEquals(WorkflowStatus.RUNNING, subWorkflow.getStatus());
-		assertEquals(2, subWorkflow.getTasks().size());
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-		assertEquals(2, es.getTasks().size());	
-		
-		// Poll for second task of the sub workflow and execute it
-		task = ess.poll("junit_task_2", "task2.junit.worker");
-		assertNotNull(task);
-		assertTrue(ess.ackTaskReceived(task.getTaskId()));
-		task.getOutputData().put("op", "junit_task_2.done");
-		task.setStatus(Status.COMPLETED);
-		ess.updateTask(task);
-		
-		// Now the sub workflow and the main workflow must have finished
-		subWorkflow = ess.getExecutionStatus(subWorkflowId, true);
-		assertNotNull(subWorkflow);
-		assertEquals(WorkflowStatus.COMPLETED, subWorkflow.getStatus());
-		assertEquals(2, subWorkflow.getTasks().size());
-		
-		es = ess.getExecutionStatus(wfid, true);
-		assertNotNull(es);
-		assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-		assertEquals(2, es.getTasks().size());
-		
-		return wfid;
-	}
-	
-	private String runAFailedForkJoinWF() throws Exception {
-		try{
-			this.createForkJoinWorkflowWithZeroRetry();
-		}catch(Exception e){}
-		
-		Map<String, Object> input = new HashMap<String, Object>();
-		String wfid = provider.startWorkflow(FORK_JOIN_WF +"_2", 1, "fanouttest", input );
-		System.out.println("testForkJoin.wfid=" + wfid);
-		Task t1 = ess.poll("junit_task_0_RT_1", "test");
-		assertTrue(ess.ackTaskReceived(t1.getTaskId()));
-		
-		Task t2 = ess.poll("junit_task_0_RT_2", "test");
-		assertTrue(ess.ackTaskReceived(t2.getTaskId()));
-		assertNotNull(t1);
-		assertNotNull(t2);
-		
-		t1.setStatus(Status.COMPLETED);
-		ess.updateTask(t1);
 
-		Workflow wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		assertEquals("Found " + wf.getTasks(), WorkflowStatus.RUNNING, wf.getStatus());
-		printTaskStatuses(wf, "Initial");
-		
-		t2.setStatus(Status.FAILED);
+        // decideNow should be idempotent if re-run on the same state!
+        workflowExecutor.decide(wfid);
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        assertEquals(1, es.getTasks().size());
+        Task t = es.getTasks().get(0);
+        assertEquals(Status.SCHEDULED, t.getStatus());
 
-		ExecutorService es = Executors.newFixedThreadPool(2);
-		Future<?> future1 = es.submit(()->{
-			try {
-				ess.updateTask(t2);
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-				
-		});
-		future1.get();
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		if (!wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t3"))) {
-			provider.decide(wfid);
-			wf = ess.getExecutionStatus(wfid, true);
-			assertNotNull(wf);
-		}else {
-			provider.decide(wfid);
-		}
-		assertTrue("Found " + wf.getTasks().stream().map(t -> t.getTaskType()).collect(Collectors.toList()), wf.getTasks().stream().anyMatch(t -> t.getReferenceTaskName().equals("t3")));
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
 
-		provider.decide(wfid);
-		provider.decide(wfid);
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		
-		wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		provider.decide(wfid);
-		printTaskStatuses(wfid, "After failed");
-		
-		return wfid;
-	}
-	
-	private void printTaskStatuses(String wfid, String message) throws Exception{
-		Workflow wf = ess.getExecutionStatus(wfid, true);
-		assertNotNull(wf);
-		printTaskStatuses(wf, message);
-	}
-	
-	private boolean printWFTaskDetails = false;
-	private void printTaskStatuses(Workflow wf, String message) throws Exception{
-		if(printWFTaskDetails){
-			System.out.println(message + " >>> Workflow status " + wf.getStatus().name());
-			wf.getTasks().forEach(t -> {
-				System.out.println("Task " +  String.format("%-15s",t.getTaskType()) + "\t" + String.format("%-15s",t.getReferenceTaskName()) + "\t" + String.format("%-15s",t.getWorkflowTask().getType()) + "\t" + t.getSeq() + "\t" + t.getStatus() + "\t" + t.getTaskId());
-			});
-			System.out.println();
-		}
-	}
+        assertNotNull(task);
+        assertEquals(t.getTaskId(), task.getTaskId());
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        t = es.getTasks().get(0);
+        assertEquals(Status.IN_PROGRESS, t.getStatus());
+        String taskId = t.getTaskId();
+
+        String param1 = (String) task.getInputData().get("p1");
+        String param2 = (String) task.getInputData().get("p2");
+
+        assertNotNull(param1);
+        assertNotNull(param2);
+        assertEquals("p1 value", param1);
+        assertEquals("p2 value", param2);
+
+        String task1Op = "task1.output->" + param1 + "." + param2;
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        // If we get the full workflow here then, last task should be completed and the next task should be scheduled
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        es.getTasks().forEach(wfTask -> {
+            if (wfTask.getTaskId().equals(taskId)) {
+                assertEquals(COMPLETED, wfTask.getStatus());
+            } else {
+                assertEquals(Status.SCHEDULED, wfTask.getStatus());
+            }
+        });
+
+        //Run sweep 10 times!
+        for (int i = 0; i < 10; i++) {
+            futures.add(executors.submit(() -> {
+                long s = System.currentTimeMillis();
+                workflowExecutor.decide(wfid);
+                System.out.println("Took " + (System.currentTimeMillis() - s) + " ms to run decider");
+                return null;
+            }));
+        }
+        for (Future<Void> future : futures) {
+            future.get();
+        }
+        futures.clear();
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        assertEquals(2, es.getTasks().size());
+
+        System.out.println("Workflow tasks=" + es.getTasks());
+
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertNotNull(task);
+        String task2Input = (String) task.getInputData().get("tp2");
+        assertNotNull(task2Input);
+        assertEquals(task1Op, task2Input);
+
+        task2Input = (String) task.getInputData().get("tp1");
+        assertNotNull(task2Input);
+        assertEquals(inputParam1, task2Input);
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        // Check the tasks, at this time there should be 2 task
+        assertEquals(es.getTasks().size(), 2);
+        es.getTasks().forEach(wfTask -> {
+            assertEquals(wfTask.getStatus(), COMPLETED);
+        });
+
+        System.out.println("Total tasks=" + es.getTasks().size());
+        assertTrue(es.getTasks().size() < 10);
+    }
+
+    @Test
+    public void testFailures() throws Exception {
+        WorkflowDef errorWorkflow = metadataService.getWorkflowDef(FORK_JOIN_WF, 1);
+        assertNotNull("Error workflow is not defined", errorWorkflow);
+
+        String taskName = "junit_task_1";
+        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        taskDef.setRetryCount(0);
+        metadataService.updateTaskDef(taskDef);
+
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
+        assertNotNull(found.getFailureWorkflow());
+        assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
+
+        String correlationId = "unit_test_1" + UUID.randomUUID().toString();
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        input.put("failureWfName", "FanInOutTest");
+        String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        assertNotNull(wfid);
+
+        Task task = getTask("junit_task_1");
+        assertNotNull(task);
+        task.setStatus(Status.FAILED);
+        workflowExecutionService.updateTask(task);
+
+        // If we get the full workflow here then, last task should be completed and the next task should be scheduled
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.FAILED, es.getStatus());
+
+        taskDef.setRetryCount(RETRY_COUNT);
+        metadataService.updateTaskDef(taskDef);
+
+    }
+
+    @Test
+    public void testRetryWithForkJoin() throws Exception {
+        String workflowId = this.runAFailedForkJoinWF();
+        Workflow wf = workflowExecutionService.getExecutionStatus(workflowId, true);
+
+        workflowExecutor.retry(workflowId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(workflow.getStatus(), WorkflowStatus.RUNNING);
+
+        printTaskStatuses(workflow, "After retry called");
+
+        Task t2 = workflowExecutionService.poll("junit_task_0_RT_2", "test");
+        assertNotNull(t2);
+        assertTrue(workflowExecutionService.ackTaskReceived(t2.getTaskId()));
+
+        Task t3 = workflowExecutionService.poll("junit_task_0_RT_3", "test");
+        assertNotNull(t3);
+        assertTrue(workflowExecutionService.ackTaskReceived(t3.getTaskId()));
+
+        t2.setStatus(COMPLETED);
+        t3.setStatus(COMPLETED);
+
+        ExecutorService es = Executors.newFixedThreadPool(2);
+        Future<?> future1 = es.submit(() -> {
+            try {
+                workflowExecutionService.updateTask(t2);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+        });
+        final Task _t3 = t3;
+        Future<?> future2 = es.submit(() -> {
+            try {
+                workflowExecutionService.updateTask(_t3);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+        });
+        future1.get();
+        future2.get();
+
+        workflowExecutor.decide(workflowId);
+        workflowExecutor.decide(workflowId);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+
+        printTaskStatuses(workflow, "T2, T3 complete");
+        workflowExecutor.decide(workflowId);
+
+        Task t4 = workflowExecutionService.poll("junit_task_0_RT_4", "test");
+        assertNotNull(t4);
+        t4.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(t4);
+
+        printTaskStatuses(workflowId, "After complete");
+    }
+
+    @Test
+    public void testRetry() throws Exception {
+        String taskName = "junit_task_1";
+        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        int retryCount = taskDef.getRetryCount();
+        taskDef.setRetryCount(1);
+        int retryDelay = taskDef.getRetryDelaySeconds();
+        taskDef.setRetryDelaySeconds(0);
+        metadataService.updateTaskDef(taskDef);
+
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(workflowDef);
+        assertNotNull(workflowDef.getFailureWorkflow());
+        assertFalse(StringUtils.isBlank(workflowDef.getFailureWorkflow()));
+
+        String correlationId = "unit_test_1" + UUID.randomUUID().toString();
+        Map<String, Object> input = new HashMap<>();
+        input.put("param1", "p1 value");
+        input.put("param2", "p2 value");
+        String workflowId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        assertNotNull(workflowId);
+        printTaskStatuses(workflowId, "initial");
+
+        Task task = getTask("junit_task_1");
+        assertNotNull(task);
+        task.setStatus(Status.FAILED);
+        workflowExecutionService.updateTask(task);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+
+        task = getTask("junit_task_1");
+        assertNotNull(task);
+        task.setStatus(Status.FAILED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.FAILED, workflow.getStatus());
+
+        printTaskStatuses(workflowId, "before retry");
+
+        workflowExecutor.retry(workflowId);
+
+        printTaskStatuses(workflowId, "after retry");
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+
+        task = getTask("junit_task_1");
+        assertNotNull(task);
+        assertEquals(workflowId, task.getWorkflowInstanceId());
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+
+        task = getTask("junit_task_2");
+        assertNotNull(task);
+        assertEquals(workflowId, task.getWorkflowInstanceId());
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+
+        assertEquals(3, workflow.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_1")).count());
+
+        taskDef.setRetryCount(retryCount);
+        taskDef.setRetryDelaySeconds(retryDelay);
+        metadataService.updateTaskDef(taskDef);
+
+        printTaskStatuses(workflowId, "final");
+
+    }
+
+    @Test
+    public void testRestart() throws Exception {
+        String taskName = "junit_task_1";
+        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        taskDef.setRetryCount(0);
+        metadataService.updateTaskDef(taskDef);
+
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
+        assertNotNull(found.getFailureWorkflow());
+        assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
+
+        String correlationId = "unit_test_1" + UUID.randomUUID().toString();
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        assertNotNull(wfid);
+
+        Task task = getTask("junit_task_1");
+        task.setStatus(Status.FAILED);
+        workflowExecutionService.updateTask(task);
+
+        // If we get the full workflow here then, last task should be completed and the next task should be scheduled
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.FAILED, es.getStatus());
+
+        workflowExecutor.rewind(es.getWorkflowId());
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+        task = getTask("junit_task_1");
+        assertNotNull(task);
+        assertEquals(wfid, task.getWorkflowInstanceId());
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+        task = getTask("junit_task_2");
+        assertNotNull(task);
+        assertEquals(wfid, task.getWorkflowInstanceId());
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+
+
+    }
+
+
+    @Test
+    public void testTimeout() throws Exception {
+
+        String taskName = "junit_task_1";
+        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        taskDef.setRetryCount(1);
+        taskDef.setTimeoutSeconds(1);
+        taskDef.setRetryDelaySeconds(0);
+        taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        metadataService.updateTaskDef(taskDef);
+
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
+        assertNotNull(found.getFailureWorkflow());
+        assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
+
+        String correlationId = "unit_test_1" + UUID.randomUUID().toString();
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        input.put("failureWfName", "FanInOutTest");
+        String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        assertNotNull(wfid);
+
+        //Ensure that we have a workflow queued up for evaluation here...
+        long size = queueDAO.getSize(WorkflowExecutor.deciderQueue);
+        assertEquals(1, size);
+
+        // If we get the full workflow here then, last task should be completed and the next task should be scheduled
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        assertEquals("fond: " + es.getTasks().stream().map(Task::toString).collect(Collectors.toList()), 1, es.getTasks().size());
+
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertEquals(wfid, task.getWorkflowInstanceId());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+
+        //Ensure that we have a workflow queued up for evaluation here...
+        size = queueDAO.getSize(WorkflowExecutor.deciderQueue);
+        assertEquals(1, size);
+
+
+        Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+        workflowSweeper.sweep(Arrays.asList(wfid), workflowExecutor);
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals("fond: " + es.getTasks().stream().map(Task::toString).collect(Collectors.toList()), 2, es.getTasks().size());
+
+        Task task1 = es.getTasks().get(0);
+        assertEquals(Status.TIMED_OUT, task1.getStatus());
+        Task task2 = es.getTasks().get(1);
+        assertEquals(Status.SCHEDULED, task2.getStatus());
+
+        task = workflowExecutionService.poll(task2.getTaskDefName(), "task1.junit.worker");
+        assertNotNull(task);
+        assertEquals(wfid, task.getWorkflowInstanceId());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
+        workflowExecutor.decide(wfid);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(2, es.getTasks().size());
+
+        assertEquals(Status.TIMED_OUT, es.getTasks().get(0).getStatus());
+        assertEquals(Status.TIMED_OUT, es.getTasks().get(1).getStatus());
+        assertEquals(WorkflowStatus.TIMED_OUT, es.getStatus());
+
+        assertEquals(1, queueDAO.getSize(WorkflowExecutor.deciderQueue));
+
+        taskDef.setTimeoutSeconds(0);
+        taskDef.setRetryCount(RETRY_COUNT);
+        metadataService.updateTaskDef(taskDef);
+
+    }
+
+    @Test
+    public void testReruns() throws Exception {
+
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
+
+        String correlationId = "unit_test_1" + UUID.randomUUID().toString();
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        assertNotNull(wfid);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        // Check the tasks, at this time there should be 1 task
+        assertEquals(es.getTasks().size(), 1);
+        Task t = es.getTasks().get(0);
+        assertEquals(Status.SCHEDULED, t.getStatus());
+
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(t.getTaskId(), task.getTaskId());
+
+        String param1 = (String) task.getInputData().get("p1");
+        String param2 = (String) task.getInputData().get("p2");
+
+        assertNotNull(param1);
+        assertNotNull(param2);
+        assertEquals("p1 value", param1);
+        assertEquals("p2 value", param2);
+
+        String task1Op = "task1.output->" + param1 + "." + param2;
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        // If we get the full workflow here then, last task should be completed and the next task should be scheduled
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        es.getTasks().forEach(wfTask -> {
+            if (wfTask.getTaskId().equals(t.getTaskId())) {
+                assertEquals(wfTask.getStatus(), COMPLETED);
+            } else {
+                assertEquals(wfTask.getStatus(), Status.SCHEDULED);
+            }
+        });
+
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        String task2Input = (String) task.getInputData().get("tp2");
+        assertNotNull(task2Input);
+        assertEquals(task1Op, task2Input);
+
+        task2Input = (String) task.getInputData().get("tp1");
+        assertNotNull(task2Input);
+        assertEquals(inputParam1, task2Input);
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+
+        // Now rerun lets rerun the workflow from the second task
+        RerunWorkflowRequest request = new RerunWorkflowRequest();
+        request.setReRunFromWorkflowId(wfid);
+        request.setReRunFromTaskId(es.getTasks().get(1).getTaskId());
+
+        String reRunwfid = workflowExecutor.rerun(request);
+
+        Workflow esRR = workflowExecutionService.getExecutionStatus(reRunwfid, true);
+        assertNotNull(esRR);
+        assertEquals(esRR.getReasonForIncompletion(), WorkflowStatus.RUNNING, esRR.getStatus());
+        // Check the tasks, at this time there should be 2 tasks
+        // first one is skipped and the second one is scheduled
+        assertEquals(esRR.getTasks().toString(), 2, esRR.getTasks().size());
+        assertEquals(COMPLETED, esRR.getTasks().get(0).getStatus());
+        Task tRR = esRR.getTasks().get(1);
+        assertEquals(esRR.getTasks().toString(), Status.SCHEDULED, tRR.getStatus());
+        assertEquals(tRR.getTaskType(), "junit_task_2");
+
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        task2Input = (String) task.getInputData().get("tp2");
+        assertNotNull(task2Input);
+        assertEquals(task1Op, task2Input);
+
+        task2Input = (String) task.getInputData().get("tp1");
+        assertNotNull(task2Input);
+        assertEquals(inputParam1, task2Input);
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(reRunwfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+
+        //////////////////////
+        // Now rerun the entire workflow
+        RerunWorkflowRequest request1 = new RerunWorkflowRequest();
+        request1.setReRunFromWorkflowId(wfid);
+
+        String reRunwfid1 = workflowExecutor.rerun(request1);
+
+        es = workflowExecutionService.getExecutionStatus(reRunwfid1, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        // Check the tasks, at this time there should be 1 task
+        assertEquals(es.getTasks().size(), 1);
+        assertEquals(Status.SCHEDULED, es.getTasks().get(0).getStatus());
+
+        task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+
+
+    }
+
+
+    @Test
+    public void testTaskSkipping() throws Exception {
+
+        String taskName = "junit_task_1";
+        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        taskDef.setRetryCount(0);
+        taskDef.setTimeoutSeconds(0);
+        metadataService.updateTaskDef(taskDef);
+
+
+        WorkflowDef found = metadataService.getWorkflowDef(TEST_WORKFLOW_NAME_3, 1);
+        assertNotNull(found);
+
+        String correlationId = "unit_test_1" + UUID.randomUUID().toString();
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String wfid = workflowExecutor.startWorkflow(TEST_WORKFLOW_NAME_3, 1, correlationId, input);
+        assertNotNull(wfid);
+
+        // Now Skip the second task
+        workflowExecutor.skipTaskFromWorkflow(wfid, "t2", null);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        // Check the tasks, at this time there should be 3 task
+        assertEquals(2, es.getTasks().size());
+        assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
+        assertEquals(Task.Status.SKIPPED, es.getTasks().get(1).getStatus());
+
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        assertEquals("t1", task.getReferenceTaskName());
+
+        String param1 = (String) task.getInputData().get("p1");
+        String param2 = (String) task.getInputData().get("p2");
+
+        assertNotNull(param1);
+        assertNotNull(param2);
+        assertEquals("p1 value", param1);
+        assertEquals("p2 value", param2);
+
+        String task1Op = "task1.output->" + param1 + "." + param2;
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        // If we get the full workflow here then, last task should be completed and the next task should be scheduled
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        es.getTasks().forEach(wfTask -> {
+            if (wfTask.getReferenceTaskName().equals("t1")) {
+                assertEquals(COMPLETED, wfTask.getStatus());
+            } else if (wfTask.getReferenceTaskName().equals("t2")) {
+                assertEquals(Status.SKIPPED, wfTask.getStatus());
+            } else {
+                assertEquals(Status.SCHEDULED, wfTask.getStatus());
+            }
+        });
+
+        task = workflowExecutionService.poll("junit_task_3", "task3.junit.worker");
+        assertNotNull(task);
+        assertEquals(Status.IN_PROGRESS, task.getStatus());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+
+
+    }
+
+    @Test
+    public void testPauseResume() throws Exception {
+
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
+
+        String correlationId = "unit_test_1" + System.nanoTime();
+        Map<String, Object> input = new HashMap<String, Object>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String wfid = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        assertNotNull(wfid);
+
+        List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
+        assertNotNull(ids);
+        assertTrue("found no ids: " + ids, ids.size() > 0);        //if there are concurrent tests running, this would be more than 1
+        boolean foundId = false;
+        for (String id : ids) {
+            if (id.equals(wfid)) {
+                foundId = true;
+            }
+        }
+        assertTrue(foundId);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        Task t = es.getTasks().get(0);
+        assertEquals(Status.SCHEDULED, t.getStatus());
+
+        // PAUSE
+        workflowExecutor.pauseWorkflow(wfid);
+
+        // The workflow is paused but the scheduled task should be pollable
+
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(t.getTaskId(), task.getTaskId());
+
+        String param1 = (String) task.getInputData().get("p1");
+        String param2 = (String) task.getInputData().get("p2");
+
+        assertNotNull(param1);
+        assertNotNull(param2);
+        assertEquals("p1 value", param1);
+        assertEquals("p2 value", param2);
+
+        String task1Op = "task1.output->" + param1 + "." + param2;
+        task.getOutputData().put("op", task1Op);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        // This decide should not schedule the next task
+        //ds.decideNow(wfid, task);
+
+        // If we get the full workflow here then, last task should be completed and the rest (including PAUSE task) should be scheduled
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        es.getTasks().forEach(wfTask -> {
+            if (wfTask.getTaskId().equals(t.getTaskId())) {
+                assertEquals(wfTask.getStatus(), COMPLETED);
+            }
+        });
+
+        // This should return null as workflow is paused
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNull("Found: " + task, task);
+
+        // Even if decide is run again the next task will not be scheduled as the workflow is still paused--
+        workflowExecutor.decide(wfid);
+
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertTrue(task == null);
+
+        // RESUME
+        workflowExecutor.resumeWorkflow(wfid);
+
+        // Now polling should get the second task
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+
+        String task2Input = (String) task.getInputData().get("tp2");
+        assertNotNull(task2Input);
+        assertEquals(task1Op, task2Input);
+
+        Task byRefName = workflowExecutionService.getPendingTaskForWorkflow("t2", wfid);
+        assertNotNull(byRefName);
+        assertEquals(task.getTaskId(), byRefName.getTaskId());
+
+        task2Input = (String) task.getInputData().get("tp1");
+        assertNotNull(task2Input);
+        assertEquals(inputParam1, task2Input);
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+
+    }
+
+    private static final String WF_WITH_SUB_WF = "WorkflowWithSubWorkflow";
+
+    @Test
+    public void testSubWorkflow() throws Exception {
+
+        createSubWorkflow();
+        WorkflowDef found = metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1);
+        assertNotNull(found);
+        Map<String, Object> input = new HashMap<>();
+        input.put("param1", "param 1 value");
+        input.put("param3", "param 2 value");
+        input.put("wfName", LINEAR_WORKFLOW_T1_T2);
+        String wfId = workflowExecutor.startWorkflow(WF_WITH_SUB_WF, 1, "test", input);
+        assertNotNull(wfId);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfId, true);
+        assertNotNull(es);
+
+        Task task = workflowExecutionService.poll("junit_task_5", "test");
+        assertNotNull(task);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+        Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+
+        es = workflowExecutionService.getExecutionStatus(wfId, true);
+        assertNotNull(es);
+        assertNotNull(es.getTasks());
+
+        task = es.getTasks().stream().filter(t -> t.getTaskType().equals(Type.SUB_WORKFLOW.name().toString())).findAny().get();
+        assertNotNull(task);
+        assertNotNull(task.getOutputData());
+        assertNotNull("Output: " + task.getOutputData().toString() + ", status: " + task.getStatus(), task.getOutputData().get("subWorkflowId"));
+        String subWorkflowId = task.getOutputData().get("subWorkflowId").toString();
+
+        es = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertNotNull(es);
+        assertNotNull(es.getTasks());
+        assertEquals(wfId, es.getParentWorkflowId());
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+        task = workflowExecutionService.poll("junit_task_1", "test");
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("junit_task_2", "test");
+        assertEquals(subWorkflowId, task.getWorkflowInstanceId());
+        String uuid = UUID.randomUUID().toString();
+        task.getOutputData().put("uuid", uuid);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        assertNotNull(es.getOutput());
+        assertTrue(es.getOutput().containsKey("o1"));
+        assertTrue(es.getOutput().containsKey("o2"));
+        assertEquals("sub workflow input param1", es.getOutput().get("o1"));
+        assertEquals(uuid, es.getOutput().get("o2"));
+        es = workflowExecutionService.getExecutionStatus(wfId, true);
+    }
+
+    @Test
+    public void testSubWorkflowFailure() throws Exception {
+
+        TaskDef taskDef = metadataService.getTaskDef("junit_task_1");
+        assertNotNull(taskDef);
+        taskDef.setRetryCount(0);
+        taskDef.setTimeoutSeconds(2);
+        metadataService.updateTaskDef(taskDef);
+
+
+        createSubWorkflow();
+        WorkflowDef found = metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1);
+        assertNotNull(found);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("param1", "param 1 value");
+        input.put("param3", "param 2 value");
+        input.put("wfName", LINEAR_WORKFLOW_T1_T2);
+        String wfId = workflowExecutor.startWorkflow(WF_WITH_SUB_WF, 1, "test", input);
+        assertNotNull(wfId);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfId, true);
+        assertNotNull(es);
+
+        Task task = workflowExecutionService.poll("junit_task_5", "test");
+        assertNotNull(task);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+        Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+
+        es = workflowExecutionService.getExecutionStatus(wfId, true);
+        assertNotNull(es);
+        assertNotNull(es.getTasks());
+        task = es.getTasks().stream().filter(t -> t.getTaskType().equals(Type.SUB_WORKFLOW.name().toString())).findAny().get();
+        assertNotNull(task);
+        assertNotNull(task.getOutputData());
+        assertNotNull(task.getOutputData().get("subWorkflowId"));
+        String subWorkflowId = task.getOutputData().get("subWorkflowId").toString();
+
+        es = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertNotNull(es);
+        assertNotNull(es.getTasks());
+
+        assertEquals(wfId, es.getParentWorkflowId());
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+        task = workflowExecutionService.poll("junit_task_1", "test");
+        assertNotNull(task);
+        task.setStatus(Status.FAILED);
+        workflowExecutionService.updateTask(task);
+
+        es = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertNotNull(es);
+        assertEquals(WorkflowStatus.FAILED, es.getStatus());
+        workflowExecutor.executeSystemTask(subworkflow, es.getParentWorkflowTaskId(), 1);
+        es = workflowExecutionService.getExecutionStatus(wfId, true);
+        assertEquals(WorkflowStatus.FAILED, es.getStatus());
+
+        taskDef.setTimeoutSeconds(0);
+        taskDef.setRetryCount(RETRY_COUNT);
+        metadataService.updateTaskDef(taskDef);
+
+    }
+
+    @Test
+    public void testSubWorkflowFailureInverse() throws Exception {
+
+        TaskDef taskDef = metadataService.getTaskDef("junit_task_1");
+        assertNotNull(taskDef);
+        taskDef.setRetryCount(0);
+        taskDef.setTimeoutSeconds(2);
+        metadataService.updateTaskDef(taskDef);
+
+
+        createSubWorkflow();
+
+        WorkflowDef found = metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1);
+        assertNotNull(found);
+        Map<String, Object> input = new HashMap<>();
+        input.put("param1", "param 1 value");
+        input.put("param3", "param 2 value");
+        input.put("wfName", LINEAR_WORKFLOW_T1_T2);
+        String wfId = workflowExecutor.startWorkflow(WF_WITH_SUB_WF, 1, "test", input);
+        assertNotNull(wfId);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfId, true);
+        assertNotNull(es);
+
+        Task task = workflowExecutionService.poll("junit_task_5", "test");
+        assertNotNull(task);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+        Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+
+        es = workflowExecutionService.getExecutionStatus(wfId, true);
+        assertNotNull(es);
+        assertNotNull(es.getTasks());
+        task = es.getTasks().stream().filter(t -> t.getTaskType().equals(Type.SUB_WORKFLOW.name().toString())).findAny().get();
+        assertNotNull(task);
+        assertNotNull(task.getOutputData());
+        assertNotNull(task.getOutputData().get("subWorkflowId"));
+        String subWorkflowId = task.getOutputData().get("subWorkflowId").toString();
+
+        es = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertNotNull(es);
+        assertNotNull(es.getTasks());
+        assertEquals(wfId, es.getParentWorkflowId());
+        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+
+        workflowExecutor.terminateWorkflow(wfId, "fail");
+        es = workflowExecutionService.getExecutionStatus(wfId, true);
+        assertEquals(WorkflowStatus.TERMINATED, es.getStatus());
+
+        es = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertEquals(WorkflowStatus.TERMINATED, es.getStatus());
+
+    }
+
+
+    @Test
+    public void testWait() throws Exception {
+
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test_wait");
+        def.setSchemaVersion(2);
+        WorkflowTask wait = new WorkflowTask();
+        wait.setWorkflowTaskType(Type.WAIT);
+        wait.setName("wait");
+        wait.setTaskReferenceName("wait0");
+        def.getTasks().add(wait);
+        metadataService.registerWorkflowDef(def);
+
+        String id = workflowExecutor.startWorkflow(def.getName(), def.getVersion(), "", new HashMap<>());
+        Workflow workflow = workflowExecutor.getWorkflow(id, true);
+        assertNotNull(workflow);
+        assertEquals(1, workflow.getTasks().size());
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+        Task waitTask = workflow.getTasks().get(0);
+        assertEquals(WorkflowTask.Type.WAIT.name(), waitTask.getTaskType());
+        waitTask.setStatus(COMPLETED);
+        workflowExecutor.updateTask(new TaskResult(waitTask));
+
+        workflow = workflowExecutor.getWorkflow(id, true);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
+    @Test
+    public void testEvent() throws Exception {
+
+        TaskDef td = new TaskDef();
+        td.setName("eventX");
+        td.setTimeoutSeconds(1);
+
+        metadataService.registerTaskDef(Arrays.asList(td));
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test_event");
+        def.setSchemaVersion(2);
+        WorkflowTask event = new WorkflowTask();
+        event.setWorkflowTaskType(Type.EVENT);
+        event.setName("eventX");
+        event.setTaskReferenceName("wait0");
+        event.setSink("conductor");
+        def.getTasks().add(event);
+        metadataService.registerWorkflowDef(def);
+
+        String id = workflowExecutor.startWorkflow(def.getName(), def.getVersion(), "", new HashMap<>());
+        Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+        Workflow workflow = workflowExecutor.getWorkflow(id, true);
+        assertNotNull(workflow);
+        assertEquals(1, workflow.getTasks().size());
+
+        Task eventTask = workflow.getTasks().get(0);
+        assertEquals(WorkflowTask.Type.EVENT.name(), eventTask.getTaskType());
+        assertEquals(COMPLETED, eventTask.getStatus());
+        assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertTrue(!eventTask.getOutputData().isEmpty());
+        assertNotNull(eventTask.getOutputData().get("event_produced"));
+    }
+
+
+    //@Test
+    public void testRateLimiting() throws Exception {
+
+        TaskDef td = new TaskDef();
+        td.setName("eventX1");
+        td.setTimeoutSeconds(1);
+        td.setConcurrentExecLimit(1);
+
+        metadataService.registerTaskDef(Arrays.asList(td));
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test_rate_limit");
+        def.setSchemaVersion(2);
+
+        WorkflowTask event = new WorkflowTask();
+        event.setType("USER_TASK");
+        event.setName("eventX1");
+        event.setTaskReferenceName("event0");
+        event.setSink("conductor");
+
+        def.getTasks().add(event);
+        metadataService.registerWorkflowDef(def);
+
+        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
+            queueDAO.processUnacks("USER_TASK");
+        }, 2, 2, TimeUnit.SECONDS);
+
+        String[] ids = new String[100];
+        ExecutorService es = Executors.newFixedThreadPool(10);
+        for (int i = 0; i < 10; i++) {
+            final int index = i;
+            es.submit(() -> {
+                try {
+                    String id = workflowExecutor.startWorkflow(def.getName(), def.getVersion(), "", new HashMap<>());
+                    ids[index] = id;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+            });
+        }
+        Uninterruptibles.sleepUninterruptibly(20, TimeUnit.SECONDS);
+        for (int i = 0; i < 10; i++) {
+            String id = ids[i];
+            Workflow workflow = workflowExecutor.getWorkflow(id, true);
+            assertNotNull(workflow);
+            assertEquals(1, workflow.getTasks().size());
+
+            Task eventTask = workflow.getTasks().get(0);
+            assertEquals(COMPLETED, eventTask.getStatus());
+            assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+            assertTrue(!eventTask.getOutputData().isEmpty());
+            assertNotNull(eventTask.getOutputData().get("event_produced"));
+        }
+    }
+
+    private void createSubWorkflow() throws Exception {
+
+        WorkflowTask wft1 = new WorkflowTask();
+        wft1.setName("junit_task_5");
+        Map<String, Object> ip1 = new HashMap<>();
+        ip1.put("p1", "${workflow.input.param1}");
+        ip1.put("p2", "${workflow.input.param2}");
+        wft1.setInputParameters(ip1);
+        wft1.setTaskReferenceName("a1");
+
+        WorkflowTask wft2 = new WorkflowTask();
+        wft2.setName("subWorkflowTask");
+        wft2.setType(Type.SUB_WORKFLOW.name());
+        SubWorkflowParams swp = new SubWorkflowParams();
+        swp.setName(LINEAR_WORKFLOW_T1_T2);
+        wft2.setSubWorkflowParam(swp);
+        Map<String, Object> ip2 = new HashMap<>();
+        ip2.put("test", "test value");
+        ip2.put("param1", "sub workflow input param1");
+        wft2.setInputParameters(ip2);
+        wft2.setTaskReferenceName("a2");
+
+        WorkflowDef main = new WorkflowDef();
+        main.setSchemaVersion(2);
+        main.setInputParameters(Arrays.asList("param1", "param2"));
+        main.setName(WF_WITH_SUB_WF);
+        main.getTasks().addAll(Arrays.asList(wft1, wft2));
+
+        metadataService.updateWorkflowDef(Arrays.asList(main));
+
+    }
+
+    private void verify(String inputParam1, String wfid, String task1Op, boolean fail) throws Exception {
+        Task task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        String task2Input = (String) task.getInputData().get("tp2");
+        assertNotNull(task2Input);
+        assertEquals(task1Op, task2Input);
+        task2Input = (String) task.getInputData().get("tp1");
+        assertNotNull(task2Input);
+        assertEquals(inputParam1, task2Input);
+        if (fail) {
+            task.setStatus(Status.FAILED);
+            task.setReasonForIncompletion("failure...0");
+        } else {
+            task.setStatus(COMPLETED);
+        }
+
+        workflowExecutionService.updateTask(task);
+
+        Workflow es = workflowExecutionService.getExecutionStatus(wfid, false);
+        assertNotNull(es);
+        if (fail) {
+            assertEquals(WorkflowStatus.RUNNING, es.getStatus());
+        } else {
+            assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        }
+    }
+
+    @Before
+    public void flushAllTaskQueues() {
+        queueDAO.queuesDetail().keySet().forEach(queueName -> {
+            queueDAO.flush(queueName);
+        });
+
+        if (taskDefs == null) {
+            return;
+        }
+        for (TaskDef td : taskDefs) {
+            queueDAO.flush(td.getName());
+        }
+    }
+
+    private void createWorkflowDefForDomain() {
+        WorkflowDef defSW = new WorkflowDef();
+        defSW.setName(LINEAR_WORKFLOW_T1_T2_SW);
+        defSW.setDescription(defSW.getName());
+        defSW.setVersion(1);
+        defSW.setInputParameters(Arrays.asList("param1", "param2"));
+        Map<String, Object> outputParameters = new HashMap<>();
+        outputParameters.put("o1", "${workflow.input.param1}");
+        outputParameters.put("o2", "${t2.output.uuid}");
+        outputParameters.put("o3", "${t1.output.op}");
+        defSW.setOutputParameters(outputParameters);
+        defSW.setFailureWorkflow("$workflow.input.failureWfName");
+        defSW.setSchemaVersion(2);
+        LinkedList<WorkflowTask> wftasks = new LinkedList<>();
+
+        WorkflowTask wft1 = new WorkflowTask();
+        wft1.setName("junit_task_3");
+        Map<String, Object> ip1 = new HashMap<>();
+        ip1.put("p1", "${workflow.input.param1}");
+        ip1.put("p2", "${workflow.input.param2}");
+        wft1.setInputParameters(ip1);
+        wft1.setTaskReferenceName("t1");
+
+        WorkflowTask subWorkflow = new WorkflowTask();
+        subWorkflow.setType(Type.SUB_WORKFLOW.name());
+        SubWorkflowParams sw = new SubWorkflowParams();
+        sw.setName(LINEAR_WORKFLOW_T1_T2);
+        subWorkflow.setSubWorkflowParam(sw);
+        subWorkflow.setTaskReferenceName("sw1");
+
+        wftasks.add(wft1);
+        wftasks.add(subWorkflow);
+        defSW.setTasks(wftasks);
+
+        try {
+            metadataService.updateWorkflowDef(defSW);
+        } catch (Exception e) {
+        }
+    }
+
+    private void createWFWithResponseTimeout() throws Exception {
+        TaskDef task = new TaskDef();
+        task.setName("task_rt");
+        task.setTimeoutSeconds(120);
+        task.setRetryCount(RETRY_COUNT);
+        task.setResponseTimeoutSeconds(15);
+        metadataService.registerTaskDef(Arrays.asList(task));
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName("RTOWF");
+        def.setDescription(def.getName());
+        def.setVersion(1);
+        def.setInputParameters(Arrays.asList("param1", "param2"));
+        Map<String, Object> outputParameters = new HashMap<>();
+        outputParameters.put("o1", "${workflow.input.param1}");
+        outputParameters.put("o2", "${t2.output.uuid}");
+        outputParameters.put("o3", "${t1.output.op}");
+        def.setOutputParameters(outputParameters);
+        def.setFailureWorkflow("$workflow.input.failureWfName");
+        def.setSchemaVersion(2);
+        LinkedList<WorkflowTask> wftasks = new LinkedList<>();
+
+        WorkflowTask wft1 = new WorkflowTask();
+        wft1.setName("task_rt");
+        Map<String, Object> ip1 = new HashMap<>();
+        ip1.put("p1", "${workflow.input.param1}");
+        ip1.put("p2", "${workflow.input.param2}");
+        wft1.setInputParameters(ip1);
+        wft1.setTaskReferenceName("task_rt_t1");
+
+        WorkflowTask wft2 = new WorkflowTask();
+        wft2.setName("junit_task_2");
+        Map<String, Object> ip2 = new HashMap<>();
+        ip2.put("tp1", "${workflow.input.param1}");
+        ip2.put("tp2", "${t1.output.op}");
+        wft2.setInputParameters(ip2);
+        wft2.setTaskReferenceName("t2");
+
+        wftasks.add(wft1);
+        wftasks.add(wft2);
+        def.setTasks(wftasks);
+
+        metadataService.updateWorkflowDef(def);
+    }
+
+    private String runWorkflowWithSubworkflow() throws Exception {
+        clearWorkflows();
+        createWorkflowDefForDomain();
+
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
+        assertNotNull(workflowDef);
+
+        String correlationId = "unit_test_sw";
+        Map<String, Object> input = new HashMap<>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+
+        String workflowId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2_SW, 1, correlationId, input, null);
+        System.out.println("testSimpleWorkflow.wfid=" + workflowId);
+        assertNotNull(workflowId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(1, workflow.getTasks().size());        //The very first task is the one that should be scheduled.
+
+        // Poll for first task and execute it
+        Task task = workflowExecutionService.poll("junit_task_3", "task3.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        task.getOutputData().put("op", "junit_task_3.done");
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+
+        // Get the sub workflow id
+        String subWorkflowId = null;
+        for (Task t : workflow.getTasks()) {
+            if (t.getTaskType().equalsIgnoreCase("SUB_WORKFLOW")) {
+                subWorkflowId = t.getOutputData().get("subWorkflowId").toString();
+            }
+        }
+        assertNotNull(subWorkflowId);
+
+        Workflow subWorkflow = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertNotNull(subWorkflow);
+        assertEquals(WorkflowStatus.RUNNING, subWorkflow.getStatus());
+        assertEquals(1, subWorkflow.getTasks().size());
+
+        // Now the Sub workflow is triggered
+        // Poll for first task of the sub workflow and execute it
+        task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        task.getOutputData().put("op", "junit_task_1.done");
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        subWorkflow = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertNotNull(subWorkflow);
+        assertEquals(WorkflowStatus.RUNNING, subWorkflow.getStatus());
+        assertEquals(2, subWorkflow.getTasks().size());
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+
+        // Poll for second task of the sub workflow and execute it
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        task.getOutputData().put("op", "junit_task_2.done");
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        // Now the sub workflow and the main workflow must have finished
+        subWorkflow = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertNotNull(subWorkflow);
+        assertEquals(WorkflowStatus.COMPLETED, subWorkflow.getStatus());
+        assertEquals(2, subWorkflow.getTasks().size());
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+
+        return workflowId;
+    }
+
+    private String runAFailedForkJoinWF() throws Exception {
+        try {
+            this.createForkJoinWorkflowWithZeroRetry();
+        } catch (Exception e) {
+        }
+
+        Map<String, Object> input = new HashMap<>();
+        String workflowId = workflowExecutor.startWorkflow(FORK_JOIN_WF + "_2", 1, "fanouttest", input);
+        System.out.println("testForkJoin.wfid=" + workflowId);
+        Task t1 = workflowExecutionService.poll("junit_task_0_RT_1", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t1.getTaskId()));
+
+        Task t2 = workflowExecutionService.poll("junit_task_0_RT_2", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t2.getTaskId()));
+        assertNotNull(t1);
+        assertNotNull(t2);
+
+        t1.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(t1);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("Found " + workflow.getTasks(), WorkflowStatus.RUNNING, workflow.getStatus());
+        printTaskStatuses(workflow, "Initial");
+
+        t2.setStatus(Status.FAILED);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        Future<?> future1 = executorService.submit(() -> {
+            try {
+                workflowExecutionService.updateTask(t2);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+        });
+        future1.get();
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.FAILED, workflow.getStatus());
+
+        return workflowId;
+    }
+
+    private void printTaskStatuses(String wfid, String message) throws Exception {
+        Workflow wf = workflowExecutionService.getExecutionStatus(wfid, true);
+        assertNotNull(wf);
+        printTaskStatuses(wf, message);
+    }
+
+    private boolean printWFTaskDetails = false;
+
+    private void printTaskStatuses(Workflow wf, String message) throws Exception {
+        if (printWFTaskDetails) {
+            System.out.println(message + " >>> Workflow status " + wf.getStatus().name());
+            wf.getTasks().forEach(t -> {
+                System.out.println("Task " + String.format("%-15s", t.getTaskType()) + "\t" + String.format("%-15s", t.getReferenceTaskName()) + "\t" + String.format("%-15s", t.getWorkflowTask().getType()) + "\t" + t.getSeq() + "\t" + t.getStatus() + "\t" + t.getTaskId());
+            });
+            System.out.println();
+        }
+    }
 }
