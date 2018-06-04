@@ -13,7 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.conductor.dao.dynomite;
+package com.netflix.conductor.dyno;
+
+import com.google.inject.Singleton;
+
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.discovery.DiscoveryClient;
+import com.netflix.dyno.connectionpool.exception.DynoException;
+import com.netflix.dyno.jedis.DynoJedisClient;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -25,15 +35,6 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.inject.Singleton;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.discovery.DiscoveryClient;
-import com.netflix.dyno.connectionpool.exception.DynoException;
-import com.netflix.dyno.jedis.DynoJedisClient;
 
 import redis.clients.jedis.JedisCommands;
 import redis.clients.jedis.ScanParams;

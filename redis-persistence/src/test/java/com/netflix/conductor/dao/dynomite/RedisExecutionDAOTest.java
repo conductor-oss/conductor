@@ -67,6 +67,7 @@ import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.index.ElasticSearchDAO;
 import com.netflix.conductor.dao.redis.JedisMock;
+import com.netflix.conductor.dyno.DynoProxy;
 
 import redis.clients.jedis.JedisCommands;
 

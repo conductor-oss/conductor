@@ -50,6 +50,7 @@ import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dyno.DynoProxy;
 import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -39,6 +39,7 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dyno.DynoProxy;
 
 @Singleton
 @Trace

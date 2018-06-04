@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.dyno.DynoProxy;
 
 public class BaseDynoDAO {
 
