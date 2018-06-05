@@ -97,7 +97,6 @@ public class DeciderService {
         return decide(workflowDef, workflow, tasksToBeScheduled);
     }
 
-    // FIXME: For a FORK task, the JOIN task is created for each branch, and this JOIN task is replaced later in this method, when getNextTask is called after the last task execution in the fork
     private DeciderOutcome decide(final WorkflowDef workflowDef, final Workflow workflow, List<Task> preScheduledTasks) throws TerminateWorkflowException {
 
         DeciderOutcome outcome = new DeciderOutcome();
@@ -290,6 +289,7 @@ public class DeciderService {
         return false;
     }
 
+    @VisibleForTesting
     List<Task> getNextTask(WorkflowDef def, Workflow workflow, Task task) {
 
         // Get the following task after the last completed task
@@ -305,7 +305,6 @@ public class DeciderService {
             taskToSchedule = def.getNextTask(taskToSchedule.getTaskReferenceName());
         }
         if (taskToSchedule != null) {
-            //return getTasksToBeScheduled(def, workflow, taskToSchedule, 0, task.getEndTime());
             return getTasksToBeScheduled(def, workflow, taskToSchedule, 0);
         }
 
@@ -443,10 +442,23 @@ public class DeciderService {
         if (Type.isSystemTask(type)) {
             taskType = Type.valueOf(type);
         }
+
+        // get in progress tasks for this workflow instance
+        List<String> inProgressTasks = workflowInstance.getTasks().stream()
+                .filter(pendingTask -> pendingTask.getStatus().equals(Status.IN_PROGRESS))
+                .map(Task::getReferenceTaskName)
+                .collect(Collectors.toList());
+
         String taskId = IDGenerator.generate();
         TaskMapperContext taskMapperContext = new TaskMapperContext(workflowDefinition, workflowInstance, taskToSchedule,
                 input, retryCount, retriedTaskId, taskId, this);
-        return taskMappers.get(taskType.name()).getMappedTasks(taskMapperContext);
+
+        // for static forks, each branch of the fork creates a join task upon completion
+        // for dynamic forks, a join task is created with the fork and also with each branch of the fork
+        // a new task must only be scheduled if a task with the same reference name is not in progress for this workflow instance
+        return taskMappers.get(taskType.name()).getMappedTasks(taskMapperContext).stream()
+                .filter(task -> !inProgressTasks.contains(task.getReferenceTaskName()))
+                .collect(Collectors.toList());
     }
 
 
