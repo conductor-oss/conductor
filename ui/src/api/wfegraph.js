@@ -61,7 +61,6 @@ class Workflow2Graph {
         case 'TIMED_OUT':
         case 'CANCELLED':
         case 'CANCELED':
-        case 'FAILED_WITH_TERMINAL_ERROR':
           style = 'stroke: #ff0000; fill: #ff0000';
           labelStyle = 'fill:#ffffff; stroke-width: 1px';
           break;
