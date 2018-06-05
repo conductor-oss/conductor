@@ -16,7 +16,6 @@
 package com.netflix.conductor.dao.dynomite;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.inject.Singleton;
 import com.netflix.conductor.annotations.Trace;
@@ -152,14 +151,15 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 				continue;
 			}
 
-			correlateTaskToWorkflowInDS(task.getTaskId(), task.getWorkflowInstanceId());
-			logger.debug("Scheduled task added to WORKFLOW_TO_TASKS workflowId: {}, taskId: {}, taskType: {} during createTasks",
-                    task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType());
+			String workflowToTaskKey = nsKey(WORKFLOW_TO_TASKS, task.getWorkflowInstanceId());
+			dynoClient.sadd(workflowToTaskKey, task.getTaskId());
+			logger.debug("Scheduled task added to WORKFLOW_TO_TASKS  with workflowToTaskKey: {}, workflowId: {}, taskId: {}, taskType: {} during createTasks",
+					workflowToTaskKey, task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType());
 
 			String inProgressTaskKey = nsKey(IN_PROGRESS_TASKS, task.getTaskDefName());
 			dynoClient.sadd(inProgressTaskKey, task.getTaskId());
 			logger.debug("Scheduled task added to IN_PROGRESS_TASKS with inProgressTaskKey: {}, workflowId: {}, taskId: {}, taskType: {} during createTasks",
-                    inProgressTaskKey, task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType());
+					workflowToTaskKey, task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType());
 
 			updateTask(task);
 			created.add(task);
@@ -214,11 +214,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			logger.debug("Workflow Task removed from TASKS_IN_PROGRESS_STATUS with tasksInProgressKey: {}, workflowId: {}, taskId: {}, taskType: {}, taskStatus: {} during updateTask",
 					nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType(), task.getStatus().name());
 		}
-
-        Set<String> taskIds = dynoClient.smembers(nsKey(WORKFLOW_TO_TASKS, task.getWorkflowInstanceId()));
-		if (!taskIds.contains(task.getTaskId())) {
-		    correlateTaskToWorkflowInDS(task.getTaskId(), task.getWorkflowInstanceId());
-        }
 
 		indexDAO.indexTask(task);
 	}
@@ -529,20 +524,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		return workflow.getWorkflowId();
 
 	}
-
-	/**
-	 * Stores the correlation of a task to the workflow instance in the datastore
-     *
-	 * @param taskId the taskId to be correlated
-	 * @param workflowInstanceId the workflowId to which the tasks belongs to
-	 */
-	@VisibleForTesting
-    void correlateTaskToWorkflowInDS(String taskId, String workflowInstanceId) {
-        String workflowToTaskKey = nsKey(WORKFLOW_TO_TASKS, workflowInstanceId);
-        dynoClient.sadd(workflowToTaskKey, taskId);
-        logger.debug("Task mapped in WORKFLOW_TO_TASKS with workflowToTaskKey: {}, workflowId: {}, taskId: {}",
-                workflowToTaskKey, workflowInstanceId, taskId);
-    }
 
 	private static String dateStr(Long timeInMs) {
 		Date date = new Date(timeInMs);

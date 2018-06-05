@@ -103,7 +103,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 		return taskDef;
 	}
 	
-	private TaskDef getTaskDefFromDB(String name) {
+	public TaskDef getTaskDefFromDB(String name) {
 		Preconditions.checkNotNull(name, "TaskDef name cannot be null");
 		
 		TaskDef taskDef = null;
