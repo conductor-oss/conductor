@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import javax.inject.Named;
 import javax.inject.Provider;
 
 import redis.clients.jedis.JedisCommands;
@@ -23,13 +24,12 @@ public class RedisQueuesProvider implements Provider<RedisQueues> {
     @Inject
     public RedisQueuesProvider(
             JedisCommands dynoClient,
-            JedisCommands dynoClientRead,
+            @Named("DynoReadClient") JedisCommands dynoClientRead,
             ShardSupplier ss,
             DynomiteConfiguration config
     ) {
         this.dynoClient = dynoClient;
-        // FIXME: This was in the original code, but seems like a bug?
-        this.dynoClientRead = dynoClient;
+        this.dynoClientRead = dynoClientRead;
         this.shardSupplier = ss;
         this.configuration = config;
     }

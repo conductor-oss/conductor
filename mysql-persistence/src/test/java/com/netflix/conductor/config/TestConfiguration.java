@@ -15,11 +15,12 @@
  */
 package com.netflix.conductor.config;
 
-import java.util.Map;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+
 import com.netflix.conductor.core.config.Configuration;
+
+import java.util.Map;
 
 /**
  * @author Viren
@@ -70,7 +71,12 @@ public class TestConfiguration implements Configuration {
 		return val != null ? val : def;
 	}
 
-	public void setProperty(String key, String value) {
+    @Override
+    public boolean getBooleanProperty(String name, boolean defaultValue) {
+        return false;
+    }
+
+    public void setProperty(String key, String value) {
 		testProperties.put(key, value);
 	}
 
