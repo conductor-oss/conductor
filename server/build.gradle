@@ -5,7 +5,7 @@ buildscript {
 }
 
 plugins {
-	id 'com.github.johnrengelman.shadow' version '1.2.3'
+	id 'com.github.johnrengelman.shadow' version '2.0.4'
 }
 
 configurations.all {
@@ -25,6 +25,8 @@ dependencies {
 	compile project(':conductor-redis-persistence')
 	compile project(':conductor-mysql-persistence')
 	compile project(':conductor-contribs')
+    compile project(':conductor-es2-persistence')
+    compile project(':conductor-es5-persistence')
 	
 	//Jetty
 	compile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
@@ -76,6 +78,8 @@ build.dependsOn('shadowJar')
 
 task server(type: JavaExec) {
   systemProperty 'workflow.elasticsearch.url', 'localhost:9300'
+    // Switch between Elasticsearch versions 2 & 5 with major version number.
+  systemProperty 'workflow.elasticsearch.version', '2'
   systemProperty 'loadSample', 'true'
   systemProperties System.properties
   main = 'com.netflix.conductor.server.Main'

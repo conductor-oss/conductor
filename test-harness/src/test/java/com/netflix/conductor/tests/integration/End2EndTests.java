@@ -59,6 +59,7 @@ public class End2EndTests {
 		System.setProperty("workflow.elasticsearch.index.name", "conductor");
 		System.setProperty("workflow.namespace.prefix", "integration-test");
 		System.setProperty("db", "memory");
+		System.setProperty("workflow.elasticsearch.version", "5");
 	}
 	
 	private static TaskClient tc;
@@ -68,7 +69,7 @@ public class End2EndTests {
 	
 	@BeforeClass
 	public static void setup() throws Exception {
-		
+
 		ConductorServer server = new ConductorServer(new ConductorConfig());
 		server.start(8080, false);
 		
