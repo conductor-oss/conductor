@@ -13,7 +13,7 @@ public class File {
 
     public File(Class object) {
         String className = object.getSimpleName() + PROTO_SUFFIX;
-        baseClass = ClassName.get(ProtoGen.GENERATED_PROTO_PACKAGE, className);
+        baseClass = ClassName.get(ProtoGen.PROTO_JAVA_PACKAGE_NAME, className);
         this.message = new Message(object,  AbstractType.baseClass(baseClass, this));
     }
 
@@ -26,11 +26,15 @@ public class File {
     }
 
     public String getPackageName() {
-        return ProtoGen.GENERATED_PROTO_PACKAGE;
+        return ProtoGen.PROTO_PACKAGE_NAME;
+    }
+
+    public String getJavaPackageName() {
+        return ProtoGen.PROTO_JAVA_PACKAGE_NAME;
     }
 
     public String getGoPackage() {
-        return ProtoGen.GENERATED_GO_PACKAGE;
+        return ProtoGen.PROTO_GO_PACKAGE_NAME;
     }
 
     public Element getMessage() {

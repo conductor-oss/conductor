@@ -5,6 +5,7 @@ package {{packageName}};
 import "{{this}}";
 {{/includes}}
 
+option java_package = "{{javaPackageName}}";
 option java_outer_classname = "{{javaClassName}}";
 option go_package = "{{goPackage}}";
 

@@ -16,10 +16,12 @@ import java.nio.file.Paths;
 import java.util.*;
 
 public class ProtoGen {
-    public static String GENERATED_PROTO_PACKAGE = "com.netflix.conductor.proto";
+    public static String PROTO_PACKAGE_NAME = "conductor.proto";
+    public static String PROTO_JAVA_PACKAGE_NAME = "com.netflix.conductor.proto";
+    public static String PROTO_GO_PACKAGE_NAME = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
     public static String GENERATED_MAPPER_PACKAGE = "com.netflix.conductor.grpc.server";
     public static String GENERATOR_NAME = "com.netflix.conductor.protogen.ProtoGen";
-    public static String GENERATED_GO_PACKAGE = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
     private List<File> files = new ArrayList<>();
 
