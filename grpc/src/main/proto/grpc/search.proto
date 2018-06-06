@@ -1,8 +1,9 @@
 syntax = "proto3";
-package com.netflix.conductor.grpc;
+package conductor.grpc;
 
 import "model/workflowsummary.proto";
 
+option java_package = "com.netflix.conductor.grpc";
 option java_outer_classname = "SearchPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
 
@@ -16,5 +17,5 @@ message SearchRequest {
 
 message WorkflowSummarySearchResult {
     int64 total_hits = 1;
-    repeated com.netflix.conductor.proto.WorkflowSummary results = 2;
+    repeated conductor.proto.WorkflowSummary results = 2;
 }

@@ -1,5 +1,5 @@
 syntax = "proto3";
-package com.netflix.conductor.grpc;
+package conductor.grpc;
 
 import "google/protobuf/empty.proto";
 import "grpc/search.proto";
@@ -8,18 +8,19 @@ import "model/skiptaskrequest.proto";
 import "model/startworkflowrequest.proto";
 import "model/rerunworkflowrequest.proto";
 
+option java_package = "com.netflix.conductor.grpc";
 option java_outer_classname = "WorkflowServicePb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
 
 service WorkflowService {
     // POST /
-    rpc StartWorkflow(com.netflix.conductor.proto.StartWorkflowRequest) returns (WorkflowId);
+    rpc StartWorkflow(conductor.proto.StartWorkflowRequest) returns (WorkflowId);
 
     // GET /{name}/correlated/{correlationId}
     rpc GetWorkflows(GetWorkflowsRequest) returns (GetWorkflowsResponse);
 
     // GET /{workflowId}
-    rpc GetWorkflowStatus(GetWorkflowStatusRequest) returns (com.netflix.conductor.proto.Workflow);
+    rpc GetWorkflowStatus(GetWorkflowStatusRequest) returns (conductor.proto.Workflow);
 
     // DELETE /{workflodId}/remove
     rpc RemoveWorkflow(RemoveWorkflowRequest) returns (google.protobuf.Empty);
@@ -40,7 +41,7 @@ service WorkflowService {
     rpc SkipTaskFromWorkflow(SkipTaskRequest) returns (google.protobuf.Empty);
 
     // POST /{workflowId}/rerun
-    rpc RerunWorkflow(com.netflix.conductor.proto.RerunWorkflowRequest) returns (WorkflowId);
+    rpc RerunWorkflow(conductor.proto.RerunWorkflowRequest) returns (WorkflowId);
 
     // POST /{workflowId}/restart
     rpc RestartWorkflow(WorkflowId) returns (google.protobuf.Empty);
@@ -68,7 +69,7 @@ message GetWorkflowsRequest {
 
 message GetWorkflowsResponse {
     message Workflows {
-        repeated com.netflix.conductor.proto.Workflow workflows = 1;
+        repeated conductor.proto.Workflow workflows = 1;
     }
     map<string, Workflows> workflows_by_id = 1;
 }
@@ -101,7 +102,7 @@ message WorkflowId {
 message SkipTaskRequest {
     string workflow_id = 1;
     string task_reference_name = 2;
-    com.netflix.conductor.proto.SkipTaskRequest request = 3;
+    conductor.proto.SkipTaskRequest request = 3;
 }
 
 message TerminateWorkflowRequest {

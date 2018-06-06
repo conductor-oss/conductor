@@ -1,20 +1,21 @@
 syntax = "proto3";
-package com.netflix.conductor.grpc;
+package conductor.grpc;
 
 import "google/protobuf/empty.proto";
 import "model/taskexeclog.proto";
 import "model/taskresult.proto";
 import "model/task.proto";
 
+option java_package = "com.netflix.conductor.grpc";
 option java_outer_classname = "TaskServicePb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
 
 service TaskService {
-    rpc Poll(PollRequest) returns (com.netflix.conductor.proto.Task);
-    rpc PollStream(stream StreamingPollRequest) returns (stream com.netflix.conductor.proto.Task);
+    rpc Poll(PollRequest) returns (conductor.proto.Task);
+    rpc PollStream(stream StreamingPollRequest) returns (stream conductor.proto.Task);
     rpc GetTasksInProgress(TasksInProgressRequest) returns (TasksInProgressResponse);
-    rpc GetPendingTaskForWorkflow(PendingTaskRequest) returns (com.netflix.conductor.proto.Task);
-    rpc UpdateTask(com.netflix.conductor.proto.TaskResult) returns (TaskUpdateResponse);
+    rpc GetPendingTaskForWorkflow(PendingTaskRequest) returns (conductor.proto.Task);
+    rpc UpdateTask(conductor.proto.TaskResult) returns (TaskUpdateResponse);
     rpc AckTask(AckTaskRequest) returns (AckTaskResponse);
 
     rpc AddLog(AddLogRequest) returns (google.protobuf.Empty);
@@ -32,7 +33,7 @@ message StreamingPollRequest {
     string worker_id = 2;
     string domain = 3;
     int32 capacity = 4;
-    repeated com.netflix.conductor.proto.TaskResult completed = 5;
+    repeated conductor.proto.TaskResult completed = 5;
 }
 
 message TasksInProgressRequest {
@@ -42,7 +43,7 @@ message TasksInProgressRequest {
 }
 
 message TasksInProgressResponse {
-    repeated com.netflix.conductor.proto.Task tasks = 1;
+    repeated conductor.proto.Task tasks = 1;
 }
 
 message PendingTaskRequest {
@@ -73,5 +74,5 @@ message TaskId {
 }
 
 message GetLogsResponse {
-    repeated com.netflix.conductor.proto.TaskExecLog logs = 1;
+    repeated conductor.proto.TaskExecLog logs = 1;
 }

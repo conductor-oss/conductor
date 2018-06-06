@@ -1,27 +1,28 @@
 syntax = "proto3";
-package com.netflix.conductor.grpc;
+package conductor.grpc;
 
 import "google/protobuf/empty.proto";
 import "model/eventhandler.proto";
 
+option java_package = "com.netflix.conductor.grpc";
 option java_outer_classname = "EventServicePb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
 
 service EventService {
     // POST /
-    rpc AddEventHandler(com.netflix.conductor.proto.EventHandler) returns (google.protobuf.Empty);
+    rpc AddEventHandler(conductor.proto.EventHandler) returns (google.protobuf.Empty);
 
     // PUT /
-    rpc UpdateEventHandler(com.netflix.conductor.proto.EventHandler) returns (google.protobuf.Empty);
+    rpc UpdateEventHandler(conductor.proto.EventHandler) returns (google.protobuf.Empty);
 
     // DELETE /{name}
     rpc RemoveEventHandler(RemoveEventHandlerRequest) returns (google.protobuf.Empty);
 
     // GET /
-    rpc GetEventHandlers(google.protobuf.Empty) returns (stream com.netflix.conductor.proto.EventHandler);
+    rpc GetEventHandlers(google.protobuf.Empty) returns (stream conductor.proto.EventHandler);
 
     // GET /{name}
-    rpc GetEventHandlersForEvent(GetEventHandlersRequest) returns (stream com.netflix.conductor.proto.EventHandler);
+    rpc GetEventHandlersForEvent(GetEventHandlersRequest) returns (stream conductor.proto.EventHandler);
 
     // GET /queues
     rpc GetQueues(google.protobuf.Empty) returns (GetQueuesResponse);

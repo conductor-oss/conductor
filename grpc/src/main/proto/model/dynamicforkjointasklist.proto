@@ -1,8 +1,9 @@
 syntax = "proto3";
-package com.netflix.conductor.proto;
+package conductor.proto;
 
 import "model/dynamicforkjointask.proto";
 
+option java_package = "com.netflix.conductor.proto";
 option java_outer_classname = "DynamicForkJoinTaskListPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
