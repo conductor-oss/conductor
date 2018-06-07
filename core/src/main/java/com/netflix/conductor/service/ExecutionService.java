@@ -160,8 +160,8 @@ public class ExecutionService {
 		updateTask(new TaskResult(task));
 	}
 	
-	public void updateTask(TaskResult task) throws Exception {
-		executor.updateTask(task);
+	public void updateTask(TaskResult taskResult) throws Exception {
+		executor.updateTask(taskResult);
 	}
 
 	public List<Task> getTasks(String taskType, String startKey, int count) throws Exception {

@@ -19,6 +19,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.metrics.Monitors;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -99,7 +100,7 @@ public class BaseDynoDAO {
         Monitors.recordDaoEventRequests(DAO_NAME, action, event);
     }
 
-    void recordRedisDaoPayloadSize(String action, int size) {
-        Monitors.recordDaoPayloadSize(DAO_NAME, action, size);
+    void recordRedisDaoPayloadSize(String action, int size, String taskType, String workflowType) {
+        Monitors.recordDaoPayloadSize(DAO_NAME, action, StringUtils.defaultIfBlank(taskType,""), StringUtils.defaultIfBlank(workflowType,""), size);
     }
 }
