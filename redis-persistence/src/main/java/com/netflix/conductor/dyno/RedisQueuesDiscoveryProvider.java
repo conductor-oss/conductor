@@ -20,16 +20,16 @@ import javax.inject.Provider;
 public class RedisQueuesDiscoveryProvider implements Provider<RedisQueues> {
 
     private static final Logger logger = LoggerFactory.getLogger(RedisQueuesDiscoveryProvider.class);
-    
+
     private final DiscoveryClient discoveryClient;
     private final DynomiteConfiguration configuration;
 
     @Inject
-    RedisQueuesDiscoveryProvider(DiscoveryClient discoveryClient, DynomiteConfiguration configuration){
+    RedisQueuesDiscoveryProvider(DiscoveryClient discoveryClient, DynomiteConfiguration configuration) {
         this.discoveryClient = discoveryClient;
         this.configuration = configuration;
     }
-    
+
     @Override
     public RedisQueues get() {
 
@@ -77,7 +77,7 @@ public class RedisQueuesDiscoveryProvider implements Provider<RedisQueues> {
         String region = configuration.getRegion();
         String localDC = configuration.getAvailabilityZone();
 
-        if(localDC == null) {
+        if (localDC == null) {
             throw new Error("Availability zone is not defined.  " +
                     "Ensure Configuration.getAvailabilityZone() returns a non-null and non-empty value.");
         }

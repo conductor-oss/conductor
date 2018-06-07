@@ -23,8 +23,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
-import com.netflix.conductor.dao.RedisESWorkflowModule;
+import com.netflix.conductor.dao.RedisWorkflowModule;
 import com.netflix.conductor.dao.es.EmbeddedElasticSearch;
+import com.netflix.conductor.dao.es.index.ElasticSearchModule;
+import com.netflix.conductor.dao.es5.EmbeddedElasticSearchV5;
+import com.netflix.conductor.dao.es5.index.ElasticSearchModuleV5;
 import com.netflix.conductor.dao.mysql.MySQLWorkflowModule;
 import com.sun.jersey.api.client.Client;
 
@@ -74,7 +77,7 @@ public class ConductorServer {
             case REDIS:
             case DYNOMITE:
                 modules.add(new DynomiteClusterModule());
-                modules.add(new RedisESWorkflowModule());
+                modules.add(new RedisWorkflowModule());
                 logger.info("Starting conductor server using dynomite/redis cluster.");
                 break;
 
@@ -86,7 +89,16 @@ public class ConductorServer {
             case MEMORY:
                 // TODO This ES logic should probably live elsewhere.
                 try {
-                    EmbeddedElasticSearch.start();
+                    if (
+                            systemPropertiesConfiguration.getIntProperty(
+                                    "workflow.elasticsearch.version",
+                                    2
+                    ) == 5) {
+                        EmbeddedElasticSearchV5.start();
+                    } else {
+                        // Use ES2 as default.
+                        EmbeddedElasticSearch.start();
+                    }
                     if (System.getProperty("workflow.elasticsearch.url") == null) {
                         System.setProperty("workflow.elasticsearch.url", "localhost:9300");
                     }
@@ -98,17 +110,23 @@ public class ConductorServer {
                 }
 
                 modules.add(new LocalRedisModule());
-                modules.add(new RedisESWorkflowModule());
+                modules.add(new RedisWorkflowModule());
                 logger.info("Starting conductor server using in memory data store");
                 break;
 
             case REDIS_CLUSTER:
                 modules.add(new RedisClusterModule());
-                modules.add(new RedisESWorkflowModule());
+                modules.add(new RedisWorkflowModule());
                 logger.info("Starting conductor server using redis_cluster.");
                 break;
         }
 
+        if (systemPropertiesConfiguration.getIntProperty("workflow.elasticsearch.version", 2) == 5) {
+            modules.add(new ElasticSearchModuleV5());
+        } else {
+            modules.add(new ElasticSearchModule());
+        }
+        
         if (systemPropertiesConfiguration.getJerseyEnabled()) {
             modules.add(new JerseyModule());
             modules.add(new SwaggerModule());
