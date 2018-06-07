@@ -107,10 +107,10 @@ public class WorkflowTaskCoordinatorTests {
 				latch.countDown();
 				return null;
 			}
-		).when(client).updateTask(any());
+		).when(client).updateTask(any(), anyString());
 		coordinator.init();
 		Uninterruptibles.awaitUninterruptibly(latch);
-		Mockito.verify(client).updateTask(any());
+		Mockito.verify(client).updateTask(any(), anyString());
 	}
 
 	@Test
@@ -144,14 +144,14 @@ public class WorkflowTaskCoordinatorTests {
 					latch.countDown();
 					return null;
 				}
-		).when(client).updateTask(any());
+		).when(client).updateTask(any(), anyString());
 
 		coordinator.init();
 		Uninterruptibles.awaitUninterruptibly(latch);
 
 		// then worker.execute must not be called and task must be updated with IN_PROGRESS status
 		verify(worker, never()).execute(any());
-		Mockito.verify(client).updateTask(any());
+		Mockito.verify(client).updateTask(any(), anyString());
 	}
 
 	@Test
@@ -186,14 +186,14 @@ public class WorkflowTaskCoordinatorTests {
 					latch.countDown();
 					return null;
 				}
-		).when(client).updateTask(any());
+		).when(client).updateTask(any(), anyString());
 
 		coordinator.init();
 		Uninterruptibles.awaitUninterruptibly(latch);
 
 		// then worker.execute must not be called and task must be updated with IN_PROGRESS status
 		verify(worker, never()).execute(any());
-		Mockito.verify(client).updateTask(any());
+		Mockito.verify(client).updateTask(any(), anyString());
 	}
 
 	@Test
@@ -232,7 +232,7 @@ public class WorkflowTaskCoordinatorTests {
 					latch.countDown();
 					return null;
 				}
-		).when(client).updateTask(any());
+		).when(client).updateTask(any(), anyString());
 		coordinator.init();
 		Uninterruptibles.awaitUninterruptibly(latch);
 
@@ -242,6 +242,6 @@ public class WorkflowTaskCoordinatorTests {
 
 		// task must be updated with IN_PROGRESS status three times, two from worker.execute() and
 		// one from returnTask caused by RejectedExecutionException.
-		verify(client, times(3)).updateTask(any());
+		verify(client, times(3)).updateTask(any(), anyString());
 	}
 }

@@ -18,24 +18,6 @@
  */
 package com.netflix.conductor.server;
 
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
-
-import javax.servlet.DispatcherType;
-import javax.ws.rs.core.MediaType;
-
-import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.Guice;
 import com.google.inject.servlet.GuiceFilter;
@@ -51,10 +33,25 @@ import com.netflix.dyno.connectionpool.impl.ConnectionPoolConfigurationImpl;
 import com.netflix.dyno.connectionpool.impl.lb.HostToken;
 import com.netflix.dyno.jedis.DynoJedisClient;
 import com.sun.jersey.api.client.Client;
-
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.DefaultServlet;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisCluster;
 import redis.clients.jedis.JedisCommands;
+
+import javax.servlet.DispatcherType;
+import javax.ws.rs.core.MediaType;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Viren

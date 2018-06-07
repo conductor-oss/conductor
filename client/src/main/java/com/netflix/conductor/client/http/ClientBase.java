@@ -44,9 +44,14 @@ import java.util.function.Function;
  * Abstract client for the REST template
  */
 public abstract class ClientBase {
+
     private static Logger logger = LoggerFactory.getLogger(ClientBase.class);
+
     protected final Client client;
+
     protected String root = "";
+
+    protected ObjectMapper objectMapper;
 
     protected ClientBase() {
         this(new DefaultClientConfig(), null);
@@ -57,8 +62,16 @@ public abstract class ClientBase {
     }
 
     protected ClientBase(ClientConfig clientConfig, ClientHandler handler) {
-        JacksonJsonProvider provider = new JacksonJsonProvider(createObjectMapper());
+        objectMapper = new ObjectMapper();
+        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
+        objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+        objectMapper.setSerializationInclusion(Include.NON_NULL);
+        objectMapper.setSerializationInclusion(Include.NON_EMPTY);
+
+        JacksonJsonProvider provider = new JacksonJsonProvider(objectMapper);
         clientConfig.getSingletons().add(provider);
+
         if (handler == null) {
             this.client = Client.create(clientConfig);
         } else {
@@ -235,15 +248,4 @@ public abstract class ClientBase {
         return builder;
     }
 
-    private ObjectMapper createObjectMapper() {
-        ObjectMapper objectMapper = new ObjectMapper();
-
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-        objectMapper.setSerializationInclusion(Include.NON_NULL);
-        objectMapper.setSerializationInclusion(Include.NON_EMPTY);
-
-        return objectMapper;
-    }
 }

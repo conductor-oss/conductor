@@ -1195,8 +1195,8 @@ public class WorkflowServiceTest {
         assertEquals("NON TRANSIENT ERROR OCCURRED: An integration point required to complete the task is down", es.getReasonForIncompletion());
         assertEquals(1, junit_task_1.getRetryCount()); //Configured retries at the task definition level
         assertEquals(0, t1.getRetryCount()); //Actual retries done on the task
-        assertEquals(true, es.getOutput().containsKey("TERMINAL_ERROR"));
-        assertEquals("Integration endpoint down: FOOBAR", es.getOutput().get("TERMINAL_ERROR"));
+        assertEquals(true, es.getOutput().containsKey("o1"));
+        assertEquals("p1 value", es.getOutput().get("o1"));
 
     }
 

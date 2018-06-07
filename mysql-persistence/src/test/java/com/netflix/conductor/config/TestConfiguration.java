@@ -85,6 +85,11 @@ public class TestConfiguration implements Configuration {
 	}
 
 	@Override
+	public long getLongProperty(String name, long defaultValue) {
+		return 0;
+	}
+
+	@Override
 	public String getRegion() {
 		return "us-east-1";
 	}

@@ -103,6 +103,17 @@ public class ConductorConfig implements Configuration {
 	}
 
 	@Override
+	public long getLongProperty(String key, long defaultValue) {
+		String val = getProperty(key, Long.toString(defaultValue));
+		try {
+			defaultValue = Long.parseLong(val);
+		} catch (NumberFormatException e) {
+			logger.error("Error parsing the Long value for Key:{} , returning a default value: {}", key, defaultValue);
+		}
+		return defaultValue;
+	}
+
+	@Override
 	public String getProperty(String key, String defaultValue) {
 
 		String val = null;
