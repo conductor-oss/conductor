@@ -69,7 +69,7 @@ com.netflix.conductor.dao.RedisWorkflowModule
 * Servlet Container
 
 ## Get Support
-Conductor is maintained by Content Platform Engineering team at Netflix.  Use github issue tracking for any support request.  
+Conductor is maintained by Media Workflow Infrastructure team at Netflix.  Use github issue tracking for any support request.  
 
 ## LICENSE
 
