@@ -18,15 +18,23 @@
  */
 package com.netflix.conductor.server;
 
-import java.io.InputStream;
-import java.util.Arrays;
-import java.util.EnumSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Set;
+import com.google.inject.Guice;
+import com.google.inject.servlet.GuiceFilter;
 
-import javax.servlet.DispatcherType;
-import javax.ws.rs.core.MediaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
+import com.netflix.conductor.dao.es.EmbeddedElasticSearch;
+import com.netflix.conductor.dao.es5.EmbeddedElasticSearchV5;
+import com.netflix.conductor.jedis.JedisMock;
+import com.netflix.dyno.connectionpool.Host;
+import com.netflix.dyno.connectionpool.Host.Status;
+import com.netflix.dyno.connectionpool.HostSupplier;
+import com.netflix.dyno.connectionpool.TokenMapSupplier;
+import com.netflix.dyno.connectionpool.impl.ConnectionPoolConfigurationImpl;
+import com.netflix.dyno.connectionpool.impl.lb.HostToken;
+import com.netflix.dyno.jedis.DynoJedisClient;
+import com.sun.jersey.api.client.Client;
 
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.eclipse.jetty.server.Server;
@@ -36,21 +44,15 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.inject.Guice;
-import com.google.inject.servlet.GuiceFilter;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.dao.es.EmbeddedElasticSearch;
-import com.netflix.conductor.dao.es5.EmbeddedElasticSearchV5;
-import com.netflix.conductor.redis.utils.JedisMock;
-import com.netflix.dyno.connectionpool.Host;
-import com.netflix.dyno.connectionpool.Host.Status;
-import com.netflix.dyno.connectionpool.HostSupplier;
-import com.netflix.dyno.connectionpool.TokenMapSupplier;
-import com.netflix.dyno.connectionpool.impl.ConnectionPoolConfigurationImpl;
-import com.netflix.dyno.connectionpool.impl.lb.HostToken;
-import com.netflix.dyno.jedis.DynoJedisClient;
-import com.sun.jersey.api.client.Client;
+import java.io.InputStream;
+import java.util.Arrays;
+import java.util.EnumSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+
+import javax.servlet.DispatcherType;
+import javax.ws.rs.core.MediaType;
 
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.JedisCluster;
@@ -72,16 +74,16 @@ public class ConductorServer {
 	
 	private Server server;
 	
-	private ConductorConfig conductorConfig;
+	private SystemPropertiesConfiguration systemPropertiesConfiguration;
 	
 	private DB database;
 	
-	public ConductorServer(ConductorConfig conductorConfig) {
-		this.conductorConfig = conductorConfig;
-		String dynoClusterName = conductorConfig.getProperty("workflow.dynomite.cluster.name", "");
+	public ConductorServer(SystemPropertiesConfiguration systemPropertiesConfiguration) {
+		this.systemPropertiesConfiguration = systemPropertiesConfiguration;
+		String dynoClusterName = systemPropertiesConfiguration.getProperty("workflow.dynomite.cluster.name", "");
 		
 		List<Host> dynoHosts = new LinkedList<>();
-		String dbstring = conductorConfig.getProperty("db", "memory");
+		String dbstring = systemPropertiesConfiguration.getProperty("db", "memory");
 		try {
 			database = DB.valueOf(dbstring);
 		}catch(IllegalArgumentException ie) {
@@ -90,7 +92,7 @@ public class ConductorServer {
 		}
 		
 		if(!(database.equals(DB.memory) || database.equals(DB.mysql))) {
-			String hosts = conductorConfig.getProperty("workflow.dynomite.cluster.hosts", null);
+			String hosts = systemPropertiesConfiguration.getProperty("workflow.dynomite.cluster.hosts", null);
 			if(hosts == null) {
 				System.err.println("Missing dynomite/redis hosts.  Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied configuration.");
 				logger.error("Missing dynomite/redis hosts.  Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied configuration.");
@@ -109,7 +111,7 @@ public class ConductorServer {
 				
 		}else {
 			//Create a single shard host supplier
-			Host dynoHost = new Host("localhost", 0, conductorConfig.getAvailabilityZone(), Status.Up);
+			Host dynoHost = new Host("localhost", 0, systemPropertiesConfiguration.getAvailabilityZone(), Status.Up);
 			dynoHosts.add(dynoHost);
 		}
 		init(dynoClusterName, dynoHosts);
@@ -125,15 +127,15 @@ public class ConductorServer {
 		case dynomite:
 			ConnectionPoolConfigurationImpl connectionPoolConfiguration = new ConnectionPoolConfigurationImpl(dynoClusterName)
 					.withTokenSupplier(getTokenMapSupplier(dynoHosts))
-					.setLocalRack(conductorConfig.getAvailabilityZone())
-					.setLocalDataCenter(conductorConfig.getRegion())
+					.setLocalRack(systemPropertiesConfiguration.getAvailabilityZone())
+					.setLocalDataCenter(systemPropertiesConfiguration.getRegion())
 					.setSocketTimeout(0)
 					.setConnectTimeout(0)
-					.setMaxConnsPerHost(conductorConfig.getIntProperty("workflow.dynomite.connection.maxConnsPerHost", 10));
+					.setMaxConnsPerHost(systemPropertiesConfiguration.getIntProperty("workflow.dynomite.connection.maxConnsPerHost", 10));
 
 			jedis = new DynoJedisClient.Builder()
 					.withHostSupplier(hostSupplier)
-					.withApplicationName(conductorConfig.getAppId())
+					.withApplicationName(systemPropertiesConfiguration.getAppId())
 					.withDynomiteClusterName(dynoClusterName)
 					.withCPConfig(connectionPoolConfiguration)
 					.build();
@@ -148,7 +150,7 @@ public class ConductorServer {
 		case memory:
 			jedis = new JedisMock();
 			try {
-				if (conductorConfig.getProperty("workflow.elasticsearch.version", "2").equals("5")){
+				if (systemPropertiesConfiguration.getProperty("workflow.elasticsearch.version", "2").equals("5")){
 					EmbeddedElasticSearchV5.start();
 				}
 				else {
@@ -177,7 +179,7 @@ public class ConductorServer {
 			break;
 		}
 		
-		this.serverModule = new ServerModule(jedis, hostSupplier, conductorConfig, database);
+		this.serverModule = new ServerModule(jedis, hostSupplier, systemPropertiesConfiguration, database);
 	}
 
 	private TokenMapSupplier getTokenMapSupplier(List<Host> dynoHosts) {

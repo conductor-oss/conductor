@@ -31,6 +31,8 @@ import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.redis.JedisMock;
+import com.netflix.conductor.dyno.DynoProxy;
+
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,7 +41,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
-import redis.clients.jedis.JedisCommands;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,6 +51,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+
+import redis.clients.jedis.JedisCommands;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

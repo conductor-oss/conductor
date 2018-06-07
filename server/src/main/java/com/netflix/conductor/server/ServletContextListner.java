@@ -32,6 +32,8 @@ import com.google.inject.Injector;
 import com.google.inject.servlet.GuiceServletContextListener;
 import com.google.inject.servlet.ServletModule;
 
+import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
+
 /**
  * @author Viren
  *
@@ -43,7 +45,7 @@ public class ServletContextListner extends GuiceServletContextListener {
 		
 		loadProperties();
 		
-		ConductorConfig config = new ConductorConfig();
+		SystemPropertiesConfiguration config = new SystemPropertiesConfiguration();
 		ConductorServer server = new ConductorServer(config);
 		
 		return Guice.createInjector(server.getGuiceModule(), getSwagger());

@@ -7,7 +7,6 @@ dependencies {
 	compile "com.netflix.dyno:dyno-jedis:${revDynoJedis}"
  	compile "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
 
-	//In memory redis for unit testing
- 	testCompile "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
-
+    //In memory
+    compile "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
 }

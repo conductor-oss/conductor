@@ -18,7 +18,9 @@ package com.netflix.conductor.dao.dynomite;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.dyno.DynoProxy;
 import com.netflix.conductor.metrics.Monitors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

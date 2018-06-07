@@ -20,21 +20,24 @@ package com.netflix.conductor.server;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+
 import com.netflix.conductor.contribs.http.HttpTask;
 import com.netflix.conductor.contribs.http.RestClientManager;
 import com.netflix.conductor.contribs.json.JsonJqTransform;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
+import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
 import com.netflix.conductor.dao.RedisWorkflowModule;
 import com.netflix.conductor.dao.es.index.ElasticSearchModule;
 import com.netflix.conductor.dao.es5.index.ElasticSearchModuleV5;
 import com.netflix.conductor.dao.mysql.MySQLWorkflowModule;
 import com.netflix.dyno.connectionpool.HostSupplier;
-import redis.clients.jedis.JedisCommands;
 
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import redis.clients.jedis.JedisCommands;
 
 /**
  * @author Viren
@@ -54,16 +57,16 @@ public class ServerModule extends AbstractModule {
 	
 	private String localRack;
 	
-	private ConductorConfig conductorConfig;
+	private SystemPropertiesConfiguration systemPropertiesConfiguration;
 	
 	private ConductorServer.DB db;
 
-	public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, ConductorConfig conductorConfig, ConductorServer.DB db) {
+	public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, SystemPropertiesConfiguration systemPropertiesConfiguration, ConductorServer.DB db) {
 		this.dynoConn = jedis;
 		this.hostSupplier = hostSupplier;
-		this.conductorConfig = conductorConfig;
-		this.region = conductorConfig.getRegion();
-		this.localRack = conductorConfig.getAvailabilityZone();
+		this.systemPropertiesConfiguration = systemPropertiesConfiguration;
+		this.region = systemPropertiesConfiguration.getRegion();
+		this.localRack = systemPropertiesConfiguration.getAvailabilityZone();
 		this.db = db;
 		
 	}
@@ -73,15 +76,15 @@ public class ServerModule extends AbstractModule {
 
 		configureExecutorService();
 
-		bind(Configuration.class).toInstance(conductorConfig);
+		bind(Configuration.class).toInstance(systemPropertiesConfiguration);
 
 		if (db == ConductorServer.DB.mysql) {
 			install(new MySQLWorkflowModule());
 		} else {
-			install(new RedisWorkflowModule(conductorConfig, dynoConn, hostSupplier));
+			install(new RedisWorkflowModule(systemPropertiesConfiguration, dynoConn, hostSupplier));
 		}
 
-		if (conductorConfig.getProperty("workflow.elasticsearch.version", "2").equals("5")){
+		if (systemPropertiesConfiguration.getProperty("workflow.elasticsearch.version", "2").equals("5")){
 			install(new ElasticSearchModuleV5());
 		}
 		else {
@@ -92,10 +95,10 @@ public class ServerModule extends AbstractModule {
 		install(new CoreModule());
 		install(new JerseyModule());
 		
-		new HttpTask(new RestClientManager(), conductorConfig);
+		new HttpTask(new RestClientManager(), systemPropertiesConfiguration);
 		new JsonJqTransform();
 		
-		List<AbstractModule> additionalModules = conductorConfig.getAdditionalModules();
+		List<AbstractModule> additionalModules = systemPropertiesConfiguration.getAdditionalModules();
 		if(additionalModules != null) {
 			for(AbstractModule additionalModule : additionalModules) {
 				install(additionalModule);

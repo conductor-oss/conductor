@@ -16,7 +16,11 @@
 /**
  * 
  */
-package com.netflix.conductor.redis.utils;
+package com.netflix.conductor.jedis;
+
+import org.rarefiedredis.redis.IRedisClient;
+import org.rarefiedredis.redis.IRedisSortedSet.ZsetPair;
+import org.rarefiedredis.redis.RedisMock;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -26,10 +30,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import org.rarefiedredis.redis.IRedisClient;
-import org.rarefiedredis.redis.IRedisSortedSet.ZsetPair;
-import org.rarefiedredis.redis.RedisMock;
 
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.ScanParams;

@@ -18,27 +18,28 @@
  */
 package com.netflix.conductor.tests.utils;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.config.CoreModule;
+import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
+import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.dynomite.RedisExecutionDAO;
+import com.netflix.conductor.dao.dynomite.RedisMetadataDAO;
+import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
+import com.netflix.conductor.dyno.DynoProxy;
+import com.netflix.conductor.jedis.JedisMock;
+import com.netflix.dyno.queues.ShardSupplier;
+
 import java.util.Arrays;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.config.CoreModule;
-import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.dao.dynomite.DynoProxy;
-import com.netflix.conductor.dao.dynomite.RedisExecutionDAO;
-import com.netflix.conductor.dao.dynomite.RedisMetadataDAO;
-import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
-import com.netflix.conductor.redis.utils.JedisMock;
-import com.netflix.conductor.server.ConductorConfig;
-import com.netflix.dyno.queues.ShardSupplier;
 
 import redis.clients.jedis.JedisCommands;
 
@@ -61,7 +62,7 @@ public class TestModule extends AbstractModule {
 
 		configureExecutorService();
 
-		ConductorConfig config = new ConductorConfig();
+		SystemPropertiesConfiguration config = new SystemPropertiesConfiguration();
 		bind(Configuration.class).toInstance(config);
 		JedisCommands jedisMock = new JedisMock();
 
