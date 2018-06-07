@@ -27,10 +27,9 @@ import com.netflix.conductor.contribs.json.JsonJqTransform;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
 import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
-import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.dao.RedisESWorkflowModule;
-import com.netflix.conductor.dao.index.ElasticSearchDAO;
-import com.netflix.conductor.dao.index.ElasticsearchModule;
+import com.netflix.conductor.dao.RedisWorkflowModule;
+import com.netflix.conductor.dao.es.index.ElasticSearchModule;
+import com.netflix.conductor.dao.es5.index.ElasticSearchModuleV5;
 import com.netflix.conductor.dao.mysql.MySQLWorkflowModule;
 import com.netflix.dyno.connectionpool.HostSupplier;
 
@@ -74,19 +73,24 @@ public class ServerModule extends AbstractModule {
 	
 	@Override
 	protected void configure() {
-		
+
 		configureExecutorService();
-		
+
 		bind(Configuration.class).toInstance(systemPropertiesConfiguration);
 
 		if (db == ConductorServer.DB.mysql) {
 			install(new MySQLWorkflowModule());
 		} else {
-		    install(new RedisESWorkflowModule(systemPropertiesConfiguration, dynoConn, hostSupplier));
+			install(new RedisWorkflowModule(systemPropertiesConfiguration, dynoConn, hostSupplier));
 		}
 
-		install(new ElasticsearchModule());
-		bind(IndexDAO.class).to(ElasticSearchDAO.class);
+		if (systemPropertiesConfiguration.getProperty("workflow.elasticsearch.version", "2").equals("5")){
+			install(new ElasticSearchModuleV5());
+		}
+		else {
+			// Use ES2 as default.
+			install(new ElasticSearchModule());
+		}
 		
 		install(new CoreModule());
 		install(new JerseyModule());

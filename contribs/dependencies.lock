@@ -1,7 +1,7 @@
 {
     "compile": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.333",
+            "locked": "1.11.341",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -107,7 +107,7 @@
     },
     "compileClasspath": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.333",
+            "locked": "1.11.341",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -213,7 +213,7 @@
     },
     "default": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.333",
+            "locked": "1.11.341",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -329,7 +329,7 @@
     },
     "runtime": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.333",
+            "locked": "1.11.341",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -435,7 +435,7 @@
     },
     "runtimeClasspath": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.333",
+            "locked": "1.11.341",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -541,7 +541,7 @@
     },
     "testCompile": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.333",
+            "locked": "1.11.341",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -663,7 +663,7 @@
     },
     "testCompileClasspath": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.333",
+            "locked": "1.11.341",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -785,7 +785,7 @@
     },
     "testRuntime": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.333",
+            "locked": "1.11.341",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -907,7 +907,7 @@
     },
     "testRuntimeClasspath": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.333",
+            "locked": "1.11.341",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {

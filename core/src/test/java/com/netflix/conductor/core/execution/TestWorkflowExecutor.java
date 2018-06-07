@@ -103,7 +103,7 @@ public class TestWorkflowExecutor {
 
 		TestConfiguration config = new TestConfiguration();
 		MetadataDAO metadataDAO = mock(MetadataDAO.class);
-		ExecutionDAO edao = mock(ExecutionDAO.class);
+		ExecutionDAO executionDAO = mock(ExecutionDAO.class);
 		QueueDAO queue = mock(QueueDAO.class);
 		ObjectMapper objectMapper = new ObjectMapper();
 		ParametersUtils parametersUtils = new ParametersUtils();
@@ -119,7 +119,7 @@ public class TestWorkflowExecutor {
 		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
 		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 		DeciderService deciderService = new DeciderService(metadataDAO, taskMappers);
-		WorkflowExecutor executor = new WorkflowExecutor(deciderService, metadataDAO, edao, queue, config);
+		WorkflowExecutor executor = new WorkflowExecutor(deciderService, metadataDAO, executionDAO, queue, config);
 		List<Task> tasks = new LinkedList<>();
 
 		WorkflowTask taskToSchedule = new WorkflowTask();
@@ -183,12 +183,12 @@ public class TestWorkflowExecutor {
 		tasks.add(task3);
 
 
-		when(edao.createTasks(tasks)).thenReturn(tasks);
+		when(executionDAO.createTasks(tasks)).thenReturn(tasks);
 		AtomicInteger startedTaskCount = new AtomicInteger(0);
 		doAnswer(invocation -> {
             startedTaskCount.incrementAndGet();
             return null;
-        }).when(edao)
+        }).when(executionDAO)
                 .updateTask(any());
 
 		AtomicInteger queuedTaskCount = new AtomicInteger(0);

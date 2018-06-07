@@ -44,6 +44,7 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
+import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DefaultRegistry;
@@ -714,6 +715,34 @@ public class TestDeciderService {
         assertEquals("s1", deciderOutcome.tasksToBeScheduled.get(0).getReferenceTaskName());
         assertEquals(0, deciderOutcome.tasksToBeRequeued.size());
         assertFalse(deciderOutcome.isComplete);
+    }
+
+
+    @Test
+    public void testGetTasksToBeScheduled() throws Exception {
+        WorkflowDef workflowDef = createLinearWorkflow();
+
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowType(workflowDef.getName());
+        workflow.setVersion(workflowDef.getVersion());
+        workflow.setStatus(WorkflowStatus.RUNNING);
+
+        WorkflowTask workflowTask1 = new WorkflowTask();
+        workflowTask1.setTaskReferenceName("s1");
+        workflowTask1.setType(Type.SIMPLE.name());
+
+        List<Task> tasksToBeScheduled = deciderService.getTasksToBeScheduled(workflowDef, workflow, workflowTask1, 0, null);
+        assertNotNull(tasksToBeScheduled);
+        assertEquals(1, tasksToBeScheduled.size());
+        assertEquals("s1", tasksToBeScheduled.get(0).getReferenceTaskName());
+
+        WorkflowTask workflowTask2 = new WorkflowTask();
+        workflowTask2.setTaskReferenceName("s2");
+        workflowTask2.setType(Type.SIMPLE.name());
+        tasksToBeScheduled = deciderService.getTasksToBeScheduled(workflowDef, workflow, workflowTask2, 0, null);
+        assertNotNull(tasksToBeScheduled);
+        assertEquals(1, tasksToBeScheduled.size());
+        assertEquals("s2", tasksToBeScheduled.get(0).getReferenceTaskName());
     }
 
     private WorkflowDef createConditionalWF() throws Exception {
