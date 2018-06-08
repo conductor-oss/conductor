@@ -3396,90 +3396,63 @@ public class WorkflowServiceTest {
     @Test
     public void testWait() throws Exception {
 
-        WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setName("test_wait");
-        workflowDef.setSchemaVersion(2);
 
-        WorkflowTask waitWorkflowTask = new WorkflowTask();
-        waitWorkflowTask.setWorkflowTaskType(Type.WAIT);
-        waitWorkflowTask.setName("wait");
-        waitWorkflowTask.setTaskReferenceName("wait0");
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test_wait");
+        def.setSchemaVersion(2);
+        WorkflowTask wait = new WorkflowTask();
+        wait.setWorkflowTaskType(Type.WAIT);
+        wait.setName("wait");
+        wait.setTaskReferenceName("wait0");
+        def.getTasks().add(wait);
+        metadataService.registerWorkflowDef(def);
 
-        WorkflowTask workflowTask = new WorkflowTask();
-        workflowTask.setName("junit_task_1");
-        workflowTask.setTaskReferenceName("t1");
-
-        workflowDef.getTasks().add(waitWorkflowTask);
-        workflowDef.getTasks().add(workflowTask);
-        metadataService.registerWorkflowDef(workflowDef);
-
-        String workflowId = workflowExecutor.startWorkflow(workflowDef.getName(), workflowDef.getVersion(), "", new HashMap<>());
-        Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
+        String id = workflowExecutor.startWorkflow(def.getName(), def.getVersion(), "", new HashMap<>());
+        Workflow workflow = workflowExecutor.getWorkflow(id, true);
         assertNotNull(workflow);
         assertEquals(1, workflow.getTasks().size());
         assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
-
         Task waitTask = workflow.getTasks().get(0);
         assertEquals(WorkflowTask.Type.WAIT.name(), waitTask.getTaskType());
         waitTask.setStatus(COMPLETED);
         workflowExecutor.updateTask(new TaskResult(waitTask));
 
-        Task task = workflowExecutionService.poll("junit_task_1", "test");
-        assertNotNull(task);
-        task.setStatus(Status.COMPLETED);
-        workflowExecutionService.updateTask(task);
-
-        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
-        assertNotNull(workflow);
-        assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+        workflow = workflowExecutor.getWorkflow(id, true);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
     }
 
     @Test
-    public void testEventWorkflow() throws Exception {
+    public void testEvent() throws Exception {
 
-        TaskDef taskDef = new TaskDef();
-        taskDef.setName("eventX");
-        taskDef.setTimeoutSeconds(1);
+        TaskDef td = new TaskDef();
+        td.setName("eventX");
+        td.setTimeoutSeconds(1);
 
-        metadataService.registerTaskDef(Collections.singletonList(taskDef));
+        metadataService.registerTaskDef(Arrays.asList(td));
 
-        WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setName("test_event");
-        workflowDef.setSchemaVersion(2);
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test_event");
+        def.setSchemaVersion(2);
+        WorkflowTask event = new WorkflowTask();
+        event.setWorkflowTaskType(Type.EVENT);
+        event.setName("eventX");
+        event.setTaskReferenceName("wait0");
+        event.setSink("conductor");
+        def.getTasks().add(event);
+        metadataService.registerWorkflowDef(def);
 
-        WorkflowTask eventWorkflowTask = new WorkflowTask();
-        eventWorkflowTask.setWorkflowTaskType(Type.EVENT);
-        eventWorkflowTask.setName("eventX");
-        eventWorkflowTask.setTaskReferenceName("wait0");
-        eventWorkflowTask.setSink("conductor");
-
-        WorkflowTask workflowTask = new WorkflowTask();
-        workflowTask.setName("junit_task_1");
-        workflowTask.setTaskReferenceName("t1");
-
-        workflowDef.getTasks().add(eventWorkflowTask);
-        workflowDef.getTasks().add(workflowTask);
-        metadataService.registerWorkflowDef(workflowDef);
-
-        String workflowId = workflowExecutor.startWorkflow(workflowDef.getName(), workflowDef.getVersion(), "", new HashMap<>());
+        String id = workflowExecutor.startWorkflow(def.getName(), def.getVersion(), "", new HashMap<>());
         Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
-        Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
+        Workflow workflow = workflowExecutor.getWorkflow(id, true);
         assertNotNull(workflow);
+        assertEquals(1, workflow.getTasks().size());
 
         Task eventTask = workflow.getTasks().get(0);
-        assertEquals(Type.EVENT.name(), eventTask.getTaskType());
+        assertEquals(WorkflowTask.Type.EVENT.name(), eventTask.getTaskType());
         assertEquals(COMPLETED, eventTask.getStatus());
+        assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
         assertTrue(!eventTask.getOutputData().isEmpty());
         assertNotNull(eventTask.getOutputData().get("event_produced"));
-
-        Task task = workflowExecutionService.poll("junit_task_1", "test");
-        assertNotNull(task);
-        task.setStatus(Status.COMPLETED);
-        workflowExecutionService.updateTask(task);
-
-        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
-        assertNotNull(workflow);
-        assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
     }
 
 
