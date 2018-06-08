@@ -255,6 +255,7 @@ public abstract class AbstractProtoMapper {
         to.setStartDelayInSeconds( from.getStartDelayInSeconds() );
         to.setRetriedTaskId( from.getRetriedTaskId() );
         to.setRetried( from.isRetried() );
+        to.setExecuted( from.isExecuted() );
         to.setCallbackFromWorker( from.isCallbackFromWorker() );
         to.setResponseTimeoutSeconds( from.getResponseTimeoutSeconds() );
         to.setWorkflowInstanceId( from.getWorkflowInstanceId() );
@@ -293,6 +294,7 @@ public abstract class AbstractProtoMapper {
         to.setStartDelayInSeconds( from.getStartDelayInSeconds() );
         to.setRetriedTaskId( from.getRetriedTaskId() );
         to.setRetried( from.getRetried() );
+        to.setExecuted( from.getExecuted() );
         to.setCallbackFromWorker( from.getCallbackFromWorker() );
         to.setResponseTimeoutSeconds( from.getResponseTimeoutSeconds() );
         to.setWorkflowInstanceId( from.getWorkflowInstanceId() );
@@ -317,6 +319,7 @@ public abstract class AbstractProtoMapper {
             case IN_PROGRESS: to = TaskPb.Task.Status.IN_PROGRESS; break;
             case CANCELED: to = TaskPb.Task.Status.CANCELED; break;
             case FAILED: to = TaskPb.Task.Status.FAILED; break;
+            case FAILED_WITH_TERMINAL_ERROR: to = TaskPb.Task.Status.FAILED_WITH_TERMINAL_ERROR; break;
             case COMPLETED: to = TaskPb.Task.Status.COMPLETED; break;
             case COMPLETED_WITH_ERRORS: to = TaskPb.Task.Status.COMPLETED_WITH_ERRORS; break;
             case SCHEDULED: to = TaskPb.Task.Status.SCHEDULED; break;
@@ -334,6 +337,7 @@ public abstract class AbstractProtoMapper {
             case IN_PROGRESS: to = Task.Status.IN_PROGRESS; break;
             case CANCELED: to = Task.Status.CANCELED; break;
             case FAILED: to = Task.Status.FAILED; break;
+            case FAILED_WITH_TERMINAL_ERROR: to = Task.Status.FAILED_WITH_TERMINAL_ERROR; break;
             case COMPLETED: to = Task.Status.COMPLETED; break;
             case COMPLETED_WITH_ERRORS: to = Task.Status.COMPLETED_WITH_ERRORS; break;
             case SCHEDULED: to = Task.Status.SCHEDULED; break;
