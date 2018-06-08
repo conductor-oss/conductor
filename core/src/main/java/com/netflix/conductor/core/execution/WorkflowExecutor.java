@@ -838,9 +838,6 @@ public class WorkflowExecutor {
             task.setStartTime(System.currentTimeMillis());
             if (!workflowSystemTask.isAsync()) {
                 workflowSystemTask.start(workflow, task, this);
-                if (task.getStatus().isTerminal()) {
-                    task.setExecuted(true);
-                }
                 startedSystemTasks = true;
                 executionDAO.updateTask(task);
             } else {
