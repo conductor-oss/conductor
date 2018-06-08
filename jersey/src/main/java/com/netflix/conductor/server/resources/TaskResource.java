@@ -140,11 +140,11 @@ public class TaskResource {
 
 	@POST
 	@ApiOperation("Update a task")
-	public String updateTask(TaskResult task) throws Exception {
-		logger.debug("Update Task: {} with callback time: {}", task, task.getCallbackAfterSeconds());
-		taskService.updateTask(task);
-		logger.debug("Task: {} updated successfully with callback time: {}", task, task.getCallbackAfterSeconds());
-		return "\"" + task.getTaskId() + "\"";
+	public String updateTask(TaskResult taskResult) throws Exception {
+		logger.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
+		taskService.updateTask(taskResult);
+		logger.debug("Task: {} updated successfully with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
+		return "\"" + taskResult.getTaskId() + "\"";
 	}
 
 	@POST

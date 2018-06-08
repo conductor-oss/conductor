@@ -18,20 +18,22 @@
  */
 package com.netflix.conductor.client.task;
 
+import com.google.common.base.Joiner;
+import com.netflix.spectator.api.BasicTag;
+import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Id;
+import com.netflix.spectator.api.Registry;
+import com.netflix.spectator.api.Spectator;
+import com.netflix.spectator.api.Tag;
+import com.netflix.spectator.api.Timer;
+import com.netflix.spectator.api.patterns.PolledMeter;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-
-import com.google.common.base.Joiner;
-import com.netflix.servo.DefaultMonitorRegistry;
-import com.netflix.servo.MonitorRegistry;
-import com.netflix.servo.monitor.BasicCounter;
-import com.netflix.servo.monitor.BasicStopwatch;
-import com.netflix.servo.monitor.MonitorConfig;
-import com.netflix.servo.monitor.MonitorConfig.Builder;
-import com.netflix.servo.monitor.StatsMonitor;
-import com.netflix.servo.monitor.StatsTimer;
-import com.netflix.servo.monitor.Stopwatch;
-import com.netflix.servo.stats.StatsConfig;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Viren
@@ -52,14 +54,16 @@ public class WorkflowTaskMetrics {
 	private static final String TASK_POLL_COUNTER = "task_poll_counter";
 	private static final String TASK_EXECUTE_TIME = "task_execute_time";
 	private static final String TASK_POLL_TIME = "task_poll_time";
+	public static final String TASK_RESULT_SIZE = "task_result_size";
 
-	private static StatsConfig statsConfig = new StatsConfig.Builder().withPublishCount(true).withPublishMax(true).withPublishMean(true).withPublishMin(true).withPublishTotal(true).build();
 
-	private static MonitorRegistry registry = DefaultMonitorRegistry.getInstance();
+	private static Registry registry = Spectator.globalRegistry();
 
-	private static ConcurrentHashMap<String, StatsTimer> monitors = new ConcurrentHashMap<>();
+	private static ConcurrentHashMap<String, Timer> monitors = new ConcurrentHashMap<>();
 
-	private static ConcurrentHashMap<String, BasicCounter> errors = new ConcurrentHashMap<>();
+	private static ConcurrentHashMap<String, Counter> errors = new ConcurrentHashMap<>();
+
+	private static Map<String, AtomicLong> gauges = new ConcurrentHashMap<>();
 
 	private static final String className = WorkflowTaskMetrics.class.getSimpleName();
 
@@ -67,102 +71,92 @@ public class WorkflowTaskMetrics {
 
 	}
 
-	private static Stopwatch startTimer(String name, String taskType) {
-		return start(getTimer(name, TASK_TYPE, taskType));
+
+	public static Timer getPollTimer(String taskType) {
+		return getTimer(TASK_POLL_TIME, TASK_TYPE, taskType);
 	}
 
-	private static StatsTimer getTimer(String name, String...additionalTags) {
+	public static Timer getExecutionTimer(String taskType) {
+		return getTimer(TASK_EXECUTE_TIME, TASK_TYPE, taskType);
+	}
+
+	private static Timer getTimer(String name, String...additionalTags) {
 		String key = className + "." + name + "." + Joiner.on(",").join(additionalTags);
 		return monitors.computeIfAbsent(key, k -> {
-			Builder builder = MonitorConfig.builder(name)
-                    .withTag("class", className)
-                    .withTag("unit", TimeUnit.MILLISECONDS.name());
-			for(int j = 0; j < additionalTags.length-1; j++) {
-				String tagKey = additionalTags[j];
-				String tagValue = additionalTags[j+1];
-				builder.withTag(tagKey, tagValue);
-				j++;
-			}
-			MonitorConfig config = builder.build();
-
-			StatsTimer statsTimer = new StatsTimer(config, statsConfig);
-			registry.register(statsTimer);
-			return statsTimer;
+			List<Tag> tagList = getTags(additionalTags);
+			tagList.add(new BasicTag("unit", TimeUnit.MILLISECONDS.name()));
+			return registry.timer(name, tagList);
 		});
+	}
+
+	private static List<Tag> getTags(String[] additionalTags) {
+		List<Tag> tagList = new ArrayList();
+		tagList.add(new BasicTag("class", className));
+		for(int j = 0; j < additionalTags.length-1; j++) {
+			tagList.add(new BasicTag(additionalTags[j], additionalTags[j+1]));
+			j++;
+		}
+		return tagList;
 	}
 
 	private static void incrementCount(String name, String...additionalTags) {
 		getCounter(name, additionalTags).increment();
 	}
 
-	private static BasicCounter getCounter(String name, String...additionalTags) {
+	private static Counter getCounter(String name, String...additionalTags) {
 		String key = className + "." + name + "."  + Joiner.on(",").join(additionalTags);
 		return errors.computeIfAbsent(key, k -> {
-			Builder builder = MonitorConfig.builder(name).withTag("class", className);
-			for(int j = 0; j < additionalTags.length-1; j++) {
-				String tagKey = additionalTags[j];
-				String tagValue = additionalTags[j+1];
-				builder.withTag(tagKey, tagValue);
-				j++;
-			}
-			MonitorConfig config = builder.build();
-			BasicCounter basicCounter = new BasicCounter(config);
-			registry.register(basicCounter);
-			return basicCounter;
+			List<Tag> tags = getTags(additionalTags);
+			return registry.counter(name, tags);
 		});
 	}
 
-	private static Stopwatch start(StatsMonitor statsMonitor) {
-		Stopwatch stopwatch = new BasicStopwatch() {
-			@Override
-			public void stop() {
-				super.stop();
-				long duration = getDuration(TimeUnit.MILLISECONDS);
-				statsMonitor.record(duration);
-			}
-		};
-		stopwatch.start();
-		return stopwatch;
-	}
 
-	public static void taskExecutionQueueFullCounter(String taskType) {
+	public static void incrementTaskExecutionQueueFullCount(String taskType) {
 		incrementCount(TASK_EXECUTION_QUEUE_FULL, TASK_TYPE, taskType);
 	}
 
-	public static void taskPollErrorCounter(String taskType, Exception e) {
+	public static void incrementTaskPollErrorCount(String taskType, Exception e) {
 		incrementCount(TASK_POLL_ERROR, TASK_TYPE, taskType, EXCEPTION, e.getClass().getSimpleName());
 	}
 
-	public static void taskPausedCounter(String taskType) {
+	public static void incrementTaskPausedCount(String taskType) {
 		incrementCount(TASK_PAUSED, TASK_TYPE, taskType);
 	}
 
-	public static void taskExecutionErrorCounter(String taskType, Throwable e) {
+	public static void incrementTaskExecutionErrorCount(String taskType, Throwable e) {
 		incrementCount(TASK_EXECUTE_ERROR, TASK_TYPE, taskType, EXCEPTION, e.getClass().getSimpleName());
 	}
 
-	public static void taskAckFailedCounter(String taskType) {
+	public static void incrementTaskAckFailedCount(String taskType) {
 		incrementCount(TASK_ACK_FAILED, TASK_TYPE, taskType);
 	}
 
-	public static void taskAckErrorCounter(String taskType, Exception e) {
+	public static void incrementTaskAckErrorCount(String taskType, Exception e) {
 		incrementCount(TASK_ACK_ERROR, TASK_TYPE, taskType, EXCEPTION, e.getClass().getSimpleName());
 	}
 
-	public static void taskUpdateErrorCounter(String taskType, Throwable t) {
+	private static AtomicLong getGauge(String name, String... additionalTags) {
+		String key = className + "." + name + "." + Joiner.on(",").join(additionalTags);
+		return gauges.computeIfAbsent(key, pollTimer -> {
+			Id id = registry.createId(name, getTags(additionalTags));
+			return PolledMeter.using(registry)
+					.withId(id)
+					.monitorValue(new AtomicLong(0));
+		});
+	}
+
+	public static void recordTaskResultPayloadSize(String taskType, long payloadSize) {
+		getGauge(TASK_RESULT_SIZE, TASK_TYPE, taskType).getAndSet(payloadSize);
+	}
+
+	public static void incrementTaskUpdateErrorCount(String taskType, Throwable t) {
 		incrementCount(TASK_UPDATE_ERROR, TASK_TYPE, taskType, EXCEPTION, t.getClass().getSimpleName());
 	}
 
-	public static void taskPollCounter(String taskType) {
-		incrementCount(TASK_POLL_COUNTER, TASK_TYPE, taskType);
+	public static void incrementTaskPollCount(String taskType, int taskCount) {
+		getCounter(TASK_POLL_COUNTER, TASK_TYPE, taskType).increment(taskCount);
 	}
 
-	public static Stopwatch startExecutionTimer(String taskType) {
-		return startTimer(TASK_EXECUTE_TIME, taskType);
-	}
 
-	public static Stopwatch startPollTimer(String taskType) {
-		return startTimer(TASK_POLL_TIME, taskType);
-
-	}
 }

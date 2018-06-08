@@ -36,6 +36,7 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,16 +80,25 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	private final static String POLL_DATA = "POLL_DATA";
 
 	private final static String EVENT_EXECUTION = "EVENT_EXECUTION";
+	public static final String WORKFLOW_DYNOMITE_PAYLOAD_THRESHOLD = "workflow.dynomite.task.payload.threshold";
+	public static final String WORKFLOW_DYNOMITE_WORKFLOW_INPUT_THRESHOLD = "workflow.dynomite.workflow.input.threshold";
 
 	private IndexDAO indexDAO;
 
 	private MetadataDAO metadataDA0;
 
+	private long taskPayloadThreshold;
+
+	private long workflowInputPayloadThreshold;
+
 	@Inject
-	public RedisExecutionDAO(DynoProxy dynoClient, ObjectMapper om, IndexDAO indexDAO, MetadataDAO metadataDA0, Configuration config) {
-		super(dynoClient, om, config);
+	public RedisExecutionDAO(DynoProxy dynoClient, ObjectMapper objectMapper,
+							 IndexDAO indexDAO, MetadataDAO metadataDA0, Configuration config) {
+		super(dynoClient, objectMapper, config);
 		this.indexDAO = indexDAO;
 		this.metadataDA0 = metadataDA0;
+		this.taskPayloadThreshold = config.getLongProperty(WORKFLOW_DYNOMITE_PAYLOAD_THRESHOLD,5 * FileUtils.ONE_MB);
+		this.workflowInputPayloadThreshold = config.getLongProperty(WORKFLOW_DYNOMITE_WORKFLOW_INPUT_THRESHOLD,2 * FileUtils.ONE_MB);
 	}
 
 	@Override
@@ -204,8 +214,18 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		}
 
 		String payload = toJson(task);
+		recordRedisDaoPayloadSize("updateTask", payload.length(), Optional.ofNullable(taskDef)
+				.map(TaskDef::getName)
+				.orElse("n/a"), task.getWorkflowType());
+		//The payload is verified and
+		if(payload.length() > taskPayloadThreshold) {
+			task.setReasonForIncompletion(String.format("Payload of the task: %s larger than the permissible %s bytes",
+					FileUtils.byteCountToDisplaySize(payload.length()), FileUtils.byteCountToDisplaySize(taskPayloadThreshold)));
+			task.setOutputData(null);
+			task.setStatus(Status.FAILED_WITH_TERMINAL_ERROR);
+			payload = toJson(task);
+		}
 		recordRedisDaoRequests("updateTask", task.getTaskType(), task.getWorkflowType());
-		recordRedisDaoPayloadSize("updateTask", payload.length());
 		dynoClient.set(nsKey(TASK, task.getTaskId()), payload);
 		logger.debug("Workflow task payload saved to TASK with taskKey: {}, workflowId: {}, taskId: {}, taskType: {} during updateTask",
 				nsKey(TASK, task.getTaskId()), task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType());
@@ -291,7 +311,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 				.orElse(null);
 		if (task != null) {
 			recordRedisDaoRequests("getTask", task.getTaskType(), task.getWorkflowType());
-			recordRedisDaoPayloadSize("getTask", toJson(task).length());
+			recordRedisDaoPayloadSize("getTask", toJson(task).length(), task.getTaskType(), task.getWorkflowType());
 		}
 		return task;
 	}
@@ -305,7 +325,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 				.map(jsonString -> {
 					Task task = readValue(jsonString, Task.class);
 					recordRedisDaoRequests("getTask", task.getTaskType(), task.getWorkflowType());
-					recordRedisDaoPayloadSize("getTask", jsonString.length());
+					recordRedisDaoPayloadSize("getTask", jsonString.length(), task.getTaskType(), task.getWorkflowType());
 					return task;
 				})
 				.collect(Collectors.toCollection(LinkedList::new));
@@ -393,7 +413,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		if(json != null) {
 			workflow = readValue(json, Workflow.class);
 			recordRedisDaoRequests("getWorkflow", "n/a", workflow.getWorkflowType());
-			recordRedisDaoPayloadSize("getWorkflow", json.length());
+			recordRedisDaoPayloadSize("getWorkflow", json.length(),"n/a", workflow.getWorkflowType());
 			if (includeTasks) {
 				List<Task> tasks = getTasksForWorkflow(workflowId);
 				tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
@@ -500,13 +520,16 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			workflow.setEndTime(System.currentTimeMillis());
 		}
 		List<Task> tasks = workflow.getTasks();
-		workflow.setTasks(new LinkedList<>()); //QQ why are the tasks set to empty list ?
+		workflow.setTasks(new LinkedList<>());
 
 		String payload = toJson(workflow);
+		if(payload.length() > workflowInputPayloadThreshold) {
+			throw new ApplicationException(Code.INVALID_INPUT, String.format("Input payload larger than the allowed threshold of: %d", workflowInputPayloadThreshold));
+		}
 		// Store the workflow object
 		dynoClient.set(nsKey(WORKFLOW, workflow.getWorkflowId()), payload);
 		recordRedisDaoRequests("storeWorkflow", "n/a", workflow.getWorkflowType());
-		recordRedisDaoPayloadSize("storeWorkflow", payload.length());
+		recordRedisDaoPayloadSize("storeWorkflow", payload.length(), "n/a", workflow.getWorkflowType());
 		if (!update) {
 			// Add to list of workflows for a workflowdef
 			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, workflow.getWorkflowType(), dateStr(workflow.getCreateTime()));
@@ -587,7 +610,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			String key = nsKey(EVENT_EXECUTION, eventExecution.getName(), eventExecution.getEvent(), eventExecution.getMessageId());
 			String json = objectMapper.writeValueAsString(eventExecution);
 			recordRedisDaoEventRequests("addEventExecution", eventExecution.getEvent());
-			recordRedisDaoPayloadSize("addEventExecution", json.length());
+			recordRedisDaoPayloadSize("addEventExecution", json.length(), eventExecution.getEvent(), "n/a");
 			if(dynoClient.hsetnx(key, eventExecution.getId(), json) == 1L) {
 				indexDAO.addEventExecution(eventExecution);
 				return true;
@@ -608,7 +631,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			logger.info("updating event execution {}", key);
 			dynoClient.hset(key, eventExecution.getId(), json);
 			recordRedisDaoEventRequests("updateEventExecution", eventExecution.getEvent());
-			recordRedisDaoPayloadSize("updateEventExecution", json.length());
+			recordRedisDaoPayloadSize("updateEventExecution", json.length(),eventExecution.getEvent(), "n/a");
 			indexDAO.addEventExecution(eventExecution);
 
 		} catch (Exception e) {
@@ -629,7 +652,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 					break;
 				}
 				recordRedisDaoEventRequests("getEventExecution", eventHandlerName);
-				recordRedisDaoPayloadSize("getEventExecution", value.length());
+				recordRedisDaoPayloadSize("getEventExecution", value.length(),eventHandlerName, "n/a");
 				EventExecution eventExecution = objectMapper.readValue(value, EventExecution.class);
 				executions.add(eventExecution);
 			}
@@ -655,7 +678,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 		String payload = toJson(pollData);
 		recordRedisDaoRequests("updatePollData");
-		recordRedisDaoPayloadSize("updatePollData", payload.length());
+		recordRedisDaoPayloadSize("updatePollData", payload.length(),"n/a","n/a");
 		dynoClient.hset(key, field, payload);
 	}
 
@@ -668,7 +691,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 		String pollDataJsonString = dynoClient.hget(key, field);
 		recordRedisDaoRequests("getPollData");
-		recordRedisDaoPayloadSize("getPollData", StringUtils.length(pollDataJsonString));
+		recordRedisDaoPayloadSize("getPollData", StringUtils.length(pollDataJsonString), "n/a", "n/a");
 
 		PollData pollData = null;
 		if (pollDataJsonString != null) {
@@ -689,7 +712,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			pMapdata.values().forEach(pollDataJsonString -> {
 				pollData.add(readValue(pollDataJsonString, PollData.class));
 				recordRedisDaoRequests("getPollData");
-				recordRedisDaoPayloadSize("getPollData", pollDataJsonString.length());
+				recordRedisDaoPayloadSize("getPollData", pollDataJsonString.length(), "n/a", "n/a");
 			});
 		}
 		return pollData;
