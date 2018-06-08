@@ -88,4 +88,9 @@ public class TestConfiguration implements Configuration {
 	public Map<String, Object> getAll() {
 		return null;
 	}
+
+	@Override
+	public long getLongProperty(String name, long defaultValue) {
+		return 1000000l;
+	}
 }

@@ -92,6 +92,15 @@ public interface Configuration {
 	 * @return User defined integer property. 
 	 */
 	public int getIntProperty(String name, int defaultValue);
+
+
+	/**
+	 *
+	 * @param name Name of the property
+	 * @param defaultValue  Default value when not specified
+	 * @return User defined Long property.
+	 */
+	public long getLongProperty(String name, long defaultValue);
 	
 	/**
 	 * 

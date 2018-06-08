@@ -18,42 +18,6 @@
  */
 package com.netflix.conductor.dao.dynomite;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.UUID;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.stream.Collectors;
-
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.elasticsearch.action.ActionFuture;
-import org.elasticsearch.action.ListenableActionFuture;
-import org.elasticsearch.action.bulk.BulkItemResponse;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.common.unit.TimeValue;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -65,29 +29,57 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.dao.index.ElasticSearchDAO;
+import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.redis.JedisMock;
-
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 import redis.clients.jedis.JedisCommands;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doNothing;
 
 /**
  * @author Viren
  *
  */
+@RunWith(MockitoJUnitRunner.class)
 public class RedisExecutionDAOTest {
 
-	private RedisMetadataDAO mdao;
+	private RedisMetadataDAO metadataDAO;
 
-	private RedisExecutionDAO dao;
+	private RedisExecutionDAO executionDAO;
 
-	private static ObjectMapper om = new ObjectMapper();
+	@Mock
+	private IndexDAO indexDAO;
+
+	private static ObjectMapper objectMapper = new ObjectMapper();
 
 	static {
-		om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-		om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-		om.setSerializationInclusion(Include.NON_NULL);
-		om.setSerializationInclusion(Include.NON_EMPTY);
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+		objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
+		objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+		objectMapper.setSerializationInclusion(Include.NON_NULL);
+		objectMapper.setSerializationInclusion(Include.NON_EMPTY);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -97,79 +89,11 @@ public class RedisExecutionDAOTest {
 		JedisCommands jedisMock = new JedisMock();
 		DynoProxy dynoClient = new DynoProxy(jedisMock);
 
-		Client client = mock(Client.class);
-		BulkItemResponse[] responses = new BulkItemResponse[0];
-		BulkResponse response = new BulkResponse(responses, 1);
-		BulkRequestBuilder brb = mock(BulkRequestBuilder.class);
+		metadataDAO = new RedisMetadataDAO(dynoClient, objectMapper, config);
+		executionDAO = new RedisExecutionDAO(dynoClient, objectMapper, indexDAO, metadataDAO, config);
 
-		when(brb.add(any(IndexRequest.class))).thenReturn(brb);
-		ListenableActionFuture<BulkResponse> laf = mock(ListenableActionFuture.class);
-		when(laf.actionGet()).thenReturn(response);
-		when(brb.execute()).thenReturn(laf);
-		when(client.prepareBulk()).thenReturn(brb);
-		final UpdateResponse ur = new UpdateResponse();
-		when(client.update(any())).thenReturn(new ActionFuture<UpdateResponse>() {
-
-			@Override
-			public boolean isDone() {
-				return true;
-			}
-
-			@Override
-			public boolean isCancelled() {
-				return false;
-			}
-
-			@Override
-			public UpdateResponse get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse get() throws InterruptedException, ExecutionException {
-				return ur;
-			}
-
-			@Override
-			public boolean cancel(boolean mayInterruptIfRunning) {
-				return false;
-			}
-
-			@Override
-			public UpdateResponse actionGet(long timeout, TimeUnit unit) {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse actionGet(TimeValue timeout) {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse actionGet(long timeoutMillis) {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse actionGet(String timeout) {
-				return ur;
-			}
-
-			@Override
-			public UpdateResponse actionGet() {
-				return ur;
-			}
-		});
-		BulkRequestBuilder bulk = client.prepareBulk();
-		bulk = bulk.add(any(IndexRequest.class));
-		bulk.execute().actionGet();
-
-		when(client.prepareBulk().add(any(IndexRequest.class)).execute().actionGet()).thenReturn(response);
-
-		ElasticSearchDAO indexer = spy(new ElasticSearchDAO(client, config, om));
-		mdao = new RedisMetadataDAO(dynoClient, om, config);
-		dao = new RedisExecutionDAO(dynoClient, om, indexer, mdao, config);
-
+		// Ignore indexing in Redis tests.
+		doNothing().when(indexDAO).indexTask(any(Task.class));
 	}
 
 	@Rule
@@ -181,7 +105,7 @@ public class RedisExecutionDAOTest {
 		TaskDef def = new TaskDef();
 		def.setName("task1");
 		def.setConcurrentExecLimit(1);
-		mdao.createTaskDef(def);
+		metadataDAO.createTaskDef(def);
 
 		List<Task> tasks = new LinkedList<>();
 		for(int i = 0; i < 15; i++) {
@@ -196,13 +120,13 @@ public class RedisExecutionDAOTest {
 			task.setStatus(Status.SCHEDULED);
 		}
 
-		dao.createTasks(tasks);
-		assertFalse(dao.exceedsInProgressLimit(tasks.get(0)));
+		executionDAO.createTasks(tasks);
+		assertFalse(executionDAO.exceedsInProgressLimit(tasks.get(0)));
 		tasks.get(0).setStatus(Status.IN_PROGRESS);
-		dao.updateTask(tasks.get(0));
+		executionDAO.updateTask(tasks.get(0));
 
 		for(Task task : tasks) {
-			assertTrue(dao.exceedsInProgressLimit(task));
+			assertTrue(executionDAO.exceedsInProgressLimit(task));
 		}
 
 	}
@@ -215,12 +139,12 @@ public class RedisExecutionDAOTest {
 		task.setTaskDefName("task1");
 		expected.expect(NullPointerException.class);
 		expected.expectMessage("Workflow instance id cannot be null");
-		dao.createTasks(Arrays.asList(task));
+		executionDAO.createTasks(Arrays.asList(task));
 
 		task.setWorkflowInstanceId("wfid");
 		expected.expect(NullPointerException.class);
 		expected.expectMessage("Task reference name cannot be nullss");
-		dao.createTasks(Arrays.asList(task));
+		executionDAO.createTasks(Arrays.asList(task));
 
 	}
 
@@ -234,31 +158,31 @@ public class RedisExecutionDAOTest {
 		task.setWorkflowInstanceId("wfid");
 		expected.expect(NullPointerException.class);
 		expected.expectMessage("Task reference name cannot be null");
-		dao.createTasks(Arrays.asList(task));
+		executionDAO.createTasks(Arrays.asList(task));
 	}
 
 	@Test
 	public void testPollData() throws Exception {
-		dao.updateLastPoll("taskDef", null, "workerId1");
-		PollData pd = dao.getPollData("taskDef", null);
+		executionDAO.updateLastPoll("taskDef", null, "workerId1");
+		PollData pd = executionDAO.getPollData("taskDef", null);
 		assertNotNull(pd);
 		assertTrue(pd.getLastPollTime() > 0);
 		assertEquals(pd.getQueueName(), "taskDef");
 		assertEquals(pd.getDomain(), null);
 		assertEquals(pd.getWorkerId(), "workerId1");
 
-		dao.updateLastPoll("taskDef", "domain1", "workerId1");
-		pd = dao.getPollData("taskDef", "domain1");
+		executionDAO.updateLastPoll("taskDef", "domain1", "workerId1");
+		pd = executionDAO.getPollData("taskDef", "domain1");
 		assertNotNull(pd);
 		assertTrue(pd.getLastPollTime() > 0);
 		assertEquals(pd.getQueueName(), "taskDef");
 		assertEquals(pd.getDomain(), "domain1");
 		assertEquals(pd.getWorkerId(), "workerId1");
 
-		List<PollData> pData = dao.getPollData("taskDef");
+		List<PollData> pData = executionDAO.getPollData("taskDef");
 		assertEquals(pData.size(), 2);
 
-		pd = dao.getPollData("taskDef", "domain2");
+		pd = executionDAO.getPollData("taskDef", "domain2");
 		assertTrue(pd == null);
 	}
 
@@ -304,7 +228,7 @@ public class RedisExecutionDAOTest {
 		task.setStatus(Task.Status.IN_PROGRESS);
 		tasks.add(task);
 
-		List<Task> created = dao.createTasks(tasks);
+		List<Task> created = executionDAO.createTasks(tasks);
 		assertEquals(tasks.size()-1, created.size());		//1 less
 
 		Set<String> srcIds = tasks.stream().map(t -> t.getReferenceTaskName() + "." + t.getRetryCount()).collect(Collectors.toSet());
@@ -312,12 +236,12 @@ public class RedisExecutionDAOTest {
 
 		assertEquals(srcIds, createdIds);
 
-		List<Task> pending = dao.getPendingTasksByWorkflow("task0", workflowId);
+		List<Task> pending = executionDAO.getPendingTasksByWorkflow("task0", workflowId);
 		assertNotNull(pending);
 		assertEquals(1, pending.size());
 		assertTrue(EqualsBuilder.reflectionEquals(tasks.get(0), pending.get(0)));
 
-		List<Task> found = dao.getTasks(tasks.get(0).getTaskDefName(), null, 1);
+		List<Task> found = executionDAO.getTasks(tasks.get(0).getTaskDefName(), null, 1);
 		assertNotNull(found);
 		assertEquals(1, found.size());
 		assertTrue(EqualsBuilder.reflectionEquals(tasks.get(0), found.get(0)));
@@ -351,14 +275,14 @@ public class RedisExecutionDAOTest {
 			task.setWorkflowInstanceId("x" + workflowId);
 			task.setTaskDefName("testTaskOps" + i);
 			task.setStatus(Task.Status.IN_PROGRESS);
-			dao.createTasks(Arrays.asList(task));
+			executionDAO.createTasks(Arrays.asList(task));
 		}
 
 
-		List<Task> created = dao.createTasks(tasks);
+		List<Task> created = executionDAO.createTasks(tasks);
 		assertEquals(tasks.size(), created.size());
 
-		List<Task> pending = dao.getPendingTasksForTaskType(tasks.get(0).getTaskDefName());
+		List<Task> pending = executionDAO.getPendingTasksForTaskType(tasks.get(0).getTaskDefName());
 		assertNotNull(pending);
 		assertEquals(2, pending.size());
 		//Pending list can come in any order.  finding the one we are looking for and then comparing
@@ -367,24 +291,24 @@ public class RedisExecutionDAOTest {
 
 		List<Task> update = new LinkedList<>();
 		for(int i = 0; i < 3; i++) {
-			Task found = dao.getTask(workflowId + "_t" + i);
+			Task found = executionDAO.getTask(workflowId + "_t" + i);
 			assertNotNull(found);
 			found.getOutputData().put("updated", true);
 			found.setStatus(Task.Status.COMPLETED);
 			update.add(found);
 		}
-		dao.updateTasks(update);
+		executionDAO.updateTasks(update);
 
 		List<String> taskIds = tasks.stream().map(Task::getTaskId).collect(Collectors.toList());
-		List<Task> found = dao.getTasks(taskIds);
+		List<Task> found = executionDAO.getTasks(taskIds);
 		assertEquals(taskIds.size(), found.size());
 		found.forEach(task -> {
 			assertTrue(task.getOutputData().containsKey("updated"));
 			assertEquals(true, task.getOutputData().get("updated"));
-			dao.removeTask(task.getTaskId());
+			executionDAO.removeTask(task.getTaskId());
 		});
 
-		found = dao.getTasks(taskIds);
+		found = executionDAO.getTasks(taskIds);
 		assertTrue(found.isEmpty());
 	}
 
@@ -453,41 +377,41 @@ public class RedisExecutionDAOTest {
 		//workflow.setWorkflowId("wf0001");
 		workflow.setWorkflowType("Junit Workflow");
 
-		String workflowId = dao.createWorkflow(workflow);
-		List<Task> created = dao.createTasks(tasks);
+		String workflowId = executionDAO.createWorkflow(workflow);
+		List<Task> created = executionDAO.createTasks(tasks);
 		assertEquals(tasks.size(), created.size());
 
-		Workflow workflowWithTasks = dao.getWorkflow(workflow.getWorkflowId(), true);
+		Workflow workflowWithTasks = executionDAO.getWorkflow(workflow.getWorkflowId(), true);
 		assertEquals(workflowWithTasks.getWorkflowId(), workflowId);
 		assertTrue(!workflowWithTasks.getTasks().isEmpty());
 
 		assertEquals(workflow.getWorkflowId(), workflowId);
-		Workflow found = dao.getWorkflow(workflowId, false);
+		Workflow found = executionDAO.getWorkflow(workflowId, false);
 		assertTrue(found.getTasks().isEmpty());
 
 		workflow.getTasks().clear();
 		assertTrue(EqualsBuilder.reflectionEquals(workflow, found));
 
 		workflow.getInput().put("updated", true);
-		dao.updateWorkflow(workflow);
-		found = dao.getWorkflow(workflowId);
+		executionDAO.updateWorkflow(workflow);
+		found = executionDAO.getWorkflow(workflowId);
 		assertNotNull(found);
 		assertTrue(found.getInput().containsKey("updated"));
 		assertEquals(true, found.getInput().get("updated"));
 
-		List<String> running = dao.getRunningWorkflowIds(workflow.getWorkflowType());
+		List<String> running = executionDAO.getRunningWorkflowIds(workflow.getWorkflowType());
 		assertNotNull(running);
 		assertTrue(running.isEmpty());
 
 		workflow.setStatus(WorkflowStatus.RUNNING);
-		dao.updateWorkflow(workflow);
+		executionDAO.updateWorkflow(workflow);
 
-		running = dao.getRunningWorkflowIds(workflow.getWorkflowType());
+		running = executionDAO.getRunningWorkflowIds(workflow.getWorkflowType());
 		assertNotNull(running);
 		assertEquals(1, running.size());
 		assertEquals(workflow.getWorkflowId(), running.get(0));
 
-		List<Workflow> pending = dao.getPendingWorkflowsByType(workflow.getWorkflowType());
+		List<Workflow> pending = executionDAO.getPendingWorkflowsByType(workflow.getWorkflowType());
 		assertNotNull(pending);
 		assertEquals(1, pending.size());
 		assertEquals(3, pending.get(0).getTasks().size());
@@ -495,16 +419,16 @@ public class RedisExecutionDAOTest {
 		assertTrue(EqualsBuilder.reflectionEquals(workflow, pending.get(0)));
 
 		workflow.setStatus(WorkflowStatus.COMPLETED);
-		dao.updateWorkflow(workflow);
-		running = dao.getRunningWorkflowIds(workflow.getWorkflowType());
+		executionDAO.updateWorkflow(workflow);
+		running = executionDAO.getRunningWorkflowIds(workflow.getWorkflowType());
 		assertNotNull(running);
 		assertTrue(running.isEmpty());
 
-		List<Workflow> bytime = dao.getWorkflowsByType(workflow.getWorkflowType(), System.currentTimeMillis(), System.currentTimeMillis()+100);
+		List<Workflow> bytime = executionDAO.getWorkflowsByType(workflow.getWorkflowType(), System.currentTimeMillis(), System.currentTimeMillis()+100);
 		assertNotNull(bytime);
 		assertTrue(bytime.isEmpty());
 
-		bytime = dao.getWorkflowsByType(workflow.getWorkflowType(), workflow.getCreateTime() - 10, workflow.getCreateTime() + 10);
+		bytime = executionDAO.getWorkflowsByType(workflow.getWorkflowType(), workflow.getCreateTime() - 10, workflow.getCreateTime() + 10);
 		assertNotNull(bytime);
 		assertEquals(1, bytime.size());
 
@@ -515,23 +439,52 @@ public class RedisExecutionDAOTest {
 			workflow.setCorrelationId("corr001");
 			workflow.setStatus(WorkflowStatus.RUNNING);
 			workflow.setWorkflowType(workflowName);
-			dao.createWorkflow(workflow);
+			executionDAO.createWorkflow(workflow);
 		}
 
 		/*
-		List<Workflow> bycorrelationId = dao.getWorkflowsByCorrelationId("corr001");
+		List<Workflow> bycorrelationId = executionDAO.getWorkflowsByCorrelationId("corr001");
 		assertNotNull(bycorrelationId);
 		assertEquals(10, bycorrelationId.size());
 		 */
-		long count = dao.getPendingWorkflowCount(workflowName);
+		long count = executionDAO.getPendingWorkflowCount(workflowName);
 		assertEquals(10, count);
 
 		for(int i = 0; i < 10; i++) {
-			dao.removeFromPendingWorkflow(workflowName, "x" + i + idBase);
+			executionDAO.removeFromPendingWorkflow(workflowName, "x" + i + idBase);
 		}
-		count = dao.getPendingWorkflowCount(workflowName);
+		count = executionDAO.getPendingWorkflowCount(workflowName);
 		assertEquals(0, count);
+	}
 
+	@Test
+	@SuppressWarnings("unchecked")
+	public void testCorrelateTaskToWorkflowInDS() throws Exception {
+		String workflowId = "workflowId";
+		String taskId = "taskId1";
+		String taskDefName = "task1";
+
+		TaskDef def = new TaskDef();
+		def.setName("task1");
+		def.setConcurrentExecLimit(1);
+		metadataDAO.createTaskDef(def);
+
+		Task task = new Task();
+		task.setTaskId(taskId);
+		task.setWorkflowInstanceId(workflowId);
+		task.setReferenceTaskName("ref_name");
+		task.setTaskDefName(taskDefName);
+		task.setTaskType(taskDefName);
+		task.setStatus(Status.IN_PROGRESS);
+		List<Task> tasks = executionDAO.createTasks(Collections.singletonList(task));
+		assertNotNull(tasks);
+		assertEquals(1, tasks.size());
+
+		executionDAO.correlateTaskToWorkflowInDS(taskId, workflowId);
+		tasks = executionDAO.getTasksForWorkflow(workflowId);
+		assertNotNull(tasks);
+		assertEquals(workflowId, tasks.get(0).getWorkflowInstanceId());
+		assertEquals(taskId, tasks.get(0).getTaskId());
 	}
 
 }

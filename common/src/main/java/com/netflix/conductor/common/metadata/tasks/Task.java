@@ -15,10 +15,10 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+
 import java.util.HashMap;
 import java.util.Map;
-
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 public class Task {
 
@@ -58,9 +58,7 @@ public class Task {
         public boolean isRetriable() {
             return retriable;
         }
-
     }
-    ;
 
     private String taskType;
 
@@ -106,6 +104,8 @@ public class Task {
 
     private boolean retried;
 
+    private boolean executed;
+
     private boolean callbackFromWorker = true;
 
     private int responseTimeoutSeconds;
@@ -133,7 +133,6 @@ public class Task {
     }
 
     /**
-     *
      * @return Type of the task
      * @see WorkflowTask.Type
      */
@@ -146,7 +145,6 @@ public class Task {
     }
 
     /**
-     *
      * @return Status of the task
      */
     public Status getStatus() {
@@ -154,7 +152,6 @@ public class Task {
     }
 
     /**
-     *
      * @param status Status of the task
      */
     public void setStatus(Status status) {
@@ -336,9 +333,7 @@ public class Task {
 
     }
 
-
     /**
-     *
      * @return True if the task has been retried after failure
      */
     public boolean isRetried() {
@@ -353,7 +348,20 @@ public class Task {
     }
 
     /**
-     *
+     * @return True if the task has completed its lifecycle within conductor (from start to completion to being updated in the datastore)
+     */
+    public boolean isExecuted() {
+        return executed;
+    }
+
+    /**
+     * @param executed the executed value to set
+     */
+    public void setExecuted(boolean executed) {
+        this.executed = executed;
+    }
+
+    /**
      * @return No. of times task has been polled
      */
     public int getPollCount() {
@@ -374,7 +382,6 @@ public class Task {
     }
 
     /**
-     *
      * @return Name of the task definition
      */
     public String getTaskDefName() {
@@ -385,7 +392,6 @@ public class Task {
     }
 
     /**
-     *
      * @param taskDefName Name of the task definition
      */
     public void setTaskDefName(String taskDefName) {
@@ -394,7 +400,6 @@ public class Task {
 
 
     /**
-     *
      * @return the timeout for task to send response.  After this timeout, the task will be re-queued
      */
     public int getResponseTimeoutSeconds() {
@@ -402,7 +407,6 @@ public class Task {
     }
 
     /**
-     *
      * @param responseTimeoutSeconds - timeout for task to send response.  After this timeout, the task will be re-queued
      */
     public void setResponseTimeoutSeconds(int responseTimeoutSeconds) {
@@ -419,7 +423,6 @@ public class Task {
 
     /**
      * @param workflowInstanceId the workflowInstanceId to set
-     *
      */
     public void setWorkflowInstanceId(String workflowInstanceId) {
         this.workflowInstanceId = workflowInstanceId;
@@ -447,7 +450,6 @@ public class Task {
 
     /**
      * @param taskId the taskId to set
-     *
      */
     public void setTaskId(String taskId) {
         this.taskId = taskId;
@@ -462,7 +464,6 @@ public class Task {
 
     /**
      * @param reasonForIncompletion the reasonForIncompletion to set
-     *
      */
     public void setReasonForIncompletion(String reasonForIncompletion) {
         this.reasonForIncompletion = reasonForIncompletion;
@@ -477,7 +478,6 @@ public class Task {
 
     /**
      * @param callbackAfterSeconds the callbackAfterSeconds to set
-     *
      */
     public void setCallbackAfterSeconds(long callbackAfterSeconds) {
         this.callbackAfterSeconds = callbackAfterSeconds;
@@ -492,7 +492,6 @@ public class Task {
 
     /**
      * @param workerId the workerId to set
-     *
      */
     public void setWorkerId(String workerId) {
         this.workerId = workerId;
@@ -507,14 +506,12 @@ public class Task {
 
     /**
      * @param outputData the outputData to set
-     *
      */
     public void setOutputData(Map<String, Object> outputData) {
         this.outputData = outputData;
     }
 
     /**
-     *
      * @return Workflow Task definition
      */
     public WorkflowTask getWorkflowTask() {
@@ -522,7 +519,6 @@ public class Task {
     }
 
     /**
-     *
      * @param workflowTask Task definition
      */
     public void setWorkflowTask(WorkflowTask workflowTask) {
@@ -538,7 +534,6 @@ public class Task {
 
     /**
      * @param domain the Domain
-     *
      */
     public void setDomain(String domain) {
         this.domain = domain;
