@@ -32,12 +32,15 @@ public class GRPCModule extends AbstractModule {
         install(new CoreModule());
         install(new ElasticSearchModuleV5());
         install(new MySQLWorkflowModule());
+
         bind(Configuration.class).to(SystemPropertiesConfiguration.class).in(Singleton.class);
+
         bind(TaskServiceGrpc.TaskServiceImplBase.class).to(TaskServiceImpl.class);
         bind(MetadataServiceGrpc.MetadataServiceImplBase.class).to(MetadataServiceImpl.class);
         bind(WorkflowServiceGrpc.WorkflowServiceImplBase.class).to(WorkflowServiceImpl.class);
-        bind(GRPCServer.class).toProvider(GRPCServerProvider.class).asEagerSingleton();
         bind(EventServiceGrpc.EventServiceImplBase.class).to(EventServiceImpl.class);
+
+        bind(GRPCServer.class).toProvider(GRPCServerProvider.class).asEagerSingleton();
     }
 
     @Provides
