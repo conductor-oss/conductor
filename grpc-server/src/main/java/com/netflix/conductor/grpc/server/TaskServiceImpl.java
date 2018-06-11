@@ -1,6 +1,10 @@
 package com.netflix.conductor.grpc.server;
 
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 import com.google.protobuf.Empty;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -10,6 +14,7 @@ import com.netflix.conductor.proto.TaskPb;
 import com.netflix.conductor.grpc.TaskServiceGrpc;
 import com.netflix.conductor.grpc.TaskServicePb;
 import com.netflix.conductor.proto.TaskResultPb;
+import io.grpc.Status;
 import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
@@ -121,14 +126,14 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     }
 
     @Override
-    public void updateTask(TaskResultPb.TaskResult req, StreamObserver<TaskServicePb.TaskUpdateResponse> response) {
+    public void updateTask(TaskResultPb.TaskResult req, StreamObserver<TaskServicePb.TaskId> response) {
         try {
             TaskResult task = protoMapper.fromProto(req);
             taskService.updateTask(task);
 
             response.onNext(
-                    TaskServicePb.TaskUpdateResponse.newBuilder()
-                    .setTaskId(task.getTaskId()).build()
+                    TaskServicePb.TaskId.newBuilder()
+                            .setTaskId(task.getTaskId()).build()
             );
             response.onCompleted();
         } catch (Exception e) {
@@ -154,12 +159,97 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     }
 
     @Override
-    public void getLogs(TaskServicePb.TaskId req, StreamObserver<TaskServicePb.GetLogsResponse> response) {
+    public void getTaskLogs(TaskServicePb.TaskId req, StreamObserver<TaskServicePb.GetLogsResponse> response) {
         List<TaskExecLog> logs = taskService.getTaskLogs(req.getTaskId());
         response.onNext(TaskServicePb.GetLogsResponse.newBuilder()
                 .addAllLogs(logs.stream().map(protoMapper::toProto)::iterator)
                 .build()
         );
+        response.onCompleted();
+    }
+
+    @Override
+    public void getTask(TaskServicePb.TaskId req, StreamObserver<TaskPb.Task> response) {
+        try {
+            Task task = taskService.getTask(req.getTaskId());
+            if (task == null) {
+                response.onError(Status.NOT_FOUND
+                        .withDescription("No such task found by id="+req.getTaskId())
+                        .asRuntimeException()
+                );
+            } else {
+                response.onNext(protoMapper.toProto(task));
+                response.onCompleted();
+            }
+        } catch (Exception e) {
+            grpcHelper.onError(response, e);
+        }
+
+    }
+
+    @Override
+    public void removeTaskFromQueue(TaskServicePb.RemoveTaskRequest req, StreamObserver<Empty> response) {
+        taskService.removeTaskfromQueue(req.getTaskType(), req.getTaskId());
+        response.onCompleted();
+    }
+
+    @Override
+    public void getQueueSizesForTasks(TaskServicePb.QueueSizesRequest req, StreamObserver<TaskServicePb.QueueSizesResponse> response) {
+        Map<String, Integer> sizes = taskService.getTaskQueueSizes(req.getTaskTypesList());
+        response.onNext(
+                TaskServicePb.QueueSizesResponse.newBuilder()
+                        .putAllQueueForTask(sizes)
+                        .build()
+        );
+        response.onCompleted();
+    }
+
+    @Override
+    public void getQueueInfo(Empty req, StreamObserver<TaskServicePb.QueueInfoResponse> response) {
+        Map<String, Long> queueInfo = queues.queuesDetail().entrySet().stream()
+                .sorted(Comparator.comparing(Map.Entry::getKey))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1, HashMap::new));
+
+        response.onNext(
+                TaskServicePb.QueueInfoResponse.newBuilder()
+                        .putAllQueues(queueInfo)
+                        .build()
+        );
+        response.onCompleted();
+    }
+
+    @Override
+    public void getQueueAllInfo(Empty req, StreamObserver<TaskServicePb.QueueAllInfoResponse> response) {
+        Map<String, Map<String, Map<String, Long>>> info = queues.queuesDetailVerbose();
+        TaskServicePb.QueueAllInfoResponse.Builder queuesBuilder = TaskServicePb.QueueAllInfoResponse.newBuilder();
+
+        for (Map.Entry<String, Map<String, Map<String, Long>>> queue : info.entrySet()) {
+            final String queueName = queue.getKey();
+            final Map<String, Map<String, Long>> queueShards = queue.getValue();
+
+            TaskServicePb.QueueAllInfoResponse.QueueInfo.Builder queueInfoBuilder =
+                    TaskServicePb.QueueAllInfoResponse.QueueInfo.newBuilder();
+
+            for (Map.Entry<String, Map<String, Long>> shard : queueShards.entrySet()) {
+                final String shardName = shard.getKey();
+                final Map<String, Long> shardInfo = shard.getValue();
+
+                // FIXME: make shardInfo an actual type
+                // shardInfo is an immutable map with predefined keys, so we can always
+                // access 'size' and 'uacked'. It would be better if shardInfo
+                // were actually a POJO.
+                queueInfoBuilder.putShards(shardName,
+                        TaskServicePb.QueueAllInfoResponse.ShardInfo.newBuilder()
+                                .setSize(shardInfo.get("size"))
+                                .setUacked(shardInfo.get("uacked"))
+                                .build()
+                );
+            }
+
+            queuesBuilder.putQueues(queueName, queueInfoBuilder.build());
+        }
+
+        response.onNext(queuesBuilder.build());
         response.onCompleted();
     }
 }
