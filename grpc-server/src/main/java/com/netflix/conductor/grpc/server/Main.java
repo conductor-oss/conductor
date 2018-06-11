@@ -3,8 +3,6 @@ package com.netflix.conductor.grpc.server;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
-import com.netflix.conductor.server.ConductorConfig;
-
 import org.apache.log4j.PropertyConfigurator;
 
 import java.io.File;
@@ -24,7 +22,7 @@ public class Main {
             PropertyConfigurator.configure(new FileInputStream(new File(args[1])));
         }
 
-        Injector injector = Guice.createInjector(new GRPCModule(new ConductorConfig()));
+        Injector injector = Guice.createInjector(new GRPCModule());
         GRPCServer server = injector.getInstance(GRPCServer.class);
 
         Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
@@ -33,6 +31,16 @@ public class Main {
                 server.stop();
             }
         }));
+
+        System.out.println("\n\n\n");
+        System.out.println("                     _            _             ");
+        System.out.println("  ___ ___  _ __   __| |_   _  ___| |_ ___  _ __ ");
+        System.out.println(" / __/ _ \\| '_ \\ / _` | | | |/ __| __/ _ \\| '__|");
+        System.out.println("| (_| (_) | | | | (_| | |_| | (__| || (_) | |   ");
+        System.out.println(" \\___\\___/|_| |_|\\__,_|\\__,_|\\___|\\__\\___/|_|   ");
+        System.out.println("\n\n\n");
+
+        server.start();
     }
 
     private static void loadConfigFile(String propertyFile) throws IOException {

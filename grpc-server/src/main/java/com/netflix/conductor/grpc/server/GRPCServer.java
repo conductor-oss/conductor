@@ -1,16 +1,20 @@
 package com.netflix.conductor.grpc.server;
 
 import com.google.inject.Inject;
+
 import com.netflix.conductor.core.config.Configuration;
-import io.grpc.BindableService;
-import io.grpc.Server;
-import io.grpc.ServerBuilder;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.util.Arrays;
+
+import javax.inject.Singleton;
+
+import io.grpc.BindableService;
+import io.grpc.Server;
+import io.grpc.ServerBuilder;
 
 @Singleton
 public class GRPCServer {
@@ -19,7 +23,7 @@ public class GRPCServer {
     private final Server server;
 
     public final static String CONFIG_PORT = "grpc.port";
-    public final static int CONFIG_PORT_DEFAULT = 8080;
+    public final static int CONFIG_PORT_DEFAULT = 8090;
 
     @Inject
     public GRPCServer(Configuration conf, BindableService... services) {

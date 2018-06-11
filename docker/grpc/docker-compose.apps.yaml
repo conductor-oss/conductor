@@ -1,0 +1,47 @@
+version: '3.4'
+
+services:
+
+  conductor-server-grpc:
+    environment:
+      - CONFIG_PROP=config.properties
+    image: conductor:grpc-server
+    build:
+      context: ../../
+      dockerfile: docker/grpc/Dockerfile.grpc
+    ports:
+      - 8090:8090
+    networks:
+      - internal
+    depends_on:
+      - mysql
+      - elasticsearch
+
+  conductor-server-rest:
+    image: conductor:server
+    build:
+      context: ../../
+      dockerfile: docker/server/Dockerfile
+    environment:
+      - CONFIG_PROP=config-mysql.properties
+    ports:
+      - 8080:8080
+    networks:
+      - internal
+    depends_on:
+      - mysql
+      - elasticsearch
+
+  conductor-ui:
+    environment:
+      - WF_SERVER=http://conductor-server-rest:8080/api/
+    image: conductor:ui
+    build:
+      context: ../../
+      dockerfile: docker/ui/Dockerfile
+    ports:
+      - 5000:5000
+    networks:
+      - internal
+    depends_on:
+      - conductor-server-rest
