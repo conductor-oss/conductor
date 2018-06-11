@@ -20,7 +20,7 @@ public class ProtoGen {
     public static String PROTO_JAVA_PACKAGE_NAME = "com.netflix.conductor.proto";
     public static String PROTO_GO_PACKAGE_NAME = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
-    public static String GENERATED_MAPPER_PACKAGE = "com.netflix.conductor.grpc.server";
+    public static String GENERATED_MAPPER_PACKAGE = "com.netflix.conductor.grpc";
     public static String GENERATOR_NAME = "com.netflix.conductor.protogen.ProtoGen";
 
     private List<File> files = new ArrayList<>();
@@ -51,7 +51,7 @@ public class ProtoGen {
         generator.process(com.netflix.conductor.common.run.WorkflowSummary.class);
 
         generator.writeProtos("grpc/src/main/proto");
-        generator.writeMapper("grpc-server/src/main/java/com/netflix/conductor/grpc/server");
+        generator.writeMapper("grpc/src/main/java/com/netflix/conductor/grpc/");
     }
 
     public ProtoGen() {
