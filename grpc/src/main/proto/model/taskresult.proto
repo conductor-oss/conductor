@@ -11,8 +11,9 @@ message TaskResult {
     enum Status {
         IN_PROGRESS = 0;
         FAILED = 1;
-        COMPLETED = 2;
-        SCHEDULED = 3;
+        FAILED_WITH_TERMINAL_ERROR = 2;
+        COMPLETED = 3;
+        SCHEDULED = 4;
     }
     string workflow_instance_id = 1;
     string task_id = 2;

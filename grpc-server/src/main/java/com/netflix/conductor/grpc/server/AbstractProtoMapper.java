@@ -482,6 +482,7 @@ public abstract class AbstractProtoMapper {
         switch (from) {
             case IN_PROGRESS: to = TaskResultPb.TaskResult.Status.IN_PROGRESS; break;
             case FAILED: to = TaskResultPb.TaskResult.Status.FAILED; break;
+            case FAILED_WITH_TERMINAL_ERROR: to = TaskResultPb.TaskResult.Status.FAILED_WITH_TERMINAL_ERROR; break;
             case COMPLETED: to = TaskResultPb.TaskResult.Status.COMPLETED; break;
             case SCHEDULED: to = TaskResultPb.TaskResult.Status.SCHEDULED; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
@@ -494,6 +495,7 @@ public abstract class AbstractProtoMapper {
         switch (from) {
             case IN_PROGRESS: to = TaskResult.Status.IN_PROGRESS; break;
             case FAILED: to = TaskResult.Status.FAILED; break;
+            case FAILED_WITH_TERMINAL_ERROR: to = TaskResult.Status.FAILED_WITH_TERMINAL_ERROR; break;
             case COMPLETED: to = TaskResult.Status.COMPLETED; break;
             case SCHEDULED: to = TaskResult.Status.SCHEDULED; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
