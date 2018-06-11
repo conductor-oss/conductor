@@ -5,6 +5,7 @@ dependencies {
 
     //FIXME Right now this brings a lot of stuff along for the ride. :-(
     compile project(':conductor-server')
+    compile project(':conductor-es5-persistence')
 
     compile "io.grpc:grpc-netty:${revGrpc}"
     compile "log4j:log4j:1.2.17"
