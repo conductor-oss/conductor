@@ -1,4 +1,4 @@
-package com.netflix.conductor.grpc.server;
+package com.netflix.conductor.grpc;
 
 import com.google.protobuf.Value;
 import com.netflix.conductor.common.metadata.events.EventExecution;

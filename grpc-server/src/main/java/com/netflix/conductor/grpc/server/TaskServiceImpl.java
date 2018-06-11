@@ -5,6 +5,7 @@ import java.util.List;
 import com.google.protobuf.Empty;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.grpc.ProtoMapper;
 import com.netflix.conductor.proto.TaskPb;
 import com.netflix.conductor.grpc.TaskServiceGrpc;
 import com.netflix.conductor.grpc.TaskServicePb;

@@ -1,4 +1,4 @@
-package com.netflix.conductor.grpc.server;
+package com.netflix.conductor.grpc;
 
 import com.google.protobuf.ListValue;
 import com.google.protobuf.NullValue;

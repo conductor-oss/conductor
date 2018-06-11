@@ -5,6 +5,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.grpc.MetadataServiceGrpc;
 import com.netflix.conductor.grpc.MetadataServicePb;
+import com.netflix.conductor.grpc.ProtoMapper;
 import com.netflix.conductor.proto.TaskDefPb;
 import com.netflix.conductor.proto.WorkflowDefPb;
 import com.netflix.conductor.service.MetadataService;

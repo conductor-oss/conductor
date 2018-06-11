@@ -11,6 +11,9 @@ plugins {
 }
 
 dependencies {
+    compile project(':conductor-common')
+    compile project(':conductor-core')
+
     compile "com.google.api.grpc:proto-google-common-protos:1.0.0"
     compile "io.grpc:grpc-protobuf:${revGrpc}"
     compile "io.grpc:grpc-stub:${revGrpc}"
