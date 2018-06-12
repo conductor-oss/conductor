@@ -118,6 +118,12 @@ public interface Configuration {
     public String getProperty(String name, String defaultValue);
 
 
+    default boolean getBoolProperty(String name, boolean defaultValue) {
+        String value = getProperty(name, null);
+        if(null == value || value.trim().length() == 0){ return defaultValue; }
+        return Boolean.valueOf(value.trim());
+    }
+
     /**
      *
      * @return Returns all the configurations in a map.

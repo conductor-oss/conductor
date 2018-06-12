@@ -30,7 +30,7 @@ import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
 import com.netflix.conductor.dao.RedisWorkflowModule;
 import com.netflix.conductor.dao.es.index.ElasticSearchModule;
 import com.netflix.conductor.dao.es5.index.ElasticSearchModuleV5;
-import com.netflix.conductor.dao.mysql.MySQLWorkflowModule;
+import com.netflix.conductor.mysql.MySQLWorkflowModule;
 import com.netflix.dyno.connectionpool.HostSupplier;
 
 import java.util.List;
