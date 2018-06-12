@@ -166,7 +166,6 @@ class Grapher extends Component {
                     p.propsDivElem.style.width = window.innerWidth/2 - 100 + 'px'
                     p.propsDivElem.style.overflowX = "scroll"
                     p.propsDivElem.style.height = document.getElementsByClassName("ui-content")[0].clientHeight + "px";
-                    //p.propsDivElem.style.backgroundColor = "#00cc00"
                     p.divElem.style.width = window.outerWidth/2 - 100 + "px";
                     p.divElem.style.display = "inline-block";
 
@@ -184,7 +183,7 @@ class Grapher extends Component {
                     p.propsDivElem.style.left = (window.innerWidth/2 + 100) + 'px';
                     p.propsDivElem.style.width = window.innerWidth/2 - 100 + 'px'
                     p.propsDivElem.style.height = document.getElementsByClassName("ui-content")[0].clientHeight + "px";
-                    //p.propsDivElem.style.width = "100%"
+
                     p.propsDivElem.style.position = "fixed"
                     p.propsDivElem.style.display = "block"
                     p.setState({selectedTask: data.task, showSideBar: true, subGraph: null, showSubGraph: false});
@@ -262,7 +261,7 @@ class Grapher extends Component {
                 <div className="right-prop-overlay" ref={this.setDivRef} style={{
                     display: this.state.showSubGraph ? '' : 'none',
                     padding: '5px 5px 10px 10px',
-                    zIndex: this.state.showSubGraph ? '' : '-100',
+                    zIndex: this.state.showSubGraph ? '' : '-100'
                 }}>
                     <h4 className="propsheader">
                         <i className="fa fa-close fa-1x close-btn" onClick={hidesub}/>
