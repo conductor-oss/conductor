@@ -84,7 +84,7 @@ public class WorkflowSweeper {
 				sweep(workflowIds, workflowExecutor);
 			} catch (Exception e) {
 				Monitors.error(className, "sweep");
-				logger.error(e.getMessage(), e);
+				logger.error("Error when sweeping workflow", e);
 			}
 		}, 500, 500, TimeUnit.MILLISECONDS);
 	}
