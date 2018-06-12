@@ -165,7 +165,7 @@ class Grapher extends Component {
                     p.propsDivElem.style.left = (window.innerWidth/2 + 100) + 'px';
                     p.propsDivElem.style.width = window.innerWidth/2 - 100 + 'px'
                     p.propsDivElem.style.overflowX = "scroll"
-                    p.propsDivElem.style.height = document.getElementsByClassName("ui-content")[0].clientHeight + "px";
+                    p.propsDivElem.style.height = window.innerHeight + "px";
                     p.divElem.style.width = window.outerWidth/2 - 100 + "px";
                     p.divElem.style.display = "inline-block";
 
@@ -182,7 +182,7 @@ class Grapher extends Component {
                     let data = vertices[v].data;
                     p.propsDivElem.style.left = (window.innerWidth/2 + 100) + 'px';
                     p.propsDivElem.style.width = window.innerWidth/2 - 100 + 'px'
-                    p.propsDivElem.style.height = document.getElementsByClassName("ui-content")[0].clientHeight + "px";
+                    p.propsDivElem.style.height = window.innerHeight + "px";
 
                     p.propsDivElem.style.position = "fixed"
                     p.propsDivElem.style.display = "block"
