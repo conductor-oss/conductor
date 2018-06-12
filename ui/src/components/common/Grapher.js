@@ -14,6 +14,7 @@ class Grapher extends Component {
         this.state.selectedTask = {};
         this.state.logs = {};
         this.grapher = new dagreD3.render();
+
         this.setSvgRef = elem => this.svgElem = elem;
         this.setDivRef = elem => this.divElem = elem;
         this.setPropsDivRef = elem => this.propsDivElem = elem;
@@ -135,6 +136,7 @@ class Grapher extends Component {
         let h = g.graph().height + 50;
         svg.attr("width", w + "px").attr("height", h + "px");
 
+
         let innerGraph = this.state.innerGraph || [];
         let p = this;
 
@@ -160,8 +162,13 @@ class Grapher extends Component {
                     let vx = innerGraph[v].vertices;
                     let subg = {n: n, vx: vx, layout: layout};
 
-                    p.propsDivElem.style.left = (window.outerWidth - 600) + 'px';
-                    p.divElem.style.left = (window.outerWidth - 1200) + "px";
+                    p.propsDivElem.style.left = (window.innerWidth/2 + 100) + 'px';
+                    p.propsDivElem.style.width = window.innerWidth/2 - 100 + 'px'
+                    p.propsDivElem.style.overflowX = "scroll"
+                    p.propsDivElem.style.height = document.getElementsByClassName("ui-content")[0].clientHeight + "px";
+                    //p.propsDivElem.style.backgroundColor = "#00cc00"
+                    p.divElem.style.width = window.outerWidth/2 - 100 + "px";
+                    p.divElem.style.display = "inline-block";
 
                     p.setState({
                         selectedTask: data.task,
@@ -174,7 +181,12 @@ class Grapher extends Component {
 
                 } else if (vertices[v].tooltip != null) {
                     let data = vertices[v].data;
-                    p.propsDivElem.style.left = (window.outerWidth - 600) + 'px';
+                    p.propsDivElem.style.left = (window.innerWidth/2 + 100) + 'px';
+                    p.propsDivElem.style.width = window.innerWidth/2 - 100 + 'px'
+                    p.propsDivElem.style.height = document.getElementsByClassName("ui-content")[0].clientHeight + "px";
+                    //p.propsDivElem.style.width = "100%"
+                    p.propsDivElem.style.position = "fixed"
+                    p.propsDivElem.style.display = "block"
                     p.setState({selectedTask: data.task, showSideBar: true, subGraph: null, showSubGraph: false});
                 }
             });
@@ -182,7 +194,7 @@ class Grapher extends Component {
         return (
             <div className="graph-ui-content" id="graph-ui-content">
                 <div className="right-prop-overlay" ref={this.setPropsDivRef}
-                     style={{display: this.state.showSideBar ? '' : 'none', padding: '5px 5px 10px 10px'}}>
+                     style={{ display: this.state.showSideBar ? '' : 'none', padding: '5px 5px 10px 10px'}}>
                     <h4 className="propsheader">
                         <i className="fa fa-close fa-1x close-btn" onClick={hideProps}/>
                         {this.state.selectedTask.taskType} ({this.state.selectedTask.status})
@@ -212,7 +224,7 @@ class Grapher extends Component {
                                 </tr>
                                 <tr>
                                     <td colSpan="4">
-                                        <pre
+                                        <pre style={{width:(window.outerWidth/2 - 140) + "px"}}
                                             id="t_input">{JSON.stringify(this.state.selectedTask.inputData, null, 3)}</pre>
                                     </td>
                                 </tr>
@@ -221,8 +233,8 @@ class Grapher extends Component {
                                                               data-clipboard-target="#t_output"/></th>
                                 </tr>
                                 <tr>
-                                    <td colSpan="4">
-                                        <pre
+                                    <td colSpan="4" >
+                                        <pre style={{width:(window.outerWidth/2 - 140) + "px"}}
                                             id="t_output">{JSON.stringify(this.state.selectedTask.outputData, null, 3)}</pre>
                                     </td>
                                 </tr>
@@ -241,13 +253,16 @@ class Grapher extends Component {
                         </Tab>
                     </Tabs>
                 </div>
-                <svg ref={this.setSvgRef}>
+                <div style={{overflowX: "auto", width:"100%"}}>
+                  <svg ref={this.setSvgRef}>
                     <g transform="translate(20,20)"/>
-                </svg>
+                  </svg>
+                </div>
+
                 <div className="right-prop-overlay" ref={this.setDivRef} style={{
                     display: this.state.showSubGraph ? '' : 'none',
                     padding: '5px 5px 10px 10px',
-                    zIndex: this.state.showSubGraph ? '' : '-100'
+                    zIndex: this.state.showSubGraph ? '' : '-100',
                 }}>
                     <h4 className="propsheader">
                         <i className="fa fa-close fa-1x close-btn" onClick={hidesub}/>
