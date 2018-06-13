@@ -11,11 +11,16 @@ export function searchWorkflows(query, search, hours, fullstr, start) {
     if(fullstr && search != null && search.length > 0) {
       search = '"' + search + '"';
     }
+
     return http.get('/api/wfe/' + status + '?q=' + query + '&h=' + hours + '&freeText=' + search + '&start=' + start).then((data) => {
-      dispatch({
-        type: 'RECEIVED_WORKFLOWS',
-        data
-      });
+      if(data && data.result && data.result.totalHits > 0){
+        dispatch({
+          type: 'RECEIVED_WORKFLOWS',
+          data
+        });
+      } else if(search !== "") {
+        return searchWorkflowsByTaskId(dispatch, search, hours, start);
+      }
     }).catch((e) => {
       dispatch({
         type: 'REQUEST_ERROR',
@@ -23,6 +28,15 @@ export function searchWorkflows(query, search, hours, fullstr, start) {
       });
     });
   }
+}
+
+function searchWorkflowsByTaskId(dispatch, search, hours, start){
+  return http.get("/api/wfe/search-by-task/" + search + "?h=" + hours + "&start=" + start).then((data) => {
+    dispatch({
+      type: 'RECEIVED_WORKFLOWS',
+      data
+    });
+  });
 }
 
 export function getWorkflowDetails(workflowId){
