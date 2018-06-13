@@ -19,9 +19,6 @@ service MetadataService {
     // GET /workflow/{name}
     rpc GetWorkflow(GetWorkflowRequest) returns (conductor.proto.WorkflowDef);
 
-    // GET /workflow
-    rpc GetAllWorkflows(google.protobuf.Empty) returns (stream conductor.proto.WorkflowDef);
-
     // POST /taskdefs
     rpc CreateTasks(CreateTasksRequest) returns (google.protobuf.Empty);
 
@@ -30,9 +27,6 @@ service MetadataService {
 
     // GET /taskdefs/{tasktype}
     rpc GetTask(GetTaskRequest) returns (conductor.proto.TaskDef);
-
-    // GET /taskdefs
-    rpc GetAllTasks(google.protobuf.Empty) returns (stream conductor.proto.TaskDef);
 
     // DELETE /taskdefs/{tasktype}
     rpc DeleteTask(GetTaskRequest) returns (google.protobuf.Empty);
