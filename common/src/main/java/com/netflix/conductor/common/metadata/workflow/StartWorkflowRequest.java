@@ -6,7 +6,7 @@ import com.netflix.conductor.common.annotations.ProtoMessage;
 import java.util.HashMap;
 import java.util.Map;
 
-@ProtoMessage(toProto = false)
+@ProtoMessage
 public class StartWorkflowRequest {
 	@ProtoField(id = 1)
 	private String name;
