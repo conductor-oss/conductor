@@ -11,15 +11,44 @@ option java_outer_classname = "TaskServicePb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
 
 service TaskService {
+    // GET /poll/{tasktype}
     rpc Poll(PollRequest) returns (conductor.proto.Task);
+
+    // GRPC-only
     rpc PollStream(stream StreamingPollRequest) returns (stream conductor.proto.Task);
+
+    // GET /in_progress/{tasktype}
     rpc GetTasksInProgress(TasksInProgressRequest) returns (TasksInProgressResponse);
+
+    // GET /in_progress/{workflowId}/{taskRefName}
     rpc GetPendingTaskForWorkflow(PendingTaskRequest) returns (conductor.proto.Task);
-    rpc UpdateTask(conductor.proto.TaskResult) returns (TaskUpdateResponse);
+
+    // POST /
+    rpc UpdateTask(conductor.proto.TaskResult) returns (TaskId);
+
+    // POST /{taskId}/ack
     rpc AckTask(AckTaskRequest) returns (AckTaskResponse);
 
+    // POST /{taskId}/log
     rpc AddLog(AddLogRequest) returns (google.protobuf.Empty);
-    rpc GetLogs(TaskId) returns (GetLogsResponse);
+
+    // GET {taskId}/log
+    rpc GetTaskLogs(TaskId) returns (GetLogsResponse);
+
+    // GET /{taskId}
+    rpc GetTask(TaskId) returns (conductor.proto.Task);
+
+    // DELETE /queue/{taskType}/{taskId}
+    rpc RemoveTaskFromQueue(RemoveTaskRequest) returns (google.protobuf.Empty);
+
+    // GET /queue/sizes
+    rpc GetQueueSizesForTasks(QueueSizesRequest) returns (QueueSizesResponse);
+
+    // GET /queue/all
+    rpc GetQueueInfo(google.protobuf.Empty) returns (QueueInfoResponse);
+
+    // GET /queue/all/verbose
+    rpc GetQueueAllInfo(google.protobuf.Empty) returns (QueueAllInfoResponse);
 }
 
 message PollRequest {
@@ -51,10 +80,6 @@ message PendingTaskRequest {
     string task_ref_name = 2;
 }
 
-message TaskUpdateResponse {
-    string task_id = 1;
-}
-
 message AckTaskRequest {
     string task_id = 1;
     string worker_id = 2;
@@ -69,10 +94,42 @@ message AddLogRequest {
     string log = 2;
 }
 
+message GetLogsResponse {
+    repeated conductor.proto.TaskExecLog logs = 1;
+}
+
 message TaskId {
     string task_id = 1;
 }
 
-message GetLogsResponse {
-    repeated conductor.proto.TaskExecLog logs = 1;
+message TaskType {
+    string task_type = 1;
+}
+
+message RemoveTaskRequest {
+    string task_type = 1;
+    string task_id = 2;
+}
+
+message QueueSizesRequest {
+    repeated string task_types = 1;
+}
+
+message QueueSizesResponse {
+    map<string, int32> queue_for_task = 1;
+}
+
+message QueueInfoResponse {
+    map<string, int64> queues = 1;
+}
+
+message QueueAllInfoResponse {
+    message ShardInfo {
+        int64 size = 1;
+        int64 uacked = 2;
+    }
+    message QueueInfo {
+        map<string, ShardInfo> shards = 1;
+    }
+    map<string, QueueInfo> queues = 1;
 }

@@ -1,4 +1,4 @@
-package com.netflix.conductor.grpc.server;
+package com.netflix.conductor.grpc;
 
 import com.google.protobuf.Value;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -544,6 +544,20 @@ public abstract class AbstractProtoMapper {
         return to;
     }
 
+    public RerunWorkflowRequestPb.RerunWorkflowRequest toProto(RerunWorkflowRequest from) {
+        RerunWorkflowRequestPb.RerunWorkflowRequest.Builder to = RerunWorkflowRequestPb.RerunWorkflowRequest.newBuilder();
+        to.setReRunFromWorkflowId( from.getReRunFromWorkflowId() );
+        for (Map.Entry<String, Object> pair : from.getWorkflowInput().entrySet()) {
+            to.putWorkflowInput( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        to.setReRunFromTaskId( from.getReRunFromTaskId() );
+        for (Map.Entry<String, Object> pair : from.getTaskInput().entrySet()) {
+            to.putTaskInput( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        to.setCorrelationId( from.getCorrelationId() );
+        return to.build();
+    }
+
     public RerunWorkflowRequest fromProto(RerunWorkflowRequestPb.RerunWorkflowRequest from) {
         RerunWorkflowRequest to = new RerunWorkflowRequest();
         to.setReRunFromWorkflowId( from.getReRunFromWorkflowId() );
@@ -575,6 +589,18 @@ public abstract class AbstractProtoMapper {
         }
         to.setTaskOutput(taskOutputMap);
         return to;
+    }
+
+    public StartWorkflowRequestPb.StartWorkflowRequest toProto(StartWorkflowRequest from) {
+        StartWorkflowRequestPb.StartWorkflowRequest.Builder to = StartWorkflowRequestPb.StartWorkflowRequest.newBuilder();
+        to.setName( from.getName() );
+        to.setVersion( from.getVersion() );
+        to.setCorrelationId( from.getCorrelationId() );
+        for (Map.Entry<String, Object> pair : from.getInput().entrySet()) {
+            to.putInput( pair.getKey(), toProto( pair.getValue() ) );
+        }
+        to.putAllTaskToDomain( from.getTaskToDomain() );
+        return to.build();
     }
 
     public StartWorkflowRequest fromProto(StartWorkflowRequestPb.StartWorkflowRequest from) {

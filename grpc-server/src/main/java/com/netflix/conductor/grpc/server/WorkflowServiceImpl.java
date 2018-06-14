@@ -9,6 +9,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.grpc.ProtoMapper;
 import com.netflix.conductor.grpc.SearchPb;
 import com.netflix.conductor.proto.RerunWorkflowRequestPb;
 import com.netflix.conductor.proto.StartWorkflowRequestPb;

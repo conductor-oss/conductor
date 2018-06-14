@@ -20,7 +20,7 @@ import com.netflix.conductor.common.annotations.ProtoMessage;
 
 import java.util.Map;
 
-@ProtoMessage(toProto = false)
+@ProtoMessage
 public class RerunWorkflowRequest {
 
     @ProtoField(id = 1)
