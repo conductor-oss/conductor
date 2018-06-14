@@ -52,7 +52,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -72,7 +71,7 @@ import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
 @Trace
 public class WorkflowExecutor {
 
-    private static Logger logger = LoggerFactory.getLogger(WorkflowExecutor.class);
+    private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutor.class);
 
     private MetadataDAO metadataDAO;
 
@@ -125,7 +124,6 @@ public class WorkflowExecutor {
     public String startWorkflow(String workflowName, int workflowVersion, Map<String, Object> workflowInput,
                                 String correlationId, String parentWorkflowId, String parentWorkflowTaskId,
                                 String event, Map<String, String> taskToDomain) throws Exception {
-
 
 
         try {
@@ -311,7 +309,9 @@ public class WorkflowExecutor {
                 .orElse(null);
     }
 
-    public void completeWorkflow(Workflow wf) throws Exception {
+    @VisibleForTesting
+    void completeWorkflow(Workflow wf) throws Exception {
+        logger.debug("Completing workflow execution for {}", wf.getWorkflowId());
         Workflow workflow = executionDAO.getWorkflow(wf.getWorkflowId(), false);
 
         if (workflow.getStatus().equals(WorkflowStatus.COMPLETED)) {
@@ -328,16 +328,19 @@ public class WorkflowExecutor {
         workflow.setStatus(WorkflowStatus.COMPLETED);
         workflow.setOutput(wf.getOutput());
         executionDAO.updateWorkflow(workflow);
+        logger.debug("Completed workflow execution for {}", wf.getWorkflowId());
         executionDAO.updateTasks(wf.getTasks());
 
         // If the following task, for some reason fails, the sweep will take
         // care of this again!
         if (workflow.getParentWorkflowId() != null) {
             Workflow parent = executionDAO.getWorkflow(workflow.getParentWorkflowId(), false);
+            logger.debug("Completed sub-workflow {}, deciding parent workflow {}", wf.getWorkflowId(), wf.getParentWorkflowId());
             decide(parent.getWorkflowId());
         }
         Monitors.recordWorkflowCompletion(workflow.getWorkflowType(), workflow.getEndTime() - workflow.getStartTime(), wf.getOwnerApp());
         queueDAO.remove(deciderQueue, workflow.getWorkflowId());    //remove from the sweep queue
+        logger.debug("Removed workflow {} from decider queue", wf.getWorkflowId());
     }
 
     public void terminateWorkflow(String workflowId, String reason) throws Exception {
@@ -414,7 +417,6 @@ public class WorkflowExecutor {
 
         String workflowId = taskResult.getWorkflowInstanceId();
         Workflow workflowInstance = executionDAO.getWorkflow(workflowId);
-        workflowInstance.getWorkflowType();
         Task task = executionDAO.getTask(taskResult.getTaskId());
 
         logger.debug("Task: {} belonging to Workflow {} being updated", task, workflowInstance);
@@ -467,7 +469,7 @@ public class WorkflowExecutor {
             workflowInstance.getFailedReferenceTaskNames().add(task.getReferenceTaskName());
             //In case of a FAILED_WITH_TERMINAL_ERROR the workflow will be terminated and the output of the task is never copied
             //ensuring the task output is copied to the workflow here
-            if(FAILED_WITH_TERMINAL_ERROR.equals(task.getStatus())) {
+            if (FAILED_WITH_TERMINAL_ERROR.equals(task.getStatus())) {
                 WorkflowDef workflowDef = metadataDAO.get(workflowInstance.getWorkflowType(), workflowInstance.getVersion());
                 Map<String, Object> outputData = task.getOutputData();
                 if (!workflowDef.getOutputParameters().isEmpty()) {
@@ -492,12 +494,12 @@ public class WorkflowExecutor {
                 logger.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
                 break;
             case IN_PROGRESS:
-                // put it back in queue based in callbackAfterSeconds
+                // put it back in queue based on callbackAfterSeconds
                 long callBack = taskResult.getCallbackAfterSeconds();
                 queueDAO.remove(taskQueueName, task.getTaskId());
                 logger.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
                 queueDAO.push(taskQueueName, task.getTaskId(), callBack); // Milliseconds
-                logger.debug("Task: {} pushed to taskQueue: {} since the task status is {} and callback: {}", task, taskQueueName, task.getStatus().name(), callBack);
+                logger.debug("Task: {} pushed back to taskQueue: {} since the task status is {} with callbackAfterSeconds: {}", task, taskQueueName, task.getStatus().name(), callBack);
                 break;
             default:
                 break;
@@ -592,6 +594,9 @@ public class WorkflowExecutor {
             logger.debug(tw.getMessage(), tw);
             terminate(def, workflow, tw);
             return true;
+        } catch (Exception e) {
+            logger.error("Error deciding workflow: {}", workflowId, e);
+            throw e;
         }
         return false;
     }
@@ -743,7 +748,7 @@ public class WorkflowExecutor {
             logger.info("Done Executing {}/{}-{} op={}", task.getTaskType(), task.getTaskId(), task.getStatus(), task.getOutputData().toString());
 
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("Error executing system task - {}, with id: {}", systemTask, taskId, e);
         }
     }
 
@@ -838,9 +843,6 @@ public class WorkflowExecutor {
             task.setStartTime(System.currentTimeMillis());
             if (!workflowSystemTask.isAsync()) {
                 workflowSystemTask.start(workflow, task, this);
-                if (task.getStatus().isTerminal()) {
-                    task.setExecuted(true);
-                }
                 startedSystemTasks = true;
                 executionDAO.updateTask(task);
             } else {

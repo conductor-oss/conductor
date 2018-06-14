@@ -80,8 +80,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	private final static String POLL_DATA = "POLL_DATA";
 
 	private final static String EVENT_EXECUTION = "EVENT_EXECUTION";
-	public static final String WORKFLOW_DYNOMITE_PAYLOAD_THRESHOLD = "workflow.dynomite.task.payload.threshold";
-	public static final String WORKFLOW_DYNOMITE_WORKFLOW_INPUT_THRESHOLD = "workflow.dynomite.workflow.input.threshold";
+	private static final String WORKFLOW_DYNOMITE_TASK_PAYLOAD_THRESHOLD = "workflow.dynomite.task.payload.threshold";
+	private static final String WORKFLOW_DYNOMITE_WORKFLOW_INPUT_THRESHOLD = "workflow.dynomite.workflow.input.threshold";
 
 	private IndexDAO indexDAO;
 
@@ -97,8 +97,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		super(dynoClient, objectMapper, config);
 		this.indexDAO = indexDAO;
 		this.metadataDA0 = metadataDA0;
-		this.taskPayloadThreshold = config.getLongProperty(WORKFLOW_DYNOMITE_PAYLOAD_THRESHOLD,5 * FileUtils.ONE_MB);
-		this.workflowInputPayloadThreshold = config.getLongProperty(WORKFLOW_DYNOMITE_WORKFLOW_INPUT_THRESHOLD,2 * FileUtils.ONE_MB);
+		this.taskPayloadThreshold = config.getLongProperty(WORKFLOW_DYNOMITE_TASK_PAYLOAD_THRESHOLD,5 * FileUtils.ONE_MB);
+		this.workflowInputPayloadThreshold = config.getLongProperty(WORKFLOW_DYNOMITE_WORKFLOW_INPUT_THRESHOLD,5 * FileUtils.ONE_MB);
 	}
 
 	@Override
