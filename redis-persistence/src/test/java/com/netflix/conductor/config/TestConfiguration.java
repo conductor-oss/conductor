@@ -19,9 +19,9 @@ package com.netflix.conductor.config;
  */
 
 
-import java.util.Map;
-
 import com.netflix.conductor.core.config.Configuration;
+
+import java.util.Map;
 
 /**
  * @author Viren
@@ -68,8 +68,13 @@ public class TestConfiguration implements Configuration {
 	public String getProperty(String string, String def) {
 		return "dummy";
 	}
-	
-	@Override
+
+    @Override
+    public boolean getBooleanProperty(String name, boolean defaultValue) {
+        return false;
+    }
+
+    @Override
 	public String getAvailabilityZone() {
 		return "us-east-1a";
 	}

@@ -25,25 +25,47 @@ import java.util.Map;
  *
  */
 public interface Configuration {
+    String DB_PROPERTY_NAME = "db";
+    String DB_DEFAULT_VALUE = "memory";
+
     String SWEEP_FREQUENCY_PROPERTY_NAME = "decider.sweep.frequency.seconds";
     int SWEEP_FREQUENCY_DEFAULT_VALUE = 30;
+
     String SWEEP_DISABLE_PROPERTY_NAME = "decider.sweep.disable";
     // FIXME This really should be typed correctly.
     String SWEEP_DISABLE_DEFAULT_VALUE = "false";
+
     String DISABLE_ASYNC_WORKERS_PROPERTY_NAME = "conductor.disable.async.workers";
     // FIXME This really should be typed correctly.
     String DISABLE_ASYNC_WORKERS_DEFAULT_VALUE = "false";
+
     String ENVIRONMENT_PROPERTY_NAME = "environment";
     String ENVIRONMENT_DEFAULT_VALUE = "test";
+
     String STACK_PROPERTY_NAME = "STACK";
     String STACK_DEFAULT_VALUE = "test";
+
     String APP_ID_PROPERTY_NAME = "APP_ID";
     String APP_ID_DEFAULT_VALUE = "conductor";
+
     String REGION_PROPERTY_NAME = "EC2_REGION";
     String REGION_DEFAULT_VALUE = "us-east-1";
+
     String AVAILABILITY_ZONE_PROPERTY_NAME = "EC2_AVAILABILITY_ZONE";
     String AVAILABILITY_ZONE_DEFAULT_VALUE = "us-east-1c";
+
+    String JERSEY_ENABLED_PROPERTY_NAME = "conductor.jersey.enabled";
+    boolean JERSEY_ENABLED_DEFAULT_VALUE = true;
+
     String ADDITIONAL_MODULES_PROPERTY_NAME = "conductor.additional.modules";
+
+    default DB getDB(){
+        return DB.valueOf(getDBString());
+    }
+
+    default String getDBString() {
+        return getProperty(DB_PROPERTY_NAME, DB_DEFAULT_VALUE).toUpperCase();
+    }
 
     /**
      *
@@ -101,6 +123,10 @@ public interface Configuration {
      */
     public String getAvailabilityZone();
 
+    default boolean getJerseyEnabled(){
+        return getBooleanProperty(JERSEY_ENABLED_PROPERTY_NAME, JERSEY_ENABLED_DEFAULT_VALUE);
+    }
+
     /**
      *
      * @param name Name of the property
@@ -117,6 +143,7 @@ public interface Configuration {
      */
     public String getProperty(String name, String defaultValue);
 
+    boolean getBooleanProperty(String name, boolean defaultValue);
 
     /**
      *
@@ -132,6 +159,11 @@ public interface Configuration {
      */
     public default List<AbstractModule> getAdditionalModules() {
         return null;
+    }
+
+
+    enum DB {
+        REDIS, DYNOMITE, MEMORY, REDIS_CLUSTER, MYSQL
     }
 
 }
