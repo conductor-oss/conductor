@@ -27,6 +27,7 @@ dependencies {
 	compile project(':conductor-contribs')
     compile project(':conductor-es2-persistence')
     compile project(':conductor-es5-persistence')
+    compile project(':conductor-grpc-server')
 	
 	//Jetty
 	compile "org.eclipse.jetty:jetty-server:${revJetteyServer}"

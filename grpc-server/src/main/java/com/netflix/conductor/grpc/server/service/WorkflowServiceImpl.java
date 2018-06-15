@@ -1,4 +1,4 @@
-package com.netflix.conductor.grpc.server;
+package com.netflix.conductor.grpc.server.service;
 
 import com.google.protobuf.Empty;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;

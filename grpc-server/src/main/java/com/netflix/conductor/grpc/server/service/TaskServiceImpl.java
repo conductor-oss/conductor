@@ -1,4 +1,4 @@
-package com.netflix.conductor.grpc.server;
+package com.netflix.conductor.grpc.server.service;
 
 import java.util.Comparator;
 import java.util.HashMap;

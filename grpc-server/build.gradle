@@ -8,29 +8,6 @@ dependencies {
     compile project(':conductor-core')
     compile project(':conductor-grpc')
 
-    //FIXME Right now this brings a lot of stuff along for the ride. :-(
-    compile project(':conductor-server')
-    compile project(':conductor-es5-persistence')
-
     compile "io.grpc:grpc-netty:${revGrpc}"
     compile "log4j:log4j:1.2.17"
-}
-
-// FIXME This is temporary until the server module refactoring is completed.
-build.dependsOn('shadowJar')
-
-shadowJar {
-    mergeServiceFiles()
-    configurations = [project.configurations.compile]
-    manifest {
-        attributes 'Description': 'Self contained Conductor server jar'
-        attributes 'Main-Class' : 'com.netflix.conductor.grpc.server.Main'
-    }
-}
-
-task server(type: JavaExec) {
-    systemProperty 'workflow.elasticsearch.url', 'localhost:9300'
-    systemProperties System.properties
-    main = 'com.netflix.conductor.grpc.server.Main'
-    classpath = sourceSets.test.runtimeClasspath
 }

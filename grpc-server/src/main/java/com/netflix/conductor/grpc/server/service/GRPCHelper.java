@@ -1,4 +1,4 @@
-package com.netflix.conductor.grpc.server;
+package com.netflix.conductor.grpc.server.service;
 
 import com.google.rpc.DebugInfo;
 import io.grpc.Metadata;
