@@ -73,8 +73,8 @@ public class End2EndTests {
 	
 	@BeforeClass
 	public static void setup() throws Exception {
-        Injector bootInjector = Guice.createInjector(new BootstrapModule());
-        Injector serverInjector = Guice.createInjector(bootInjector.getInstance(ModulesProvider.class).get());
+		Injector bootInjector = Guice.createInjector(new BootstrapModule());
+		Injector serverInjector = Guice.createInjector(bootInjector.getInstance(ModulesProvider.class).get());
 		JettyServer server = new JettyServer(8080, false);
 		server.start();
 		
