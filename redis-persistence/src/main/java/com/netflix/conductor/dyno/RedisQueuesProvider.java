@@ -14,6 +14,8 @@ import redis.clients.jedis.JedisCommands;
 
 public class RedisQueuesProvider implements Provider<RedisQueues> {
 
+    public static final String READ_CLIENT_INJECTION_NAME = "DynoReadClient";
+
     private static final Logger logger = LoggerFactory.getLogger(RedisQueuesProvider.class);
 
     private final JedisCommands dynoClient;
@@ -24,7 +26,7 @@ public class RedisQueuesProvider implements Provider<RedisQueues> {
     @Inject
     public RedisQueuesProvider(
             JedisCommands dynoClient,
-            @Named("DynoReadClient") JedisCommands dynoClientRead,
+            @Named(READ_CLIENT_INJECTION_NAME) JedisCommands dynoClientRead,
             ShardSupplier ss,
             DynomiteConfiguration config
     ) {

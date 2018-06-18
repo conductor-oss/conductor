@@ -5,6 +5,7 @@ import com.google.inject.name.Names;
 
 import com.netflix.conductor.dyno.DynoShardSupplierProvider;
 import com.netflix.conductor.dyno.DynomiteConfiguration;
+import com.netflix.conductor.dyno.RedisQueuesProvider;
 import com.netflix.conductor.dyno.SystemPropertiesDynomiteConfiguration;
 import com.netflix.conductor.jedis.ConfigurationHostSupplierProvider;
 import com.netflix.conductor.jedis.DynomiteJedisProvider;
@@ -16,13 +17,14 @@ import com.netflix.dyno.queues.ShardSupplier;
 import redis.clients.jedis.JedisCommands;
 
 public class DynomiteClusterModule extends AbstractModule {
+
     @Override
     protected void configure() {
 
         bind(DynomiteConfiguration.class).to(SystemPropertiesDynomiteConfiguration.class);
         bind(JedisCommands.class).toProvider(DynomiteJedisProvider.class).asEagerSingleton();
         bind(JedisCommands.class)
-                .annotatedWith(Names.named("DynoReadClient"))
+                .annotatedWith(Names.named(RedisQueuesProvider.READ_CLIENT_INJECTION_NAME))
                 .toProvider(DynomiteJedisProvider.class)
                 .asEagerSingleton();
         bind(HostSupplier.class).toProvider(ConfigurationHostSupplierProvider.class);
