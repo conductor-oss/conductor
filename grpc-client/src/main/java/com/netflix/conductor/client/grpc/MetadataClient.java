@@ -15,6 +15,7 @@ public class MetadataClient extends ClientBase {
 
     public MetadataClient(String address, int port) {
         super(address, port);
+        this.stub = MetadataServiceGrpc.newBlockingStub(this.channel);
     }
 
     /**

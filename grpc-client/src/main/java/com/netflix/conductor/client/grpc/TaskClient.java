@@ -1,6 +1,8 @@
 package com.netflix.conductor.client.grpc;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
@@ -9,8 +11,7 @@ import com.netflix.conductor.grpc.TaskServicePb;
 import com.netflix.conductor.proto.TaskPb;
 import org.apache.commons.lang3.StringUtils;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class TaskClient extends ClientBase {
@@ -42,6 +43,46 @@ public class TaskClient extends ClientBase {
                 .build()
         );
         return protoMapper.fromProto(task);
+    }
+
+    /**
+     * Perform a batch poll for tasks by task type. Batch size is configurable by count.
+     *
+     * @param taskType             Type of task to poll for
+     * @param workerId             Name of the client worker. Used for logging.
+     * @param count                Maximum number of tasks to be returned. Actual number of tasks returned can be less than this number.
+     * @param timeoutInMillisecond Long poll wait timeout.
+     * @return List of tasks awaiting to be executed.
+     */
+    public List<Task> batchPollTasksByTaskType(String taskType, String workerId, int count, int timeoutInMillisecond) {
+        return Lists.newArrayList(batchPollTasksByTaskTypeAsync(taskType, workerId, count, timeoutInMillisecond));
+    }
+
+    /**
+     * Perform a batch poll for tasks by task type. Batch size is configurable by count.
+     * Returns an iterator that streams tasks as they become available through GRPC.
+     *
+     * @param taskType             Type of task to poll for
+     * @param workerId             Name of the client worker. Used for logging.
+     * @param count                Maximum number of tasks to be returned. Actual number of tasks returned can be less than this number.
+     * @param timeoutInMillisecond Long poll wait timeout.
+     * @return Iterator of tasks awaiting to be executed.
+     */
+    public Iterator<Task> batchPollTasksByTaskTypeAsync(String taskType, String workerId, int count, int timeoutInMillisecond) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
+        Preconditions.checkArgument(StringUtils.isNotBlank(workerId), "Worker id cannot be blank");
+        Preconditions.checkArgument(count > 0, "Count must be greater than 0");
+
+        Iterator<TaskPb.Task> it = stub.batchPoll(
+                TaskServicePb.BatchPollRequest.newBuilder()
+                        .setTaskType(taskType)
+                        .setWorkerId(workerId)
+                        .setCount(count)
+                        .setTimeout(timeoutInMillisecond)
+                        .build()
+        );
+
+        return Iterators.transform(it, protoMapper::fromProto);
     }
 
     /**

@@ -14,8 +14,8 @@ service TaskService {
     // GET /poll/{tasktype}
     rpc Poll(PollRequest) returns (conductor.proto.Task);
 
-    // GRPC-only
-    rpc PollStream(stream StreamingPollRequest) returns (stream conductor.proto.Task);
+    // /poll/batch/{tasktype}
+    rpc BatchPoll(BatchPollRequest) returns (stream conductor.proto.Task);
 
     // GET /in_progress/{tasktype}
     rpc GetTasksInProgress(TasksInProgressRequest) returns (TasksInProgressResponse);
@@ -57,12 +57,12 @@ message PollRequest {
     string domain = 3;
 }
 
-message StreamingPollRequest {
+message BatchPollRequest {
     string task_type = 1;
     string worker_id = 2;
     string domain = 3;
-    int32 capacity = 4;
-    repeated conductor.proto.TaskResult completed = 5;
+    int32 count = 4;
+    int32 timeout = 5;
 }
 
 message TasksInProgressRequest {

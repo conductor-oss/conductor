@@ -35,6 +35,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
 
     private static final int MAX_TASK_COUNT = 100;
     private static final int POLL_TIMEOUT_MS = 100;
+    private static final int MAX_POLL_TIMEOUT_MS = 5000;
 
     private final ExecutionService taskService;
     private final QueueDAO queues;
@@ -60,41 +61,24 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     }
 
     @Override
-    public StreamObserver<TaskServicePb.StreamingPollRequest> pollStream(StreamObserver<TaskPb.Task> observer) {
-        final ServerCallStreamObserver<TaskPb.Task> responseObserver =
-                (ServerCallStreamObserver<TaskPb.Task>) observer;
+    public void batchPoll(TaskServicePb.BatchPollRequest req, StreamObserver<TaskPb.Task> response) {
+        final int count = (req.getCount() == 0) ? 1 : req.getCount();
+        final int timeout = (req.getTimeout() == 0) ? POLL_TIMEOUT_MS : req.getTimeout();
 
-        return new StreamObserver<TaskServicePb.StreamingPollRequest>() {
-            @Override
-            public void onNext(TaskServicePb.StreamingPollRequest req) {
-                try {
-                    for (TaskResultPb.TaskResult result : req.getCompletedList()) {
-                        TaskResult task = protoMapper.fromProto(result);
-                        taskService.updateTask(task);
-                    }
+        if (timeout > MAX_POLL_TIMEOUT_MS) {
+            response.onError(Status.INVALID_ARGUMENT
+                    .withDescription("longpoll timeout cannot be longer than " + MAX_POLL_TIMEOUT_MS + "ms")
+                    .asRuntimeException()
+            );
+            return;
+        }
 
-                    List<Task> newTasks = taskService.poll(
-                            req.getTaskType(), req.getWorkerId(), req.getDomain(),
-                            req.getCapacity(), POLL_TIMEOUT_MS);
-
-                    for (Task task : newTasks) {
-                        responseObserver.onNext(protoMapper.toProto(task));
-                    }
-                } catch (Exception e) {
-                    grpcHelper.onError(observer, e);
-                }
-            }
-
-            @Override
-            public void onError(Throwable t) {
-                responseObserver.onError(t);
-            }
-
-            @Override
-            public void onCompleted() {
-                responseObserver.onCompleted();
-            }
-        };
+        try {
+            List<Task> polledTasks = taskService.poll(req.getTaskType(), req.getWorkerId(), req.getDomain(), count, timeout);
+            polledTasks.stream().map(protoMapper::toProto).forEach(response::onNext);
+        } catch (Exception e) {
+            grpcHelper.onError(response, e);
+        }
     }
 
     @Override
