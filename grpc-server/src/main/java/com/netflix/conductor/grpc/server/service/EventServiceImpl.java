@@ -15,9 +15,13 @@ import java.util.Map;
 import javax.inject.Inject;
 
 import io.grpc.stub.StreamObserver;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
+    private static final Logger logger = LoggerFactory.getLogger(EventServiceImpl.class);
     private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
+    private static final GRPCHelper grpcHelper = new GRPCHelper(logger);
 
     private final MetadataService service;
     private final EventProcessor ep;
@@ -31,18 +35,19 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
     @Override
     public void addEventHandler(EventHandlerPb.EventHandler req, StreamObserver<Empty> response) {
         service.addEventHandler(protoMapper.fromProto(req));
-        response.onCompleted();
+        grpcHelper.emptyResponse(response);
     }
 
     @Override
     public void updateEventHandler(EventHandlerPb.EventHandler req, StreamObserver<Empty> response) {
         service.updateEventHandler(protoMapper.fromProto(req));
-        response.onCompleted();
+        grpcHelper.emptyResponse(response);
     }
 
     @Override
     public void removeEventHandler(EventServicePb.RemoveEventHandlerRequest req, StreamObserver<Empty> response) {
         service.removeEventHandlerStatus(req.getName());
+        grpcHelper.emptyResponse(response);
     }
 
     @Override

@@ -174,7 +174,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     @Override
     public void removeTaskFromQueue(TaskServicePb.RemoveTaskRequest req, StreamObserver<Empty> response) {
         taskService.removeTaskfromQueue(req.getTaskType(), req.getTaskId());
-        response.onCompleted();
+        grpcHelper.emptyResponse(response);
     }
 
     @Override

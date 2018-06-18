@@ -1,5 +1,6 @@
 package com.netflix.conductor.grpc.server.service;
 
+import com.google.protobuf.Empty;
 import com.google.rpc.DebugInfo;
 import io.grpc.Metadata;
 import io.grpc.Status;
@@ -88,5 +89,10 @@ public class GRPCHelper {
     void onError(StreamObserver<?> response, Throwable t) {
         logger.error("internal exception during GRPC request", t);
         response.onError(throwableToStatusException(t));
+    }
+
+    void emptyResponse(StreamObserver<Empty> response) {
+        response.onNext(Empty.getDefaultInstance());
+        response.onCompleted();
     }
 }

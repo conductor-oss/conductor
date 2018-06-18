@@ -112,7 +112,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     public void removeWorkflow(WorkflowServicePb.RemoveWorkflowRequest req, StreamObserver<Empty> response) {
         try {
             service.removeWorkflow(req.getWorkflodId(), req.getArchiveWorkflow());
-            response.onCompleted();
+            grpcHelper.emptyResponse(response);
         } catch (Exception e) {
             grpcHelper.onError(response, e);
         }
@@ -144,7 +144,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     public void decideWorkflow(WorkflowServicePb.WorkflowId req, StreamObserver<Empty> response) {
         try {
             executor.decide(req.getWorkflowId());
-            response.onCompleted();
+            grpcHelper.emptyResponse(response);
         } catch (Exception e) {
             grpcHelper.onError(response, e);
         }
@@ -154,7 +154,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     public void pauseWorkflow(WorkflowServicePb.WorkflowId req, StreamObserver<Empty> response) {
         try {
             executor.pauseWorkflow(req.getWorkflowId());
-            response.onCompleted();
+            grpcHelper.emptyResponse(response);
         } catch (Exception e) {
             grpcHelper.onError(response, e);
         }
@@ -164,7 +164,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     public void resumeWorkflow(WorkflowServicePb.WorkflowId req, StreamObserver<Empty> response) {
         try {
             executor.resumeWorkflow(req.getWorkflowId());
-            response.onCompleted();
+            grpcHelper.emptyResponse(response);
         } catch (Exception e) {
             grpcHelper.onError(response, e);
         }
@@ -175,7 +175,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
         try {
             SkipTaskRequest skipTask = protoMapper.fromProto(req.getRequest());
             executor.skipTaskFromWorkflow(req.getWorkflowId(), req.getTaskReferenceName(), skipTask);
-            response.onCompleted();
+            grpcHelper.emptyResponse(response);
         } catch (Exception e) {
             grpcHelper.onError(response, e);
         }
@@ -196,7 +196,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     public void restartWorkflow(WorkflowServicePb.WorkflowId req, StreamObserver<Empty> response) {
         try {
             executor.rewind(req.getWorkflowId());
-            response.onCompleted();
+            grpcHelper.emptyResponse(response);
         } catch (Exception e) {
             grpcHelper.onError(response, e);
         }
@@ -206,7 +206,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     public void retryWorkflow(WorkflowServicePb.WorkflowId req, StreamObserver<Empty> response) {
         try {
             executor.retry(req.getWorkflowId());
-            response.onCompleted();
+            grpcHelper.emptyResponse(response);
         } catch (Exception e) {
             grpcHelper.onError(response, e);
         }
@@ -216,7 +216,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     public void resetWorkflowCallbacks(WorkflowServicePb.WorkflowId req, StreamObserver<Empty> response) {
         try {
             executor.resetCallbacksForInProgressTasks(req.getWorkflowId());
-            response.onCompleted();
+            grpcHelper.emptyResponse(response);
         } catch (Exception e) {
             grpcHelper.onError(response, e);
         }
@@ -226,7 +226,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     public void terminateWorkflow(WorkflowServicePb.TerminateWorkflowRequest req, StreamObserver<Empty> response) {
         try {
             executor.terminateWorkflow(req.getWorkflowId(), req.getReason());
-            response.onCompleted();
+            grpcHelper.emptyResponse(response);
         } catch (Exception e) {
             grpcHelper.onError(response, e);
         }

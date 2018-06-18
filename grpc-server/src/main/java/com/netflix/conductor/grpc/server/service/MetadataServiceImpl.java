@@ -34,7 +34,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     public void createWorkflow(WorkflowDefPb.WorkflowDef req, StreamObserver<Empty> response) {
         try {
             service.registerWorkflowDef(protoMapper.fromProto(req));
-            response.onCompleted();
+            grpcHelper.emptyResponse(response);
         } catch (Exception e) {
             grpcHelper.onError(response, e);
         }
@@ -47,7 +47,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
 
         try {
             service.updateWorkflowDef(workflows);
-            response.onCompleted();
+            grpcHelper.emptyResponse(response);
         } catch (Exception e) {
             grpcHelper.onError(response, e);
         }
@@ -73,13 +73,13 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
         service.registerTaskDef(
                 req.getDefsList().stream().map(protoMapper::fromProto).collect(Collectors.toList())
         );
-        response.onCompleted();
+        grpcHelper.emptyResponse(response);
     }
 
     @Override
     public void updateTask(TaskDefPb.TaskDef req, StreamObserver<Empty> response) {
         service.updateTaskDef(protoMapper.fromProto(req));
-        response.onCompleted();
+        grpcHelper.emptyResponse(response);
     }
 
     @Override
@@ -99,6 +99,6 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     @Override
     public void deleteTask(MetadataServicePb.GetTaskRequest req, StreamObserver<Empty> response) {
         service.unregisterTaskDef(req.getTaskType());
-        response.onCompleted();
+        grpcHelper.emptyResponse(response);
     }
 }
