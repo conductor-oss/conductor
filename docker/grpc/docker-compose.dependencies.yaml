@@ -22,6 +22,9 @@ services:
     image: elasticsearch:5.6-alpine
     environment:
       ES_JAVA_OPTS: "-Xms750m -Xmx750m"
+      transport.host: 0.0.0.0
+      discovery.type: single-node
+      cluster.name: conductor
     networks:
       - internal
     ports:

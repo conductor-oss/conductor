@@ -47,7 +47,7 @@ shadowJar {
    configurations = [project.configurations.compile]
    manifest {
        attributes 'Description': 'Self contained Conductor server jar'
-       attributes 'Main-Class' : 'com.netflix.conductor.server.Main'
+       attributes 'Main-Class' : 'com.netflix.conductor.bootstrap.Main'
    }
 }
 publishing {

@@ -12,6 +12,8 @@ dependencies-down:
 	docker-compose -f docker-compose.dependencies.yaml down
 
 stack-up:
+	docker-compose -f docker-compose.dependencies.yaml up -d
+	sleep 30
 	docker-compose -f docker-compose.dependencies.yaml -f docker-compose.apps.yaml  up
 
 stack-down:

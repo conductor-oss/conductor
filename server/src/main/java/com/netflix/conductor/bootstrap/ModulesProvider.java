@@ -71,7 +71,6 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
 
             case MYSQL:
                 modules.add(new MySQLWorkflowModule());
-                modules.add(new MySQLWorkflowModule());
                 logger.info("Starting conductor server using MySQL data store", database);
                 break;
             case MEMORY:

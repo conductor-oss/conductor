@@ -4,7 +4,7 @@ import com.netflix.conductor.core.config.Configuration;
 
 public interface JettyServerConfiguration extends Configuration {
     String ENABLED_PROPERTY_NAME = "conductor.jetty.server.enabled";
-    boolean ENABLED_DEFAULT_VALUE = false;
+    boolean ENABLED_DEFAULT_VALUE = true;
 
     String PORT_PROPERTY_NAME = "conductor.jetty.server.port";
     int PORT_DEFAULT_VALUE = 8080;
