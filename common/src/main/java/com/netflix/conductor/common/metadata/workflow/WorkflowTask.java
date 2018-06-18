@@ -388,21 +388,13 @@ public class WorkflowTask {
 	}
 	
 	/**
-	 * 
+	 *
 	 * @return If the task is optional.  When set to true, the workflow execution continues even when the task is in failed status.
 	 */
-	public Boolean getOptional() {
+	public Boolean isOptional() {
 		return optional;
 	}
-	
-	/**
-	 * 
-	 * @return true if the task is optional.  False otherwise.
-	 */
-	public boolean isOptional() {
-		return (optional != null && optional.booleanValue()); 
-	}
-	
+
 	/**
 	 * 
 	 * @param optional when set to true, the task is marked as optional

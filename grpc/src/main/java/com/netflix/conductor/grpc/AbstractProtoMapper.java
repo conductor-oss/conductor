@@ -53,13 +53,25 @@ import javax.annotation.Generated;
 public abstract class AbstractProtoMapper {
     public EventExecutionPb.EventExecution toProto(EventExecution from) {
         EventExecutionPb.EventExecution.Builder to = EventExecutionPb.EventExecution.newBuilder();
-        to.setId( from.getId() );
-        to.setMessageId( from.getMessageId() );
-        to.setName( from.getName() );
-        to.setEvent( from.getEvent() );
+        if (from.getId() != null) {
+            to.setId( from.getId() );
+        }
+        if (from.getMessageId() != null) {
+            to.setMessageId( from.getMessageId() );
+        }
+        if (from.getName() != null) {
+            to.setName( from.getName() );
+        }
+        if (from.getEvent() != null) {
+            to.setEvent( from.getEvent() );
+        }
         to.setCreated( from.getCreated() );
-        to.setStatus( toProto( from.getStatus() ) );
-        to.setAction( toProto( from.getAction() ) );
+        if (from.getStatus() != null) {
+            to.setStatus( toProto( from.getStatus() ) );
+        }
+        if (from.getAction() != null) {
+            to.setAction( toProto( from.getAction() ) );
+        }
         for (Map.Entry<String, Object> pair : from.getOutput().entrySet()) {
             to.putOutput( pair.getKey(), toProto( pair.getValue() ) );
         }
@@ -109,9 +121,15 @@ public abstract class AbstractProtoMapper {
 
     public EventHandlerPb.EventHandler toProto(EventHandler from) {
         EventHandlerPb.EventHandler.Builder to = EventHandlerPb.EventHandler.newBuilder();
-        to.setName( from.getName() );
-        to.setEvent( from.getEvent() );
-        to.setCondition( from.getCondition() );
+        if (from.getName() != null) {
+            to.setName( from.getName() );
+        }
+        if (from.getEvent() != null) {
+            to.setEvent( from.getEvent() );
+        }
+        if (from.getCondition() != null) {
+            to.setCondition( from.getCondition() );
+        }
         for (EventHandler.Action elem : from.getActions()) {
             to.addActions( toProto(elem) );
         }
@@ -131,9 +149,15 @@ public abstract class AbstractProtoMapper {
 
     public EventHandlerPb.EventHandler.StartWorkflow toProto(EventHandler.StartWorkflow from) {
         EventHandlerPb.EventHandler.StartWorkflow.Builder to = EventHandlerPb.EventHandler.StartWorkflow.newBuilder();
-        to.setName( from.getName() );
-        to.setVersion( from.getVersion() );
-        to.setCorrelationId( from.getCorrelationId() );
+        if (from.getName() != null) {
+            to.setName( from.getName() );
+        }
+        if (from.getVersion() != null) {
+            to.setVersion( from.getVersion() );
+        }
+        if (from.getCorrelationId() != null) {
+            to.setCorrelationId( from.getCorrelationId() );
+        }
         for (Map.Entry<String, Object> pair : from.getInput().entrySet()) {
             to.putInput( pair.getKey(), toProto( pair.getValue() ) );
         }
@@ -155,8 +179,12 @@ public abstract class AbstractProtoMapper {
 
     public EventHandlerPb.EventHandler.TaskDetails toProto(EventHandler.TaskDetails from) {
         EventHandlerPb.EventHandler.TaskDetails.Builder to = EventHandlerPb.EventHandler.TaskDetails.newBuilder();
-        to.setWorkflowId( from.getWorkflowId() );
-        to.setTaskRefName( from.getTaskRefName() );
+        if (from.getWorkflowId() != null) {
+            to.setWorkflowId( from.getWorkflowId() );
+        }
+        if (from.getTaskRefName() != null) {
+            to.setTaskRefName( from.getTaskRefName() );
+        }
         for (Map.Entry<String, Object> pair : from.getOutput().entrySet()) {
             to.putOutput( pair.getKey(), toProto( pair.getValue() ) );
         }
@@ -177,10 +205,18 @@ public abstract class AbstractProtoMapper {
 
     public EventHandlerPb.EventHandler.Action toProto(EventHandler.Action from) {
         EventHandlerPb.EventHandler.Action.Builder to = EventHandlerPb.EventHandler.Action.newBuilder();
-        to.setAction( toProto( from.getAction() ) );
-        to.setStartWorkflow( toProto( from.getStartWorkflow() ) );
-        to.setCompleteTask( toProto( from.getCompleteTask() ) );
-        to.setFailTask( toProto( from.getFailTask() ) );
+        if (from.getAction() != null) {
+            to.setAction( toProto( from.getAction() ) );
+        }
+        if (from.getStartWorkflow() != null) {
+            to.setStartWorkflow( toProto( from.getStartWorkflow() ) );
+        }
+        if (from.getCompleteTask() != null) {
+            to.setCompleteTask( toProto( from.getCompleteTask() ) );
+        }
+        if (from.getFailTask() != null) {
+            to.setFailTask( toProto( from.getFailTask() ) );
+        }
         to.setExpandInlineJson( from.isExpandInlineJson() );
         return to.build();
     }
@@ -219,9 +255,15 @@ public abstract class AbstractProtoMapper {
 
     public PollDataPb.PollData toProto(PollData from) {
         PollDataPb.PollData.Builder to = PollDataPb.PollData.newBuilder();
-        to.setQueueName( from.getQueueName() );
-        to.setDomain( from.getDomain() );
-        to.setWorkerId( from.getWorkerId() );
+        if (from.getQueueName() != null) {
+            to.setQueueName( from.getQueueName() );
+        }
+        if (from.getDomain() != null) {
+            to.setDomain( from.getDomain() );
+        }
+        if (from.getWorkerId() != null) {
+            to.setWorkerId( from.getWorkerId() );
+        }
         to.setLastPollTime( from.getLastPollTime() );
         return to.build();
     }
@@ -237,38 +279,64 @@ public abstract class AbstractProtoMapper {
 
     public TaskPb.Task toProto(Task from) {
         TaskPb.Task.Builder to = TaskPb.Task.newBuilder();
-        to.setTaskType( from.getTaskType() );
-        to.setStatus( toProto( from.getStatus() ) );
+        if (from.getTaskType() != null) {
+            to.setTaskType( from.getTaskType() );
+        }
+        if (from.getStatus() != null) {
+            to.setStatus( toProto( from.getStatus() ) );
+        }
         for (Map.Entry<String, Object> pair : from.getInputData().entrySet()) {
             to.putInputData( pair.getKey(), toProto( pair.getValue() ) );
         }
-        to.setReferenceTaskName( from.getReferenceTaskName() );
+        if (from.getReferenceTaskName() != null) {
+            to.setReferenceTaskName( from.getReferenceTaskName() );
+        }
         to.setRetryCount( from.getRetryCount() );
         to.setSeq( from.getSeq() );
-        to.setCorrelationId( from.getCorrelationId() );
+        if (from.getCorrelationId() != null) {
+            to.setCorrelationId( from.getCorrelationId() );
+        }
         to.setPollCount( from.getPollCount() );
-        to.setTaskDefName( from.getTaskDefName() );
+        if (from.getTaskDefName() != null) {
+            to.setTaskDefName( from.getTaskDefName() );
+        }
         to.setScheduledTime( from.getScheduledTime() );
         to.setStartTime( from.getStartTime() );
         to.setEndTime( from.getEndTime() );
         to.setUpdateTime( from.getUpdateTime() );
         to.setStartDelayInSeconds( from.getStartDelayInSeconds() );
-        to.setRetriedTaskId( from.getRetriedTaskId() );
+        if (from.getRetriedTaskId() != null) {
+            to.setRetriedTaskId( from.getRetriedTaskId() );
+        }
         to.setRetried( from.isRetried() );
         to.setExecuted( from.isExecuted() );
         to.setCallbackFromWorker( from.isCallbackFromWorker() );
         to.setResponseTimeoutSeconds( from.getResponseTimeoutSeconds() );
-        to.setWorkflowInstanceId( from.getWorkflowInstanceId() );
-        to.setWorkflowType( from.getWorkflowType() );
-        to.setTaskId( from.getTaskId() );
-        to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        if (from.getWorkflowInstanceId() != null) {
+            to.setWorkflowInstanceId( from.getWorkflowInstanceId() );
+        }
+        if (from.getWorkflowType() != null) {
+            to.setWorkflowType( from.getWorkflowType() );
+        }
+        if (from.getTaskId() != null) {
+            to.setTaskId( from.getTaskId() );
+        }
+        if (from.getReasonForIncompletion() != null) {
+            to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        }
         to.setCallbackAfterSeconds( from.getCallbackAfterSeconds() );
-        to.setWorkerId( from.getWorkerId() );
+        if (from.getWorkerId() != null) {
+            to.setWorkerId( from.getWorkerId() );
+        }
         for (Map.Entry<String, Object> pair : from.getOutputData().entrySet()) {
             to.putOutputData( pair.getKey(), toProto( pair.getValue() ) );
         }
-        to.setWorkflowTask( toProto( from.getWorkflowTask() ) );
-        to.setDomain( from.getDomain() );
+        if (from.getWorkflowTask() != null) {
+            to.setWorkflowTask( toProto( from.getWorkflowTask() ) );
+        }
+        if (from.getDomain() != null) {
+            to.setDomain( from.getDomain() );
+        }
         return to.build();
     }
 
@@ -351,17 +419,27 @@ public abstract class AbstractProtoMapper {
 
     public TaskDefPb.TaskDef toProto(TaskDef from) {
         TaskDefPb.TaskDef.Builder to = TaskDefPb.TaskDef.newBuilder();
-        to.setName( from.getName() );
-        to.setDescription( from.getDescription() );
+        if (from.getName() != null) {
+            to.setName( from.getName() );
+        }
+        if (from.getDescription() != null) {
+            to.setDescription( from.getDescription() );
+        }
         to.setRetryCount( from.getRetryCount() );
         to.setTimeoutSeconds( from.getTimeoutSeconds() );
         to.addAllInputKeys( from.getInputKeys() );
         to.addAllOutputKeys( from.getOutputKeys() );
-        to.setTimeoutPolicy( toProto( from.getTimeoutPolicy() ) );
-        to.setRetryLogic( toProto( from.getRetryLogic() ) );
+        if (from.getTimeoutPolicy() != null) {
+            to.setTimeoutPolicy( toProto( from.getTimeoutPolicy() ) );
+        }
+        if (from.getRetryLogic() != null) {
+            to.setRetryLogic( toProto( from.getRetryLogic() ) );
+        }
         to.setRetryDelaySeconds( from.getRetryDelaySeconds() );
         to.setResponseTimeoutSeconds( from.getResponseTimeoutSeconds() );
-        to.setConcurrentExecLimit( from.getConcurrentExecLimit() );
+        if (from.getConcurrentExecLimit() != null) {
+            to.setConcurrentExecLimit( from.getConcurrentExecLimit() );
+        }
         for (Map.Entry<String, Object> pair : from.getInputTemplate().entrySet()) {
             to.putInputTemplate( pair.getKey(), toProto( pair.getValue() ) );
         }
@@ -433,8 +511,12 @@ public abstract class AbstractProtoMapper {
 
     public TaskExecLogPb.TaskExecLog toProto(TaskExecLog from) {
         TaskExecLogPb.TaskExecLog.Builder to = TaskExecLogPb.TaskExecLog.newBuilder();
-        to.setLog( from.getLog() );
-        to.setTaskId( from.getTaskId() );
+        if (from.getLog() != null) {
+            to.setLog( from.getLog() );
+        }
+        if (from.getTaskId() != null) {
+            to.setTaskId( from.getTaskId() );
+        }
         to.setCreatedTime( from.getCreatedTime() );
         return to.build();
     }
@@ -449,12 +531,22 @@ public abstract class AbstractProtoMapper {
 
     public TaskResultPb.TaskResult toProto(TaskResult from) {
         TaskResultPb.TaskResult.Builder to = TaskResultPb.TaskResult.newBuilder();
-        to.setWorkflowInstanceId( from.getWorkflowInstanceId() );
-        to.setTaskId( from.getTaskId() );
-        to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        if (from.getWorkflowInstanceId() != null) {
+            to.setWorkflowInstanceId( from.getWorkflowInstanceId() );
+        }
+        if (from.getTaskId() != null) {
+            to.setTaskId( from.getTaskId() );
+        }
+        if (from.getReasonForIncompletion() != null) {
+            to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        }
         to.setCallbackAfterSeconds( from.getCallbackAfterSeconds() );
-        to.setWorkerId( from.getWorkerId() );
-        to.setStatus( toProto( from.getStatus() ) );
+        if (from.getWorkerId() != null) {
+            to.setWorkerId( from.getWorkerId() );
+        }
+        if (from.getStatus() != null) {
+            to.setStatus( toProto( from.getStatus() ) );
+        }
         for (Map.Entry<String, Object> pair : from.getOutputData().entrySet()) {
             to.putOutputData( pair.getKey(), toProto( pair.getValue() ) );
         }
@@ -505,13 +597,21 @@ public abstract class AbstractProtoMapper {
 
     public DynamicForkJoinTaskPb.DynamicForkJoinTask toProto(DynamicForkJoinTask from) {
         DynamicForkJoinTaskPb.DynamicForkJoinTask.Builder to = DynamicForkJoinTaskPb.DynamicForkJoinTask.newBuilder();
-        to.setTaskName( from.getTaskName() );
-        to.setWorkflowName( from.getWorkflowName() );
-        to.setReferenceName( from.getReferenceName() );
+        if (from.getTaskName() != null) {
+            to.setTaskName( from.getTaskName() );
+        }
+        if (from.getWorkflowName() != null) {
+            to.setWorkflowName( from.getWorkflowName() );
+        }
+        if (from.getReferenceName() != null) {
+            to.setReferenceName( from.getReferenceName() );
+        }
         for (Map.Entry<String, Object> pair : from.getInput().entrySet()) {
             to.putInput( pair.getKey(), toProto( pair.getValue() ) );
         }
-        to.setType( from.getType() );
+        if (from.getType() != null) {
+            to.setType( from.getType() );
+        }
         return to.build();
     }
 
@@ -546,15 +646,21 @@ public abstract class AbstractProtoMapper {
 
     public RerunWorkflowRequestPb.RerunWorkflowRequest toProto(RerunWorkflowRequest from) {
         RerunWorkflowRequestPb.RerunWorkflowRequest.Builder to = RerunWorkflowRequestPb.RerunWorkflowRequest.newBuilder();
-        to.setReRunFromWorkflowId( from.getReRunFromWorkflowId() );
+        if (from.getReRunFromWorkflowId() != null) {
+            to.setReRunFromWorkflowId( from.getReRunFromWorkflowId() );
+        }
         for (Map.Entry<String, Object> pair : from.getWorkflowInput().entrySet()) {
             to.putWorkflowInput( pair.getKey(), toProto( pair.getValue() ) );
         }
-        to.setReRunFromTaskId( from.getReRunFromTaskId() );
+        if (from.getReRunFromTaskId() != null) {
+            to.setReRunFromTaskId( from.getReRunFromTaskId() );
+        }
         for (Map.Entry<String, Object> pair : from.getTaskInput().entrySet()) {
             to.putTaskInput( pair.getKey(), toProto( pair.getValue() ) );
         }
-        to.setCorrelationId( from.getCorrelationId() );
+        if (from.getCorrelationId() != null) {
+            to.setCorrelationId( from.getCorrelationId() );
+        }
         return to.build();
     }
 
@@ -593,9 +699,15 @@ public abstract class AbstractProtoMapper {
 
     public StartWorkflowRequestPb.StartWorkflowRequest toProto(StartWorkflowRequest from) {
         StartWorkflowRequestPb.StartWorkflowRequest.Builder to = StartWorkflowRequestPb.StartWorkflowRequest.newBuilder();
-        to.setName( from.getName() );
-        to.setVersion( from.getVersion() );
-        to.setCorrelationId( from.getCorrelationId() );
+        if (from.getName() != null) {
+            to.setName( from.getName() );
+        }
+        if (from.getVersion() != null) {
+            to.setVersion( from.getVersion() );
+        }
+        if (from.getCorrelationId() != null) {
+            to.setCorrelationId( from.getCorrelationId() );
+        }
         for (Map.Entry<String, Object> pair : from.getInput().entrySet()) {
             to.putInput( pair.getKey(), toProto( pair.getValue() ) );
         }
@@ -619,8 +731,12 @@ public abstract class AbstractProtoMapper {
 
     public SubWorkflowParamsPb.SubWorkflowParams toProto(SubWorkflowParams from) {
         SubWorkflowParamsPb.SubWorkflowParams.Builder to = SubWorkflowParamsPb.SubWorkflowParams.newBuilder();
-        to.setName( from.getName() );
-        to.setVersion( toProto( from.getVersion() ) );
+        if (from.getName() != null) {
+            to.setName( from.getName() );
+        }
+        if (from.getVersion() != null) {
+            to.setVersion( toProto( from.getVersion() ) );
+        }
         return to.build();
     }
 
@@ -633,8 +749,12 @@ public abstract class AbstractProtoMapper {
 
     public WorkflowDefPb.WorkflowDef toProto(WorkflowDef from) {
         WorkflowDefPb.WorkflowDef.Builder to = WorkflowDefPb.WorkflowDef.newBuilder();
-        to.setName( from.getName() );
-        to.setDescription( from.getDescription() );
+        if (from.getName() != null) {
+            to.setName( from.getName() );
+        }
+        if (from.getDescription() != null) {
+            to.setDescription( from.getDescription() );
+        }
         to.setVersion( from.getVersion() );
         for (WorkflowTask elem : from.getTasks()) {
             to.addTasks( toProto(elem) );
@@ -643,7 +763,9 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getOutputParameters().entrySet()) {
             to.putOutputParameters( pair.getKey(), toProto( pair.getValue() ) );
         }
-        to.setFailureWorkflow( from.getFailureWorkflow() );
+        if (from.getFailureWorkflow() != null) {
+            to.setFailureWorkflow( from.getFailureWorkflow() );
+        }
         to.setSchemaVersion( from.getSchemaVersion() );
         return to.build();
     }
@@ -667,21 +789,39 @@ public abstract class AbstractProtoMapper {
 
     public WorkflowTaskPb.WorkflowTask toProto(WorkflowTask from) {
         WorkflowTaskPb.WorkflowTask.Builder to = WorkflowTaskPb.WorkflowTask.newBuilder();
-        to.setName( from.getName() );
-        to.setTaskReferenceName( from.getTaskReferenceName() );
-        to.setDescription( from.getDescription() );
+        if (from.getName() != null) {
+            to.setName( from.getName() );
+        }
+        if (from.getTaskReferenceName() != null) {
+            to.setTaskReferenceName( from.getTaskReferenceName() );
+        }
+        if (from.getDescription() != null) {
+            to.setDescription( from.getDescription() );
+        }
         for (Map.Entry<String, Object> pair : from.getInputParameters().entrySet()) {
             to.putInputParameters( pair.getKey(), toProto( pair.getValue() ) );
         }
-        to.setType( from.getType() );
-        to.setDynamicTaskNameParam( from.getDynamicTaskNameParam() );
-        to.setCaseValueParam( from.getCaseValueParam() );
-        to.setCaseExpression( from.getCaseExpression() );
+        if (from.getType() != null) {
+            to.setType( from.getType() );
+        }
+        if (from.getDynamicTaskNameParam() != null) {
+            to.setDynamicTaskNameParam( from.getDynamicTaskNameParam() );
+        }
+        if (from.getCaseValueParam() != null) {
+            to.setCaseValueParam( from.getCaseValueParam() );
+        }
+        if (from.getCaseExpression() != null) {
+            to.setCaseExpression( from.getCaseExpression() );
+        }
         for (Map.Entry<String, List<WorkflowTask>> pair : from.getDecisionCases().entrySet()) {
             to.putDecisionCases( pair.getKey(), toProto( pair.getValue() ) );
         }
-        to.setDynamicForkTasksParam( from.getDynamicForkTasksParam() );
-        to.setDynamicForkTasksInputParamName( from.getDynamicForkTasksInputParamName() );
+        if (from.getDynamicForkTasksParam() != null) {
+            to.setDynamicForkTasksParam( from.getDynamicForkTasksParam() );
+        }
+        if (from.getDynamicForkTasksInputParamName() != null) {
+            to.setDynamicForkTasksInputParamName( from.getDynamicForkTasksInputParamName() );
+        }
         for (WorkflowTask elem : from.getDefaultCase()) {
             to.addDefaultCase( toProto(elem) );
         }
@@ -689,10 +829,16 @@ public abstract class AbstractProtoMapper {
             to.addForkTasks( toProto(elem) );
         }
         to.setStartDelay( from.getStartDelay() );
-        to.setSubWorkflowParam( toProto( from.getSubWorkflowParam() ) );
+        if (from.getSubWorkflowParam() != null) {
+            to.setSubWorkflowParam( toProto( from.getSubWorkflowParam() ) );
+        }
         to.addAllJoinOn( from.getJoinOn() );
-        to.setSink( from.getSink() );
-        to.setOptional( from.isOptional() );
+        if (from.getSink() != null) {
+            to.setSink( from.getSink() );
+        }
+        if (from.isOptional() != null) {
+            to.setOptional( from.isOptional() );
+        }
         return to.build();
     }
 
@@ -765,32 +911,68 @@ public abstract class AbstractProtoMapper {
 
     public TaskSummaryPb.TaskSummary toProto(TaskSummary from) {
         TaskSummaryPb.TaskSummary.Builder to = TaskSummaryPb.TaskSummary.newBuilder();
-        to.setWorkflowId( from.getWorkflowId() );
-        to.setWorkflowType( from.getWorkflowType() );
-        to.setCorrelationId( from.getCorrelationId() );
-        to.setScheduledTime( from.getScheduledTime() );
-        to.setStartTime( from.getStartTime() );
-        to.setUpdateTime( from.getUpdateTime() );
-        to.setEndTime( from.getEndTime() );
-        to.setStatus( toProto( from.getStatus() ) );
-        to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        if (from.getWorkflowId() != null) {
+            to.setWorkflowId( from.getWorkflowId() );
+        }
+        if (from.getWorkflowType() != null) {
+            to.setWorkflowType( from.getWorkflowType() );
+        }
+        if (from.getCorrelationId() != null) {
+            to.setCorrelationId( from.getCorrelationId() );
+        }
+        if (from.getScheduledTime() != null) {
+            to.setScheduledTime( from.getScheduledTime() );
+        }
+        if (from.getStartTime() != null) {
+            to.setStartTime( from.getStartTime() );
+        }
+        if (from.getUpdateTime() != null) {
+            to.setUpdateTime( from.getUpdateTime() );
+        }
+        if (from.getEndTime() != null) {
+            to.setEndTime( from.getEndTime() );
+        }
+        if (from.getStatus() != null) {
+            to.setStatus( toProto( from.getStatus() ) );
+        }
+        if (from.getReasonForIncompletion() != null) {
+            to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        }
         to.setExecutionTime( from.getExecutionTime() );
         to.setQueueWaitTime( from.getQueueWaitTime() );
-        to.setTaskDefName( from.getTaskDefName() );
-        to.setTaskType( from.getTaskType() );
-        to.setInput( from.getInput() );
-        to.setOutput( from.getOutput() );
-        to.setTaskId( from.getTaskId() );
+        if (from.getTaskDefName() != null) {
+            to.setTaskDefName( from.getTaskDefName() );
+        }
+        if (from.getTaskType() != null) {
+            to.setTaskType( from.getTaskType() );
+        }
+        if (from.getInput() != null) {
+            to.setInput( from.getInput() );
+        }
+        if (from.getOutput() != null) {
+            to.setOutput( from.getOutput() );
+        }
+        if (from.getTaskId() != null) {
+            to.setTaskId( from.getTaskId() );
+        }
         return to.build();
     }
 
     public WorkflowPb.Workflow toProto(Workflow from) {
         WorkflowPb.Workflow.Builder to = WorkflowPb.Workflow.newBuilder();
-        to.setStatus( toProto( from.getStatus() ) );
+        if (from.getStatus() != null) {
+            to.setStatus( toProto( from.getStatus() ) );
+        }
         to.setEndTime( from.getEndTime() );
-        to.setWorkflowId( from.getWorkflowId() );
-        to.setParentWorkflowId( from.getParentWorkflowId() );
-        to.setParentWorkflowTaskId( from.getParentWorkflowTaskId() );
+        if (from.getWorkflowId() != null) {
+            to.setWorkflowId( from.getWorkflowId() );
+        }
+        if (from.getParentWorkflowId() != null) {
+            to.setParentWorkflowId( from.getParentWorkflowId() );
+        }
+        if (from.getParentWorkflowTaskId() != null) {
+            to.setParentWorkflowTaskId( from.getParentWorkflowTaskId() );
+        }
         for (Task elem : from.getTasks()) {
             to.addTasks( toProto(elem) );
         }
@@ -800,13 +982,23 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getOutput().entrySet()) {
             to.putOutput( pair.getKey(), toProto( pair.getValue() ) );
         }
-        to.setWorkflowType( from.getWorkflowType() );
+        if (from.getWorkflowType() != null) {
+            to.setWorkflowType( from.getWorkflowType() );
+        }
         to.setVersion( from.getVersion() );
-        to.setCorrelationId( from.getCorrelationId() );
-        to.setReRunFromWorkflowId( from.getReRunFromWorkflowId() );
-        to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        if (from.getCorrelationId() != null) {
+            to.setCorrelationId( from.getCorrelationId() );
+        }
+        if (from.getReRunFromWorkflowId() != null) {
+            to.setReRunFromWorkflowId( from.getReRunFromWorkflowId() );
+        }
+        if (from.getReasonForIncompletion() != null) {
+            to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        }
         to.setSchemaVersion( from.getSchemaVersion() );
-        to.setEvent( from.getEvent() );
+        if (from.getEvent() != null) {
+            to.setEvent( from.getEvent() );
+        }
         to.putAllTaskToDomain( from.getTaskToDomain() );
         to.addAllFailedReferenceTaskNames( from.getFailedReferenceTaskNames() );
         return to.build();
@@ -872,20 +1064,44 @@ public abstract class AbstractProtoMapper {
 
     public WorkflowSummaryPb.WorkflowSummary toProto(WorkflowSummary from) {
         WorkflowSummaryPb.WorkflowSummary.Builder to = WorkflowSummaryPb.WorkflowSummary.newBuilder();
-        to.setWorkflowType( from.getWorkflowType() );
+        if (from.getWorkflowType() != null) {
+            to.setWorkflowType( from.getWorkflowType() );
+        }
         to.setVersion( from.getVersion() );
-        to.setWorkflowId( from.getWorkflowId() );
-        to.setCorrelationId( from.getCorrelationId() );
-        to.setStartTime( from.getStartTime() );
-        to.setUpdateTime( from.getUpdateTime() );
-        to.setEndTime( from.getEndTime() );
-        to.setStatus( toProto( from.getStatus() ) );
-        to.setInput( from.getInput() );
-        to.setOutput( from.getOutput() );
-        to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        if (from.getWorkflowId() != null) {
+            to.setWorkflowId( from.getWorkflowId() );
+        }
+        if (from.getCorrelationId() != null) {
+            to.setCorrelationId( from.getCorrelationId() );
+        }
+        if (from.getStartTime() != null) {
+            to.setStartTime( from.getStartTime() );
+        }
+        if (from.getUpdateTime() != null) {
+            to.setUpdateTime( from.getUpdateTime() );
+        }
+        if (from.getEndTime() != null) {
+            to.setEndTime( from.getEndTime() );
+        }
+        if (from.getStatus() != null) {
+            to.setStatus( toProto( from.getStatus() ) );
+        }
+        if (from.getInput() != null) {
+            to.setInput( from.getInput() );
+        }
+        if (from.getOutput() != null) {
+            to.setOutput( from.getOutput() );
+        }
+        if (from.getReasonForIncompletion() != null) {
+            to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        }
         to.setExecutionTime( from.getExecutionTime() );
-        to.setEvent( from.getEvent() );
-        to.setFailedReferenceTaskNames( from.getFailedReferenceTaskNames() );
+        if (from.getEvent() != null) {
+            to.setEvent( from.getEvent() );
+        }
+        if (from.getFailedReferenceTaskNames() != null) {
+            to.setFailedReferenceTaskNames( from.getFailedReferenceTaskNames() );
+        }
         return to.build();
     }
 
