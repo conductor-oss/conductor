@@ -35,8 +35,10 @@ public class MessageType extends AbstractType {
 
     @Override
     public void mapToProto(String field, MethodSpec.Builder method) {
-        method.addStatement("to.$L( toProto( from.$L() ) )",
-                fieldMethod("set", field), fieldMethod("get", field));
+        final String getter = fieldMethod("get", field);
+        method.beginControlFlow("if (from.$L() != null)", getter);
+        method.addStatement("to.$L( toProto( from.$L() ) )", fieldMethod("set", field), getter);
+        method.endControlFlow();
     }
 
     @Override
