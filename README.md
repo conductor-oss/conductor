@@ -15,10 +15,6 @@ Conductor is an _orchestration_ engine that runs in the cloud.
 ## Get Conductor
 Binaries are available from Maven Central and jcenter.
 
-|Group|Artifact|Latest Stable Version|
-|-----------|---------------|---------------------|
-|com.netflix.conductor|conductor-*|1.5.+|
-
 Below are the various artifacts published:
 
 |Artifact|Description|
@@ -73,7 +69,7 @@ Conductor is maintained by Media Workflow Infrastructure team at Netflix.  Use g
 
 ## LICENSE
 
-Copyright (c) 2016 Netflix, Inc.
+Copyright (c) 2018 Netflix, Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

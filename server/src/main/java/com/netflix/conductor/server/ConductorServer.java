@@ -15,11 +15,10 @@
  */
 package com.netflix.conductor.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Guice;
 import com.google.inject.servlet.GuiceFilter;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
@@ -30,21 +29,19 @@ import com.netflix.conductor.dao.es5.EmbeddedElasticSearchV5;
 import com.netflix.conductor.dao.es5.index.ElasticSearchModuleV5;
 import com.netflix.conductor.dao.mysql.MySQLWorkflowModule;
 import com.sun.jersey.api.client.Client;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.DispatcherType;
+import javax.ws.rs.core.MediaType;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
-
-import javax.servlet.DispatcherType;
-import javax.ws.rs.core.MediaType;
 
 /**
  * @author Viren
@@ -82,7 +79,6 @@ public class ConductorServer {
                 break;
 
             case MYSQL:
-                modules.add(new MySQLWorkflowModule());
                 modules.add(new MySQLWorkflowModule());
                 logger.info("Starting conductor server using MySQL data store", database);
                 break;

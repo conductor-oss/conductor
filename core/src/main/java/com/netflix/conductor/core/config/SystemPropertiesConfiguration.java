@@ -100,6 +100,16 @@ public class SystemPropertiesConfiguration implements Configuration {
     }
 
     @Override
+    public long getLongProperty(String key, long defaultValue) {
+        String val = getProperty(key, Long.toString(defaultValue));
+        try {
+            defaultValue = Integer.parseInt(val);
+        } catch (NumberFormatException e) {
+        }
+        return defaultValue;
+    }
+
+    @Override
     public String getProperty(String key, String defaultValue) {
 
         String val = null;
