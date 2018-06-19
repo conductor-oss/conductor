@@ -4,21 +4,20 @@ import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 
 import javax.lang.model.element.Modifier;
+import java.lang.reflect.Type;
 import java.util.Set;
 
-public class AnyType extends MessageType {
-    public AnyType() {
-        super(Object.class, ClassName.get("com.google.protobuf", "Value"), null);
+public class ExternMessageType extends MessageType {
+    private String externProtoType;
+
+    public ExternMessageType(Type javaType, ClassName javaProtoType, String externProtoType, String protoFilePath) {
+        super(javaType, javaProtoType, protoFilePath);
+        this.externProtoType = externProtoType;
     }
 
     @Override
     public String getProtoType() {
-        return "google.protobuf.Value";
-    }
-
-    @Override
-    public void getDependencies(Set<String> deps) {
-        deps.add("google/protobuf/struct.proto");
+        return externProtoType;
     }
 
     @Override

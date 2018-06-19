@@ -11,11 +11,11 @@ import java.util.List;
 import java.util.Set;
 
 public class MessageType extends AbstractType {
-    private File protoFile;
+    private String protoFilePath;
 
-    public MessageType(Type javaType, ClassName javaProtoType, File protoFile) {
+    public MessageType(Type javaType, ClassName javaProtoType, String protoFilePath) {
         super(javaType, javaProtoType);
-        this.protoFile = protoFile;
+        this.protoFilePath = protoFilePath;
     }
 
     @Override
@@ -24,13 +24,13 @@ public class MessageType extends AbstractType {
         return String.join(".", classes.subList(1, classes.size()));
     }
 
+    public String getProtoFilePath() {
+        return protoFilePath;
+    }
+
     @Override
     public TypeName getRawJavaType() {
         return getJavaProtoType();
-    }
-
-    public File getProtoFile() {
-        return protoFile;
     }
 
     @Override
@@ -41,15 +41,26 @@ public class MessageType extends AbstractType {
         method.endControlFlow();
     }
 
+    private boolean isEnum() {
+        Type clazz = getJavaType();
+        return (clazz instanceof Class<?>) && ((Class) clazz).isEnum();
+    }
+
     @Override
     public void mapFromProto(String field, MethodSpec.Builder method) {
+        if (!isEnum())
+            method.beginControlFlow("if (from.$L())", fieldMethod("has", field));
+
         method.addStatement("to.$L( fromProto( from.$L() ) )",
                 fieldMethod("set", field), fieldMethod("get", field));
+
+        if (!isEnum())
+            method.endControlFlow();
     }
 
     @Override
     public void getDependencies(Set<String> deps) {
-        deps.add(getProtoFile().getFilePath());
+        deps.add(protoFilePath);
     }
 
     @Override

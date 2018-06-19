@@ -5,9 +5,7 @@ import com.netflix.conductor.protogen.*;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.TypeName;
-import com.squareup.javapoet.TypeSpec;
 
-import javax.lang.model.element.Modifier;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.*;
@@ -26,7 +24,14 @@ public abstract class AbstractType {
         addScalar(boolean.class, "bool");
         addScalar(Boolean.class, "bool");
 
-        TYPES.put(Object.class, new AnyType());
+
+        TYPES.put(Object.class,
+                new ExternMessageType(
+                        Object.class,
+                        ClassName.get("com.google.protobuf", "Value"),
+                        "google.protobuf.Value",
+                        "google/protobuf/struct.proto")
+        );
     }
 
     static Map<Type, Class> PROTO_LIST_TYPES = new HashMap<>();
@@ -65,12 +70,12 @@ public abstract class AbstractType {
     }
 
     public static MessageType declare(Class type, MessageType parent) {
-        return declare(type, (ClassName)parent.getJavaProtoType(), parent.getProtoFile());
+        return declare(type, (ClassName)parent.getJavaProtoType(), parent.getProtoFilePath());
     }
 
-    public static MessageType declare(Class type, ClassName parentType, File protoFile) {
+    public static MessageType declare(Class type, ClassName parentType, String protoFilePath) {
         String simpleName = type.getSimpleName();
-        MessageType t = new MessageType(type, parentType.nestedClass(simpleName), protoFile);
+        MessageType t = new MessageType(type, parentType.nestedClass(simpleName), protoFilePath);
         if (TYPES.containsKey(type)) {
             throw new IllegalArgumentException("duplicate type declaration: "+type);
         }
@@ -78,8 +83,8 @@ public abstract class AbstractType {
         return t;
     }
 
-    public static MessageType baseClass(ClassName className, File protoFile) {
-        return new MessageType(Object.class, className, protoFile);
+    public static MessageType baseClass(ClassName className, String protoFilePath) {
+        return new MessageType(Object.class, className, protoFilePath);
     }
 
     Type javaType;

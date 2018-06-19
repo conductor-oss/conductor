@@ -10,11 +10,13 @@ public class File {
 
     private ClassName baseClass;
     private Element message;
+    private String filePath;
 
     public File(Class object) {
         String className = object.getSimpleName() + PROTO_SUFFIX;
-        baseClass = ClassName.get(ProtoGen.PROTO_JAVA_PACKAGE_NAME, className);
-        this.message = new Message(object,  AbstractType.baseClass(baseClass, this));
+        this.filePath = "model/" + object.getSimpleName().toLowerCase() + ".proto";
+        this.baseClass = ClassName.get(ProtoGen.PROTO_JAVA_PACKAGE_NAME, className);
+        this.message = new Message(object,  AbstractType.baseClass(baseClass, filePath));
     }
 
     public String getJavaClassName() {
@@ -22,7 +24,7 @@ public class File {
     }
 
     public String getFilePath() {
-        return "model/" + message.getName().toLowerCase() + ".proto";
+        return filePath;
     }
 
     public String getPackageName() {
