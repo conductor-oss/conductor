@@ -20,7 +20,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dyno.DynoProxy;
 import com.netflix.conductor.metrics.Monitors;
-
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,23 +50,21 @@ public class BaseDynoDAO {
 
     String nsKey(String... nsValues) {
         String rootNamespace = config.getProperty("workflow.namespace.prefix", null);
-        StringBuilder namespacedKey = new StringBuilder(rootNamespace).append(NAMESPACE_SEP);
+        StringBuilder namespacedKey = new StringBuilder();
+        if (StringUtils.isNotBlank(rootNamespace)) {
+            namespacedKey.append(rootNamespace).append(NAMESPACE_SEP);
+        }
         String stack = config.getStack();
-        if (stack != null && !stack.isEmpty()) {
+        if (StringUtils.isNotBlank(stack)) {
             namespacedKey.append(stack).append(NAMESPACE_SEP);
         }
-        if (domain != null && !domain.isEmpty()) {
+        if (StringUtils.isNotBlank(domain)) {
             namespacedKey.append(domain).append(NAMESPACE_SEP);
         }
         for (int i = 0; i < nsValues.length; i++) {
-            namespacedKey.append(nsValues[i]);
-            if (i < nsValues.length - 1) {
-                namespacedKey.append(NAMESPACE_SEP);
-            }
+            namespacedKey.append(nsValues[i]).append(NAMESPACE_SEP);
         }
-        //QUES cpewf.devint.test.WORKFLOW.UUID isSystemTask the stack in here same as the NETFLIX_STACK ? and what about the domain?
-        //Looking at the data saved in dynomite cpewf.WORKFLOW.UUID
-        return namespacedKey.toString();
+        return StringUtils.removeEnd(namespacedKey.toString(), NAMESPACE_SEP);
     }
 
     public DynoProxy getDyno() {
@@ -101,7 +99,7 @@ public class BaseDynoDAO {
         Monitors.recordDaoEventRequests(DAO_NAME, action, event);
     }
 
-    void recordRedisDaoPayloadSize(String action, int size) {
-        Monitors.recordDaoPayloadSize(DAO_NAME, action, size);
+    void recordRedisDaoPayloadSize(String action, int size, String taskType, String workflowType) {
+        Monitors.recordDaoPayloadSize(DAO_NAME, action, StringUtils.defaultIfBlank(taskType,""), StringUtils.defaultIfBlank(workflowType,""), size);
     }
 }

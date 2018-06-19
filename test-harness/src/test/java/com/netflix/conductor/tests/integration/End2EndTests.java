@@ -153,7 +153,7 @@ public class End2EndTests {
 		
 		task.getOutputData().put("key1", "value1");
 		task.setStatus(Status.COMPLETED);
-		tc.updateTask(new TaskResult(task));
+		tc.updateTask(new TaskResult(task), task.getTaskType());
 		
 		polled = tc.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
 		assertNotNull(polled);

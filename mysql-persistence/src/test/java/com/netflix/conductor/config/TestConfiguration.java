@@ -71,7 +71,12 @@ public class TestConfiguration implements MySQLConfiguration {
 		return val != null ? val : def;
 	}
 
-	public void setProperty(String key, String value) {
+    @Override
+    public boolean getBooleanProperty(String name, boolean defaultValue) {
+        return false;
+    }
+
+    public void setProperty(String key, String value) {
 		testProperties.put(key, value);
 	}
 
@@ -83,6 +88,11 @@ public class TestConfiguration implements MySQLConfiguration {
 	@Override
 	public int getIntProperty(String string, int def) {
 		return 100;
+	}
+
+	@Override
+	public long getLongProperty(String name, long defaultValue) {
+		return 0;
 	}
 
 	@Override

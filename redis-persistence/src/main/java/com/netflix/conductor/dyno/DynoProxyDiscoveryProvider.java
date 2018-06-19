@@ -20,12 +20,10 @@ public class DynoProxyDiscoveryProvider implements Provider<JedisCommands> {
 
     @Override
     public JedisCommands get() {
-        String cluster = configuration.getCluster();
-        String applicationName = configuration.getAppId();
         return new DynoJedisClient
                 .Builder()
-                .withApplicationName(applicationName)
-                .withDynomiteClusterName(cluster)
+                .withApplicationName(configuration.getAppId())
+                .withDynomiteClusterName(configuration.getCluster())
                 .withDiscoveryClient(discoveryClient)
                 .build();
     }
