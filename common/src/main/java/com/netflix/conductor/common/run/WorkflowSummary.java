@@ -32,7 +32,7 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
  *
  * @author Viren
  */
-@ProtoMessage(fromProto = false)
+@ProtoMessage
 public class WorkflowSummary {
 
 	/**
@@ -230,5 +230,53 @@ public class WorkflowSummary {
 
 	public void setFailedReferenceTaskNames(String failedReferenceTaskNames) {
 		this.failedReferenceTaskNames = failedReferenceTaskNames;
+	}
+
+	public void setWorkflowType(String workflowType) {
+		this.workflowType = workflowType;
+	}
+
+	public void setVersion(int version) {
+		this.version = version;
+	}
+
+	public void setWorkflowId(String workflowId) {
+		this.workflowId = workflowId;
+	}
+
+	public void setCorrelationId(String correlationId) {
+		this.correlationId = correlationId;
+	}
+
+	public void setStartTime(String startTime) {
+		this.startTime = startTime;
+	}
+
+	public void setUpdateTime(String updateTime) {
+		this.updateTime = updateTime;
+	}
+
+	public void setEndTime(String endTime) {
+		this.endTime = endTime;
+	}
+
+	public void setStatus(WorkflowStatus status) {
+		this.status = status;
+	}
+
+	public void setInput(String input) {
+		this.input = input;
+	}
+
+	public void setOutput(String output) {
+		this.output = output;
+	}
+
+	public void setReasonForIncompletion(String reasonForIncompletion) {
+		this.reasonForIncompletion = reasonForIncompletion;
+	}
+
+	public void setExecutionTime(long executionTime) {
+		this.executionTime = executionTime;
 	}
 }

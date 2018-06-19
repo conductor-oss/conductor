@@ -34,8 +34,10 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
+import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.grpc.server.GRPCServer;
 import com.netflix.conductor.grpc.server.GRPCServerProvider;
 import com.netflix.conductor.tests.utils.TestEnvironment;
@@ -195,7 +197,6 @@ public class End2EndGrpcTests {
 		assertEquals(t1.getTaskReferenceName(), pending.getReferenceTaskName());
 		assertEquals(workflowId, pending.getWorkflowInstanceId());
 
-		/*
 		Thread.sleep(1000);
 		SearchResult<WorkflowSummary> searchResult = wc.search("workflowType='" + def.getName() + "'");
 		assertNotNull(searchResult);
@@ -211,6 +212,5 @@ public class End2EndGrpcTests {
 		assertNotNull(wf);
 		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
 		assertEquals(1, wf.getTasks().size());
-		*/
 	}
 }

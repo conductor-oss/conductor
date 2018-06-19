@@ -3,12 +3,16 @@ package com.netflix.conductor.client.grpc;
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.grpc.SearchPb;
 import com.netflix.conductor.grpc.WorkflowServiceGrpc;
 import com.netflix.conductor.grpc.WorkflowServicePb;
 import com.netflix.conductor.proto.WorkflowPb;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -256,6 +260,49 @@ public class WorkflowClient extends ClientBase {
                 .setWorkflowId(workflowId)
                 .setReason(reason)
                 .build()
+        );
+    }
+
+    /**
+     * Search for workflows based on payload
+     *
+     * @param query the search query
+     * @return the {@link SearchResult} containing the {@link WorkflowSummary} that match the query
+     */
+    public SearchResult<WorkflowSummary> search(@Nonnull String query) {
+        return search(null, null, null, null, query);
+    }
+
+    /**
+     * Paginated search for workflows based on payload
+     *
+     * @param start    start value of page
+     * @param size     number of workflows to be returned
+     * @param sort     sort order
+     * @param freeText additional free text query
+     * @param query    the search query
+     * @return the {@link SearchResult} containing the {@link WorkflowSummary} that match the query
+     */
+    public SearchResult<WorkflowSummary> search(
+            @Nullable Integer start, @Nullable Integer size,
+            @Nullable String sort, @Nullable String freeText, @Nonnull String query) {
+        Preconditions.checkNotNull(query, "query cannot be null");
+
+        SearchPb.SearchRequest.Builder request = SearchPb.SearchRequest.newBuilder();
+        request.setQuery(query);
+        if (start != null)
+            request.setStart(start);
+        if (size != null)
+            request.setSize(size);
+        if (sort != null)
+            request.setSort(sort);
+        if (freeText != null)
+            request.setFreeText(freeText);
+
+        SearchPb.WorkflowSummarySearchResult result = stub.search(request.build());
+        return new SearchResult<WorkflowSummary>(
+                result.getTotalHits(),
+                result.getResultsList().stream().map(protoMapper::fromProto).collect(Collectors.toList())
         );
     }
 }

@@ -1117,6 +1117,25 @@ public abstract class AbstractProtoMapper {
         return to.build();
     }
 
+    public WorkflowSummary fromProto(WorkflowSummaryPb.WorkflowSummary from) {
+        WorkflowSummary to = new WorkflowSummary();
+        to.setWorkflowType( from.getWorkflowType() );
+        to.setVersion( from.getVersion() );
+        to.setWorkflowId( from.getWorkflowId() );
+        to.setCorrelationId( from.getCorrelationId() );
+        to.setStartTime( from.getStartTime() );
+        to.setUpdateTime( from.getUpdateTime() );
+        to.setEndTime( from.getEndTime() );
+        to.setStatus( fromProto( from.getStatus() ) );
+        to.setInput( from.getInput() );
+        to.setOutput( from.getOutput() );
+        to.setReasonForIncompletion( from.getReasonForIncompletion() );
+        to.setExecutionTime( from.getExecutionTime() );
+        to.setEvent( from.getEvent() );
+        to.setFailedReferenceTaskNames( from.getFailedReferenceTaskNames() );
+        return to;
+    }
+
     public abstract WorkflowTaskPb.WorkflowTask.WorkflowTaskList toProto(List<WorkflowTask> in);
 
     public abstract List<WorkflowTask> fromProto(WorkflowTaskPb.WorkflowTask.WorkflowTaskList in);
