@@ -224,9 +224,15 @@ public abstract class AbstractProtoMapper {
     public EventHandler.Action fromProto(EventHandlerPb.EventHandler.Action from) {
         EventHandler.Action to = new EventHandler.Action();
         to.setAction( fromProto( from.getAction() ) );
-        to.setStartWorkflow( fromProto( from.getStartWorkflow() ) );
-        to.setCompleteTask( fromProto( from.getCompleteTask() ) );
-        to.setFailTask( fromProto( from.getFailTask() ) );
+        if (from.hasStartWorkflow()) {
+            to.setStartWorkflow( fromProto( from.getStartWorkflow() ) );
+        }
+        if (from.hasCompleteTask()) {
+            to.setCompleteTask( fromProto( from.getCompleteTask() ) );
+        }
+        if (from.hasFailTask()) {
+            to.setFailTask( fromProto( from.getFailTask() ) );
+        }
         to.setExpandInlineJson( from.getExpandInlineJson() );
         return to;
     }
@@ -376,7 +382,9 @@ public abstract class AbstractProtoMapper {
             outputDataMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setOutputData(outputDataMap);
-        to.setWorkflowTask( fromProto( from.getWorkflowTask() ) );
+        if (from.hasWorkflowTask()) {
+            to.setWorkflowTask( fromProto( from.getWorkflowTask() ) );
+        }
         to.setDomain( from.getDomain() );
         return to;
     }
@@ -743,7 +751,9 @@ public abstract class AbstractProtoMapper {
     public SubWorkflowParams fromProto(SubWorkflowParamsPb.SubWorkflowParams from) {
         SubWorkflowParams to = new SubWorkflowParams();
         to.setName( from.getName() );
-        to.setVersion( fromProto( from.getVersion() ) );
+        if (from.hasVersion()) {
+            to.setVersion( fromProto( from.getVersion() ) );
+        }
         return to;
     }
 
@@ -866,7 +876,9 @@ public abstract class AbstractProtoMapper {
         to.setDefaultCase( from.getDefaultCaseList().stream().map(this::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
         to.setForkTasks( from.getForkTasksList().stream().map(this::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
         to.setStartDelay( from.getStartDelay() );
-        to.setSubWorkflowParam( fromProto( from.getSubWorkflowParam() ) );
+        if (from.hasSubWorkflowParam()) {
+            to.setSubWorkflowParam( fromProto( from.getSubWorkflowParam() ) );
+        }
         to.setJoinOn( from.getJoinOnList().stream().collect(Collectors.toCollection(ArrayList::new)) );
         to.setSink( from.getSink() );
         to.setOptional( from.getOptional() );
