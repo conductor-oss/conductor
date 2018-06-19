@@ -49,7 +49,8 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     @Override
     public void poll(TaskServicePb.PollRequest req, StreamObserver<TaskPb.Task> response) {
         try {
-            List<Task> tasks = taskService.poll(req.getTaskType(), req.getWorkerId(), req.getDomain(), 1, POLL_TIMEOUT_MS);
+            List<Task> tasks = taskService.poll(req.getTaskType(), req.getWorkerId(),
+                    grpcHelper.optional(req.getDomain()), 1, POLL_TIMEOUT_MS);
             if (!tasks.isEmpty()) {
                 TaskPb.Task t = protoMapper.toProto(tasks.get(0));
                 response.onNext(t);
@@ -62,8 +63,8 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
 
     @Override
     public void batchPoll(TaskServicePb.BatchPollRequest req, StreamObserver<TaskPb.Task> response) {
-        final int count = (req.getCount() == 0) ? 1 : req.getCount();
-        final int timeout = (req.getTimeout() == 0) ? POLL_TIMEOUT_MS : req.getTimeout();
+        final int count = grpcHelper.optionalOr(req.getCount(), 1);
+        final int timeout = grpcHelper.optionalOr(req.getTimeout(), POLL_TIMEOUT_MS);
 
         if (timeout > MAX_POLL_TIMEOUT_MS) {
             response.onError(Status.INVALID_ARGUMENT
@@ -74,8 +75,11 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
         }
 
         try {
-            List<Task> polledTasks = taskService.poll(req.getTaskType(), req.getWorkerId(), req.getDomain(), count, timeout);
+            List<Task> polledTasks = taskService.poll(req.getTaskType(), req.getWorkerId(),
+                    grpcHelper.optional(req.getDomain()), count, timeout);
+            logger.info("polled tasks: "+polledTasks);
             polledTasks.stream().map(protoMapper::toProto).forEach(response::onNext);
+            response.onCompleted();
         } catch (Exception e) {
             grpcHelper.onError(response, e);
         }
@@ -83,13 +87,15 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
 
     @Override
     public void getTasksInProgress(TaskServicePb.TasksInProgressRequest req, StreamObserver<TaskServicePb.TasksInProgressResponse> response) {
-        final int count = (req.getCount() != 0) ? req.getCount() : MAX_TASK_COUNT;
+        final String startKey = grpcHelper.optional(req.getStartKey());
+        final int count = grpcHelper.optionalOr(req.getCount(), MAX_TASK_COUNT);
 
         try {
             response.onNext(
                     TaskServicePb.TasksInProgressResponse.newBuilder().addAllTasks(
-                        taskService.getTasks(req.getTaskType(), req.getStartKey(), count).stream()
-                            .map(protoMapper::toProto)::iterator
+                        taskService.getTasks(req.getTaskType(), startKey, count)
+                                .stream()
+                                .map(protoMapper::toProto)::iterator
                     ).build()
             );
             response.onCompleted();

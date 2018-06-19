@@ -55,8 +55,9 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
 
     @Override
     public void startWorkflow(StartWorkflowRequestPb.StartWorkflowRequest pbRequest, StreamObserver<WorkflowServicePb.WorkflowId> response) {
-        StartWorkflowRequest request = protoMapper.fromProto(pbRequest);
-        WorkflowDef def = metadata.getWorkflowDef(request.getName(), request.getVersion());
+        // TODO: better handling of optional 'version'
+        final StartWorkflowRequest request = protoMapper.fromProto(pbRequest);
+        WorkflowDef def = metadata.getWorkflowDef(request.getName(), grpcHelper.optional(request.getVersion()));
         if(def == null){
             response.onError(Status.NOT_FOUND
                 .withDescription("No such workflow found by name="+request.getName())
@@ -234,9 +235,9 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
 
     private void doSearch(boolean searchByTask, SearchPb.SearchRequest req, StreamObserver<SearchPb.WorkflowSummarySearchResult> response) {
         final int start = req.getStart();
-        final int size = (req.getSize() != 0) ? req.getSize() : maxSearchSize;
+        final int size = grpcHelper.optionalOr(req.getSize(), maxSearchSize);
         final List<String> sort = convertSort(req.getSort());
-        final String freeText = req.getFreeText().isEmpty() ? "*" : req.getFreeText();
+        final String freeText = grpcHelper.optionalOr(req.getFreeText(), "*");
         final String query = req.getQuery();
 
         if (size > maxSearchSize) {

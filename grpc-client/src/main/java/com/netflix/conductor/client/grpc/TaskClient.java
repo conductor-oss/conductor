@@ -11,6 +11,7 @@ import com.netflix.conductor.grpc.TaskServicePb;
 import com.netflix.conductor.proto.TaskPb;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -93,10 +94,21 @@ public class TaskClient extends ClientBase {
      * @param count    number of tasks to retrieve
      * @return Returns the list of PENDING tasks by type, starting with a given task Id.
      */
-    public List<Task> getPendingTasksByType(String taskType, Optional<String> startKey, Optional<Integer> count) {
+    public List<Task> getPendingTasksByType(String taskType, @Nullable String startKey, @Nullable Integer count) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-        // TODO
-        return null;
+
+        TaskServicePb.TasksInProgressRequest.Builder request = TaskServicePb.TasksInProgressRequest.newBuilder();
+        request.setTaskType(taskType);
+        if (startKey != null)
+            request.setStartKey(startKey);
+        if (count != null)
+            request.setCount(count);
+
+        return stub.getTasksInProgress(request.build())
+                .getTasksList()
+                .stream()
+                .map(protoMapper::fromProto)
+                .collect(Collectors.toList());
     }
 
     /**
@@ -136,15 +148,15 @@ public class TaskClient extends ClientBase {
      * @param workerId user identified worker.
      * @return true if the task was found with the given ID and acknowledged. False otherwise. If the server returns false, the client should NOT attempt to ack again.
      */
-    public boolean ack(String taskId, String workerId) {
-        // TODO: Optional<workerId>
+    public boolean ack(String taskId, @Nullable String workerId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
-        return stub.ackTask(
-                TaskServicePb.AckTaskRequest.newBuilder()
-                        .setTaskId(taskId)
-                        .setWorkerId(workerId)
-                        .build()
-        ).getAck();
+
+        TaskServicePb.AckTaskRequest.Builder request = TaskServicePb.AckTaskRequest.newBuilder();
+        request.setTaskId(taskId);
+        if (workerId != null)
+            request.setWorkerId(workerId);
+
+        return stub.ackTask(request.build()).getAck();
     }
 
     /**

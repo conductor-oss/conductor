@@ -139,7 +139,7 @@ public class End2EndGrpcTests {
 		assertEquals(t0.getTaskReferenceName(), wf.getTasks().get(0).getReferenceTaskName());
 		assertEquals(workflowId, wf.getWorkflowId());
 
-		List<String> runningIds = wc.getRunningWorkflow(def.getName(), Optional.of(def.getVersion()));
+		List<String> runningIds = wc.getRunningWorkflow(def.getName(), def.getVersion());
 		assertNotNull(runningIds);
 		assertEquals(1, runningIds.size());
 		assertEquals(workflowId, runningIds.get(0));
@@ -156,7 +156,7 @@ public class End2EndGrpcTests {
 
 		Boolean acked = tc.ack(task.getTaskId(), "test");
 		assertNotNull(acked);
-		assertTrue(acked.booleanValue());
+		assertTrue(acked);
 
 		task.getOutputData().put("key1", "value1");
 		task.setStatus(Status.COMPLETED);
@@ -180,12 +180,12 @@ public class End2EndGrpcTests {
 		assertEquals(task.getTaskId(), taskById.getTaskId());
 		
 		
-		List<Task> getTasks = tc.getPendingTasksByType(t0.getName(), null, Optional.of(1));
+		List<Task> getTasks = tc.getPendingTasksByType(t0.getName(), null, 1);
 		assertNotNull(getTasks);
 		assertEquals(0, getTasks.size());		//getTasks only gives pending tasks
 		
 		
-		getTasks = tc.getPendingTasksByType(t1.getName(), null, Optional.of(1));
+		getTasks = tc.getPendingTasksByType(t1.getName(), null, 1);
 		assertNotNull(getTasks);
 		assertEquals(1, getTasks.size());
 		

@@ -10,6 +10,8 @@ import io.grpc.stub.StreamObserver;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 import java.util.Arrays;
 
 public class GRPCHelper {
@@ -94,5 +96,21 @@ public class GRPCHelper {
     void emptyResponse(StreamObserver<Empty> response) {
         response.onNext(Empty.getDefaultInstance());
         response.onCompleted();
+    }
+
+    String optional(@Nonnull String str) {
+        return str.isEmpty() ? null : str;
+    }
+
+    String optionalOr(@Nonnull String str, String defaults) {
+        return str.isEmpty() ? defaults : str;
+    }
+
+    Integer optional(@Nonnull Integer i) {
+        return i == 0 ? null : i;
+    }
+
+    Integer optionalOr(@Nonnull Integer i, int defaults) {
+        return i == 0 ? defaults : i;
     }
 }

@@ -8,7 +8,9 @@ import com.netflix.conductor.grpc.MetadataServicePb;
 import com.netflix.conductor.proto.WorkflowDefPb;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nullable;
 import java.util.List;
+import java.util.Optional;
 
 public class MetadataClient extends ClientBase {
     private MetadataServiceGrpc.MetadataServiceBlockingStub stub;
@@ -53,15 +55,17 @@ public class MetadataClient extends ClientBase {
      * @param version the version of the workflow def
      * @return Workflow definition for the given workflow and version
      */
-    public WorkflowDef getWorkflowDef(String name, Integer version) {
+    public WorkflowDef getWorkflowDef(String name, @Nullable Integer version) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "name cannot be blank");
-        WorkflowDefPb.WorkflowDef workflowDef = stub.getWorkflow(
+
+        MetadataServicePb.GetWorkflowRequest.Builder request =
                 MetadataServicePb.GetWorkflowRequest.newBuilder()
-                        .setName(name)
-                        .setVersion(version)
-                        .build()
-        );
-        return protoMapper.fromProto(workflowDef);
+                        .setName(name);
+
+        if (version != null)
+            request.setVersion(version);
+
+        return protoMapper.fromProto(stub.getWorkflow(request.build()));
     }
 
     /**

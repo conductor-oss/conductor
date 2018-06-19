@@ -9,6 +9,7 @@ import com.netflix.conductor.grpc.WorkflowServicePb;
 import com.netflix.conductor.proto.WorkflowPb;
 import org.apache.commons.lang3.StringUtils;
 
+import javax.annotation.Nullable;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -17,6 +18,7 @@ public class WorkflowClient extends ClientBase {
 
     public WorkflowClient(String address, int port) {
         super(address, port);
+        this.stub = WorkflowServiceGrpc.newBlockingStub(this.channel);
     }
 
     /**
@@ -105,13 +107,13 @@ public class WorkflowClient extends ClientBase {
      * @param version      the version of the wokflow definition. Defaults to 1.
      * @return the list of running workflow instances
      */
-    public List<String> getRunningWorkflow(String workflowName, Optional<Integer> version) {
+    public List<String> getRunningWorkflow(String workflowName, @Nullable Integer version) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowName), "Workflow name cannot be blank");
 
         WorkflowServicePb.GetRunningWorkflowsResponse workflows = stub.getRunningWorkflows(
                 WorkflowServicePb.GetRunningWorkflowsRequest.newBuilder()
                         .setName(workflowName)
-                        .setVersion(version.orElse(1))
+                        .setVersion(version == null ? 1 : version)
                         .build()
         );
         return workflows.getWorkflowIdsList();

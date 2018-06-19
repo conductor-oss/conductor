@@ -55,8 +55,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
 
     @Override
     public void getWorkflow(MetadataServicePb.GetWorkflowRequest req, StreamObserver<WorkflowDefPb.WorkflowDef> response) {
-        // TODO: req.getVersion optional
-        WorkflowDef def = service.getWorkflowDef(req.getName(), req.getVersion());
+        WorkflowDef def = service.getWorkflowDef(req.getName(), grpcHelper.optional(req.getVersion()));
         if (def != null) {
             response.onNext(protoMapper.toProto(def));
             response.onCompleted();
