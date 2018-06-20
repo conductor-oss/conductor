@@ -124,4 +124,9 @@ public class MockIndexDAO implements IndexDAO {
 	public List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays) {
 		return null;
 	}
+
+	@Override
+	public List<String> searchRecentIncompletedWorkflows(String indexName, long lastModifiedHours) {
+		return null;
+	}
 }
