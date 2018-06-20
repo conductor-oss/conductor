@@ -83,7 +83,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 		String payload = toJson(taskDef);
 		dynoClient.hset(nsKey(ALL_TASK_DEFS), taskDef.getName(), payload);
 		recordRedisDaoRequests("storeTaskDef");
-		recordRedisDaoPayloadSize("storeTaskDef", payload.length());
+		recordRedisDaoPayloadSize("storeTaskDef", payload.length(), taskDef.getName(), "n/a");
 		refreshTaskDefs();
 		return taskDef.getName();
 	}
@@ -112,7 +112,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 		if (taskDefJsonStr != null) {
 			taskDef = readValue(taskDefJsonStr, TaskDef.class);
 			recordRedisDaoRequests("getTaskDef");
-			recordRedisDaoPayloadSize("getTaskDef", taskDefJsonStr.length());
+			recordRedisDaoPayloadSize("getTaskDef", taskDefJsonStr.length(), taskDef.getName(), "n/a");
 		}	
 		return taskDef;
 	}
@@ -131,7 +131,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 					size += taskDefJsonStr.length();
 				}
 			}
-			recordRedisDaoPayloadSize("getAllTaskDefs", size);
+			recordRedisDaoPayloadSize("getAllTaskDefs", size, "n/a", "n/a");
 		}
 
 		return allTaskDefs;
@@ -172,7 +172,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 		if (workflowDefJsonString != null) {
 			def = readValue(workflowDefJsonString, WorkflowDef.class);
 			recordRedisDaoRequests("getWorkflowDef");
-			recordRedisDaoPayloadSize("getWorkflowDef", workflowDefJsonString.length());
+			recordRedisDaoPayloadSize("getWorkflowDef", workflowDefJsonString.length(), "n/a", def.getName());
 		}
 
 		return def;
@@ -193,7 +193,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 			workflows.add(readValue(workflowDef, WorkflowDef.class));
 			size += workflowDef.length();
 		}
-		recordRedisDaoPayloadSize("getAllWorkflowDefsByName", size);
+		recordRedisDaoPayloadSize("getAllWorkflowDefsByName", size, "n/a", name);
 
 		return workflows;
 	}
@@ -207,7 +207,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 		String workflowDefJsonString = dynoClient.hget(nsKey(WORKFLOW_DEF, name), String.valueOf(version));
 		if (workflowDefJsonString != null) {
 			def = readValue(workflowDefJsonString, WorkflowDef.class);
-			recordRedisDaoPayloadSize("getWorkflowDef", workflowDefJsonString.length());
+			recordRedisDaoPayloadSize("getWorkflowDef", workflowDefJsonString.length(), "n/a", name);
 		}
 		return def;
 	}
@@ -237,7 +237,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 				size += workflowDef.length();
 			}
 		}
-		recordRedisDaoPayloadSize("getAllWorkflowDefs", size);
+		recordRedisDaoPayloadSize("getAllWorkflowDefs", size, "n/a", "n/a");
 		return workflows;
 	}
 
@@ -254,7 +254,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 			workflows.add(readValue(workflowDefJsonString, WorkflowDef.class));
 			size += workflowDefJsonString.length();
 		}
-		recordRedisDaoPayloadSize("getAllLatestWorkflowDefs", size);
+		recordRedisDaoPayloadSize("getAllLatestWorkflowDefs", size, "n/a", "n/a");
 
 		return workflows;
 	}

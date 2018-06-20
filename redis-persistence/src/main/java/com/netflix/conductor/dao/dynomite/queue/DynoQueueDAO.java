@@ -204,7 +204,6 @@ public class DynoQueueDAO implements QueueDAO {
 
     public void processUnacks(String queueName) {
         ((RedisDynoQueue) queues.get(queueName)).processUnacks();
-        ;
     }
 
     @Override

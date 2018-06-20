@@ -22,12 +22,12 @@ public class DynoShardSupplierProvider implements Provider<ShardSupplier> {
 
     @Override
     public ShardSupplier get() {
-        if(configuration.getAvailabilityZone() == null)
+        if(configuration.getAvailabilityZone() == null) {
             throw new ProvisionException(
                     "Availability zone is not defined.  Ensure Configuration.getAvailabilityZone() returns a non-null " +
                             "and non-empty value."
             );
-
+        }
 
         String localDC = configuration.getAvailabilityZone().replaceAll(configuration.getRegion(), "");
 

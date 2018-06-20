@@ -22,7 +22,6 @@ import java.util.Map;
 
 /**
  * @author Viren
- *
  */
 public interface Configuration {
     String DB_PROPERTY_NAME = "db";
@@ -59,7 +58,7 @@ public interface Configuration {
 
     String ADDITIONAL_MODULES_PROPERTY_NAME = "conductor.additional.modules";
 
-    default DB getDB(){
+    default DB getDB() {
         return DB.valueOf(getDBString());
     }
 
@@ -68,102 +67,103 @@ public interface Configuration {
     }
 
     /**
-     *
      * @return time frequency in seconds, at which the workflow sweeper should run to evaluate running workflows.
      */
-    public int getSweepFrequency();
+    int getSweepFrequency();
 
     /**
-     *
      * @return when set to true, the sweep is disabled
      */
-    public boolean disableSweep();
+    boolean disableSweep();
 
 
     /**
-     *
      * @return when set to true, the background task workers executing async system tasks (eg HTTP) are disabled
-     *
      */
-    public boolean disableAsyncWorkers();
+    boolean disableAsyncWorkers();
 
     /**
-     *
      * @return ID of the server.  Can be host name, IP address or any other meaningful identifier.  Used for logging
      */
-    public String getServerId();
+    String getServerId();
 
     /**
-     *
      * @return Current environment. e.g. test, prod
      */
-    public String getEnvironment();
+    String getEnvironment();
 
     /**
-     *
      * @return name of the stack under which the app is running.  e.g. devint, testintg, staging, prod etc.
      */
-    public String getStack();
+    String getStack();
 
     /**
-     *
      * @return APP ID.  Used for logging
      */
-    public String getAppId();
+    String getAppId();
 
     /**
-     *
      * @return Data center region.  if hosting on Amazon the value is something like us-east-1, us-west-2 etc.
      */
-    public String getRegion();
+    String getRegion();
 
     /**
-     *
      * @return Availability zone / rack.  for AWS deployments, the value is something like us-east-1a, etc.
      */
-    public String getAvailabilityZone();
+    String getAvailabilityZone();
 
-    default boolean getJerseyEnabled(){
+    default boolean getJerseyEnabled() {
         return getBooleanProperty(JERSEY_ENABLED_PROPERTY_NAME, JERSEY_ENABLED_DEFAULT_VALUE);
     }
 
     /**
-     *
-     * @param name Name of the property
-     * @param defaultValue  Default value when not specified
+     * @param name         Name of the property
+     * @param defaultValue Default value when not specified
      * @return User defined integer property.
      */
-    public int getIntProperty(String name, int defaultValue);
+    int getIntProperty(String name, int defaultValue);
 
     /**
-     *
-     * @param name Name of the property
-     * @param defaultValue  Default value when not specified
+     * @param name         Name of the property
+     * @param defaultValue Default value when not specified
      * @return User defined string property.
      */
-    public String getProperty(String name, String defaultValue);
+    String getProperty(String name, String defaultValue);
 
     boolean getBooleanProperty(String name, boolean defaultValue);
 
-    /**
-     *
-     * @return Returns all the configurations in a map.
-     */
-    public Map<String, Object> getAll();
+    default boolean getBoolProperty(String name, boolean defaultValue) {
+        String value = getProperty(name, null);
+        if (null == value || value.trim().length() == 0) {
+            return defaultValue;
+        }
+        return Boolean.valueOf(value.trim());
+    }
 
     /**
-     *
-     * @return Provides a list of additional modules to configure.
-     * Use this to inject additional modules that should be loaded as part of the Conductor server initialization
-     * If you are creating custom tasks (com.netflix.conductor.core.execution.tasks.WorkflowSystemTask) then initialize them as part of the custom modules.
+     * @return Returns all the configurations in a map.
      */
-    public default List<AbstractModule> getAdditionalModules() {
+    Map<String, Object> getAll();
+
+    /**
+     * @return Provides a list of additional modules to configure. Use this to inject additional modules that should be
+     * loaded as part of the Conductor server initialization If you are creating custom tasks
+     * (com.netflix.conductor.core.execution.tasks.WorkflowSystemTask) then initialize them as part of the custom
+     * modules.
+     */
+    default List<AbstractModule> getAdditionalModules() {
         return null;
     }
 
 
+    /**
+     * @param name         Name of the property
+     * @param defaultValue Default value when not specified
+     * @return User defined Long property.
+     */
+    long getLongProperty(String name, long defaultValue);
+
     enum DB {
         REDIS, DYNOMITE, MEMORY, REDIS_CLUSTER, MYSQL
     }
-
 }

@@ -9,7 +9,7 @@ import com.netflix.conductor.dao.es.EmbeddedElasticSearch;
 import com.netflix.conductor.dao.es.index.ElasticSearchModule;
 import com.netflix.conductor.dao.es5.EmbeddedElasticSearchV5;
 import com.netflix.conductor.dao.es5.index.ElasticSearchModuleV5;
-import com.netflix.conductor.dao.mysql.MySQLWorkflowModule;
+import com.netflix.conductor.mysql.MySQLWorkflowModule;
 import com.netflix.conductor.server.DynomiteClusterModule;
 import com.netflix.conductor.server.JerseyModule;
 import com.netflix.conductor.server.LocalRedisModule;
