@@ -126,7 +126,7 @@ public class MockIndexDAO implements IndexDAO {
 	}
 
 	@Override
-	public List<String> searchRecentIncompletedWorkflows(String indexName, long lastModifiedHours) {
+	public List<String> searchRecentRunningWorkflows(long lastModifiedHours) {
 		return null;
 	}
 }
