@@ -1301,44 +1301,47 @@ public class WorkflowServiceTest {
         createWFWithResponseTimeout();
 
         String correlationId = "unit_test_1";
-        Map<String, Object> input = new HashMap<String, Object>();
+        Map<String, Object> workflowInput = new HashMap<String, Object>();
         String inputParam1 = "p1 value";
-        input.put("param1", inputParam1);
-        input.put("param2", "p2 value");
-        String wfid = workflowExecutor.startWorkflow("RTOWF", 1, correlationId, input);
-        System.out.println("testSimpleWorkflowWithResponseTimeout.wfid=" + wfid);
-        assertNotNull(wfid);
+        workflowInput.put("param1", inputParam1);
+        workflowInput.put("param2", "p2 value");
+        String workflowId = workflowExecutor.startWorkflow("RTOWF", 1, correlationId, workflowInput);
+        System.out.println("testSimpleWorkflowWithResponseTimeout.wfid=" + workflowId);
+        assertNotNull(workflowId);
 
-        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
-        assertNotNull(es);
-        assertEquals(WorkflowStatus.RUNNING, es.getStatus());
-        assertEquals(1, es.getTasks().size());        //The very first task is the one that should be scheduled.
-
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(1, workflow.getTasks().size());        //The very first task is the one that should be scheduled.
+        assertEquals(1, queueDAO.getSize("task_rt"));
 
         // Polling for the first task should return the same task as before
         Task task = workflowExecutionService.poll("task_rt", "task1.junit.worker");
         assertNotNull(task);
         assertEquals("task_rt", task.getTaskType());
         assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
-        assertEquals(wfid, task.getWorkflowInstanceId());
+        assertEquals(workflowId, task.getWorkflowInstanceId());
 
         // As the task_rt is out of the queue, the next poll should not get it
         Task nullTask = workflowExecutionService.poll("task_rt", "task1.junit.worker");
         assertNull(nullTask);
 
-        // Now since the ResponseTimeOut is set to 15 secs, sleep
-        Thread.sleep(15000);
-        workflowExecutor.decide(wfid);
+        Thread.sleep(10000);
+        workflowExecutor.decide(workflowId);
+        assertEquals(1, queueDAO.getSize("task_rt"));
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
 
         // Polling now should get the same task back because it should have been put back in the queue
         Task taskAgain = workflowExecutionService.poll("task_rt", "task1.junit.worker");
         assertNotNull(taskAgain);
-        assertEquals(task.getTaskId(), taskAgain.getTaskId());
 
-        String task1Op = "task1.Done";
-        task.getOutputData().put("op", task1Op);
-        task.setStatus(COMPLETED);
-        workflowExecutionService.updateTask(task);
+        taskAgain.getOutputData().put("op", "task1.Done");
+        taskAgain.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(taskAgain);
 
         task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
         assertNotNull(task);
@@ -1350,9 +1353,9 @@ public class WorkflowServiceTest {
         workflowExecutionService.updateTask(task);
 
 
-        es = workflowExecutionService.getExecutionStatus(wfid, true);
-        assertNotNull(es);
-        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
 
     }
 
@@ -3482,6 +3485,81 @@ public class WorkflowServiceTest {
         assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
     }
 
+    @Test
+    public void testTaskWithCallbackAfterSecondsInWorkflow() throws Exception {
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(workflowDef);
+
+        String workflowId = workflowExecutor.startWorkflow(workflowDef.getName(), workflowDef.getVersion(), "", new HashMap<>());
+        Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
+        assertNotNull(workflow);
+
+        Task task = workflowExecutionService.poll("junit_task_1", "test");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        String taskId = task.getTaskId();
+        task.setStatus(Status.IN_PROGRESS);
+        task.setCallbackAfterSeconds(5L);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(1, workflow.getTasks().size());
+
+        // task should not be available
+        task = workflowExecutionService.poll("junit_task_1", "test");
+        assertNull(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(1, workflow.getTasks().size());
+
+        Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
+
+        task = workflowExecutionService.poll("junit_task_1", "test");
+        assertNotNull(task);
+        assertEquals(taskId, task.getTaskId());
+
+        task.setStatus(Status.COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(2, workflow.getTasks().size());
+
+        task = workflowExecutionService.poll("junit_task_2", "test");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        taskId = task.getTaskId();
+        task.setStatus(Status.IN_PROGRESS);
+        task.setCallbackAfterSeconds(5L);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(2, workflow.getTasks().size());
+
+        // task should not be available
+        task = workflowExecutionService.poll("junit_task_1", "test");
+        assertNull(task);
+
+        Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
+
+        task = workflowExecutionService.poll("junit_task_2", "test");
+        assertNotNull(task);
+        assertEquals(taskId, task.getTaskId());
+
+        task.setStatus(Status.COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(2, workflow.getTasks().size());
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
 
     //@Test
     public void testRateLimiting() throws Exception {
@@ -3659,8 +3737,9 @@ public class WorkflowServiceTest {
         task.setName("task_rt");
         task.setTimeoutSeconds(120);
         task.setRetryCount(RETRY_COUNT);
-        task.setResponseTimeoutSeconds(15);
-        metadataService.registerTaskDef(Arrays.asList(task));
+        task.setRetryDelaySeconds(0);
+        task.setResponseTimeoutSeconds(10);
+        metadataService.registerTaskDef(Collections.singletonList(task));
 
         WorkflowDef def = new WorkflowDef();
         def.setName("RTOWF");

@@ -17,3 +17,4 @@ dump.rdb
 .idea
 *.iml
 out/
+.DS_Store
