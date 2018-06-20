@@ -846,9 +846,7 @@ public abstract class AbstractProtoMapper {
         if (from.getSink() != null) {
             to.setSink( from.getSink() );
         }
-        if (from.isOptional() != null) {
-            to.setOptional( from.isOptional() );
-        }
+        to.setOptional( from.isOptional() );
         return to.build();
     }
 

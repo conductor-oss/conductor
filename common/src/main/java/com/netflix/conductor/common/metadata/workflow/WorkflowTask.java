@@ -134,7 +134,7 @@ public class WorkflowTask {
 	private String sink;
 
 	@ProtoField(id = 18)
-	private Boolean optional;
+	private boolean optional = false;
 	
 	/**
 	 * @return the name
@@ -391,7 +391,7 @@ public class WorkflowTask {
 	 *
 	 * @return If the task is optional.  When set to true, the workflow execution continues even when the task is in failed status.
 	 */
-	public Boolean isOptional() {
+	public boolean isOptional() {
 		return optional;
 	}
 
@@ -399,7 +399,7 @@ public class WorkflowTask {
 	 * 
 	 * @param optional when set to true, the task is marked as optional
 	 */
-	public void setOptional(Boolean optional) {
+	public void setOptional(boolean optional) {
 		this.optional = optional;
 	}
 	
