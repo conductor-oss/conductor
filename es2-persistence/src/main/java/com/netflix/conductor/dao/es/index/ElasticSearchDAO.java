@@ -72,6 +72,7 @@ import javax.inject.Singleton;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -487,6 +488,27 @@ public class ElasticSearchDAO implements IndexDAO {
 				.should(QueryBuilders.termQuery("status", "FAILED"))
 				.mustNot(QueryBuilders.existsQuery("archived"))
 				.minimumNumberShouldMatch(1);
+		SearchRequestBuilder s = elasticSearchClient.prepareSearch(indexName)
+				.setTypes("workflow")
+				.setQuery(q)
+				.setSize(1000);
+
+		SearchResponse response = s.execute().actionGet();
+		SearchHits hits = response.getHits();
+		List<String> ids = new LinkedList<>();
+		for (SearchHit hit : hits.getHits()) {
+			ids.add(hit.getId());
+		}
+		return ids;
+	}
+
+	//copy paste from com.netflix.conductor.dao.es.index.ElasticSearchDAO5.searchRecentIncompletedWorkflows
+	public List<String> searchRecentRunningWorkflows(long modifiedHoursAgo) {
+		QueryBuilder q = QueryBuilders.boolQuery()
+				.must(QueryBuilders.rangeQuery("updateTime")
+						.gt(LocalDate.now().minus(modifiedHoursAgo, ChronoUnit.HOURS)))
+				.must(QueryBuilders.termQuery("status", "RUNNING"));
+
 		SearchRequestBuilder s = elasticSearchClient.prepareSearch(indexName)
 				.setTypes("workflow")
 				.setQuery(q)
