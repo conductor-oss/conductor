@@ -5,6 +5,10 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.sql.ExecuteFunction;
+import com.netflix.conductor.sql.QueryFunction;
+import com.netflix.conductor.sql.TransactionalFunction;
+
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;

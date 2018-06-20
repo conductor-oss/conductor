@@ -18,7 +18,7 @@ package com.netflix.conductor.config;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
-import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.mysql.MySQLConfiguration;
 
 import java.util.Map;
 
@@ -26,7 +26,7 @@ import java.util.Map;
  * @author Viren
  *
  */
-public class TestConfiguration implements Configuration {
+public class TestConfiguration implements MySQLConfiguration {
 
 	private Map<String, String> testProperties = Maps.newHashMap(ImmutableMap.of("test", "dummy"));
 

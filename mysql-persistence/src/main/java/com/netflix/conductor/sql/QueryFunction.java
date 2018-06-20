@@ -1,4 +1,6 @@
-package com.netflix.conductor.dao.mysql;
+package com.netflix.conductor.sql;
+
+import com.netflix.conductor.dao.mysql.Query;
 
 import java.sql.SQLException;
 
