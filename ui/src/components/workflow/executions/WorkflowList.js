@@ -216,7 +216,9 @@ const Workflow = React.createClass({
   },
  render() {
     let wfs = [];
-    let totalHits = 0;
+    let filteredWfs = [];
+
+     let totalHits = 0;
     let found = 0;
     if(this.props.data.hits) {
       wfs = this.props.data.hits;
@@ -230,6 +232,18 @@ const Workflow = React.createClass({
     }
     const workflowNames = this.state.workflows?this.state.workflows:[];
     const statusList = ['RUNNING','COMPLETED','FAILED','TIMED_OUT','TERMINATED','PAUSED'];
+
+    //secondary filter to match sure we only show workflows that match the the status
+    //console.log(this.state);
+     var currentStatus = this.state.status;
+     if(currentStatus!="" && wfs.length>0) {
+         filteredWfs = wfs.filter( function (wf) {
+                 return wf.status == currentStatus //remove wft if status doesn't match search
+             });
+     } else {
+         filteredWfs = wfs;
+     }
+
 
     return (
       <div className="ui-content">
@@ -267,7 +281,7 @@ const Workflow = React.createClass({
           {parseInt(this.state.start) >= 100?<a onClick={this.prevPage}><i className="fa fa-backward"/>&nbsp;Previous Page</a>:''}
           {parseInt(this.state.start) + 100 <= totalHits?<a onClick={this.nextPage}>&nbsp;&nbsp;Next Page&nbsp;<i className="fa fa-forward"/></a>:''}
         </span>
-        <BootstrapTable data={wfs} striped={true} hover={true} search={false} exportCSV={false} pagination={false} options={{sizePerPage:100}}>
+        <BootstrapTable data={filteredWfs} striped={true} hover={true} search={false} exportCSV={false} pagination={false} options={{sizePerPage:100}}>
           <TableHeaderColumn dataField="workflowType" isKey={true} dataAlign="left" dataSort={true}>Workflow</TableHeaderColumn>
           <TableHeaderColumn dataField="workflowId" dataSort={true} dataFormat={linkMaker}>Workflow ID</TableHeaderColumn>
           <TableHeaderColumn dataField="status" dataSort={true}>Status</TableHeaderColumn>
