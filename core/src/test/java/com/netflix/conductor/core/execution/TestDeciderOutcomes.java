@@ -84,9 +84,11 @@ public class TestDeciderOutcomes {
 	public void init() throws Exception {
 		
 		MetadataDAO metadataDAO = mock(MetadataDAO.class);
-		TaskDef td = new TaskDef();
-		td.setRetryCount(1);
-		when(metadataDAO.getTaskDef(any())).thenReturn(td);
+		TaskDef taskDef = new TaskDef();
+		taskDef.setRetryCount(1);
+		taskDef.setName("mockTaskDef");
+		taskDef.setResponseTimeoutSeconds(0);
+		when(metadataDAO.getTaskDef(any())).thenReturn(taskDef);
 		ParametersUtils parametersUtils = new ParametersUtils();
 		Map<String, TaskMapper> taskMappers = new HashMap<>();
 		taskMappers.put("DECISION", new DecisionTaskMapper());
@@ -296,9 +298,9 @@ public class TestDeciderOutcomes {
 	}
 
 	@Test
-	public void testOptionalWithDyammicFork() throws Exception {
-		WorkflowDef def = new WorkflowDef();
-		def.setName("test");
+	public void testOptionalWithDynamicFork() throws Exception {
+		WorkflowDef workflowDef = new WorkflowDef();
+		workflowDef.setName("test");
 
 		WorkflowTask task1 = new WorkflowTask();
 		task1.setName("fork0");
@@ -314,35 +316,34 @@ public class TestDeciderOutcomes {
 		task2.setType("JOIN");
 		task2.setTaskReferenceName("join0");
 
-		def.getTasks().add(task1);
-		def.getTasks().add(task2);
-		def.setSchemaVersion(2);
+		workflowDef.getTasks().add(task1);
+		workflowDef.getTasks().add(task2);
+		workflowDef.setSchemaVersion(2);
 
 
 		Workflow workflow = new Workflow();
-		List<WorkflowTask> forks = new LinkedList<>();
+		List<WorkflowTask> forkedTasks = new LinkedList<>();
 		Map<String, Map<String, Object>> forkedInputs = new HashMap<>();
 
 		for(int i = 0; i < 3; i++) {
-			WorkflowTask wft = new WorkflowTask();
-			wft.setName("f" + i);
-			wft.setTaskReferenceName("f" + i);
-			wft.setWorkflowTaskType(Type.SIMPLE);
-			wft.setOptional(true);
-			forks.add(wft);
+			WorkflowTask workflowTask = new WorkflowTask();
+			workflowTask.setName("f" + i);
+			workflowTask.setTaskReferenceName("f" + i);
+			workflowTask.setWorkflowTaskType(Type.SIMPLE);
+			workflowTask.setOptional(true);
+			forkedTasks.add(workflowTask);
 
-			forkedInputs.put(wft.getTaskReferenceName(), new HashMap<>());
+			forkedInputs.put(workflowTask.getTaskReferenceName(), new HashMap<>());
 		}
-		workflow.getInput().put("forks", forks);
+		workflow.getInput().put("forks", forkedTasks);
 		workflow.getInput().put("forkedInputs", forkedInputs);
 
 
 		workflow.setStartTime(System.currentTimeMillis());
-		DeciderOutcome outcome = deciderService.decide(workflow, def);
+		DeciderOutcome outcome = deciderService.decide(workflow, workflowDef);
 		assertNotNull(outcome);
 		assertEquals(5, outcome.tasksToBeScheduled.size());
 		assertEquals(0, outcome.tasksToBeUpdated.size());
-
 		assertEquals(SystemTaskType.FORK.name(), outcome.tasksToBeScheduled.get(0).getTaskType());
 		assertEquals(Task.Status.COMPLETED, outcome.tasksToBeScheduled.get(0).getStatus());
 		for(int i = 1; i < 4; i++) {
@@ -354,7 +355,7 @@ public class TestDeciderOutcomes {
 		workflow.getTasks().clear();
 		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
 
-		outcome = deciderService.decide(workflow, def);
+		outcome = deciderService.decide(workflow, workflowDef);
 		assertNotNull(outcome);
 		assertEquals(SystemTaskType.JOIN.name(), outcome.tasksToBeScheduled.get(0).getTaskType());
 		for(int i = 1; i < 4; i++) {
