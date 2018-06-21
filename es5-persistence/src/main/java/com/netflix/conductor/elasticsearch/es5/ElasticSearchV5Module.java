@@ -16,32 +16,37 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index;
+package com.netflix.conductor.elasticsearch.es5;
 
-import java.net.InetAddress;
+import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
 
-import javax.inject.Singleton;
-
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.dao.es5.index.ElasticSearchDAOV5;
+import com.netflix.conductor.elasticsearch.ElasticSearchModule;
+import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
+
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.InetSocketTransportAddress;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.elasticsearch.transport.client.PreBuiltTransportClient;
-import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
-import com.netflix.conductor.core.config.Configuration;
+
+import java.net.InetAddress;
+
+import javax.inject.Singleton;
 
 
 /**
  * @author Viren
  * Provider for the elasticsearch transport client
  */
-public class ElasticSearchModuleV5 extends AbstractModule {
+public class ElasticSearchV5Module extends AbstractModule {
 
-	private static Logger log = LoggerFactory.getLogger(ElasticSearchModuleV5.class);
+	private static Logger log = LoggerFactory.getLogger(ElasticSearchV5Module.class);
 	
 	@Provides
 	@Singleton
@@ -72,6 +77,8 @@ public class ElasticSearchModuleV5 extends AbstractModule {
 
 	@Override
 	protected void configure() {
+	    install(new ElasticSearchModule());
         bind(IndexDAO.class).to(ElasticSearchDAOV5.class);
+        bind(EmbeddedElasticSearchProvider.class).to(EmbeddedElasticSearchV5Provider.class);
 	}
 }

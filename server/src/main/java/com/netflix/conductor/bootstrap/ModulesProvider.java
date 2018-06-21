@@ -5,10 +5,9 @@ import com.google.inject.ProvisionException;
 
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.RedisWorkflowModule;
-import com.netflix.conductor.dao.es.EmbeddedElasticSearch;
-import com.netflix.conductor.dao.es.index.ElasticSearchModule;
-import com.netflix.conductor.dao.es5.EmbeddedElasticSearchV5;
-import com.netflix.conductor.dao.es5.index.ElasticSearchModuleV5;
+import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
+import com.netflix.conductor.elasticsearch.es2.ElasticSearchV2Module;
+import com.netflix.conductor.elasticsearch.es5.ElasticSearchV5Module;
 import com.netflix.conductor.mysql.MySQLWorkflowModule;
 import com.netflix.conductor.server.DynomiteClusterModule;
 import com.netflix.conductor.server.JerseyModule;
@@ -74,33 +73,10 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
                 logger.info("Starting conductor server using MySQL data store", database);
                 break;
             case MEMORY:
-                // TODO This ES logic should probably live elsewhere.
-                try {
-                    if (
-                            configuration.getIntProperty(
-                                    "workflow.elasticsearch.version",
-                                    2
-                            ) == 5) {
-                        EmbeddedElasticSearchV5.start();
-                    } else {
-                        // Use ES2 as default.
-                        EmbeddedElasticSearch.start();
-                    }
-                    if (System.getProperty("workflow.elasticsearch.url") == null) {
-                        System.setProperty("workflow.elasticsearch.url", "localhost:9300");
-                    }
-                    if (System.getProperty("workflow.elasticsearch.index.name") == null) {
-                        System.setProperty("workflow.elasticsearch.index.name", "conductor");
-                    }
-                } catch (Exception e) {
-                    logger.error("Error starting embedded elasticsearch.  Search functionality will be impacted: " + e.getMessage(), e);
-                }
-
                 modules.add(new LocalRedisModule());
                 modules.add(new RedisWorkflowModule());
                 logger.info("Starting conductor server using in memory data store");
                 break;
-
             case REDIS_CLUSTER:
                 modules.add(new RedisClusterModule());
                 modules.add(new RedisWorkflowModule());
@@ -108,10 +84,13 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
                 break;
         }
 
-        if (configuration.getIntProperty("workflow.elasticsearch.version", 2) == 5) {
-            modules.add(new ElasticSearchModuleV5());
+        if (configuration.getIntProperty(
+                ElasticSearchConfiguration.ELASTIC_SEARCH_VERSION_PROPERTY_NAME,
+                2
+        ) == 5) {
+            modules.add(new ElasticSearchV5Module());
         } else {
-            modules.add(new ElasticSearchModule());
+            modules.add(new ElasticSearchV2Module());
         }
 
         if (configuration.getJerseyEnabled()) {

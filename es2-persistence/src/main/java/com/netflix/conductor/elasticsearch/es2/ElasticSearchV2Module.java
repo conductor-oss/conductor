@@ -13,13 +13,16 @@
 /**
  *
  */
-package com.netflix.conductor.dao.es.index;
+package com.netflix.conductor.elasticsearch.es2;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.dao.es.index.ElasticSearchV2DAO;
+import com.netflix.conductor.elasticsearch.ElasticSearchModule;
+import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
 
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
@@ -36,9 +39,9 @@ import javax.inject.Singleton;
 /**
  * @author Viren Provider for the elasticsearch transport client
  */
-public class ElasticSearchModule extends AbstractModule {
+public class ElasticSearchV2Module extends AbstractModule {
 
-    private static Logger log = LoggerFactory.getLogger(ElasticSearchModule.class);
+    private static Logger log = LoggerFactory.getLogger(ElasticSearchV2Module.class);
 
     @Provides
     @Singleton
@@ -68,6 +71,8 @@ public class ElasticSearchModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(IndexDAO.class).to(ElasticSearchDAO.class);
+        install(new ElasticSearchModule());
+        bind(IndexDAO.class).to(ElasticSearchV2DAO.class);
+        bind(EmbeddedElasticSearchProvider.class).to(EmbeddedElasticSearchV2Provider.class);
     }
 }

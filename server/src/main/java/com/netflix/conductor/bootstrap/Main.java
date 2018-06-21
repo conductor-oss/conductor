@@ -18,6 +18,7 @@ package com.netflix.conductor.bootstrap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
+import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
 import com.netflix.conductor.grpc.server.GRPCServerProvider;
 import com.netflix.conductor.jetty.server.JettyServerProvider;
 
@@ -45,6 +46,15 @@ public class Main {
         Injector bootstrapInjector = Guice.createInjector(new BootstrapModule());
         ModulesProvider modulesProvider = bootstrapInjector.getInstance(ModulesProvider.class);
         Injector serverInjector = Guice.createInjector(modulesProvider.get());
+
+
+        serverInjector.getInstance(EmbeddedElasticSearchProvider.class).get().ifPresent(search -> {
+            try {
+                search.start();
+            } catch (Exception ioe) {
+                System.exit(3);
+            }
+        });
 
         System.out.println("\n\n\n");
         System.out.println("                     _            _             ");

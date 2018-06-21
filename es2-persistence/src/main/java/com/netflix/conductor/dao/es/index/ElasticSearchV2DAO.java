@@ -95,9 +95,9 @@ import javax.inject.Singleton;
  */
 @Trace
 @Singleton
-public class ElasticSearchDAO implements IndexDAO {
+public class ElasticSearchV2DAO implements IndexDAO {
 
-	private static Logger logger = LoggerFactory.getLogger(ElasticSearchDAO.class);
+	private static Logger logger = LoggerFactory.getLogger(ElasticSearchV2DAO.class);
 	
 	private static final String WORKFLOW_DOC_TYPE = "workflow";
 	
@@ -109,7 +109,7 @@ public class ElasticSearchDAO implements IndexDAO {
 	
 	private static final String MSG_DOC_TYPE = "message";
 	
-	private static final String className = ElasticSearchDAO.class.getSimpleName();
+	private static final String className = ElasticSearchV2DAO.class.getSimpleName();
 
 	private static final int RETRY_COUNT = 3;
 	
@@ -135,7 +135,7 @@ public class ElasticSearchDAO implements IndexDAO {
     }
 	
 	@Inject
-	public ElasticSearchDAO(Client elasticSearchClient, Configuration config, ObjectMapper objectMapper) {
+	public ElasticSearchV2DAO(Client elasticSearchClient, Configuration config, ObjectMapper objectMapper) {
 		this.objectMapper = objectMapper;
 		this.elasticSearchClient = elasticSearchClient;
 		this.indexName = config.getProperty("workflow.elasticsearch.index.name", null);
@@ -185,7 +185,7 @@ public class ElasticSearchDAO implements IndexDAO {
 		GetIndexTemplatesResponse result = elasticSearchClient.admin().indices().prepareGetTemplates("wfe_template").execute().actionGet();
 		if(result.getIndexTemplates().isEmpty()) {
 			logger.info("Creating the index template 'wfe_template'");
-			InputStream stream = ElasticSearchDAO.class.getResourceAsStream("/template.json");
+			InputStream stream = ElasticSearchV2DAO.class.getResourceAsStream("/template.json");
 			byte[] templateSource = IOUtils.toByteArray(stream);
 			
 			try {
@@ -208,7 +208,7 @@ public class ElasticSearchDAO implements IndexDAO {
 		GetMappingsResponse response = elasticSearchClient.admin().indices().prepareGetMappings(indexName).addTypes(WORKFLOW_DOC_TYPE).execute().actionGet();
 		if(response.mappings().isEmpty()) {
 			logger.info("Adding the workflow type mappings");
-			InputStream stream = ElasticSearchDAO.class.getResourceAsStream("/wfe_type.json");
+			InputStream stream = ElasticSearchV2DAO.class.getResourceAsStream("/wfe_type.json");
 			byte[] bytes = IOUtils.toByteArray(stream);
 			String source = new String(bytes);
 			try {
