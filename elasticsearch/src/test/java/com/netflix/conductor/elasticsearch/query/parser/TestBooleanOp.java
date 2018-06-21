@@ -16,7 +16,10 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
+package com.netflix.conductor.elasticsearch.query.parser;
+
+import com.netflix.conductor.elasticsearch.query.parser.BooleanOp;
+import com.netflix.conductor.elasticsearch.query.parser.ParserException;
 
 import org.junit.Test;
 

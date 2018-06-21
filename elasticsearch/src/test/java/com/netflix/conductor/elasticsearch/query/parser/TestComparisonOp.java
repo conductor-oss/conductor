@@ -1,4 +1,4 @@
-package com.netflix.conductor.dao.es.index.query.parser; /**
+/**
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,10 @@ package com.netflix.conductor.dao.es.index.query.parser; /**
 /**
  * 
  */
+package com.netflix.conductor.elasticsearch.query.parser;
+
+import com.netflix.conductor.elasticsearch.query.parser.ComparisonOp;
+import com.netflix.conductor.elasticsearch.query.parser.ParserException;
 
 import org.junit.Test;
 
@@ -26,13 +30,13 @@ import static org.junit.Assert.assertNotNull;
  * @author Viren
  *
  */
-public class TestBooleanOp extends AbstractParserTest {
+public class TestComparisonOp extends AbstractParserTest {
 
 	@Test
 	public void test() throws Exception {
-		String[] tests = new String[]{"AND", "OR"};
+		String[] tests = new String[]{"<",">","=","!=","IN"};
 		for(String test : tests){
-			BooleanOp name = new BooleanOp(getInputStream(test));
+			ComparisonOp name = new ComparisonOp(getInputStream(test));
 			String nameVal = name.getOperator();
 			assertNotNull(nameVal);
 			assertEquals(test, nameVal);
@@ -40,12 +44,11 @@ public class TestBooleanOp extends AbstractParserTest {
 	}
 	
 	@Test(expected=ParserException.class)
-	public void testInvalid() throws Exception {
-		String test = "<";
-		BooleanOp name = new BooleanOp(getInputStream(test));
+	public void testInvalidOp() throws Exception {
+		String test =  "AND";
+		ComparisonOp name = new ComparisonOp(getInputStream(test));
 		String nameVal = name.getOperator();
 		assertNotNull(nameVal);
 		assertEquals(test, nameVal);
-	
 	}
 }

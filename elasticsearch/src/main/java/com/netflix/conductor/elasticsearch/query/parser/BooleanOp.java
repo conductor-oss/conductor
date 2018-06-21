@@ -16,7 +16,7 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
+package com.netflix.conductor.elasticsearch.query.parser;
 
 import java.io.InputStream;
 

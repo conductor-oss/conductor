@@ -16,34 +16,27 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es.index.query.parser;
+package com.netflix.conductor.elasticsearch.query.parser;
 
-import java.io.InputStream;
+import com.netflix.conductor.elasticsearch.query.parser.Name;
+
+import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
  * @author Viren
- * Represents the name of the field to be searched against.  
+ *
  */
-public class Name extends AbstractNode {
+public class TestName extends AbstractParserTest {
 
-	private String value;
-	
-	public Name(InputStream is) throws ParserException {
-		super(is);
+	@Test
+	public void test() throws Exception{
+		String test =  "metadata.en_US.lang		";
+		Name name = new Name(getInputStream(test));
+		String nameVal = name.getName();
+		assertNotNull(nameVal);
+		assertEquals(test.trim(), nameVal);
 	}
-
-	@Override
-	protected void _parse() throws Exception {
-		this.value = readToken();
-	}
-	
-	@Override
-	public String toString(){
-		return value;
-	}
-	
-	public String getName(){
-		return value;
-	}
-
 }

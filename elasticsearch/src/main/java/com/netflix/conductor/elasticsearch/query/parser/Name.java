@@ -16,21 +16,34 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
+package com.netflix.conductor.elasticsearch.query.parser;
+
+import java.io.InputStream;
 
 /**
  * @author Viren
- *
+ * Represents the name of the field to be searched against.  
  */
-@SuppressWarnings("serial")
-public class ParserException extends Exception {
+public class Name extends AbstractNode {
 
-	public ParserException(String message) {
-		super(message);
+	private String value;
+	
+	public Name(InputStream is) throws ParserException {
+		super(is);
 	}
 
-	public ParserException(String message, Throwable cause) {
-		super(message, cause);
+	@Override
+	protected void _parse() throws Exception {
+		this.value = readToken();
+	}
+	
+	@Override
+	public String toString(){
+		return value;
+	}
+	
+	public String getName(){
+		return value;
 	}
 
 }

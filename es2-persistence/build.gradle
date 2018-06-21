@@ -9,16 +9,12 @@ configurations {
 }
 
 dependencies {
-    compile project(':conductor-core')
-
-    //ES5 Dependency
-    compile "org.apache.logging.log4j:log4j-api:${revLog4jApi}"
-    compile "org.apache.logging.log4j:log4j-core:${revLog4jCore}"
-
-    compileOnly "commons-io:commons-io:${revCommonsIo}"
+    compile project(':conductor-elasticsearch')
 
     compileOnly "org.elasticsearch:elasticsearch:${revElasticSearch2}"
     compileOnly "com.github.rholder:guava-retrying:${revGuavaRetrying}"
+
+    testCompile project(':conductor-elasticsearch').sourceSets.test.output
 }
 
 // Drop the classifier and delete jar task actions to replace the regular jar artifact with the shadow artifact

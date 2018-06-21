@@ -1,4 +1,4 @@
-package com.netflix.conductor.dao.es.index.query.parser; /**
+/**
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,6 +16,12 @@ package com.netflix.conductor.dao.es.index.query.parser; /**
 /**
  * 
  */
+package com.netflix.conductor.elasticsearch.query.parser;
+
+import com.netflix.conductor.elasticsearch.query.parser.ConstValue;
+import com.netflix.conductor.elasticsearch.query.parser.ListConst;
+import com.netflix.conductor.elasticsearch.query.parser.ParserException;
+import com.netflix.conductor.elasticsearch.query.parser.Range;
 
 import org.junit.Test;
 

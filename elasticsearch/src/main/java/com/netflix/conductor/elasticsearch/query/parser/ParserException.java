@@ -16,20 +16,21 @@
 /**
  * 
  */
-package com.netflix.conductor.dao.es5.index.query.parser;
-
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.InputStream;
+package com.netflix.conductor.elasticsearch.query.parser;
 
 /**
  * @author Viren
  *
  */
-public abstract class AbstractParserTest {
+@SuppressWarnings("serial")
+public class ParserException extends Exception {
 
-	protected InputStream getInputStream(String expression) {
-		return new BufferedInputStream(new ByteArrayInputStream(expression.getBytes()));
+	public ParserException(String message) {
+		super(message);
+	}
+
+	public ParserException(String message, Throwable cause) {
+		super(message, cause);
 	}
 
 }

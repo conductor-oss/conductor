@@ -18,6 +18,10 @@
  */
 package com.netflix.conductor.dao.es.index.query.parser;
 
+import com.netflix.conductor.elasticsearch.query.parser.AbstractNode;
+import com.netflix.conductor.elasticsearch.query.parser.BooleanOp;
+import com.netflix.conductor.elasticsearch.query.parser.ParserException;
+
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 
