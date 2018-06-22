@@ -155,8 +155,8 @@ public class Monitors {
 		return sw;
 	}
 
-	public static void record(long count, String name, String... tags) {
-		gauge(classQualifier, "workflow_running", count, tags);
+	public static void recordGauge(String name, long count, String... tags) {
+		gauge(classQualifier, name, count, tags);
 	}
 
 	public static void recordQueueWaitTime(String taskType, long queueWaitTime) {
