@@ -173,12 +173,11 @@ public interface IndexDAO {
 	List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays);
 
 	/**
-	 * Search for RUNNING and FAILED workflows changed in the last lastModifiedHours hours
-	 * @param indexName  Name of the index to search
-	 * @param lastModifiedHours - last updated date should be modifiedHoursAgo hours ago or less
-	 * @return  List of worlflow Ids matching the pattern
+	 * Search for RUNNING workflows changed in the last lastModifiedHours hours
+	 * @param modifiedHoursAgo - last updated date should be modifiedHoursAgo hours ago or less
+	 * @return  List of workflow Ids matching the pattern
 	 */
-	List<String> searchRecentIncompletedWorkflows(String indexName, long modifiedHoursAgo);
+	List<String> searchRecentRunningWorkflows(int modifiedHoursAgo);
 
 
 

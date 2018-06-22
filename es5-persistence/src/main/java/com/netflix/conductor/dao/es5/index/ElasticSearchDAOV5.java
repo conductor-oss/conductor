@@ -64,6 +64,7 @@ import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.sort.SortOrder;
+import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -488,7 +489,6 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 				.setTypes("workflow")
 				.setQuery(q)
 				.setSize(1000);
-
 		SearchResponse response = s.execute().actionGet();
 		SearchHits hits = response.getHits();
 		List<String> ids = new LinkedList<>();
@@ -498,16 +498,18 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 		return ids;
 	}
 
-	public List<String> searchRecentIncompletedWorkflows(String indexName, long modifiedHoursAgo) {
+	public List<String> searchRecentRunningWorkflows(int modifiedHoursAgo) {
+		DateTime dateTime = new DateTime();
 		QueryBuilder q = QueryBuilders.boolQuery()
 				.must(QueryBuilders.rangeQuery("updateTime")
-						.gt(LocalDate.now().minus(modifiedHoursAgo, ChronoUnit.HOURS)))
-				.should(QueryBuilders.termQuery("status", "RUNNING"));
+						.gt(dateTime.minusHours(modifiedHoursAgo)))
+				.must(QueryBuilders.termQuery("status", "RUNNING"));
 
 		SearchRequestBuilder s = elasticSearchClient.prepareSearch(indexName)
 				.setTypes("workflow")
 				.setQuery(q)
-				.setSize(1000);
+				.setSize(5000)
+                .addSort("updateTime",SortOrder.ASC);
 
 		SearchResponse response = s.execute().actionGet();
 		SearchHits hits = response.getHits();
