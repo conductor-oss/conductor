@@ -177,8 +177,6 @@ public interface IndexDAO {
 	 * @param modifiedHoursAgo - last updated date should be modifiedHoursAgo hours ago or less
 	 * @return  List of workflow Ids matching the pattern
 	 */
-	List<String> searchRecentRunningWorkflows(long modifiedHoursAgo);
-
-
+	List<String> searchRecentRunningWorkflows(int modifiedHoursAgo);
 
 }
