@@ -19,6 +19,8 @@
 package com.netflix.conductor.tests.utils;
 
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -69,7 +71,7 @@ public class TestModule extends AbstractModule {
 			
 			@Override
 			public Set<String> getQueueShards() {
-				return Arrays.asList("a").stream().collect(Collectors.toSet());
+				return new HashSet<>(Collections.singletonList("a"));
 			}
 			
 			@Override

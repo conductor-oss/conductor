@@ -148,7 +148,7 @@ public class DynoQueueDAO implements QueueDAO {
 	@Override
 	public List<String> pop(String queueName, int count, int timeout) {
 		List<Message> msg = queues.get(queueName).pop(count, timeout, TimeUnit.MILLISECONDS);
-		return msg.stream().map(m -> m.getId()).collect(Collectors.toList());
+		return msg.stream().map(Message::getId).collect(Collectors.toList());
 	}
 
 	@Override
