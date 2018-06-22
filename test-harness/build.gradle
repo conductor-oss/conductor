@@ -24,7 +24,7 @@ dependencies {
 
 test {
     // Because tests in the module bind to ports they shouldn't be executed in parallel.
-    maxParallelForks = 1
+//    maxParallelForks = 1
 }
 
 task server(type: JavaExec) {

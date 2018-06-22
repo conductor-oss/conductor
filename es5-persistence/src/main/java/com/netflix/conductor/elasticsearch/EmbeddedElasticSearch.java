@@ -14,13 +14,6 @@ import java.nio.file.Path;
 
 public interface EmbeddedElasticSearch extends Lifecycle {
     Logger logger = LoggerFactory.getLogger(EmbeddedElasticSearch.class);
-    String ES_PATH_DATA = "path.data";
-    String ES_PATH_HOME = "path.home";
-
-    int DEFAULT_PORT = 9200;
-    String DEFAULT_CLUSTER_NAME = "elasticsearch_test";
-    String DEFAULT_HOST = "127.0.0.1";
-    String DEFAULT_SETTING_FILE = "embedded-es.yml";
 
     default void cleanDataDir(String path) {
         try {

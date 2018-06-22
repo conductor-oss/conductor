@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.elasticsearch.es5;
 
+import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 
 import org.elasticsearch.client.Client;
@@ -35,9 +36,19 @@ public class EmbeddedElasticSearchV5 implements EmbeddedElasticSearch {
 
     private static final Logger logger = LoggerFactory.getLogger(EmbeddedElasticSearchV5.class);
 
+    private final String clusterName;
+    private final String host;
+    private final int port;
+
     private Node instance;
     private Client client;
     private File dataDir;
+
+    public EmbeddedElasticSearchV5(String clusterName, String host, int port){
+        this.clusterName = clusterName;
+        this.host = host;
+        this.port = port;
+    }
 
     private class PluginConfigurableNode extends Node {
         public PluginConfigurableNode(Settings preparedSettings, Collection<Class<? extends Plugin>> classpathPlugins) {
@@ -47,18 +58,18 @@ public class EmbeddedElasticSearchV5 implements EmbeddedElasticSearch {
 
     @Override
     public void start() throws Exception {
-        start(DEFAULT_CLUSTER_NAME, DEFAULT_HOST, DEFAULT_PORT, true);
+        start(clusterName, host, port);
     }
 
-    public synchronized void start(String clusterName, String host, int port, boolean enableTransportClient) throws Exception {
+    public synchronized void start(String clusterName, String host, int port) throws Exception {
 
         if (instance != null && !instance.isClosed()) {
             logger.info("Elastic Search is already running on port {}", getPort());
             return;
         }
 
-        final Settings settings = getSettings(clusterName, host, port, enableTransportClient);
-        dataDir = setupDataDir(settings.get(ES_PATH_DATA));
+        final Settings settings = getSettings(clusterName, host, port);
+        dataDir = setupDataDir(settings.get(ElasticSearchConfiguration.EMBEDDED_DATA_PATH_DEFAULT_VALUE));
 
         logger.info("Starting ElasticSearch for cluster {} ", settings.get("cluster.name"));
         instance = new PluginConfigurableNode(settings, singletonList(Netty4Plugin.class));
@@ -77,15 +88,16 @@ public class EmbeddedElasticSearchV5 implements EmbeddedElasticSearch {
         client = instance.client();
     }
 
-    private Settings getSettings(String clusterName, String host, int port, boolean enableTransportClient) throws IOException {
+    private Settings getSettings(String clusterName, String host, int port) throws IOException {
         dataDir = Files.createTempDirectory(clusterName + "_" + System.currentTimeMillis() + "data").toFile();
         File homeDir = Files.createTempDirectory(clusterName + "_" + System.currentTimeMillis() + "-home").toFile();
         Settings.Builder settingsBuilder = Settings.builder()
                 .put("cluster.name", clusterName)
                 .put("http.host", host)
                 .put("http.port", port)
-                .put(ES_PATH_DATA, dataDir.getAbsolutePath())
-                .put(ES_PATH_HOME, homeDir.getAbsolutePath())
+                .put("transport.tcp.port", port + 100)
+                .put(ElasticSearchConfiguration.EMBEDDED_DATA_PATH_DEFAULT_VALUE, dataDir.getAbsolutePath())
+                .put(ElasticSearchConfiguration.EMBEDDED_HOME_PATH_DEFAULT_VALUE, homeDir.getAbsolutePath())
                 .put("http.enabled", true)
                 .put("script.inline", true)
                 .put("script.stored", true)
