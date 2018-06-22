@@ -234,15 +234,14 @@ const Workflow = React.createClass({
     const statusList = ['RUNNING','COMPLETED','FAILED','TIMED_OUT','TERMINATED','PAUSED'];
 
     //secondary filter to match sure we only show workflows that match the the status
-    //console.log(this.state);
-     var currentStatus = this.state.status;
-     if(currentStatus!="" && wfs.length>0) {
-         filteredWfs = wfs.filter( function (wf) {
-                 return wf.status == currentStatus //remove wft if status doesn't match search
-             });
-     } else {
-         filteredWfs = wfs;
-     }
+    var currentStatusArray = this.state.status;
+    if(currentStatusArray.length>0 && wfs.length>0) {
+        filteredWfs = wfs.filter( function (wf) {
+            return currentStatusArray.includes(wf.status); //remove wft if status doesn't match search
+        });
+    } else {
+        filteredWfs = wfs;
+    }
 
 
     return (
