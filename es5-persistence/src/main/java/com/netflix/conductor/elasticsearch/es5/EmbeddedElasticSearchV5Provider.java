@@ -19,10 +19,10 @@ public class EmbeddedElasticSearchV5Provider implements EmbeddedElasticSearchPro
 
     @Override
     public Optional<EmbeddedElasticSearch> get() {
-        return isMemoryAndVersion() ? Optional.of(new EmbeddedElasticSearchV5()) : Optional.empty();
+        return isEmbedded() ? Optional.of(new EmbeddedElasticSearchV5()) : Optional.empty();
     }
 
-    private boolean isMemoryAndVersion(){
-        return configuration.getVersion() == 5 && configuration.getDB().equals(Configuration.DB.MEMORY);
+    private boolean isEmbedded(){
+        return configuration.getDB().equals(Configuration.DB.MEMORY);
     }
 }

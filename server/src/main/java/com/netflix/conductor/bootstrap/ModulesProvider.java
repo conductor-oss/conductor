@@ -5,8 +5,6 @@ import com.google.inject.ProvisionException;
 
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.RedisWorkflowModule;
-import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
-import com.netflix.conductor.elasticsearch.es2.ElasticSearchV2Module;
 import com.netflix.conductor.elasticsearch.es5.ElasticSearchV5Module;
 import com.netflix.conductor.mysql.MySQLWorkflowModule;
 import com.netflix.conductor.server.DynomiteClusterModule;
@@ -31,12 +29,12 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
     private static final Logger logger = LoggerFactory.getLogger(ModulesProvider.class);
 
     private final Configuration configuration;
-    
+
     @Inject
-    public ModulesProvider(Configuration configuration){
+    public ModulesProvider(Configuration configuration) {
         this.configuration = configuration;
     }
-    
+
     @Override
     public List<AbstractModule> get() {
         List<AbstractModule> modulesToLoad = new ArrayList<>();
@@ -57,7 +55,7 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
             final String message = "Invalid db name: " + configuration.getDBString()
                     + ", supported values are: " + Arrays.toString(Configuration.DB.values());
             logger.error(message);
-            throw new ProvisionException(message,ie);
+            throw new ProvisionException(message, ie);
         }
 
         switch (database) {
@@ -84,14 +82,7 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
                 break;
         }
 
-        if (configuration.getIntProperty(
-                ElasticSearchConfiguration.ELASTIC_SEARCH_VERSION_PROPERTY_NAME,
-                2
-        ) == 5) {
-            modules.add(new ElasticSearchV5Module());
-        } else {
-            modules.add(new ElasticSearchV2Module());
-        }
+        modules.add(new ElasticSearchV5Module());
 
         if (configuration.getJerseyEnabled()) {
             modules.add(new JerseyModule());

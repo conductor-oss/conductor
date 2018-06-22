@@ -1,6 +1,6 @@
 rootProject.name='conductor'
 
-include 'client','common','contribs','core', 'elasticsearch', 'es2-persistence','es5-persistence','jersey'
+include 'client','common','contribs','core', 'elasticsearch', 'es5-persistence','jersey'
 include 'mysql-persistence', 'redis-persistence','server','test-harness','ui'
 include 'protogen'
 include 'grpc', 'grpc-server', 'grpc-client'
