@@ -515,7 +515,7 @@ public class ElasticSearchDAO implements IndexDAO {
 		SearchRequestBuilder s = elasticSearchClient.prepareSearch(indexName)
 				.setTypes("workflow")
 				.setQuery(q)
-				.setSize(5000);
+				.setSize(5000).addSort("updateTime",SortOrder.ASC);
 
 		SearchResponse response = s.execute().actionGet();
 		SearchHits hits = response.getHits();
