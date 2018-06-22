@@ -1,10 +1,6 @@
 dependencies {
     compile project(':conductor-core')
 
-    compile "commons-io:commons-io:${revCommonsIo}"
     compile "com.google.inject:guice:${revGuice}"
 
-    //ES5 Dependency
-    compile "org.apache.logging.log4j:log4j-api:${revLog4jApi}"
-    compile "org.apache.logging.log4j:log4j-core:${revLog4jCore}"
 }

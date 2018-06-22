@@ -18,11 +18,6 @@
  */
 package com.netflix.conductor.elasticsearch.query.parser;
 
-import com.netflix.conductor.elasticsearch.query.parser.ConstValue;
-import com.netflix.conductor.elasticsearch.query.parser.ListConst;
-import com.netflix.conductor.elasticsearch.query.parser.ParserException;
-import com.netflix.conductor.elasticsearch.query.parser.Range;
-
 import org.junit.Test;
 
 import java.util.List;

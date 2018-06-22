@@ -1,8 +1,12 @@
 dependencies {
-    compile project(':conductor-elasticsearch')
+    compile project(':conductor-core')
+
+    compile "commons-io:commons-io:${revCommonsIo}"
 
 	compile "org.elasticsearch:elasticsearch:${revElasticSearch5}"
 	compile "org.elasticsearch.client:transport:${revElasticSearch5}"
 
-    testCompile project(':conductor-elasticsearch').sourceSets.test.output
+    //ES5 Dependency
+    compile "org.apache.logging.log4j:log4j-api:${revLog4jApi}"
+    compile "org.apache.logging.log4j:log4j-core:${revLog4jCore}"
 }

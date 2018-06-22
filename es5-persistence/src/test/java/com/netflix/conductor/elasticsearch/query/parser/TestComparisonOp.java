@@ -18,7 +18,6 @@
  */
 package com.netflix.conductor.elasticsearch.query.parser;
 
-import com.netflix.conductor.elasticsearch.query.parser.Name;
 
 import org.junit.Test;
 
@@ -29,14 +28,25 @@ import static org.junit.Assert.assertNotNull;
  * @author Viren
  *
  */
-public class TestName extends AbstractParserTest {
+public class TestComparisonOp extends AbstractParserTest {
 
 	@Test
-	public void test() throws Exception{
-		String test =  "metadata.en_US.lang		";
-		Name name = new Name(getInputStream(test));
-		String nameVal = name.getName();
+	public void test() throws Exception {
+		String[] tests = new String[]{"<",">","=","!=","IN"};
+		for(String test : tests){
+			ComparisonOp name = new ComparisonOp(getInputStream(test));
+			String nameVal = name.getOperator();
+			assertNotNull(nameVal);
+			assertEquals(test, nameVal);
+		}
+	}
+	
+	@Test(expected=ParserException.class)
+	public void testInvalidOp() throws Exception {
+		String test =  "AND";
+		ComparisonOp name = new ComparisonOp(getInputStream(test));
+		String nameVal = name.getOperator();
 		assertNotNull(nameVal);
-		assertEquals(test.trim(), nameVal);
+		assertEquals(test, nameVal);
 	}
 }

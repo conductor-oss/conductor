@@ -31,7 +31,6 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.es5.index.query.parser.Expression;
-import com.netflix.conductor.elasticsearch.query.parser.ParserException;
 import com.netflix.conductor.metrics.Monitors;
 
 import org.apache.commons.io.IOUtils;
@@ -86,6 +85,8 @@ import java.util.stream.IntStream;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import com.netflix.conductor.elasticsearch.query.parser.ParserException;
 
 /**
  * @author Viren
