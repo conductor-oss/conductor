@@ -179,6 +179,4 @@ public interface IndexDAO {
 	 */
 	List<String> searchRecentRunningWorkflows(int modifiedHoursAgo);
 
-
-
 }

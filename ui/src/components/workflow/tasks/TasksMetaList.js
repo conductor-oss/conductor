@@ -64,6 +64,7 @@ const TaskMetaList = React.createClass({
           <TableHeaderColumn dataField="ownerApp" dataSort={true} >Owner App</TableHeaderColumn>
           <TableHeaderColumn dataField="timeoutPolicy" dataSort={true} >Timeout Policy</TableHeaderColumn>
           <TableHeaderColumn dataField="timeoutSeconds" dataSort={true} >Timeout Seconds</TableHeaderColumn>
+          <TableHeaderColumn dataField="responseTimeoutSeconds" dataSort={true} >Response Timeout Seconds</TableHeaderColumn>
           <TableHeaderColumn dataField="retryCount" dataSort={true} >Retry Count</TableHeaderColumn>
           <TableHeaderColumn dataField="concurrentExecLimit" dataSort={true} >Concurrent Exec Limit</TableHeaderColumn>
           <TableHeaderColumn dataField="retryLogic" dataSort={true} dataFormat={retries}>Retry Logic</TableHeaderColumn>
