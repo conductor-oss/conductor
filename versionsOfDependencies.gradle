@@ -41,6 +41,7 @@ ext {
     revJettyServlet = '9.3.9.v20160517'
     revOauthClient = '1.19.4'
     revOauthSignature = '1.19.4'
+    revProtoBuf = '3.5.1'
     revRarefiedRedis = '0.0.17'
     revServo = '0.12.17'
     revServletApi = '3.1.0'

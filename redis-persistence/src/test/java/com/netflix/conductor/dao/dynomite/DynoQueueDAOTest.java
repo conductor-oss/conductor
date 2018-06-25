@@ -15,10 +15,9 @@
  */
 package com.netflix.conductor.dao.dynomite;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.config.TestConfiguration;
+import com.netflix.conductor.common.utils.JsonUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
 import com.netflix.conductor.dao.redis.JedisMock;
@@ -49,15 +48,7 @@ public class DynoQueueDAOTest {
 
 	private QueueDAO dao;
 
-	private static ObjectMapper om = new ObjectMapper();
-
-	static {
-		om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-		om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-		om.setSerializationInclusion(Include.NON_NULL);
-		om.setSerializationInclusion(Include.NON_EMPTY);
-	}
+	private static ObjectMapper om = JsonUtils.getMapper();
 
 	@Before
 	public void init() throws Exception {

@@ -1,4 +1,7 @@
 dependencies {
     compile "com.github.rholder:guava-retrying:${revGuavaRetrying}"
     compile "org.slf4j:slf4j-api:${revSlf4j}"
+    compile "com.google.protobuf:protobuf-java:${revProtoBuf}"
+    compile "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
+    compile "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
 }

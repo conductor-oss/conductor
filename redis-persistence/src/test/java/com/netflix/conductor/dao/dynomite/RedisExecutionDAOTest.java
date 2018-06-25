@@ -18,8 +18,6 @@
  */
 package com.netflix.conductor.dao.dynomite;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -29,6 +27,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.common.utils.JsonUtils;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.redis.JedisMock;
 import com.netflix.conductor.dyno.DynoProxy;
@@ -75,15 +74,7 @@ public class RedisExecutionDAOTest {
 	@Mock
 	private IndexDAO indexDAO;
 
-	private static ObjectMapper objectMapper = new ObjectMapper();
-
-	static {
-		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-		objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-		objectMapper.setSerializationInclusion(Include.NON_NULL);
-		objectMapper.setSerializationInclusion(Include.NON_EMPTY);
-	}
+	private static ObjectMapper objectMapper = JsonUtils.getMapper();
 
 	@SuppressWarnings("unchecked")
 	@Before
