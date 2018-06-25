@@ -15,6 +15,7 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import com.google.protobuf.Any;
 import com.netflix.conductor.common.annotations.ProtoEnum;
 import com.netflix.conductor.common.annotations.ProtoField;
 import com.netflix.conductor.common.annotations.ProtoMessage;
@@ -160,6 +161,12 @@ public class Task {
 
     @ProtoField(id = 28)
     private String domain;
+
+    @ProtoField(id = 29)
+    private Any inputMessage;
+
+    @ProtoField(id = 30)
+    private Any outputMessage;
 
     public Task() {
 
@@ -572,8 +579,23 @@ public class Task {
         this.domain = domain;
     }
 
-    public Task copy() {
+    public Any getInputMessage() {
+        return inputMessage;
+    }
 
+    public void setInputMessage(Any inputMessage) {
+        this.inputMessage = inputMessage;
+    }
+
+    public Any getOutputMessage() {
+        return outputMessage;
+    }
+
+    public void setOutputMessage(Any outputMessage) {
+        this.outputMessage = outputMessage;
+    }
+
+    public Task copy() {
         Task copy = new Task();
         copy.setCallbackAfterSeconds(callbackAfterSeconds);
         copy.setCallbackFromWorker(callbackFromWorker);
@@ -594,6 +616,8 @@ public class Task {
         copy.setWorkerId(workerId);
         copy.setWorkflowTask(workflowTask);
         copy.setDomain(domain);
+        copy.setInputMessage(inputMessage);
+        copy.setOutputMessage(outputMessage);
         return copy;
     }
 
@@ -627,6 +651,8 @@ public class Task {
                 ", outputData=" + outputData +
                 ", workflowTask=" + workflowTask +
                 ", domain='" + domain + '\'' +
+                ", inputMessage='" + inputMessage + '\'' +
+                ", outputMessage='" + outputMessage + '\'' +
                 '}';
     }
 }

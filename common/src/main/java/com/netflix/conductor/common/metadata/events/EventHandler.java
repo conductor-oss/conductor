@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.common.metadata.events;
 
+import com.google.protobuf.Any;
 import com.netflix.conductor.common.annotations.ProtoEnum;
 import com.netflix.conductor.common.annotations.ProtoField;
 import com.netflix.conductor.common.annotations.ProtoMessage;
@@ -239,6 +240,9 @@ public class EventHandler {
 		@ProtoField(id = 3)
 		private Map<String, Object> output = new HashMap<>();
 
+		@ProtoField(id = 4)
+		private Any outputMessage;
+
 		/**
 		 * @return the workflowId
 		 */
@@ -283,9 +287,14 @@ public class EventHandler {
 		public void setOutput(Map<String, Object> output) {
 			this.output = output;
 		}
-		
-		
-		
+
+		public Any getOutputMessage() {
+			return outputMessage;
+		}
+
+		public void setOutputMessage(Any outputMessage) {
+			this.outputMessage = outputMessage;
+		}
 	}
 
 	@ProtoMessage
@@ -302,6 +311,9 @@ public class EventHandler {
 
 		@ProtoField(id = 4)
 		private Map<String, Object> input = new HashMap<>();
+
+		@ProtoField(id = 5)
+		private Any inputMessage;
 
 		/**
 		 * @return the name
@@ -363,8 +375,14 @@ public class EventHandler {
 		public void setInput(Map<String, Object> input) {
 			this.input = input;
 		}
-		
-		
+
+		public Any getInputMessage() {
+			return inputMessage;
+		}
+
+		public void setInputMessage(Any inputMessage) {
+			this.inputMessage = inputMessage;
+		}
 	}
 	
 }

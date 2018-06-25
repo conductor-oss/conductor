@@ -225,6 +225,7 @@ public class TaskClient extends ClientBase {
                 taskResult.setReasonForIncompletion(String.format("The TaskResult payload: %d is greater than the permissible 3MB", taskResultSize));
                 taskResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
                 taskResult.setOutputData(null);
+                taskResult.setOutputMessage(null);
             }
         } catch (Exception e) {
             logger.error("Unable to parse the TaskResult: {}", taskResult);

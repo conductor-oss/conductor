@@ -1,9 +1,6 @@
 package com.netflix.conductor.grpc;
 
-import com.google.protobuf.ListValue;
-import com.google.protobuf.NullValue;
-import com.google.protobuf.Struct;
-import com.google.protobuf.Value;
+import com.google.protobuf.*;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.proto.WorkflowTaskPb;
 
@@ -136,5 +133,15 @@ public final class ProtoMapper extends AbstractProtoMapper {
         return WorkflowTaskPb.WorkflowTask.WorkflowTaskList.newBuilder()
                 .addAllTasks(list.stream().map(this::toProto)::iterator)
                 .build();
+    }
+
+    @Override
+    public Any toProto(Any in) {
+        return in;
+    }
+
+    @Override
+    public Any fromProto(Any in) {
+        return in;
     }
 }

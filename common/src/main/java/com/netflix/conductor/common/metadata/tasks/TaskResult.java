@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import com.google.protobuf.Any;
 import com.netflix.conductor.common.annotations.ProtoEnum;
 import com.netflix.conductor.common.annotations.ProtoField;
 import com.netflix.conductor.common.annotations.ProtoMessage;
@@ -60,6 +61,9 @@ public class TaskResult {
 
     @ProtoField(id = 7)
     private Map<String, Object> outputData = new HashMap<>();
+
+    @ProtoField(id = 8)
+    private Any outputMessage;
 
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
 
@@ -177,6 +181,14 @@ public class TaskResult {
         return this;
     }
 
+    public Any getOutputMessage() {
+        return outputMessage;
+    }
+
+    public void setOutputMessage(Any outputMessage) {
+        this.outputMessage = outputMessage;
+    }
+
     /**
      *
      * @return Task execution logs
@@ -214,6 +226,7 @@ public class TaskResult {
                 ", workerId='" + workerId + '\'' +
                 ", status=" + status +
                 ", outputData=" + outputData +
+                ", outputMessage=" + outputMessage +
                 ", logs=" + logs +
                 '}';
     }

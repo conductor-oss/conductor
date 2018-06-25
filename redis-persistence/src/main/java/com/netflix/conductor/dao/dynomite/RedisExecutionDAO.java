@@ -223,6 +223,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			task.setReasonForIncompletion(String.format("Payload of the task: %s larger than the permissible %s bytes",
 					FileUtils.byteCountToDisplaySize(payload.length()), FileUtils.byteCountToDisplaySize(taskPayloadThreshold)));
 			task.setOutputData(null);
+			task.setOutputMessage(null);
 			task.setStatus(Status.FAILED_WITH_TERMINAL_ERROR);
 			payload = toJson(task);
 		}

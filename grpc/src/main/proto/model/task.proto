@@ -3,6 +3,7 @@ package conductor.proto;
 
 import "model/workflowtask.proto";
 import "google/protobuf/struct.proto";
+import "google/protobuf/any.proto";
 
 option java_package = "com.netflix.conductor.proto";
 option java_outer_classname = "TaskPb";
@@ -49,4 +50,6 @@ message Task {
     map<string, google.protobuf.Value> output_data = 26;
     WorkflowTask workflow_task = 27;
     string domain = 28;
+    google.protobuf.Any input_message = 29;
+    google.protobuf.Any output_message = 30;
 }

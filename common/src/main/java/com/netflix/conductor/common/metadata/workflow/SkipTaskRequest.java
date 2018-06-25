@@ -15,6 +15,7 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.google.protobuf.Any;
 import com.netflix.conductor.common.annotations.ProtoField;
 import com.netflix.conductor.common.annotations.ProtoMessage;
 
@@ -27,6 +28,12 @@ public class SkipTaskRequest {
 
 	@ProtoField(id = 2)
 	private Map<String, Object> taskOutput;
+
+	@ProtoField(id = 3)
+	private Any taskInputMessage;
+
+	@ProtoField(id = 4)
+	private Any taskOutputMessage;
 
 	public Map<String, Object> getTaskInput() {
 		return taskInput;
@@ -43,6 +50,20 @@ public class SkipTaskRequest {
 	public void setTaskOutput(Map<String, Object> taskOutput) {
 		this.taskOutput = taskOutput;
 	}
-	
-	
+
+	public Any getTaskInputMessage() {
+		return taskInputMessage;
+	}
+
+	public void setTaskInputMessage(Any taskInputMessage) {
+		this.taskInputMessage = taskInputMessage;
+	}
+
+	public Any getTaskOutputMessage() {
+		return taskOutputMessage;
+	}
+
+	public void setTaskOutputMessage(Any taskOutputMessage) {
+		this.taskOutputMessage = taskOutputMessage;
+	}
 }

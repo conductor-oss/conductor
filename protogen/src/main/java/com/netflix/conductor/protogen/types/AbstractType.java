@@ -1,6 +1,7 @@
 package com.netflix.conductor.protogen.types;
 
 import com.google.common.base.CaseFormat;
+import com.google.protobuf.Any;
 import com.netflix.conductor.protogen.*;
 import com.squareup.javapoet.ClassName;
 import com.squareup.javapoet.MethodSpec;
@@ -31,6 +32,14 @@ public abstract class AbstractType {
                         ClassName.get("com.google.protobuf", "Value"),
                         "google.protobuf.Value",
                         "google/protobuf/struct.proto")
+        );
+
+        TYPES.put(Any.class,
+                new ExternMessageType(
+                        Any.class,
+                        ClassName.get(Any.class),
+                        "google.protobuf.Any",
+                        "google/protobuf/any.proto")
         );
     }
 
