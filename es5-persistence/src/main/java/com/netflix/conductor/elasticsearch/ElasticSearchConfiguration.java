@@ -2,6 +2,11 @@ package com.netflix.conductor.elasticsearch;
 
 import com.netflix.conductor.core.config.Configuration;
 
+import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
+
 public interface ElasticSearchConfiguration extends Configuration {
 
     String ELASTIC_SEARCH_URL_PROPERTY_NAME = "workflow.elasticsearch.url";
@@ -30,6 +35,17 @@ public interface ElasticSearchConfiguration extends Configuration {
 
     default String getURL() {
         return getProperty(ELASTIC_SEARCH_URL_PROPERTY_NAME, ELASTIC_SEARCH_URL_DEFAULT_VALUE);
+    }
+
+    default List<URI> getURIs(){
+
+        String clusterAddress = getURL();
+
+        String[] hosts = clusterAddress.split(",");
+
+        return Arrays.stream(hosts).map( host ->
+           (host.startsWith("http://") || host.startsWith("tcp://")) ? URI.create(host) : URI.create("tcp://" + host)
+        ).collect(Collectors.toList());
     }
 
     default String getIndexName() {
