@@ -731,12 +731,12 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
     private void insertOrUpdatePollData(Connection connection, PollData pollData, String domain) {
 
-        String INSERT_POLL_DATA = "INSERT INTO poll_data (queue_name, domain, json_data) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE queue_name=VALUES(queue_name), domain=VALUES(domain)";
+        //String INSERT_POLL_DATA = "INSERT INTO poll_data (queue_name, domain, json_data) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE queue_name=VALUES(queue_name), domain=VALUES(domain)";
         
-
+        String INSERT_POLL_DATA = "INSERT INTO poll_data (queue_name, domain, json_data, modified_on) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE json_data=VALUES(json_data), modified_on=VALUES(modified_on)";
+                
         execute(connection, INSERT_POLL_DATA, q -> q.addParameter(pollData.getQueueName()).addParameter(domain)
                 .addJsonParameter(pollData).executeUpdate());
-
     }
 
     private PollData readPollData(Connection connection, String queueName, String domain) {
