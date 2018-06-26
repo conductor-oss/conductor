@@ -61,7 +61,7 @@ public class WorkflowBulkResource {
     @Consumes(MediaType.WILDCARD)
     public void pauseWorkflow(List<String> workflowIds) throws Exception {
         Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() > MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
         for (String workflowId : workflowIds) {
             executor.pauseWorkflow(workflowId);
         }
@@ -73,7 +73,7 @@ public class WorkflowBulkResource {
     @Consumes(MediaType.WILDCARD)
     public void resumeWorkflow(List<String> workflowIds) throws Exception {
         Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() > MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
         for (String workflowId : workflowIds) {
             executor.resumeWorkflow(workflowId);
         }
@@ -86,7 +86,7 @@ public class WorkflowBulkResource {
     @Consumes(MediaType.WILDCARD)
     public void restart(List<String> workflowIds) throws Exception {
         Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() > MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
         for (String workflowId : workflowIds) {
             executor.rewind(workflowId);
         }
@@ -98,7 +98,7 @@ public class WorkflowBulkResource {
     @Consumes(MediaType.WILDCARD)
     public void retry(List<String> workflowIds) throws Exception {
         Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() > MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
         for (String workflowId : workflowIds) {
             executor.retry(workflowId);
         }
@@ -110,7 +110,7 @@ public class WorkflowBulkResource {
     @Consumes(MediaType.WILDCARD)
     public void terminate(List<String> workflowIds, @QueryParam("reason") String reason) throws Exception {
         Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() > MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
         for (String workflowId : workflowIds) {
             executor.terminateWorkflow(workflowId, reason);
         }
