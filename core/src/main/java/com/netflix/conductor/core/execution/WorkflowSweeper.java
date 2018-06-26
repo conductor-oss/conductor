@@ -81,7 +81,7 @@ public class WorkflowSweeper {
 					return;
 				}
 				List<String> workflowIds = queueDAO.pop(WorkflowExecutor.deciderQueue, 2 * executorThreadPoolSize, 2000);
-				int currentQueueSize = queueDAO.getSize(WorkflowExecutor.deciderQueue)
+				int currentQueueSize = queueDAO.getSize(WorkflowExecutor.deciderQueue);
 				logger.debug("Sweeper's current deciderqueue size: {}.", currentQueueSize);
 				int retrievedWorkflows = (workflowIds != null) ? workflowIds.size() : 0;
 				logger.debug("Sweeper retrieved {} workflows from the decider queue.", retrievedWorkflows);
