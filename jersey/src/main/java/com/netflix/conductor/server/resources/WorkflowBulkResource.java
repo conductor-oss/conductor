@@ -19,9 +19,7 @@
 package com.netflix.conductor.server.resources;
 
 import com.google.common.base.Preconditions;
-import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.service.MetadataService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
@@ -40,7 +38,6 @@ import java.util.List;
 
 /**
  * @author Alex
- *
  */
 @Api(value = "/workflow/bulk", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON, tags = "Workflow Bulk Management")
 @Path("/workflow/bulk")
@@ -49,10 +46,9 @@ import java.util.List;
 @Singleton
 public class WorkflowBulkResource {
 
+    private static final int MAX_REQUEST_ITEMS = 1000;
     private WorkflowExecutor executor;
 
-    private static final int MAX_REQUEST_ITEMS = 1000;
-    
 
     @Inject
     public WorkflowBulkResource(WorkflowExecutor executor) {
@@ -65,7 +61,7 @@ public class WorkflowBulkResource {
     @Consumes(MediaType.WILDCARD)
     public void pauseWorkflow(List<String> workflowIds) throws Exception {
         Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+        Preconditions.checkArgument(workflowIds.size() > MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
         for (String workflowId : workflowIds) {
             executor.pauseWorkflow(workflowId);
         }
@@ -77,7 +73,7 @@ public class WorkflowBulkResource {
     @Consumes(MediaType.WILDCARD)
     public void resumeWorkflow(List<String> workflowIds) throws Exception {
         Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+        Preconditions.checkArgument(workflowIds.size() > MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
         for (String workflowId : workflowIds) {
             executor.resumeWorkflow(workflowId);
         }
@@ -90,7 +86,7 @@ public class WorkflowBulkResource {
     @Consumes(MediaType.WILDCARD)
     public void restart(List<String> workflowIds) throws Exception {
         Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+        Preconditions.checkArgument(workflowIds.size() > MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
         for (String workflowId : workflowIds) {
             executor.rewind(workflowId);
         }
@@ -102,7 +98,7 @@ public class WorkflowBulkResource {
     @Consumes(MediaType.WILDCARD)
     public void retry(List<String> workflowIds) throws Exception {
         Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+        Preconditions.checkArgument(workflowIds.size() > MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
         for (String workflowId : workflowIds) {
             executor.retry(workflowId);
         }
@@ -114,7 +110,7 @@ public class WorkflowBulkResource {
     @Consumes(MediaType.WILDCARD)
     public void terminate(List<String> workflowIds, @QueryParam("reason") String reason) throws Exception {
         Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+        Preconditions.checkArgument(workflowIds.size() > MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
         for (String workflowId : workflowIds) {
             executor.terminateWorkflow(workflowId, reason);
         }
