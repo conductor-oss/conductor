@@ -17,7 +17,7 @@ package com.netflix.conductor.dao.dynomite;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.config.TestConfiguration;
-import com.netflix.conductor.common.utils.JsonUtils;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
 import com.netflix.conductor.dao.redis.JedisMock;
@@ -48,7 +48,7 @@ public class DynoQueueDAOTest {
 
 	private QueueDAO dao;
 
-	private static ObjectMapper om = JsonUtils.getMapper();
+	private static ObjectMapper om = new JsonMapperProvider().get();
 
 	@Before
 	public void init() throws Exception {

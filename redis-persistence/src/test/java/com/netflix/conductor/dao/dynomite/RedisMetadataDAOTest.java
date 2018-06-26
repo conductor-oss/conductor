@@ -28,7 +28,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import com.netflix.conductor.common.utils.JsonUtils;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -58,7 +58,7 @@ public class RedisMetadataDAOTest {
 
 	private RedisMetadataDAO dao;
 	
-	private static ObjectMapper om = JsonUtils.getMapper();
+	private static ObjectMapper om = new JsonMapperProvider().get();
 
 	@Before
 	public void init() {

@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Any;
 import com.google.protobuf.Struct;
 import com.google.protobuf.Value;
-import com.netflix.conductor.common.utils.JsonUtils;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import org.junit.Test;
 
 import java.io.IOException;
@@ -14,10 +14,10 @@ import java.io.StringWriter;
 
 import static org.junit.Assert.*;
 
-public class JsonUtilsTest {
+public class JsonMapperProviderTest {
     @Test
     public void testSimpleMapping() throws JsonGenerationException, JsonMappingException, IOException {
-        ObjectMapper m = JsonUtils.getMapper();
+        ObjectMapper m = new JsonMapperProvider().get();
         assertTrue(m.canSerialize(Any.class));
 
         Struct struct1 = Struct.newBuilder().putFields(

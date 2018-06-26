@@ -3,7 +3,7 @@ package com.netflix.conductor.dao.mysql;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.common.utils.JsonUtils;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.zaxxer.hikari.HikariDataSource;
 
 import org.flywaydb.core.Flyway;
@@ -26,7 +26,7 @@ public class MySQLBaseDAOTest {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final DataSource dataSource;
     protected final TestConfiguration testConfiguration = new TestConfiguration();
-    protected final ObjectMapper objectMapper = JsonUtils.getMapper();
+    protected final ObjectMapper objectMapper = new JsonMapperProvider().get();
     protected final DB db = EmbeddedDatabase.INSTANCE.getDB();
 
     static AtomicBoolean migrated = new AtomicBoolean(false);

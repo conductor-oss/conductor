@@ -15,9 +15,11 @@
  */
 package com.netflix.conductor.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
 import com.netflix.conductor.dyno.SystemPropertiesDynomiteConfiguration;
@@ -38,6 +40,7 @@ public class ServerModule extends AbstractModule {
         install(new JettyModule());
         install(new GRPCModule());
 
+        bind(ObjectMapper.class).toProvider(JsonMapperProvider.class);
         bind(Configuration.class).to(SystemPropertiesDynomiteConfiguration.class);
         bind(ExecutorService.class).toProvider(ExecutorServiceProvider.class).in(Scopes.SINGLETON);
     }

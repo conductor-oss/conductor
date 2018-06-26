@@ -20,7 +20,7 @@ package com.netflix.conductor.client.http;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.netflix.conductor.common.utils.JsonUtils;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -61,7 +61,7 @@ public abstract class ClientBase {
     }
 
     protected ClientBase(ClientConfig clientConfig, ClientHandler handler) {
-        objectMapper = JsonUtils.getMapper();
+        objectMapper = new JsonMapperProvider().get();
 
         JacksonJsonProvider provider = new JacksonJsonProvider(objectMapper);
         clientConfig.getSingletons().add(provider);

@@ -10,10 +10,11 @@ import com.google.protobuf.Any;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.Message;
 
+import javax.inject.Provider;
 import java.io.IOException;
 
-public class JsonUtils {
-    private JsonUtils() {}
+public class JsonMapperProvider implements Provider<ObjectMapper> {
+    public JsonMapperProvider() {}
 
     /**
      * JsonProtoModule can be registered into an {@link ObjectMapper}
@@ -76,8 +77,8 @@ public class JsonUtils {
          * but '@value' contains a base64 encoded string with the binary data of the serialized
          * message.
          *
-         * Since all the provided Conductor clients are aware of this encoding, it's always possible
-         * to re-build the original {@link Any} message regardless of the client's language.
+         * Since all the provided Conductor clients are required to know this encoding, it's always
+         * possible to re-build the original {@link Any} message regardless of the client's language.
          *
          * {@see AnyDeserializer}
          */
@@ -126,7 +127,8 @@ public class JsonUtils {
         }
     }
 
-    public static ObjectMapper getMapper() {
+    @Override
+    public ObjectMapper get() {
         final ObjectMapper objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);

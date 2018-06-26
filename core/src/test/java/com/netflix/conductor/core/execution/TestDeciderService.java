@@ -42,7 +42,7 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
-import com.netflix.conductor.common.utils.JsonUtils;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DefaultRegistry;
@@ -92,7 +92,7 @@ public class TestDeciderService {
 
     private static Registry registry;
 
-    private static ObjectMapper objectMapper = JsonUtils.getMapper();
+    private static ObjectMapper objectMapper = new JsonMapperProvider().get();
 
     @BeforeClass
     public static void init() {
