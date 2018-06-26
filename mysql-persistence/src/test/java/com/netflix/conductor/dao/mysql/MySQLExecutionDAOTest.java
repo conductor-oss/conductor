@@ -142,8 +142,8 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 	}
 	
 	@Test
-    public void testWith10THreads() throws InterruptedException, ExecutionException {
-        testPollDataWithParallelThreads(10);
+    public void testWith5THreads() throws InterruptedException, ExecutionException {
+        testPollDataWithParallelThreads(5);
     }
     
     
