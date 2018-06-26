@@ -6,14 +6,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 
-import com.netflix.conductor.common.metadata.tasks.PollData;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.Task.Status;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
-import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.dao.IndexDAO;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,13 +15,28 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+
+import com.netflix.conductor.common.metadata.tasks.PollData;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.dao.IndexDAO;
 
 @SuppressWarnings("Duplicates")
 public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
@@ -132,6 +140,44 @@ public class MySQLExecutionDAOTest extends MySQLBaseDAOTest {
 		pd = dao.getPollData("taskDef", "domain2");
 		assertTrue(pd == null);
 	}
+	
+	@Test
+    public void testWith10THreads() throws InterruptedException, ExecutionException {
+        testPollDataWithParallelThreads(10);
+    }
+    
+    
+    private void testPollDataWithParallelThreads(final int threadCount) throws InterruptedException, ExecutionException {
+
+        Callable<PollData> task = new Callable<PollData>() {
+            @Override
+            public PollData call() {
+                dao.updateLastPoll("taskDef", null, "workerId1");
+                return dao.getPollData("taskDef", null);
+            }
+        };
+        List<Callable<PollData>> tasks = Collections.nCopies(threadCount, task);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(threadCount);
+        List<Future<PollData>> futures = executorService.invokeAll(tasks);
+        List<String> resultList = new ArrayList<String>(futures.size());
+        // Check for exceptions
+        for (Future<PollData> future : futures) {
+            // Throws an exception if an exception was thrown by the task.
+            PollData pollData = future.get();
+            System.out.println(pollData);
+            if(pollData !=null)
+                resultList.add(future.get().getQueueName());
+        }
+        // Validate the IDs
+        Assert.assertEquals(threadCount, futures.size());
+        List<String> expectedList = new ArrayList<String>(threadCount);
+        for (long i = 1; i <= threadCount; i++) {
+            expectedList.add("taskDef");
+        }
+        Collections.sort(resultList);
+        Assert.assertEquals(expectedList, resultList);
+    }
 
 	@Test
 	public void testTaskCreateDups() throws Exception {

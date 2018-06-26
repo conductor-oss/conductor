@@ -1,5 +1,17 @@
 package com.netflix.conductor.dao.mysql;
 
+import java.sql.Connection;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.sql.DataSource;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -15,16 +27,6 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
-import java.sql.Connection;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
-import javax.inject.Inject;
-import javax.sql.DataSource;
 
 public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
@@ -805,11 +807,15 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
         if (result == 0) {
             String INSERT_POLL_DATA = "INSERT INTO poll_data (queue_name, domain, json_data) VALUES (?, ?, ?)";
+            
+            synchronized(this)
+            {
             execute(connection, INSERT_POLL_DATA, q ->
                     q.addParameter(pollData.getQueueName())
                             .addParameter(domain)
                             .addJsonParameter(pollData)
                             .executeUpdate());
+            }
         }
     }
 
