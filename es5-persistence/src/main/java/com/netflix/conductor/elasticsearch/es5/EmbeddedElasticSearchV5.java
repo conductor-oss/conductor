@@ -61,9 +61,14 @@ public class EmbeddedElasticSearchV5 implements EmbeddedElasticSearch {
 
     public synchronized void start(String clusterName, String host, int port) throws Exception {
 
-        if (instance != null && !instance.isClosed()) {
-            logger.info("Elastic Search is already running on port {}", getPort());
-            return;
+        if (instance != null) {
+            String msg = String.format(
+                            "An instance of this Embedded Elastic Search server is already running on port: %d.  " +
+                                    "It must be stopped before you can call start again.",
+                            getPort()
+                    );
+            logger.error(msg);
+            throw new IllegalStateException(msg);
         }
 
         final Settings settings = getSettings(clusterName, host, port);
@@ -117,6 +122,7 @@ public class EmbeddedElasticSearchV5 implements EmbeddedElasticSearch {
             String port = getPort();
             logger.info("Stopping Elastic Search");
             instance.close();
+            instance = null;
             logger.info("Elastic Search on port {} stopped", port);
         }
 
