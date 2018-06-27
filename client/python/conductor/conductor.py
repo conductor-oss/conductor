@@ -75,8 +75,10 @@ class BaseClient(object):
         self.__print(resp)
         self.__checkForSuccess(resp)
 
-    def makeUrl(self, urlformat, *argv):
-        url = self.baseResource + '/' + urlformat.format(*argv)
+    def makeUrl(self, urlformat=None, *argv):
+        url = self.baseResource + '/'
+        if urlformat:
+            url += urlformat.format(*argv)
         return url
 
     def makeParams(self, **kwargs):
@@ -292,15 +294,15 @@ class EventServicesClient(BaseClient):
         return self.get(url, params)
 
     def getEventHandlerDefs(self):
-        url = self.makeUrl('')
+        url = self.makeUrl()
         return self.get(url)
 
     def createEventHandlerDef(self, ehObj):
-        url = self.makeUrl('')
+        url = self.makeUrl()
         return self.post(url, None, ehObj)
 
     def updateEventHandlerDef(self, ehObj):
-        url = self.makeUrl('')
+        url = self.makeUrl()
         return self.put(url, None, ehObj)
 
     def removeEventHandler(self, ehName):
