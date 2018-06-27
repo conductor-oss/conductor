@@ -15,7 +15,6 @@ package com.netflix.conductor.elasticsearch.es5;
 import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 
-import org.elasticsearch.client.Client;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.InternalSettingsPreparer;
 import org.elasticsearch.node.Node;
@@ -41,7 +40,6 @@ public class EmbeddedElasticSearchV5 implements EmbeddedElasticSearch {
     private final int port;
 
     private Node instance;
-    private Client client;
     private File dataDir;
 
     public EmbeddedElasticSearchV5(String clusterName, String host, int port){
@@ -85,7 +83,6 @@ public class EmbeddedElasticSearchV5 implements EmbeddedElasticSearch {
             }
         });
         logger.info("ElasticSearch cluster {} started in local mode on port {}", instance.settings().get("cluster.name"), getPort());
-        client = instance.client();
     }
 
     private Settings getSettings(String clusterName, String host, int port) throws IOException {
@@ -107,14 +104,6 @@ public class EmbeddedElasticSearchV5 implements EmbeddedElasticSearch {
                 .put("transport.type", "netty4");
 
         return settingsBuilder.build();
-    }
-
-    public Client getClient() {
-        if (instance == null || instance.isClosed()) {
-            logger.error("Embedded ElasticSearch is not Initialized and started, please call start() method first");
-            return null;
-        }
-        return client;
     }
 
     private String getPort() {
