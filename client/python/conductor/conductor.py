@@ -79,6 +79,9 @@ class BaseClient(object):
         url = self.baseResource + '/' + urlformat.format(*argv)
         return url
 
+    def makeParams(self, **kwargs):
+        return dict((k, v) for k, v in kwargs.items() if v is not None) or None
+
     def mergeTwoDicts(self, x, y):
         z = x.copy()
         z.update(y)
@@ -115,9 +118,7 @@ class MetadataClient(BaseClient):
 
     def getWorkflowDef(self, wfname, version=1):
         url = self.makeUrl('workflow/{}', wfname)
-        params = {}
-        params['version'] = version
-        return self.get(url, params)
+        return self.get(url, self.makeParams(version=version))
 
     def createWorkflowDef(self, wfdObj):
         url = self.makeUrl('workflow')
@@ -145,9 +146,7 @@ class MetadataClient(BaseClient):
 
     def unRegisterTaskDef(self, tdName, reason=None):
         url = self.makeUrl('taskdefs/{}', tdName)
-        params = {}
-        params['reason'] = reason
-        self.delete(url, params)
+        self.delete(url, self.makeParams(reason=reason))
 
     def getAllTaskDefs(self):
         url = self.makeUrl('taskdefs')
@@ -256,10 +255,7 @@ class WorkflowClient(BaseClient):
 
     def removeWorkflow(self, wfId, archiveWorkflow, reason=None):
         url = self.makeUrl('{}/remove', wfId)
-        params = {}
-        params['archiveWorkflow'] = archiveWorkflow
-        params['reason'] = reason
-        self.delete(url, params)
+        self.delete(url, self.makeParams(archiveWorkflow=archiveWorkflow, reason=reason))
 
     def pauseWorkflow(self, wfId):
         url = self.makeUrl('{}/pause', wfId)
