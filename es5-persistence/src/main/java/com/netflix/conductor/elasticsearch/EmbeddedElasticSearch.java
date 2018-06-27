@@ -16,14 +16,15 @@ public interface EmbeddedElasticSearch extends Lifecycle {
     Logger logger = LoggerFactory.getLogger(EmbeddedElasticSearch.class);
 
     default void cleanDataDir(String path) {
+        File dataDir = new File(path);
+
         try {
             logger.info("Deleting contents of data dir {}", path);
-            File f = new File(path);
-            if (f.exists()) {
-                FileUtils.cleanDirectory(new File(path));
+            if (dataDir.exists()) {
+                FileUtils.cleanDirectory(dataDir);
             }
         } catch (IOException e) {
-            logger.error("Failed to delete ES data dir");
+            logger.error(String.format("Failed to delete ES data dir: %s", dataDir.getAbsolutePath()), e);
         }
     }
 
