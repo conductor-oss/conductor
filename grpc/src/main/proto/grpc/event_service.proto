@@ -1,7 +1,6 @@
 syntax = "proto3";
-package conductor.grpc;
+package conductor.grpc.events;
 
-import "google/protobuf/empty.proto";
 import "model/eventhandler.proto";
 
 option java_package = "com.netflix.conductor.grpc";
@@ -10,40 +9,60 @@ option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
 
 service EventService {
     // POST /
-    rpc AddEventHandler(conductor.proto.EventHandler) returns (google.protobuf.Empty);
+    rpc AddEventHandler(AddEventHandlerRequest) returns (AddEventHandlerResponse);
 
     // PUT /
-    rpc UpdateEventHandler(conductor.proto.EventHandler) returns (google.protobuf.Empty);
+    rpc UpdateEventHandler(UpdateEventHandlerRequest) returns (UpdateEventHandlerResponse);
 
     // DELETE /{name}
-    rpc RemoveEventHandler(RemoveEventHandlerRequest) returns (google.protobuf.Empty);
+    rpc RemoveEventHandler(RemoveEventHandlerRequest) returns (RemoveEventHandlerResponse);
 
     // GET /
-    rpc GetEventHandlers(google.protobuf.Empty) returns (stream conductor.proto.EventHandler);
+    rpc GetEventHandlers(GetEventHandlersRequest) returns (stream conductor.proto.EventHandler);
 
     // GET /{name}
-    rpc GetEventHandlersForEvent(GetEventHandlersRequest) returns (stream conductor.proto.EventHandler);
+    rpc GetEventHandlersForEvent(GetEventHandlersForEventRequest) returns (stream conductor.proto.EventHandler);
 
     // GET /queues
-    rpc GetQueues(google.protobuf.Empty) returns (GetQueuesResponse);
-    rpc GetQueueSizes(google.protobuf.Empty) returns (GetQueueSizesResponse);
+    rpc GetQueues(GetQueuesRequest) returns (GetQueuesResponse);
+    rpc GetQueueSizes(GetQueueSizesRequest) returns (GetQueueSizesResponse);
 
     // GET /queues/providers
-    rpc GetQueueProviders(google.protobuf.Empty) returns (GetQueueProvidersResponse);
+    rpc GetQueueProviders(GetQueueProvidersRequest) returns (GetQueueProvidersResponse);
 }
+
+message AddEventHandlerRequest {
+    conductor.proto.EventHandler handler = 1;
+}
+
+message AddEventHandlerResponse {}
+
+message UpdateEventHandlerRequest {
+    conductor.proto.EventHandler handler = 1;
+}
+
+message UpdateEventHandlerResponse {}
 
 message RemoveEventHandlerRequest {
     string name = 1;
 }
 
-message GetEventHandlersRequest {
+message RemoveEventHandlerResponse {}
+
+message GetEventHandlersRequest {}
+
+message GetEventHandlersForEventRequest {
     string event = 1;
     bool active_only = 2;
 }
 
+message GetQueuesRequest {}
+
 message GetQueuesResponse {
     map<string, string> event_to_queue_uri = 1;
 }
+
+message GetQueueSizesRequest {}
 
 message GetQueueSizesResponse {
     message QueueInfo {
@@ -51,6 +70,8 @@ message GetQueueSizesResponse {
     }
     map<string, QueueInfo> event_to_queue_info = 2;
 }
+
+message GetQueueProvidersRequest {}
 
 message GetQueueProvidersResponse {
     repeated string providers = 1;

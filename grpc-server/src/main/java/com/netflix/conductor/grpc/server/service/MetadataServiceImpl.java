@@ -31,33 +31,32 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     }
 
     @Override
-    public void createWorkflow(WorkflowDefPb.WorkflowDef req, StreamObserver<Empty> response) {
-        try {
-            service.registerWorkflowDef(protoMapper.fromProto(req));
-            grpcHelper.emptyResponse(response);
-        } catch (Exception e) {
-            grpcHelper.onError(response, e);
-        }
+    public void createWorkflow(MetadataServicePb.CreateWorkflowRequest req, StreamObserver<MetadataServicePb.CreateWorkflowResponse> response) {
+        WorkflowDef workflow = protoMapper.fromProto(req.getWorkflow());
+        service.registerWorkflowDef(workflow);
+        response.onNext(MetadataServicePb.CreateWorkflowResponse.getDefaultInstance());
+        response.onCompleted();
     }
 
     @Override
-    public void updateWorkflows(MetadataServicePb.UpdateWorkflowsRequest req, StreamObserver<Empty> response) {
+    public void updateWorkflows(MetadataServicePb.UpdateWorkflowsRequest req, StreamObserver<MetadataServicePb.UpdateWorkflowsResponse> response) {
         List<WorkflowDef> workflows = req.getDefsList().stream()
                 .map(protoMapper::fromProto).collect(Collectors.toList());
 
-        try {
-            service.updateWorkflowDef(workflows);
-            grpcHelper.emptyResponse(response);
-        } catch (Exception e) {
-            grpcHelper.onError(response, e);
-        }
+        service.updateWorkflowDef(workflows);
+        response.onNext(MetadataServicePb.UpdateWorkflowsResponse.getDefaultInstance());
+        response.onCompleted();
     }
 
     @Override
-    public void getWorkflow(MetadataServicePb.GetWorkflowRequest req, StreamObserver<WorkflowDefPb.WorkflowDef> response) {
+    public void getWorkflow(MetadataServicePb.GetWorkflowRequest req, StreamObserver<MetadataServicePb.GetWorkflowResponse> response) {
         WorkflowDef def = service.getWorkflowDef(req.getName(), grpcHelper.optional(req.getVersion()));
         if (def != null) {
-            response.onNext(protoMapper.toProto(def));
+            WorkflowDefPb.WorkflowDef workflow = protoMapper.toProto(def);
+            response.onNext(MetadataServicePb.GetWorkflowResponse.newBuilder()
+                    .setWorkflow(workflow)
+                    .build()
+            );
             response.onCompleted();
         } else {
             response.onError(Status.NOT_FOUND
@@ -68,24 +67,31 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     }
 
     @Override
-    public void createTasks(MetadataServicePb.CreateTasksRequest req, StreamObserver<Empty> response) {
+    public void createTasks(MetadataServicePb.CreateTasksRequest req, StreamObserver<MetadataServicePb.CreateTasksResponse> response) {
         service.registerTaskDef(
                 req.getDefsList().stream().map(protoMapper::fromProto).collect(Collectors.toList())
         );
-        grpcHelper.emptyResponse(response);
+        response.onNext(MetadataServicePb.CreateTasksResponse.getDefaultInstance());
+        response.onCompleted();
     }
 
     @Override
-    public void updateTask(TaskDefPb.TaskDef req, StreamObserver<Empty> response) {
-        service.updateTaskDef(protoMapper.fromProto(req));
-        grpcHelper.emptyResponse(response);
+    public void updateTask(MetadataServicePb.UpdateTaskRequest req, StreamObserver<MetadataServicePb.UpdateTaskResponse> response) {
+        TaskDef task = protoMapper.fromProto(req.getTask());
+        service.updateTaskDef(task);
+        response.onNext(MetadataServicePb.UpdateTaskResponse.getDefaultInstance());
+        response.onCompleted();
     }
 
     @Override
-    public void getTask(MetadataServicePb.GetTaskRequest req, StreamObserver<TaskDefPb.TaskDef> response) {
+    public void getTask(MetadataServicePb.GetTaskRequest req, StreamObserver<MetadataServicePb.GetTaskResponse> response) {
         TaskDef def = service.getTaskDef(req.getTaskType());
         if (def != null) {
-            response.onNext(protoMapper.toProto(def));
+            TaskDefPb.TaskDef task = protoMapper.toProto(def);
+            response.onNext(MetadataServicePb.GetTaskResponse.newBuilder()
+                    .setTask(task)
+                    .build()
+            );
             response.onCompleted();
         } else {
             response.onError(Status.NOT_FOUND
@@ -96,8 +102,9 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     }
 
     @Override
-    public void deleteTask(MetadataServicePb.GetTaskRequest req, StreamObserver<Empty> response) {
+    public void deleteTask(MetadataServicePb.DeleteTaskRequest req, StreamObserver<MetadataServicePb.DeleteTaskResponse> response) {
         service.unregisterTaskDef(req.getTaskType());
-        grpcHelper.emptyResponse(response);
+        response.onNext(MetadataServicePb.DeleteTaskResponse.getDefaultInstance());
+        response.onCompleted();
     }
 }

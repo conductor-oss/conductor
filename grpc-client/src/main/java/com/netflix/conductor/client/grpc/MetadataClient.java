@@ -28,7 +28,9 @@ public class MetadataClient extends ClientBase {
     public void registerWorkflowDef(WorkflowDef workflowDef) {
         Preconditions.checkNotNull(workflowDef, "Worfklow definition cannot be null");
         stub.createWorkflow(
-                protoMapper.toProto(workflowDef)
+                MetadataServicePb.CreateWorkflowRequest.newBuilder()
+                        .setWorkflow(protoMapper.toProto(workflowDef))
+                        .build()
         );
     }
 
@@ -65,7 +67,7 @@ public class MetadataClient extends ClientBase {
         if (version != null)
             request.setVersion(version);
 
-        return protoMapper.fromProto(stub.getWorkflow(request.build()));
+        return protoMapper.fromProto(stub.getWorkflow(request.build()).getWorkflow());
     }
 
     /**
@@ -90,7 +92,11 @@ public class MetadataClient extends ClientBase {
      */
     public void updateTaskDef(TaskDef taskDef) {
         Preconditions.checkNotNull(taskDef, "Task definition cannot be null");
-        stub.updateTask(protoMapper.toProto(taskDef));
+        stub.updateTask(
+                MetadataServicePb.UpdateTaskRequest.newBuilder()
+                        .setTask(protoMapper.toProto(taskDef))
+                        .build()
+        );
     }
 
     /**
@@ -105,7 +111,7 @@ public class MetadataClient extends ClientBase {
                 stub.getTask(MetadataServicePb.GetTaskRequest.newBuilder()
                         .setTaskType(taskType)
                         .build()
-                )
+                ).getTask()
         );
     }
 
@@ -117,7 +123,7 @@ public class MetadataClient extends ClientBase {
      */
     public void unregisterTaskDef(String taskType) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-        stub.deleteTask(MetadataServicePb.GetTaskRequest.newBuilder()
+        stub.deleteTask(MetadataServicePb.DeleteTaskRequest.newBuilder()
                 .setTaskType(taskType)
                 .build()
         );

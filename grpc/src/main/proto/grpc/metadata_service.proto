@@ -1,7 +1,6 @@
 syntax = "proto3";
-package conductor.grpc;
+package conductor.grpc.metadata;
 
-import "google/protobuf/empty.proto";
 import "model/taskdef.proto";
 import "model/workflowdef.proto";
 
@@ -11,40 +10,71 @@ option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
 
 service MetadataService {
     // POST /workflow
-    rpc CreateWorkflow(conductor.proto.WorkflowDef) returns (google.protobuf.Empty);
+    rpc CreateWorkflow(CreateWorkflowRequest) returns (CreateWorkflowResponse);
 
     // PUT /workflow
-    rpc UpdateWorkflows(UpdateWorkflowsRequest) returns (google.protobuf.Empty);
+    rpc UpdateWorkflows(UpdateWorkflowsRequest) returns (UpdateWorkflowsResponse);
 
     // GET /workflow/{name}
-    rpc GetWorkflow(GetWorkflowRequest) returns (conductor.proto.WorkflowDef);
+    rpc GetWorkflow(GetWorkflowRequest) returns (GetWorkflowResponse);
 
     // POST /taskdefs
-    rpc CreateTasks(CreateTasksRequest) returns (google.protobuf.Empty);
+    rpc CreateTasks(CreateTasksRequest) returns (CreateTasksResponse);
 
     // PUT /taskdefs
-    rpc UpdateTask(conductor.proto.TaskDef) returns (google.protobuf.Empty);
+    rpc UpdateTask(UpdateTaskRequest) returns (UpdateTaskResponse);
 
     // GET /taskdefs/{tasktype}
-    rpc GetTask(GetTaskRequest) returns (conductor.proto.TaskDef);
+    rpc GetTask(GetTaskRequest) returns (GetTaskResponse);
 
     // DELETE /taskdefs/{tasktype}
-    rpc DeleteTask(GetTaskRequest) returns (google.protobuf.Empty);
+    rpc DeleteTask(DeleteTaskRequest) returns (DeleteTaskResponse);
 }
+
+message CreateWorkflowRequest {
+    conductor.proto.WorkflowDef workflow = 1;
+}
+
+message CreateWorkflowResponse {}
 
 message UpdateWorkflowsRequest {
     repeated conductor.proto.WorkflowDef defs = 1;
 }
 
-message CreateTasksRequest {
-    repeated conductor.proto.TaskDef defs = 1;
-}
+message UpdateWorkflowsResponse {}
 
 message GetWorkflowRequest {
     string name = 1;
     int32 version = 2;
 }
 
+message GetWorkflowResponse {
+    conductor.proto.WorkflowDef workflow = 1;
+}
+
+message CreateTasksRequest {
+    repeated conductor.proto.TaskDef defs = 1;
+}
+
+message CreateTasksResponse {}
+
+message UpdateTaskRequest {
+    conductor.proto.TaskDef task = 1;
+}
+
+message UpdateTaskResponse {}
+
+
 message GetTaskRequest {
     string task_type = 1;
 }
+
+message GetTaskResponse {
+    conductor.proto.TaskDef task = 1;
+}
+
+message DeleteTaskRequest {
+    string task_type = 1;
+}
+
+message DeleteTaskResponse {}

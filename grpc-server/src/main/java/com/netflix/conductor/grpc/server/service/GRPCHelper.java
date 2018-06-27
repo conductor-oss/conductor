@@ -93,11 +93,6 @@ public class GRPCHelper {
         response.onError(throwableToStatusException(t));
     }
 
-    void emptyResponse(StreamObserver<Empty> response) {
-        response.onNext(Empty.getDefaultInstance());
-        response.onCompleted();
-    }
-
     String optional(@Nonnull String str) {
         return str.isEmpty() ? null : str;
     }

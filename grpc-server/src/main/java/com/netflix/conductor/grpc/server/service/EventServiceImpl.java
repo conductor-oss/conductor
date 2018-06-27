@@ -33,38 +33,41 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
     }
 
     @Override
-    public void addEventHandler(EventHandlerPb.EventHandler req, StreamObserver<Empty> response) {
-        service.addEventHandler(protoMapper.fromProto(req));
-        grpcHelper.emptyResponse(response);
+    public void addEventHandler(EventServicePb.AddEventHandlerRequest req, StreamObserver<EventServicePb.AddEventHandlerResponse> response) {
+        service.addEventHandler(protoMapper.fromProto(req.getHandler()));
+        response.onNext(EventServicePb.AddEventHandlerResponse.getDefaultInstance());
+        response.onCompleted();
     }
 
     @Override
-    public void updateEventHandler(EventHandlerPb.EventHandler req, StreamObserver<Empty> response) {
-        service.updateEventHandler(protoMapper.fromProto(req));
-        grpcHelper.emptyResponse(response);
+    public void updateEventHandler(EventServicePb.UpdateEventHandlerRequest req, StreamObserver<EventServicePb.UpdateEventHandlerResponse> response) {
+        service.updateEventHandler(protoMapper.fromProto(req.getHandler()));
+        response.onNext(EventServicePb.UpdateEventHandlerResponse.getDefaultInstance());
+        response.onCompleted();
     }
 
     @Override
-    public void removeEventHandler(EventServicePb.RemoveEventHandlerRequest req, StreamObserver<Empty> response) {
+    public void removeEventHandler(EventServicePb.RemoveEventHandlerRequest req, StreamObserver<EventServicePb.RemoveEventHandlerResponse> response) {
         service.removeEventHandlerStatus(req.getName());
-        grpcHelper.emptyResponse(response);
+        response.onNext(EventServicePb.RemoveEventHandlerResponse.getDefaultInstance());
+        response.onCompleted();
     }
 
     @Override
-    public void getEventHandlers(Empty req, StreamObserver<EventHandlerPb.EventHandler> response) {
+    public void getEventHandlers(EventServicePb.GetEventHandlersRequest req, StreamObserver<EventHandlerPb.EventHandler> response) {
         service.getEventHandlers().stream().map(protoMapper::toProto).forEach(response::onNext);
         response.onCompleted();
     }
 
     @Override
-    public void getEventHandlersForEvent(EventServicePb.GetEventHandlersRequest req, StreamObserver<EventHandlerPb.EventHandler> response) {
+    public void getEventHandlersForEvent(EventServicePb.GetEventHandlersForEventRequest req, StreamObserver<EventHandlerPb.EventHandler> response) {
         service.getEventHandlersForEvent(req.getEvent(), req.getActiveOnly())
                 .stream().map(protoMapper::toProto).forEach(response::onNext);
         response.onCompleted();
     }
 
     @Override
-    public void getQueues(Empty req, StreamObserver<EventServicePb.GetQueuesResponse> response) {
+    public void getQueues(EventServicePb.GetQueuesRequest req, StreamObserver<EventServicePb.GetQueuesResponse> response) {
         response.onNext(
                 EventServicePb.GetQueuesResponse.newBuilder()
                 .putAllEventToQueueUri(ep.getQueues())
@@ -74,7 +77,7 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
     }
 
     @Override
-    public void getQueueSizes(Empty req, StreamObserver<EventServicePb.GetQueueSizesResponse> response) {
+    public void getQueueSizes(EventServicePb.GetQueueSizesRequest req, StreamObserver<EventServicePb.GetQueueSizesResponse> response) {
         EventServicePb.GetQueueSizesResponse.Builder builder = EventServicePb.GetQueueSizesResponse.newBuilder();
         for (Map.Entry<String, Map<String, Long>> pair : ep.getQueueSizes().entrySet()) {
             builder.putEventToQueueInfo(pair.getKey(),
@@ -87,7 +90,7 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
     }
 
     @Override
-    public void getQueueProviders(Empty req, StreamObserver<EventServicePb.GetQueueProvidersResponse> response) {
+    public void getQueueProviders(EventServicePb.GetQueueProvidersRequest req, StreamObserver<EventServicePb.GetQueueProvidersResponse> response) {
         response.onNext(
                 EventServicePb.GetQueueProvidersResponse.newBuilder()
                         .addAllProviders(EventQueues.providers())
