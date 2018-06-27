@@ -498,11 +498,13 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 		return ids;
 	}
 
-	public List<String> searchRecentRunningWorkflows(int modifiedHoursAgo) {
+	public List<String> searchRecentRunningWorkflows(int lastModifiedHoursAgoFrom, int lastModifiedHoursAgoTo) {
 		DateTime dateTime = new DateTime();
 		QueryBuilder q = QueryBuilders.boolQuery()
 				.must(QueryBuilders.rangeQuery("updateTime")
-						.gt(dateTime.minusHours(modifiedHoursAgo)))
+						.gt(dateTime.minusHours(lastModifiedHoursAgoFrom)))
+				.must(QueryBuilders.rangeQuery("updateTime")
+						.lt(dateTime.minusHours(lastModifiedHoursAgoTo)))
 				.must(QueryBuilders.termQuery("status", "RUNNING"));
 
 		SearchRequestBuilder s = elasticSearchClient.prepareSearch(indexName)
@@ -520,23 +522,5 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 		return ids;
 	}
 
-	public List<String> searchRecentRunningWorkflows(long modifiedHoursAgo) {
-		QueryBuilder q = QueryBuilders.boolQuery()
-				.must(QueryBuilders.rangeQuery("updateTime")
-						.gt(LocalDate.now().minus(modifiedHoursAgo, ChronoUnit.HOURS)))
-				.must(QueryBuilders.termQuery("status", "RUNNING"));
 
-		SearchRequestBuilder s = elasticSearchClient.prepareSearch(indexName)
-				.setTypes("workflow")
-				.setQuery(q)
-				.setSize(1000);
-
-		SearchResponse response = s.execute().actionGet();
-		SearchHits hits = response.getHits();
-		List<String> ids = new LinkedList<>();
-		for (SearchHit hit : hits.getHits()) {
-			ids.add(hit.getId());
-		}
-		return ids;
-	}
 }
