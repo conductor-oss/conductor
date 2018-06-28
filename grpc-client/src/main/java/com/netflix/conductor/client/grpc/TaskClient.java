@@ -100,10 +100,12 @@ public class TaskClient extends ClientBase {
 
         TaskServicePb.TasksInProgressRequest.Builder request = TaskServicePb.TasksInProgressRequest.newBuilder();
         request.setTaskType(taskType);
-        if (startKey != null)
+        if (startKey != null) {
             request.setStartKey(startKey);
-        if (count != null)
+        }
+        if (count != null) {
             request.setCount(count);
+        }
 
         return stub.getTasksInProgress(request.build())
                 .getTasksList()
@@ -157,8 +159,9 @@ public class TaskClient extends ClientBase {
 
         TaskServicePb.AckTaskRequest.Builder request = TaskServicePb.AckTaskRequest.newBuilder();
         request.setTaskId(taskId);
-        if (workerId != null)
+        if (workerId != null) {
             request.setWorkerId(workerId);
+        }
 
         return stub.ackTask(request.build()).getAck();
     }
