@@ -93,18 +93,65 @@ public class GRPCHelper {
         response.onError(throwableToStatusException(t));
     }
 
+    /**
+     * Convert a non-null String instance to a possibly null String instance
+     * based on ProtoBuf's rules for optional arguments.
+     *
+     * This helper converts an String instance from a ProtoBuf object into a
+     * possibly null String. In ProtoBuf objects, String fields are not
+     * nullable, but an empty String field is considered to be "missing".
+     *
+     * The internal Conductor APIs expect missing arguments to be passed
+     * as null values, so this helper performs such conversion.
+     *
+     * @param str a string from a ProtoBuf object
+     * @return the original string, or null
+     */
     String optional(@Nonnull String str) {
         return str.isEmpty() ? null : str;
     }
 
+    /**
+     * Check if a given non-null String instance is "missing" according to ProtoBuf's
+     * missing field rules. If the String is missing, the given default value will be
+     * returned. Otherwise, the string itself will be returned.
+     *
+     * @param str the input String
+     * @param defaults the default value for the string
+     * @return 'str' if it is not empty according to ProtoBuf rules; 'defaults' otherwise
+     */
     String optionalOr(@Nonnull String str, String defaults) {
         return str.isEmpty() ? defaults : str;
     }
 
+    /**
+     * Convert a non-null Integer instance to a possibly null Integer instance
+     * based on ProtoBuf's rules for optional arguments.
+     *
+     * This helper converts an Integer instance from a ProtoBuf object into a
+     * possibly null Integer. In ProtoBuf objects, Integer fields are not
+     * nullable, but a zero-value Integer field is considered to be "missing".
+     *
+     * The internal Conductor APIs expect missing arguments to be passed
+     * as null values, so this helper performs such conversion.
+     *
+     * @param i an Integer from a ProtoBuf object
+     * @return the original Integer, or null
+     */
     Integer optional(@Nonnull Integer i) {
         return i == 0 ? null : i;
     }
 
+    /**
+     * Check if a given non-null Integer instance is "missing" according to ProtoBuf's
+     * missing field rules. If the Integer is missing (i.e. if it has a zero-value),
+     * the given default value will be returned. Otherwise, the Integer itself will be
+     * returned.
+     *
+     * @param i the input Integer
+     * @param defaults the default value for the Integer
+     * @return 'i' if it is not a zero-value according to ProtoBuf rules; 'defaults' otherwise
+     */
     Integer optionalOr(@Nonnull Integer i, int defaults) {
         return i == 0 ? defaults : i;
     }
