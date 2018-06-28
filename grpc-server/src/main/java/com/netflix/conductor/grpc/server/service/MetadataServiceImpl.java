@@ -1,6 +1,5 @@
 package com.netflix.conductor.grpc.server.service;
 
-import com.google.protobuf.Empty;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.grpc.MetadataServiceGrpc;
@@ -19,9 +18,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImplBase {
-    private static final Logger logger = LoggerFactory.getLogger(MetadataServiceImpl.class);
-    private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
-    private static final GRPCHelper grpcHelper = new GRPCHelper(logger);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MetadataServiceImpl.class);
+    private static final ProtoMapper PROTO_MAPPER = ProtoMapper.INSTANCE;
+    private static final GRPCHelper GRPC_HELPER = new GRPCHelper(LOGGER);
 
     private final MetadataService service;
 
@@ -32,7 +31,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
 
     @Override
     public void createWorkflow(MetadataServicePb.CreateWorkflowRequest req, StreamObserver<MetadataServicePb.CreateWorkflowResponse> response) {
-        WorkflowDef workflow = protoMapper.fromProto(req.getWorkflow());
+        WorkflowDef workflow = PROTO_MAPPER.fromProto(req.getWorkflow());
         service.registerWorkflowDef(workflow);
         response.onNext(MetadataServicePb.CreateWorkflowResponse.getDefaultInstance());
         response.onCompleted();
@@ -41,7 +40,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     @Override
     public void updateWorkflows(MetadataServicePb.UpdateWorkflowsRequest req, StreamObserver<MetadataServicePb.UpdateWorkflowsResponse> response) {
         List<WorkflowDef> workflows = req.getDefsList().stream()
-                .map(protoMapper::fromProto).collect(Collectors.toList());
+                .map(PROTO_MAPPER::fromProto).collect(Collectors.toList());
 
         service.updateWorkflowDef(workflows);
         response.onNext(MetadataServicePb.UpdateWorkflowsResponse.getDefaultInstance());
@@ -50,9 +49,9 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
 
     @Override
     public void getWorkflow(MetadataServicePb.GetWorkflowRequest req, StreamObserver<MetadataServicePb.GetWorkflowResponse> response) {
-        WorkflowDef def = service.getWorkflowDef(req.getName(), grpcHelper.optional(req.getVersion()));
+        WorkflowDef def = service.getWorkflowDef(req.getName(), GRPC_HELPER.optional(req.getVersion()));
         if (def != null) {
-            WorkflowDefPb.WorkflowDef workflow = protoMapper.toProto(def);
+            WorkflowDefPb.WorkflowDef workflow = PROTO_MAPPER.toProto(def);
             response.onNext(MetadataServicePb.GetWorkflowResponse.newBuilder()
                     .setWorkflow(workflow)
                     .build()
@@ -69,7 +68,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     @Override
     public void createTasks(MetadataServicePb.CreateTasksRequest req, StreamObserver<MetadataServicePb.CreateTasksResponse> response) {
         service.registerTaskDef(
-                req.getDefsList().stream().map(protoMapper::fromProto).collect(Collectors.toList())
+                req.getDefsList().stream().map(PROTO_MAPPER::fromProto).collect(Collectors.toList())
         );
         response.onNext(MetadataServicePb.CreateTasksResponse.getDefaultInstance());
         response.onCompleted();
@@ -77,7 +76,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
 
     @Override
     public void updateTask(MetadataServicePb.UpdateTaskRequest req, StreamObserver<MetadataServicePb.UpdateTaskResponse> response) {
-        TaskDef task = protoMapper.fromProto(req.getTask());
+        TaskDef task = PROTO_MAPPER.fromProto(req.getTask());
         service.updateTaskDef(task);
         response.onNext(MetadataServicePb.UpdateTaskResponse.getDefaultInstance());
         response.onCompleted();
@@ -87,7 +86,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     public void getTask(MetadataServicePb.GetTaskRequest req, StreamObserver<MetadataServicePb.GetTaskResponse> response) {
         TaskDef def = service.getTaskDef(req.getTaskType());
         if (def != null) {
-            TaskDefPb.TaskDef task = protoMapper.toProto(def);
+            TaskDefPb.TaskDef task = PROTO_MAPPER.toProto(def);
             response.onNext(MetadataServicePb.GetTaskResponse.newBuilder()
                     .setTask(task)
                     .build()

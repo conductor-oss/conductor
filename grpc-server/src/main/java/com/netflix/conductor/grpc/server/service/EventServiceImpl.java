@@ -1,7 +1,5 @@
 package com.netflix.conductor.grpc.server.service;
 
-import com.google.protobuf.Empty;
-
 import com.netflix.conductor.core.events.EventProcessor;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.grpc.EventServiceGrpc;
@@ -19,9 +17,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
-    private static final Logger logger = LoggerFactory.getLogger(EventServiceImpl.class);
-    private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
-    private static final GRPCHelper grpcHelper = new GRPCHelper(logger);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EventServiceImpl.class);
+    private static final ProtoMapper PROTO_MAPPER = ProtoMapper.INSTANCE;
+    private static final GRPCHelper GRPC_HELPER = new GRPCHelper(LOGGER);
 
     private final MetadataService service;
     private final EventProcessor ep;
@@ -34,14 +32,14 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
 
     @Override
     public void addEventHandler(EventServicePb.AddEventHandlerRequest req, StreamObserver<EventServicePb.AddEventHandlerResponse> response) {
-        service.addEventHandler(protoMapper.fromProto(req.getHandler()));
+        service.addEventHandler(PROTO_MAPPER.fromProto(req.getHandler()));
         response.onNext(EventServicePb.AddEventHandlerResponse.getDefaultInstance());
         response.onCompleted();
     }
 
     @Override
     public void updateEventHandler(EventServicePb.UpdateEventHandlerRequest req, StreamObserver<EventServicePb.UpdateEventHandlerResponse> response) {
-        service.updateEventHandler(protoMapper.fromProto(req.getHandler()));
+        service.updateEventHandler(PROTO_MAPPER.fromProto(req.getHandler()));
         response.onNext(EventServicePb.UpdateEventHandlerResponse.getDefaultInstance());
         response.onCompleted();
     }
@@ -55,14 +53,14 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
 
     @Override
     public void getEventHandlers(EventServicePb.GetEventHandlersRequest req, StreamObserver<EventHandlerPb.EventHandler> response) {
-        service.getEventHandlers().stream().map(protoMapper::toProto).forEach(response::onNext);
+        service.getEventHandlers().stream().map(PROTO_MAPPER::toProto).forEach(response::onNext);
         response.onCompleted();
     }
 
     @Override
     public void getEventHandlersForEvent(EventServicePb.GetEventHandlersForEventRequest req, StreamObserver<EventHandlerPb.EventHandler> response) {
         service.getEventHandlersForEvent(req.getEvent(), req.getActiveOnly())
-                .stream().map(protoMapper::toProto).forEach(response::onNext);
+                .stream().map(PROTO_MAPPER::toProto).forEach(response::onNext);
         response.onCompleted();
     }
 

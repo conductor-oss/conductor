@@ -22,8 +22,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
-import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -68,7 +66,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class TaskResource {
 
-	private static final Logger logger = LoggerFactory.getLogger(TaskResource.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(TaskResource.class);
 
 	private ExecutionService taskService;
 
@@ -88,14 +86,14 @@ public class TaskResource {
 	@ApiOperation("Poll for a task of a certain type")
 	@Consumes({MediaType.WILDCARD})
 	public Task poll(@PathParam("tasktype") String taskType, @QueryParam("workerid") String workerId, @QueryParam("domain") String domain) throws Exception {
-		logger.debug("Task being polled: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
+		LOGGER.debug("Task being polled: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
 		List<Task> tasks = taskService.poll(taskType, workerId, domain, 1, 100);
 		if (tasks.isEmpty()) {
-			logger.debug("No Task available for the poll: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
+			LOGGER.debug("No Task available for the poll: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
 			return null;
 		}
 		Task task = tasks.get(0);
-		logger.debug("The Task {} being returned for /tasks/poll/{}?{}&{}", task, taskType, workerId, domain);
+		LOGGER.debug("The Task {} being returned for /tasks/poll/{}?{}&{}", task, taskType, workerId, domain);
 		return task;
 	}
 
@@ -113,7 +111,7 @@ public class TaskResource {
 			throw new ApplicationException(Code.INVALID_INPUT, "Long Poll Timeout value cannot be more than 5 seconds");
 		}
 		List<Task> polledTasks = taskService.poll(taskType, workerId, domain, count, timeout);
-		logger.debug("The Tasks {} being returned for /tasks/poll/{}?{}&{}",
+		LOGGER.debug("The Tasks {} being returned for /tasks/poll/{}?{}&{}",
 				polledTasks.stream()
 						.map(Task::getTaskId)
 						.collect(Collectors.toList()), taskType, workerId, domain);
@@ -141,9 +139,9 @@ public class TaskResource {
 	@POST
 	@ApiOperation("Update a task")
 	public String updateTask(TaskResult taskResult) throws Exception {
-		logger.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
+		LOGGER.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
 		taskService.updateTask(taskResult);
-		logger.debug("Task: {} updated successfully with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
+		LOGGER.debug("Task: {} updated successfully with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
 		return "\"" + taskResult.getTaskId() + "\"";
 	}
 
@@ -152,7 +150,7 @@ public class TaskResource {
 	@ApiOperation("Ack Task is recieved")
 	@Consumes({ MediaType.WILDCARD })
 	public String ack(@PathParam("taskId") String taskId, @QueryParam("workerid") String workerId) throws Exception {
-		logger.debug("Ack received for task: {} from worker: {}", taskId, workerId);
+		LOGGER.debug("Ack received for task: {} from worker: {}", taskId, workerId);
 		return "" + taskService.ackTaskReceived(taskId);
 	}
 	
