@@ -19,6 +19,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.servlet.GuiceServletContextListener;
 
+import com.netflix.conductor.bootstrap.ModulesProvider;
 import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
 
 import org.apache.log4j.PropertyConfigurator;
@@ -39,9 +40,8 @@ public class ServletContextListner extends GuiceServletContextListener {
         loadProperties();
 
         SystemPropertiesConfiguration config = new SystemPropertiesConfiguration();
-        ConductorServer server = new ConductorServer(config);
 
-        return Guice.createInjector(server.getModulesToLoad());
+        return Guice.createInjector(new ModulesProvider(config).get());
     }
 
     private void loadProperties() {

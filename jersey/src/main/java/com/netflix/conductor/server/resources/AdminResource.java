@@ -58,7 +58,7 @@ import io.swagger.annotations.ApiOperation;
 @Singleton
 public class AdminResource {
 
-	private static Logger logger = LoggerFactory.getLogger(AdminResource.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AdminResource.class);
 	
 	private Configuration config;
 
@@ -86,7 +86,7 @@ public class AdminResource {
 			this.version = prop.getProperty("Implementation-Version");
 			this.buildDate = prop.getProperty("Build-Date");
 		}catch(Exception e) {
-			logger.error(e.getMessage(), e);
+			LOGGER.error(e.getMessage(), e);
 		}
 	}
 

@@ -18,17 +18,11 @@
  */
 package com.netflix.conductor.tests.integration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
 
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-
-import org.junit.BeforeClass;
-import org.junit.Test;
-
+import com.netflix.conductor.bootstrap.BootstrapModule;
+import com.netflix.conductor.bootstrap.ModulesProvider;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -43,41 +37,48 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
-import com.netflix.conductor.server.ConductorServer;
+import com.netflix.conductor.jetty.server.JettyServer;
+
+import com.netflix.conductor.tests.utils.TestEnvironment;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Viren
  *
  */
 public class End2EndTests {
-
-	static {
-		System.setProperty("EC2_REGION", "us-east-1");
-		System.setProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
-		System.setProperty("workflow.elasticsearch.url", "localhost:9300");
-		System.setProperty("workflow.elasticsearch.index.name", "conductor");
-		System.setProperty("workflow.namespace.prefix", "integration-test");
-		System.setProperty("db", "memory");
-		System.setProperty("workflow.elasticsearch.version", "5");
-	}
-	
 	private static TaskClient tc;
-	
 	private static WorkflowClient wc;
-	
-	
+
 	@BeforeClass
 	public static void setup() throws Exception {
-		
-		ConductorServer server = new ConductorServer(new SystemPropertiesConfiguration());
-		server.start(8080, false);
+	    TestEnvironment.setup();
+
+		Injector bootInjector = Guice.createInjector(new BootstrapModule());
+		Injector serverInjector = Guice.createInjector(bootInjector.getInstance(ModulesProvider.class).get());
+		JettyServer server = new JettyServer(8080, false);
+		server.start();
 		
 		tc = new TaskClient();
 		tc.setRootURI("http://localhost:8080/api/");
 		
 		wc = new WorkflowClient();
 		wc.setRootURI("http://localhost:8080/api/");
+	}
+
+	@AfterClass
+	public static void teardown() {
+		TestEnvironment.teardown();
 	}
 	
 	@Test

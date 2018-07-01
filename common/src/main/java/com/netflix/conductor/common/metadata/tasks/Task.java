@@ -15,13 +15,18 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import com.netflix.conductor.common.annotations.ProtoEnum;
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import java.util.HashMap;
 import java.util.Map;
 
+@ProtoMessage
 public class Task {
 
+    @ProtoEnum
     public enum Status {
 
         IN_PROGRESS(false, true, true),
@@ -60,72 +65,100 @@ public class Task {
         }
     }
 
+    @ProtoField(id = 1)
     private String taskType;
 
+    @ProtoField(id = 2)
     private Status status;
 
+    @ProtoField(id = 3)
     private Map<String, Object> inputData = new HashMap<>();
 
+    @ProtoField(id = 4)
     private String referenceTaskName;
 
+    @ProtoField(id = 5)
     private int retryCount;
 
+    @ProtoField(id = 6)
     private int seq;
 
+    @ProtoField(id = 7)
     private String correlationId;
 
+    @ProtoField(id = 8)
     private int pollCount;
 
+    @ProtoField(id = 9)
     private String taskDefName;
 
     /**
      * Time when the task was scheduled
      */
+    @ProtoField(id = 10)
     private long scheduledTime;
 
     /**
      * Time when the task was first polled
      */
+    @ProtoField(id = 11)
     private long startTime;
 
     /**
      * Time when the task completed executing
      */
+    @ProtoField(id = 12)
     private long endTime;
 
     /**
      * Time when the task was last updated
      */
+    @ProtoField(id = 13)
     private long updateTime;
 
+    @ProtoField(id = 14)
     private int startDelayInSeconds;
 
+    @ProtoField(id = 15)
     private String retriedTaskId;
 
+    @ProtoField(id = 16)
     private boolean retried;
 
+    @ProtoField(id = 17)
     private boolean executed;
 
+    @ProtoField(id = 18)
     private boolean callbackFromWorker = true;
 
+    @ProtoField(id = 19)
     private int responseTimeoutSeconds;
 
+    @ProtoField(id = 20)
     private String workflowInstanceId;
 
+    @ProtoField(id = 21)
     private String workflowType;
 
+    @ProtoField(id = 22)
     private String taskId;
 
+    @ProtoField(id = 23)
     private String reasonForIncompletion;
 
+    @ProtoField(id = 24)
     private long callbackAfterSeconds;
 
+    @ProtoField(id = 25)
     private String workerId;
 
+    @ProtoField(id = 26)
     private Map<String, Object> outputData = new HashMap<>();
 
+    @ProtoField(id = 27)
     private WorkflowTask workflowTask;
 
+    @ProtoField(id = 28)
     private String domain;
 
     public Task() {

@@ -1,13 +1,26 @@
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@ProtoMessage
 public class StartWorkflowRequest {
+	@ProtoField(id = 1)
 	private String name;
+
+	@ProtoField(id = 2)
 	private Integer version;
+
+	@ProtoField(id = 3)
 	private String correlationId;
+
+	@ProtoField(id = 4)
 	private Map<String, Object> input = new HashMap<>();
+
+	@ProtoField(id = 5)
 	private Map<String, String> taskToDomain = new HashMap<>();
 	
 	public String getName() {

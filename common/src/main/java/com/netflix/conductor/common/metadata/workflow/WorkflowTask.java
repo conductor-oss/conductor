@@ -18,6 +18,10 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.netflix.conductor.common.annotations.ProtoEnum;
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,8 +36,10 @@ import java.util.Set;
  * @author Viren
  *
  */
+@ProtoMessage
 public class WorkflowTask {
 
+	@ProtoEnum
 	public enum Type {
 		SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, EVENT, WAIT, USER_DEFINED;
 		
@@ -55,48 +61,80 @@ public class WorkflowTask {
 			return systemTasks.contains(name);
 		}
 	}
-	
+
+	@ProtoField(id = 1)
 	private String name;
-	
+
+	@ProtoField(id = 2)
 	private String taskReferenceName;
 
+	@ProtoField(id = 3)
 	private String description;
 
 	//Key: Name of the input parameter.  MUST be one of the keys defined in TaskDef (e.g. fileName)
 	//Value: mapping of the parameter from another task (e.g. task1.someOutputParameterAsFileName)
+	@ProtoField(id = 4)
 	private Map<String, Object> inputParameters = new HashMap<String, Object>();
 
+	@ProtoField(id = 5)
 	private String type = Type.SIMPLE.name();
 
+	@ProtoField(id = 6)
 	private String dynamicTaskNameParam;
-	
+
+	@ProtoField(id = 7)
 	private String caseValueParam;
-	
+
+	@ProtoField(id = 8)
 	private String caseExpression;
-	
+
+	@ProtoMessage(wrapper = true)
+	public static class WorkflowTaskList {
+		public List<WorkflowTask> getTasks() {
+			return tasks;
+		}
+
+		public void setTasks(List<WorkflowTask> tasks) {
+			this.tasks = tasks;
+		}
+
+		@ProtoField(id = 1)
+		private List<WorkflowTask> tasks;
+	}
+
 	//Populates for the tasks of the decision type
+	@ProtoField(id = 9)
 	private Map<String, List<WorkflowTask>> decisionCases = new LinkedHashMap<>();
-	
+
 	@Deprecated
 	private String dynamicForkJoinTasksParam;
-	
+
+	@ProtoField(id = 10)
 	private String dynamicForkTasksParam;
-	
+
+	@ProtoField(id = 11)
 	private String dynamicForkTasksInputParamName;
-	
+
+	@ProtoField(id = 12)
 	private List<WorkflowTask> defaultCase = new LinkedList<>();
-	
+
+	@ProtoField(id = 13)
 	private List<List<WorkflowTask>> forkTasks = new LinkedList<>();
-	
+
+	@ProtoField(id = 14)
 	private int startDelay;		//No. of seconds (at-least) to wait before starting a task.
 
-	private SubWorkflowParams subWorkflow;
-	
+	@ProtoField(id = 15)
+	private SubWorkflowParams subWorkflowParam;
+
+	@ProtoField(id = 16)
 	private List<String> joinOn = new LinkedList<>();
-	
+
+	@ProtoField(id = 17)
 	private String sink;
-	
-	private Boolean optional;
+
+	@ProtoField(id = 18)
+	private boolean optional = false;
 	
 	/**
 	 * @return the name
@@ -309,14 +347,14 @@ public class WorkflowTask {
 	 * @return the subWorkflow
 	 */
 	public SubWorkflowParams getSubWorkflowParam() {
-		return subWorkflow;
+		return subWorkflowParam;
 	}
 
 	/**
 	 * @param subWorkflow the subWorkflowParam to set
 	 */
 	public void setSubWorkflowParam(SubWorkflowParams subWorkflow) {
-		this.subWorkflow = subWorkflow;
+		this.subWorkflowParam = subWorkflow;
 	}
 
 	/**
@@ -350,26 +388,18 @@ public class WorkflowTask {
 	}
 	
 	/**
-	 * 
+	 *
 	 * @return If the task is optional.  When set to true, the workflow execution continues even when the task is in failed status.
 	 */
-	public Boolean getOptional() {
+	public boolean isOptional() {
 		return optional;
 	}
-	
-	/**
-	 * 
-	 * @return true if the task is optional.  False otherwise.
-	 */
-	public boolean isOptional() {
-		return (optional != null && optional.booleanValue()); 
-	}
-	
+
 	/**
 	 * 
 	 * @param optional when set to true, the task is marked as optional
 	 */
-	public void setOptional(Boolean optional) {
+	public void setOptional(boolean optional) {
 		this.optional = optional;
 	}
 	

@@ -225,9 +225,9 @@ public class RedisMetadataDAOTest {
 		eh.setName(UUID.randomUUID().toString());
 		eh.setActive(false);
 		Action action = new Action();
-		action.setAction(Type.start_workflow);
-		action.setStart_workflow(new StartWorkflow());
-		action.getStart_workflow().setName("workflow_x");
+		action.setAction(Type.START_WORKFLOW);
+		action.setStartWorkflow(new StartWorkflow());
+		action.getStartWorkflow().setName("workflow_x");
 		eh.getActions().add(action);
 		eh.setEvent(event1);
 		

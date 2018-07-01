@@ -14,6 +14,7 @@ ext {
     revElasticSearch5Client = '5.6.8'
     revEurekaClient = '1.8.7'
     revFlywayCore ='4.0.3'
+    revGrpc = '1.11.0'
     revGuavaRetrying = '2.0.0'
     revGuice = '4.1.0'
     revGuiceMultiBindings = '4.1.0'

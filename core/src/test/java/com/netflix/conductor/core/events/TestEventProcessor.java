@@ -82,10 +82,10 @@ public class TestEventProcessor {
 		eh.setName(UUID.randomUUID().toString());
 		eh.setActive(false);
 		Action action = new Action();
-		action.setAction(Type.start_workflow);
-		action.setStart_workflow(new StartWorkflow());
-		action.getStart_workflow().setName("workflow_x");
-		action.getStart_workflow().setVersion(1);	//TODO: Remove this to simulate the null value for version being passed!
+		action.setAction(Type.START_WORKFLOW);
+		action.setStartWorkflow(new StartWorkflow());
+		action.getStartWorkflow().setName("workflow_x");
+		action.getStartWorkflow().setVersion(1);	//TODO: Remove this to simulate the null value for version being passed!
 		eh.getActions().add(action);
 		eh.setEvent(event);
 		
@@ -110,13 +110,13 @@ public class TestEventProcessor {
 				started.set(true);
 				return id;
 			}
-		}).when(executor).startWorkflow(action.getStart_workflow().getName(), 1, action.getStart_workflow().getCorrelationId(), action.getStart_workflow().getInput(), event);
+		}).when(executor).startWorkflow(action.getStartWorkflow().getName(), 1, action.getStartWorkflow().getCorrelationId(), action.getStartWorkflow().getInput(), event);
 
 		//Metadata Service Mock
 		MetadataService metadata = mock(MetadataService.class);
 		WorkflowDef def = new WorkflowDef();
 		def.setVersion(1);
-		def.setName(action.getStart_workflow().getName());
+		def.setName(action.getStartWorkflow().getName());
 		when(metadata.getWorkflowDef(any(), any())).thenReturn(def);
 		
 		ActionProcessor ap = new ActionProcessor(executor, metadata);

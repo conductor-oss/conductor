@@ -1,3 +1,8 @@
 rootProject.name='conductor'
-include 'common', 'core', 'redis-persistence','es2-persistence', 'es5-persistence','mysql-persistence','jersey', 'client', 'test-harness', 'ui', 'contribs', 'server'
+
+include 'client','common','contribs','core','es2-persistence','es5-persistence','jersey','mysql-persistence'
+include 'redis-persistence','server','test-harness','ui'
+include 'protogen'
+include 'grpc', 'grpc-server', 'grpc-client'
+
 rootProject.children.each {it.name="conductor-${it.name}"}

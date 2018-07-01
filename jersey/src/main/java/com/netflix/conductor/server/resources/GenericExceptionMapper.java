@@ -47,7 +47,7 @@ import com.sun.jersey.api.core.HttpContext;
 @Singleton
 public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 
-	private static Logger logger = LoggerFactory.getLogger(GenericExceptionMapper.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(GenericExceptionMapper.class);
 	
 	private static List<Variant> supportedMediaTypes = Variant.mediaTypes(MediaType.APPLICATION_JSON_TYPE, MediaType.TEXT_HTML_TYPE, MediaType.TEXT_PLAIN_TYPE).add().build();
 	
@@ -63,7 +63,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 	
 	@Override
 	public Response toResponse(Throwable t) {
-		logger.error(t.getMessage(), t);
+		LOGGER.error(t.getMessage(), t);
 		Monitors.error("error", "error");
 		ApplicationException e = new ApplicationException(Code.INTERNAL_ERROR, t.getMessage(), t);
 		MediaType mediaType = context.getRequest().selectVariant(supportedMediaTypes).getMediaType();

@@ -18,6 +18,10 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import com.netflix.conductor.common.annotations.ProtoEnum;
+import com.netflix.conductor.common.annotations.ProtoField;
+import com.netflix.conductor.common.annotations.ProtoMessage;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,24 +32,33 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Result of the task execution.
  *
  */
+@ProtoMessage
 public class TaskResult {
 
+    @ProtoEnum
     public enum Status {
         IN_PROGRESS, FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED, SCHEDULED;        //SCHEDULED is added for the backward compatibility and should NOT be used when updating the task result
     }
 
+    @ProtoField(id = 1)
     private String workflowInstanceId;
 
+    @ProtoField(id = 2)
     private String taskId;
 
+    @ProtoField(id = 3)
     private String reasonForIncompletion;
 
+    @ProtoField(id = 4)
     private long callbackAfterSeconds;
 
+    @ProtoField(id = 5)
     private String workerId;
 
+    @ProtoField(id = 6)
     private Status status;
 
+    @ProtoField(id = 7)
     private Map<String, Object> outputData = new HashMap<>();
 
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
