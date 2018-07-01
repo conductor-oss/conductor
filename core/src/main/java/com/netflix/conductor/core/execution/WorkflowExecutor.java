@@ -64,6 +64,8 @@ import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRES
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
+import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT;
+import static com.netflix.conductor.core.execution.ApplicationException.Code.INVALID_INPUT;
 
 /**
  * @author Viren Workflow services provider interface
@@ -131,7 +133,7 @@ public class WorkflowExecutor {
             //QQ When is the payload of the input validated
             if (workflowInput == null) {
                 logger.error("The input for the workflow {} cannot be NULL", workflowName);
-                throw new ApplicationException(Code.INVALID_INPUT, "NULL input passed when starting workflow");
+                throw new ApplicationException(INVALID_INPUT, "NULL input passed when starting workflow");
             }
 
             //Check if the workflow definition is valid
@@ -150,7 +152,7 @@ public class WorkflowExecutor {
 
             if (!missingTaskDefs.isEmpty()) {
                 logger.error("Cannot find the task definitions for the following tasks used in workflow: {}", missingTaskDefs);
-                throw new ApplicationException(Code.INVALID_INPUT, "Cannot find the task definitions for the following tasks used in workflow: " + missingTaskDefs);
+                throw new ApplicationException(INVALID_INPUT, "Cannot find the task definitions for the following tasks used in workflow: " + missingTaskDefs);
             }
             //A random UUID is assigned to the work flow instance
             String workflowId = IDGenerator.generate();
@@ -187,7 +189,7 @@ public class WorkflowExecutor {
     public String resetCallbacksForInProgressTasks(String workflowId) throws Exception {
         Workflow workflow = executionDAO.getWorkflow(workflowId, true);
         if (workflow.getStatus().isTerminal()) {
-            throw new ApplicationException(Code.CONFLICT, "Workflow is completed.  status=" + workflow.getStatus());
+            throw new ApplicationException(CONFLICT, "Workflow is completed.  status=" + workflow.getStatus());
         }
 
         // Get tasks that are in progress and have callbackAfterSeconds > 0
@@ -209,7 +211,7 @@ public class WorkflowExecutor {
         Preconditions.checkNotNull(request.getReRunFromWorkflowId(), "reRunFromWorkflowId is missing");
         if (!rerunWF(request.getReRunFromWorkflowId(), request.getReRunFromTaskId(), request.getTaskInput(),
                 request.getWorkflowInput(), request.getCorrelationId())) {
-            throw new ApplicationException(Code.INVALID_INPUT, "Task " + request.getReRunFromTaskId() + " not found");
+            throw new ApplicationException(INVALID_INPUT, "Task " + request.getReRunFromTaskId() + " not found");
         }
         return request.getReRunFromWorkflowId();
     }
@@ -217,7 +219,13 @@ public class WorkflowExecutor {
     public void rewind(String workflowId) throws Exception {
         Workflow workflow = executionDAO.getWorkflow(workflowId, true);
         if (!workflow.getStatus().isTerminal()) {
-            throw new ApplicationException(Code.CONFLICT, "Workflow is still running.  status=" + workflow.getStatus());
+            throw new ApplicationException(CONFLICT, "Workflow is still running.  status=" + workflow.getStatus());
+        }
+
+        WorkflowDef workflowDef = metadataDAO.get(workflow.getWorkflowType(), workflow.getVersion());
+        if (!workflowDef.isRestartable() && workflow.getStatus().equals(WorkflowStatus.COMPLETED)) { // Can only restart non completed workflows when the configuration is set to false
+            throw new ApplicationException(CONFLICT, String.format("WorkflowId: %s is an instance of WorkflowDef: %s and version: %d and is non restartable",
+                    workflowId, workflowDef.getName(), workflowDef.getVersion()));
         }
 
         // Remove all the tasks...
@@ -235,10 +243,10 @@ public class WorkflowExecutor {
     public void retry(String workflowId) throws Exception {
         Workflow workflow = executionDAO.getWorkflow(workflowId, true);
         if (!workflow.getStatus().isTerminal()) {
-            throw new ApplicationException(Code.CONFLICT, "Workflow is still running.  status=" + workflow.getStatus());
+            throw new ApplicationException(CONFLICT, "Workflow is still running.  status=" + workflow.getStatus());
         }
         if (workflow.getTasks().isEmpty()) {
-            throw new ApplicationException(Code.CONFLICT, "Workflow has not started yet");
+            throw new ApplicationException(CONFLICT, "Workflow has not started yet");
         }
 
         // First get the failed task and the cancelled task
@@ -252,11 +260,11 @@ public class WorkflowExecutor {
             }
         }
         if (failedTask != null && !failedTask.getStatus().isTerminal()) {
-            throw new ApplicationException(Code.CONFLICT,
+            throw new ApplicationException(CONFLICT,
                     "The last task is still not completed!  I can only retry the last failed task.  Use restart if you want to attempt entire workflow execution again.");
         }
         if (failedTask != null && failedTask.getStatus().isSuccessful()) {
-            throw new ApplicationException(Code.CONFLICT,
+            throw new ApplicationException(CONFLICT,
                     "The last task has not failed!  I can only retry the last failed task.  Use restart if you want to attempt entire workflow execution again.");
         }
 
@@ -322,7 +330,7 @@ public class WorkflowExecutor {
 
         if (workflow.getStatus().isTerminal()) {
             String msg = "Workflow has already been completed.  Current status " + workflow.getStatus();
-            throw new ApplicationException(Code.CONFLICT, msg);
+            throw new ApplicationException(CONFLICT, msg);
         }
 
         workflow.setStatus(WorkflowStatus.COMPLETED);
@@ -408,6 +416,7 @@ public class WorkflowExecutor {
         // Send to atlas
         Monitors.recordWorkflowTermination(workflow.getWorkflowType(), workflow.getStatus(), workflow.getOwnerApp());
     }
+
 
     public void updateTask(TaskResult taskResult) throws Exception {
         if (taskResult == null) {
@@ -605,7 +614,7 @@ public class WorkflowExecutor {
         WorkflowStatus status = WorkflowStatus.PAUSED;
         Workflow workflow = executionDAO.getWorkflow(workflowId, false);
         if (workflow.getStatus().isTerminal()) {
-            throw new ApplicationException(Code.CONFLICT, "Workflow id " + workflowId + " has ended, status cannot be updated.");
+            throw new ApplicationException(CONFLICT, "Workflow id " + workflowId + " has ended, status cannot be updated.");
         }
         if (workflow.getStatus().equals(status)) {
             return;        //Already paused!
