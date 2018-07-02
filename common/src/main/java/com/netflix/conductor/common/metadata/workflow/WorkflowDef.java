@@ -59,7 +59,11 @@ public class WorkflowDef extends Auditable {
 
 	@ProtoField(id = 8)
 	private int schemaVersion = 1;
-	
+
+	//By default a workflow is restartable
+	@ProtoField(id = 9)
+	private boolean restartable = true;
+
 	/**
 	 * @return the name
 	 */
@@ -160,7 +164,27 @@ public class WorkflowDef extends Auditable {
 		this.version = version;
 	}
 
-	
+
+	/**
+	 * This method determines if the workflow is restartable or not
+	 *
+	 * @return true: if the workflow is restartable
+	 * false: if the workflow is non restartable
+	 */
+	public boolean isRestartable() {
+		return restartable;
+	}
+
+	/**
+	 * This method is called only when the workflow definition is created
+	 *
+	 * @param restartable true: if the workflow is restartable
+	 *                    false: if the workflow is non restartable
+	 */
+	public void setRestartable(boolean restartable) {
+		this.restartable = restartable;
+	}
+
 	/**
 	 * @return the schemaVersion
 	 */
@@ -203,7 +227,9 @@ public class WorkflowDef extends Auditable {
 	}
 	
 	public WorkflowTask getTaskByRefName(String taskReferenceName){
-		Optional<WorkflowTask> found = all().stream().filter(wft -> wft.getTaskReferenceName().equals(taskReferenceName)).findFirst();
+		Optional<WorkflowTask> found = all().stream()
+				.filter(wft -> wft.getTaskReferenceName().equals(taskReferenceName))
+				.findFirst();
 		if(found.isPresent()){
 			return found.get();
 		}

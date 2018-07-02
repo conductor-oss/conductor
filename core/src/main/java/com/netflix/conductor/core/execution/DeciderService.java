@@ -144,11 +144,11 @@ public class DeciderService {
             }
 
             TaskDef taskDefinition = metadataDAO.getTaskDef(pendingTask.getTaskDefName());
-            if (taskDefinition != null) {//QQ what happens when the task definition is null at this time ??
+            if (taskDefinition != null) {
                 checkForTimeout(taskDefinition, pendingTask);
-                // If the task has not been updated for "responseTimeout" then rescheduled it.
+                // If the task has not been updated for "responseTimeout" then mark task as TIMED_OUT
                 if (isResponseTimedOut(taskDefinition, pendingTask)) {
-                    outcome.tasksToBeRequeued.add(pendingTask);
+                    timeoutTask(pendingTask);
                 }
             }
 
@@ -422,8 +422,14 @@ public class DeciderService {
         }
 
         Monitors.recordTaskResponseTimeout(task.getTaskDefName());
-        logger.debug("responseTimeout of {} exceeded for the Task: {} with Task Definition: {}", responseTimeout, task, taskDefinition);
         return true;
+    }
+
+    private void timeoutTask(Task task) {
+        String reason = "responseTimeout: " + task.getResponseTimeoutSeconds() + " exceeded for the taskId: " + task.getTaskId() + " with Task Definition: " + task.getTaskDefName();
+        logger.debug(reason);
+        task.setStatus(TIMED_OUT);
+        task.setReasonForIncompletion(reason);
     }
 
     public List<Task> getTasksToBeScheduled(WorkflowDef def, Workflow workflow,
