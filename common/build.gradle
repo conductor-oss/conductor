@@ -5,4 +5,5 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
     compile "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
     compile "javax.inject:javax.inject:1"
+    compile "com.github.vmg.protogen:protogen-annotations:${revProtoGen}"
 }

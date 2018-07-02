@@ -16,9 +16,7 @@
 package com.netflix.conductor.common.metadata.tasks;
 
 import com.google.protobuf.Any;
-import com.netflix.conductor.common.annotations.ProtoEnum;
-import com.netflix.conductor.common.annotations.ProtoField;
-import com.netflix.conductor.common.annotations.ProtoMessage;
+import com.github.vmg.protogen.annotations.*;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import java.util.HashMap;

@@ -42,6 +42,7 @@ ext {
     revOauthClient = '1.19.4'
     revOauthSignature = '1.19.4'
     revProtoBuf = '3.5.1'
+    revProtoGen = '0.4.0'
     revRarefiedRedis = '0.0.17'
     revServo = '0.12.17'
     revServletApi = '3.1.0'

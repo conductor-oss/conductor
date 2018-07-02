@@ -19,9 +19,7 @@
 package com.netflix.conductor.common.metadata.events;
 
 import com.google.protobuf.Any;
-import com.netflix.conductor.common.annotations.ProtoEnum;
-import com.netflix.conductor.common.annotations.ProtoField;
-import com.netflix.conductor.common.annotations.ProtoMessage;
+import com.github.vmg.protogen.annotations.*;
 
 import java.util.HashMap;
 import java.util.LinkedList;

@@ -1,5 +1,4 @@
 dependencies {
     compile project(':conductor-common')
-    compile 'com.squareup:javapoet:1.11.1'
-    compile 'com.github.jknack:handlebars:4.0.6'
+    compile "com.github.vmg.protogen:protogen-codegen:${revProtoGen}"
 }
