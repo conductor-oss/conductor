@@ -46,6 +46,7 @@ import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.tests.utils.TestRunner;
 import org.apache.commons.lang.StringUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -247,6 +248,7 @@ public class WorkflowServiceTest {
 
         registered = true;
     }
+
 
     @Test
     public void testWorkflowWithNoTasks() throws Exception {
@@ -1149,6 +1151,9 @@ public class WorkflowServiceTest {
 
         WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
         assertNotNull(found);
+        Map<String, Object> outputParameters = found.getOutputParameters();
+        outputParameters.put("validationErrors", "${t1.output.ErrorMessage}");
+        metadataService.updateWorkflowDef(found);
 
         String correlationId = "unit_test_1";
         Map<String, Object> input = new HashMap<>();
@@ -1186,9 +1191,8 @@ public class WorkflowServiceTest {
         TaskResult taskResult = new TaskResult(task);
         taskResult.setReasonForIncompletion("NON TRANSIENT ERROR OCCURRED: An integration point required to complete the task is down");
         taskResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
-        /*Map<String, Object> outputData = new HashMap<>();
-        outputData.put("TERMINAL_ERROR", "Integration endpoint down: FOOBAR");*/
         taskResult.addOutputData("TERMINAL_ERROR", "Integration endpoint down: FOOBAR");
+        taskResult.addOutputData("ErrorMessage", "There was a terminal error");
 
         workflowExecutionService.updateTask(taskResult);
         workflowExecutor.decide(workflowInstanceId);
@@ -1203,6 +1207,10 @@ public class WorkflowServiceTest {
         assertEquals(0, t1.getRetryCount()); //Actual retries done on the task
         assertEquals(true, es.getOutput().containsKey("o1"));
         assertEquals("p1 value", es.getOutput().get("o1"));
+        assertEquals(es.getOutput().get("validationErrors").toString(), "There was a terminal error");
+
+        outputParameters.remove("validationErrors");
+        metadataService.updateWorkflowDef(found);
 
     }
 
@@ -1322,14 +1330,14 @@ public class WorkflowServiceTest {
         assertEquals(1, queueDAO.getSize("task_rt"));
 
         // Polling for the first task should return the same task as before
-        Task task = workflowExecutionService.poll("task_rt", "task1.junit.worker");
+        Task task = workflowExecutionService.poll("task_rt", "task1.junit.worker.testTimeout");
         assertNotNull(task);
         assertEquals("task_rt", task.getTaskType());
         assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
         assertEquals(workflowId, task.getWorkflowInstanceId());
 
         // As the task_rt is out of the queue, the next poll should not get it
-        Task nullTask = workflowExecutionService.poll("task_rt", "task1.junit.worker");
+        Task nullTask = workflowExecutionService.poll("task_rt", "task1.junit.worker.testTimeout");
         assertNull(nullTask);
 
         Thread.sleep(10000);
@@ -1349,7 +1357,7 @@ public class WorkflowServiceTest {
         taskAgain.setStatus(COMPLETED);
         workflowExecutionService.updateTask(taskAgain);
 
-        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker.testTimeout");
         assertNotNull(task);
         assertEquals("junit_task_2", task.getTaskType());
         assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
@@ -1706,8 +1714,8 @@ public class WorkflowServiceTest {
 
     }
 
-
-    private void clearWorkflows() throws Exception {
+    @After
+    public void clearWorkflows() throws Exception {
         List<String> workflows = metadataService.getWorkflowDefs().stream()
                 .map(WorkflowDef::getName)
                 .collect(Collectors.toList());
