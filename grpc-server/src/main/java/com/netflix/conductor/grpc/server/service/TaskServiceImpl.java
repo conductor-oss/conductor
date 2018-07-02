@@ -6,16 +6,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.google.protobuf.Empty;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.grpc.ProtoMapper;
 import com.netflix.conductor.proto.TaskPb;
 import com.netflix.conductor.grpc.TaskServiceGrpc;
 import com.netflix.conductor.grpc.TaskServicePb;
-import com.netflix.conductor.proto.TaskResultPb;
 import io.grpc.Status;
-import io.grpc.stub.ServerCallStreamObserver;
 import io.grpc.stub.StreamObserver;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -29,9 +26,9 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 
 public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
-    private static final Logger logger = LoggerFactory.getLogger(TaskServiceImpl.class);
-    private static final ProtoMapper protoMapper = ProtoMapper.INSTANCE;
-    private static final GRPCHelper grpcHelper = new GRPCHelper(logger);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TaskServiceImpl.class);
+    private static final ProtoMapper PROTO_MAPPER = ProtoMapper.INSTANCE;
+    private static final GRPCHelper GRPC_HELPER = new GRPCHelper(LOGGER);
 
     private static final int MAX_TASK_COUNT = 100;
     private static final int POLL_TIMEOUT_MS = 100;
@@ -47,24 +44,27 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     }
 
     @Override
-    public void poll(TaskServicePb.PollRequest req, StreamObserver<TaskPb.Task> response) {
+    public void poll(TaskServicePb.PollRequest req, StreamObserver<TaskServicePb.PollResponse> response) {
         try {
             List<Task> tasks = taskService.poll(req.getTaskType(), req.getWorkerId(),
-                    grpcHelper.optional(req.getDomain()), 1, POLL_TIMEOUT_MS);
+                    GRPC_HELPER.optional(req.getDomain()), 1, POLL_TIMEOUT_MS);
             if (!tasks.isEmpty()) {
-                TaskPb.Task t = protoMapper.toProto(tasks.get(0));
-                response.onNext(t);
+                TaskPb.Task t = PROTO_MAPPER.toProto(tasks.get(0));
+                response.onNext(TaskServicePb.PollResponse.newBuilder()
+                        .setTask(t)
+                        .build()
+                );
             }
             response.onCompleted();
         } catch (Exception e) {
-            grpcHelper.onError(response, e);
+            GRPC_HELPER.onError(response, e);
         }
     }
 
     @Override
     public void batchPoll(TaskServicePb.BatchPollRequest req, StreamObserver<TaskPb.Task> response) {
-        final int count = grpcHelper.optionalOr(req.getCount(), 1);
-        final int timeout = grpcHelper.optionalOr(req.getTimeout(), POLL_TIMEOUT_MS);
+        final int count = GRPC_HELPER.optionalOr(req.getCount(), 1);
+        final int timeout = GRPC_HELPER.optionalOr(req.getTimeout(), POLL_TIMEOUT_MS);
 
         if (timeout > MAX_POLL_TIMEOUT_MS) {
             response.onError(Status.INVALID_ARGUMENT
@@ -76,58 +76,63 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
 
         try {
             List<Task> polledTasks = taskService.poll(req.getTaskType(), req.getWorkerId(),
-                    grpcHelper.optional(req.getDomain()), count, timeout);
-            logger.info("polled tasks: "+polledTasks);
-            polledTasks.stream().map(protoMapper::toProto).forEach(response::onNext);
+                    GRPC_HELPER.optional(req.getDomain()), count, timeout);
+            LOGGER.info("polled tasks: "+polledTasks);
+            polledTasks.stream().map(PROTO_MAPPER::toProto).forEach(response::onNext);
             response.onCompleted();
         } catch (Exception e) {
-            grpcHelper.onError(response, e);
+            GRPC_HELPER.onError(response, e);
         }
     }
 
     @Override
     public void getTasksInProgress(TaskServicePb.TasksInProgressRequest req, StreamObserver<TaskServicePb.TasksInProgressResponse> response) {
-        final String startKey = grpcHelper.optional(req.getStartKey());
-        final int count = grpcHelper.optionalOr(req.getCount(), MAX_TASK_COUNT);
+        final String startKey = GRPC_HELPER.optional(req.getStartKey());
+        final int count = GRPC_HELPER.optionalOr(req.getCount(), MAX_TASK_COUNT);
 
         try {
             response.onNext(
                     TaskServicePb.TasksInProgressResponse.newBuilder().addAllTasks(
                         taskService.getTasks(req.getTaskType(), startKey, count)
                                 .stream()
-                                .map(protoMapper::toProto)::iterator
+                                .map(PROTO_MAPPER::toProto)::iterator
                     ).build()
             );
             response.onCompleted();
         } catch (Exception e) {
-            grpcHelper.onError(response, e);
+            GRPC_HELPER.onError(response, e);
         }
     }
 
     @Override
-    public void getPendingTaskForWorkflow(TaskServicePb.PendingTaskRequest req, StreamObserver<TaskPb.Task> response) {
+    public void getPendingTaskForWorkflow(TaskServicePb.PendingTaskRequest req, StreamObserver<TaskServicePb.PendingTaskResponse> response) {
         try {
             Task t = taskService.getPendingTaskForWorkflow(req.getTaskRefName(), req.getWorkflowId());
-            response.onNext(protoMapper.toProto(t));
-            response.onCompleted();
-        } catch (Exception e) {
-            grpcHelper.onError(response, e);
-        }
-    }
-
-    @Override
-    public void updateTask(TaskResultPb.TaskResult req, StreamObserver<TaskServicePb.TaskId> response) {
-        try {
-            TaskResult task = protoMapper.fromProto(req);
-            taskService.updateTask(task);
-
             response.onNext(
-                    TaskServicePb.TaskId.newBuilder()
-                            .setTaskId(task.getTaskId()).build()
+                    TaskServicePb.PendingTaskResponse.newBuilder()
+                            .setTask(PROTO_MAPPER.toProto(t))
+                            .build()
             );
             response.onCompleted();
         } catch (Exception e) {
-            grpcHelper.onError(response, e);
+            GRPC_HELPER.onError(response, e);
+        }
+    }
+
+    @Override
+    public void updateTask(TaskServicePb.UpdateTaskRequest req, StreamObserver<TaskServicePb.UpdateTaskResponse> response) {
+        try {
+            TaskResult task = PROTO_MAPPER.fromProto(req.getResult());
+            taskService.updateTask(task);
+
+            response.onNext(
+                    TaskServicePb.UpdateTaskResponse.newBuilder()
+                            .setTaskId(task.getTaskId())
+                            .build()
+            );
+            response.onCompleted();
+        } catch (Exception e) {
+            GRPC_HELPER.onError(response, e);
         }
     }
 
@@ -138,28 +143,29 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
             response.onNext(TaskServicePb.AckTaskResponse.newBuilder().setAck(ack).build());
             response.onCompleted();
         } catch (Exception e) {
-            grpcHelper.onError(response, e);
+            GRPC_HELPER.onError(response, e);
         }
     }
 
     @Override
-    public void addLog(TaskServicePb.AddLogRequest req, StreamObserver<Empty> response) {
+    public void addLog(TaskServicePb.AddLogRequest req, StreamObserver<TaskServicePb.AddLogResponse> response) {
         taskService.log(req.getTaskId(), req.getLog());
+        response.onNext(TaskServicePb.AddLogResponse.getDefaultInstance());
         response.onCompleted();
     }
 
     @Override
-    public void getTaskLogs(TaskServicePb.TaskId req, StreamObserver<TaskServicePb.GetLogsResponse> response) {
+    public void getTaskLogs(TaskServicePb.GetTaskLogsRequest req, StreamObserver<TaskServicePb.GetTaskLogsResponse> response) {
         List<TaskExecLog> logs = taskService.getTaskLogs(req.getTaskId());
-        response.onNext(TaskServicePb.GetLogsResponse.newBuilder()
-                .addAllLogs(logs.stream().map(protoMapper::toProto)::iterator)
+        response.onNext(TaskServicePb.GetTaskLogsResponse.newBuilder()
+                .addAllLogs(logs.stream().map(PROTO_MAPPER::toProto)::iterator)
                 .build()
         );
         response.onCompleted();
     }
 
     @Override
-    public void getTask(TaskServicePb.TaskId req, StreamObserver<TaskPb.Task> response) {
+    public void getTask(TaskServicePb.GetTaskRequest req, StreamObserver<TaskServicePb.GetTaskResponse> response) {
         try {
             Task task = taskService.getTask(req.getTaskId());
             if (task == null) {
@@ -168,19 +174,24 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
                         .asRuntimeException()
                 );
             } else {
-                response.onNext(protoMapper.toProto(task));
+                response.onNext(
+                        TaskServicePb.GetTaskResponse.newBuilder()
+                        .setTask(PROTO_MAPPER.toProto(task))
+                        .build()
+                );
                 response.onCompleted();
             }
         } catch (Exception e) {
-            grpcHelper.onError(response, e);
+            GRPC_HELPER.onError(response, e);
         }
 
     }
 
     @Override
-    public void removeTaskFromQueue(TaskServicePb.RemoveTaskRequest req, StreamObserver<Empty> response) {
+    public void removeTaskFromQueue(TaskServicePb.RemoveTaskRequest req, StreamObserver<TaskServicePb.RemoveTaskResponse> response) {
         taskService.removeTaskfromQueue(req.getTaskType(), req.getTaskId());
-        grpcHelper.emptyResponse(response);
+        response.onNext(TaskServicePb.RemoveTaskResponse.getDefaultInstance());
+        response.onCompleted();
     }
 
     @Override
@@ -195,7 +206,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     }
 
     @Override
-    public void getQueueInfo(Empty req, StreamObserver<TaskServicePb.QueueInfoResponse> response) {
+    public void getQueueInfo(TaskServicePb.QueueInfoRequest req, StreamObserver<TaskServicePb.QueueInfoResponse> response) {
         Map<String, Long> queueInfo = queues.queuesDetail().entrySet().stream()
                 .sorted(Comparator.comparing(Map.Entry::getKey))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1, HashMap::new));
@@ -209,7 +220,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     }
 
     @Override
-    public void getQueueAllInfo(Empty req, StreamObserver<TaskServicePb.QueueAllInfoResponse> response) {
+    public void getQueueAllInfo(TaskServicePb.QueueAllInfoRequest req, StreamObserver<TaskServicePb.QueueAllInfoResponse> response) {
         Map<String, Map<String, Map<String, Long>>> info = queues.queuesDetailVerbose();
         TaskServicePb.QueueAllInfoResponse.Builder queuesBuilder = TaskServicePb.QueueAllInfoResponse.newBuilder();
 

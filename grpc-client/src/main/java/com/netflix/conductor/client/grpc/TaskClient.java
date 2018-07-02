@@ -6,6 +6,7 @@ import com.google.common.collect.Lists;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.grpc.MetadataServicePb;
 import com.netflix.conductor.grpc.TaskServiceGrpc;
 import com.netflix.conductor.grpc.TaskServicePb;
 import com.netflix.conductor.proto.TaskPb;
@@ -36,14 +37,14 @@ public class TaskClient extends ClientBase {
         Preconditions.checkArgument(StringUtils.isNotBlank(domain), "Domain cannot be blank");
         Preconditions.checkArgument(StringUtils.isNotBlank(workerId), "Worker id cannot be blank");
 
-        TaskPb.Task task = stub.poll(
+        TaskServicePb.PollResponse response = stub.poll(
                 TaskServicePb.PollRequest.newBuilder()
                 .setTaskType(taskType)
                 .setWorkerId(workerId)
                 .setDomain(domain)
                 .build()
         );
-        return protoMapper.fromProto(task);
+        return protoMapper.fromProto(response.getTask());
     }
 
     /**
@@ -99,10 +100,12 @@ public class TaskClient extends ClientBase {
 
         TaskServicePb.TasksInProgressRequest.Builder request = TaskServicePb.TasksInProgressRequest.newBuilder();
         request.setTaskType(taskType);
-        if (startKey != null)
+        if (startKey != null) {
             request.setStartKey(startKey);
-        if (count != null)
+        }
+        if (count != null) {
             request.setCount(count);
+        }
 
         return stub.getTasksInProgress(request.build())
                 .getTasksList()
@@ -122,13 +125,13 @@ public class TaskClient extends ClientBase {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "Workflow id cannot be blank");
         Preconditions.checkArgument(StringUtils.isNotBlank(taskReferenceName), "Task reference name cannot be blank");
 
-        TaskPb.Task task = stub.getPendingTaskForWorkflow(
+        TaskServicePb.PendingTaskResponse response = stub.getPendingTaskForWorkflow(
                 TaskServicePb.PendingTaskRequest.newBuilder()
                         .setWorkflowId(workflowId)
                         .setTaskRefName(taskReferenceName)
                         .build()
         );
-        return protoMapper.fromProto(task);
+        return protoMapper.fromProto(response.getTask());
     }
 
     /**
@@ -138,7 +141,10 @@ public class TaskClient extends ClientBase {
      */
     public void updateTask(TaskResult taskResult) {
         Preconditions.checkNotNull(taskResult, "Task result cannot be null");
-        stub.updateTask(protoMapper.toProto(taskResult));
+        stub.updateTask(TaskServicePb.UpdateTaskRequest.newBuilder()
+                .setResult(protoMapper.toProto(taskResult))
+                .build()
+        );
     }
 
     /**
@@ -153,8 +159,9 @@ public class TaskClient extends ClientBase {
 
         TaskServicePb.AckTaskRequest.Builder request = TaskServicePb.AckTaskRequest.newBuilder();
         request.setTaskId(taskId);
-        if (workerId != null)
+        if (workerId != null) {
             request.setWorkerId(workerId);
+        }
 
         return stub.ackTask(request.build()).getAck();
     }
@@ -183,7 +190,7 @@ public class TaskClient extends ClientBase {
     public List<TaskExecLog> getTaskLogs(String taskId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
         return stub.getTaskLogs(
-                TaskServicePb.TaskId.newBuilder().setTaskId(taskId).build()
+                TaskServicePb.GetTaskLogsRequest.newBuilder().setTaskId(taskId).build()
         ).getLogsList()
                 .stream()
                 .map(protoMapper::fromProto)
@@ -199,7 +206,10 @@ public class TaskClient extends ClientBase {
     public Task getTaskDetails(String taskId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
         return protoMapper.fromProto(
-                stub.getTask(TaskServicePb.TaskId.newBuilder().setTaskId(taskId).build())
+                stub.getTask(TaskServicePb.GetTaskRequest.newBuilder()
+                        .setTaskId(taskId)
+                        .build()
+                ).getTask()
         );
     }
 

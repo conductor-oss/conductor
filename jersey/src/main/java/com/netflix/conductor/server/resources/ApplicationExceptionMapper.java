@@ -46,7 +46,7 @@ import com.sun.jersey.api.core.HttpContext;
 @Singleton
 public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationException> {
 
-	private static Logger logger = LoggerFactory.getLogger(ApplicationExceptionMapper.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationExceptionMapper.class);
 	
 	private static List<Variant> supportedMediaTypes = Variant.mediaTypes(MediaType.APPLICATION_JSON_TYPE, MediaType.TEXT_HTML_TYPE, MediaType.TEXT_PLAIN_TYPE).add().build();
 	
@@ -62,7 +62,7 @@ public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationEx
 	
 	@Override
 	public Response toResponse(ApplicationException e) {
-		logger.error(e.getMessage(), e);
+		LOGGER.error(e.getMessage(), e);
 		if(e.getHttpStatusCode() == 500) {
 			Monitors.error("error", "error");
 		}
