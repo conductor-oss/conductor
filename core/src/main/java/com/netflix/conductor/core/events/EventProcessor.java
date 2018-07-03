@@ -34,6 +34,7 @@ import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
+import com.netflix.conductor.metrics.Monitors;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,7 +71,8 @@ public class EventProcessor {
 	
 	private ObjectMapper objectMapper;
 
-	
+	private static final String className = EventProcessor.class.getSimpleName();
+
 	@Inject
 	public EventProcessor(ExecutionService executionService, MetadataService metadataService,
 						  ActionProcessor actionProcessor, Configuration config, ObjectMapper objectMapper) {
@@ -110,16 +112,22 @@ public class EventProcessor {
 	}
 	
 	private void refresh() {
-		Set<String> events = metadataService.getEventHandlers().stream().map(eh -> eh.getEvent()).collect(Collectors.toSet());
-		List<ObservableQueue> created = new LinkedList<>();
-		events.stream().forEach(event -> queuesMap.computeIfAbsent(event, s -> {
-			ObservableQueue q = EventQueues.getQueue(event, false);
-			created.add(q);
-			return q;
-		}));
-		if(!created.isEmpty()) {
-			created.stream().filter(q -> q != null).forEach(queue -> listen(queue));	
-		}
+        try {
+            Set<String> events = metadataService.getEventHandlers().stream().map(eh -> eh.getEvent()).collect(
+                Collectors.toSet());
+            List<ObservableQueue> created = new LinkedList<>();
+            events.stream().forEach(event -> queuesMap.computeIfAbsent(event, s -> {
+                ObservableQueue q = EventQueues.getQueue(event, false);
+                created.add(q);
+                return q;
+            }));
+            if (!created.isEmpty()) {
+                created.stream().filter(q -> q != null).forEach(queue -> listen(queue));
+            }
+        } catch (Exception e) {
+			Monitors.error(className, "refresh");
+            logger.error("refresh event queues failed", e);
+        }
 	}
 	
 	private void listen(ObservableQueue queue) {
