@@ -41,3 +41,5 @@ idea {
         sourceDirs += file("${projectDir}/build/generated/source/proto/main/grpc");
     }
 }
+
+compileJava.dependsOn(tasks.getByPath(":conductor-protogen:generate"))
