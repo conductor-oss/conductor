@@ -814,6 +814,7 @@ public abstract class AbstractProtoMapper {
             to.setFailureWorkflow( from.getFailureWorkflow() );
         }
         to.setSchemaVersion( from.getSchemaVersion() );
+        to.setRestartable( from.isRestartable() );
         return to.build();
     }
 
@@ -831,6 +832,7 @@ public abstract class AbstractProtoMapper {
         to.setOutputParameters(outputParametersMap);
         to.setFailureWorkflow( from.getFailureWorkflow() );
         to.setSchemaVersion( from.getSchemaVersion() );
+        to.setRestartable( from.getRestartable() );
         return to;
     }
 
