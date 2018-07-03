@@ -1,27 +1,22 @@
 package com.netflix.conductor.dao.mysql;
 
-import com.google.common.base.Preconditions;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.MetadataDAO;
-
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import com.netflix.conductor.metrics.Monitors;
 
 import javax.inject.Inject;
 import javax.sql.DataSource;
+import java.sql.Connection;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -31,7 +26,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     public static final String PROP_TASKDEF_CACHE_REFRESH = "conductor.taskdef.cache.refresh.time.seconds";
     public static final int DEFAULT_TASKDEF_CACHE_REFRESH_SECONDS = 60;
     private final ConcurrentHashMap<String, TaskDef> taskDefCache = new ConcurrentHashMap<>();
-
+    private static final String className = MySQLMetadataDAO.class.getSimpleName();
     @Inject
     public MySQLMetadataDAO(ObjectMapper om, DataSource dataSource, Configuration config) {
         super(om, dataSource);
@@ -369,19 +364,24 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
      * Query persistence for all defined {@link TaskDef} data, and cache it in {@link #taskDefCache}.
      */
     private void refreshTaskDefs() {
-        withTransaction(tx -> {
-            Map<String, TaskDef> map = new HashMap<>();
-            findAllTaskDefs(tx).forEach(taskDef -> map.put(taskDef.getName(), taskDef));
+        try {
+            withTransaction(tx -> {
+                Map<String, TaskDef> map = new HashMap<>();
+                findAllTaskDefs(tx).forEach(taskDef -> map.put(taskDef.getName(), taskDef));
 
-            synchronized (taskDefCache) {
-                taskDefCache.clear();
-                taskDefCache.putAll(map);
-            }
+                synchronized (taskDefCache) {
+                    taskDefCache.clear();
+                    taskDefCache.putAll(map);
+                }
 
-            if (logger.isTraceEnabled()) {
-                logger.trace("Refreshed {} TaskDefs", taskDefCache.size());
-            }
-        });
+                if (logger.isTraceEnabled()) {
+                    logger.trace("Refreshed {} TaskDefs", taskDefCache.size());
+                }
+            });
+        } catch (Exception e){
+            Monitors.error(className, "refreshTaskDefs");
+            logger.error("refresh TaskDefs failed ", e);
+        }
     }
 
     /**

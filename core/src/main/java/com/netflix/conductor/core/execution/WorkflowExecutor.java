@@ -475,6 +475,7 @@ public class WorkflowExecutor {
 
         executionDAO.updateTask(task);
 
+
         //If the task has failed update the failed task reference name in the workflow.
         //This gives the ability to look at workflow and see what tasks have failed at a high level.
         if (FAILED.equals(task.getStatus()) || FAILED_WITH_TERMINAL_ERROR.equals(task.getStatus())) {
@@ -482,6 +483,13 @@ public class WorkflowExecutor {
             //In case of a FAILED_WITH_TERMINAL_ERROR the workflow will be terminated and the output of the task is never copied
             //ensuring the task output is copied to the workflow here
             if (FAILED_WITH_TERMINAL_ERROR.equals(task.getStatus())) {
+                //Update the task in the workflow instance
+                Task taskByRefName = workflowInstance.getTaskByRefName(task.getReferenceTaskName());
+                taskByRefName.setStatus(task.getStatus());
+                taskByRefName.setOutputData(task.getOutputData());
+                taskByRefName.setReasonForIncompletion(task.getReasonForIncompletion());
+                taskByRefName.setWorkerId(task.getWorkerId());
+                taskByRefName.setCallbackAfterSeconds(task.getCallbackAfterSeconds());
                 WorkflowDef workflowDef = metadataDAO.get(workflowInstance.getWorkflowType(), workflowInstance.getVersion());
                 Map<String, Object> outputData = task.getOutputData();
                 if (!workflowDef.getOutputParameters().isEmpty()) {
