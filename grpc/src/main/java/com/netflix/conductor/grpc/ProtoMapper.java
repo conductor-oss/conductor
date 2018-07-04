@@ -35,7 +35,7 @@ public final class ProtoMapper extends AbstractProtoMapper {
      * value representable as a native JSON type. Consequently, this method expects
      * the given {@link Object} instance to be a Java object instance of JSON-native
      * value, namely: null, {@link Boolean}, {@link Double}, {@link String},
-     * {@link Map<String, Object>}, {@link List<Object>}.
+     * {@link Map}, {@link List}.
      *
      * Any other values will cause an exception to be thrown.
      * See {@link ProtoMapper#fromProto(Value)} for the reverse mapping.
