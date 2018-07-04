@@ -7,7 +7,7 @@ import "model/task.proto";
 
 option java_package = "com.netflix.conductor.grpc";
 option java_outer_classname = "TaskServicePb";
-option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc/tasks";
 
 service TaskService {
     // GET /poll/{tasktype}

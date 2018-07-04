@@ -9,7 +9,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	pb "github.com/netflix/conductor/client/gogrpc/conductor/grpc"
+	"github.com/netflix/conductor/client/gogrpc/conductor/grpc/tasks"
 	"github.com/netflix/conductor/client/gogrpc/conductor/model"
 )
 
@@ -137,7 +137,7 @@ func (worker *Worker) onError(err error) {
 	}
 }
 
-func (worker *Worker) runTask(req *pb.PollRequest) error {
+func (worker *Worker) runTask(req *tasks.PollRequest) error {
 	ctx, cancel := context.WithTimeout(context.Background(), worker.TaskTimeout)
 	defer cancel()
 
@@ -146,10 +146,11 @@ func (worker *Worker) runTask(req *pb.PollRequest) error {
 		return err
 	}
 
-	result, err := worker.Executor.Execute(ctx, task)
+	result, err := worker.Executor.Execute(ctx, task.Task)
 	// TODO: what if the task failed?
 	if err == nil {
-		_, err := worker.Client.Tasks().UpdateTask(context.Background(), result)
+		request := tasks.UpdateTaskRequest{Result: result}
+		_, err := worker.Client.Tasks().UpdateTask(context.Background(), &request)
 		if err != nil {
 			return err
 		}
@@ -160,7 +161,7 @@ func (worker *Worker) runTask(req *pb.PollRequest) error {
 func (worker *Worker) thread() {
 	defer worker.waitThreads.Done()
 
-	pollRequest := &pb.PollRequest{
+	pollRequest := &tasks.PollRequest{
 		TaskType: worker.TaskType,
 		WorkerId: worker.Identifier,
 	}

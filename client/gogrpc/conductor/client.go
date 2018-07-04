@@ -1,28 +1,30 @@
 package conductor
 
 import (
-	pb "github.com/netflix/conductor/client/gogrpc/conductor/grpc"
+	"github.com/netflix/conductor/client/gogrpc/conductor/grpc/tasks"
+	"github.com/netflix/conductor/client/gogrpc/conductor/grpc/metadata"
+	"github.com/netflix/conductor/client/gogrpc/conductor/grpc/workflows"
 	grpc "google.golang.org/grpc"
 )
 
 // TasksClient is a Conductor client that exposes the Conductor
 // Tasks API.
 type TasksClient interface {
-	Tasks() pb.TaskServiceClient
+	Tasks() tasks.TaskServiceClient
 	Shutdown()
 }
 
 // MetadataClient is a Conductor client that exposes the Conductor
 // Metadata API.
 type MetadataClient interface {
-	Metadata() pb.MetadataServiceClient
+	Metadata() metadata.MetadataServiceClient
 	Shutdown()
 }
 
 // WorkflowsClient is a Conductor client that exposes the Conductor
 // Workflows API.
 type WorkflowsClient interface {
-	Workflows() pb.WorkflowServiceClient
+	Workflows() workflows.WorkflowServiceClient
 	Shutdown()
 }
 
@@ -30,9 +32,9 @@ type WorkflowsClient interface {
 // the different services it exposes.
 type Client struct {
 	conn      *grpc.ClientConn
-	tasks     pb.TaskServiceClient
-	metadata  pb.MetadataServiceClient
-	workflows pb.WorkflowServiceClient
+	tasks     tasks.TaskServiceClient
+	metadata  metadata.MetadataServiceClient
+	workflows workflows.WorkflowServiceClient
 }
 
 // NewClient returns a new Client with a GRPC connection to the given address,
@@ -51,25 +53,25 @@ func (client *Client) Shutdown() {
 }
 
 // Tasks returns the Tasks service for this client
-func (client *Client) Tasks() pb.TaskServiceClient {
+func (client *Client) Tasks() tasks.TaskServiceClient {
 	if client.tasks == nil {
-		client.tasks = pb.NewTaskServiceClient(client.conn)
+		client.tasks = tasks.NewTaskServiceClient(client.conn)
 	}
 	return client.tasks
 }
 
 // Metadata returns the Metadata service for this client
-func (client *Client) Metadata() pb.MetadataServiceClient {
+func (client *Client) Metadata() metadata.MetadataServiceClient {
 	if client.metadata == nil {
-		client.metadata = pb.NewMetadataServiceClient(client.conn)
+		client.metadata = metadata.NewMetadataServiceClient(client.conn)
 	}
 	return client.metadata
 }
 
 // Workflows returns the workflows service for this client
-func (client *Client) Workflows() pb.WorkflowServiceClient {
+func (client *Client) Workflows() workflows.WorkflowServiceClient {
 	if client.workflows == nil {
-		client.workflows = pb.NewWorkflowServiceClient(client.conn)
+		client.workflows = workflows.NewWorkflowServiceClient(client.conn)
 	}
 	return client.workflows
 }

@@ -3,7 +3,7 @@ package conductor.grpc.search;
 
 option java_package = "com.netflix.conductor.grpc";
 option java_outer_classname = "SearchPb";
-option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc/search";
 
 message Request {
     int32 start = 1;
