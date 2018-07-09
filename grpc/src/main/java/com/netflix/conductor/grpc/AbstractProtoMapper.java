@@ -50,7 +50,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Generated;
 
-@Generated("ProtoGen")
+@Generated("com.github.vmg.protogen.ProtoGen")
 public abstract class AbstractProtoMapper {
     public EventExecutionPb.EventExecution toProto(EventExecution from) {
         EventExecutionPb.EventExecution.Builder to = EventExecutionPb.EventExecution.newBuilder();

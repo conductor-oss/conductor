@@ -42,4 +42,4 @@ idea {
     }
 }
 
-compileJava.dependsOn(tasks.getByPath(":conductor-protogen:generate"))
+compileJava.dependsOn(tasks.getByPath(":conductor-common:protogen"))
