@@ -4,7 +4,7 @@ buildscript {
         maven { url "https://dl.bintray.com/vmg/protogen" }
     }
     dependencies {
-        classpath "com.github.vmg.protogen:protogen-codegen:1.2.0"
+        classpath "com.github.vmg.protogen:protogen-codegen:${revProtogenCodegen}"
     }
 }
 
@@ -14,8 +14,8 @@ dependencies {
     compile "com.google.protobuf:protobuf-java:${revProtoBuf}"
     compile "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
     compile "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
-    compile "javax.inject:javax.inject:1"
-    compile "com.github.vmg.protogen:protogen-annotations:1.0.0"
+    compile "javax.inject:javax.inject:${revJavaxInject}"
+    compile "com.github.vmg.protogen:protogen-annotations:${revProtogenAnnotations}"
 }
 
 import com.github.vmg.protogen.ProtoGenTask;
