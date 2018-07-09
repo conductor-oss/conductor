@@ -28,6 +28,9 @@ public class JsonMapperProvider implements Provider<ObjectMapper> {
      * {@see AnySerializer}, {@see AnyDeserializer}
      */
     private static class JsonProtoModule extends SimpleModule {
+        private final static String JSON_TYPE = "@type";
+        private final static String JSON_VALUE = "@value";
+
         /**
          * AnySerializer converts a ProtoBuf {@link Any} object into its JSON
          * representation.
@@ -87,8 +90,8 @@ public class JsonMapperProvider implements Provider<ObjectMapper> {
             public void serialize(Any value, JsonGenerator jgen, SerializerProvider provider)
                     throws IOException, JsonProcessingException {
                 jgen.writeStartObject();
-                jgen.writeStringField("@type", value.getTypeUrl());
-                jgen.writeBinaryField("@value", value.getValue().toByteArray());
+                jgen.writeStringField(JSON_TYPE, value.getTypeUrl());
+                jgen.writeBinaryField(JSON_VALUE, value.getValue().toByteArray());
                 jgen.writeEndObject();
             }
         }
@@ -104,14 +107,16 @@ public class JsonMapperProvider implements Provider<ObjectMapper> {
             public Any deserialize(JsonParser p, DeserializationContext ctxt)
                     throws IOException, JsonProcessingException {
                 JsonNode root = p.getCodec().readTree(p);
-                JsonNode type = root.get("@type");
-                JsonNode value = root.get("@value");
+                JsonNode type = root.get(JSON_TYPE);
+                JsonNode value = root.get(JSON_VALUE);
 
-                if (type == null || !type.isTextual())
+                if (type == null || !type.isTextual()) {
                     throw ctxt.reportMappingException("invalid '@type' field when deserializing ProtoBuf Any object");
+                }
 
-                if (value == null || !value.isTextual())
+                if (value == null || !value.isTextual()) {
                     throw ctxt.reportMappingException("invalid '@value' field when deserializing ProtoBuf Any object");
+                }
 
                 return Any.newBuilder()
                         .setTypeUrl(type.textValue())
