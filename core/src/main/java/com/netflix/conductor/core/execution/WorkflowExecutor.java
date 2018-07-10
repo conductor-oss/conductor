@@ -442,6 +442,7 @@ public class WorkflowExecutor {
                 task.setStatus(COMPLETED);
             }
             task.setOutputData(taskResult.getOutputData());
+            task.setOutputMessage(taskResult.getOutputMessage());
             task.setReasonForIncompletion(taskResult.getReasonForIncompletion());
             task.setWorkerId(taskResult.getWorkerId());
             executionDAO.updateTask(task);
@@ -465,6 +466,7 @@ public class WorkflowExecutor {
 
         task.setStatus(valueOf(taskResult.getStatus().name()));
         task.setOutputData(taskResult.getOutputData());
+        task.setOutputMessage(taskResult.getOutputMessage());
         task.setReasonForIncompletion(taskResult.getReasonForIncompletion());
         task.setWorkerId(taskResult.getWorkerId());
         task.setCallbackAfterSeconds(taskResult.getCallbackAfterSeconds());
@@ -678,6 +680,8 @@ public class WorkflowExecutor {
         if (skipTaskRequest != null) {
             theTask.setInputData(skipTaskRequest.getTaskInput());
             theTask.setOutputData(skipTaskRequest.getTaskOutput());
+            theTask.setInputMessage(skipTaskRequest.getTaskInputMessage());
+            theTask.setOutputMessage(skipTaskRequest.getTaskOutputMessage());
         }
         executionDAO.createTasks(Arrays.asList(theTask));
         decide(workflowId);

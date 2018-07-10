@@ -77,16 +77,15 @@ public class EmbeddedElasticSearchV5 implements EmbeddedElasticSearch {
         logger.info("Starting ElasticSearch for cluster {} ", settings.get("cluster.name"));
         instance = new PluginConfigurableNode(settings, singletonList(Netty4Plugin.class));
         instance.start();
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                try {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                if (instance != null) {
                     instance.close();
-                } catch (IOException e) {
-                    logger.error("Error closing ElasticSearch");
                 }
+            } catch (IOException e) {
+                logger.error("Error closing ElasticSearch");
             }
-        });
+        }));
         logger.info("ElasticSearch cluster {} started in local mode on port {}", instance.settings().get("cluster.name"), getPort());
     }
 

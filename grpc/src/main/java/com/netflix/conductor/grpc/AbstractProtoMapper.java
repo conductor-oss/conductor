@@ -1,5 +1,6 @@
 package com.netflix.conductor.grpc;
 
+import com.google.protobuf.Any;
 import com.google.protobuf.Value;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -49,7 +50,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import javax.annotation.Generated;
 
-@Generated("com.netflix.conductor.protogen.ProtoGen")
+@Generated("com.github.vmg.protogen.ProtoGen")
 public abstract class AbstractProtoMapper {
     public EventExecutionPb.EventExecution toProto(EventExecution from) {
         EventExecutionPb.EventExecution.Builder to = EventExecutionPb.EventExecution.newBuilder();
@@ -161,6 +162,9 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getInput().entrySet()) {
             to.putInput( pair.getKey(), toProto( pair.getValue() ) );
         }
+        if (from.getInputMessage() != null) {
+            to.setInputMessage( toProto( from.getInputMessage() ) );
+        }
         return to.build();
     }
 
@@ -174,6 +178,9 @@ public abstract class AbstractProtoMapper {
             inputMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setInput(inputMap);
+        if (from.hasInputMessage()) {
+            to.setInputMessage( fromProto( from.getInputMessage() ) );
+        }
         return to;
     }
 
@@ -188,6 +195,9 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getOutput().entrySet()) {
             to.putOutput( pair.getKey(), toProto( pair.getValue() ) );
         }
+        if (from.getOutputMessage() != null) {
+            to.setOutputMessage( toProto( from.getOutputMessage() ) );
+        }
         return to.build();
     }
 
@@ -200,6 +210,9 @@ public abstract class AbstractProtoMapper {
             outputMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setOutput(outputMap);
+        if (from.hasOutputMessage()) {
+            to.setOutputMessage( fromProto( from.getOutputMessage() ) );
+        }
         return to;
     }
 
@@ -343,6 +356,12 @@ public abstract class AbstractProtoMapper {
         if (from.getDomain() != null) {
             to.setDomain( from.getDomain() );
         }
+        if (from.getInputMessage() != null) {
+            to.setInputMessage( toProto( from.getInputMessage() ) );
+        }
+        if (from.getOutputMessage() != null) {
+            to.setOutputMessage( toProto( from.getOutputMessage() ) );
+        }
         return to.build();
     }
 
@@ -386,6 +405,12 @@ public abstract class AbstractProtoMapper {
             to.setWorkflowTask( fromProto( from.getWorkflowTask() ) );
         }
         to.setDomain( from.getDomain() );
+        if (from.hasInputMessage()) {
+            to.setInputMessage( fromProto( from.getInputMessage() ) );
+        }
+        if (from.hasOutputMessage()) {
+            to.setOutputMessage( fromProto( from.getOutputMessage() ) );
+        }
         return to;
     }
 
@@ -558,6 +583,9 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getOutputData().entrySet()) {
             to.putOutputData( pair.getKey(), toProto( pair.getValue() ) );
         }
+        if (from.getOutputMessage() != null) {
+            to.setOutputMessage( toProto( from.getOutputMessage() ) );
+        }
         return to.build();
     }
 
@@ -574,6 +602,9 @@ public abstract class AbstractProtoMapper {
             outputDataMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setOutputData(outputDataMap);
+        if (from.hasOutputMessage()) {
+            to.setOutputMessage( fromProto( from.getOutputMessage() ) );
+        }
         return to;
     }
 
@@ -702,6 +733,12 @@ public abstract class AbstractProtoMapper {
             taskOutputMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setTaskOutput(taskOutputMap);
+        if (from.hasTaskInputMessage()) {
+            to.setTaskInputMessage( fromProto( from.getTaskInputMessage() ) );
+        }
+        if (from.hasTaskOutputMessage()) {
+            to.setTaskOutputMessage( fromProto( from.getTaskOutputMessage() ) );
+        }
         return to;
     }
 
@@ -777,6 +814,7 @@ public abstract class AbstractProtoMapper {
             to.setFailureWorkflow( from.getFailureWorkflow() );
         }
         to.setSchemaVersion( from.getSchemaVersion() );
+        to.setRestartable( from.isRestartable() );
         return to.build();
     }
 
@@ -794,6 +832,7 @@ public abstract class AbstractProtoMapper {
         to.setOutputParameters(outputParametersMap);
         to.setFailureWorkflow( from.getFailureWorkflow() );
         to.setSchemaVersion( from.getSchemaVersion() );
+        to.setRestartable( from.getRestartable() );
         return to;
     }
 
@@ -1141,4 +1180,8 @@ public abstract class AbstractProtoMapper {
     public abstract Value toProto(Object in);
 
     public abstract Object fromProto(Value in);
+
+    public abstract Any toProto(Any in);
+
+    public abstract Any fromProto(Any in);
 }

@@ -15,8 +15,7 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
-import com.netflix.conductor.common.annotations.ProtoField;
-import com.netflix.conductor.common.annotations.ProtoMessage;
+import com.github.vmg.protogen.annotations.*;
 
 import java.util.ArrayList;
 import java.util.List;

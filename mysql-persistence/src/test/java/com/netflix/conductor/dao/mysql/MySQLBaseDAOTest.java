@@ -1,10 +1,9 @@
 package com.netflix.conductor.dao.mysql;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.zaxxer.hikari.HikariDataSource;
 
 import org.flywaydb.core.Flyway;
@@ -27,7 +26,7 @@ public class MySQLBaseDAOTest {
     protected final Logger logger = LoggerFactory.getLogger(getClass());
     protected final DataSource dataSource;
     protected final TestConfiguration testConfiguration = new TestConfiguration();
-    protected final ObjectMapper objectMapper = createObjectMapper();
+    protected final ObjectMapper objectMapper = new JsonMapperProvider().get();
     protected final DB db = EmbeddedDatabase.INSTANCE.getDB();
 
     static AtomicBoolean migrated = new AtomicBoolean(false);
@@ -69,16 +68,6 @@ public class MySQLBaseDAOTest {
             flyway.migrate();
             migrated.getAndSet(true);
         }
-    }
-
-    private static ObjectMapper createObjectMapper() {
-        ObjectMapper om = new ObjectMapper();
-        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-        om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-        om.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        om.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-        return om;
     }
 
     protected void resetAllData() {

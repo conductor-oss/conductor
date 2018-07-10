@@ -21,7 +21,7 @@ package com.netflix.conductor.common.metadata.events;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.netflix.conductor.common.annotations.*;
+import com.github.vmg.protogen.annotations.*;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 
 /**

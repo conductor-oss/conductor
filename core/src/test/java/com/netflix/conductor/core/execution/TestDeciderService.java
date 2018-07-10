@@ -18,8 +18,6 @@
  */
 package com.netflix.conductor.core.execution;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -44,7 +42,7 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
-import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DefaultRegistry;
@@ -94,15 +92,7 @@ public class TestDeciderService {
 
     private static Registry registry;
 
-    private static ObjectMapper objectMapper = new ObjectMapper();
-
-    static {
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-        objectMapper.setSerializationInclusion(Include.NON_NULL);
-        objectMapper.setSerializationInclusion(Include.NON_EMPTY);
-    }
+    private static ObjectMapper objectMapper = new JsonMapperProvider().get();
 
     @BeforeClass
     public static void init() {

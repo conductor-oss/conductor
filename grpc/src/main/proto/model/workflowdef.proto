@@ -17,4 +17,5 @@ message WorkflowDef {
     map<string, google.protobuf.Value> output_parameters = 6;
     string failure_workflow = 7;
     int32 schema_version = 8;
+    bool restartable = 9;
 }

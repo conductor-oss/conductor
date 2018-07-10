@@ -21,7 +21,7 @@ dependencies {
 
 protobuf {
     protoc {
-        artifact = 'com.google.protobuf:protoc:3.5.1-1'
+        artifact = "com.google.protobuf:protoc:${revProtoBuf}"
     }
     plugins {
         grpc {
@@ -41,3 +41,5 @@ idea {
         sourceDirs += file("${projectDir}/build/generated/source/proto/main/grpc");
     }
 }
+
+compileJava.dependsOn(tasks.getByPath(":conductor-common:protogen"))

@@ -1,7 +1,6 @@
 package com.netflix.conductor.common.metadata.workflow;
 
-import com.netflix.conductor.common.annotations.ProtoField;
-import com.netflix.conductor.common.annotations.ProtoMessage;
+import com.github.vmg.protogen.annotations.*;
 
 import java.util.HashMap;
 import java.util.Map;

@@ -23,9 +23,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.netflix.conductor.common.annotations.ProtoEnum;
-import com.netflix.conductor.common.annotations.ProtoField;
-import com.netflix.conductor.common.annotations.ProtoMessage;
+import com.github.vmg.protogen.annotations.*;
 import com.netflix.conductor.common.metadata.Auditable;
 
 /**

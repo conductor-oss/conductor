@@ -28,12 +28,11 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
@@ -59,16 +58,8 @@ public class RedisMetadataDAOTest {
 
 	private RedisMetadataDAO dao;
 	
-	private static ObjectMapper om = new ObjectMapper();
+	private static ObjectMapper om = new JsonMapperProvider().get();
 
-	static {
-		om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-		om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-		om.setSerializationInclusion(Include.NON_NULL);
-		om.setSerializationInclusion(Include.NON_EMPTY);
-	}
-	
 	@Before
 	public void init() {
 		Configuration config = new TestConfiguration();

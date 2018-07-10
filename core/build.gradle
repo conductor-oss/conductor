@@ -8,8 +8,6 @@ dependencies {
 
     compile "com.netflix.servo:servo-core:${revServo}"
     compile "com.netflix.spectator:spectator-api:${revSpectator}"
-    compile "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
-    compile "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
     compile "com.jayway.jsonpath:json-path:${revJsonPath}"
 
     compile "org.apache.commons:commons-lang3:${revCommonsLang3}"

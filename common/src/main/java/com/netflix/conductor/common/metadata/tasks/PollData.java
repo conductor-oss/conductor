@@ -1,7 +1,6 @@
 package com.netflix.conductor.common.metadata.tasks;
 
-import com.netflix.conductor.common.annotations.ProtoField;
-import com.netflix.conductor.common.annotations.ProtoMessage;
+import com.github.vmg.protogen.annotations.*;
 
 /**
  * Copyright 2016 Netflix, Inc.

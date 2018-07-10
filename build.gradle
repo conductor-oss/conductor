@@ -1,5 +1,4 @@
 buildscript {
-	
 	repositories {
         jcenter()
     }

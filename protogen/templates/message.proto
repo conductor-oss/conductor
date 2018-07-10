@@ -1,8 +1,0 @@
-{{protoClass}} {{name}} {
-{{#nested}}
-    {{>message}}
-{{/nested}}
-{{#fields}}
-    {{protoTypeDeclaration}};
-{{/fields}}
-}

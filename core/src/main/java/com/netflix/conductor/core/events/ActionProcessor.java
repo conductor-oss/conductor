@@ -109,9 +109,10 @@ public class ActionProcessor {
 			replaced.put("error", "No task found with reference name: " + taskRefName + ", workflowId: " + workflowId);
 			return replaced;
 		}
-		
+
 		task.setStatus(status);
 		task.setOutputData(replaced);
+		task.setOutputMessage(taskDetails.getOutputMessage());
 		task.getOutputData().put("conductor.event.messageId", messageId);
 		task.getOutputData().put("conductor.event.name", event);
 		
