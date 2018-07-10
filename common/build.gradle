@@ -1,7 +1,6 @@
 buildscript {
     repositories {
         jcenter()
-        maven { url "https://dl.bintray.com/vmg/protogen" }
     }
     dependencies {
         classpath "com.github.vmg.protogen:protogen-codegen:${revProtogenCodegen}"

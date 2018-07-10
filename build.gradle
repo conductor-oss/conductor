@@ -33,7 +33,6 @@ subprojects {
 
     repositories {
         jcenter()
-        maven { url "https://dl.bintray.com/vmg/protogen" }
     }
 
     dependencies {
