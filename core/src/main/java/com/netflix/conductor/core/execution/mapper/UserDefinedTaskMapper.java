@@ -79,7 +79,7 @@ public class UserDefinedTaskMapper implements TaskMapper {
         userDefinedTask.setTaskDefName(taskToSchedule.getName());
         userDefinedTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         userDefinedTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        userDefinedTask.setWorkflowType(workflowInstance.getWorkflowType());
+        userDefinedTask.setWorkflowType(workflowInstance.getWorkflowName());
         userDefinedTask.setCorrelationId(workflowInstance.getCorrelationId());
         userDefinedTask.setScheduledTime(System.currentTimeMillis());
         userDefinedTask.setTaskId(taskId);

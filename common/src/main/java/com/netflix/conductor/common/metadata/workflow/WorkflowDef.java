@@ -23,6 +23,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 import com.github.vmg.protogen.annotations.*;
@@ -35,7 +36,7 @@ import com.netflix.conductor.common.metadata.Auditable;
 @ProtoMessage
 public class WorkflowDef extends Auditable {
 
-	@ProtoField(id = 1)
+    @ProtoField(id = 1)
 	private String name;
 
 	@ProtoField(id = 2)
@@ -241,5 +242,34 @@ public class WorkflowDef extends Auditable {
 			all.addAll(wft.all());
 		}
 		return all;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		WorkflowDef that = (WorkflowDef) o;
+		return getVersion() == that.getVersion() &&
+				getSchemaVersion() == that.getSchemaVersion() &&
+				Objects.equals(getName(), that.getName()) &&
+				Objects.equals(getDescription(), that.getDescription()) &&
+				Objects.equals(getTasks(), that.getTasks()) &&
+				Objects.equals(getInputParameters(), that.getInputParameters()) &&
+				Objects.equals(getOutputParameters(), that.getOutputParameters()) &&
+				Objects.equals(getFailureWorkflow(), that.getFailureWorkflow());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(
+				getName(),
+				getDescription(),
+				getVersion(),
+				getTasks(),
+				getInputParameters(),
+				getOutputParameters(),
+				getFailureWorkflow(),
+				getSchemaVersion()
+		);
 	}
 }

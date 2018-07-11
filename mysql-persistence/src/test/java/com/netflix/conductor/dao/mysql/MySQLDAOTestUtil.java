@@ -1,9 +1,9 @@
 package com.netflix.conductor.dao.mysql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.zaxxer.hikari.HikariDataSource;
 
 import org.flywaydb.core.Flyway;
@@ -18,23 +18,23 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sql.DataSource;
 
-import ch.vorburger.mariadb4j.DB;
-
 
 @SuppressWarnings("Duplicates")
-public class MySQLBaseDAOTest {
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
-    protected final DataSource dataSource;
-    protected final TestConfiguration testConfiguration = new TestConfiguration();
-    protected final ObjectMapper objectMapper = new JsonMapperProvider().get();
-    protected final DB db = EmbeddedDatabase.INSTANCE.getDB();
+public class MySQLDAOTestUtil {
+    private static final Logger logger = LoggerFactory.getLogger(MySQLDAOTestUtil.class);
+    private final DataSource dataSource;
+    private final TestConfiguration testConfiguration = new TestConfiguration();
+    private final ObjectMapper objectMapper = new JsonMapperProvider().get();
 
     static AtomicBoolean migrated = new AtomicBoolean(false);
 
-    MySQLBaseDAOTest() {
+    MySQLDAOTestUtil() {
         testConfiguration.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/conductor");
         testConfiguration.setProperty("jdbc.username", "root");
         testConfiguration.setProperty("jdbc.password", "");
+        // Ensure the DB starts
+        EmbeddedDatabase.INSTANCE.getDB();
+
         this.dataSource = getDataSource(testConfiguration);
     }
 
@@ -61,7 +61,7 @@ public class MySQLBaseDAOTest {
             return;
         }
 
-        synchronized (MySQLBaseDAOTest.class) {
+        synchronized (MySQLDAOTestUtil.class) {
             Flyway flyway = new Flyway();
             flyway.setDataSource(dataSource);
             flyway.setPlaceholderReplacement(false);
@@ -70,7 +70,19 @@ public class MySQLBaseDAOTest {
         }
     }
 
-    protected void resetAllData() {
+    public DataSource getDataSource() {
+        return dataSource;
+    }
+
+    public TestConfiguration getTestConfiguration() {
+        return testConfiguration;
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+
+    public void resetAllData() {
         logger.info("Resetting data for test");
         try (Connection connection = dataSource.getConnection()) {
         	try(ResultSet rs = connection.prepareStatement("SHOW TABLES").executeQuery();

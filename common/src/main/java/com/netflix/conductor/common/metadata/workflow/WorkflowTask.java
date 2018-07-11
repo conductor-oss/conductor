@@ -28,6 +28,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -573,4 +574,56 @@ public class WorkflowTask {
 	public String toString() {
 		return name + "/" + taskReferenceName;
 	}
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        WorkflowTask that = (WorkflowTask) o;
+        return getStartDelay() == that.getStartDelay() &&
+                isOptional() == that.isOptional() &&
+                Objects.equals(getName(), that.getName()) &&
+                Objects.equals(getTaskReferenceName(), that.getTaskReferenceName()) &&
+                Objects.equals(getDescription(), that.getDescription()) &&
+                Objects.equals(getInputParameters(), that.getInputParameters()) &&
+                Objects.equals(getType(), that.getType()) &&
+                Objects.equals(getDynamicTaskNameParam(), that.getDynamicTaskNameParam()) &&
+                Objects.equals(getCaseValueParam(), that.getCaseValueParam()) &&
+                Objects.equals(getCaseExpression(), that.getCaseExpression()) &&
+                Objects.equals(getDecisionCases(), that.getDecisionCases()) &&
+                Objects.equals(getDynamicForkJoinTasksParam(), that.getDynamicForkJoinTasksParam()) &&
+                Objects.equals(getDynamicForkTasksParam(), that.getDynamicForkTasksParam()) &&
+                Objects.equals(getDynamicForkTasksInputParamName(), that.getDynamicForkTasksInputParamName()) &&
+                Objects.equals(getDefaultCase(), that.getDefaultCase()) &&
+                Objects.equals(getForkTasks(), that.getForkTasks()) &&
+                Objects.equals(getSubWorkflowParam(), that.getSubWorkflowParam()) &&
+                Objects.equals(getJoinOn(), that.getJoinOn()) &&
+                Objects.equals(getSink(), that.getSink());
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(
+                getName(),
+                getTaskReferenceName(),
+                getDescription(),
+                getInputParameters(),
+                getType(),
+                getDynamicTaskNameParam(),
+                getCaseValueParam(),
+                getCaseExpression(),
+                getDecisionCases(),
+                getDynamicForkJoinTasksParam(),
+                getDynamicForkTasksParam(),
+                getDynamicForkTasksInputParamName(),
+                getDefaultCase(),
+                getForkTasks(),
+                getStartDelay(),
+                getSubWorkflowParam(),
+                getJoinOn(),
+                getSink(),
+                isOptional()
+        );
+    }
 }

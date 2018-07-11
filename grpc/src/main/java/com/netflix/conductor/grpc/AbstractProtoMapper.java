@@ -1050,6 +1050,9 @@ public abstract class AbstractProtoMapper {
         }
         to.putAllTaskToDomain( from.getTaskToDomain() );
         to.addAllFailedReferenceTaskNames( from.getFailedReferenceTaskNames() );
+        if (from.getWorkflowDefinition() != null) {
+            to.setWorkflowDefinition( toProto( from.getWorkflowDefinition() ) );
+        }
         return to.build();
     }
 
@@ -1080,6 +1083,9 @@ public abstract class AbstractProtoMapper {
         to.setEvent( from.getEvent() );
         to.setTaskToDomain( from.getTaskToDomainMap() );
         to.setFailedReferenceTaskNames( from.getFailedReferenceTaskNamesList().stream().collect(Collectors.toCollection(HashSet::new)) );
+        if (from.hasWorkflowDefinition()) {
+            to.setWorkflowDefinition( fromProto( from.getWorkflowDefinition() ) );
+        }
         return to;
     }
 

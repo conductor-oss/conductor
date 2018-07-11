@@ -50,7 +50,11 @@ public class SimpleTaskMapperTest {
 
         when(metadataDAO.getTaskDef("simple_task")).thenReturn(new TaskDef());
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(new WorkflowDef(), new Workflow(), taskToSchedule, new HashMap<>(), 0, retriedTaskId, taskId, null);
+        WorkflowDef  wd = new WorkflowDef();
+        Workflow w = new Workflow();
+        w.setWorkflowDefinition(wd);
+
+        TaskMapperContext taskMapperContext = new TaskMapperContext(w, taskToSchedule, new HashMap<>(), 0, retriedTaskId, taskId, null);
 
         List<Task> mappedTasks = simpleTaskMapper.getMappedTasks(taskMapperContext);
         assertNotNull(mappedTasks);
@@ -65,7 +69,12 @@ public class SimpleTaskMapperTest {
         taskToSchedule.setName("simple_task");
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
-        TaskMapperContext taskMapperContext = new TaskMapperContext(new WorkflowDef(), new Workflow(), taskToSchedule, new HashMap<>(), 0, retriedTaskId, taskId, null);
+
+        WorkflowDef  wd = new WorkflowDef();
+        Workflow w = new Workflow();
+        w.setWorkflowDefinition(wd);
+
+        TaskMapperContext taskMapperContext = new TaskMapperContext(w, taskToSchedule, new HashMap<>(), 0, retriedTaskId, taskId, null);
 
         when(metadataDAO.getTaskDef("simple_task")).thenReturn(null);
         //then

@@ -1,18 +1,9 @@
 package com.netflix.conductor.dao.mysql;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.execution.ApplicationException;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.junit.Before;
@@ -20,16 +11,27 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 @SuppressWarnings("Duplicates")
 @RunWith(JUnit4.class)
-public class MySQLMetadataDAOTest extends MySQLBaseDAOTest {
+public class MySQLMetadataDAOTest {
 
+    private final MySQLDAOTestUtil testUtil = new MySQLDAOTestUtil();
     private MySQLMetadataDAO dao;
 
     @Before
     public void setup() throws Exception {
-        dao = new MySQLMetadataDAO(objectMapper, dataSource, testConfiguration);
-        resetAllData();
+        dao = new MySQLMetadataDAO(testUtil.getObjectMapper(), testUtil.getDataSource(), testUtil.getTestConfiguration());
+        testUtil.resetAllData();
     }
 
     @Test(expected=NullPointerException.class)
@@ -68,7 +70,7 @@ public class MySQLMetadataDAOTest extends MySQLBaseDAOTest {
         assertEquals("test", all.get(0).getName());
         assertEquals(1, all.get(0).getVersion());
 
-        WorkflowDef found = dao.get("test", 1);
+        WorkflowDef found = dao.get("test", 1).get();
         assertTrue(EqualsBuilder.reflectionEquals(def, found));
 
         def.setVersion(2);
@@ -80,7 +82,7 @@ public class MySQLMetadataDAOTest extends MySQLBaseDAOTest {
         assertEquals("test", all.get(0).getName());
         assertEquals(1, all.get(0).getVersion());
 
-        found = dao.getLatest(def.getName());
+        found = dao.getLatest(def.getName()).get();
         assertEquals(def.getName(), found.getName());
         assertEquals(def.getVersion(), found.getVersion());
         assertEquals(2, found.getVersion());
@@ -101,7 +103,7 @@ public class MySQLMetadataDAOTest extends MySQLBaseDAOTest {
 
         def.setDescription("updated");
         dao.update(def);
-        found = dao.get(def.getName(), def.getVersion());
+        found = dao.get(def.getName(), def.getVersion()).get();
         assertEquals(def.getDescription(), found.getDescription());
 
         List<String> allnames = dao.findAll();

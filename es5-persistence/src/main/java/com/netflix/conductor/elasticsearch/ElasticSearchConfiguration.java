@@ -62,6 +62,7 @@ public interface ElasticSearchConfiguration extends Configuration {
 
     default int getEmbeddedPort() {
         return getIntProperty(EMBEDDED_PORT_PROPERTY_NAME, EMBEDDED_PORT_DEFAULT_VALUE);
+
     }
 
     default String getEmbeddedClusterName() {

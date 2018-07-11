@@ -1,19 +1,9 @@
 package com.netflix.conductor.dao.mysql;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import com.google.common.collect.ImmutableList;
+
 import com.netflix.conductor.core.events.queue.Message;
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -21,17 +11,31 @@ import org.junit.rules.ExpectedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 @SuppressWarnings("Duplicates")
-public class MySQLQueueDAOTest extends MySQLBaseDAOTest {
+public class MySQLQueueDAOTest {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MySQLQueueDAOTest.class);
 
+	private final MySQLDAOTestUtil testUtil = new MySQLDAOTestUtil();
 	private MySQLQueueDAO dao;
 
 	@Before
 	public void setup() throws Exception {
-		dao = new MySQLQueueDAO(objectMapper, dataSource);
-		resetAllData();
+		dao = new MySQLQueueDAO(testUtil.getObjectMapper(), testUtil.getDataSource());
+		testUtil.resetAllData();
 	}
 
 	@Rule
@@ -145,9 +149,9 @@ public class MySQLQueueDAOTest extends MySQLBaseDAOTest {
 
 		// Assert that our un-popped messages match our expected size
 		final long expectedSize = totalSize - firstPollSize - secondPollSize;
-		try(Connection c = dataSource.getConnection()) {
+		try(Connection c = testUtil.getDataSource().getConnection()) {
 			String UNPOPPED = "SELECT COUNT(*) FROM queue_message WHERE queue_name = ? AND popped = false";
-			try(Query q = new Query(objectMapper, c, UNPOPPED)) {
+			try(Query q = new Query(testUtil.getObjectMapper(), c, UNPOPPED)) {
 				long count = q.addParameter(queueName).executeCount();
 				assertEquals("Remaining queue size mismatch", expectedSize, count);
 			}
@@ -224,9 +228,9 @@ public class MySQLQueueDAOTest extends MySQLBaseDAOTest {
 
 		// Assert that our un-popped messages match our expected size
 		final long expectedSize = totalSize - firstPollSize - secondPollSize;
-		try(Connection c = dataSource.getConnection()) {
+		try(Connection c = testUtil.getDataSource().getConnection()) {
 			String UNPOPPED = "SELECT COUNT(*) FROM queue_message WHERE queue_name = ? AND popped = false";
-			try(Query q = new Query(objectMapper, c, UNPOPPED)) {
+			try(Query q = new Query(testUtil.getObjectMapper(), c, UNPOPPED)) {
 				long count = q.addParameter(queueName).executeCount();
 				assertEquals("Remaining queue size mismatch", expectedSize, count);
 			}

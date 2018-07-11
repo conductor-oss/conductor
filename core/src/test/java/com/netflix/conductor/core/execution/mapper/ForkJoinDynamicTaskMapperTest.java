@@ -65,6 +65,7 @@ public class ForkJoinDynamicTaskMapperTest {
         def.setInputParameters(Arrays.asList("param1", "param2"));
 
         Workflow  workflowInstance = new Workflow();
+        workflowInstance.setWorkflowDefinition(def);
 
         WorkflowTask dynamicForkJoinToSchedule = new WorkflowTask();
         dynamicForkJoinToSchedule.setType(WorkflowTask.Type.FORK_JOIN_DYNAMIC.name());
@@ -113,12 +114,12 @@ public class ForkJoinDynamicTaskMapperTest {
         Task simpleTask2 = new Task();
         simpleTask2.setReferenceTaskName("xdt2");
 
-        when(deciderService.getTasksToBeScheduled(def, workflowInstance, wt2, 0 )).thenReturn(Arrays.asList(simpleTask1));
-        when(deciderService.getTasksToBeScheduled(def, workflowInstance, wt3, 0 )).thenReturn(Arrays.asList(simpleTask2));
+        when(deciderService.getTasksToBeScheduled(workflowInstance, wt2, 0 )).thenReturn(Arrays.asList(simpleTask1));
+        when(deciderService.getTasksToBeScheduled(workflowInstance, wt3, 0 )).thenReturn(Arrays.asList(simpleTask2));
 
         String taskId = IDGenerator.generate();
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(def, workflowInstance, dynamicForkJoinToSchedule, null,0, null, taskId, deciderService);
+        TaskMapperContext taskMapperContext = new TaskMapperContext(workflowInstance, dynamicForkJoinToSchedule, null,0, null, taskId, deciderService);
         //then
         expectedException.expect(TerminateWorkflowException.class);
         forkJoinDynamicTaskMapper.getMappedTasks(taskMapperContext);
@@ -135,6 +136,7 @@ public class ForkJoinDynamicTaskMapperTest {
         def.setInputParameters(Arrays.asList("param1", "param2"));
 
         Workflow  workflowInstance = new Workflow();
+        workflowInstance.setWorkflowDefinition(def);
 
         WorkflowTask dynamicForkJoinToSchedule = new WorkflowTask();
         dynamicForkJoinToSchedule.setType(WorkflowTask.Type.FORK_JOIN_DYNAMIC.name());
@@ -184,12 +186,12 @@ public class ForkJoinDynamicTaskMapperTest {
         Task simpleTask2 = new Task();
         simpleTask2.setReferenceTaskName("xdt2");
 
-        when(deciderService.getTasksToBeScheduled(def, workflowInstance, wt2, 0 )).thenReturn(Arrays.asList(simpleTask1));
-        when(deciderService.getTasksToBeScheduled(def, workflowInstance, wt3, 0 )).thenReturn(Arrays.asList(simpleTask2));
+        when(deciderService.getTasksToBeScheduled(workflowInstance, wt2, 0 )).thenReturn(Arrays.asList(simpleTask1));
+        when(deciderService.getTasksToBeScheduled(workflowInstance, wt3, 0 )).thenReturn(Arrays.asList(simpleTask2));
 
         String taskId = IDGenerator.generate();
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(def, workflowInstance, dynamicForkJoinToSchedule, null,0, null, taskId, deciderService);
+        TaskMapperContext taskMapperContext = new TaskMapperContext(workflowInstance, dynamicForkJoinToSchedule, null,0, null, taskId, deciderService);
         //then
         List<Task> mappedTasks = forkJoinDynamicTaskMapper.getMappedTasks(taskMapperContext);
 

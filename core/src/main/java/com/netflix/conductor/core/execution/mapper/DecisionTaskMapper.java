@@ -17,20 +17,23 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.google.common.annotations.VisibleForTesting;
+
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.SystemTaskType;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.script.ScriptException;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+
+import javax.script.ScriptException;
 
 
 /**
@@ -66,7 +69,6 @@ public class DecisionTaskMapper implements TaskMapper {
         List<Task> tasksToBeScheduled = new LinkedList<>();
         WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
         Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
-        WorkflowDef workflowDefinition = taskMapperContext.getWorkflowDefinition();
         Map<String, Object> taskInput = taskMapperContext.getTaskInput();
         int retryCount = taskMapperContext.getRetryCount();
         String taskId = taskMapperContext.getTaskId();
@@ -80,7 +82,7 @@ public class DecisionTaskMapper implements TaskMapper {
         decisionTask.setTaskDefName(SystemTaskType.DECISION.name());
         decisionTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         decisionTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        decisionTask.setWorkflowType(workflowInstance.getWorkflowType());
+        decisionTask.setWorkflowType(workflowInstance.getWorkflowName());
         decisionTask.setCorrelationId(workflowInstance.getCorrelationId());
         decisionTask.setScheduledTime(System.currentTimeMillis());
         decisionTask.setEndTime(System.currentTimeMillis());
@@ -103,7 +105,7 @@ public class DecisionTaskMapper implements TaskMapper {
             WorkflowTask selectedTask = selectedTasks.get(0);        //Schedule the first task to be executed...
             //TODO break out this recursive call using function composition of what needs to be done and then walk back the condition tree
             List<Task> caseTasks = taskMapperContext.getDeciderService()
-                    .getTasksToBeScheduled(workflowDefinition, workflowInstance, selectedTask, retryCount, taskMapperContext.getRetryTaskId());
+                    .getTasksToBeScheduled(workflowInstance, selectedTask, retryCount, taskMapperContext.getRetryTaskId());
             tasksToBeScheduled.addAll(caseTasks);
             decisionTask.getInputData().put("hasChildren", "true");
         }

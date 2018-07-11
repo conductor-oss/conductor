@@ -21,6 +21,7 @@ package com.netflix.conductor.core.execution;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
@@ -221,9 +222,12 @@ public class TestWorkflowExecutor {
     @Test
     @SuppressWarnings("unchecked")
     public void testCompleteWorkflow() throws Exception {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test");
+
         Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(def);
         workflow.setWorkflowId("1");
-        workflow.setWorkflowType("test");
         workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
         workflow.setOwnerApp("junit_test");
         workflow.setStartTime(10L);

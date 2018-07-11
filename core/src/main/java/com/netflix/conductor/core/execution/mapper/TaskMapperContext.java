@@ -28,7 +28,6 @@ import java.util.Map;
  */
 public class TaskMapperContext {
 
-    private WorkflowDef workflowDefinition;
     private Workflow workflowInstance;
     private WorkflowTask taskToSchedule;
     private Map<String, Object> taskInput;
@@ -38,10 +37,9 @@ public class TaskMapperContext {
     private DeciderService deciderService;
 
 
-    public TaskMapperContext(WorkflowDef workflowDefinition, Workflow workflowInstance, WorkflowTask taskToSchedule,
+    public TaskMapperContext(Workflow workflowInstance, WorkflowTask taskToSchedule,
                              Map<String, Object> taskInput, int retryCount, String retryTaskId, String taskId, DeciderService deciderService) {
 
-        this.workflowDefinition = workflowDefinition;
         this.workflowInstance = workflowInstance;
         this.taskToSchedule = taskToSchedule;
         this.taskInput = taskInput;
@@ -52,7 +50,7 @@ public class TaskMapperContext {
     }
 
     public WorkflowDef getWorkflowDefinition() {
-        return workflowDefinition;
+        return workflowInstance.getWorkflowDefinition();
     }
 
     public Workflow getWorkflowInstance() {
@@ -86,7 +84,7 @@ public class TaskMapperContext {
     @Override
     public String toString() {
         return "TaskMapperContext{" +
-                "workflowDefinition=" + workflowDefinition +
+                "workflowDefinition=" + getWorkflowDefinition() +
                 ", workflowInstance=" + workflowInstance +
                 ", taskToSchedule=" + taskToSchedule +
                 ", taskInput=" + taskInput +

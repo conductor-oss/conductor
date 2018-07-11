@@ -15,9 +15,10 @@
  */
 package com.netflix.conductor.core.execution;
 
+import com.google.common.base.Preconditions;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Preconditions;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -87,8 +88,8 @@ public class ParametersUtils {
         wf.put("workflowId", workflow.getWorkflowId());
         wf.put("parentWorkflowId", workflow.getParentWorkflowId());
         wf.put("parentWorkflowTaskId", workflow.getParentWorkflowTaskId());
-        wf.put("workflowType", workflow.getWorkflowType());
-        wf.put("version", workflow.getVersion());
+        wf.put("workflowType", workflow.getWorkflowName());
+        wf.put("version", workflow.getWorkflowVersion());
         wf.put("correlationId", workflow.getCorrelationId());
         wf.put("reasonForIncompletion", workflow.getReasonForIncompletion());
         wf.put("schemaVersion", workflow.getSchemaVersion());

@@ -18,8 +18,9 @@
  */
 package com.netflix.conductor.tests.integration;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Uninterruptibles;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -45,6 +46,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.tests.utils.TestRunner;
+
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -56,7 +58,6 @@ import org.junit.runner.RunWith;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -70,6 +71,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import javax.inject.Inject;
 
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
 import static org.junit.Assert.assertEquals;
@@ -339,12 +342,10 @@ public class WorkflowServiceTest {
         metadataService.updateWorkflowDef(ver1);
         metadataService.updateWorkflowDef(ver2);
 
-        WorkflowDef found = metadataService.getWorkflowDef(ver2.getName(), 1);
-        assertNotNull(found);
+        WorkflowDef found = metadataService.getWorkflowDef(ver2.getName(), 1).get();
         assertEquals(2, found.getSchemaVersion());
 
-        WorkflowDef found1 = metadataService.getWorkflowDef(ver1.getName(), 1);
-        assertNotNull(found1);
+        WorkflowDef found1 = metadataService.getWorkflowDef(ver1.getName(), 1).get();
         assertEquals(1, found1.getSchemaVersion());
 
     }
@@ -1149,7 +1150,7 @@ public class WorkflowServiceTest {
         taskDef.setRetryCount(1);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
         assertNotNull(found);
         Map<String, Object> outputParameters = found.getOutputParameters();
         outputParameters.put("validationErrors", "${t1.output.ErrorMessage}");
@@ -1220,8 +1221,7 @@ public class WorkflowServiceTest {
 
         clearWorkflows();
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
 
         String correlationId = "unit_test_1";
         Map<String, Object> input = new HashMap<>();
@@ -1478,8 +1478,7 @@ public class WorkflowServiceTest {
         clearWorkflows();
         createWorkflowDefForDomain();
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1).get();
 
         String correlationId = "unit_test_sw";
         Map<String, Object> input = new HashMap<String, Object>();
@@ -1608,8 +1607,7 @@ public class WorkflowServiceTest {
         clearWorkflows();
         createWorkflowDefForDomain();
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1).get();
 
         String correlationId = "unit_test_sw";
         Map<String, Object> input = new HashMap<String, Object>();
@@ -1735,8 +1733,7 @@ public class WorkflowServiceTest {
 
         clearWorkflows();
 
-        WorkflowDef found = metadataService.getWorkflowDef(LONG_RUNNING, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LONG_RUNNING, 1).get();
 
         String correlationId = "unit_test_1";
         Map<String, Object> input = new HashMap<String, Object>();
@@ -1844,8 +1841,7 @@ public class WorkflowServiceTest {
 
         clearWorkflows();
 
-        WorkflowDef found = metadataService.getWorkflowDef(LONG_RUNNING, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LONG_RUNNING, 1).get();
 
         String correlationId = "unit_test_1";
         Map<String, Object> input = new HashMap<String, Object>();
@@ -1958,8 +1954,7 @@ public class WorkflowServiceTest {
 
         int count = 3;
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
 
         String correlationId = "unit_test_concurrrent";
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2163,8 +2158,7 @@ public class WorkflowServiceTest {
         taskDef.setRetryDelaySeconds(1);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
 
         String correlationId = "unit_test_1";
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2231,8 +2225,7 @@ public class WorkflowServiceTest {
     @Test
     public void testSuccess() throws Exception {
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2341,8 +2334,7 @@ public class WorkflowServiceTest {
     @Test
     public void testDeciderUpdate() throws Exception {
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2373,8 +2365,7 @@ public class WorkflowServiceTest {
     //Ignore for now, will improve this in the future
     public void testFailurePoints() throws Exception {
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2448,8 +2439,7 @@ public class WorkflowServiceTest {
 
         ExecutorService executors = Executors.newFixedThreadPool(3);
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2588,16 +2578,14 @@ public class WorkflowServiceTest {
 
     @Test
     public void testFailures() throws Exception {
-        WorkflowDef errorWorkflow = metadataService.getWorkflowDef(FORK_JOIN_WF, 1);
-        assertNotNull("Error workflow is not defined", errorWorkflow);
+        metadataService.getWorkflowDef(FORK_JOIN_WF, 1).get();
 
         String taskName = "junit_task_1";
         TaskDef taskDef = metadataService.getTaskDef(taskName);
         taskDef.setRetryCount(0);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
         assertNotNull(found.getFailureWorkflow());
         assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
 
@@ -2692,8 +2680,7 @@ public class WorkflowServiceTest {
         taskDef.setRetryDelaySeconds(0);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(workflowDef);
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
         assertNotNull(workflowDef.getFailureWorkflow());
         assertFalse(StringUtils.isBlank(workflowDef.getFailureWorkflow()));
 
@@ -2869,8 +2856,7 @@ public class WorkflowServiceTest {
         taskDef.setRetryCount(0);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
         assertNotNull(found.getFailureWorkflow());
         assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
 
@@ -2931,8 +2917,7 @@ public class WorkflowServiceTest {
         taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
         assertNotNull(found.getFailureWorkflow());
         assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
 
@@ -3004,8 +2989,7 @@ public class WorkflowServiceTest {
     @Test
     public void testReruns() throws Exception {
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -3152,8 +3136,7 @@ public class WorkflowServiceTest {
         metadataService.updateTaskDef(taskDef);
 
 
-        WorkflowDef found = metadataService.getWorkflowDef(TEST_WORKFLOW_NAME_3, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(TEST_WORKFLOW_NAME_3, 1).get();
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -3223,8 +3206,7 @@ public class WorkflowServiceTest {
     @Test
     public void testPauseResume() throws Exception {
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
 
         String correlationId = "unit_test_1" + System.nanoTime();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -3335,8 +3317,7 @@ public class WorkflowServiceTest {
     public void testSubWorkflow() throws Exception {
 
         createSubWorkflow();
-        WorkflowDef found = metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1).get();
         Map<String, Object> input = new HashMap<>();
         input.put("param1", "param 1 value");
         input.put("param3", "param 2 value");
@@ -3402,8 +3383,7 @@ public class WorkflowServiceTest {
 
 
         createSubWorkflow();
-        WorkflowDef found = metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1);
-        assertNotNull(found);
+        metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1).get();
 
         Map<String, Object> input = new HashMap<>();
         input.put("param1", "param 1 value");
@@ -3467,7 +3447,7 @@ public class WorkflowServiceTest {
 
         createSubWorkflow();
 
-        WorkflowDef found = metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1);
+        WorkflowDef found = metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1).get();
         assertNotNull(found);
         Map<String, Object> input = new HashMap<>();
         input.put("param1", "param 1 value");
@@ -3896,8 +3876,7 @@ public class WorkflowServiceTest {
         clearWorkflows();
         createWorkflowDefForDomain();
 
-        WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
-        assertNotNull(workflowDef);
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1).get();
 
         String correlationId = "unit_test_sw";
         Map<String, Object> input = new HashMap<>();

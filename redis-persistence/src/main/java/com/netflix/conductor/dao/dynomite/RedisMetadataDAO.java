@@ -15,21 +15,10 @@
  */
 package com.netflix.conductor.dao.dynomite;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
-import javax.inject.Inject;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.inject.Singleton;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -40,6 +29,19 @@ import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dyno.DynoProxy;
 import com.netflix.conductor.metrics.Monitors;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
+import javax.inject.Inject;
 
 @Singleton
 @Trace
@@ -170,7 +172,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 	}
 
 	@Override
-	public WorkflowDef getLatest(String name) {
+	public Optional<WorkflowDef> getLatest(String name) {
 		Preconditions.checkNotNull(name, "WorkflowDef name cannot be null");
 		WorkflowDef def = null;
 
@@ -181,7 +183,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 			recordRedisDaoPayloadSize("getWorkflowDef", workflowDefJsonString.length(), "n/a", def.getName());
 		}
 
-		return def;
+		return Optional.ofNullable(def);
 	}
 
 	public List<WorkflowDef> getAllVersions(String name) {
@@ -205,7 +207,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 	}
 
 	@Override
-	public WorkflowDef get(String name, int version) {
+	public Optional<WorkflowDef> get(String name, int version) {
 		Preconditions.checkNotNull(name, "WorkflowDef name cannot be null");
 		WorkflowDef def = null;
 
@@ -215,7 +217,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 			def = readValue(workflowDefJsonString, WorkflowDef.class);
 			recordRedisDaoPayloadSize("getWorkflowDef", workflowDefJsonString.length(), "n/a", name);
 		}
-		return def;
+		return Optional.ofNullable(def);
 	}
 
 	@Override

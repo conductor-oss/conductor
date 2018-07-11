@@ -18,21 +18,6 @@
  */
 package com.netflix.conductor.dao.dynomite;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import com.netflix.conductor.common.utils.JsonMapperProvider;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
@@ -42,13 +27,28 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.redis.JedisMock;
 import com.netflix.conductor.dyno.DynoProxy;
 
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
 import redis.clients.jedis.JedisCommands;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Viren
@@ -106,7 +106,7 @@ public class RedisMetadataDAOTest {
 		assertEquals("test", all.get(0).getName());
 		assertEquals(1, all.get(0).getVersion());
 		
-		WorkflowDef found = dao.get("test", 1);
+		WorkflowDef found = dao.get("test", 1).get();
 		assertTrue(EqualsBuilder.reflectionEquals(def, found));
 		
 		def.setVersion(2);
@@ -118,7 +118,7 @@ public class RedisMetadataDAOTest {
 		assertEquals("test", all.get(0).getName());
 		assertEquals(1, all.get(0).getVersion());
 		
-		found = dao.getLatest(def.getName());
+		found = dao.getLatest(def.getName()).get();
 		assertEquals(def.getName(), found.getName());
 		assertEquals(def.getVersion(), found.getVersion());
 		assertEquals(2, found.getVersion());
@@ -139,7 +139,7 @@ public class RedisMetadataDAOTest {
 		
 		def.setDescription("updated");
 		dao.update(def);
-		found = dao.get(def.getName(), def.getVersion());
+		found = dao.get(def.getName(), def.getVersion()).get();
 		assertEquals(def.getDescription(), found.getDescription());
 		
 		List<String> allnames = dao.findAll();

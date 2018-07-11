@@ -18,15 +18,9 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.google.common.annotations.VisibleForTesting;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
@@ -35,6 +29,13 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Viren
@@ -60,8 +61,8 @@ public class Event extends WorkflowSystemTask {
 		Map<String, Object> payload = new HashMap<>();
 		payload.putAll(task.getInputData());
 		payload.put("workflowInstanceId", workflow.getWorkflowId());
-		payload.put("workflowType", workflow.getWorkflowType());
-		payload.put("workflowVersion", workflow.getVersion());
+		payload.put("workflowType", workflow.getWorkflowName());
+		payload.put("workflowVersion", workflow.getWorkflowVersion());
 		payload.put("correlationId", workflow.getCorrelationId());
 		
 		String payloadJson = om.writeValueAsString(payload);
@@ -103,12 +104,12 @@ public class Event extends WorkflowSystemTask {
 			
 			if("conductor".equals(sinkValue)) {
 				
-				queueName = sinkValue + ":" + workflow.getWorkflowType() + ":" + task.getReferenceTaskName();
+				queueName = sinkValue + ":" + workflow.getWorkflowName() + ":" + task.getReferenceTaskName();
 				
 			} else if(sinkValue.startsWith("conductor:")) {
 				
 				queueName = sinkValue.replaceAll("conductor:", "");
-				queueName = "conductor:" + workflow.getWorkflowType() + ":" + queueName;
+				queueName = "conductor:" + workflow.getWorkflowName() + ":" + queueName;
 				
 			} else {
 				task.setStatus(Status.FAILED);

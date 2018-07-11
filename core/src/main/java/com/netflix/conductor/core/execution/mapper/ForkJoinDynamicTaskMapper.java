@@ -15,9 +15,10 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.DynamicForkJoinTaskList;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -27,6 +28,7 @@ import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
+
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -107,7 +109,6 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
 
         WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
         Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
-        WorkflowDef workflowDef = taskMapperContext.getWorkflowDefinition();
         String taskId = taskMapperContext.getTaskId();
         int retryCount = taskMapperContext.getRetryCount();
 
@@ -130,7 +131,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         //Add each dynamic task to the mapped tasks and also get the last dynamic task in the list,
         // which indicates that the following task after that needs to be a join task
         for (WorkflowTask wft : dynForkTasks) {//TODO this is a cyclic dependency, break it out using function composition
-            List<Task> forkedTasks = taskMapperContext.getDeciderService().getTasksToBeScheduled(workflowDef, workflowInstance, wft, retryCount);
+            List<Task> forkedTasks = taskMapperContext.getDeciderService().getTasksToBeScheduled(workflowInstance, wft, retryCount);
             for (Task forkedTask : forkedTasks) {
                 Map<String, Object> forkedTaskInput = tasksInput.get(forkedTask.getReferenceTaskName());
                 forkedTask.getInputData().putAll(forkedTaskInput);
@@ -143,7 +144,10 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
 
         //From the workflow definition get the next task and make sure that it is a JOIN task.
         //The dynamic fork tasks need to be followed by a join task
-        WorkflowTask joinWorkflowTask = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());
+        WorkflowTask joinWorkflowTask = workflowInstance
+                .getWorkflowDefinition()
+                .getNextTask(taskToSchedule.getTaskReferenceName());
+
         if (joinWorkflowTask == null || !joinWorkflowTask.getType().equals(WorkflowTask.Type.JOIN.name())) {
             throw new TerminateWorkflowException("Dynamic join definition is not followed by a join task.  Check the blueprint");
         }
@@ -205,7 +209,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         joinTask.setTaskDefName(SystemTaskType.JOIN.name());
         joinTask.setReferenceTaskName(joinWorkflowTask.getTaskReferenceName());
         joinTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        joinTask.setWorkflowType(workflowInstance.getWorkflowType());
+        joinTask.setWorkflowType(workflowInstance.getWorkflowName());
         joinTask.setCorrelationId(workflowInstance.getCorrelationId());
         joinTask.setScheduledTime(System.currentTimeMillis());
         joinTask.setEndTime(System.currentTimeMillis());

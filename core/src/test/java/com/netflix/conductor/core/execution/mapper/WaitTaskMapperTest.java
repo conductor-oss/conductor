@@ -27,7 +27,12 @@ public class WaitTaskMapperTest {
         String taskId = IDGenerator.generate();
 
         ParametersUtils parametersUtils = new ParametersUtils();
-        TaskMapperContext taskMapperContext = new TaskMapperContext(new WorkflowDef(), new Workflow(), taskToSchedule, new HashMap<>(), 0, null, taskId, null);
+
+        WorkflowDef  wd = new WorkflowDef();
+        Workflow w = new Workflow();
+        w.setWorkflowDefinition(wd);
+
+        TaskMapperContext taskMapperContext = new TaskMapperContext(w, taskToSchedule, new HashMap<>(), 0, null, taskId, null);
         WaitTaskMapper waitTaskMapper = new WaitTaskMapper(parametersUtils);
         //When
         List<Task> mappedTasks = waitTaskMapper.getMappedTasks(taskMapperContext);

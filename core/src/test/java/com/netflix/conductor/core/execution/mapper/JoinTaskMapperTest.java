@@ -25,7 +25,11 @@ public class JoinTaskMapperTest {
 
         String taskId = IDGenerator.generate();
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(new WorkflowDef(), new Workflow(), taskToSchedule,
+        WorkflowDef  wd = new WorkflowDef();
+        Workflow w = new Workflow();
+        w.setWorkflowDefinition(wd);
+
+        TaskMapperContext taskMapperContext = new TaskMapperContext(w, taskToSchedule,
                 null, 0, null, taskId, null);
 
         List<Task> mappedTasks = new JoinTaskMapper().getMappedTasks(taskMapperContext);

@@ -19,6 +19,7 @@
 package com.netflix.conductor.service;
 
 import com.google.common.base.Preconditions;
+
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -29,9 +30,11 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
 
+import java.util.List;
+import java.util.Optional;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.List;
 
 /**
  * @author Viren 
@@ -125,9 +128,9 @@ public class MetadataService {
 	 * @param version Optional.  Version.  If null, then retrieves the latest
 	 * @return Workflow definition
 	 */
-	public WorkflowDef getWorkflowDef(String name, Integer version) {
+	public Optional<WorkflowDef> getWorkflowDef(String name, Integer version) {
 		if (version == null) {
-			return metadata.getLatest(name);
+			return getLatestWorkflow(name);
 		}
 		return metadata.get(name, version);
 	}
@@ -137,7 +140,7 @@ public class MetadataService {
 	 * @param name Name of the workflow to retrieve
 	 * @return Latest version of the workflow definition
 	 */
-	public WorkflowDef getLatestWorkflow(String name) {
+	public Optional<WorkflowDef> getLatestWorkflow(String name) {
 		return metadata.getLatest(name);
 	}
 

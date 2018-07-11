@@ -20,6 +20,7 @@ import org.junit.rules.ExpectedException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -52,6 +53,7 @@ public class SubWorkflowTaskMapperTest {
         //Given
         WorkflowDef workflowDef = new WorkflowDef();
         Workflow  workflowInstance = new Workflow();
+        workflowInstance.setWorkflowDefinition(workflowDef);
         WorkflowTask taskToSchedule = new WorkflowTask();
         SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         subWorkflowParams.setName("Foo");
@@ -66,7 +68,7 @@ public class SubWorkflowTaskMapperTest {
                 .thenReturn(subWorkflowParamMap);
 
         //When
-        TaskMapperContext taskMapperContext = new TaskMapperContext(workflowDef, workflowInstance, taskToSchedule,
+        TaskMapperContext taskMapperContext = new TaskMapperContext(workflowInstance, taskToSchedule,
                 taskInput, 0, null, IDGenerator.generate(), deciderService);
         List<Task> mappedTasks = subWorkflowTaskMapper.getMappedTasks(taskMapperContext);
 
@@ -121,7 +123,7 @@ public class SubWorkflowTaskMapperTest {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("FooWorkFlow");
         workflowDef.setVersion(2);
-        when(metadataDAO.getLatest(any())).thenReturn(workflowDef);
+        when(metadataDAO.getLatest(any())).thenReturn(Optional.of(workflowDef));
 
         Integer version = subWorkflowTaskMapper.getSubWorkflowVersion(subWorkflowParamMap, "FooWorkFlow");
 
@@ -131,7 +133,7 @@ public class SubWorkflowTaskMapperTest {
     @Test
     public void getSubworkflowVersionFromMetaException() throws Exception {
         Map<String, Object> subWorkflowParamMap = new HashMap<>();
-        when(metadataDAO.getLatest(any())).thenReturn(null);
+        when(metadataDAO.getLatest(any())).thenReturn(Optional.empty());
 
         expectedException.expect(TerminateWorkflowException.class);
         expectedException.expectMessage(String.format("The Task %s defined as a sub-workflow has no workflow definition available ", "FooWorkFlow"));
