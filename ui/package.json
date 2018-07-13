@@ -83,7 +83,7 @@
     "gulp-sourcemaps": "^1.5.2",
     "gulp-uglify": "^1.4.0",
     "json-loader": "^0.5.4",
-    "mocha": "^2.3.0",
+    "mocha": "^2.5.3",
     "postcss-nested": "^1.0.0",
     "postcss-simple-extend": "^1.0.0",
     "postcss-simple-vars": "^1.0.0",
