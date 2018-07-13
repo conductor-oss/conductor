@@ -21,9 +21,7 @@
   "dependencies": {
     "amdefine": "^1.0.0",
     "autoprefixer": "^6.0.0",
-    "babel": "^6.5.2",
     "babel-polyfill": "^6.3.14",
-    "babel-register": "^6.18.0",
     "bunyan": "^1.7.1",
     "clipboard": "^1.6.1",
     "create-react-class": "^15.5.3",
