@@ -2756,7 +2756,7 @@ public class WorkflowServiceTest {
         taskDef.setRetryCount(0);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
         found.setName(JUNIT_TEST_WF_NON_RESTARTABLE);
         found.setRestartable(false);
         metadataService.updateWorkflowDef(found);
@@ -3581,7 +3581,7 @@ public class WorkflowServiceTest {
 
     @Test
     public void testTaskWithCallbackAfterSecondsInWorkflow() throws Exception {
-        WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
         assertNotNull(workflowDef);
 
         String workflowId = workflowExecutor.startWorkflow(workflowDef.getName(), workflowDef.getVersion(), "", new HashMap<>());

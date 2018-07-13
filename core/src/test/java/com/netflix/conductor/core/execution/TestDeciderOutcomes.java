@@ -81,9 +81,11 @@ public class TestDeciderOutcomes {
     public void init() throws Exception {
 
         MetadataDAO metadataDAO = mock(MetadataDAO.class);
-        TaskDef td = new TaskDef();
-        td.setRetryCount(1);
-        when(metadataDAO.getTaskDef(any())).thenReturn(td);
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(1);
+        taskDef.setName("mockTaskDef");
+        taskDef.setResponseTimeoutSeconds(0);
+        when(metadataDAO.getTaskDef(any())).thenReturn(taskDef);
         ParametersUtils parametersUtils = new ParametersUtils();
         Map<String, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put("DECISION", new DecisionTaskMapper());
