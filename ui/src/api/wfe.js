@@ -157,6 +157,7 @@ router.get('/id/:workflowId', async (req, res, next) => {
     next(err);
   }
 });
+
 router.delete('/terminate/:workflowId', async (req, res, next) => {
   try {
     const result = await http.delete(baseURL2 + req.params.workflowId);
@@ -165,6 +166,7 @@ router.delete('/terminate/:workflowId', async (req, res, next) => {
     next(err);
   }
 });
+
 router.post('/restart/:workflowId', async (req, res, next) => {
   try {
     const result = await http.post(baseURL2 + req.params.workflowId + '/restart', {}, req.token);
@@ -213,6 +215,7 @@ router.get('/metadata/workflow/:name/:version', async (req, res, next) => {
     next(err);
   }
 });
+
 router.get('/metadata/workflow', async (req, res, next) => {
   try {
     const result = await http.get(baseURLMeta + 'workflow', req.token);
@@ -221,6 +224,7 @@ router.get('/metadata/workflow', async (req, res, next) => {
     next(err);
   }
 });
+
 router.get('/metadata/taskdef', async (req, res, next) => {
   try {
     const result = await http.get(baseURLMeta + 'taskdefs', req.token);
@@ -229,6 +233,7 @@ router.get('/metadata/taskdef', async (req, res, next) => {
     next(err);
   }
 });
+
 router.get('/task/log/:taskId', async (req, res, next) => {
   try {
     const logs = await http.get(baseURLTask + req.params.taskId + '/log', req.token);
@@ -237,6 +242,7 @@ router.get('/task/log/:taskId', async (req, res, next) => {
     next(err);
   }
 });
+
 router.get('/queue/data', async (req, res, next) => {
   try {
     const sizes = await http.get(baseURLTask + 'queue/all', req.token);
@@ -254,4 +260,5 @@ router.get('/queue/data', async (req, res, next) => {
     next(err);
   }
 });
+
 module.exports = router;

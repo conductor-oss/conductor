@@ -47,8 +47,8 @@ const HttpClient = {
         }
       });
     }),
-  put: (path, data, token) => {
-    return new Promise((resolve, reject) => {
+  put: (path, data, token) =>
+    new Promise((resolve, reject) => {
       const req = request.put(path, data).set('Accept', 'application/json');
       if (token) {
         req.set('Authorization', token);
@@ -61,9 +61,7 @@ const HttpClient = {
           resolve(res.body);
         }
       });
-    });
-  },
-
+    }),
   delete: (path, data, token) =>
     new Promise((resolve, reject) => {
       const req = request.del(path, data).set('Accept', 'application/json');

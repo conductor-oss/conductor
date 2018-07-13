@@ -16,7 +16,6 @@ router.get('/', async (req, res, next) => {
 
 router.get('/executions', async (req, res, next) => {
   try {
-    let event = req.params.event;
     const result = await http.get(baseURL2 + '/' + req.params.event + '?activeOnly=false', req.token);
     res.status(200).send(result);
   } catch (err) {
