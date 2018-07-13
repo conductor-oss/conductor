@@ -49,7 +49,7 @@ describe('Filters', function() {
       // Create the mock request
       const req = {
         headers: {
-          authorization: 'Bearer header.body.signature'
+          foo: 'bar'
         }
       };
 
@@ -57,7 +57,8 @@ describe('Filters', function() {
 
       // Execute the auth middleware
       middleware[0](req, res, () => {
-        assert.equal(req.headers.authorization, req.token);
+        assert.equal(req.headers.authorization, null);
+        assert.equal(req.token, null);
       });
     });
   });
