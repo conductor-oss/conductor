@@ -80,6 +80,8 @@ public class WorkflowTaskCoordinator {
 
 	private static final String ALL_WORKERS = "all";
 
+	private static final long SHUTDOWN_WAIT_TIME_IN_SEC = 10;
+
 	/**
 	 * @param eurekaClient Eureka client - used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is terminated. If passed null, discovery check is not done.
 	 * @param taskClient TaskClient used to communicate to the Conductor server
@@ -270,6 +272,23 @@ public class WorkflowTaskCoordinator {
 			scheduledExecutorService.scheduleWithFixedDelay(()->pollForTask(worker), worker.getPollingInterval(), worker.getPollingInterval(), TimeUnit.MILLISECONDS);
 		});
 	}
+
+    public synchronized void shutdown() throws InterruptedException {
+        this.scheduledExecutorService.shutdown();
+        this.executorService.shutdown();
+
+        awaitTermination(this.scheduledExecutorService, SHUTDOWN_WAIT_TIME_IN_SEC);
+        awaitTermination(this.executorService, SHUTDOWN_WAIT_TIME_IN_SEC);
+    }
+
+    private void awaitTermination(ExecutorService executorService, long timeout) throws InterruptedException {
+        if (executorService.awaitTermination(timeout, TimeUnit.SECONDS)) {
+            logger.debug("tasks completed, shutting down");
+        } else {
+            logger.warn("Forcing shutdown after waiting for %s second", timeout);
+            this.scheduledExecutorService.shutdownNow();
+        }
+    }
 
 	private void pollForTask(Worker worker) {
 		if(eurekaClient != null && !eurekaClient.getInstanceRemoteStatus().equals(InstanceStatus.UP)) {
