@@ -7,7 +7,7 @@ class AuthFilter {
         return next();
       }
 
-      req.authHeader = token;
+      req.token = authorization;
 
       next();
     });
