@@ -1,7 +1,5 @@
 import 'babel-polyfill';
 import express from 'express';
-import React from 'react';
-import ReactDOM from 'react-dom/server';
 import Bunyan from 'bunyan';
 
 let log = Bunyan.createLogger({ src: true, name: 'Conductor UI' });
@@ -10,8 +8,6 @@ const wfeAPI = require('./api/wfe');
 const sysAPI = require('./api/sys');
 const eventsAPI = require('./api/events');
 const { MiddlewareIndex } = require('./middleware');
-
-let app = express();
 
 class Main {
   init() {
@@ -52,3 +48,7 @@ class Main {
     });
   }
 }
+
+const main = new Main();
+
+main.init();
