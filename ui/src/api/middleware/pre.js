@@ -1,9 +1,7 @@
-const { AuthFilter } = require('./filters/authFilter');
+import AuthFilter from './filters/authFilter';
 
-class PreMiddleware {
+export default class PreMiddleware {
   init(app) {
     new AuthFilter().init(app);
   }
 }
-
-module.exports.PreMiddleware = PreMiddleware;

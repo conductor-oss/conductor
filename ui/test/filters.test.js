@@ -1,5 +1,5 @@
-var assert = require('assert');
-var { AuthFilter } = require('../src/api/middleware/filters/authFilter');
+const assert = require('assert');
+const { AuthFilter } = require('../src/api/middleware/filters/authFilter');
 
 describe('Filters', function() {
   describe('Pre Middleware', function() {

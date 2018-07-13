@@ -1,4 +1,4 @@
-class AuthFilter {
+export default class AuthFilter {
   init(app) {
     app.use((req, res, next) => {
       const { headers: { authorization = '' } = {} } = req;
@@ -13,5 +13,3 @@ class AuthFilter {
     });
   }
 }
-
-module.exports.AuthFilter = AuthFilter;

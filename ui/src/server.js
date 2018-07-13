@@ -1,13 +1,13 @@
 import 'babel-polyfill';
 import express from 'express';
 import Bunyan from 'bunyan';
+import MiddlewareIndex from './api/middleware';
 
 let log = Bunyan.createLogger({ src: true, name: 'Conductor UI' });
 
 const wfeAPI = require('./api/wfe');
 const sysAPI = require('./api/sys');
 const eventsAPI = require('./api/events');
-const { MiddlewareIndex } = require('./api/middleware');
 
 class Main {
   init() {

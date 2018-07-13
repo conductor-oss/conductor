@@ -1,7 +1,7 @@
-const { PreMiddleware } = require('./pre');
-const { PostMiddleware } = require('./post');
+import PreMiddleware from './pre';
+import PostMiddleware from './post';
 
-class MiddlewareIndex {
+export default class MiddlewareIndex {
   before(app) {
     new PreMiddleware().init(app);
   }
@@ -10,5 +10,3 @@ class MiddlewareIndex {
     new PostMiddleware().init(app);
   }
 }
-
-module.exports.MiddlewareIndex = MiddlewareIndex;
