@@ -1,5 +1,5 @@
-const assert = require('assert');
-const { AuthFilter } = require('../src/api/middleware/filters/authFilter');
+import assert from 'assert';
+import AuthFilter from '../src/api/middleware/filters/authFilter';
 
 describe('Filters', function() {
   describe('Pre Middleware', function() {
