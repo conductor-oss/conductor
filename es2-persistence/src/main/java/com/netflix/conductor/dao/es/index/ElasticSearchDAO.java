@@ -185,14 +185,14 @@ public class ElasticSearchDAO implements IndexDAO {
 		//0. Add the tasklog template
 		GetIndexTemplatesResponse result = elasticSearchClient.admin().indices().prepareGetTemplates("tasklog_template").execute().actionGet();
 		if (result.getIndexTemplates().isEmpty()) {
-			logger.info("Creating the index template 'default_template'");
+			logger.info("Creating the index template 'tasklog_template'");
 			InputStream stream = ElasticSearchDAO.class.getResourceAsStream("/template_tasklog.json");
 			byte[] templateSource = IOUtils.toByteArray(stream);
 
 			try {
 				elasticSearchClient.admin().indices().preparePutTemplate("tasklog_template").setSource(templateSource).execute().actionGet();
 			} catch (Exception e) {
-				logger.error(e.getMessage(), e);
+				logger.error("Failed to init tasklog_template", e);
 			}
 		}
 
