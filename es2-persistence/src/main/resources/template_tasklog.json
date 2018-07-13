@@ -46,7 +46,7 @@
                 }
             }
         },
-        "task": {
+        "task_log": {
             "properties": {
                 "createdTime": {
                     "type": "long"

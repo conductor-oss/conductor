@@ -104,7 +104,7 @@ public class ElasticSearchDAO implements IndexDAO {
 
 	private static final String TASK_DOC_TYPE = "task";
 
-	private static final String LOG_DOC_TYPE = "task";
+	private static final String LOG_DOC_TYPE = "task_log";
 
 	private static final String EVENT_DOC_TYPE = "event";
 
