@@ -4,7 +4,7 @@
   "description": "Workflow User Interface",
   "main": "index.js",
   "scripts": {
-    "test": "mocha --reporter nyan --compilers js:babel-core/register --recursive",
+    "test": "mocha --reporter nyan --compilers js:babel-core/register --recursive --check-leaks",
     "watch": "gulp watch",
     "build": "gulp build --release",
     "deploy": "gulp deploy --release"
