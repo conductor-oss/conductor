@@ -13,85 +13,71 @@ function getUrl(path) {
     : `http://127.0.0.1:${global.server.get('port')}${path}`;
 }
 
-const getAuthHeader = token => {
-  const key = token ? 'Authorization' : '';
-  const val = token ? token : '';
-  return {
-    key,
-    val
-  };
-};
-
 const HttpClient = {
   get: (path, token) =>
     new Promise((resolve, reject) => {
-      const auth = getAuthHeader(token);
-      request
-        .get(getUrl(path))
-        .accept('application/json')
-        .set(auth.key, auth.val)
-        .end((err, res) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(res.body);
-          }
-        });
+      const req = request.get(getUrl(path)).accept('application/json');
+      if (token) {
+        req.set('Authorization', token);
+      }
+      req.end((err, res) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(res.body);
+        }
+      });
     }),
   post: (path, data, token) =>
     new Promise((resolve, reject) => {
-      const auth = getAuthHeader(token);
-      request
-        .post(path, data)
-        .set('Accept', 'application/json')
-        .set(auth.key, auth.val)
-        .end((err, res) => {
-          if (err || !res.ok) {
-            console.error('Error on post! ' + res);
-            reject(err);
+      const req = request.post(path, data).set('Accept', 'application/json');
+      if (token) {
+        req.set('Authorization', token);
+      }
+      req.end((err, res) => {
+        if (err || !res.ok) {
+          console.error('Error on post! ' + res);
+          reject(err);
+        } else {
+          if (res.body) {
+            resolve(res.body);
           } else {
-            if (res.body) {
-              resolve(res.body);
-            } else {
-              resolve(res);
-            }
+            resolve(res);
           }
-        });
+        }
+      });
     }),
-
   put: (path, data, token) => {
     return new Promise((resolve, reject) => {
-      const auth = getAuthHeader(token);
-      request
-        .put(path, data)
-        .set('Accept', 'application/json')
-        .set(auth.key, auth.val)
-        .end((err, res) => {
-          if (err || !res.ok) {
-            console.error('Error on post! ' + res);
-            reject(err);
-          } else {
-            resolve(res.body);
-          }
-        });
+      const req = request.put(path, data).set('Accept', 'application/json');
+      if (token) {
+        req.set('Authorization', token);
+      }
+      req.end((err, res) => {
+        if (err || !res.ok) {
+          console.error('Error on post! ' + res);
+          reject(err);
+        } else {
+          resolve(res.body);
+        }
+      });
     });
   },
 
   delete: (path, data, token) =>
     new Promise((resolve, reject) => {
-      const auth = getAuthHeader(token);
-      request
-        .del(path, data)
-        .set('Accept', 'application/json')
-        .set(auth.key, auth.val)
-        .end((err, res) => {
-          if (err || !res.ok) {
-            console.error('Error on post! ' + err);
-            reject(err);
-          } else {
-            resolve(res);
-          }
-        });
+      const req = request.del(path, data).set('Accept', 'application/json');
+      if (token) {
+        req.set('Authorization', token);
+      }
+      req.end((err, res) => {
+        if (err || !res.ok) {
+          console.error('Error on post! ' + err);
+          reject(err);
+        } else {
+          resolve(res);
+        }
+      });
     })
 };
 

@@ -43,7 +43,7 @@ router.get('/', async (req, res, next) => {
       start +
       '&query=' +
       query;
-    const result = await http.get(url);
+    const result = await http.get(url, req.token);
     const hits = result.results;
     res.status(200).send({ result: { hits: hits, totalHits: result.totalHits } });
   } catch (err) {
@@ -77,7 +77,7 @@ router.get('/search-by-task/:taskId', async (req, res, next) => {
     let query = req.query.q || '';
     const url =
       baseURL2 + 'search-by-tasks?size=100&sort=startTime:DESC&freeText=' + freeText.join(' AND ') + '&start=' + start;
-    const result = await http.get(url);
+    const result = await http.get(url, req.token);
     const hits = result.results;
     res.status(200).send({ result: { hits: hits, totalHits: result.totalHits } });
   } catch (err) {
@@ -87,8 +87,8 @@ router.get('/search-by-task/:taskId', async (req, res, next) => {
 
 router.get('/id/:workflowId', async (req, res, next) => {
   try {
-    const result = await http.get(baseURL2 + req.params.workflowId + '?includeTasks=true');
-    const meta = await http.get(baseURLMeta + 'workflow/' + result.workflowType + '?version=' + result.version);
+    const result = await http.get(`${baseURL2}${req.params.workflowId}?includeTasks=true`, req.token);
+    const meta = await http.get(`${baseURLMeta}workflow/${result.workflowType}?version=${result.version}`, req.token);
 
     const subs = filter(identity)(
       map(task => {
@@ -122,7 +122,9 @@ router.get('/id/:workflowId', async (req, res, next) => {
       }
     });
 
-    const logs = map(task => Promise.all([task, http.get(baseURLTask + task.taskId + '/log')]))(result.tasks);
+    const logs = map(task => Promise.all([task, http.get(baseURLTask + task.taskId + '/log', req.token)]))(
+      result.tasks
+    );
 
     await Promise.all(logs).then(result => {
       forEach(([task, logs]) => {
@@ -135,8 +137,8 @@ router.get('/id/:workflowId', async (req, res, next) => {
     const promises = map(({ name, version, subWorkflowId, referenceTaskName }) =>
       Promise.all([
         referenceTaskName,
-        http.get(baseURLMeta + 'workflow/' + name + '?version=' + version),
-        http.get(baseURL2 + subWorkflowId + '?includeTasks=true')
+        http.get(baseURLMeta + 'workflow/' + name + '?version=' + version, req.token),
+        http.get(baseURL2 + subWorkflowId + '?includeTasks=true', req.token)
       ])
     )(subs);
 
@@ -165,7 +167,7 @@ router.delete('/terminate/:workflowId', async (req, res, next) => {
 });
 router.post('/restart/:workflowId', async (req, res, next) => {
   try {
-    const result = await http.post(baseURL2 + req.params.workflowId + '/restart');
+    const result = await http.post(baseURL2 + req.params.workflowId + '/restart', {}, req.token);
     res.status(200).send({ result: req.params.workflowId });
   } catch (err) {
     next(err);
@@ -174,7 +176,7 @@ router.post('/restart/:workflowId', async (req, res, next) => {
 
 router.post('/retry/:workflowId', async (req, res, next) => {
   try {
-    const result = await http.post(baseURL2 + req.params.workflowId + '/retry');
+    const result = await http.post(baseURL2 + req.params.workflowId + '/retry', {}, req.token);
     res.status(200).send({ result: req.params.workflowId });
   } catch (err) {
     next(err);
@@ -183,7 +185,7 @@ router.post('/retry/:workflowId', async (req, res, next) => {
 
 router.post('/pause/:workflowId', async (req, res, next) => {
   try {
-    const result = await http.put(baseURL2 + req.params.workflowId + '/pause');
+    const result = await http.put(baseURL2 + req.params.workflowId + '/pause', {}, req.token);
     res.status(200).send({ result: req.params.workflowId });
   } catch (err) {
     next(err);
@@ -192,7 +194,7 @@ router.post('/pause/:workflowId', async (req, res, next) => {
 
 router.post('/resume/:workflowId', async (req, res, next) => {
   try {
-    const result = await http.put(baseURL2 + req.params.workflowId + '/resume');
+    const result = await http.put(baseURL2 + req.params.workflowId + '/resume', {}, req.token);
     res.status(200).send({ result: req.params.workflowId });
   } catch (err) {
     next(err);
@@ -202,7 +204,10 @@ router.post('/resume/:workflowId', async (req, res, next) => {
 //metadata
 router.get('/metadata/workflow/:name/:version', async (req, res, next) => {
   try {
-    const result = await http.get(baseURLMeta + 'workflow/' + req.params.name + '?version=' + req.params.version);
+    const result = await http.get(
+      baseURLMeta + 'workflow/' + req.params.name + '?version=' + req.params.version,
+      req.token
+    );
     res.status(200).send({ result });
   } catch (err) {
     next(err);
@@ -210,7 +215,7 @@ router.get('/metadata/workflow/:name/:version', async (req, res, next) => {
 });
 router.get('/metadata/workflow', async (req, res, next) => {
   try {
-    const result = await http.get(baseURLMeta + 'workflow');
+    const result = await http.get(baseURLMeta + 'workflow', req.token);
     res.status(200).send({ result });
   } catch (err) {
     next(err);
@@ -218,7 +223,7 @@ router.get('/metadata/workflow', async (req, res, next) => {
 });
 router.get('/metadata/taskdef', async (req, res, next) => {
   try {
-    const result = await http.get(baseURLMeta + 'taskdefs');
+    const result = await http.get(baseURLMeta + 'taskdefs', req.token);
     res.status(200).send({ result });
   } catch (err) {
     next(err);
@@ -226,7 +231,7 @@ router.get('/metadata/taskdef', async (req, res, next) => {
 });
 router.get('/task/log/:taskId', async (req, res, next) => {
   try {
-    const logs = await http.get(baseURLTask + req.params.taskId + '/log');
+    const logs = await http.get(baseURLTask + req.params.taskId + '/log', req.token);
     res.status(200).send({ logs });
   } catch (err) {
     next(err);
@@ -234,8 +239,8 @@ router.get('/task/log/:taskId', async (req, res, next) => {
 });
 router.get('/queue/data', async (req, res, next) => {
   try {
-    const sizes = await http.get(baseURLTask + 'queue/all');
-    const polldata = await http.get(baseURLTask + 'queue/polldata/all');
+    const sizes = await http.get(baseURLTask + 'queue/all', req.token);
+    const polldata = await http.get(baseURLTask + 'queue/polldata/all', req.token);
     polldata.forEach(pd => {
       var qname = pd.queueName;
 
