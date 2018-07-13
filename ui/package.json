@@ -19,7 +19,6 @@
   ],
   "license": "SEE LICENSE IN license.txt",
   "dependencies": {
-    "amdefine": "^1.0.0",
     "autoprefixer": "^6.0.0",
     "babel-polyfill": "^6.3.14",
     "bunyan": "^1.7.1",
