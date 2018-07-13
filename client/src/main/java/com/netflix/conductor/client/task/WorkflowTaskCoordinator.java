@@ -273,7 +273,7 @@ public class WorkflowTaskCoordinator {
 		});
 	}
 
-    public synchronized void shutdown() throws InterruptedException {
+    public void shutdown() throws InterruptedException {
         this.scheduledExecutorService.shutdown();
         this.executorService.shutdown();
 
