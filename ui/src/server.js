@@ -7,7 +7,7 @@ let log = Bunyan.createLogger({ src: true, name: 'Conductor UI' });
 const wfeAPI = require('./api/wfe');
 const sysAPI = require('./api/sys');
 const eventsAPI = require('./api/events');
-const { MiddlewareIndex } = require('./middleware');
+const { MiddlewareIndex } = require('./api/middleware');
 
 class Main {
   init() {
