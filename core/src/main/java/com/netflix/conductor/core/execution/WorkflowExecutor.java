@@ -341,11 +341,12 @@ public class WorkflowExecutor {
         // If the following task, for some reason fails, the sweep will take care of this again!
         if (workflow.getParentWorkflowId() != null) {
             Workflow parent = executionDAO.getWorkflow(workflow.getParentWorkflowId(), false);
+            WorkflowDef parentDef = metadataDAO.get(parent.getWorkflowType(), parent.getVersion());
             logger.debug("Completed sub-workflow {}, deciding parent workflow {}", wf.getWorkflowId(), wf.getParentWorkflowId());
 
             Task parentWorkflowTask = executionDAO.getTask(workflow.getParentWorkflowTaskId());
             // If parent is FAILED and the sub workflow task in parent is FAILED, we want to resume them
-            if (parent.getStatus() == WorkflowStatus.FAILED && parentWorkflowTask.getStatus() == FAILED) {
+            if (StringUtils.isBlank(parentDef.getFailureWorkflow()) && parent.getStatus() == WorkflowStatus.FAILED && parentWorkflowTask.getStatus() == FAILED) {
                 parentWorkflowTask.setStatus(IN_PROGRESS);
                 executionDAO.updateTask(parentWorkflowTask);
                 parent.setStatus(WorkflowStatus.RUNNING);
