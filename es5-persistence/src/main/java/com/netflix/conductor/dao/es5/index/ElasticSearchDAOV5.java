@@ -73,7 +73,6 @@ import javax.inject.Singleton;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -103,7 +102,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 	
 	private static final String TASK_DOC_TYPE = "task";
 	
-	private static final String LOG_DOC_TYPE = "task";
+	private static final String LOG_DOC_TYPE = "task_log";
 	
 	private static final String EVENT_DOC_TYPE = "event";
 	
@@ -182,17 +181,17 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 	 */
 	private void initIndex() throws Exception {
 
-		//0. Add the index template
-		GetIndexTemplatesResponse result = elasticSearchClient.admin().indices().prepareGetTemplates("wfe_template").execute().actionGet();
+		//0. Add the tasklog template
+		GetIndexTemplatesResponse result = elasticSearchClient.admin().indices().prepareGetTemplates("tasklog_template").execute().actionGet();
 		if(result.getIndexTemplates().isEmpty()) {
-			logger.info("Creating the index template 'wfe_template'");
-			InputStream stream = ElasticSearchDAOV5.class.getResourceAsStream("/template.json");
+			logger.info("Creating the index template 'tasklog_template'");
+			InputStream stream = ElasticSearchDAOV5.class.getResourceAsStream("/template_tasklog.json");
 			byte[] templateSource = IOUtils.toByteArray(stream);
 			
 			try {
-				elasticSearchClient.admin().indices().preparePutTemplate("wfe_template").setSource(templateSource, XContentType.JSON).execute().actionGet();
+				elasticSearchClient.admin().indices().preparePutTemplate("tasklog_template").setSource(templateSource, XContentType.JSON).execute().actionGet();
 			}catch(Exception e) {
-				logger.error("Failed to init index template", e);
+				logger.error("Failed to init tasklog_template", e);
 			}
 		}
 	
@@ -205,17 +204,31 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 			}catch(ResourceAlreadyExistsException done) {}
 		}
 				
-		//2. Mapping for the workflow document type
-		GetMappingsResponse response = elasticSearchClient.admin().indices().prepareGetMappings(indexName).addTypes(WORKFLOW_DOC_TYPE).execute().actionGet();
-		if(response.mappings().isEmpty()) {
+		//2. Add Mappings for the workflow document type
+		GetMappingsResponse getMappingsResponse = elasticSearchClient.admin().indices().prepareGetMappings(indexName).addTypes(WORKFLOW_DOC_TYPE).execute().actionGet();
+		if(getMappingsResponse.mappings().isEmpty()) {
 			logger.info("Adding the workflow type mappings");
-			InputStream stream = ElasticSearchDAOV5.class.getResourceAsStream("/wfe_type.json");
+			InputStream stream = ElasticSearchDAOV5.class.getResourceAsStream("/mappings_docType_workflow.json");
 			byte[] bytes = IOUtils.toByteArray(stream);
 			String source = new String(bytes);
 			try {
 				elasticSearchClient.admin().indices().preparePutMapping(indexName).setType(WORKFLOW_DOC_TYPE).setSource(source).execute().actionGet();
 			}catch(Exception e) {
 				logger.error("Failed to init index mappings", e);
+			}
+		}
+
+		//3. Add Mappings for task document type
+		getMappingsResponse = elasticSearchClient.admin().indices().prepareGetMappings(indexName).addTypes(TASK_DOC_TYPE).execute().actionGet();
+		if (getMappingsResponse.mappings().isEmpty()) {
+			logger.info("Adding the task type mappings");
+			InputStream stream = ElasticSearchDAOV5.class.getResourceAsStream("/mappings_docType_task.json");
+			byte[] bytes = IOUtils.toByteArray(stream);
+			String source = new String(bytes);
+			try {
+				elasticSearchClient.admin().indices().preparePutMapping(indexName).setType(TASK_DOC_TYPE).setSource(source).execute().actionGet();
+			} catch (Exception e) {
+				logger.error(e.getMessage(), e);
 			}
 		}
 	}
