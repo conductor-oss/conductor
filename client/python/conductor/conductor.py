@@ -44,7 +44,7 @@ class BaseClient(object):
         theUrl = "{}/{}".format(self.baseURL, resPath)
         theHeader = self.headers
         if headers is not None:
-            theHeader = dict(self.headers.items() + headers.items())
+            theHeader = self.mergeTwoDicts(self.headers, headers)
         if body is not None:
             jsonBody = json.dumps(body, ensure_ascii=False)
             resp = requests.post(theUrl, params=queryParams, data=jsonBody, headers=theHeader)
@@ -58,7 +58,7 @@ class BaseClient(object):
         theUrl = "{}/{}".format(self.baseURL, resPath)
         theHeader = self.headers
         if headers is not None:
-            theHeader = dict(self.headers.items() + headers.items())
+            theHeader = self.mergeTwoDicts(self.headers, headers)
 
         if body is not None:
             jsonBody = json.dumps(body, ensure_ascii=False)
@@ -75,9 +75,19 @@ class BaseClient(object):
         self.__print(resp)
         self.__checkForSuccess(resp)
 
-    def makeUrl(self, urlformat, *argv):
-        url = self.baseResource + '/' + urlformat.format(*argv)
+    def makeUrl(self, urlformat=None, *argv):
+        url = self.baseResource + '/'
+        if urlformat:
+            url += urlformat.format(*argv)
         return url
+
+    def makeParams(self, **kwargs):
+        return dict((k, v) for k, v in kwargs.items() if v is not None) or None
+
+    def mergeTwoDicts(self, x, y):
+        z = x.copy()
+        z.update(y)
+        return z
 
     def __print(self, resp):
         if self.printUrl:
@@ -110,9 +120,7 @@ class MetadataClient(BaseClient):
 
     def getWorkflowDef(self, wfname, version=1):
         url = self.makeUrl('workflow/{}', wfname)
-        params = {}
-        params['version'] = version
-        return self.get(url, params)
+        return self.get(url, self.makeParams(version=version))
 
     def createWorkflowDef(self, wfdObj):
         url = self.makeUrl('workflow')
@@ -138,9 +146,9 @@ class MetadataClient(BaseClient):
         url = self.makeUrl('taskdefs')
         self.put(url, None, taskDefObj)
 
-    def unRegisterTaskDef(self, tdName):
+    def unRegisterTaskDef(self, tdName, reason=None):
         url = self.makeUrl('taskdefs/{}', tdName)
-        self.delete(url)
+        self.delete(url, self.makeParams(reason=reason))
 
     def getAllTaskDefs(self):
         url = self.makeUrl('taskdefs')
@@ -202,9 +210,11 @@ class TaskClient(BaseClient):
         url = self.makeUrl('queue/{}', taskName)
         return self.get(url)
 
-    def removeTaskFromQueue(self, taskId):
+    def removeTaskFromQueue(self, taskId, reason=None):
         url = self.makeUrl('queue/{}', taskId)
-        self.delete(url)
+        params = {}
+        params['reason'] = reason
+        self.delete(url, params)
 
     def getTaskQueueSizes(self, listOfTaskName):
         url = self.makeUrl('queue/sizes')
@@ -245,6 +255,10 @@ class WorkflowClient(BaseClient):
         params['reason'] = reason
         self.delete(url, params)
 
+    def removeWorkflow(self, wfId, archiveWorkflow, reason=None):
+        url = self.makeUrl('{}/remove', wfId)
+        self.delete(url, self.makeParams(archiveWorkflow=archiveWorkflow, reason=reason))
+
     def pauseWorkflow(self, wfId):
         url = self.makeUrl('{}/pause', wfId)
         self.put(url)
@@ -267,6 +281,41 @@ class WorkflowClient(BaseClient):
         params['from'] = fromTaskRef
         self.post(url, params, None)
 
+class EventServicesClient(BaseClient):
+    BASE_RESOURCE = 'event'
+
+    def __init__(self, baseURL):
+        BaseClient.__init__(self, baseURL, self.BASE_RESOURCE)
+
+    def getEventHandlerDef(self, event, activeOnly=True):
+        url = self.makeUrl('{}', event)
+        params = {}
+        params['activeOnly'] = activeOnly
+        return self.get(url, params)
+
+    def getEventHandlerDefs(self):
+        url = self.makeUrl()
+        return self.get(url)
+
+    def createEventHandlerDef(self, ehObj):
+        url = self.makeUrl()
+        return self.post(url, None, ehObj)
+
+    def updateEventHandlerDef(self, ehObj):
+        url = self.makeUrl()
+        return self.put(url, None, ehObj)
+
+    def removeEventHandler(self, ehName):
+        url = self.makeUrl('{}', ehName)
+        self.delete(url, {})
+
+    def getEventHandlerQueues(self):
+        url = self.makeUrl('queues')
+        return self.get(url)
+
+    def getEventHandlerQueuesProviders(self):
+        url = self.makeUrl('queues/providers')
+        return self.get(url)
 
 class WFClientMgr:
     def __init__(self, server_url='http://localhost:8080/api/'):

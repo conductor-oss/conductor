@@ -99,9 +99,9 @@ router.get('/id/:workflowId', async (req, res, next) => {
                     };
                 }
             }
-        })(result.tasks));
+        })(result.tasks || []));
 
-        result.tasks.forEach(task => {
+        (result.tasks || []).forEach(task => {
             if (task.taskType === 'SUB_WORKFLOW') {
                 const subWorkflowId = task.inputData && task.inputData.subWorkflowId;
 
