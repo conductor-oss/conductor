@@ -294,7 +294,6 @@ public class WorkflowTaskCoordinator {
 			executorService.shutdownNow();
 			Thread.currentThread().interrupt();
 		}
-
 	}
 
 	private void pollForTask(Worker worker) {
