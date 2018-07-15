@@ -273,22 +273,29 @@ public class WorkflowTaskCoordinator {
 		});
 	}
 
-    public void shutdown() throws InterruptedException {
+    public void shutdown() {
         this.scheduledExecutorService.shutdown();
         this.executorService.shutdown();
 
-        awaitTermination(this.scheduledExecutorService, SHUTDOWN_WAIT_TIME_IN_SEC);
-        awaitTermination(this.executorService, SHUTDOWN_WAIT_TIME_IN_SEC);
+        shutdownExecutorService(this.scheduledExecutorService, SHUTDOWN_WAIT_TIME_IN_SEC);
+        shutdownExecutorService(this.executorService, SHUTDOWN_WAIT_TIME_IN_SEC);
     }
 
-    private void awaitTermination(ExecutorService executorService, long timeout) throws InterruptedException {
-        if (executorService.awaitTermination(timeout, TimeUnit.SECONDS)) {
-            logger.debug("tasks completed, shutting down");
-        } else {
-            logger.warn("Forcing shutdown after waiting for %s second", timeout);
-            this.scheduledExecutorService.shutdownNow();
-        }
-    }
+    private void shutdownExecutorService(ExecutorService executorService, long timeout) {
+		try {
+			if (executorService.awaitTermination(timeout, TimeUnit.SECONDS)) {
+				logger.debug("tasks completed, shutting down");
+			} else {
+				logger.warn(String.format("forcing shutdown after waiting for %s second", timeout));
+				this.scheduledExecutorService.shutdownNow();
+			}
+		} catch (InterruptedException ie) {
+			logger.warn("shutdown interrupted, invoking shutdownNow");
+			executorService.shutdownNow();
+			Thread.currentThread().interrupt();
+		}
+
+	}
 
 	private void pollForTask(Worker worker) {
 		if(eurekaClient != null && !eurekaClient.getInstanceRemoteStatus().equals(InstanceStatus.UP)) {
