@@ -80,6 +80,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	private final static String POLL_DATA = "POLL_DATA";
 
 	private final static String EVENT_EXECUTION = "EVENT_EXECUTION";
+
 	private static final String WORKFLOW_DYNOMITE_TASK_PAYLOAD_THRESHOLD = "workflow.dynomite.task.payload.threshold";
 	private static final String WORKFLOW_DYNOMITE_WORKFLOW_INPUT_THRESHOLD = "workflow.dynomite.workflow.input.threshold";
 
