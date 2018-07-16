@@ -87,8 +87,11 @@ router.get('/search-by-task/:taskId', async (req, res, next) => {
 
 router.get('/id/:workflowId', async (req, res, next) => {
   try {
-    const result = await http.get(`${baseURL2}${req.params.workflowId}?includeTasks=true`, req.token);
-    const meta = await http.get(`${baseURLMeta}workflow/${result.workflowType}?version=${result.version}`, req.token);
+    const result = await http.get(baseURL2 + req.params.workflowId + '?includeTasks=true', req.token);
+    const meta = await http.get(
+      baseURLMeta + 'workflow/' + result.workflowType + '?version=' + result.version,
+      req.token
+    );
 
     const subs = filter(identity)(
       map(task => {
@@ -104,10 +107,10 @@ router.get('/id/:workflowId', async (req, res, next) => {
             };
           }
         }
-      })(result.tasks)
+      })(result.tasks || [])
     );
 
-    result.tasks.forEach(task => {
+    (result.tasks || []).forEach(task => {
       if (task.taskType === 'SUB_WORKFLOW') {
         const subWorkflowId = task.inputData && task.inputData.subWorkflowId;
 
@@ -122,9 +125,7 @@ router.get('/id/:workflowId', async (req, res, next) => {
       }
     });
 
-    const logs = map(task => Promise.all([task, http.get(baseURLTask + task.taskId + '/log', req.token)]))(
-      result.tasks
-    );
+    const logs = map(task => Promise.all([task, http.get(baseURLTask + task.taskId + '/log')]))(result.tasks);
 
     await Promise.all(logs).then(result => {
       forEach(([task, logs]) => {
@@ -137,8 +138,8 @@ router.get('/id/:workflowId', async (req, res, next) => {
     const promises = map(({ name, version, subWorkflowId, referenceTaskName }) =>
       Promise.all([
         referenceTaskName,
-        http.get(baseURLMeta + 'workflow/' + name + '?version=' + version, req.token),
-        http.get(baseURL2 + subWorkflowId + '?includeTasks=true', req.token)
+        http.get(baseURLMeta + 'workflow/' + name + '?version=' + version),
+        http.get(baseURL2 + subWorkflowId + '?includeTasks=true')
       ])
     )(subs);
 
