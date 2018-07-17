@@ -21,9 +21,7 @@
   "dependencies": {
     "amdefine": "^1.0.0",
     "autoprefixer": "^6.0.0",
-    "babel": "^6.5.2",
     "babel-polyfill": "^6.3.14",
-    "babel-register": "^6.18.0",
     "bunyan": "^1.7.1",
     "clipboard": "^1.6.1",
     "create-react-class": "^15.5.3",
@@ -31,7 +29,6 @@
     "dagre-d3": "^0.4.17",
     "express": "^4.13.3",
     "fbjs": "^0.7.2",
-    "flux": "^2.1.1",
     "graceful-fs": "^4.0.0",
     "gulp-env": "^0.4.0",
     "history": "^1.17.0",
@@ -58,7 +55,7 @@
     "webpack": "^1.12.10"
   },
   "devDependencies": {
-    "babel": "^6.3.13",
+    "babel": "^6.5.2",
     "babel-core": "^6.5.2",
     "babel-eslint": "^5.0.0-beta6",
     "babel-loader": "^6.2.1",
@@ -67,7 +64,7 @@
     "babel-preset-react-hmre": "^1.0.1",
     "babel-preset-stage-0": "^6.3.13",
     "babel-preset-stage-2": "^6.3.13",
-    "babel-register": "^6.5.2",
+    "babel-register": "^6.18.0",
     "babelify": "^7.2.0",
     "browser-sync": "^2.9.1",
     "browserify": "^12.0.1",
