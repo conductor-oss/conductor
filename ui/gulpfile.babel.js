@@ -132,11 +132,6 @@ gulp.task('fonts', () => {
 
 gulp.task('images', () => {
   gulp.src(paths.srcImg)
-    .pipe(imagemin({
-      progressive: true,
-      svgoPlugins: [{removeViewBox: false}],
-      use: [pngquant()]
-    }))
     .pipe(gulp.dest(paths.dist + '/images'));
 });
 
