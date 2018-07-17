@@ -1,5 +1,4 @@
-import React, { PropTypes, Component } from 'react';
-import { Link } from 'react-router'
+import React from 'react';
 import { connect } from 'react-redux';
 import { Panel, Button } from 'react-bootstrap';
 const ErrorPage = React.createClass({

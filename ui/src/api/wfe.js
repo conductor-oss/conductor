@@ -10,7 +10,6 @@ import identity from "lodash/identity";
 const router = new Router();
 const baseURL = process.env.WF_SERVER;
 const baseURL2 = baseURL + 'workflow/';
-const baseURL2ByTasks = baseURL2 + 'search-by-task';
 const baseURLMeta = baseURL + 'metadata/';
 const baseURLTask = baseURL + 'tasks/';
 

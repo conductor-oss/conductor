@@ -1,6 +1,4 @@
-import { join } from 'path';
 import { Router } from 'express';
-import Bunyan from 'bunyan';
 import http from '../core/HttpClient';
 
 const router = new Router();
