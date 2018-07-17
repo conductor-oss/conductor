@@ -7,7 +7,8 @@
     "test": "mocha --reporter nyan --compilers js:babel-core/register --recursive --check-leaks",
     "watch": "gulp watch",
     "build": "gulp build --release",
-    "deploy": "gulp deploy --release"
+    "deploy": "gulp deploy --release",
+    "eslint": "eslint  [src]*"
   },
   "repository": {
     "type": "git",
@@ -58,7 +59,7 @@
   "devDependencies": {
     "babel": "^6.3.13",
     "babel-core": "^6.5.2",
-    "babel-eslint": "^5.0.0-beta6",
+    "babel-eslint": "^8.2.2",
     "babel-loader": "^6.2.1",
     "babel-preset-es2015": "^6.3.13",
     "babel-preset-react": "^6.3.13",
@@ -71,7 +72,11 @@
     "browserify": "^12.0.1",
     "chai": "^3.2.0",
     "cssnano": "^3.0.0",
-    "eslint-plugin-react": "^3.3.2",
+    "eslint": "^4.16.0",
+    "eslint-config-airbnb": "^16.1.0",
+    "eslint-plugin-import": "^2.8.0",
+    "eslint-plugin-jsx-a11y": "^6.0.3",
+    "eslint-plugin-react": "^7.5.1",
     "gulp": "^3.9.0",
     "gulp-babel": "^6.1.1",
     "gulp-eslint": "^1.0.0",
