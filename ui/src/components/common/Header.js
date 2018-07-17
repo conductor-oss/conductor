@@ -1,9 +1,4 @@
-import React, { Component } from 'react';
-import { Link } from 'react-router'
-import { Navbar, Nav, NavItem, NavDropdown, MenuItem, Input, Button, Tabs, Tab } from 'react-bootstrap';
-import http from '../../core/HttpClient';
-import d3 from 'd3';
-import update from 'react-addons-update';
+import React from 'react';
 import { connect } from 'react-redux';
 
 const Header = React.createClass({
