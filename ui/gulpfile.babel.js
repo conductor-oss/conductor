@@ -140,8 +140,8 @@ gulp.task('images', () => {
     .pipe(gulp.dest(paths.dist + '/images'));
 });
 
-// There are too many linting error. this needs to be disabled 
-// for now. It is causing wathc to fail.
+// There are too many linting error. this needs to be disabled
+// for now. It is causing watch to fail.
 // After we fix all of the linting errors, we can enable it.
 //    gulp.task('lint', () => {
 //      gulp.src(paths.srcLint)
