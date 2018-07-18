@@ -14,10 +14,10 @@ import ghPages from 'gulp-gh-pages';
 import path from 'path';
 import cp from 'child_process';
 import webpack from 'webpack';
-import config from './config';
 import webpackDevMiddleware from 'webpack-dev-middleware';
 import webpackHotMiddleware from 'webpack-hot-middleware';
 import env from 'gulp-env';
+import config from './config';
 
 const paths = {
   bundle: 'app.js',
@@ -95,7 +95,9 @@ gulp.task('serve', done => {
 
 gulp.task('server-bundle', done => {
   webpack(config, (err, stats) => {
+    // eslint-disable-next-line no-undef
     if (err) throw new gutil.PluginError('webpack:build', err);
+    // eslint-disable-next-line no-console
     console.log(
       `[webpack:build]${stats.toString({
         colors: true
