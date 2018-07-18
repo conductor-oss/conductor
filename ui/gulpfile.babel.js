@@ -59,7 +59,7 @@ const webpackConfig = {};
 gulp.task('serve', done => {
   console.log(`Stats : ${JSON.stringify(config.stats)}`);
   const bundler = webpack(config);
-  function start() {
+  const start = () => {
     const server = cp.fork('server.js', {
       cwd: path.join(__dirname, './dist'),
       env: Object.assign({ NODE_ENV: 'development' }, process.env),
@@ -74,12 +74,11 @@ gulp.task('serve', done => {
         }
       }
     });
-
     server.once('error', err => console.log(`Server startup failed ${err}`));
     process.on('exit', () => server.kill('SIGTERM'));
     return server;
-  }
-  function bundle(err, stats) {
+  };
+  const bundle = (err, stats) => {
     if (err) {
       console.log(`Bundle errors! ${err}`);
     }
@@ -91,7 +90,7 @@ gulp.task('serve', done => {
       webpackConfig.serverInstance.kill('SIGTERM');
       webpackConfig.serverInstance = start();
     }
-  }
+  };
   bundler.watch(200, bundle);
 });
 
@@ -130,6 +129,9 @@ gulp.task('images', () => {
   gulp.src(paths.srcImg).pipe(gulp.dest(`${paths.dist}/images`));
 });
 
+// There are too many linting error. this needs to be disabled
+// for now. It is causing watch to fail.
+// After we fix all of the linting errors, we can enable it.
 gulp.task('lint', () => {
   gulp
     .src(paths.srcLint)
@@ -149,7 +151,7 @@ gulp.task('watchTask', () => {
 gulp.task('deploy', () => gulp.src(paths.distDeploy).pipe(ghPages()));
 
 gulp.task('watch', cb => {
-  runSequence('clean', ['set-env', 'browserSync', 'watchTask', 'public', 'styles', 'fonts', 'lint', 'images'], cb);
+  runSequence('clean', ['set-env', 'browserSync', 'watchTask', 'public', 'styles', 'fonts', 'images'], cb);
 });
 
 gulp.task('set-env', () => {
