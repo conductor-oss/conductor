@@ -53,10 +53,10 @@ gulp.task('browserSync', ['serve'], () => {
   });
 });
 
-var webpackConfig = {};
+const webpackConfig = {};
 
 gulp.task('serve', done => {
-  console.log('Stats : ' + JSON.stringify(config.stats));
+  console.log(`Stats : ${JSON.stringify(config.stats)}`);
   const bundler = webpack(config);
   function start() {
     const server = cp.fork('server.js', {
@@ -73,13 +73,13 @@ gulp.task('serve', done => {
         }
       }
     });
-    server.once('error', err => console.log('Server startup failed ' + err));
+    server.once('error', err => console.log(`Server startup failed ${err}`));
     process.on('exit', () => server.kill('SIGTERM'));
     return server;
   }
   function bundle(err, stats) {
     if (err) {
-      console.log('Bundle errors! ' + err);
+      console.log(`Bundle errors! ${err}`);
     }
     console.log(stats.toString(config[0].stats));
 
@@ -94,13 +94,12 @@ gulp.task('serve', done => {
 });
 
 gulp.task('server-bundle', done => {
-  webpack(config, function(err, stats) {
+  webpack(config, (err, stats) => {
     if (err) throw new gutil.PluginError('webpack:build', err);
     console.log(
-      '[webpack:build]' +
-        stats.toString({
-          colors: true
-        })
+      `[webpack:build]${stats.toString({
+        colors: true
+      })}`
     );
     done();
   });
@@ -121,19 +120,22 @@ gulp.task('public', () => {
 });
 
 gulp.task('fonts', () => {
-  gulp.src(paths.srcFonts).pipe(gulp.dest(paths.dist + '/fonts'));
+  gulp.src(paths.srcFonts).pipe(gulp.dest(`${paths.dist}/fonts`));
+});
+
+gulp.task('images', () => {
+  gulp.src(paths.srcImg).pipe(gulp.dest(`${paths.dist}/images`));
 });
 
 // There are too many linting error. this needs to be disabled
 // for now. It is causing watch to fail.
 // After we fix all of the linting errors, we can enable it.
 gulp.task('lint', () => {
-  gulp.src(paths.srcLint)
+  gulp
+    .src(paths.srcLint)
     .pipe(eslint())
     .pipe(eslint.format());
 });
-
-gulp.src(paths.srcImg).pipe(gulp.dest(paths.dist + '/images'));
 
 gulp.task('watchTask', () => {
   gulp.watch(paths.srcFonts, ['fonts']);
@@ -144,20 +146,18 @@ gulp.task('watchTask', () => {
   });
 });
 
-gulp.task('deploy', function() {
-  return gulp.src(paths.distDeploy).pipe(ghPages());
-});
+gulp.task('deploy', () => gulp.src(paths.distDeploy).pipe(ghPages()));
 
 gulp.task('watch', cb => {
-runSequence('clean', ['set-env','browserSync', 'watchTask', 'public', 'styles', 'fonts', 'images'], cb);
+  runSequence('clean', ['set-env', 'browserSync', 'watchTask', 'public', 'styles', 'fonts', 'images'], cb);
+});
 
-
-gulp.task('set-env', function() {
-  //Only use localhost if WF_SERVER is not set
-  var wf_server = process.env.WF_SERVER || 'http://localhost:8080/api/';
+gulp.task('set-env', () => {
+  // Only use localhost if WF_SERVER is not set
+  const wfServer = process.env.WF_SERVER || 'http://localhost:8080/api/';
   env({
     vars: {
-      WF_SERVER: wf_server
+      WF_SERVER: wfServer
     }
   });
 });
