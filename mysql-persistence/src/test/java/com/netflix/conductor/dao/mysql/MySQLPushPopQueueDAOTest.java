@@ -29,8 +29,8 @@ public class MySQLPushPopQueueDAOTest extends MySQLBaseDAOTest {
     }
 
     @Test
-    public void testWith5THreads() throws Exception {
-        testPollDataWithParallelThreads(5);
+    public void testWith2THreads() throws Exception {
+        testPollDataWithParallelThreads(2);
     }
 
     private void testPollDataWithParallelThreads(final int threadCount)
