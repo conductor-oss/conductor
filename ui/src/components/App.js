@@ -5,26 +5,25 @@ import ErrorPage from './common/Error';
 import LeftMenu from './common/LeftMenu';
 import packageJSON from '../../package.json';
 
-const App = React.createClass({
-  getInitialState() {
-    return {
-      minimize: false
-    };
-  },
-  handleResize(e) {
-    this.setState({ windowWidth: window.innerWidth, minimize: window.innerWidth < 600 });
-  },
+class App extends React.Component {
+  state = {
+    minimize: false
+  };
 
   componentDidMount() {
     window.addEventListener('resize', this.handleResize);
-  },
+  }
 
   componentWillUnmount() {
     window.removeEventListener('resize', this.handleResize);
-  },
+  }
+
+  handleResize() {
+    this.setState({ minimize: window.innerWidth < 600 });
+  }
 
   render() {
-    const version = packageJSON.version;
+    const { version } = packageJSON;
     const marginLeft = this.state.minimize ? '52px' : '177px';
     return !this.props.error ? (
       <div style={{ height: '100%' }}>
@@ -35,7 +34,7 @@ const App = React.createClass({
             className="appMainBody"
             style={{
               width: document.body.clientWidth - 180,
-              marginLeft: marginLeft,
+              marginLeft,
               marginTop: '10px',
               paddingRight: '20px'
             }}
@@ -49,6 +48,6 @@ const App = React.createClass({
       this.props.children
     );
   }
-});
+}
 
 export default connect(state => state.global)(App);
