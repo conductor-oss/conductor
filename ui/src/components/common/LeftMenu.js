@@ -83,17 +83,16 @@ const menuPaths = {
 
 class LeftMenu extends React.Component {
   state = {
-    minimize: false
+    minimize: false,
+    loading: false
   };
 
   componentDidMount() {
     window.addEventListener('resize', this.handleResize);
   }
 
-  componentWillReceiveProps(nextProps) {
-    this.state.loading = nextProps.fetching;
-    this.state.version = nextProps.version;
-    this.state.minimize = nextProps.minimize;
+  componentWillReceiveProps({ fetching: loading, minimize }) {
+    this.setState({ loading, minimize });
   }
 
   componentWillUnmount() {
@@ -101,36 +100,36 @@ class LeftMenu extends React.Component {
   }
 
   handleResize() {
-    this.setState({ windowWidth: window.innerWidth, minimize: window.innerWidth < 600 });
+    this.setState({ minimize: window.innerWidth < 600 });
   }
 
   render() {
     const { minimize } = this.state;
-    let appName = 'Workflow';
+    const { appName = 'Workflow' } = this.props;
+
     const width = minimize ? '50px' : '176px';
 
-    if (this.props.appName) {
-      appName = this.props.appName;
-    }
-    let display = minimize ? 'none' : '';
-    let menuItems = [];
+    const display = minimize ? 'none' : '';
+    const menuItems = [];
     let keyVal = 0;
-    menuPaths[appName].map((cv, i, arr) => {
-      let iconClass = 'fa ' + cv['icon'];
-      if (cv['header'] == true) {
+
+    // eslint-disable-next-line array-callback-return
+    menuPaths[appName].map(cv => {
+      const iconClass = `fa ${cv.icon}`;
+      if (cv.header === true) {
         menuItems.push(
           <div className="" key={`key-${(keyVal += 1)}`}>
             <div className="menuHeader">
-              <i className="fa fa-angle-down" />&nbsp;{cv['label']}
+              <i className="fa fa-angle-down" />&nbsp;{cv.label}
             </div>
           </div>
         );
       } else {
         menuItems.push(
-          <Link to={cv['href']} key={`key-${(keyVal += 1)}`}>
+          <Link to={cv.href} key={`key-${(keyVal += 1)}`}>
             <div className="menuItem">
               <i className={iconClass} style={{ width: '20px' }} />
-              <span style={{ marginLeft: '10px', display: display }}>{cv['label']}</span>
+              <span style={{ marginLeft: '10px', display }}>{cv.label}</span>
             </div>
           </Link>
         );
