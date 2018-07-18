@@ -25,9 +25,9 @@ class ErrorPage extends React.Component {
     });
   }
 
-  handleAlertDismiss() {
+  handleAlertDismiss = () => {
     this.setState({ alertVisible: false });
-  }
+  };
 
   render() {
     if (this.state.alertVisible) {

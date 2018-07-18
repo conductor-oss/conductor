@@ -10,25 +10,25 @@ import {
 } from '../../../actions/WorkflowActions';
 
 class WorkflowAction extends React.Component {
-  terminate() {
+  terminate = () => {
     this.props.dispatch(terminateWorkflow(this.props.workflowId));
-  }
+  };
 
-  restart() {
+  restart = () => {
     this.props.dispatch(restartWorfklow(this.props.workflowId));
-  }
+  };
 
-  retry() {
+  retry = () => {
     this.props.dispatch(retryWorfklow(this.props.workflowId));
-  }
+  };
 
-  pause() {
+  pause = () => {
     this.props.dispatch(pauseWorfklow(this.props.workflowId));
-  }
+  };
 
-  resume() {
+  resume = () => {
     this.props.dispatch(resumeWorfklow(this.props.workflowId));
-  }
+  };
 
   render() {
     const ttTerm = (

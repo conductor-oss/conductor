@@ -7,7 +7,6 @@ import { getEventHandlers } from '../../actions/WorkflowActions';
 class EventExecs extends React.Component {
   state = {
     events: [],
-    executions: [],
     eventTypes: []
   };
 
@@ -15,9 +14,8 @@ class EventExecs extends React.Component {
     this.props.dispatch(getEventHandlers());
   }
 
-  componentWillReceiveProps(nextProps) {
-    this.state.executions = nextProps.executions;
-    this.state.events = nextProps.events;
+  componentWillReceiveProps({ events }) {
+    this.setState({ events });
   }
 
   render() {

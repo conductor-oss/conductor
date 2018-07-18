@@ -99,9 +99,9 @@ class LeftMenu extends React.Component {
     window.removeEventListener('resize', this.handleResize);
   }
 
-  handleResize() {
+  handleResize = () => {
     this.setState({ minimize: window.innerWidth < 600 });
-  }
+  };
 
   render() {
     const { minimize } = this.state;
