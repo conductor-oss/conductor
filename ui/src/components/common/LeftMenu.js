@@ -81,32 +81,31 @@ const menuPaths = {
   ]
 };
 
-const LeftMenu = React.createClass({
-  getInitialState() {
-    return {
-      sys: {},
-      minimize: false
-    };
-  },
-  handleResize(e) {
-    this.setState({ windowWidth: window.innerWidth, minimize: window.innerWidth < 600 });
-  },
+class LeftMenu extends React.Component {
+  state = {
+    minimize: false
+  };
 
   componentDidMount() {
     window.addEventListener('resize', this.handleResize);
-  },
+  }
 
-  componentWillUnmount() {
-    window.removeEventListener('resize', this.handleResize);
-  },
   componentWillReceiveProps(nextProps) {
     this.state.loading = nextProps.fetching;
     this.state.version = nextProps.version;
     this.state.minimize = nextProps.minimize;
-  },
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener('resize', this.handleResize);
+  }
+
+  handleResize() {
+    this.setState({ windowWidth: window.innerWidth, minimize: window.innerWidth < 600 });
+  }
 
   render() {
-    let minimize = this.state.minimize;
+    const { minimize } = this.state;
     let appName = 'Workflow';
     const width = minimize ? '50px' : '176px';
 
@@ -139,7 +138,7 @@ const LeftMenu = React.createClass({
     });
 
     return (
-      <div className="left-menu" style={{ width: width }}>
+      <div className="left-menu" style={{ width }}>
         <div className="logo textual pull-left">
           <a href="/" title="Conductor">
             <h4>
@@ -152,6 +151,6 @@ const LeftMenu = React.createClass({
       </div>
     );
   }
-});
+}
 
 export default connect(state => state.workflow)(LeftMenu);
