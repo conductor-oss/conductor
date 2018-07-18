@@ -1,23 +1,21 @@
-import React, { PropTypes, Component } from 'react';
-import { Link } from 'react-router'
+import React from 'react';
 import { connect } from 'react-redux';
 import { Panel, Button } from 'react-bootstrap';
-const ErrorPage = React.createClass({
 
-  getInitialState() {
-    return {
-      alertVisible: false,
-      status: '',
-      details: ''
-    }
-  },
+class ErrorPage extends React.Component {
+  state = {
+    alertVisible: false,
+    status: '',
+    details: ''
+  };
+
   componentWillReceiveProps(nextProps) {
     let status = '';
     let details = '';
-    if(nextProps.exception != null && nextProps.exception.response != null){
-      status = nextProps.exception.response.status + ' - ' + nextProps.exception.response.statusText;
+    if (nextProps.exception != null && nextProps.exception.response != null) {
+      status = `${nextProps.exception.response.status} - ${nextProps.exception.response.statusText}`;
       details = JSON.stringify(nextProps.exception.response.text);
-    }else {
+    } else {
       details = nextProps.exception;
     }
     this.setState({
@@ -25,10 +23,12 @@ const ErrorPage = React.createClass({
       status,
       details
     });
-  },
+  }
+
   handleAlertDismiss() {
-   this.setState({alertVisible: false});
-  },
+    this.setState({ alertVisible: false });
+  }
+
   render() {
     if (this.state.alertVisible) {
       return (
@@ -36,14 +36,15 @@ const ErrorPage = React.createClass({
           <Panel header={this.state.status} bsStyle="danger">
             <code>{this.state.details}</code>
           </Panel>
-          <Button bsStyle="danger" onClick={this.handleAlertDismiss}>Close</Button>
+          <Button bsStyle="danger" onClick={this.handleAlertDismiss}>
+            Close
+          </Button>
           &nbsp;&nbsp;If you think this is not expected, file a bug with workflow admins.
         </span>
       );
-    }else {
-      return (<span/>);
     }
+    return <span />;
   }
-});
+}
 
 export default connect(state => state.workflow)(ErrorPage);
