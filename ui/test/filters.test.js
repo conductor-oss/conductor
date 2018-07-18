@@ -1,11 +1,12 @@
+/* eslint-disable no-undef */
 import assert from 'assert';
 import AuthFilter from '../src/api/middleware/filters/authFilter';
 
-describe('Filters', function() {
-  describe('Pre Middleware', function() {
+describe('Filters', () => {
+  describe('Pre Middleware', () => {
     const authFilter = new AuthFilter();
 
-    it('should add token to req and call next', function() {
+    it('should add token to req and call next', () => {
       const middleware = [];
 
       // Create Mock App
@@ -33,7 +34,7 @@ describe('Filters', function() {
       });
     });
 
-    it('should bypass add auth token if auth header not present and call next', function() {
+    it('should bypass add auth token if auth header not present and call next', () => {
       const middleware = [];
 
       // Create Mock App
