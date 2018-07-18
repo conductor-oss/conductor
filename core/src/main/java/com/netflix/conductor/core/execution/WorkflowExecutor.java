@@ -259,10 +259,7 @@ public class WorkflowExecutor {
                 cancelledTasks.add(t);
             }
         }
-        if (failedTask != null && !failedTask.getStatus().isTerminal()) {
-            throw new ApplicationException(CONFLICT,
-                    "The last task is still not completed!  I can only retry the last failed task.  Use restart if you want to attempt entire workflow execution again.");
-        }
+
         if (failedTask != null && failedTask.getStatus().isSuccessful()) {
             throw new ApplicationException(CONFLICT,
                     "The last task has not failed!  I can only retry the last failed task.  Use restart if you want to attempt entire workflow execution again.");
