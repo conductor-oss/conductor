@@ -1,3 +1,5 @@
+/* eslint-disable no-restricted-globals */
+
 import React from 'react';
 import { Link } from 'react-router';
 import { connect } from 'react-redux';
@@ -75,37 +77,21 @@ function miniDetails(cell, row) {
 class Workflow extends React.Component {
   constructor(props) {
     super(props);
-    let workflowTypes = props.location.query.workflowTypes;
-    if (workflowTypes != null && workflowTypes !== '') {
-      workflowTypes = workflowTypes.split(',');
-    } else {
-      workflowTypes = [];
-    }
-    let status = props.location.query.status;
-    if (status != null && status !== '') {
-      status = status.split(',');
-    } else {
-      status = [];
-    }
-    let search = props.location.query.q;
-    if (search == null || search === 'undefined' || search === '') {
-      search = '';
-    }
-    const st = props.location.query.start;
-    let start = 0;
-    if (!isNaN(st, 10)) {
-      start = parseInt(st, 10);
-    }
+    const {
+      location: {
+        query: { workflowTypes = '', q = '', status = '', start = 0 }
+      }
+    } = props;
 
     this.state = {
-      search,
-      workflowTypes,
-      status,
+      search: q === 'undefined' || q === '' ? '' : q,
+      workflowTypes: workflowTypes === '' ? [] : workflowTypes.split(','),
+      status: status !== '' ? status.split(',') : [],
       h: this.props.location.query.h,
       workflows: [],
       update: true,
       fullstr: true,
-      start
+      start: !isNaN(start, 10) ? parseInt(start, 10) : start
     };
   }
 
@@ -114,43 +100,31 @@ class Workflow extends React.Component {
     this.doDispatch();
   }
 
-  componentWillReceiveProps(nextProps) {
-    const { workflows = [] } = nextProps;
-
+  componentWillReceiveProps({
+    workflows = [],
+    location: {
+      query: { h, start, status = '', q }
+    }
+  }) {
     const workflowDefs = workflows.map(workflowDef => workflowDef.name);
 
-    let search = nextProps.location.query.q;
-    if (search == null || search == 'undefined' || search == '') {
+    let search = q;
+    if (search == null || search === 'undefined' || search === '') {
       search = '';
-    }
-    let h = nextProps.location.query.h;
-    if (isNaN(h)) {
-      h = '';
-    }
-    let start = nextProps.location.query.start;
-    if (isNaN(start)) {
-      start = 0;
-    }
-    let status = nextProps.location.query.status;
-    if (status != null && status != '') {
-      status = status.split(',');
-    } else {
-      status = [];
     }
 
     let update = true;
     update = this.state.search !== search;
     update = update || this.state.h !== h;
     update = update || this.state.start !== start;
-    update = update || this.state.status.join(',') !== status.join(',');
 
     this.setState({
       search,
-      h,
+      h: isNaN(h, 10) ? '' : h,
       update,
-      status,
+      status: status !== '' ? status.split(',') : [],
       workflows: workflowDefs,
-      start
+      start: isNaN(start, 10) ? 0 : start
     });
 
     this.refreshResults();
