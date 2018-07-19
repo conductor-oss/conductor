@@ -25,7 +25,6 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.utils.RetryUtil;
-import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
@@ -147,38 +146,13 @@ public class ElasticSearchDAOV5 implements IndexDAO {
                 keepAliveTime,
                 TimeUnit.MINUTES,
                 new LinkedBlockingQueue<>());
-
-        /*
-        try {
-            this.setup();
-        }catch(Exception e){
-            e.printStackTrace();
-            logger.debug("Got into problems with the setup");
-        }
-        */
-    }
-
-    private void updateIndexName() {
-        this.logIndexName = this.logIndexPrefix + "_" + SIMPLE_DATE_FORMAT.format(new Date());
-
-        try {
-            elasticSearchClient.admin().indices().prepareGetIndex().addIndices(logIndexName).execute().actionGet();
-        } catch (IndexNotFoundException infe) {
-            try {
-                elasticSearchClient.admin().indices().prepareCreate(logIndexName).execute().actionGet();
-            } catch (ResourceAlreadyExistsException ilee) {
-
-            } catch (Exception e) {
-                logger.error("Failed to update log index name: {}", logIndexName, e);
-            }
-        }
     }
 
     @Override
     public void setup() throws Exception {
 
-        elasticSearchClient.admin().cluster().prepareHealth().setWaitForGreenStatus()
-                .execute().get();
+        elasticSearchClient.admin().cluster().prepareHealth().setWaitForGreenStatus().execute().get();
+
         try {
 
             initIndex();
@@ -233,6 +207,22 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             }
         }
 
+    }
+
+    private void updateIndexName() {
+        this.logIndexName = this.logIndexPrefix + "_" + SIMPLE_DATE_FORMAT.format(new Date());
+
+        try {
+            elasticSearchClient.admin().indices().prepareGetIndex().addIndices(logIndexName).execute().actionGet();
+        } catch (IndexNotFoundException infe) {
+            try {
+                elasticSearchClient.admin().indices().prepareCreate(logIndexName).execute().actionGet();
+            } catch (ResourceAlreadyExistsException ilee) {
+
+            } catch (Exception e) {
+                logger.error("Failed to update log index name: {}", logIndexName, e);
+            }
+        }
     }
 
     @Override

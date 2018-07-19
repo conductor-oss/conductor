@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Netflix, Inc.
- * <p>
+ *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p>
- * http://www.apache.org/licenses/LICENSE-2.0
- * <p>
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -78,7 +78,6 @@ public interface IndexDAO {
      */
     SearchResult<String> searchWorkflows(String query, String freeText, int start, int count, List<String> sort);
 
-
     /**
      *
      * @param query SQL like query for task search parameters.
@@ -103,7 +102,6 @@ public interface IndexDAO {
      */
     CompletableFuture<Void> asyncRemoveWorkflow(String workflowId);
 
-
     /**
      *
      * Updates the index
@@ -121,7 +119,6 @@ public interface IndexDAO {
      * @return CompletableFuture of type void
      */
     CompletableFuture<Void> asyncUpdateWorkflow(String workflowInstanceId, String[] keys, Object[] values);
-
 
     /**
      * Retrieves a specific field from the index
@@ -150,12 +147,10 @@ public interface IndexDAO {
      */
     List<TaskExecLog> getTaskExecutionLogs(String taskId);
 
-
     /**
      * @param eventExecution Event Execution to be indexed
      */
     void addEventExecution(EventExecution eventExecution);
-
 
     /**
      *
