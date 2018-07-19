@@ -18,6 +18,8 @@ package com.netflix.conductor.bootstrap;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 
+import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
 import com.netflix.conductor.grpc.server.GRPCServerProvider;
 import com.netflix.conductor.jetty.server.JettyServerProvider;
@@ -27,12 +29,15 @@ import org.apache.log4j.PropertyConfigurator;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.Optional;
 import java.util.Properties;
 
 /**
  * @author Viren Entry point for the server
  */
 public class Main {
+
+    private static final int EMBEDDED_ES_INIT_TIME = 5000;
 
     public static void main(String[] args) throws Exception {
 
@@ -47,14 +52,21 @@ public class Main {
         ModulesProvider modulesProvider = bootstrapInjector.getInstance(ModulesProvider.class);
         Injector serverInjector = Guice.createInjector(modulesProvider.get());
 
-
-        serverInjector.getInstance(EmbeddedElasticSearchProvider.class).get().ifPresent(search -> {
+        Optional<EmbeddedElasticSearch> embeddedSearchInstance = serverInjector.getInstance(EmbeddedElasticSearchProvider.class).get();
+        if (embeddedSearchInstance.isPresent()) {
             try {
-                search.start();
+                embeddedSearchInstance.get().start();
+                /*
+                 * Elasticsearch embedded instance does not notify when it is up and ready to accept incoming requests.
+                 * A possible solution for reading and writing into the index is to wait a specific amount of time.
+                 */
+                Thread.sleep(EMBEDDED_ES_INIT_TIME);
             } catch (Exception ioe) {
                 System.exit(3);
             }
-        });
+        }
+        serverInjector.getInstance(IndexDAO.class).setup();
+
 
         System.out.println("\n\n\n");
         System.out.println("                     _            _             ");
