@@ -31,6 +31,7 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.es5.index.query.parser.Expression;
+import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.query.parser.ParserException;
 import com.netflix.conductor.metrics.Monitors;
 
@@ -121,7 +122,6 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 
     private Client elasticSearchClient;
 
-
     private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
     private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMww");
@@ -133,20 +133,11 @@ public class ElasticSearchDAOV5 implements IndexDAO {
     }
 
     @Inject
-    public ElasticSearchDAOV5(Client elasticSearchClient, Configuration config, ObjectMapper objectMapper) {
+    public ElasticSearchDAOV5(Client elasticSearchClient, ElasticSearchConfiguration config, ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.elasticSearchClient = elasticSearchClient;
-        this.indexName = config.getProperty("workflow.elasticsearch.index.name", null);
-
-        try {
-
-            initIndex();
-            updateIndexName(config);
-            Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> updateIndexName(config), 0, 1, TimeUnit.HOURS);
-
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
+        this.indexName = config.getIndexName();
+        this.logIndexPrefix = config.getProperty("workflow.elasticsearch.tasklog.index.name", "task_log");
 
         int corePoolSize = 6;
         int maximumPoolSize = 12;
@@ -156,10 +147,18 @@ public class ElasticSearchDAOV5 implements IndexDAO {
                 keepAliveTime,
                 TimeUnit.MINUTES,
                 new LinkedBlockingQueue<>());
+
+        /*
+        try {
+            this.setup();
+        }catch(Exception e){
+            e.printStackTrace();
+            logger.debug("Got into problems with the setup");
+        }
+        */
     }
 
-    private void updateIndexName(Configuration config) {
-        this.logIndexPrefix = config.getProperty("workflow.elasticsearch.tasklog.index.name", "task_log");
+    private void updateIndexName() {
         this.logIndexName = this.logIndexPrefix + "_" + SIMPLE_DATE_FORMAT.format(new Date());
 
         try {
@@ -175,23 +174,19 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         }
     }
 
-    /**
-     * Initializes the index with required templates and mappings.
-     */
-    private void initIndex() throws Exception {
+    @Override
+    public void setup() throws Exception {
 
-        //0. Add the index template
-        GetIndexTemplatesResponse result = elasticSearchClient.admin().indices().prepareGetTemplates("wfe_template").execute().actionGet();
-        if (result.getIndexTemplates().isEmpty()) {
-            logger.info("Creating the index template 'wfe_template'");
-            InputStream stream = ElasticSearchDAOV5.class.getResourceAsStream("/template.json");
-            byte[] templateSource = IOUtils.toByteArray(stream);
+        elasticSearchClient.admin().cluster().prepareHealth().setWaitForGreenStatus()
+                .execute().get();
+        try {
 
-            try {
-                elasticSearchClient.admin().indices().preparePutTemplate("wfe_template").setSource(templateSource, XContentType.JSON).execute().actionGet();
-            } catch (Exception e) {
-                logger.error("Failed to init index template", e);
-            }
+            initIndex();
+            updateIndexName();
+            Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> updateIndexName(), 0, 1, TimeUnit.HOURS);
+
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
         }
 
         //1. Create the required index
@@ -217,6 +212,27 @@ public class ElasticSearchDAOV5 implements IndexDAO {
                 logger.error("Failed to init index mappings", e);
             }
         }
+    }
+
+    /**
+     * Initializes the index with required templates and mappings.
+     */
+    private void initIndex() throws Exception {
+
+        //0. Add the index template
+        GetIndexTemplatesResponse result = elasticSearchClient.admin().indices().prepareGetTemplates("wfe_template").execute().actionGet();
+        if (result.getIndexTemplates().isEmpty()) {
+            logger.info("Creating the index template 'wfe_template'");
+            InputStream stream = ElasticSearchDAOV5.class.getResourceAsStream("/template.json");
+            byte[] templateSource = IOUtils.toByteArray(stream);
+
+            try {
+                elasticSearchClient.admin().indices().preparePutTemplate("wfe_template").setSource(templateSource, XContentType.JSON).execute().actionGet();
+            } catch (Exception e) {
+                logger.error("Failed to init index template", e);
+            }
+        }
+
     }
 
     @Override
