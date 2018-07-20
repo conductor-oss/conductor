@@ -87,6 +87,23 @@ func (c *ConductorHttpClient) GetAllWorkflowDefs() (string, error) {
 	}
 }
 
+func (c *ConductorHttpClient) UnRegisterWorkflowDef(workflowDefName string, version int) (string, error) {
+	url := c.httpClient.MakeUrl("/metadata/workflow/{workflowDefName}", "{workflowDefName}", workflowDefName)
+	versionString := "1"
+
+    versionString = strconv.Itoa(version)
+
+    params := map[string]string{"version":versionString}
+	outputString, err := c.httpClient.Delete(url, params, nil, "")
+
+	if err != nil {
+		log.Println("Error while trying to Unregister Workflow Definition", workflowDefName, err)
+		return "", nil
+	} else {
+		return outputString, nil
+	}
+}
+
 func (c *ConductorHttpClient) GetTaskDef(taskDefName string) (string, error) {
 	url := c.httpClient.MakeUrl("/metadata/taskdefs/{taskDefName}", "{taskDefName}", taskDefName)
 	outputString, err := c.httpClient.Get(url, nil, nil)

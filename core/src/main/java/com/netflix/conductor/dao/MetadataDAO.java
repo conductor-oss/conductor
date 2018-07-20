@@ -99,6 +99,13 @@ public interface MetadataDAO {
 	public abstract WorkflowDef get(String name, int version);
 
 	/**
+	 *
+	 * @param name Name of the workflow
+	 *
+	 */
+	public void removeWorkflowDef(String name, int version);
+
+	/**
 	 * 
 	 * @return Names of all the workflows
 	 * 

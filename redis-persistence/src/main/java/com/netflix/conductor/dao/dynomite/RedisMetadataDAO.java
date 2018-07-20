@@ -218,6 +218,17 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 	}
 
 	@Override
+	public void removeWorkflowDef(String name, int version) {
+		Preconditions.checkNotNull(name, "WorkflowDef name cannot be null");
+		Preconditions.checkNotNull(version, "Version cannot be null");
+		Long result = dynoClient.hdel(nsKey(WORKFLOW_DEF, name), String.valueOf(version));
+		if (!result.equals(1L)) {
+			throw new ApplicationException(Code.NOT_FOUND, "Cannot remove the workflow - no such workflow definition");
+		}
+		recordRedisDaoRequests("removeWorkflowDef");
+	}
+
+	@Override
 	public List<String> findAll() {
 		Set<String> wfNames = dynoClient.smembers(nsKey(WORKFLOW_DEF_NAMES));
 		return new ArrayList<>(wfNames);
@@ -354,8 +365,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 		return eventHandler;
 
 	}
-	
-	
+
 	private void _createOrUpdate(WorkflowDef workflowDef) {
 		Preconditions.checkNotNull(workflowDef, "WorkflowDef object cannot be null");
 		Preconditions.checkNotNull(workflowDef.getName(), "WorkflowDef name cannot be null");

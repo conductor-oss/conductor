@@ -155,9 +155,26 @@ public class MetadataService {
 		metadata.create(def);
 	}
 
+    /**
+     *
+     * @param name Name of the workflow definition to be removed
+	 * @param version Version of the workflow definition.
+     */
+	public void unregisterWorkflowDef(String name, Integer version) {
+        if (name == null) {
+            throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot be null");
+        }
+
+        if (version == null) {
+            throw new ApplicationException(Code.INVALID_INPUT, "Version cannot be null");
+        }
+
+	    metadata.removeWorkflowDef(name, version);
+    }
+
 	/**
-	 * 
-	 * @param eventHandler Event handler to be added.  
+	 *
+	 * @param eventHandler Event handler to be added.
 	 * Will throw an exception if an event handler already exists with the name
 	 */
 	public void addEventHandler(EventHandler eventHandler) {

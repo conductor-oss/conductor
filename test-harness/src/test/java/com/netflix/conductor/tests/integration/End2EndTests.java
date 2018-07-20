@@ -20,12 +20,14 @@ package com.netflix.conductor.tests.integration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.netflix.conductor.client.http.MetadataClient;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -65,7 +67,8 @@ public class End2EndTests {
 	private static TaskClient tc;
 	
 	private static WorkflowClient wc;
-	
+
+	private static MetadataClient mc;
 	
 	@BeforeClass
 	public static void setup() throws Exception {
@@ -203,7 +206,33 @@ public class End2EndTests {
 		assertNotNull(wf);
 		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
 		assertEquals(1, wf.getTasks().size());
-		
+
+	}
+
+	public void testMetadataWorkflowDefinition() {
+		WorkflowDef def = new WorkflowDef();
+		def.setName("test");
+		def.setVersion(1);
+		WorkflowTask t0 = new WorkflowTask();
+		t0.setName("t0");
+		t0.setWorkflowTaskType(Type.SIMPLE);
+		t0.setTaskReferenceName("t0");
+
+		WorkflowTask t1 = new WorkflowTask();
+		t1.setName("t1");
+		t1.setWorkflowTaskType(Type.SIMPLE);
+		t1.setTaskReferenceName("t1");
+
+
+		def.getTasks().add(t0);
+		def.getTasks().add(t1);
+
+		mc.registerWorkflowDef(def);
+
+		mc.unregisterWorkflowDef(def.getName(), 1);
+
+		WorkflowDef getDef = mc.getWorkflowDef("test", 1);
+		assertNull(getDef);
 	}
 	
 }

@@ -81,6 +81,12 @@ public class MetadataResource {
 	public List<WorkflowDef> getAll() throws Exception {
 		return service.getWorkflowDefs();
 	}
+
+	@DELETE
+	@Path("/workflow/{name}")
+	public void unregisterWorkflowDef(@PathParam("name") String name, @QueryParam("version") Integer version) throws Exception {
+		service.unregisterWorkflowDef(name, version);
+	}
 	
 	@POST
 	@Path("/taskdefs")
@@ -119,5 +125,4 @@ public class MetadataResource {
 		service.unregisterTaskDef(taskType);
 	}
 
-	
 }
