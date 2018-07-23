@@ -25,6 +25,7 @@ import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.filter.ClientFilter;
 import org.apache.commons.lang.StringUtils;
 
+import javax.ws.rs.QueryParam;
 import java.util.Arrays;
 import java.util.List;
 
@@ -123,8 +124,7 @@ public class MetadataClient extends ClientBase {
     public void unregisterWorkflowDef(String name, Integer version) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Workflow name cannot be blank");
         Preconditions.checkNotNull(version, "Version cannot be null");
-
-        delete("metadata/workflow/{name}",  new Object[]{"version", version}, WorkflowDef.class, name);
+        delete(new Object[]{"version", version}, "metadata/workflow/{name}",  name);
     }
 
     // Task Metadata Operations

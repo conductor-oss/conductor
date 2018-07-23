@@ -47,6 +47,9 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.server.ConductorConfig;
 import com.netflix.conductor.server.ConductorServer;
+import com.sun.jersey.api.client.UniformInterfaceException;
+import com.sun.jersey.api.client.ClientResponse;
+
 
 /**
  * @author Viren
@@ -81,6 +84,9 @@ public class End2EndTests {
 		
 		wc = new WorkflowClient();
 		wc.setRootURI("http://localhost:8080/api/");
+
+		mc = new MetadataClient();
+		mc.setRootURI("http://localhost:8080/api/");
 	}
 	
 	@Test
@@ -209,9 +215,10 @@ public class End2EndTests {
 
 	}
 
+	@Test
 	public void testMetadataWorkflowDefinition() {
 		WorkflowDef def = new WorkflowDef();
-		def.setName("test");
+		def.setName("testWorkflowDel");
 		def.setVersion(1);
 		WorkflowTask t0 = new WorkflowTask();
 		t0.setName("t0");
@@ -223,16 +230,19 @@ public class End2EndTests {
 		t1.setWorkflowTaskType(Type.SIMPLE);
 		t1.setTaskReferenceName("t1");
 
-
 		def.getTasks().add(t0);
 		def.getTasks().add(t1);
 
 		mc.registerWorkflowDef(def);
+		mc.unregisterWorkflowDef("testWorkflowDel", 1);
 
-		mc.unregisterWorkflowDef(def.getName(), 1);
-
-		WorkflowDef getDef = mc.getWorkflowDef("test", 1);
-		assertNull(getDef);
+		try {
+			WorkflowDef getDef = mc.getWorkflowDef("testWorkflowDel", 1);
+		} catch (UniformInterfaceException ue) {
+			ClientResponse response = ue.getResponse();
+			// TODO: fix this to NOT_FOUND once error handling is fixed
+			assertEquals(204, response.getStatus());
+		}
 	}
 	
 }

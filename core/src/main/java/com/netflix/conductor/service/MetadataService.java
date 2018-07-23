@@ -160,13 +160,13 @@ public class MetadataService {
      * @param name Name of the workflow definition to be removed
 	 * @param version Version of the workflow definition.
      */
-	public void unregisterWorkflowDef(String name, Integer version) {
+	public void unregisterWorkflowDef(String name, int version) {
         if (name == null) {
             throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot be null");
         }
 
-        if (version == null) {
-            throw new ApplicationException(Code.INVALID_INPUT, "Version cannot be null");
+        if (version == 0) {
+            throw new ApplicationException(Code.INVALID_INPUT, "Version is not valid");
         }
 
 	    metadata.removeWorkflowDef(name, version);
