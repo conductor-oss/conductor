@@ -18,6 +18,7 @@ ext {
     revGuice = '4.1.0'
     revGuiceMultiBindings = '4.1.0'
     revGuiceServlet = '4.1.0'
+    revHealth = '1.1.+'
     revHikariCP = '2.6.3'
     revJsonPath = '2.2.0'
     revJaxrsJackson = '2.7.5'
