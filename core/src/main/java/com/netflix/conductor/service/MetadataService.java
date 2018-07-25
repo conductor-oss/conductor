@@ -41,126 +41,126 @@ import java.util.List;
 @Trace
 public class MetadataService {
 
-	private MetadataDAO metadata;
+    private MetadataDAO metadata;
 
-	@Inject
-	public MetadataService(MetadataDAO metadata) {
-		this.metadata = metadata;
-	}
+    @Inject
+    public MetadataService(MetadataDAO metadata) {
+        this.metadata = metadata;
+    }
 
-	/**
-	 * 
-	 * @param taskDefinitions Task Definitions to register
-	 */
-	public void registerTaskDef(List<TaskDef> taskDefinitions) {
-		for (TaskDef taskDefinition : taskDefinitions) {
-			taskDefinition.setCreatedBy(WorkflowContext.get().getClientApp());
-	   		taskDefinition.setCreateTime(System.currentTimeMillis());
-	   		taskDefinition.setUpdatedBy(null);
-	   		taskDefinition.setUpdateTime(null);
-			metadata.createTaskDef(taskDefinition);
-		}
-	}
+    /**
+     *
+     * @param taskDefinitions Task Definitions to register
+     */
+    public void registerTaskDef(List<TaskDef> taskDefinitions) {
+        for (TaskDef taskDefinition : taskDefinitions) {
+            taskDefinition.setCreatedBy(WorkflowContext.get().getClientApp());
+            taskDefinition.setCreateTime(System.currentTimeMillis());
+            taskDefinition.setUpdatedBy(null);
+            taskDefinition.setUpdateTime(null);
+            metadata.createTaskDef(taskDefinition);
+        }
+    }
 
-	/**
-	 * 
-	 * @param taskDefinition Task Definition to be updated
-	 */
-	public void updateTaskDef(TaskDef taskDefinition) {
-		TaskDef existing = metadata.getTaskDef(taskDefinition.getName());
-		if (existing == null) {
-			throw new ApplicationException(Code.NOT_FOUND, "No such task by name " + taskDefinition.getName());
-		}
-   		taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
-   		taskDefinition.setUpdateTime(System.currentTimeMillis());
-		metadata.updateTaskDef(taskDefinition);
-	}
+    /**
+     *
+     * @param taskDefinition Task Definition to be updated
+     */
+    public void updateTaskDef(TaskDef taskDefinition) {
+        TaskDef existing = metadata.getTaskDef(taskDefinition.getName());
+        if (existing == null) {
+            throw new ApplicationException(Code.NOT_FOUND, "No such task by name " + taskDefinition.getName());
+        }
+        taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
+        taskDefinition.setUpdateTime(System.currentTimeMillis());
+        metadata.updateTaskDef(taskDefinition);
+    }
 
-	/**
-	 * 
-	 * @param taskType Remove task definition
-	 */
-	public void unregisterTaskDef(String taskType) {
-		metadata.removeTaskDef(taskType);
-	}
+    /**
+     *
+     * @param taskType Remove task definition
+     */
+    public void unregisterTaskDef(String taskType) {
+        metadata.removeTaskDef(taskType);
+    }
 
-	/**
-	 * 
-	 * @return List of all the registered tasks
-	 */
-	public List<TaskDef> getTaskDefs() {
-		return metadata.getAllTaskDefs();
-	}
+    /**
+     *
+     * @return List of all the registered tasks
+     */
+    public List<TaskDef> getTaskDefs() {
+        return metadata.getAllTaskDefs();
+    }
 
-	/**
-	 * 
-	 * @param taskType Task to retrieve
-	 * @return Task Definition
-	 */
-	public TaskDef getTaskDef(String taskType) {
-		return metadata.getTaskDef(taskType);
-	}
+    /**
+     *
+     * @param taskType Task to retrieve
+     * @return Task Definition
+     */
+    public TaskDef getTaskDef(String taskType) {
+        return metadata.getTaskDef(taskType);
+    }
 
-	/**
-	 * 
-	 * @param def Workflow definition to be updated
-	 */
-	public void updateWorkflowDef(WorkflowDef def) {
-		metadata.update(def);		
-	}
-	
-	/**
-	 * 
-	 * @param wfs Workflow definitions to be updated.
-	 */
-	public void updateWorkflowDef(List<WorkflowDef> wfs) {
-		for (WorkflowDef wf : wfs) {
-			metadata.update(wf);
-		}
-	}
+    /**
+     *
+     * @param def Workflow definition to be updated
+     */
+    public void updateWorkflowDef(WorkflowDef def) {
+        metadata.update(def);
+    }
 
-	/**
-	 * 
-	 * @param name Name of the workflow to retrieve
-	 * @param version Optional.  Version.  If null, then retrieves the latest
-	 * @return Workflow definition
-	 */
-	public WorkflowDef getWorkflowDef(String name, Integer version) {
-		if (version == null) {
-			return metadata.getLatest(name);
-		}
-		return metadata.get(name, version);
-	}
-	
-	/**
-	 * 
-	 * @param name Name of the workflow to retrieve
-	 * @return Latest version of the workflow definition
-	 */
-	public WorkflowDef getLatestWorkflow(String name) {
-		return metadata.getLatest(name);
-	}
+    /**
+     *
+     * @param wfs Workflow definitions to be updated.
+     */
+    public void updateWorkflowDef(List<WorkflowDef> wfs) {
+        for (WorkflowDef wf : wfs) {
+            metadata.update(wf);
+        }
+    }
 
-	public List<WorkflowDef> getWorkflowDefs() {
-		return metadata.getAll();
-	}
+    /**
+     *
+     * @param name Name of the workflow to retrieve
+     * @param version Optional.  Version.  If null, then retrieves the latest
+     * @return Workflow definition
+     */
+    public WorkflowDef getWorkflowDef(String name, Integer version) {
+        if (version == null) {
+            return metadata.getLatest(name);
+        }
+        return metadata.get(name, version);
+    }
 
-	public void registerWorkflowDef(WorkflowDef def) {
-		if(def.getName().contains(":")) {
-			throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
-		}
-		if(def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
-			def.setSchemaVersion(2);
-		}
-		metadata.create(def);
-	}
+    /**
+     *
+     * @param name Name of the workflow to retrieve
+     * @return Latest version of the workflow definition
+     */
+    public WorkflowDef getLatestWorkflow(String name) {
+        return metadata.getLatest(name);
+    }
+
+    public List<WorkflowDef> getWorkflowDefs() {
+        return metadata.getAll();
+    }
+
+    public void registerWorkflowDef(WorkflowDef def) {
+        if(def.getName().contains(":")) {
+            throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
+        }
+        if(def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
+            def.setSchemaVersion(2);
+        }
+        metadata.create(def);
+    }
 
     /**
      *
      * @param name Name of the workflow definition to be removed
-	 * @param version Version of the workflow definition.
+     * @param version Version of the workflow definition.
      */
-	public void unregisterWorkflowDef(String name, int version) {
+    public void unregisterWorkflowDef(String name, int version) {
         if (name == null) {
             throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot be null");
         }
@@ -169,59 +169,59 @@ public class MetadataService {
             throw new ApplicationException(Code.INVALID_INPUT, "Version is not valid");
         }
 
-	    metadata.removeWorkflowDef(name, version);
+        metadata.removeWorkflowDef(name, version);
     }
 
-	/**
-	 *
-	 * @param eventHandler Event handler to be added.
-	 * Will throw an exception if an event handler already exists with the name
-	 */
-	public void addEventHandler(EventHandler eventHandler) {
-		validateEvent(eventHandler);
-		metadata.addEventHandler(eventHandler);
-	}
+    /**
+     *
+     * @param eventHandler Event handler to be added.
+     * Will throw an exception if an event handler already exists with the name
+     */
+    public void addEventHandler(EventHandler eventHandler) {
+        validateEvent(eventHandler);
+        metadata.addEventHandler(eventHandler);
+    }
 
-	/**
-	 * 
-	 * @param eventHandler Event handler to be updated.
-	 */
-	public void updateEventHandler(EventHandler eventHandler) {
-		validateEvent(eventHandler);
-		metadata.updateEventHandler(eventHandler);
-	}
-	
-	/**
-	 * 
-	 * @param name Removes the event handler from the system
-	 */
-	public void removeEventHandlerStatus(String name) {
-		metadata.removeEventHandlerStatus(name);
-	}
+    /**
+     *
+     * @param eventHandler Event handler to be updated.
+     */
+    public void updateEventHandler(EventHandler eventHandler) {
+        validateEvent(eventHandler);
+        metadata.updateEventHandler(eventHandler);
+    }
 
-	/**
-	 * 
-	 * @return All the event handlers registered in the system
-	 */
-	public List<EventHandler> getEventHandlers() {
-		return metadata.getEventHandlers();
-	}
-	
-	/**
-	 * 
-	 * @param event name of the event
-	 * @param activeOnly if true, returns only the active handlers
-	 * @return Returns the list of all the event handlers for a given event
-	 */
-	public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
-		return metadata.getEventHandlersForEvent(event, activeOnly);
-	}
-	
-	private void validateEvent(EventHandler eh) {
-		Preconditions.checkNotNull(eh.getName(), "Missing event handler name");
-		Preconditions.checkNotNull(eh.getEvent(), "Missing event location");
-		Preconditions.checkNotNull(eh.getActions().isEmpty(), "No actions specified.  Please specify at-least one action");
-		String event = eh.getEvent();
-		EventQueues.getQueue(event, true);
-	}
+    /**
+     *
+     * @param name Removes the event handler from the system
+     */
+    public void removeEventHandlerStatus(String name) {
+        metadata.removeEventHandlerStatus(name);
+    }
+
+    /**
+     *
+     * @return All the event handlers registered in the system
+     */
+    public List<EventHandler> getEventHandlers() {
+        return metadata.getEventHandlers();
+    }
+
+    /**
+     *
+     * @param event name of the event
+     * @param activeOnly if true, returns only the active handlers
+     * @return Returns the list of all the event handlers for a given event
+     */
+    public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
+        return metadata.getEventHandlersForEvent(event, activeOnly);
+    }
+
+    private void validateEvent(EventHandler eh) {
+        Preconditions.checkNotNull(eh.getName(), "Missing event handler name");
+        Preconditions.checkNotNull(eh.getEvent(), "Missing event location");
+        Preconditions.checkNotNull(eh.getActions().isEmpty(), "No actions specified.  Please specify at-least one action");
+        String event = eh.getEvent();
+        EventQueues.getQueue(event, true);
+    }
 }

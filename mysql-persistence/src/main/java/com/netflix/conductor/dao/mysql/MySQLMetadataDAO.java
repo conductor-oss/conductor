@@ -133,7 +133,8 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
 
         executeWithTransaction(DELETE_WORKFLOW_QUERY, q -> {
             if (!q.addParameter(name).addParameter(version).executeDelete()) {
-                throw new ApplicationException(ApplicationException.Code.NOT_FOUND, "No such workflow definition");
+                throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
+                        String.format("No such workflow definition: %s version: %d", name, version));
             }
         });
     }
