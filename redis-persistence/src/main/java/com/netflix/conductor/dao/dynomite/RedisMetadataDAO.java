@@ -39,6 +39,7 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
+import org.apache.commons.lang.StringUtils;
 
 @Singleton
 @Trace
@@ -219,8 +220,8 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
     @Override
     public void removeWorkflowDef(String name, int version) {
-        Preconditions.checkNotNull(name, "WorkflowDef name cannot be null");
-        Preconditions.checkNotNull(version, "Version cannot be null");
+        Preconditions.checkArgument(StringUtils.isNotBlank(name), "WorkflowDef name cannot be null");
+        Preconditions.checkArgument(version > 0, "Input version is not valid");
         Long result = dynoClient.hdel(nsKey(WORKFLOW_DEF, name), String.valueOf(version));
         if (!result.equals(1L)) {
             throw new ApplicationException(Code.NOT_FOUND, String.format("Cannot remove the workflow - no such workflow" +
