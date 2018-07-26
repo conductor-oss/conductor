@@ -29,6 +29,6 @@ public class EmbeddedElasticSearchV5Provider implements EmbeddedElasticSearchPro
     }
 
     private boolean isEmbedded() {
-        return configuration.getDB().equals(Configuration.DB.MEMORY);
+        return configuration.getElasticSearchType().equals(Configuration.ELASTICSEARCH.MEMORY);
     }
 }
