@@ -56,7 +56,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
         try {
             String id = executor.startWorkflow(
                     request.getName(), GRPC_HELPER.optional(request.getVersion()), request.getCorrelationId(),
-                    request.getInput(), null, request.getTaskToDomain());
+                    request.getInput(), null, request.getTaskToDomain(), request.getWorkflowDef());
             response.onNext(WorkflowServicePb.StartWorkflowResponse.newBuilder()
                     .setWorkflowId(id)
                     .build()

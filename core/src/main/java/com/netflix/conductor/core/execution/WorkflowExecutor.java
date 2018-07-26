@@ -141,7 +141,8 @@ public class WorkflowExecutor {
             String correlationId,
             Map<String, Object> input,
             String event,
-            Map<String, String> taskToDomain
+            Map<String, String> taskToDomain,
+            WorkflowDef workflowDef
     ) {
         return startWorkflow(
                 name,
@@ -151,7 +152,8 @@ public class WorkflowExecutor {
                 null,
                 null,
                 event,
-                taskToDomain
+                taskToDomain,
+                workflowDef
         );
     }
 
@@ -175,6 +177,7 @@ public class WorkflowExecutor {
                 parentWorkflowId,
                 parentWorkflowTaskId,
                 event,
+                null,
                 null
         );
     }
@@ -190,11 +193,13 @@ public class WorkflowExecutor {
             String parentWorkflowId,
             String parentWorkflowTaskId,
             String event,
-            Map<String, String> taskToDomain
+            Map<String, String> taskToDomain,
+            WorkflowDef workflowDef
     ) {
 
         Optional<WorkflowDef> potentialDef =
-                version == null ? lookupLatestWorkflowDefinition(name) : lookupWorkflowDefinition(name, version);
+                workflowDef != null ? Optional.of(workflowDef) :
+                        version == null ? lookupLatestWorkflowDefinition(name) : lookupWorkflowDefinition(name, version);
 
         //Check if the workflow definition is valid
         WorkflowDef workflowDefinition = potentialDef

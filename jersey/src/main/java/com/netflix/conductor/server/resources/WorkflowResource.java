@@ -15,6 +15,7 @@
  */
 package com.netflix.conductor.server.resources;
 
+import com.google.common.base.Strings;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -82,25 +83,36 @@ public class WorkflowResource {
     @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation("Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain")
     public String startWorkflow(StartWorkflowRequest request) {
+        if (Strings.isNullOrEmpty(request.getName())) {
+            throw new ApplicationException(Code.INVALID_INPUT,  "A name is required to start a workflow.");
+        }
         return executor.startWorkflow(
                 request.getName(),
                 request.getVersion(),
                 request.getCorrelationId(),
                 request.getInput(),
                 null,
-                request.getTaskToDomain()
+                request.getTaskToDomain(),
+                request.getWorkflowDef()
         );
     }
 
     @POST
     @Path("/{name}")
     @Produces({MediaType.TEXT_PLAIN})
-    @ApiOperation("Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking")
-    public String startWorkflow(
-            @PathParam("name") String name, @QueryParam("version") Integer version,
-            @QueryParam("correlationId") String correlationId, Map<String, Object> input) {
+    @ApiOperation("Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking.")
+    public String startWorkflow(@PathParam("name") String name, StartWorkflowRequest request) {
+        String workflowName = request.getName();
+        if (Strings.isNullOrEmpty(name) || (!Strings.isNullOrEmpty(workflowName) && !name.equals(workflowName))) {
+            throw new ApplicationException(
+                    Code.INVALID_INPUT,
+                    "Cannot run workflow with name inconsistencies. " +
+                    "Make sure the name on the url and the name on the payload matches."
+            );
+        }
 
-        return executor.startWorkflow(name, version, correlationId, input, null);
+        return executor.startWorkflow(name, request.getVersion(), request.getCorrelationId(),
+                request.getInput(), null, request.getTaskToDomain(), request.getWorkflowDef());
     }
 
     @GET

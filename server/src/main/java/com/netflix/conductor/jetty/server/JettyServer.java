@@ -15,6 +15,7 @@
  */
 package com.netflix.conductor.jetty.server;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.servlet.GuiceFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +33,7 @@ import java.io.InputStream;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.DispatcherType;
 import javax.ws.rs.core.MediaType;
@@ -115,8 +117,15 @@ public class JettyServer implements Lifecycle {
         stream = Main.class.getResourceAsStream("/sub_flow_1.json");
         client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(stream);
 
-        String input = "{\"task2Name\":\"task_5\"}";
-        client.resource("http://localhost:" + port + "/api/workflow/kitchensink").type(MediaType.APPLICATION_JSON).post(input);
+        Map<String, Object> payload = ImmutableMap.of("input",
+                                                      ImmutableMap.of("task2Name", "task_5"));
+        String payloadStr = om.writeValueAsString(payload);
+        client.resource("http://localhost:" + port + "/api/workflow/kitchensink").type(MediaType.APPLICATION_JSON).post(payloadStr);
+
+        // Ephemeral workflow
+
+        //client.resource("http://localhost:" + port + "/api/workflow/ephemeralTest").type(MediaType.APPLICATION_JSON).post(input);
+
 
         logger.info("Kitchen sink workflows are created!");
     }
