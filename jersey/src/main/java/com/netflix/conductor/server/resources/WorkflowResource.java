@@ -86,6 +86,9 @@ public class WorkflowResource {
         if (Strings.isNullOrEmpty(request.getName())) {
             throw new ApplicationException(Code.INVALID_INPUT,  "A name is required to start a workflow.");
         }
+        if (request.getWorkflowDef() != null) {
+            metadata.registerWorkflowDef(request.getWorkflowDef());
+        }
         return executor.startWorkflow(
                 request.getName(),
                 request.getVersion(),
@@ -107,8 +110,12 @@ public class WorkflowResource {
             throw new ApplicationException(
                     Code.INVALID_INPUT,
                     "Cannot run workflow with name inconsistencies. " +
-                    "Make sure the name on the url and the name on the payload matches."
+                    "Make sure the name on the url and the name on the payload match."
             );
+        }
+
+        if (request.getWorkflowDef() != null) {
+            metadata.registerWorkflowDef(request.getWorkflowDef());
         }
 
         return executor.startWorkflow(name, request.getVersion(), request.getCorrelationId(),
