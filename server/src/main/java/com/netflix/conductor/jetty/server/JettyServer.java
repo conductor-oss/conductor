@@ -122,11 +122,12 @@ public class JettyServer implements Lifecycle {
         String payloadStr = om.writeValueAsString(payload);
         client.resource("http://localhost:" + port + "/api/workflow/kitchensink").type(MediaType.APPLICATION_JSON).post(payloadStr);
 
-        // Ephemeral workflow
-
-        //client.resource("http://localhost:" + port + "/api/workflow/ephemeralTest").type(MediaType.APPLICATION_JSON).post(input);
-
-
         logger.info("Kitchen sink workflows are created!");
+
+
+        // Ephemeral workflow
+        InputStream ephemeralInputStream = Main.class.getResourceAsStream("/ephemeralWithStoredTasks-kitchenSink.json");
+        client.resource("http://localhost:" + port + "/api/workflow/ephemeralKitchenSink").type(MediaType.APPLICATION_JSON).post(ephemeralInputStream);
+        logger.info("Ephemeral Kitchen sink workflow with stored task is created!");
     }
 }
