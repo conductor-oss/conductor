@@ -1,7 +1,7 @@
 {
 
   "workflowDef": {
-    "name": "ephemeralKitchenSink",
+    "name": "ephemeralKitchenSinkStoredTasks",
     "description": "kitchensink workflow definition",
     "version": 1,
     "tasks": [
