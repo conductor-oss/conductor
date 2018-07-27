@@ -27,9 +27,6 @@ public interface Configuration {
     String DB_PROPERTY_NAME = "db";
     String DB_DEFAULT_VALUE = "memory";
 
-    String ELASTICSEARCH_PROPERTY_NAME = "elasticsearch";
-    String ELASTICSEARCH_DEFAULT_VALUE = "memory";
-
     String SWEEP_FREQUENCY_PROPERTY_NAME = "decider.sweep.frequency.seconds";
     int SWEEP_FREQUENCY_DEFAULT_VALUE = 30;
 
@@ -67,14 +64,6 @@ public interface Configuration {
 
     default String getDBString() {
         return getProperty(DB_PROPERTY_NAME, DB_DEFAULT_VALUE).toUpperCase();
-    }
-
-    default ELASTICSEARCH getElasticSearchType() {
-        return ELASTICSEARCH.valueOf(getElasticSearchString());
-    }
-
-    default String getElasticSearchString() {
-        return getProperty(ELASTICSEARCH_PROPERTY_NAME, ELASTICSEARCH_DEFAULT_VALUE).toUpperCase();
     }
 
     /**
@@ -178,7 +167,4 @@ public interface Configuration {
         REDIS, DYNOMITE, MEMORY, REDIS_CLUSTER, MYSQL
     }
 
-    enum ELASTICSEARCH {
-        MEMORY, EXTERNAL
-    }
 }
