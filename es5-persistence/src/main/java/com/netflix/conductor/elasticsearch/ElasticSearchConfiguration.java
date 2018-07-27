@@ -9,6 +9,9 @@ import java.util.stream.Collectors;
 
 public interface ElasticSearchConfiguration extends Configuration {
 
+    String ELASTICSEARCH_PROPERTY_NAME = "workflow.elasticsearch.instanceType";
+    ElasticSearchInstanceType ELASTICSEARCH_INSTANCE_TYPE_DEFAULT_VALUE = ElasticSearchInstanceType.MEMORY;
+
     String ELASTIC_SEARCH_URL_PROPERTY_NAME = "workflow.elasticsearch.url";
     String ELASTIC_SEARCH_URL_DEFAULT_VALUE = "localhost:9300";
 
@@ -75,4 +78,15 @@ public interface ElasticSearchConfiguration extends Configuration {
     default String getEmbeddedSettingsFile() {
         return getProperty(EMBEDDED_SETTINGS_FILE_PROPERTY_NAME, EMBEDDED_SETTINGS_FILE_DEFAULT_VALUE);
     }
+
+    default ElasticSearchInstanceType getElasticSearchInstanceType() {
+        return ElasticSearchInstanceType.valueOf(
+                getProperty(ELASTICSEARCH_PROPERTY_NAME, ELASTICSEARCH_INSTANCE_TYPE_DEFAULT_VALUE.name()).toUpperCase()
+        );
+    }
+
+    enum ElasticSearchInstanceType {
+        MEMORY, EXTERNAL
+    }
+
 }
