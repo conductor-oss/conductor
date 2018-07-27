@@ -19,19 +19,6 @@
 package com.netflix.conductor.contribs.http;
 
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -50,6 +37,17 @@ import com.sun.jersey.api.client.WebResource.Builder;
 import com.sun.jersey.oauth.client.OAuthClientFilter;
 import com.sun.jersey.oauth.signature.OAuthParameters;
 import com.sun.jersey.oauth.signature.OAuthSecrets;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Viren
@@ -92,7 +90,7 @@ public class HttpTask extends WorkflowSystemTask {
 	}
 	
 	@Override
-	public void start(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+	public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
 		Object request = task.getInputData().get(requestParameter);
 		task.setWorkerId(config.getServerId());
 		if(request == null) {
@@ -117,7 +115,6 @@ public class HttpTask extends WorkflowSystemTask {
 		}
 		
 		try {
-			
 			HttpResponse response = httpCall(input);
 			logger.info("response {}, {}", response.statusCode, response.body);
 			if(response.statusCode > 199 && response.statusCode < 300) {
@@ -148,7 +145,7 @@ public class HttpTask extends WorkflowSystemTask {
 	 * @return Response of the http call
 	 * @throws Exception If there was an error making http call
 	 */
-	protected HttpResponse httpCall(Input input) throws Exception {
+	private HttpResponse httpCall(Input input) throws Exception {
 		Client client = rcm.getClient(input);
 
 		if(input.oauthConsumerKey != null) {
@@ -223,12 +220,12 @@ public class HttpTask extends WorkflowSystemTask {
 	}
 
 	@Override
-	public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+	public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) {
 		return false;
 	}
 	
 	@Override
-	public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+	public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) {
 		task.setStatus(Status.CANCELED);
 	}
 	

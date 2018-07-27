@@ -36,17 +36,17 @@ public class Wait extends WorkflowSystemTask {
 	}
 	
 	@Override
-	public void start(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+	public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
 		task.setStatus(Status.IN_PROGRESS);
 	}
 
 	@Override
-	public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+	public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) {
 		return false;
 	}
 	
 	@Override
-	public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+	public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) {
 		task.setStatus(Status.CANCELED);
 	}
 }

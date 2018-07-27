@@ -18,18 +18,16 @@
  */
 package com.netflix.conductor.core.events.sqs;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue;
 import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
 import com.netflix.conductor.core.events.EventQueueProvider;
-import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Viren
@@ -38,9 +36,8 @@ import com.netflix.conductor.core.events.queue.ObservableQueue;
 @Singleton
 public class SQSEventQueueProvider implements EventQueueProvider {
 
-	private Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
-	
-	private AmazonSQSClient client;
+	private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
+	private final AmazonSQSClient client;
 	
 	@Inject
 	public SQSEventQueueProvider(AmazonSQSClient client) {
@@ -51,9 +48,12 @@ public class SQSEventQueueProvider implements EventQueueProvider {
 	public ObservableQueue getQueue(String queueURI) {
 		return queues.computeIfAbsent(queueURI, q -> {
 			Builder builder = new SQSObservableQueue.Builder();
-			SQSObservableQueue queue = builder.withBatchSize(1).withClient(client).withPollTimeInMS(100).withQueueName(queueURI).withVisibilityTimeout(60).build();
-			return queue;
+			return builder.withBatchSize(1)
+					.withClient(client)
+					.withPollTimeInMS(100)
+					.withQueueName(queueURI)
+					.withVisibilityTimeout(60)
+					.build();
 		});
 	}
-
 }
