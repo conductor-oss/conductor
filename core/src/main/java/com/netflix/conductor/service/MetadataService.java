@@ -32,6 +32,7 @@ import com.netflix.conductor.dao.MetadataDAO;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -156,6 +157,28 @@ public class MetadataService {
 			def.setSchemaVersion(2);
 		}
 		metadata.create(def);
+	}
+
+	/**
+	 * Creates a workflow based on a definition considering stored and ephemeral definitions
+	 * Improvement: Add transactional support
+	 *
+	 * @param def Ephemeral workflow definition
+	 */
+	public void registerEphemeralWorkflowDef(WorkflowDef def) {
+
+		this.registerWorkflowDef(def);
+
+		List<TaskDef> ephemeralTaskDefinitions = def.getTasks().stream()
+				.filter(workflowTask -> (workflowTask.isUserDefined() && workflowTask.getTaskDef() != null))
+				.map(workflowTask -> workflowTask.getTaskDef())
+				.collect(Collectors.toList());
+
+		// TODO: add ability to batch read/write tasks on behalf of performance increase
+		for (TaskDef ephemeralTaskDefinition : ephemeralTaskDefinitions) {
+			metadata.createTaskDef(ephemeralTaskDefinition);
+		}
+
 	}
 
 	/**

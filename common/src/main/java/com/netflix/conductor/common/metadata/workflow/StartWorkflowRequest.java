@@ -24,6 +24,7 @@ public class StartWorkflowRequest {
     @ProtoField(id = 5)
     private Map<String, String> taskToDomain = new HashMap<>();
 
+    @ProtoField(id = 6)
     private WorkflowDef workflowDef;
 
     public String getName() {

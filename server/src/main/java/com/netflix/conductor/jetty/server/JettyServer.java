@@ -100,16 +100,19 @@ public class JettyServer implements Lifecycle {
 
 
     private static void createKitchenSink(int port) throws Exception {
+        Client client = Client.create();
+        ObjectMapper objectMapper = new ObjectMapper();
 
+        /*
+         * Kitchensink example (stored workflow with stored tasks)
+         */
         List<TaskDef> taskDefs = new LinkedList<>();
         for (int i = 0; i < 40; i++) {
             taskDefs.add(new TaskDef("task_" + i, "task_" + i, 1, 0));
         }
         taskDefs.add(new TaskDef("search_elasticsearch", "search_elasticsearch", 1, 0));
 
-        Client client = Client.create();
-        ObjectMapper om = new ObjectMapper();
-        client.resource("http://localhost:" + port + "/api/metadata/taskdefs").type(MediaType.APPLICATION_JSON).post(om.writeValueAsString(taskDefs));
+        client.resource("http://localhost:" + port + "/api/metadata/taskdefs").type(MediaType.APPLICATION_JSON).post(objectMapper.writeValueAsString(taskDefs));
 
         InputStream stream = Main.class.getResourceAsStream("/kitchensink.json");
         client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(stream);
@@ -119,15 +122,25 @@ public class JettyServer implements Lifecycle {
 
         Map<String, Object> payload = ImmutableMap.of("input",
                                                       ImmutableMap.of("task2Name", "task_5"));
-        String payloadStr = om.writeValueAsString(payload);
+        String payloadStr = objectMapper.writeValueAsString(payload);
         client.resource("http://localhost:" + port + "/api/workflow/kitchensink").type(MediaType.APPLICATION_JSON).post(payloadStr);
 
-        logger.info("Kitchen sink workflows are created!");
+        logger.info("Kitchen sink workflow is created!");
+
+        /*
+         * Kitchensink example with ephemeral workflow and stored tasks
+         */
+        InputStream ephemeralInputStream = Main.class.getResourceAsStream("/kitchenSink-ephemeralWorkflowWithStoredTasks.json");
+        client.resource("http://localhost:" + port + "/api/workflow/ephemeralKitchenSinkStoredTasks").type(MediaType.APPLICATION_JSON).post(ephemeralInputStream);
+        logger.info("Ephemeral Kitchen sink workflow with stored tasks is created!");
 
 
-        // Ephemeral workflow
-        InputStream ephemeralInputStream = Main.class.getResourceAsStream("/ephemeralWithStoredTasks-kitchenSink.json");
-        client.resource("http://localhost:" + port + "/api/workflow/ephemeralKitchenSink").type(MediaType.APPLICATION_JSON).post(ephemeralInputStream);
-        logger.info("Ephemeral Kitchen sink workflow with stored task is created!");
+        /*
+         * Kitchensink example with ephemeral workflow and ephemeral tasks
+         */
+        ephemeralInputStream = Main.class.getResourceAsStream("/kitchenSink-ephemeralWorkflowWithEphemeralTasks.json");
+        client.resource("http://localhost:" + port + "/api/workflow/ephemeralKitchenSinkEphemeralTasks").type(MediaType.APPLICATION_JSON).post(ephemeralInputStream);
+        logger.info("Ephemeral Kitchen sink workflow with ephemeral tasks is created!");
+
     }
 }

@@ -757,6 +757,9 @@ public abstract class AbstractProtoMapper {
             to.putInput( pair.getKey(), toProto( pair.getValue() ) );
         }
         to.putAllTaskToDomain( from.getTaskToDomain() );
+        if (from.getWorkflowDef() != null) {
+            to.setWorkflowDef( toProto( from.getWorkflowDef() ) );
+        }
         return to.build();
     }
 
@@ -771,6 +774,9 @@ public abstract class AbstractProtoMapper {
         }
         to.setInput(inputMap);
         to.setTaskToDomain( from.getTaskToDomainMap() );
+        if (from.hasWorkflowDef()) {
+            to.setWorkflowDef( fromProto( from.getWorkflowDef() ) );
+        }
         return to;
     }
 
@@ -886,6 +892,9 @@ public abstract class AbstractProtoMapper {
             to.setSink( from.getSink() );
         }
         to.setOptional( from.isOptional() );
+        if (from.getTaskDef() != null) {
+            to.setTaskDef( toProto( from.getTaskDef() ) );
+        }
         return to.build();
     }
 
@@ -919,6 +928,9 @@ public abstract class AbstractProtoMapper {
         to.setJoinOn( from.getJoinOnList().stream().collect(Collectors.toCollection(ArrayList::new)) );
         to.setSink( from.getSink() );
         to.setOptional( from.getOptional() );
+        if (from.hasTaskDef()) {
+            to.setTaskDef( fromProto( from.getTaskDef() ) );
+        }
         return to;
     }
 

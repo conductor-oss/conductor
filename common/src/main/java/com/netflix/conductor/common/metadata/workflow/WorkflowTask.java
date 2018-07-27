@@ -19,6 +19,7 @@
 package com.netflix.conductor.common.metadata.workflow;
 
 import com.github.vmg.protogen.annotations.*;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -134,6 +135,9 @@ public class WorkflowTask {
 
 	@ProtoField(id = 18)
 	private boolean optional = false;
+
+	@ProtoField(id = 19)
+	private TaskDef taskDef;
 	
 	/**
 	 * @return the name
@@ -395,92 +399,117 @@ public class WorkflowTask {
 	}
 
 	/**
+	 *
+	 * @return If the task is defined by the user, regardless of its nature (ephemeral or stored)
+	 */
+	public boolean isUserDefined() {
+		return this.getType().equals(Type.SIMPLE.name());
+	}
+
+	/**
+	 *
+	 * @return Task definition associated to the Workflow Task
+	 */
+	public TaskDef getTaskDef() {
+		return taskDef;
+	}
+
+	/**
+	 * @param taskDef Task definition
+	 */
+	public void setTaskDef(TaskDef taskDef) {
+		this.taskDef = taskDef;
+	}
+
+	/**
 	 * 
 	 * @param optional when set to true, the task is marked as optional
 	 */
 	public void setOptional(boolean optional) {
 		this.optional = optional;
 	}
-	
-	private Collection<List<WorkflowTask>> children(){
-		Collection<List<WorkflowTask>> v1 = new LinkedList<>();
-		Type tt = Type.USER_DEFINED;
-		if(Type.isSystemTask(type)) {
-			tt = Type.valueOf(type);
+
+	private Collection<List<WorkflowTask>> children() {
+		Collection<List<WorkflowTask>> workflowTaskLists = new LinkedList<>();
+		Type taskType = Type.USER_DEFINED;
+		if (Type.isSystemTask(type)) {
+			taskType = Type.valueOf(type);
 		}
-		
-		switch(tt){
+
+		switch (taskType) {
 			case DECISION:
-				v1.addAll(decisionCases.values());
-				v1.add(defaultCase);
+				workflowTaskLists.addAll(decisionCases.values());
+				workflowTaskLists.add(defaultCase);
 				break;
 			case FORK_JOIN:
-				v1.addAll(forkTasks);
+				workflowTaskLists.addAll(forkTasks);
 				break;
 			default:
 				break;
 		}
-		return v1;
-		
+		return workflowTaskLists;
+
 	}
-	
-	public List<WorkflowTask> all(){
+
+	public List<WorkflowTask> all() {
 		List<WorkflowTask> all = new LinkedList<>();
 		all.add(this);
-		for (List<WorkflowTask> wfts : children() ){
-			for(WorkflowTask wft : wfts){
-				all.addAll(wft.all());
+		for (List<WorkflowTask> workflowTaskList : children()) {
+			for (WorkflowTask workflowTask : workflowTaskList) {
+				all.addAll(workflowTask.all());
 			}
 		}
 		return all;
 	}
-	
-	public WorkflowTask next(String taskReferenceName, WorkflowTask parent){
-		Type tt = Type.USER_DEFINED;
-		if(Type.isSystemTask(type)) {
-			tt = Type.valueOf(type);
+
+	public WorkflowTask next(String taskReferenceName, WorkflowTask parent) {
+		Type taskType = Type.USER_DEFINED;
+		if (Type.isSystemTask(type)) {
+			taskType = Type.valueOf(type);
 		}
-		
-		switch(tt){
+
+		switch (taskType) {
 			case DECISION:
-				for (List<WorkflowTask> wfts : children() ){
+				for (List<WorkflowTask> wfts : children()) {
 					Iterator<WorkflowTask> it = wfts.iterator();
-					while(it.hasNext()){
+					while (it.hasNext()) {
 						WorkflowTask task = it.next();
-						if(task.getTaskReferenceName().equals(taskReferenceName)){
+						if (task.getTaskReferenceName().equals(taskReferenceName)) {
 							break;
 						}
 						WorkflowTask nextTask = task.next(taskReferenceName, this);
-						if(nextTask != null){
+						if (nextTask != null) {
 							return nextTask;
 						}
-						if(task.has(taskReferenceName)){
+						if (task.has(taskReferenceName)) {
 							break;
 						}
 					}
-					if(it.hasNext()) { return it.next(); }
+					if (it.hasNext()) {
+						return it.next();
+					}
 				}
 				break;
 			case FORK_JOIN:
 				boolean found = false;
-				for (List<WorkflowTask> wfts : children() ){
+				for (List<WorkflowTask> wfts : children()) {
 					Iterator<WorkflowTask> it = wfts.iterator();
-					while(it.hasNext()){
+					while (it.hasNext()) {
 						WorkflowTask task = it.next();
-						if(task.getTaskReferenceName().equals(taskReferenceName)){
+						if (task.getTaskReferenceName().equals(taskReferenceName)) {
 							found = true;
 							break;
 						}
 						WorkflowTask nextTask = task.next(taskReferenceName, this);
-						if(nextTask != null){
+						if (nextTask != null) {
 							return nextTask;
 						}
 					}
-					if(it.hasNext()) { 
-						return it.next(); 
+					if (it.hasNext()) {
+						return it.next();
 					}
-					if(found && parent != null){
-						return parent.next(this.taskReferenceName, parent);		//we need to return join task... -- get my sibling from my parent..
+					if (found && parent != null) {
+						return parent.next(this.taskReferenceName, parent);        //we need to return join task... -- get my sibling from my parent..
 					}
 				}
 				break;

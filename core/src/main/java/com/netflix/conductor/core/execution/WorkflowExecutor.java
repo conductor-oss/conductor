@@ -249,17 +249,17 @@ public class WorkflowExecutor {
             throw new ApplicationException(Code.INVALID_INPUT, "NULL input passed when starting workflow");
         }
 
-        //because everything else is a system defined task
-        Set<String> missingTaskDefs = workflowDefinition.all().stream()
-                .filter(wft -> wft.getType().equals(WorkflowTask.Type.SIMPLE.name()))
-                .map(wft2 -> wft2.getName())
+        // Obtain the missing task definitions: those that are not system tasks and also don't have embedded definitions
+        Set<String> missingTaskDefinitions = workflowDefinition.all().stream()
+                .filter(workflowTask -> (workflowTask.isUserDefined() && workflowTask.getTaskDef() == null))
+                .map(workflowTask -> workflowTask.getName())
                 .filter(task -> metadataDAO.getTaskDef(task) == null)
                 .collect(Collectors.toSet());
 
-        if (!missingTaskDefs.isEmpty()) {
-            logger.error("Cannot find the task definitions for the following tasks used in workflow: {}", missingTaskDefs);
+        if (!missingTaskDefinitions.isEmpty()) {
+            logger.error("Cannot find the task definitions for the following tasks used in workflow: {}", missingTaskDefinitions);
             Monitors.recordWorkflowStartError(workflowDefinition.getName(), WorkflowContext.get().getClientApp());
-            throw new ApplicationException(Code.INVALID_INPUT, "Cannot find the task definitions for the following tasks used in workflow: " + missingTaskDefs);
+            throw new ApplicationException(Code.INVALID_INPUT, "Cannot find the task definitions for the following tasks used in workflow: " + missingTaskDefinitions);
         }
         //A random UUID is assigned to the work flow instance
         String workflowId = IDGenerator.generate();

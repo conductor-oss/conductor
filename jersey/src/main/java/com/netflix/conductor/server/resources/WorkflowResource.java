@@ -87,7 +87,7 @@ public class WorkflowResource {
             throw new ApplicationException(Code.INVALID_INPUT,  "A name is required to start a workflow.");
         }
         if (request.getWorkflowDef() != null) {
-            metadata.registerWorkflowDef(request.getWorkflowDef());
+            metadata.registerEphemeralWorkflowDef(request.getWorkflowDef());
         }
         return executor.startWorkflow(
                 request.getName(),
@@ -115,7 +115,7 @@ public class WorkflowResource {
         }
 
         if (request.getWorkflowDef() != null) {
-            metadata.registerWorkflowDef(request.getWorkflowDef());
+            metadata.registerEphemeralWorkflowDef(request.getWorkflowDef());
         }
 
         return executor.startWorkflow(name, request.getVersion(), request.getCorrelationId(),
