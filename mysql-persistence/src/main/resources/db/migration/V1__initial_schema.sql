@@ -159,8 +159,8 @@ CREATE TABLE queue (
 
 CREATE TABLE queue_message (
   id int(11) unsigned NOT NULL AUTO_INCREMENT,
-  created_on TIMESTAMP,
-  deliver_on TIMESTAMP,
+  created_on TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  deliver_on TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   queue_name varchar(255) NOT NULL,
   message_id varchar(255) NOT NULL,
   popped boolean DEFAULT false,
