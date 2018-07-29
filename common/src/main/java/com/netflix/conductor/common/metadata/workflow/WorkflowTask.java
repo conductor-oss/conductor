@@ -137,7 +137,7 @@ public class WorkflowTask {
 	private boolean optional = false;
 
 	@ProtoField(id = 19)
-	private TaskDef taskDef;
+	private TaskDef taskDefinition;
 	
 	/**
 	 * @return the name
@@ -400,25 +400,17 @@ public class WorkflowTask {
 
 	/**
 	 *
-	 * @return If the task is defined by the user, regardless of its nature (ephemeral or stored)
-	 */
-	public boolean isUserDefined() {
-		return this.getType().equals(Type.SIMPLE.name());
-	}
-
-	/**
-	 *
 	 * @return Task definition associated to the Workflow Task
 	 */
-	public TaskDef getTaskDef() {
-		return taskDef;
+	public TaskDef getTaskDefinition() {
+		return taskDefinition;
 	}
 
 	/**
-	 * @param taskDef Task definition
+	 * @param taskDefinition Task definition
 	 */
-	public void setTaskDef(TaskDef taskDef) {
-		this.taskDef = taskDef;
+	public void setTaskDefinition(TaskDef taskDefinition) {
+		this.taskDefinition = taskDefinition;
 	}
 
 	/**

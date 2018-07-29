@@ -69,11 +69,14 @@ public class SimpleTaskMapper implements TaskMapper {
         int retryCount = taskMapperContext.getRetryCount();
         String retriedTaskId = taskMapperContext.getRetryTaskId();
 
-        TaskDef taskDefinition = Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
-                .orElseThrow(() -> {
-                    String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
-                    return new TerminateWorkflowException(reason);
-                });
+        TaskDef taskDefinition = taskToSchedule.getTaskDefinition();
+        if (taskDefinition == null) {
+            taskDefinition = Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
+                    .orElseThrow(() -> {
+                        String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
+                        return new TerminateWorkflowException(reason);
+                    });
+        }
 
         Map<String, Object> input = parametersUtils.getTaskInput(taskToSchedule.getInputParameters(), workflowInstance, taskDefinition, taskMapperContext.getTaskId());
         Task simpleTask = new Task();

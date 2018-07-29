@@ -2931,7 +2931,7 @@ public class WorkflowServiceTest {
         assertNotNull(wfid);
 
         //Ensure that we have a workflow queued up for evaluation here...
-        long size = queueDAO.getSize(WorkflowExecutor.deciderQueue);
+        long size = queueDAO.getSize(WorkflowExecutor.DECIDER_QUEUE);
         assertEquals(1, size);
 
         // If we get the full workflow here then, last task should be completed and the next task should be scheduled
@@ -2947,7 +2947,7 @@ public class WorkflowServiceTest {
 
 
         //Ensure that we have a workflow queued up for evaluation here...
-        size = queueDAO.getSize(WorkflowExecutor.deciderQueue);
+        size = queueDAO.getSize(WorkflowExecutor.DECIDER_QUEUE);
         assertEquals(1, size);
 
 
@@ -2978,7 +2978,7 @@ public class WorkflowServiceTest {
         assertEquals(Status.TIMED_OUT, es.getTasks().get(1).getStatus());
         assertEquals(WorkflowStatus.TIMED_OUT, es.getStatus());
 
-        assertEquals(1, queueDAO.getSize(WorkflowExecutor.deciderQueue));
+        assertEquals(1, queueDAO.getSize(WorkflowExecutor.DECIDER_QUEUE));
 
         taskDef.setTimeoutSeconds(0);
         taskDef.setRetryCount(RETRY_COUNT);

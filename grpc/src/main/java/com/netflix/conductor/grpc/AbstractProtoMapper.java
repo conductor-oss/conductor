@@ -44,7 +44,6 @@ import java.lang.String;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -829,7 +828,7 @@ public abstract class AbstractProtoMapper {
         to.setName( from.getName() );
         to.setDescription( from.getDescription() );
         to.setVersion( from.getVersion() );
-        to.setTasks( from.getTasksList().stream().map(this::fromProto).collect(Collectors.toCollection(LinkedList::new)) );
+        to.setTasks( from.getTasksList().stream().map(this::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
         to.setInputParameters( from.getInputParametersList().stream().collect(Collectors.toCollection(ArrayList::new)) );
         Map<String, Object> outputParametersMap = new HashMap<String, Object>();
         for (Map.Entry<String, Value> pair : from.getOutputParametersMap().entrySet()) {
@@ -892,8 +891,8 @@ public abstract class AbstractProtoMapper {
             to.setSink( from.getSink() );
         }
         to.setOptional( from.isOptional() );
-        if (from.getTaskDef() != null) {
-            to.setTaskDef( toProto( from.getTaskDef() ) );
+        if (from.getTaskDefinition() != null) {
+            to.setTaskDefinition( toProto( from.getTaskDefinition() ) );
         }
         return to.build();
     }
@@ -928,8 +927,8 @@ public abstract class AbstractProtoMapper {
         to.setJoinOn( from.getJoinOnList().stream().collect(Collectors.toCollection(ArrayList::new)) );
         to.setSink( from.getSink() );
         to.setOptional( from.getOptional() );
-        if (from.hasTaskDef()) {
-            to.setTaskDef( fromProto( from.getTaskDef() ) );
+        if (from.hasTaskDefinition()) {
+            to.setTaskDefinition( fromProto( from.getTaskDefinition() ) );
         }
         return to;
     }

@@ -90,9 +90,10 @@ public class WorkflowExecutor {
 
     private ParametersUtils parametersUtils = new ParametersUtils();
 
-    public static final String deciderQueue = "_deciderQueue";
-
     private int activeWorkerLastPollnSecs;
+
+    public static final String DECIDER_QUEUE = "_deciderQueue";
+
 
     @Inject
     public WorkflowExecutor(
@@ -249,17 +250,20 @@ public class WorkflowExecutor {
             throw new ApplicationException(Code.INVALID_INPUT, "NULL input passed when starting workflow");
         }
 
-        // Obtain the missing task definitions: those that are not system tasks and also don't have embedded definitions
-        Set<String> missingTaskDefinitions = workflowDefinition.all().stream()
-                .filter(workflowTask -> (workflowTask.isUserDefined() && workflowTask.getTaskDef() == null))
+        // Obtain the names of the tasks with missing definitions:
+        // - Are not system tasks
+        // - Don't have embedded definitions
+        Set<String> missingTaskDefinitionNames = workflowDefinition.all().stream()
+                .filter(workflowTask ->
+                        (workflowTask.getType().equals(WorkflowTask.Type.SIMPLE.name()) && workflowTask.getTaskDefinition() == null))
                 .map(workflowTask -> workflowTask.getName())
                 .filter(task -> metadataDAO.getTaskDef(task) == null)
                 .collect(Collectors.toSet());
 
-        if (!missingTaskDefinitions.isEmpty()) {
-            logger.error("Cannot find the task definitions for the following tasks used in workflow: {}", missingTaskDefinitions);
+        if (!missingTaskDefinitionNames.isEmpty()) {
+            logger.error("Cannot find the task definitions for the following tasks used in workflow: {}", missingTaskDefinitionNames);
             Monitors.recordWorkflowStartError(workflowDefinition.getName(), WorkflowContext.get().getClientApp());
-            throw new ApplicationException(Code.INVALID_INPUT, "Cannot find the task definitions for the following tasks used in workflow: " + missingTaskDefinitions);
+            throw new ApplicationException(Code.INVALID_INPUT, "Cannot find the task definitions for the following tasks used in workflow: " + missingTaskDefinitionNames);
         }
         //A random UUID is assigned to the work flow instance
         String workflowId = IDGenerator.generate();
@@ -467,7 +471,7 @@ public class WorkflowExecutor {
             decide(parent.getWorkflowId());
         }
         Monitors.recordWorkflowCompletion(workflow.getWorkflowName(), workflow.getEndTime() - workflow.getStartTime(), wf.getOwnerApp());
-        queueDAO.remove(deciderQueue, workflow.getWorkflowId());    //remove from the sweep queue
+        queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
         logger.debug("Removed workflow {} from decider queue", wf.getWorkflowId());
     }
 
@@ -577,7 +581,7 @@ public class WorkflowExecutor {
             }
         }
 
-        queueDAO.remove(deciderQueue, workflow.getWorkflowId());    //remove from the sweep queue
+        queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
         executionDAO.removeFromPendingWorkflow(workflow.getWorkflowName(), workflow.getWorkflowId());
 
         // Send to atlas
@@ -781,7 +785,7 @@ public class WorkflowExecutor {
             if (!outcome.tasksToBeUpdated.isEmpty() || !outcome.tasksToBeScheduled.isEmpty()) {
                 executionDAO.updateTasks(tasksToBeUpdated);
                 executionDAO.updateWorkflow(workflow);
-                queueDAO.push(deciderQueue, workflow.getWorkflowId(), config.getSweepFrequency());
+                queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), config.getSweepFrequency());
             }
 
             if (stateChanged) {

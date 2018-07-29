@@ -103,9 +103,7 @@ public class JettyServer implements Lifecycle {
         Client client = Client.create();
         ObjectMapper objectMapper = new ObjectMapper();
 
-        /*
-         * Kitchensink example (stored workflow with stored tasks)
-         */
+
         List<TaskDef> taskDefs = new LinkedList<>();
         for (int i = 0; i < 40; i++) {
             taskDefs.add(new TaskDef("task_" + i, "task_" + i, 1, 0));
@@ -114,6 +112,9 @@ public class JettyServer implements Lifecycle {
 
         client.resource("http://localhost:" + port + "/api/metadata/taskdefs").type(MediaType.APPLICATION_JSON).post(objectMapper.writeValueAsString(taskDefs));
 
+        /*
+         * Kitchensink example (stored workflow with stored tasks)
+         */
         InputStream stream = Main.class.getResourceAsStream("/kitchensink.json");
         client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(stream);
 
@@ -133,7 +134,6 @@ public class JettyServer implements Lifecycle {
         InputStream ephemeralInputStream = Main.class.getResourceAsStream("/kitchenSink-ephemeralWorkflowWithStoredTasks.json");
         client.resource("http://localhost:" + port + "/api/workflow/ephemeralKitchenSinkStoredTasks").type(MediaType.APPLICATION_JSON).post(ephemeralInputStream);
         logger.info("Ephemeral Kitchen sink workflow with stored tasks is created!");
-
 
         /*
          * Kitchensink example with ephemeral workflow and ephemeral tasks

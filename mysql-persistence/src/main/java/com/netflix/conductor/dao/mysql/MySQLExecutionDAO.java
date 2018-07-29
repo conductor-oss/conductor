@@ -2,11 +2,7 @@ package com.netflix.conductor.dao.mysql;
 
 import java.sql.Connection;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -35,13 +31,13 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
     private IndexDAO indexer;
 
-    private MetadataDAO metadata;
+    private MetadataDAO metadataDAO;
 
     @Inject
-    public MySQLExecutionDAO(IndexDAO indexer, MetadataDAO metadata, ObjectMapper om, DataSource dataSource) {
+    public MySQLExecutionDAO(IndexDAO indexer, MetadataDAO metadataDAO, ObjectMapper om, DataSource dataSource) {
         super(om, dataSource);
         this.indexer = indexer;
-        this.metadata = metadata;
+        this.metadataDAO = metadataDAO;
     }
 
     private static String dateStr(Long timeInMs) {
@@ -130,7 +126,9 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
     @Override
     public boolean exceedsInProgressLimit(Task task) {
-        TaskDef taskDef = metadata.getTaskDef(task.getTaskDefName());
+        TaskDef taskDef = Optional.ofNullable(task.getWorkflowTask().getTaskDefinition())
+                .orElse(metadataDAO.getTaskDef(task.getTaskDefName()));
+
         if (taskDef == null) {
             return false;
         }
@@ -502,7 +500,8 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
             task.setEndTime(System.currentTimeMillis());
         }
 
-        TaskDef taskDef = metadata.getTaskDef(task.getTaskDefName());
+        TaskDef taskDef = Optional.ofNullable(task.getWorkflowTask().getTaskDefinition())
+                .orElse(metadataDAO.getTaskDef(task.getTaskDefName()));
 
         if (taskDef != null && taskDef.concurrencyLimit() > 0) {
             boolean inProgress = task.getStatus() != null && task.getStatus().equals(Task.Status.IN_PROGRESS);

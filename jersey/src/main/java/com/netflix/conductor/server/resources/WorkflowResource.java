@@ -86,9 +86,7 @@ public class WorkflowResource {
         if (Strings.isNullOrEmpty(request.getName())) {
             throw new ApplicationException(Code.INVALID_INPUT,  "A name is required to start a workflow.");
         }
-        if (request.getWorkflowDef() != null) {
-            metadata.registerEphemeralWorkflowDef(request.getWorkflowDef());
-        }
+
         return executor.startWorkflow(
                 request.getName(),
                 request.getVersion(),
@@ -105,21 +103,17 @@ public class WorkflowResource {
     @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation("Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking.")
     public String startWorkflow(@PathParam("name") String name, StartWorkflowRequest request) {
-        String workflowName = request.getName();
-        if (Strings.isNullOrEmpty(name) || (!Strings.isNullOrEmpty(workflowName) && !name.equals(workflowName))) {
-            throw new ApplicationException(
-                    Code.INVALID_INPUT,
-                    "Cannot run workflow with name inconsistencies. " +
-                    "Make sure the name on the url and the name on the payload match."
-            );
+        if (request == null) {
+            throw new ApplicationException(Code.INVALID_INPUT, "Payload for starting a new workflow is needed");
         }
-
-        if (request.getWorkflowDef() != null) {
-            metadata.registerEphemeralWorkflowDef(request.getWorkflowDef());
-        }
-
-        return executor.startWorkflow(name, request.getVersion(), request.getCorrelationId(),
-                request.getInput(), null, request.getTaskToDomain(), request.getWorkflowDef());
+        return executor.startWorkflow(
+                name,
+                request.getVersion(),
+                request.getCorrelationId(),
+                request.getInput(),
+                null,
+                request.getTaskToDomain(),
+                request.getWorkflowDef());
     }
 
     @GET

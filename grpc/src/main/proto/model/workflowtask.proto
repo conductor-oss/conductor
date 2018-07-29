@@ -43,5 +43,5 @@ message WorkflowTask {
     repeated string join_on = 16;
     string sink = 17;
     bool optional = 18;
-    TaskDef task_def = 19;
+    TaskDef task_definition = 19;
 }

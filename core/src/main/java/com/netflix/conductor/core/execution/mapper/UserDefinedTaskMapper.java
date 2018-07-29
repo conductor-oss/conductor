@@ -66,11 +66,14 @@ public class UserDefinedTaskMapper implements TaskMapper {
         String taskId = taskMapperContext.getTaskId();
         int retryCount = taskMapperContext.getRetryCount();
 
-        TaskDef taskDefinition = Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
-                .orElseThrow(() -> {
-                    String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
-                    return new TerminateWorkflowException(reason);
-                });
+        TaskDef taskDefinition = taskToSchedule.getTaskDefinition();
+        if (taskDefinition == null) {
+            taskDefinition = Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
+                    .orElseThrow(() -> {
+                        String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
+                        return new TerminateWorkflowException(reason);
+                    });
+        }
 
         Map<String, Object> input = parametersUtils.getTaskInputV2(taskToSchedule.getInputParameters(), workflowInstance, taskId, taskDefinition);
 

@@ -146,7 +146,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	@Override
 	public List<Task> createTasks(List<Task> tasks) {
 
-		List<Task> created = new LinkedList<Task>();
+		List<Task> tasksCreated = new LinkedList<>();
 
 		for (Task task : tasks) {
 		    validate(task);
@@ -172,10 +172,10 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
                     inProgressTaskKey, task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType());
 
 			updateTask(task);
-			created.add(task);
+			tasksCreated.add(task);
 		}
 
-		return created;
+		return tasksCreated;
 
 	}
 
@@ -194,7 +194,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			task.setEndTime(System.currentTimeMillis());
 		}
 
-		TaskDef taskDef = metadataDA0.getTaskDef(task.getTaskDefName());
+		TaskDef taskDef = Optional.ofNullable(task.getWorkflowTask().getTaskDefinition())
+				.orElse(metadataDA0.getTaskDef(task.getTaskDefName()));
 
 		if(taskDef != null && taskDef.concurrencyLimit() > 0) {
 
@@ -329,7 +330,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 					recordRedisDaoPayloadSize("getTask", jsonString.length(), task.getTaskType(), task.getWorkflowType());
 					return task;
 				})
-				.collect(Collectors.toCollection(LinkedList::new));
+				.collect(Collectors.toList());
 	}
 
 	@Override

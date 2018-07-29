@@ -37,13 +37,7 @@ import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -132,9 +126,9 @@ public class DeciderService {
 
         Map<String, Task> tasksToBeScheduled = new LinkedHashMap<>();
 
-        preScheduledTasks.forEach(pst -> {
-            executedTaskRefNames.remove(pst.getReferenceTaskName());
-            tasksToBeScheduled.put(pst.getReferenceTaskName(), pst);
+        preScheduledTasks.forEach(preScheduledTask -> {
+            executedTaskRefNames.remove(preScheduledTask.getReferenceTaskName());
+            tasksToBeScheduled.put(preScheduledTask.getReferenceTaskName(), preScheduledTask);
         });
 
         // A new workflow does not enter this code branch
@@ -145,7 +139,10 @@ public class DeciderService {
                 executedTaskRefNames.remove(pendingTask.getReferenceTaskName());
             }
 
-            TaskDef taskDefinition = metadataDAO.getTaskDef(pendingTask.getTaskDefName());
+            String taskDefName = pendingTask.getTaskDefName();
+            TaskDef taskDefinition = Optional.ofNullable(pendingTask.getWorkflowTask().getTaskDefinition())
+                    .orElse(metadataDAO.getTaskDef(taskDefName));
+
             if (taskDefinition != null) {
                 checkForTimeout(taskDefinition, pendingTask);
                 // If the task has not been updated for "responseTimeout" then mark task as TIMED_OUT
@@ -213,7 +210,7 @@ public class DeciderService {
                 throw new TerminateWorkflowException("No tasks found to be executed", WorkflowStatus.COMPLETED);
             }
 
-            WorkflowTask taskToSchedule = def.getTasks().getFirst(); //Nothing isSystemTask running yet - so schedule the first task
+            WorkflowTask taskToSchedule = def.getTasks().get(0); //Nothing isSystemTask running yet - so schedule the first task
             //Loop until a non-skipped task isSystemTask found
             while (isTaskSkipped(taskToSchedule, workflow)) {
                 taskToSchedule = def.getNextTask(taskToSchedule.getTaskReferenceName());
@@ -244,19 +241,18 @@ public class DeciderService {
     }
 
     private void updateOutput(final Workflow workflow) {
-        final WorkflowDef def = workflow.getWorkflowDefinition();
+        final WorkflowDef workflowDefinition = workflow.getWorkflowDefinition();
 
-        List<Task> allTasks = workflow.getTasks();
-        if (allTasks.isEmpty()) {
+        List<Task> tasks = workflow.getTasks();
+        if (tasks.isEmpty()) {
             return;
         }
 
-        Task last;
-        last = allTasks.get(allTasks.size() - 1);
-        Map<String, Object> output = last.getOutputData();
+        Task lastTask = tasks.get(tasks.size() - 1);
+        Map<String, Object> output = lastTask.getOutputData();
 
-        if (!def.getOutputParameters().isEmpty()) {
-            output = parametersUtils.getTaskInput(def.getOutputParameters(), workflow, null, null);
+        if (!workflowDefinition.getOutputParameters().isEmpty()) {
+            output = parametersUtils.getTaskInput(workflowDefinition.getOutputParameters(), workflow, null, null);
         }
         workflow.setOutput(output);
     }
@@ -270,8 +266,8 @@ public class DeciderService {
         Map<String, Status> taskStatusMap = new HashMap<>();
         workflow.getTasks().forEach(task -> taskStatusMap.put(task.getReferenceTaskName(), task.getStatus()));
 
-        LinkedList<WorkflowTask> wftasks = workflow.getWorkflowDefinition().getTasks();
-        boolean allCompletedSuccessfully = wftasks.stream().parallel().allMatch(wftask -> {
+        List<WorkflowTask> workflowTasks = workflow.getWorkflowDefinition().getTasks();
+        boolean allCompletedSuccessfully = workflowTasks.stream().parallel().allMatch(wftask -> {
             Status status = taskStatusMap.get(wftask.getTaskReferenceName());
             return status != null && status.isSuccessful() && status.isTerminal();
         });
@@ -475,16 +471,16 @@ public class DeciderService {
 
     private boolean isTaskSkipped(WorkflowTask taskToSchedule, Workflow workflow) {
         try {
-            boolean retval = false;
+            boolean isTaskSkipped = false;
             if (taskToSchedule != null) {
                 Task t = workflow.getTaskByRefName(taskToSchedule.getTaskReferenceName());
                 if (t == null) {
-                    retval = false;
+                    isTaskSkipped = false;
                 } else if (t.getStatus().equals(SKIPPED)) {
-                    retval = true;
+                    isTaskSkipped = true;
                 }
             }
-            return retval;
+            return isTaskSkipped;
         } catch (Exception e) {
             throw new TerminateWorkflowException(e.getMessage());
         }

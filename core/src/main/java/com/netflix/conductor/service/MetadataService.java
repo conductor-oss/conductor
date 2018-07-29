@@ -160,28 +160,6 @@ public class MetadataService {
 	}
 
 	/**
-	 * Creates a workflow based on a definition considering stored and ephemeral definitions
-	 * Improvement: Add transactional support
-	 *
-	 * @param def Ephemeral workflow definition
-	 */
-	public void registerEphemeralWorkflowDef(WorkflowDef def) {
-
-		this.registerWorkflowDef(def);
-
-		List<TaskDef> ephemeralTaskDefinitions = def.getTasks().stream()
-				.filter(workflowTask -> (workflowTask.isUserDefined() && workflowTask.getTaskDef() != null))
-				.map(workflowTask -> workflowTask.getTaskDef())
-				.collect(Collectors.toList());
-
-		// TODO: add ability to batch read/write tasks on behalf of performance increase
-		for (TaskDef ephemeralTaskDefinition : ephemeralTaskDefinitions) {
-			metadata.createTaskDef(ephemeralTaskDefinition);
-		}
-
-	}
-
-	/**
 	 * 
 	 * @param eventHandler Event handler to be added.  
 	 * Will throw an exception if an event handler already exists with the name

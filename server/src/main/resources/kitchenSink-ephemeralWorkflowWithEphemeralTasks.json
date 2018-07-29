@@ -16,7 +16,7 @@
           }
         },
         "type": "SIMPLE",
-        "taskDef": {
+        "taskDefinition": {
           "ownerApp": null,
           "createTime": null,
           "updateTime": null,
@@ -73,7 +73,7 @@
                 "oddEven": "${task_2.output.oddEven}"
               },
               "type": "SIMPLE",
-              "taskDef": {
+              "taskDefinition": {
                 "ownerApp": null,
                 "createTime": null,
                 "updateTime": null,
@@ -121,7 +121,7 @@
                     "name": "task_100010",
                     "taskReferenceName": "task_100010",
                     "type": "SIMPLE",
-                    "taskDef": {
+                    "taskDefinition": {
                       "ownerApp": null,
                       "createTime": null,
                       "updateTime": null,
@@ -160,7 +160,7 @@
                     "name": "task_100011",
                     "taskReferenceName": "task_100011",
                     "type": "SIMPLE",
-                    "taskDef": {
+                    "taskDefinition": {
                       "ownerApp": null,
                       "createTime": null,
                       "updateTime": null,
@@ -227,7 +227,7 @@
           "workflowIds": "${get_es_1.output..workflowId}"
         },
         "type": "SIMPLE",
-        "taskDef": {
+        "taskDefinition": {
           "ownerApp": null,
           "createTime": null,
           "updateTime": null,
