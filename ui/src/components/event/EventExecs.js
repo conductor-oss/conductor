@@ -1,13 +1,10 @@
-import React, { Component } from 'react';
-import { Link, browserHistory } from 'react-router';
-import { Breadcrumb, BreadcrumbItem, Input, Well, Button, Panel, DropdownButton, MenuItem, Popover, OverlayTrigger, ButtonGroup, Table, Grid, Row, Col } from 'react-bootstrap';
-import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
+import React from 'react';
+import { Table, Grid, Row, Col } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { getEvents, getEventHandlers } from '../../actions/WorkflowActions';
+import { getEventHandlers } from '../../actions/WorkflowActions';
 import Typeahead from 'react-bootstrap-typeahead';
 
 const EventExecs = React.createClass({
-
   getInitialState() {
     return {
       events: [],
@@ -23,7 +20,6 @@ const EventExecs = React.createClass({
     this.state.executions = nextProps.executions;
     this.state.events = nextProps.events;
   },
-
   render() {
     let executions = this.state.executions;
     let events = this.state.events;
@@ -31,7 +27,6 @@ const EventExecs = React.createClass({
     events.forEach(event => {
       eventTypes.push(event.event);
     });
-
 
     return (
       <div className="ui-content">
@@ -59,4 +54,5 @@ const EventExecs = React.createClass({
     );
   }
 });
+
 export default connect(state => state.workflow)(EventExecs);

@@ -1,12 +1,9 @@
-import React, { Component } from 'react';
-import { Link, browserHistory } from 'react-router';
-import { Breadcrumb, BreadcrumbItem, Input, Well, Button, Panel, DropdownButton, MenuItem, Popover, OverlayTrigger, ButtonGroup, Table } from 'react-bootstrap';
-import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
+import React from 'react';
+import { Popover, OverlayTrigger, Table } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import { getEventHandlers } from '../../actions/WorkflowActions';
 
 const Events = React.createClass({
-
   getInitialState() {
     return {
       events: []
@@ -18,17 +15,9 @@ const Events = React.createClass({
   componentWillReceiveProps(nextProps) {
     this.state.events = nextProps.events || [];
   },
-
   render() {
     var wfs = this.state.events;
 
-    function jsonMaker(cell, row){
-      return JSON.stringify(cell);
-    };
-
-    function activeLink(cell, row){
-      return cell?'Yes':'No';
-    };
     function helpName() {
       return (<OverlayTrigger trigger="click" rootClose placement="bottom" overlay={
         <Popover title='Event Handler Name' style={{ width: '300px'}}>

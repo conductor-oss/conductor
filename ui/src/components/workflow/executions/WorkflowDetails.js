@@ -1,6 +1,5 @@
-import React, {Component} from 'react';
+import React from 'react';
 import {OverlayTrigger, Button, Popover, Panel, Table} from 'react-bootstrap';
-import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 import {connect} from 'react-redux';
 import {getWorkflowDetails} from '../../../actions/WorkflowActions';
 import WorkflowAction from './WorkflowAction';
@@ -96,8 +95,7 @@ function showFailure(wf) {
     return 'none';
 }
 
-
-class WorkflowDetails extends Component {
+class WorkflowDetails extends React.Component {
     constructor(props) {
         super(props);
 

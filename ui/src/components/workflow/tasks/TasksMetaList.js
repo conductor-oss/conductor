@@ -1,12 +1,10 @@
-import React, { Component } from 'react';
-import { Link, browserHistory } from 'react-router';
-import { Breadcrumb, BreadcrumbItem, Input, Well, Button, Panel, DropdownButton, ButtonToolbar, MenuItem, Popover, OverlayTrigger, ButtonGroup } from 'react-bootstrap';
+import React from 'react';
+import { Input, Popover, OverlayTrigger } from 'react-bootstrap';
 import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 import { connect } from 'react-redux';
 import { getTaskDefs } from '../../../actions/WorkflowActions';
 
 const TaskMetaList = React.createClass({
-
   getInitialState() {
     return {
       name: '',
@@ -14,16 +12,13 @@ const TaskMetaList = React.createClass({
       taskDefs: []
     }
   },
-
   componentWillMount(){
     this.props.dispatch(getTaskDefs());
   },
-
   componentWillReceiveProps(nextProps){
     this.state.taskDefs = nextProps.taskDefs;
 
   },
-
   render() {
     var wfs = this.state.taskDefs;
 
@@ -73,4 +68,5 @@ const TaskMetaList = React.createClass({
     );
   }
 });
+
 export default connect(state => state.workflow)(TaskMetaList);
