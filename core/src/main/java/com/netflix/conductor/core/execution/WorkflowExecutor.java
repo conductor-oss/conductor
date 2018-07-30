@@ -142,8 +142,7 @@ public class WorkflowExecutor {
             String correlationId,
             Map<String, Object> input,
             String event,
-            Map<String, String> taskToDomain,
-            WorkflowDef workflowDef
+            Map<String, String> taskToDomain
     ) {
         return startWorkflow(
                 name,
@@ -153,8 +152,7 @@ public class WorkflowExecutor {
                 null,
                 null,
                 event,
-                taskToDomain,
-                workflowDef
+                taskToDomain
         );
     }
 
@@ -178,8 +176,28 @@ public class WorkflowExecutor {
                 parentWorkflowId,
                 parentWorkflowTaskId,
                 event,
-                null,
                 null
+        );
+    }
+
+    /**
+     * @throws ApplicationException
+     */
+    public String startWorkflow(
+            WorkflowDef workflowDefinition,
+            Map<String, Object> workflowInput,
+            String correlationId,
+            String event,
+            Map<String, String> taskToDomain
+    ) {
+        return startWorkflow(
+                workflowDefinition,
+                workflowInput,
+                correlationId,
+                null,
+                null,
+                event,
+                taskToDomain
         );
     }
 
@@ -194,13 +212,11 @@ public class WorkflowExecutor {
             String parentWorkflowId,
             String parentWorkflowTaskId,
             String event,
-            Map<String, String> taskToDomain,
-            WorkflowDef workflowDef
+            Map<String, String> taskToDomain
     ) {
 
         Optional<WorkflowDef> potentialDef =
-                workflowDef != null ? Optional.of(workflowDef) :
-                        version == null ? lookupLatestWorkflowDefinition(name) : lookupWorkflowDefinition(name, version);
+                version == null ? lookupLatestWorkflowDefinition(name) : lookupWorkflowDefinition(name, version);
 
         //Check if the workflow definition is valid
         WorkflowDef workflowDefinition = potentialDef

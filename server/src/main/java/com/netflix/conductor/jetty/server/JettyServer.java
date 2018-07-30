@@ -132,14 +132,14 @@ public class JettyServer implements Lifecycle {
          * Kitchensink example with ephemeral workflow and stored tasks
          */
         InputStream ephemeralInputStream = Main.class.getResourceAsStream("/kitchenSink-ephemeralWorkflowWithStoredTasks.json");
-        client.resource("http://localhost:" + port + "/api/workflow/ephemeralKitchenSinkStoredTasks").type(MediaType.APPLICATION_JSON).post(ephemeralInputStream);
+        client.resource("http://localhost:" + port + "/api/workflow/").type(MediaType.APPLICATION_JSON).post(ephemeralInputStream);
         logger.info("Ephemeral Kitchen sink workflow with stored tasks is created!");
 
         /*
          * Kitchensink example with ephemeral workflow and ephemeral tasks
          */
         ephemeralInputStream = Main.class.getResourceAsStream("/kitchenSink-ephemeralWorkflowWithEphemeralTasks.json");
-        client.resource("http://localhost:" + port + "/api/workflow/ephemeralKitchenSinkEphemeralTasks").type(MediaType.APPLICATION_JSON).post(ephemeralInputStream);
+        client.resource("http://localhost:" + port + "/api/workflow/").type(MediaType.APPLICATION_JSON).post(ephemeralInputStream);
         logger.info("Ephemeral Kitchen sink workflow with ephemeral tasks is created!");
 
     }

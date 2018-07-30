@@ -1,4 +1,5 @@
 {
+  "name": "kitchenSink-ephemeralWorkflowWithEphemeralTasks",
   "workflowDef": {
     "name": "ephemeralKitchenSinkEphemeralTasks",
     "description": "Kitchensink ephemeral workflow with ephemeral tasks",

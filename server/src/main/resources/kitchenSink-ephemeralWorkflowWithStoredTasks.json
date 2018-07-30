@@ -1,5 +1,5 @@
 {
-
+  "name": "kitchenSink-ephemeralWorkflowWithStoredTasks",
   "workflowDef": {
     "name": "ephemeralKitchenSinkStoredTasks",
     "description": "kitchensink workflow definition",
@@ -160,7 +160,6 @@
     },
     "schemaVersion": 2
   },
-
   "input": {
     "task2Name": "task_5"
   }

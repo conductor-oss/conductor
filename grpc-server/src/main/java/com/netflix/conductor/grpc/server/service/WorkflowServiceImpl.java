@@ -54,9 +54,23 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
         final StartWorkflowRequest request = PROTO_MAPPER.fromProto(pbRequest);
 
         try {
-            String id = executor.startWorkflow(
-                    request.getName(), GRPC_HELPER.optional(request.getVersion()), request.getCorrelationId(),
-                    request.getInput(), null, request.getTaskToDomain(), request.getWorkflowDef());
+            String id;
+            if (request.getWorkflowDef() == null) {
+                id = executor.startWorkflow(
+                        request.getName(),
+                        GRPC_HELPER.optional(request.getVersion()),
+                        request.getCorrelationId(),
+                        request.getInput(),
+                        null,
+                        request.getTaskToDomain());
+            } else {
+                id = executor.startWorkflow(
+                        request.getWorkflowDef(),
+                        request.getInput(),
+                        request.getCorrelationId(),
+                        null,
+                        request.getTaskToDomain());
+            }
             response.onNext(WorkflowServicePb.StartWorkflowResponse.newBuilder()
                     .setWorkflowId(id)
                     .build()

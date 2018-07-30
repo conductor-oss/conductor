@@ -19,6 +19,7 @@ import com.google.common.base.Strings;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
@@ -84,36 +85,39 @@ public class WorkflowResource {
     @ApiOperation("Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain")
     public String startWorkflow(StartWorkflowRequest request) {
         if (Strings.isNullOrEmpty(request.getName())) {
-            throw new ApplicationException(Code.INVALID_INPUT,  "A name is required to start a workflow.");
+            throw new ApplicationException(Code.INVALID_INPUT, "A name is required to start a workflow.");
         }
 
-        return executor.startWorkflow(
-                request.getName(),
-                request.getVersion(),
-                request.getCorrelationId(),
-                request.getInput(),
-                null,
-                request.getTaskToDomain(),
-                request.getWorkflowDef()
-        );
+        WorkflowDef workflowDefinition = request.getWorkflowDef();
+        if (workflowDefinition == null) {
+            return executor.startWorkflow(
+                    request.getName(),
+                    request.getVersion(),
+                    request.getCorrelationId(),
+                    request.getInput(),
+                    null,
+                    request.getTaskToDomain()
+            );
+        } else {
+            return executor.startWorkflow(
+                    request.getWorkflowDef(),
+                    request.getInput(),
+                    request.getCorrelationId(),
+                    null,
+                    request.getTaskToDomain()
+            );
+        }
+
     }
 
     @POST
     @Path("/{name}")
     @Produces({MediaType.TEXT_PLAIN})
-    @ApiOperation("Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking.")
-    public String startWorkflow(@PathParam("name") String name, StartWorkflowRequest request) {
-        if (request == null) {
-            throw new ApplicationException(Code.INVALID_INPUT, "Payload for starting a new workflow is needed");
-        }
-        return executor.startWorkflow(
-                name,
-                request.getVersion(),
-                request.getCorrelationId(),
-                request.getInput(),
-                null,
-                request.getTaskToDomain(),
-                request.getWorkflowDef());
+    @ApiOperation("Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking")
+    public String startWorkflow(
+            @PathParam("name") String name, @QueryParam("version") Integer version,
+            @QueryParam("correlationId") String correlationId, Map<String, Object> input) {
+        return executor.startWorkflow(name, version, correlationId, input, null);
     }
 
     @GET
