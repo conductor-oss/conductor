@@ -124,7 +124,7 @@ public class MetadataClient extends ClientBase {
     public void unregisterWorkflowDef(String name, Integer version) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Workflow name cannot be blank");
         Preconditions.checkNotNull(version, "Version cannot be null");
-        delete(new Object[]{"version", version}, "metadata/workflow/{name}",  name);
+        delete("metadata/workflow/{name}/version/{version}",  name, version);
     }
 
     // Task Metadata Operations
