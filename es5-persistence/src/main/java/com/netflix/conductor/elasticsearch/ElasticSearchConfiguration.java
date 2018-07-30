@@ -1,5 +1,6 @@
 package com.netflix.conductor.elasticsearch;
 
+import com.google.common.base.Strings;
 import com.netflix.conductor.core.config.Configuration;
 
 import java.net.URI;
@@ -81,9 +82,12 @@ public interface ElasticSearchConfiguration extends Configuration {
     }
 
     default ElasticSearchInstanceType getElasticSearchInstanceType() {
-        return ElasticSearchInstanceType.valueOf(
-                getProperty(ELASTICSEARCH_PROPERTY_NAME, ELASTICSEARCH_INSTANCE_TYPE_DEFAULT_VALUE.name()).toUpperCase()
-        );
+        ElasticSearchInstanceType elasticSearchInstanceType = ELASTICSEARCH_INSTANCE_TYPE_DEFAULT_VALUE;
+        String instanceTypeConfig = getProperty(ELASTICSEARCH_PROPERTY_NAME, "");
+        if (!Strings.isNullOrEmpty(instanceTypeConfig)) {
+            elasticSearchInstanceType = ElasticSearchInstanceType.valueOf(instanceTypeConfig.toUpperCase());
+        }
+        return elasticSearchInstanceType;
     }
 
     enum ElasticSearchInstanceType {
