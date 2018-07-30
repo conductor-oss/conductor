@@ -2,6 +2,7 @@ package com.netflix.conductor.dao.mysql;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -108,6 +109,10 @@ public class MySQLMetadataDAOTest extends MySQLBaseDAOTest {
         assertNotNull(allnames);
         assertEquals(1, allnames.size());
         assertEquals(def.getName(), allnames.get(0));
+
+        dao.removeWorkflowDef("test", 1);
+        WorkflowDef deleted = dao.get("test", 1);
+        assertNull(deleted);
     }
 
     @Test

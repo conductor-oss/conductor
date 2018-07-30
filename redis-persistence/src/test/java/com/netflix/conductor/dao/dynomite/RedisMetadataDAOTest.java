@@ -20,6 +20,7 @@ package com.netflix.conductor.dao.dynomite;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
@@ -28,6 +29,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import com.netflix.conductor.common.run.Workflow;
 import org.apache.commons.lang.builder.EqualsBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -154,6 +156,10 @@ public class RedisMetadataDAOTest {
 		assertNotNull(allnames);
 		assertEquals(1, allnames.size());
 		assertEquals(def.getName(), allnames.get(0));
+
+		dao.removeWorkflowDef("test", 1);
+		WorkflowDef deleted = dao.get("test", 1);
+		assertNull(deleted);
 	}
 	
 	@Test
