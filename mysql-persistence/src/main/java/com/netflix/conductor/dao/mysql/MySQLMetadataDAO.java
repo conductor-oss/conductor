@@ -128,7 +128,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     }
 
     @Override
-    public void removeWorkflowDef(String name, int version) {
+    public void removeWorkflowDef(String name, Integer version) {
         final String DELETE_WORKFLOW_QUERY = "DELETE from meta_workflow_def WHERE name = ? AND version = ?";
 
         executeWithTransaction(DELETE_WORKFLOW_QUERY, q -> {

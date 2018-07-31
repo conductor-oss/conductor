@@ -234,9 +234,9 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
     }
 
     @Override
-    public void removeWorkflowDef(String name, int version) {
+    public void removeWorkflowDef(String name, Integer version) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "WorkflowDef name cannot be null");
-        Preconditions.checkArgument(version > 0, "Input version is not valid");
+        Preconditions.checkNotNull(version, "Input version cannot be null");
         Long result = dynoClient.hdel(nsKey(WORKFLOW_DEF, name), String.valueOf(version));
         if (!result.equals(1L)) {
             throw new ApplicationException(Code.NOT_FOUND, String.format("Cannot remove the workflow - no such workflow" +
@@ -256,9 +256,6 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
             // check if latest version is same as the deleted version
             if (versions.size() > 0) {
                 dynoClient.hdel(nsKey(WORKFLOW_DEF_NAMES, name));
-
-                // delete the latest key
-                dynoClient.hdel(nsKey(WORKFLOW_DEF, name), LATEST);
             }
 
         } catch (Exception ex) {
