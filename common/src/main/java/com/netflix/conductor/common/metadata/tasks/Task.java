@@ -593,6 +593,17 @@ public class Task {
         this.outputMessage = outputMessage;
     }
 
+    /**
+     * @return the task definition associated to the running task if available
+     */
+    public TaskDef getTaskDefinition() {
+        TaskDef taskDefinition = null;
+        if (this.getWorkflowTask() != null) {
+            taskDefinition = this.getWorkflowTask().getTaskDefinition();
+        }
+        return taskDefinition;
+    }
+
     public Task copy() {
         Task copy = new Task();
         copy.setCallbackAfterSeconds(callbackAfterSeconds);

@@ -194,8 +194,13 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			task.setEndTime(System.currentTimeMillis());
 		}
 
-		TaskDef taskDef = Optional.ofNullable(task.getWorkflowTask().getTaskDefinition())
-				.orElse(metadataDA0.getTaskDef(task.getTaskDefName()));
+		TaskDef taskDef;
+		if (task.getWorkflowTask() != null) {
+			taskDef = Optional.ofNullable(task.getWorkflowTask().getTaskDefinition())
+					.orElse(metadataDA0.getTaskDef(task.getTaskDefName()));
+		} else {
+			taskDef = metadataDA0.getTaskDef(task.getTaskDefName());
+		}
 
 		if(taskDef != null && taskDef.concurrencyLimit() > 0) {
 

@@ -283,14 +283,14 @@ public class TestHttpTask {
         assertEquals(HttpTask.MISSING_REQUEST, task.getReasonForIncompletion());
         assertTrue(!task.getStatus().isSuccessful());
 
-        WorkflowTask wft = new WorkflowTask();
-        wft.setOptional(true);
-        wft.setName("HTTP");
-        wft.setWorkflowTaskType(Type.USER_DEFINED);
-        wft.setTaskReferenceName("t1");
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setOptional(true);
+        workflowTask.setName("HTTP");
+        workflowTask.setWorkflowTaskType(Type.USER_DEFINED);
+        workflowTask.setTaskReferenceName("t1");
 
         WorkflowDef def = new WorkflowDef();
-        def.getTasks().add(wft);
+        def.getTasks().add(workflowTask);
 
         Workflow workflow = new Workflow();
         workflow.setWorkflowDefinition(def);

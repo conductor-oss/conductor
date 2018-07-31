@@ -140,7 +140,7 @@ public class DeciderService {
             }
 
             String taskDefName = pendingTask.getTaskDefName();
-            TaskDef taskDefinition = Optional.ofNullable(pendingTask.getWorkflowTask().getTaskDefinition())
+            TaskDef taskDefinition = Optional.ofNullable(pendingTask.getTaskDefinition())
                     .orElse(metadataDAO.getTaskDef(taskDefName));
 
             if (taskDefinition != null) {

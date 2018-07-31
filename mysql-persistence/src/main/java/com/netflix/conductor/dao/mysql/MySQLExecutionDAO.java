@@ -126,8 +126,8 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
     @Override
     public boolean exceedsInProgressLimit(Task task) {
-        TaskDef taskDef = Optional.ofNullable(task.getWorkflowTask().getTaskDefinition())
-                .orElse(metadataDAO.getTaskDef(task.getTaskDefName()));
+        TaskDef taskDef = Optional.ofNullable(task.getTaskDefinition())
+                    .orElse(metadataDAO.getTaskDef(task.getTaskDefName()));
 
         if (taskDef == null) {
             return false;
@@ -500,7 +500,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
             task.setEndTime(System.currentTimeMillis());
         }
 
-        TaskDef taskDef = Optional.ofNullable(task.getWorkflowTask().getTaskDefinition())
+        TaskDef taskDef = Optional.ofNullable(task.getTaskDefinition())
                 .orElse(metadataDAO.getTaskDef(task.getTaskDefName()));
 
         if (taskDef != null && taskDef.concurrencyLimit() > 0) {

@@ -628,7 +628,7 @@ public class TestDeciderService {
 
         DeciderOutcome deciderOutcome = deciderService.decide(workflow);
         assertNotNull(deciderOutcome);
-        assertTrue(workflow.getTaskByRefName("s1").isExecuted());
+System.out.println(workflow);
         assertFalse(workflow.getTaskByRefName("s1").isRetried());
         assertEquals(1, deciderOutcome.tasksToBeUpdated.size());
         assertEquals("s1", deciderOutcome.tasksToBeUpdated.get(0).getReferenceTaskName());
