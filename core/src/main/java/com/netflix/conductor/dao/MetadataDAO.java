@@ -121,13 +121,6 @@ public interface MetadataDAO {
 
 	/**
 	 * 
-	 * @return List of all the latest workflow definitions
-	 * 
-	 */
-	public abstract List<WorkflowDef> getAllLatest();
-
-	/**
-	 * 
 	 * @param name name of the workflow
 	 * @return List of all the workflow definitions
 	 * 

@@ -133,12 +133,6 @@ public class RedisMetadataDAOTest {
 		assertEquals(def.getVersion(), found.getVersion());
 		assertEquals(2, found.getVersion());
 		
-		all = dao.getAllLatest();
-		assertNotNull(all);
-		assertEquals(1, all.size());
-		assertEquals("test", all.get(0).getName());
-		assertEquals(2, all.get(0).getVersion());
-		
 		all = dao.getAllVersions(def.getName());
 		assertNotNull(all);
 		assertEquals(2, all.size());
@@ -160,6 +154,27 @@ public class RedisMetadataDAOTest {
 		dao.removeWorkflowDef("test", 1);
 		WorkflowDef deleted = dao.get("test", 1);
 		assertNull(deleted);
+        dao.removeWorkflowDef("test", 2);
+		WorkflowDef latestDef = dao.getLatest("test");
+		assertNull(latestDef);
+
+		WorkflowDef[] workflowDefsArray = new WorkflowDef[3];
+		for(int i=1; i <=3; i++) {
+            workflowDefsArray[i-1] = new WorkflowDef();
+            workflowDefsArray[i-1].setName("test");
+            workflowDefsArray[i-1].setVersion(i);
+            workflowDefsArray[i-1].setDescription("description");
+            workflowDefsArray[i-1].setCreatedBy("unit_test");
+            workflowDefsArray[i-1].setCreateTime(1L);
+            workflowDefsArray[i-1].setOwnerApp("ownerApp");
+            workflowDefsArray[i-1].setUpdatedBy("unit_test2");
+            workflowDefsArray[i-1].setUpdateTime(2L);
+            dao.create( workflowDefsArray[i-1]);
+        }
+        dao.removeWorkflowDef("test", 1);
+        dao.removeWorkflowDef("test", 2);
+        WorkflowDef workflow = dao.getLatest("test");
+        assertEquals(workflow.getVersion(), 3);
 	}
 	
 	@Test

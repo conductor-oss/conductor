@@ -152,7 +152,6 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
         return queryWithTransaction(GET_ALL_WORKFLOW_DEF_QUERY, q -> q.executeAndFetch(WorkflowDef.class));
     }
 
-    @Override
     public List<WorkflowDef> getAllLatest() {
         final String GET_ALL_LATEST_WORKFLOW_DEF_QUERY = "SELECT json_data FROM meta_workflow_def WHERE version = " +
                                                          "latest_version";

@@ -34,16 +34,21 @@ import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 @Trace
 public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
+
+    private static final Logger logger = LoggerFactory.getLogger(RedisMetadataDAO.class);
 
     // Keys Families
     private final static String ALL_TASK_DEFS = "TASK_DEFS";
@@ -174,11 +179,21 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         Preconditions.checkNotNull(name, "WorkflowDef name cannot be null");
         WorkflowDef def = null;
 
-        String workflowDefJsonString = dynoClient.hget(nsKey(WORKFLOW_DEF, name), LATEST);
-        if (workflowDefJsonString != null) {
-            def = readValue(workflowDefJsonString, WorkflowDef.class);
-            recordRedisDaoRequests("getWorkflowDef");
-            recordRedisDaoPayloadSize("getWorkflowDef", workflowDefJsonString.length(), "n/a", def.getName());
+        // Get the list of valid versions leaving Latest
+        List<Integer> versions = new ArrayList<Integer>();
+        dynoClient.hkeys(nsKey(WORKFLOW_DEF, name)).forEach(key -> {
+            if (!key.equals(LATEST)) {
+                versions.add(Integer.valueOf(key));
+            }
+        });
+
+        if (versions.size() > 0) {
+            Collections.sort(versions);
+            String latestKey = versions.get(versions.size() - 1).toString();
+            String latestdata = dynoClient.hget(nsKey(WORKFLOW_DEF, name), latestKey);
+            if (latestdata != null) {
+                def = readValue(latestdata, WorkflowDef.class);
+            }
         }
 
         return def;
@@ -227,6 +242,29 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
             throw new ApplicationException(Code.NOT_FOUND, String.format("Cannot remove the workflow - no such workflow" +
                     " definition: %s version: %d", name, version));
         }
+
+        // do the clean up check if there are any more versions remaining if not delete the
+        // workflow name
+        List<Integer> versions = new ArrayList<Integer>();
+        dynoClient.hkeys(nsKey(WORKFLOW_DEF, name)).forEach(key -> {
+            if (!key.equals(LATEST)) {
+                versions.add(Integer.valueOf(key));
+            }
+        });
+
+        try {
+            // check if latest version is same as the deleted version
+            if (versions.size() > 0) {
+                dynoClient.hdel(nsKey(WORKFLOW_DEF_NAMES, name));
+
+                // delete the latest key
+                dynoClient.hdel(nsKey(WORKFLOW_DEF, name), LATEST);
+            }
+
+        } catch (Exception ex) {
+            logger.error("Error while deleting lastest: {} version {}", name, version, ex);
+        }
+
         recordRedisDaoRequests("removeWorkflowDef");
     }
 
@@ -256,24 +294,6 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
             }
         }
         recordRedisDaoPayloadSize("getAllWorkflowDefs", size, "n/a", "n/a");
-        return workflows;
-    }
-
-    @Override
-    public List<WorkflowDef> getAllLatest() {
-        List<WorkflowDef> workflows = new LinkedList<WorkflowDef>();
-        int size = 0;
-
-        // Get all from WORKFLOW_DEF_NAMES
-        recordRedisDaoRequests("getAllLatestWorkflowDefs");
-        Set<String> workflowNames = dynoClient.smembers(nsKey(WORKFLOW_DEF_NAMES));
-        for (String workflowName : workflowNames) {
-            String workflowDefJsonString = dynoClient.hget(nsKey(WORKFLOW_DEF, workflowName), LATEST);
-            workflows.add(readValue(workflowDefJsonString, WorkflowDef.class));
-            size += workflowDefJsonString.length();
-        }
-        recordRedisDaoPayloadSize("getAllLatestWorkflowDefs", size, "n/a", "n/a");
-
         return workflows;
     }
 
@@ -373,20 +393,9 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         Preconditions.checkNotNull(workflowDef.getName(), "WorkflowDef name cannot be null");
 
         // First set the workflow def
-        dynoClient.hset(nsKey(WORKFLOW_DEF, workflowDef.getName()), String.valueOf(workflowDef.getVersion()), toJson(workflowDef));
+        dynoClient.hset(nsKey(WORKFLOW_DEF, workflowDef.getName()), String.valueOf(workflowDef.getVersion()),
+                toJson(workflowDef));
 
-        // If it is getting created then make sure the latest field is updated
-        // and WORKFLOW_DEF_NAMES is updated
-        List<Integer> versions = new ArrayList<Integer>();
-        dynoClient.hkeys(nsKey(WORKFLOW_DEF, workflowDef.getName())).forEach(key -> {
-            if (!key.equals(LATEST)) {
-                versions.add(Integer.valueOf(key));
-            }
-        });
-        Collections.sort(versions);
-        String latestKey = versions.get(versions.size() - 1).toString();
-        String latestdata = dynoClient.hget(nsKey(WORKFLOW_DEF, workflowDef.getName()), latestKey);
-        dynoClient.hset(nsKey(WORKFLOW_DEF, workflowDef.getName()), LATEST, latestdata);
         dynoClient.sadd(nsKey(WORKFLOW_DEF_NAMES), workflowDef.getName());
         recordRedisDaoRequests("storeWorkflowDef", "n/a", workflowDef.getName());
     }
