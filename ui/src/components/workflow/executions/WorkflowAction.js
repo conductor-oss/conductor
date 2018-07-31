@@ -1,10 +1,9 @@
-import React, { Component } from 'react';
-import { Button, ButtonGroup, OverlayTrigger, Popover, Panel, Input, Grid, Row, Col, Tooltip } from 'react-bootstrap';
+import React from 'react';
+import { Button, ButtonGroup, OverlayTrigger, Popover } from 'react-bootstrap';
 import { connect } from 'react-redux';
-import { terminateWorkflow, restartWorfklow, retryWorfklow, pauseWorfklow, resumeWorfklow, getWorkflowDetails } from '../../../actions/WorkflowActions';
+import { terminateWorkflow, restartWorfklow, retryWorfklow, pauseWorfklow, resumeWorfklow } from '../../../actions/WorkflowActions';
 
 const WorkflowAction = React.createClass({
-
   getInitialState() {
     return {
       terminating: false,
@@ -15,7 +14,6 @@ const WorkflowAction = React.createClass({
       resuming: false
     };
   },
-
   render() {
     const tt_term = (
       <Popover id="popover-trigger-hover-focus" title="Terminate Workflow">
@@ -42,12 +40,14 @@ const WorkflowAction = React.createClass({
         Resume workflow execution
       </Popover>
     );
-    let terminating = this.props.terminating;
-    let rerunning = this.state.rerunning;
-    let restarting = this.props.restarting;
-    let retrying = this.props.retrying;
-    let pausing = this.props.pausing;
-    let resuming = this.props.resuming;
+    
+    const { 
+        terminating,
+        restarting,
+        retrying,
+        pausing, 
+        resuming
+      } = this.props;
 
     if(this.props.workflowStatus == 'RUNNING'){
 

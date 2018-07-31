@@ -1,12 +1,10 @@
-import React, { Component } from 'react';
-import { Link } from 'react-router';
-import { Breadcrumb, BreadcrumbItem, Grid, Row, Col, Well, OverlayTrigger,Button,Popover, Panel, Tabs, Tab } from 'react-bootstrap';
-import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
+import React from 'react';
+import { Tabs, Tab } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import { getWorkflowMetaDetails } from '../../actions/WorkflowActions';
 import WorkflowMetaDia from './WorkflowMetaDia'
 
-class WorkflowMetaDetails extends Component {
+class WorkflowMetaDetails extends React.Component {
 
   constructor(props) {
     super(props);
@@ -48,4 +46,5 @@ class WorkflowMetaDetails extends Component {
     );
   }
 };
+
 export default connect(state => state.workflow)(WorkflowMetaDetails);
