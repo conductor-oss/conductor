@@ -257,7 +257,6 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
             if (versions.size() > 0) {
                 dynoClient.hdel(nsKey(WORKFLOW_DEF_NAMES, name));
             }
-
         } catch (Exception ex) {
             logger.error("Error while deleting lastest: {} version {}", name, version, ex);
         }
