@@ -27,6 +27,7 @@ import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
@@ -47,6 +48,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -57,9 +59,12 @@ import static org.junit.Assert.assertTrue;
  *
  */
 public class End2EndTests {
-    private static TaskClient tc;
-    private static WorkflowClient wc;
+    private static TaskClient taskClient;
+    private static WorkflowClient workflowClient;
     private static EmbeddedElasticSearch search;
+
+    private static final int SERVER_PORT = 8080;
+    private static final String TASK_DEFINITION_PREFIX = "task_";
 
     @BeforeClass
     public static void setup() throws Exception {
@@ -73,14 +78,14 @@ public class End2EndTests {
         search = serverInjector.getInstance(EmbeddedElasticSearchProvider.class).get().get();
         search.start();
 
-        JettyServer server = new JettyServer(8080, false);
+        JettyServer server = new JettyServer(SERVER_PORT, false);
         server.start();
 
-        tc = new TaskClient();
-        tc.setRootURI("http://localhost:8080/api/");
+        taskClient = new TaskClient();
+        taskClient.setRootURI("http://localhost:8080/api/");
 
-        wc = new WorkflowClient();
-        wc.setRootURI("http://localhost:8080/api/");
+        workflowClient = new WorkflowClient();
+        workflowClient.setRootURI("http://localhost:8080/api/");
     }
 
     @AfterClass
@@ -91,17 +96,11 @@ public class End2EndTests {
 
     @Test
     public void testAll() throws Exception {
-        assertNotNull(tc);
-        List<TaskDef> defs = new LinkedList<>();
-        for (int i = 0; i < 5; i++) {
-            TaskDef def = new TaskDef("t" + i, "task " + i);
-            def.setTimeoutPolicy(TimeoutPolicy.RETRY);
-            defs.add(def);
-        }
-        tc.registerTaskDefs(defs);
-        List<TaskDef> found = tc.getTaskDef();
+        List<TaskDef> definitions = createAndRegisterTaskDefinitions("t", 5);
+
+        List<TaskDef> found = taskClient.getTaskDef();
         assertNotNull(found);
-        assertEquals(defs.size(), found.size());
+        assertEquals(definitions.size(), found.size());
 
         WorkflowDef def = new WorkflowDef();
         def.setName("test");
@@ -119,56 +118,56 @@ public class End2EndTests {
         def.getTasks().add(t0);
         def.getTasks().add(t1);
 
-        wc.registerWorkflow(def);
-        WorkflowDef foundd = wc.getWorkflowDef(def.getName(), null);
-        assertNotNull(foundd);
-        assertEquals(def.getName(), foundd.getName());
-        assertEquals(def.getVersion(), foundd.getVersion());
+        workflowClient.registerWorkflow(def);
+        WorkflowDef workflowDefinitionFromSystem = workflowClient.getWorkflowDef(def.getName(), null);
+        assertNotNull(workflowDefinitionFromSystem);
+        assertEquals(def.getName(), workflowDefinitionFromSystem.getName());
+        assertEquals(def.getVersion(), workflowDefinitionFromSystem.getVersion());
 
         String correlationId = "test_corr_id";
-        String workflowId = wc.startWorkflow(def.getName(), null, correlationId, new HashMap<>());
+        String workflowId = workflowClient.startWorkflow(def.getName(), null, correlationId, new HashMap<>());
         assertNotNull(workflowId);
         System.out.println(workflowId);
 
-        Workflow wf = wc.getWorkflow(workflowId, false);
+        Workflow wf = workflowClient.getWorkflow(workflowId, false);
         assertEquals(0, wf.getTasks().size());
         assertEquals(workflowId, wf.getWorkflowId());
 
-        wf = wc.getWorkflow(workflowId, true);
+        wf = workflowClient.getWorkflow(workflowId, true);
         assertNotNull(wf);
         assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
         assertEquals(1, wf.getTasks().size());
         assertEquals(t0.getTaskReferenceName(), wf.getTasks().get(0).getReferenceTaskName());
         assertEquals(workflowId, wf.getWorkflowId());
 
-        List<String> runningIds = wc.getRunningWorkflow(def.getName(), def.getVersion());
+        List<String> runningIds = workflowClient.getRunningWorkflow(def.getName(), def.getVersion());
         assertNotNull(runningIds);
         assertEquals(1, runningIds.size());
         assertEquals(workflowId, runningIds.get(0));
 
-        List<Task> polled = tc.batchPollTasksByTaskType("non existing task", "test", 1, 100);
+        List<Task> polled = taskClient.batchPollTasksByTaskType("non existing task", "test", 1, 100);
         assertNotNull(polled);
         assertEquals(0, polled.size());
 
-        polled = tc.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
+        polled = taskClient.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
         assertNotNull(polled);
         assertEquals(1, polled.size());
         assertEquals(t0.getName(), polled.get(0).getTaskDefName());
         Task task = polled.get(0);
 
-        Boolean acked = tc.ack(task.getTaskId(), "test");
+        Boolean acked = taskClient.ack(task.getTaskId(), "test");
         assertNotNull(acked);
         assertTrue(acked.booleanValue());
 
         task.getOutputData().put("key1", "value1");
         task.setStatus(Status.COMPLETED);
-        tc.updateTask(new TaskResult(task), task.getTaskType());
+        taskClient.updateTask(new TaskResult(task), task.getTaskType());
 
-        polled = tc.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
+        polled = taskClient.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
         assertNotNull(polled);
         assertTrue(polled.toString(), polled.isEmpty());
 
-        wf = wc.getWorkflow(workflowId, true);
+        wf = workflowClient.getWorkflow(workflowId, true);
         assertNotNull(wf);
         assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
         assertEquals(2, wf.getTasks().size());
@@ -177,42 +176,137 @@ public class End2EndTests {
         assertEquals(Task.Status.COMPLETED, wf.getTasks().get(0).getStatus());
         assertEquals(Task.Status.SCHEDULED, wf.getTasks().get(1).getStatus());
 
-        Task taskById = tc.getTaskDetails(task.getTaskId());
+        Task taskById = taskClient.getTaskDetails(task.getTaskId());
         assertNotNull(taskById);
         assertEquals(task.getTaskId(), taskById.getTaskId());
 
 
-        List<Task> getTasks = tc.getPendingTasksByType(t0.getName(), null, 1);
+        List<Task> getTasks = taskClient.getPendingTasksByType(t0.getName(), null, 1);
         assertNotNull(getTasks);
         assertEquals(0, getTasks.size());        //getTasks only gives pending tasks
 
 
-        getTasks = tc.getPendingTasksByType(t1.getName(), null, 1);
+        getTasks = taskClient.getPendingTasksByType(t1.getName(), null, 1);
         assertNotNull(getTasks);
         assertEquals(1, getTasks.size());
 
 
-        Task pending = tc.getPendingTaskForWorkflow(workflowId, t1.getTaskReferenceName());
+        Task pending = taskClient.getPendingTaskForWorkflow(workflowId, t1.getTaskReferenceName());
         assertNotNull(pending);
         assertEquals(t1.getTaskReferenceName(), pending.getReferenceTaskName());
         assertEquals(workflowId, pending.getWorkflowInstanceId());
 
         Thread.sleep(1000);
-        SearchResult<WorkflowSummary> searchResult = wc.search("workflowType='" + def.getName() + "'");
+        SearchResult<WorkflowSummary> searchResult = workflowClient.search("workflowType='" + def.getName() + "'");
         assertNotNull(searchResult);
         assertEquals(1, searchResult.getTotalHits());
 
-        wc.terminateWorkflow(workflowId, "terminate reason");
-        wf = wc.getWorkflow(workflowId, true);
+        workflowClient.terminateWorkflow(workflowId, "terminate reason");
+        wf = workflowClient.getWorkflow(workflowId, true);
         assertNotNull(wf);
         assertEquals(WorkflowStatus.TERMINATED, wf.getStatus());
 
-        wc.restart(workflowId);
-        wf = wc.getWorkflow(workflowId, true);
+        workflowClient.restart(workflowId);
+        wf = workflowClient.getWorkflow(workflowId, true);
         assertNotNull(wf);
         assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
         assertEquals(1, wf.getTasks().size());
+    }
 
+    @Test
+    public void testEphemeralWorkflowsWithStoredTasks() throws Exception {
+        List<TaskDef> definitions = createAndRegisterTaskDefinitions("storedTaskDef", 5);
+
+        List<TaskDef> found = taskClient.getTaskDef();
+        assertNotNull(found);
+        assertTrue(definitions.size() > 0);
+
+        WorkflowDef workflowDefinition = new WorkflowDef();
+        workflowDefinition.setName("testEphemeralWorkflow");
+
+        WorkflowTask workflowTask1 = createWorkflowTask("storedTaskDef1");
+        WorkflowTask workflowTask2 = createWorkflowTask("storedTaskDef2");
+
+        workflowDefinition.getTasks().add(workflowTask1);
+        workflowDefinition.getTasks().add(workflowTask2);
+
+        String workflowExecutionName = "ephemeralWorkflow";
+        StartWorkflowRequest workflowRequest = new StartWorkflowRequest()
+                .withName(workflowExecutionName)
+                .withWorkflowDef(workflowDefinition);
+
+        String workflowId = workflowClient.startWorkflow(workflowRequest);
+        assertNotNull(workflowId);
+
+        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+        WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
+        assertNotNull(ephemeralWorkflow);
+        assertEquals(workflowDefinition.getName(), ephemeralWorkflow.getName());
+    }
+
+    @Test
+    public void testEphemeralWorkflowsWithEphemeralTasks() throws Exception {
+        WorkflowDef workflowDefinition = new WorkflowDef();
+        workflowDefinition.setName("testEphemeralWorkflowWithEphemeralTasks");
+
+        WorkflowTask workflowTask1 = createWorkflowTask("ephemeralTask1");
+        TaskDef taskDefinition1 = createTaskDefinition("ephemeralTaskDef1");
+        workflowTask1.setTaskDefinition(taskDefinition1);
+
+        WorkflowTask workflowTask2 = createWorkflowTask("ephemeralTask2");
+        TaskDef taskDefinition2 = createTaskDefinition("ephemeralTaskDef2");
+        workflowTask2.setTaskDefinition(taskDefinition2);
+
+        workflowDefinition.getTasks().add(workflowTask1);
+        workflowDefinition.getTasks().add(workflowTask2);
+
+        String workflowExecutionName = "ephemeralWorkflowWithEphemeralTasks";
+        StartWorkflowRequest workflowRequest = new StartWorkflowRequest()
+                .withName(workflowExecutionName)
+                .withWorkflowDef(workflowDefinition);
+
+        String workflowId = workflowClient.startWorkflow(workflowRequest);
+        assertNotNull(workflowId);
+
+        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+        WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
+        assertNotNull(ephemeralWorkflow);
+        assertEquals(workflowDefinition.getName(), ephemeralWorkflow.getName());
+
+        List<WorkflowTask> ephemeralTasks = ephemeralWorkflow.getTasks();
+        assertEquals(2, ephemeralTasks.size());
+        for (WorkflowTask ephemeralTask : ephemeralTasks) {
+            assertNotNull(ephemeralTask.getTaskDefinition());
+        }
+
+    }
+
+    private WorkflowTask createWorkflowTask(String name) {
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName(name);
+        workflowTask.setWorkflowTaskType(Type.SIMPLE);
+        workflowTask.setTaskReferenceName(name);
+        return workflowTask;
+    }
+
+    private TaskDef createTaskDefinition(String name) {
+        TaskDef taskDefinition = new TaskDef();
+        taskDefinition.setName(name);
+        return taskDefinition;
+    }
+
+    // Helper method for creating task definitions on the server
+    private List<TaskDef> createAndRegisterTaskDefinitions(String prefixTaskDefinition, int numberOfTaskDefinitions) {
+        assertNotNull(taskClient);
+        String prefix = Optional.ofNullable(prefixTaskDefinition).orElse(TASK_DEFINITION_PREFIX);
+        List<TaskDef> definitions = new LinkedList<>();
+        for (int i = 0; i < numberOfTaskDefinitions; i++) {
+            TaskDef def = new TaskDef(prefix + i, "task " + i + "description");
+            def.setTimeoutPolicy(TimeoutPolicy.RETRY);
+            definitions.add(def);
+        }
+        taskClient.registerTaskDefs(definitions);
+        return definitions;
     }
 
 }
