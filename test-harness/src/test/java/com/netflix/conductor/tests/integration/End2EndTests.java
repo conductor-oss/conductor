@@ -127,7 +127,6 @@ public class End2EndTests {
         String correlationId = "test_corr_id";
         String workflowId = workflowClient.startWorkflow(def.getName(), null, correlationId, new HashMap<>());
         assertNotNull(workflowId);
-        System.out.println(workflowId);
 
         Workflow wf = workflowClient.getWorkflow(workflowId, false);
         assertEquals(0, wf.getTasks().size());

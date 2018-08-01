@@ -545,35 +545,6 @@ public class WorkflowTask {
 		
 	}
 	
-	public boolean has2(String taskReferenceName){
-
-		if(this.getTaskReferenceName().equals(taskReferenceName)){
-			return true;
-		}
-		Type tt = Type.USER_DEFINED;
-		if(Type.isSystemTask(type)) {
-			tt = Type.valueOf(type);
-		}
-		
-		switch(tt){
-			
-			case DECISION:
-			case FORK_JOIN:	
-				for(List<WorkflowTask> childx : children()){
-					for(WorkflowTask child : childx){
-						if(child.getTaskReferenceName().equals(taskReferenceName)){
-							return true;
-						}
-					}
-				}
-				break;
-			default:
-				break;
-		}		
-		return false;
-		
-	}
-	
 	public WorkflowTask get(String taskReferenceName){
 
 		if(this.getTaskReferenceName().equals(taskReferenceName)){

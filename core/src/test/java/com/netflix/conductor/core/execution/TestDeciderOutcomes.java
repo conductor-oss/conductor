@@ -298,7 +298,7 @@ public class TestDeciderOutcomes {
     }
 
     @Test
-    public void testOptionalWithDyammicFork() throws Exception {
+    public void testOptionalWithDynamicFork() throws Exception {
         WorkflowDef def = new WorkflowDef();
         def.setName("test");
 
