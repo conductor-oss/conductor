@@ -158,7 +158,7 @@ public class MetadataService {
     /**
      *
      * @param name Name of the workflow definition to be removed
-     * @param version Version of the workflow definition.
+     * @param version Version of the workflow definition to be removed
      */
     public void unregisterWorkflowDef(String name, Integer version) {
         if (name == null) {

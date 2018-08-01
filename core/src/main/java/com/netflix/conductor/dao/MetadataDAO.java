@@ -100,8 +100,8 @@ public interface MetadataDAO {
 
 	/**
 	 *
-	 * @param name Name of the workflow
-	 * @param version version
+	 * @param name Name of the workflow definition to be removed
+	 * @param version Version of the workflow definition to be removed
 	 */
 	public void removeWorkflowDef(String name, Integer version);
 
