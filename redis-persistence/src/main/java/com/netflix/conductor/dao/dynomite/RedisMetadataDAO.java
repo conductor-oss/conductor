@@ -17,10 +17,12 @@ package com.netflix.conductor.dao.dynomite;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -175,28 +177,28 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
     }
 
     @Override
+    /*
+     * @param name Name of the workflow definition
+     * @return     Latest version of workflow definition
+     * @see        WorkflowDef
+     */
     public WorkflowDef getLatest(String name) {
         Preconditions.checkNotNull(name, "WorkflowDef name cannot be null");
-        WorkflowDef def = null;
+        WorkflowDef workflowDef = null;
 
-        // Get the list of valid versions leaving Latest
-        List<Integer> versions = new ArrayList<Integer>();
-        dynoClient.hkeys(nsKey(WORKFLOW_DEF, name)).forEach(key -> {
-            if (!key.equals(LATEST)) {
-                versions.add(Integer.valueOf(key));
-            }
-        });
+        Optional<Integer> optionalMaxVersion = dynoClient.hkeys(nsKey(WORKFLOW_DEF, name)).stream()
+                .filter(key -> !key.equals(LATEST))
+                .map(Integer::valueOf)
+                .max(Comparator.naturalOrder());
 
-        if (versions.size() > 0) {
-            Collections.sort(versions);
-            String latestKey = versions.get(versions.size() - 1).toString();
-            String latestdata = dynoClient.hget(nsKey(WORKFLOW_DEF, name), latestKey);
+        if (optionalMaxVersion.isPresent()) {
+            String latestdata = dynoClient.hget(nsKey(WORKFLOW_DEF, name), optionalMaxVersion.get().toString());
             if (latestdata != null) {
-                def = readValue(latestdata, WorkflowDef.class);
+                workflowDef = readValue(latestdata, WorkflowDef.class);
             }
         }
 
-        return def;
+        return workflowDef;
     }
 
     public List<WorkflowDef> getAllVersions(String name) {
@@ -243,22 +245,16 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
                     " definition: %s version: %d", name, version));
         }
 
-        // do the clean up check if there are any more versions remaining if not delete the
+        // check if there are any more versions remaining if not delete the
         // workflow name
-        List<Integer> versions = new ArrayList<Integer>();
-        dynoClient.hkeys(nsKey(WORKFLOW_DEF, name)).forEach(key -> {
-            if (!key.equals(LATEST)) {
-                versions.add(Integer.valueOf(key));
-            }
-        });
+        Optional<Integer> optionMaxVersion = dynoClient.hkeys(nsKey(WORKFLOW_DEF, name)).stream()
+                .filter(key -> !key.equals(LATEST))
+                .map(Integer::valueOf)
+                .max(Comparator.naturalOrder());
 
-        try {
-            // check if latest version is same as the deleted version
-            if (versions.size() > 0) {
-                dynoClient.hdel(nsKey(WORKFLOW_DEF_NAMES, name));
-            }
-        } catch (Exception ex) {
-            logger.error("Error while deleting lastest: {} version {}", name, version, ex);
+        // delete workflow name
+        if (!optionMaxVersion.isPresent()) {
+            dynoClient.srem(nsKey(WORKFLOW_DEF_NAMES), name);
         }
 
         recordRedisDaoRequests("removeWorkflowDef");

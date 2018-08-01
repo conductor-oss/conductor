@@ -177,6 +177,12 @@ public class RedisMetadataDAOTest {
         assertEquals(workflow.getVersion(), 3);
     }
 
+    @Test(expected=ApplicationException.class)
+    public void removeInvalidWorkflowDef() throws Exception {
+        WorkflowDef def = new WorkflowDef();
+        dao.removeWorkflowDef("hello", 1);
+    }
+
     @Test
     public void testTaskDefOperations() throws Exception {
 
