@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
 import { Link, browserHistory } from 'react-router';
-import { Input, Button, Panel, Popover, OverlayTrigger, ButtonGroup, Grid, Row, Col  } from 'react-bootstrap';
+import { Input, Button, Panel, Popover, OverlayTrigger, ButtonGroup, Grid, Row, Col, Label  } from 'react-bootstrap';
 import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 import { connect } from 'react-redux';
-import { searchWorkflows, getWorkflowDefs } from '../../../actions/WorkflowActions';
+import { searchWorkflows, getWorkflowDefs, bulkRetryWorkflow, bulkPauseWorkflow, bulkResumeWorkflow, bulkRestartWorkflow, bulkTerminateWorkflow } from '../../../actions/WorkflowActions';
 import Typeahead from 'react-bootstrap-typeahead';
 
 
@@ -82,7 +82,11 @@ const Workflow = React.createClass({
       workflows: [],
       update: true,
       fullstr: true,
-      start: start
+      start: start,
+      selectedWFEs:[],
+      bulkProcessOperation: "",
+      bulkProcessInFlight: false,
+      bulkProcessSuccess: false
     }
   },
   componentWillMount(){
@@ -90,7 +94,6 @@ const Workflow = React.createClass({
     this.doDispatch();
   },
   componentWillReceiveProps(nextProps) {
-
     let workflowDefs = nextProps.workflows;
     workflowDefs = workflowDefs ? workflowDefs : [];
     workflowDefs = workflowDefs.map(workflowDef => workflowDef.name);
@@ -126,6 +129,8 @@ const Workflow = React.createClass({
       update : update,
       status : status,
       workflows : workflowDefs,
+      bulkProcessInFlight : nextProps.bulkProcessInFlight,
+      bulkProcessSuccess : nextProps.bulkProcessSuccess,
       start : start
     });
 
@@ -214,11 +219,82 @@ const Workflow = React.createClass({
     this.state.update = true;
     this.refreshResults();
   },
+
+  handleRowSelect(row, isSelected, e) {
+    var currWFEs = this.state.selectedWFEs;
+    this.state.update = true;
+    if(isSelected){
+      currWFEs.push(row);
+      this.setState({selectedWFEs: currWFEs})
+    } else {
+      var index = this.state.selectedWFEs.filter((storedRow) => {
+        return row.workflowId === storedRow.workflowId
+      })[0] || -1;
+      if(index === -1){
+        return true;
+      }
+      currWFEs.splice(index, 1)
+      this.setState({selectedWFEs: currWFEs})
+    }
+
+    return true;
+  },
+
+  handleSelectAll(isSelected, rows, e) {
+    this.state.update = true;
+    if(isSelected){
+      this.setState({selectedWFEs: rows})
+    } else {
+      this.setState({selectedWFEs: []})
+    }
+
+    return true;
+  },
+
+  onChangeBulkProcessSelection(e){
+    this.setState({bulkProcessOperation:e.target.value})
+  },
+
+  bulkProcess(){
+    var wfes = this.state.selectedWFEs.map((wfe) => {return wfe.workflowId});
+    var operation = this.state.bulkProcessOperation;
+    this.setState({bulkProcessSuccess:false});
+    if(wfes.length === 0){
+      return;
+    }
+
+    switch(operation){
+      case "retry":
+        this.setState({bulkProcessInFlight:true});
+        this.props.dispatch(bulkRetryWorkflow(wfes));
+        break;
+      case "restart":
+        this.setState({bulkProcessInFlight:true});
+        this.props.dispatch(bulkRestartWorkflow(wfes))
+        break;
+      case "resume":
+        this.setState({bulkProcessInFlight:true});
+        this.props.dispatch(bulkResumeWorkflow(wfes))
+        break;
+      case "terminate":
+        this.setState({bulkProcessInFlight:true});
+        this.props.dispatch(bulkTerminateWorkflow(wfes))
+        break;
+      case "pause":
+        this.setState({bulkProcessInFlight:true});
+        this.props.dispatch(bulkPauseWorkflow(wfes))
+        break;
+      default: return;
+    }
+
+    this.refs.bulkProcessSelect.refs.input.value = "";
+    this.setState({selectedWFEs:[], bulkProcessOperation:""});
+    this.refs.table.cleanSelected();
+  },
+
  render() {
     let wfs = [];
-    let filteredWfs = [];
-
-     let totalHits = 0;
+    let totalHits = 0;
     let found = 0;
     if(this.props.data.hits) {
       wfs = this.props.data.hits;
@@ -233,16 +309,13 @@ const Workflow = React.createClass({
     const workflowNames = this.state.workflows?this.state.workflows:[];
     const statusList = ['RUNNING','COMPLETED','FAILED','TIMED_OUT','TERMINATED','PAUSED'];
 
-    //secondary filter to match sure we only show workflows that match the the status
-    var currentStatusArray = this.state.status;
-    if(currentStatusArray.length>0 && wfs.length>0) {
-        filteredWfs = wfs.filter( function (wf) {
-            return currentStatusArray.includes(wf.status); //remove wft if status doesn't match search
-        });
-    } else {
-        filteredWfs = wfs;
-    }
-
+    const selectRow = {
+      mode: 'checkbox',
+      onSelect: this.handleRowSelect,
+      onSelectAll: this.handleSelectAll
+    };
+    const bulkSpin = (this.state.bulkProcessInFlight ? (<i style={{"font-size":"150%"}} className="fa fa-spinner fa-spin"></i>) : "");
+    const bulkSuccess = (this.state.bulkProcessSuccess ? (<span style={{"font-size":"150%", "color":"green"}}>Success!</span>) : "");
 
     return (
       <div className="ui-content">
@@ -275,14 +348,49 @@ const Workflow = React.createClass({
           </form>
           </Panel>
         </div>
+        <Panel header="Bulk Processing">
+        <Grid fluid={true}>
+          <Row className="show-grid">
+              <Col md={3}>
+                <Input plaintext><span style={{"fontSize":"150%"}}>{this.state.selectedWFEs.length} </span></Input>
+                &nbsp;
+                <i className="fa fa-angle-up fa-1x"/>
+                &nbsp;&nbsp;&nbsp;
+                <label className="small nobold">Number of Workflows Selected</label>
+              </Col>
+            <Col md={2}>
+                <Input type="select" ref="bulkProcessSelect" onChange={this.onChangeBulkProcessSelection} >
+                  <option value=""></option>
+                  <option value="pause">Pause</option>
+                  <option value="resume">Resume</option>
+                  <option value="restart">Restart</option>
+                  <option value="retry">Retry</option>
+                  <option value="terminate">Terminate</option>
+                </Input>
+                <i className="fa fa-angle-up fa-1x"/>
+                &nbsp;&nbsp;&nbsp;
+                <label className="small nobold">Workflow Operation</label>
+            </Col>
+            <Col md={1}>
+              <Button bsStyle="success" onClick={this.bulkProcess} value="Process" className="btn" disabled={this.state.bulkProcessInFlight} >Process</Button>
+              &nbsp;
+
+            </Col>
+            <Col md={2}>
+              {bulkSpin}
+              {bulkSuccess}
+            </Col>
+          </Row>
+        </Grid>
+        </Panel>
         <span>Total Workflows Found: <b>{totalHits}</b>, Displaying {this.state.start} <b>to</b> {max}</span>
         <span style={{float:'right'}}>
           {parseInt(this.state.start) >= 100?<a onClick={this.prevPage}><i className="fa fa-backward"/>&nbsp;Previous Page</a>:''}
           {parseInt(this.state.start) + 100 <= totalHits?<a onClick={this.nextPage}>&nbsp;&nbsp;Next Page&nbsp;<i className="fa fa-forward"/></a>:''}
         </span>
-        <BootstrapTable data={filteredWfs} striped={true} hover={true} search={false} exportCSV={false} pagination={false} options={{sizePerPage:100}}>
-          <TableHeaderColumn dataField="workflowType" isKey={true} dataAlign="left" dataSort={true}>Workflow</TableHeaderColumn>
-          <TableHeaderColumn dataField="workflowId" dataSort={true} dataFormat={linkMaker}>Workflow ID</TableHeaderColumn>
+        <BootstrapTable ref="table" data={wfs} striped={true} hover={true} search={false} exportCSV={false} pagination={false} selectRow={selectRow} options={{sizePerPage:100}}>
+          <TableHeaderColumn dataField="workflowType"  dataAlign="left" dataSort={true}>Workflow</TableHeaderColumn>
+          <TableHeaderColumn dataField="workflowId" isKey={true} dataSort={true} dataFormat={linkMaker}>Workflow ID</TableHeaderColumn>
           <TableHeaderColumn dataField="status" dataSort={true}>Status</TableHeaderColumn>
           <TableHeaderColumn dataField="startTime" dataSort={true} dataFormat={formatDate}>Start Time</TableHeaderColumn>
           <TableHeaderColumn dataField="updateTime" dataSort={true} dataFormat={formatDate}>Last Updated</TableHeaderColumn>

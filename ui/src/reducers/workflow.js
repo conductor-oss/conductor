@@ -68,6 +68,77 @@ export default function workflows(state = initialState, action) {
         terminating: false,
         refetch: true
       };
+    case 'REQUESTED_BULK_TERMINATE_WORKFLOW':
+      return {
+        ...state,
+        bulkProcessInFlight:true,
+        bulkProcessSuccess:false
+      };
+    case 'RECEIVED_BULK_TERMINATE_WORKFLOW':
+      return {
+        ...state,
+        error:false,
+        bulkProcessInFlight:false,
+        bulkProcessSuccess: true
+      };
+    case 'REQUESTED_BULK_RESTART_WORKFLOW':
+      return {
+        ...state,
+        bulkProcessInFlight:true,
+        bulkProcessSuccess:false
+      };
+    case 'RECEIVED_BULK_RESTART_WORKFLOW':
+      return {
+        ...state,
+        error:false,
+        bulkProcessInFlight:false,
+        bulkProcessSuccess: true
+      };
+    case 'REQUESTED_BULK_RETRY_WORKFLOW':
+      return {
+        ...state,
+        bulkProcessInFlight:true,
+        bulkProcessSuccess:false
+      };
+    case 'RECEIVED_BULK_RETRY_WORKFLOW':
+      return {
+        ...state,
+        error:false,
+        bulkProcessInFlight:false,
+        bulkProcessSuccess: true
+      };
+    case 'REQUESTED_BULK_RETRY_WORKFLOW':
+      return {
+        ...state,
+        bulkProcessInFlight:true,
+        bulkProcessSuccess:false
+      };
+    case 'RECEIVED_BULK_PAUSE_WORKFLOW':
+      return {
+        ...state,
+        error:false,
+        bulkProcessInFlight:false,
+        bulkProcessSuccess: true
+      };
+    case 'REQUESTED_BULK_PAUSE_WORKFLOW':
+      return {
+        ...state,
+        bulkProcessInFlight:true,
+        bulkProcessSuccess:false
+      };
+    case 'RECEIVED_BULK_RESUME_WORKFLOW':
+      return {
+        ...state,
+        error:false,
+        bulkProcessInFlight:false,
+        bulkProcessSuccess: true
+      };
+    case 'REQUESTED_BULK_RESUME_WORKFLOW':
+      return {
+        ...state,
+        bulkProcessInFlight:true,
+        bulkProcessSuccess:false
+      };
     case 'REQUESTED_RESTART_WORKFLOW':
       return {
         ...state,
@@ -232,7 +303,9 @@ export default function workflows(state = initialState, action) {
       terminating: false,
       retrying: false,
       pausing: false,
-      resumign: false
+      resumign: false,
+      bulkProcessInFlight:false,
+      bulkProcessSuccess:false
     };
     case 'GET_TASK_LOGS':
       return {
