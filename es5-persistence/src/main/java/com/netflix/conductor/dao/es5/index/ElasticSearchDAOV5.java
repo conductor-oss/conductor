@@ -54,6 +54,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.get.GetField;
@@ -63,6 +64,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -443,18 +445,18 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 
 	@Override
 	public String get(String workflowInstanceId, String fieldToGet) {
-		Object value = null;
-		GetRequest request = new GetRequest(indexName, WORKFLOW_DOC_TYPE, workflowInstanceId).storedFields(fieldToGet);
+		GetRequest request = new GetRequest(indexName, WORKFLOW_DOC_TYPE, workflowInstanceId)
+				.fetchSourceContext(new FetchSourceContext(true, new String[]{fieldToGet}, Strings.EMPTY_ARRAY));
 		GetResponse response = elasticSearchClient.get(request).actionGet();
-		Map<String, GetField> fields = response.getFields();
-		if(fields == null) {
-			return null;
+
+		if (response.isExists()){
+			Map<String, Object> sourceAsMap = response.getSourceAsMap();
+			if (sourceAsMap.containsKey(fieldToGet)){
+				return sourceAsMap.get(fieldToGet).toString();
+			}
 		}
-		GetField field = fields.get(fieldToGet);		
-		if(field != null) value = field.getValue();
-		if(value != null) {
-			return value.toString();
-		}
+
+		logger.debug("Unable to find Workflow: {} in ElasticSearch index: {}.", workflowInstanceId, indexName);
 		return null;
 	}
 	

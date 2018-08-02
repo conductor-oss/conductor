@@ -1,11 +1,10 @@
-import React, { Component } from 'react';
-import { Link, browserHistory } from 'react-router';
-import { Input, Button, Panel, Popover, OverlayTrigger, ButtonGroup, Grid, Row, Col, Label  } from 'react-bootstrap';
+import React from 'react';
+import { Link } from 'react-router';
+import { Input, Button, Panel, Popover, OverlayTrigger, ButtonGroup, Grid, Row, Col  } from 'react-bootstrap';
 import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 import { connect } from 'react-redux';
 import { searchWorkflows, getWorkflowDefs, bulkRetryWorkflow, bulkPauseWorkflow, bulkResumeWorkflow, bulkRestartWorkflow, bulkTerminateWorkflow } from '../../../actions/WorkflowActions';
 import Typeahead from 'react-bootstrap-typeahead';
-
 
 function linkMaker(cell) {
     return <Link to={`/workflow/id/${cell}`}>{cell}</Link>;
@@ -49,9 +48,7 @@ function miniDetails(cell, row){
 }
 
 const Workflow = React.createClass({
-
   getInitialState() {
-
     let workflowTypes = this.props.location.query.workflowTypes;
     if(workflowTypes != null && workflowTypes != '') {
       workflowTypes = workflowTypes.split(',');
@@ -156,7 +153,6 @@ const Workflow = React.createClass({
     this.props.history.pushState(null, "/workflow?q=" + q + "&h=" + h + "&workflowTypes=" + workflowTypes + "&status=" + status + "&start=" + start);
   },
   doDispatch() {
-
     let search = '';
     if(this.state.search != '') {
       search = this.state.search;
@@ -309,6 +305,7 @@ const Workflow = React.createClass({
     const workflowNames = this.state.workflows?this.state.workflows:[];
     const statusList = ['RUNNING','COMPLETED','FAILED','TIMED_OUT','TERMINATED','PAUSED'];
 
+
     const selectRow = {
       mode: 'checkbox',
       onSelect: this.handleRowSelect,
@@ -316,6 +313,17 @@ const Workflow = React.createClass({
     };
     const bulkSpin = (this.state.bulkProcessInFlight ? (<i style={{"font-size":"150%"}} className="fa fa-spinner fa-spin"></i>) : "");
     const bulkSuccess = (this.state.bulkProcessSuccess ? (<span style={{"font-size":"150%", "color":"green"}}>Success!</span>) : "");
+
+    //secondary filter to match sure we only show workflows that match the the status
+    var currentStatusArray = this.state.status;
+    /*if(currentStatusArray.length>0 && wfs.length>0) {
+        filteredWfs = wfs.filter( function (wf) {
+            return currentStatusArray.includes(wf.status); //remove wft if status doesn't match search
+        });
+    } else {
+        filteredWfs = wfs;
+    }*/
+
 
     return (
       <div className="ui-content">
@@ -406,4 +414,5 @@ const Workflow = React.createClass({
     );
   }
 });
+
 export default connect(state => state.workflow)(Workflow);
