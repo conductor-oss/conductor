@@ -47,7 +47,6 @@ import com.netflix.conductor.core.execution.tasks.Event;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator;
 import com.netflix.conductor.core.execution.tasks.Wait;
-import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 
 
@@ -137,8 +136,8 @@ public class CoreModule extends AbstractModule {
     @Singleton
     @StringMapKey("SUB_WORKFLOW")
     @Named("TaskMappers")
-    public TaskMapper getSubWorkflowTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
-        return new SubWorkflowTaskMapper(parametersUtils, metadataDAO);
+    public TaskMapper getSubWorkflowTaskMapper(ParametersUtils parametersUtils) {
+        return new SubWorkflowTaskMapper(parametersUtils);
     }
 
     @ProvidesIntoMap

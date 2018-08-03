@@ -270,7 +270,7 @@ public class WorkflowExecutor {
             throw new ApplicationException(Code.INVALID_INPUT, "NULL input passed when starting workflow");
         }
 
-        metadataMapperService.populateTaskDefinitionsMetadata(workflowDefinition);
+        metadataMapperService.populateTaskDefinitions(workflowDefinition);
 
         // Obtain the names of the tasks with missing definitions:
         // - Are not system tasks

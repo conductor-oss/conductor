@@ -785,7 +785,7 @@ public abstract class AbstractProtoMapper {
             to.setName( from.getName() );
         }
         if (from.getVersion() != null) {
-            to.setVersion( toProto( from.getVersion() ) );
+            to.setVersion( from.getVersion() );
         }
         return to.build();
     }
@@ -793,9 +793,7 @@ public abstract class AbstractProtoMapper {
     public SubWorkflowParams fromProto(SubWorkflowParamsPb.SubWorkflowParams from) {
         SubWorkflowParams to = new SubWorkflowParams();
         to.setName( from.getName() );
-        if (from.hasVersion()) {
-            to.setVersion( fromProto( from.getVersion() ) );
-        }
+        to.setVersion( from.getVersion() );
         return to;
     }
 
