@@ -24,7 +24,7 @@ public class MetadataMapperService {
     }
 
     public WorkflowDef populateTaskDefinitions(WorkflowDef workflowDefinition) {
-        List<WorkflowTask> workflowTasks = workflowDefinition.all();
+        List<WorkflowTask> workflowTasks = workflowDefinition.collectTasks();
         for (WorkflowTask workflowTask : workflowTasks) {
 
 

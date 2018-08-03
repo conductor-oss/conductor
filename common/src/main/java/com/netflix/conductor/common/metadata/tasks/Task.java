@@ -21,6 +21,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @ProtoMessage
 public class Task {
@@ -594,14 +595,12 @@ public class Task {
     }
 
     /**
-     * @return the task definition associated to the running task if available
+     * @return {@link Optional} containing the task definition if available
      */
-    public TaskDef getTaskDefinition() {
-        TaskDef taskDefinition = null;
-        if (this.getWorkflowTask() != null) {
-            taskDefinition = this.getWorkflowTask().getTaskDefinition();
-        }
-        return taskDefinition;
+    public Optional<TaskDef> getTaskDefinition() {
+        return this.getWorkflowTask() != null ?
+                Optional.ofNullable(this.getWorkflowTask().getTaskDefinition()) :
+                Optional.empty();
     }
 
     public Task copy() {

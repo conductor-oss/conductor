@@ -443,15 +443,15 @@ public class WorkflowTask {
 
 	}
 
-	public List<WorkflowTask> all() {
-		List<WorkflowTask> all = new LinkedList<>();
-		all.add(this);
+	public List<WorkflowTask> collectTasks() {
+		List<WorkflowTask> tasks = new LinkedList<>();
+		tasks.add(this);
 		for (List<WorkflowTask> workflowTaskList : children()) {
 			for (WorkflowTask workflowTask : workflowTaskList) {
-				all.addAll(workflowTask.all());
+				tasks.addAll(workflowTask.collectTasks());
 			}
 		}
-		return all;
+		return tasks;
 	}
 
 	public WorkflowTask next(String taskReferenceName, WorkflowTask parent) {

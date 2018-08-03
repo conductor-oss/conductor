@@ -272,10 +272,8 @@ public class WorkflowExecutor {
 
         metadataMapperService.populateTaskDefinitions(workflowDefinition);
 
-        // Obtain the names of the tasks with missing definitions:
-        // - Are not system tasks
-        // - Don't have embedded definitions
-        Set<String> missingTaskDefinitionNames = workflowDefinition.all().stream()
+        // Obtain the names of the tasks with missing definitions
+        Set<String> missingTaskDefinitionNames = workflowDefinition.collectTasks().stream()
                 .filter(workflowTask ->
                         (workflowTask.getType().equals(WorkflowTask.Type.SIMPLE.name()) && workflowTask.getTaskDefinition() == null))
                 .map(workflowTask -> workflowTask.getName())

@@ -29,7 +29,6 @@ import java.util.Optional;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.Auditable;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
 
 /**
  * @author Viren
@@ -229,7 +228,7 @@ public class WorkflowDef extends Auditable {
 	}
 	
 	public WorkflowTask getTaskByRefName(String taskReferenceName){
-		Optional<WorkflowTask> found = all().stream()
+		Optional<WorkflowTask> found = collectTasks().stream()
 				.filter(workflowTask -> workflowTask.getTaskReferenceName().equals(taskReferenceName))
 				.findFirst();
 		if(found.isPresent()){
@@ -237,13 +236,13 @@ public class WorkflowDef extends Auditable {
 		}
 		return null;
 	}
-	
-	public List<WorkflowTask> all(){
-		List<WorkflowTask> all = new LinkedList<>();
-		for(WorkflowTask workflowTask : tasks){
-			all.addAll(workflowTask.all());
+
+	public List<WorkflowTask> collectTasks() {
+		List<WorkflowTask> tasks = new LinkedList<>();
+		for (WorkflowTask workflowTask : this.tasks) {
+			tasks.addAll(workflowTask.collectTasks());
 		}
-		return all;
+		return tasks;
 	}
 
 	@Override

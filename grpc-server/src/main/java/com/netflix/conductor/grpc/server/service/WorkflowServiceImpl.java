@@ -17,18 +17,15 @@ import com.netflix.conductor.proto.StartWorkflowRequestPb;
 import com.netflix.conductor.proto.WorkflowPb;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
-
+import io.grpc.Status;
+import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import javax.inject.Inject;
-
-import io.grpc.Status;
-import io.grpc.stub.StreamObserver;
 
 public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImplBase {
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskServiceImpl.class);
@@ -54,6 +51,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
         final StartWorkflowRequest request = PROTO_MAPPER.fromProto(pbRequest);
 
         try {
+            // TODO When moving to Java 9: Use ifPresentOrElse(Consumer<? super T> action, Runnable emptyAction)
             String id;
             if (request.getWorkflowDef() == null) {
                 id = executor.startWorkflow(

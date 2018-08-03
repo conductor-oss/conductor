@@ -42,6 +42,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -138,12 +139,12 @@ public class DeciderService {
                 executedTaskRefNames.remove(pendingTask.getReferenceTaskName());
             }
 
-            TaskDef taskDefinition = pendingTask.getTaskDefinition();
+            Optional<TaskDef> taskDefinition = pendingTask.getTaskDefinition();
 
-            if (taskDefinition != null) {
-                checkForTimeout(taskDefinition, pendingTask);
+            if (taskDefinition.isPresent()) {
+                checkForTimeout(taskDefinition.get(), pendingTask);
                 // If the task has not been updated for "responseTimeout" then mark task as TIMED_OUT
-                if (isResponseTimedOut(taskDefinition, pendingTask)) {
+                if (isResponseTimedOut(taskDefinition.get(), pendingTask)) {
                     timeoutTask(pendingTask);
                 }
             }
@@ -156,7 +157,7 @@ public class DeciderService {
                 if (workflowTask != null && workflowTask.isOptional()) {
                     pendingTask.setStatus(COMPLETED_WITH_ERRORS);
                 } else {
-                    Task retryTask = retry(taskDefinition, workflowTask, pendingTask, workflow);
+                    Task retryTask = retry(taskDefinition.get(), workflowTask, pendingTask, workflow);
                     tasksToBeScheduled.put(retryTask.getReferenceTaskName(), retryTask);
                     executedTaskRefNames.remove(retryTask.getReferenceTaskName());
                     outcome.tasksToBeUpdated.add(pendingTask);

@@ -156,7 +156,6 @@ public class TestDeciderService {
         assertNull(taskInput.get("taskOutputParam3"));
         assertNull(taskInput.get("nullValue"));
         assertEquals(workflow.getTasks().get(0).getStatus().name(), taskInput.get("task2Status"));    //task2 and task3 are the tasks respectively
-        System.out.println(taskInput);
     }
 
     @Test
@@ -221,8 +220,6 @@ public class TestDeciderService {
         assertEquals("The Doors", taskInput.get("secondName"));
         assertEquals("The Band is: The Doors-\ti-123abcdef990", taskInput.get("concatenatedName"));
 
-        System.out.println(new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(taskInput));
-
         assertEquals("request id 001", taskInput.get("workflowInputParam"));
         assertEquals("http://location", taskInput.get("taskOutputParam"));
         assertNull(taskInput.get("taskOutputParam3"));
@@ -265,7 +262,7 @@ public class TestDeciderService {
         task.getOutputData().put("isPersonActive", true);
         workflow.getTasks().add(task);
         Map<String, Object> taskInput = parametersUtils.getTaskInput(ip, workflow, null, null);
-        System.out.println(taskInput.get("complexJson"));
+
         assertNotNull(taskInput);
         assertTrue(taskInput.containsKey("workflowInputParam"));
         assertTrue(taskInput.containsKey("taskOutputParam"));
@@ -628,7 +625,7 @@ public class TestDeciderService {
 
         DeciderOutcome deciderOutcome = deciderService.decide(workflow);
         assertNotNull(deciderOutcome);
-System.out.println(workflow);
+
         assertFalse(workflow.getTaskByRefName("s1").isRetried());
         assertEquals(1, deciderOutcome.tasksToBeUpdated.size());
         assertEquals("s1", deciderOutcome.tasksToBeUpdated.get(0).getReferenceTaskName());

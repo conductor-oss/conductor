@@ -24,6 +24,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
@@ -125,11 +126,13 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
     @Override
     public boolean exceedsInProgressLimit(Task task) {
-        TaskDef taskDef = task.getTaskDefinition();
 
-        if (taskDef == null) {
+        Optional<TaskDef> taskDefinition = task.getTaskDefinition();
+        if (!taskDefinition.isPresent()) {
             return false;
         }
+
+        TaskDef taskDef = taskDefinition.get();
 
         int limit = taskDef.concurrencyLimit();
         if (limit <= 0) {
@@ -498,9 +501,9 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
             task.setEndTime(System.currentTimeMillis());
         }
 
-        TaskDef taskDef = task.getTaskDefinition();
+        Optional<TaskDef> taskDefinition = task.getTaskDefinition();
 
-        if (taskDef != null && taskDef.concurrencyLimit() > 0) {
+        if (taskDefinition.isPresent() && taskDefinition.get().concurrencyLimit() > 0) {
             boolean inProgress = task.getStatus() != null && task.getStatus().equals(Task.Status.IN_PROGRESS);
             updateInProgressStatus(connection, task, inProgress);
         }
