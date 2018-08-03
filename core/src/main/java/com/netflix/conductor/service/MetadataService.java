@@ -24,6 +24,8 @@ import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.ApplicationException;
@@ -32,6 +34,7 @@ import com.netflix.conductor.dao.MetadataDAO;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -45,11 +48,11 @@ import javax.inject.Singleton;
 @Trace
 public class MetadataService {
 
-	private MetadataDAO metadata;
+	private MetadataDAO metadataDAO;
 
 	@Inject
-	public MetadataService(MetadataDAO metadata) {
-		this.metadata = metadata;
+	public MetadataService(MetadataDAO metadataDAO) {
+		this.metadataDAO = metadataDAO;
 	}
 
 	/**
@@ -62,7 +65,7 @@ public class MetadataService {
 	   		taskDefinition.setCreateTime(System.currentTimeMillis());
 	   		taskDefinition.setUpdatedBy(null);
 	   		taskDefinition.setUpdateTime(null);
-			metadata.createTaskDef(taskDefinition);
+			metadataDAO.createTaskDef(taskDefinition);
 		}
 	}
 
@@ -71,13 +74,13 @@ public class MetadataService {
 	 * @param taskDefinition Task Definition to be updated
 	 */
 	public void updateTaskDef(TaskDef taskDefinition) {
-		TaskDef existing = metadata.getTaskDef(taskDefinition.getName());
+		TaskDef existing = metadataDAO.getTaskDef(taskDefinition.getName());
 		if (existing == null) {
 			throw new ApplicationException(Code.NOT_FOUND, "No such task by name " + taskDefinition.getName());
 		}
    		taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
    		taskDefinition.setUpdateTime(System.currentTimeMillis());
-		metadata.updateTaskDef(taskDefinition);
+		metadataDAO.updateTaskDef(taskDefinition);
 	}
 
 	/**
@@ -85,7 +88,7 @@ public class MetadataService {
 	 * @param taskType Remove task definition
 	 */
 	public void unregisterTaskDef(String taskType) {
-		metadata.removeTaskDef(taskType);
+		metadataDAO.removeTaskDef(taskType);
 	}
 
 	/**
@@ -93,7 +96,7 @@ public class MetadataService {
 	 * @return List of all the registered tasks
 	 */
 	public List<TaskDef> getTaskDefs() {
-		return metadata.getAllTaskDefs();
+		return metadataDAO.getAllTaskDefs();
 	}
 
 	/**
@@ -102,7 +105,7 @@ public class MetadataService {
 	 * @return Task Definition
 	 */
 	public TaskDef getTaskDef(String taskType) {
-		return metadata.getTaskDef(taskType);
+		return metadataDAO.getTaskDef(taskType);
 	}
 
 	/**
@@ -110,7 +113,7 @@ public class MetadataService {
 	 * @param def Workflow definition to be updated
 	 */
 	public void updateWorkflowDef(WorkflowDef def) {
-		metadata.update(def);		
+		metadataDAO.update(def);
 	}
 	
 	/**
@@ -119,7 +122,7 @@ public class MetadataService {
 	 */
 	public void updateWorkflowDef(List<WorkflowDef> wfs) {
 		for (WorkflowDef wf : wfs) {
-			metadata.update(wf);
+			metadataDAO.update(wf);
 		}
 	}
 
@@ -133,7 +136,7 @@ public class MetadataService {
 		if (version == null) {
 			return getLatestWorkflow(name);
 		}
-		return metadata.get(name, version);
+		return metadataDAO.get(name, version);
 	}
 	
 	/**
@@ -142,11 +145,11 @@ public class MetadataService {
 	 * @return Latest version of the workflow definition
 	 */
 	public Optional<WorkflowDef> getLatestWorkflow(String name) {
-		return metadata.getLatest(name);
+		return metadataDAO.getLatest(name);
 	}
 
 	public List<WorkflowDef> getWorkflowDefs() {
-		return metadata.getAll();
+		return metadataDAO.getAll();
 	}
 
 	public void registerWorkflowDef(WorkflowDef def) {
@@ -156,7 +159,7 @@ public class MetadataService {
 		if(def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
 			def.setSchemaVersion(2);
 		}
-		metadata.create(def);
+		metadataDAO.create(def);
 	}
 
 	/**
@@ -166,7 +169,7 @@ public class MetadataService {
 	 */
 	public void addEventHandler(EventHandler eventHandler) {
 		validateEvent(eventHandler);
-		metadata.addEventHandler(eventHandler);
+		metadataDAO.addEventHandler(eventHandler);
 	}
 
 	/**
@@ -175,7 +178,7 @@ public class MetadataService {
 	 */
 	public void updateEventHandler(EventHandler eventHandler) {
 		validateEvent(eventHandler);
-		metadata.updateEventHandler(eventHandler);
+		metadataDAO.updateEventHandler(eventHandler);
 	}
 	
 	/**
@@ -183,7 +186,7 @@ public class MetadataService {
 	 * @param name Removes the event handler from the system
 	 */
 	public void removeEventHandlerStatus(String name) {
-		metadata.removeEventHandlerStatus(name);
+		metadataDAO.removeEventHandlerStatus(name);
 	}
 
 	/**
@@ -191,7 +194,7 @@ public class MetadataService {
 	 * @return All the event handlers registered in the system
 	 */
 	public List<EventHandler> getEventHandlers() {
-		return metadata.getEventHandlers();
+		return metadataDAO.getEventHandlers();
 	}
 	
 	/**
@@ -201,7 +204,7 @@ public class MetadataService {
 	 * @return Returns the list of all the event handlers for a given event
 	 */
 	public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
-		return metadata.getEventHandlersForEvent(event, activeOnly);
+		return metadataDAO.getEventHandlersForEvent(event, activeOnly);
 	}
 	
 	private void validateEvent(EventHandler eh) {

@@ -15,11 +15,10 @@
  */
 package com.netflix.conductor.dao.dynomite;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.inject.Singleton;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.PollData;
@@ -35,15 +34,14 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dyno.DynoProxy;
 import com.netflix.conductor.metrics.Monitors;
-
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -57,8 +55,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
-
-import javax.inject.Inject;
 
 @Singleton
 @Trace
@@ -89,18 +85,15 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	private IndexDAO indexDAO;
 
-	private MetadataDAO metadataDA0;
-
 	private long taskPayloadThreshold;
 
 	private long workflowInputPayloadThreshold;
 
 	@Inject
 	public RedisExecutionDAO(DynoProxy dynoClient, ObjectMapper objectMapper,
-							 IndexDAO indexDAO, MetadataDAO metadataDA0, Configuration config) {
+							 IndexDAO indexDAO, Configuration config) {
 		super(dynoClient, objectMapper, config);
 		this.indexDAO = indexDAO;
-		this.metadataDA0 = metadataDA0;
 		this.taskPayloadThreshold = config.getLongProperty(WORKFLOW_DYNOMITE_TASK_PAYLOAD_THRESHOLD,5 * FileUtils.ONE_MB);
 		this.workflowInputPayloadThreshold = config.getLongProperty(WORKFLOW_DYNOMITE_WORKFLOW_INPUT_THRESHOLD,5 * FileUtils.ONE_MB);
 	}
@@ -194,13 +187,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			task.setEndTime(System.currentTimeMillis());
 		}
 
-		TaskDef taskDef;
-		if (task.getWorkflowTask() != null) {
-			taskDef = Optional.ofNullable(task.getWorkflowTask().getTaskDefinition())
-					.orElse(metadataDA0.getTaskDef(task.getTaskDefName()));
-		} else {
-			taskDef = metadataDA0.getTaskDef(task.getTaskDefName());
-		}
+		TaskDef taskDef = task.getTaskDefinition();
 
 		if(taskDef != null && taskDef.concurrencyLimit() > 0) {
 
@@ -252,7 +239,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	@Override
 	public boolean exceedsInProgressLimit(Task task) {
-		TaskDef taskDef = metadataDA0.getTaskDef(task.getTaskDefName());
+		TaskDef taskDef = task.getTaskDefinition();
 		if(taskDef == null) {
 			return false;
 		}

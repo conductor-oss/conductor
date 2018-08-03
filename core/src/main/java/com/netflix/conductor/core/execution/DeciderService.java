@@ -19,7 +19,6 @@
 package com.netflix.conductor.core.execution;
 
 import com.google.common.annotations.VisibleForTesting;
-
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -31,17 +30,20 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.utils.IDGenerator;
-import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
-import java.util.stream.Collectors;
-
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED_WITH_ERRORS;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
@@ -60,15 +62,12 @@ public class DeciderService {
 
     private static Logger logger = LoggerFactory.getLogger(DeciderService.class);
 
-    private MetadataDAO metadataDAO;
-
     private ParametersUtils parametersUtils = new ParametersUtils();
 
     private Map<String, TaskMapper> taskMappers;
 
     @Inject
-    public DeciderService(MetadataDAO metadataDAO, @Named("TaskMappers") Map<String, TaskMapper> taskMappers) {
-        this.metadataDAO = metadataDAO;
+    public DeciderService(@Named("TaskMappers") Map<String, TaskMapper> taskMappers) {
         this.taskMappers = taskMappers;
     }
 
@@ -139,9 +138,7 @@ public class DeciderService {
                 executedTaskRefNames.remove(pendingTask.getReferenceTaskName());
             }
 
-            String taskDefName = pendingTask.getTaskDefName();
-            TaskDef taskDefinition = Optional.ofNullable(pendingTask.getTaskDefinition())
-                    .orElse(metadataDAO.getTaskDef(taskDefName));
+            TaskDef taskDefinition = pendingTask.getTaskDefinition();
 
             if (taskDefinition != null) {
                 checkForTimeout(taskDefinition, pendingTask);
@@ -467,7 +464,6 @@ public class DeciderService {
                 .filter(task -> !inProgressTasks.contains(task.getReferenceTaskName()))
                 .collect(Collectors.toList());
     }
-
 
     private boolean isTaskSkipped(WorkflowTask taskToSchedule, Workflow workflow) {
         try {

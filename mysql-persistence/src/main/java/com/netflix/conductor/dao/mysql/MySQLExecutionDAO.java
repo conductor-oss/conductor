@@ -1,13 +1,5 @@
 package com.netflix.conductor.dao.mysql;
 
-import java.sql.Connection;
-import java.text.SimpleDateFormat;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-import javax.sql.DataSource;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -21,8 +13,18 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
+
+import javax.inject.Inject;
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
@@ -31,13 +33,10 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
     private IndexDAO indexer;
 
-    private MetadataDAO metadataDAO;
-
     @Inject
-    public MySQLExecutionDAO(IndexDAO indexer, MetadataDAO metadataDAO, ObjectMapper om, DataSource dataSource) {
+    public MySQLExecutionDAO(IndexDAO indexer, ObjectMapper om, DataSource dataSource) {
         super(om, dataSource);
         this.indexer = indexer;
-        this.metadataDAO = metadataDAO;
     }
 
     private static String dateStr(Long timeInMs) {
@@ -126,8 +125,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
     @Override
     public boolean exceedsInProgressLimit(Task task) {
-        TaskDef taskDef = Optional.ofNullable(task.getTaskDefinition())
-                    .orElse(metadataDAO.getTaskDef(task.getTaskDefName()));
+        TaskDef taskDef = task.getTaskDefinition();
 
         if (taskDef == null) {
             return false;
@@ -500,8 +498,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
             task.setEndTime(System.currentTimeMillis());
         }
 
-        TaskDef taskDef = Optional.ofNullable(task.getTaskDefinition())
-                .orElse(metadataDAO.getTaskDef(task.getTaskDefName()));
+        TaskDef taskDef = task.getTaskDefinition();
 
         if (taskDef != null && taskDef.concurrencyLimit() > 0) {
             boolean inProgress = task.getStatus() != null && task.getStatus().equals(Task.Status.IN_PROGRESS);

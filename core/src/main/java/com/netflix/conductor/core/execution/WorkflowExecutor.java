@@ -94,6 +94,8 @@ public class WorkflowExecutor {
 
     public static final String DECIDER_QUEUE = "_deciderQueue";
 
+    public MetadataMapperService metadataMapperService;
+
 
     @Inject
     public WorkflowExecutor(
@@ -101,6 +103,7 @@ public class WorkflowExecutor {
             MetadataDAO metadataDAO,
             ExecutionDAO executionDAO,
             QueueDAO queueDAO,
+            MetadataMapperService metadataMapperService,
             Configuration config
     ) {
         this.deciderService = deciderService;
@@ -108,6 +111,7 @@ public class WorkflowExecutor {
         this.executionDAO = executionDAO;
         this.queueDAO = queueDAO;
         this.config = config;
+        this.metadataMapperService = metadataMapperService;
         activeWorkerLastPollnSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
     }
 
@@ -266,6 +270,8 @@ public class WorkflowExecutor {
             throw new ApplicationException(Code.INVALID_INPUT, "NULL input passed when starting workflow");
         }
 
+        metadataMapperService.populateTaskDefinitionsMetadata(workflowDefinition);
+
         // Obtain the names of the tasks with missing definitions:
         // - Are not system tasks
         // - Don't have embedded definitions
@@ -273,7 +279,6 @@ public class WorkflowExecutor {
                 .filter(workflowTask ->
                         (workflowTask.getType().equals(WorkflowTask.Type.SIMPLE.name()) && workflowTask.getTaskDefinition() == null))
                 .map(workflowTask -> workflowTask.getName())
-                .filter(task -> metadataDAO.getTaskDef(task) == null)
                 .collect(Collectors.toSet());
 
         if (!missingTaskDefinitionNames.isEmpty()) {
@@ -299,8 +304,10 @@ public class WorkflowExecutor {
         wf.setUpdateTime(null);
         wf.setEvent(event);
         wf.setTaskToDomain(taskToDomain);
+
         executionDAO.createWorkflow(wf);
         logger.info("A new instance of workflow {} created with workflow id {}", wf.getWorkflowName(), workflowId);
+
         //then decide to see if anything needs to be done as part of the workflow
         decide(workflowId);
 
@@ -354,7 +361,8 @@ public class WorkflowExecutor {
             throw new ApplicationException(CONFLICT, "Workflow is still running.  status=" + workflow.getStatus());
         }
 
-        WorkflowDef workflowDef = metadataDAO.get(workflow.getWorkflowType(), workflow.getVersion()).get();
+        WorkflowDef workflowDef = Optional.ofNullable(workflow.getWorkflowDefinition())
+                                          .orElse(metadataDAO.get(workflow.getWorkflowType(), workflow.getVersion()).get());
         if (!workflowDef.isRestartable() && workflow.getStatus().equals(WorkflowStatus.COMPLETED)) { // Can only restart non completed workflows when the configuration is set to false
             throw new ApplicationException(CONFLICT, String.format("WorkflowId: %s is an instance of WorkflowDef: %s and version: %d and is non restartable",
                     workflowId, workflowDef.getName(), workflowDef.getVersion()));
@@ -573,10 +581,12 @@ public class WorkflowExecutor {
 
             try {
 
-                WorkflowDef latestFailureWorkflow = metadataDAO.getLatest(failureWorkflow)
-                        .orElseThrow(() ->
-                                new RuntimeException("Failure Workflow Definition not found for: " + failureWorkflow)
-                        );
+                WorkflowDef latestFailureWorkflow = Optional.of(workflow.getWorkflowDefinition()).orElse(
+                        metadataDAO.getLatest(failureWorkflow)
+                                .orElseThrow(() ->
+                                        new RuntimeException("Failure Workflow Definition not found for: " + failureWorkflow)
+                                )
+                );
 
                 String failureWFId = startWorkflow(
                         latestFailureWorkflow,
@@ -840,7 +850,8 @@ public class WorkflowExecutor {
     public void resumeWorkflow(String workflowId) {
         Workflow workflow = executionDAO.getWorkflow(workflowId, false);
         if (!workflow.getStatus().equals(WorkflowStatus.PAUSED)) {
-            throw new IllegalStateException("The workflow " + workflowId + " is PAUSED so cannot resume");
+            throw new IllegalStateException("The workflow " + workflowId + " is not PAUSED so cannot resume. " +
+                                            "Current status is " + workflow.getStatus().name());
         }
         workflow.setStatus(WorkflowStatus.RUNNING);
         executionDAO.updateWorkflow(workflow);

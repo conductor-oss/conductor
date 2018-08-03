@@ -24,7 +24,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
-import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,20 +42,17 @@ public class SimpleTaskMapper implements TaskMapper {
     public static final Logger logger = LoggerFactory.getLogger(SimpleTaskMapper.class);
 
     private ParametersUtils parametersUtils;
-    private MetadataDAO metadataDAO;
 
-    public SimpleTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+    public SimpleTaskMapper(ParametersUtils parametersUtils) {
         this.parametersUtils = parametersUtils;
-        this.metadataDAO = metadataDAO;
     }
-
 
     /**
      * This method maps a {@link WorkflowTask} of type {@link WorkflowTask.Type#SIMPLE}
      * to a {@link Task}
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId
-     * @throws TerminateWorkflowException In case if the task definition does not exist in the {@link MetadataDAO}
+     * @throws TerminateWorkflowException In case if the task definition does not exist
      * @return: a List with just one simple task
      */
     @Override
@@ -69,14 +65,11 @@ public class SimpleTaskMapper implements TaskMapper {
         int retryCount = taskMapperContext.getRetryCount();
         String retriedTaskId = taskMapperContext.getRetryTaskId();
 
-        TaskDef taskDefinition = taskToSchedule.getTaskDefinition();
-        if (taskDefinition == null) {
-            taskDefinition = Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
-                    .orElseThrow(() -> {
-                        String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
-                        return new TerminateWorkflowException(reason);
-                    });
-        }
+        TaskDef taskDefinition = Optional.ofNullable(taskToSchedule.getTaskDefinition())
+                .orElseThrow(() -> {
+                    String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
+                    return new TerminateWorkflowException(reason);
+                });
 
         Map<String, Object> input = parametersUtils.getTaskInput(taskToSchedule.getInputParameters(), workflowInstance, taskDefinition, taskMapperContext.getTaskId());
         Task simpleTask = new Task();

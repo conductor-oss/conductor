@@ -240,8 +240,8 @@ public class WorkflowDef extends Auditable {
 	
 	public List<WorkflowTask> all(){
 		List<WorkflowTask> all = new LinkedList<>();
-		for(WorkflowTask wft : tasks){
-			all.addAll(wft.all());
+		for(WorkflowTask workflowTask : tasks){
+			all.addAll(workflowTask.all());
 		}
 		return all;
 	}

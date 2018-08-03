@@ -24,7 +24,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
-import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,12 +41,9 @@ public class DynamicTaskMapper implements TaskMapper {
 
     public static final Logger logger = LoggerFactory.getLogger(DynamicTaskMapper.class);
 
-    private MetadataDAO metadataDAO;
-
     private ParametersUtils parametersUtils;
 
-    public DynamicTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
-        this.metadataDAO = metadataDAO;
+    public DynamicTaskMapper(ParametersUtils parametersUtils) {
         this.parametersUtils = parametersUtils;
     }
 
@@ -116,23 +112,20 @@ public class DynamicTaskMapper implements TaskMapper {
     }
 
     /**
-     * This method gets the TaskDefinition from the MetadataDao based on the {@link WorkflowTask#getName()}
+     * This method gets the TaskDefinition for a specific {@link WorkflowTask}
      *
      * @param taskToSchedule: An instance of {@link WorkflowTask} which has the name of the using which the {@link TaskDef} can be retrieved.
-     * @throws TerminateWorkflowException : in case of no work flow definition available in the {@link MetadataDAO}
+     * @throws TerminateWorkflowException : in case of no work flow definition available
      * @return: An instance of TaskDefinition
      */
     @VisibleForTesting
     TaskDef getDynamicTaskDefinition(WorkflowTask taskToSchedule) throws TerminateWorkflowException { //TODO this is a common pattern in code base can be moved to DAO
-        TaskDef taskDefinition = taskToSchedule.getTaskDefinition();
-        if (taskDefinition == null) {
-            taskDefinition = Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
-                    .orElseThrow(() -> {
-                        String reason = String.format("Invalid task specified.  Cannot find task by name %s in the task definitions",
-                                taskToSchedule.getName());
-                        return new TerminateWorkflowException(reason);
-                    });
-        }
+        TaskDef taskDefinition = Optional.ofNullable(taskToSchedule.getTaskDefinition())
+                .orElseThrow(() -> {
+                    String reason = String.format("Invalid task specified.  Cannot find task by name %s in the task definitions",
+                            taskToSchedule.getName());
+                    return new TerminateWorkflowException(reason);
+                });
         return taskDefinition;
     }
 }

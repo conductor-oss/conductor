@@ -33,14 +33,14 @@ import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.queue.dyno.DynoEventQueueProvider;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
-import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
 import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
 import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
 import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
-import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Event;
@@ -95,8 +95,8 @@ public class CoreModule extends AbstractModule {
     @StringMapKey("DYNAMIC")
     @Singleton
     @Named("TaskMappers")
-    public TaskMapper getDynamicTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
-        return new DynamicTaskMapper(parametersUtils, metadataDAO);
+    public TaskMapper getDynamicTaskMapper(ParametersUtils parametersUtils) {
+        return new DynamicTaskMapper(parametersUtils);
     }
 
     @ProvidesIntoMap
@@ -153,16 +153,16 @@ public class CoreModule extends AbstractModule {
     @StringMapKey("USER_DEFINED")
     @Singleton
     @Named("TaskMappers")
-    public TaskMapper getUserDefinedTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
-        return new UserDefinedTaskMapper(parametersUtils, metadataDAO);
+    public TaskMapper getUserDefinedTaskMapper(ParametersUtils parametersUtils) {
+        return new UserDefinedTaskMapper(parametersUtils);
     }
 
     @ProvidesIntoMap
     @StringMapKey("SIMPLE")
     @Singleton
     @Named("TaskMappers")
-    public TaskMapper getSimpleTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
-        return new SimpleTaskMapper(parametersUtils, metadataDAO);
+    public TaskMapper getSimpleTaskMapper(ParametersUtils parametersUtils) {
+        return new SimpleTaskMapper(parametersUtils);
     }
 
 
