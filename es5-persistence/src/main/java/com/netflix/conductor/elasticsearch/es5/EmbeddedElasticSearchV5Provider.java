@@ -1,13 +1,11 @@
 package com.netflix.conductor.elasticsearch.es5;
 
-import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
 
-import java.util.Optional;
-
 import javax.inject.Inject;
+import java.util.Optional;
 
 public class EmbeddedElasticSearchV5Provider implements EmbeddedElasticSearchProvider {
     private final ElasticSearchConfiguration configuration;
@@ -29,6 +27,6 @@ public class EmbeddedElasticSearchV5Provider implements EmbeddedElasticSearchPro
     }
 
     private boolean isEmbedded() {
-        return configuration.getDB().equals(Configuration.DB.MEMORY);
+        return configuration.getElasticSearchInstanceType().equals(ElasticSearchConfiguration.ElasticSearchInstanceType.MEMORY);
     }
 }
