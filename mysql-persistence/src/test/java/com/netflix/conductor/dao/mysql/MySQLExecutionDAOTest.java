@@ -20,19 +20,12 @@ import static org.mockito.Mockito.mock;
 public class MySQLExecutionDAOTest extends ExecutionDAOTest {
 
     private final MySQLDAOTestUtil testMySQL = new MySQLDAOTestUtil();
-    private MySQLMetadataDAO metadata;
-    private MySQLExecutionDAO dao;
+    private MySQLExecutionDAO executionDAO;
 
     @Before
     public void setup() throws Exception {
-        metadata = new MySQLMetadataDAO(
-                testMySQL.getObjectMapper(),
-                testMySQL.getDataSource(),
-                testMySQL.getTestConfiguration()
-        );
-        dao = new MySQLExecutionDAO(
+        executionDAO = new MySQLExecutionDAO(
                 mock(IndexDAO.class),
-                metadata,
                 testMySQL.getObjectMapper(),
                 testMySQL.getDataSource()
         );
@@ -59,11 +52,7 @@ public class MySQLExecutionDAOTest extends ExecutionDAOTest {
 
     @Override
     public ExecutionDAO getExecutionDAO() {
-        return dao;
+        return executionDAO;
     }
 
-    @Override
-    public MetadataDAO getMetadataDAO() {
-        return metadata;
-    }
 }

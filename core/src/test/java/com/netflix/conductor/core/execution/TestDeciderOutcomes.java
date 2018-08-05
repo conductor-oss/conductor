@@ -38,8 +38,6 @@ import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Join;
-import com.netflix.conductor.dao.MetadataDAO;
-
 import org.junit.Before;
 import org.junit.Test;
 
@@ -55,9 +53,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * @author Viren
@@ -79,27 +74,20 @@ public class TestDeciderOutcomes {
 
     @Before
     public void init() throws Exception {
-
-        MetadataDAO metadataDAO = mock(MetadataDAO.class);
-        TaskDef taskDef = new TaskDef();
-        taskDef.setRetryCount(1);
-        taskDef.setName("mockTaskDef");
-        taskDef.setResponseTimeoutSeconds(0);
-        when(metadataDAO.getTaskDef(any())).thenReturn(taskDef);
         ParametersUtils parametersUtils = new ParametersUtils();
         Map<String, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put("DECISION", new DecisionTaskMapper());
-        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils));
         taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
         taskMappers.put("JOIN", new JoinTaskMapper());
         taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper));
-        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils));
+        taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
+        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils));
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 
-        this.deciderService = new DeciderService(metadataDAO, taskMappers);
+        this.deciderService = new DeciderService(taskMappers);
     }
 
     @Test
@@ -137,14 +125,15 @@ public class TestDeciderOutcomes {
         WorkflowDef def = new WorkflowDef();
         def.setName("test");
 
-        WorkflowTask task = new WorkflowTask();
-        task.setName("test_task");
-        task.setType("USER_TASK");
-        task.setTaskReferenceName("t0");
-        task.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
-        task.getInputParameters().put("requestId", "${workflow.input.requestId}");
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("test_task");
+        workflowTask.setType("USER_TASK");
+        workflowTask.setTaskReferenceName("t0");
+        workflowTask.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
+        workflowTask.getInputParameters().put("requestId", "${workflow.input.requestId}");
+        workflowTask.setTaskDefinition(new TaskDef("test_task"));
 
-        def.getTasks().add(task);
+        def.getTasks().add(workflowTask);
         def.setSchemaVersion(2);
 
         Workflow workflow = new Workflow();
@@ -155,7 +144,7 @@ public class TestDeciderOutcomes {
         assertNotNull(outcome);
 
         assertEquals(1, outcome.tasksToBeScheduled.size());
-        assertEquals(task.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+        assertEquals(workflowTask.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
 
         String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
         assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
@@ -204,6 +193,7 @@ public class TestDeciderOutcomes {
             wft.setWorkflowTaskType(Type.SIMPLE);
             wft.getInputParameters().put("requestId", "${workflow.input.requestId}");
             wft.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
+            wft.setTaskDefinition(new TaskDef("f" + i));
             forks.add(wft);
             Map<String, Object> input = new HashMap<>();
             input.put("k", "v");
@@ -255,11 +245,13 @@ public class TestDeciderOutcomes {
         task1.setTaskReferenceName("t0");
         task1.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
         task1.setOptional(true);
+        task1.setTaskDefinition(new TaskDef("task0"));
 
         WorkflowTask task2 = new WorkflowTask();
         task2.setName("task1");
         task2.setType("SIMPLE");
         task2.setTaskReferenceName("t1");
+        task2.setTaskDefinition(new TaskDef("task1"));
 
         def.getTasks().add(task1);
         def.getTasks().add(task2);
@@ -327,14 +319,15 @@ public class TestDeciderOutcomes {
         Map<String, Map<String, Object>> forkedInputs = new HashMap<>();
 
         for (int i = 0; i < 3; i++) {
-            WorkflowTask wft = new WorkflowTask();
-            wft.setName("f" + i);
-            wft.setTaskReferenceName("f" + i);
-            wft.setWorkflowTaskType(Type.SIMPLE);
-            wft.setOptional(true);
-            forks.add(wft);
+            WorkflowTask workflowTask = new WorkflowTask();
+            workflowTask.setName("f" + i);
+            workflowTask.setTaskReferenceName("f" + i);
+            workflowTask.setWorkflowTaskType(Type.SIMPLE);
+            workflowTask.setOptional(true);
+            workflowTask.setTaskDefinition(new TaskDef("f" + i));
+            forks.add(workflowTask);
 
-            forkedInputs.put(wft.getTaskReferenceName(), new HashMap<>());
+            forkedInputs.put(workflowTask.getTaskReferenceName(), new HashMap<>());
         }
         workflow.getInput().put("forks", forks);
         workflow.getInput().put("forkedInputs", forkedInputs);
@@ -381,17 +374,19 @@ public class TestDeciderOutcomes {
         even.setName("even");
         even.setType("SIMPLE");
         even.setTaskReferenceName("even");
+        even.setTaskDefinition(new TaskDef("even"));
 
         WorkflowTask odd = new WorkflowTask();
         odd.setName("odd");
         odd.setType("SIMPLE");
         odd.setTaskReferenceName("odd");
+        odd.setTaskDefinition(new TaskDef("odd"));
 
         WorkflowTask defaultt = new WorkflowTask();
         defaultt.setName("defaultt");
         defaultt.setType("SIMPLE");
         defaultt.setTaskReferenceName("defaultt");
-
+        defaultt.setTaskDefinition(new TaskDef("defaultt"));
 
         WorkflowTask decide = new WorkflowTask();
         decide.setName("decide");

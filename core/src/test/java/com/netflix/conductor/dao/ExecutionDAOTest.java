@@ -4,9 +4,9 @@ import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ApplicationException;
-
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.junit.Rule;
 import org.junit.Test;
@@ -31,17 +31,19 @@ public abstract class ExecutionDAOTest {
 
     abstract protected ExecutionDAO getExecutionDAO();
 
-    abstract protected MetadataDAO getMetadataDAO();
-
     @Rule
     public ExpectedException expected = ExpectedException.none();
 
     @Test
     public void testTaskExceedsLimit() throws Exception {
-        TaskDef def = new TaskDef();
-        def.setName("task1");
-        def.setConcurrentExecLimit(1);
-        getMetadataDAO().createTaskDef(def);
+        TaskDef taskDefinition = new TaskDef();
+        taskDefinition.setName("task1");
+        taskDefinition.setConcurrentExecLimit(1);
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("task1");
+        workflowTask.setTaskDefinition(taskDefinition);
+        workflowTask.setTaskDefinition(taskDefinition);
 
         List<Task> tasks = new LinkedList<>();
         for (int i = 0; i < 15; i++) {
@@ -54,6 +56,7 @@ public abstract class ExecutionDAOTest {
             task.setTaskDefName("task1");
             tasks.add(task);
             task.setStatus(Task.Status.SCHEDULED);
+            task.setWorkflowTask(workflowTask);
         }
 
         getExecutionDAO().createTasks(tasks);

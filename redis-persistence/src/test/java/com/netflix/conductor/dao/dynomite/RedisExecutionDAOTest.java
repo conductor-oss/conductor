@@ -25,20 +25,17 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.ExecutionDAOTest;
 import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.redis.JedisMock;
 import com.netflix.conductor.dyno.DynoProxy;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
+import redis.clients.jedis.JedisCommands;
 
 import java.util.Collections;
 import java.util.List;
-
-import redis.clients.jedis.JedisCommands;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -52,8 +49,6 @@ import static org.mockito.Mockito.mock;
  */
 @RunWith(MockitoJUnitRunner.class)
 public class RedisExecutionDAOTest extends ExecutionDAOTest {
-
-    private RedisMetadataDAO metadataDAO;
 
     private RedisExecutionDAO executionDAO;
 
@@ -69,8 +64,7 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
         JedisCommands jedisMock = new JedisMock();
         DynoProxy dynoClient = new DynoProxy(jedisMock);
 
-        metadataDAO = new RedisMetadataDAO(dynoClient, objectMapper, config);
-        executionDAO = new RedisExecutionDAO(dynoClient, objectMapper, mock(IndexDAO.class), metadataDAO, config);
+        executionDAO = new RedisExecutionDAO(dynoClient, objectMapper, mock(IndexDAO.class), config);
 
         // Ignore indexing in Redis tests.
         doNothing().when(indexDAO).indexTask(any(Task.class));
@@ -86,7 +80,6 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
         TaskDef def = new TaskDef();
         def.setName("task1");
         def.setConcurrentExecLimit(1);
-        metadataDAO.createTaskDef(def);
 
         Task task = new Task();
         task.setTaskId(taskId);
@@ -111,8 +104,4 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
         return executionDAO;
     }
 
-    @Override
-    protected MetadataDAO getMetadataDAO() {
-        return metadataDAO;
-    }
 }

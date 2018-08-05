@@ -20,7 +20,6 @@ import org.junit.rules.ExpectedException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -44,7 +43,7 @@ public class SubWorkflowTaskMapperTest {
     public void setUp() throws Exception {
         parametersUtils = mock(ParametersUtils.class);
         metadataDAO = mock(MetadataDAO.class);
-        subWorkflowTaskMapper = new SubWorkflowTaskMapper(parametersUtils, metadataDAO);
+        subWorkflowTaskMapper = new SubWorkflowTaskMapper(parametersUtils);
         deciderService = mock(DeciderService.class);
     }
 
@@ -57,13 +56,13 @@ public class SubWorkflowTaskMapperTest {
         WorkflowTask taskToSchedule = new WorkflowTask();
         SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         subWorkflowParams.setName("Foo");
-        subWorkflowParams.setVersion("2");
+        subWorkflowParams.setVersion(2);
         taskToSchedule.setSubWorkflowParam(subWorkflowParams);
         Map<String,Object> taskInput = new HashMap<>();
 
         Map<String, Object> subWorkflowParamMap = new HashMap<>();
         subWorkflowParamMap.put("name","FooWorkFlow");
-        subWorkflowParamMap.put("version","2");
+        subWorkflowParamMap.put("version",2);
         when(parametersUtils.getTaskInputV2(anyMap(), any(Workflow.class), anyString(), any(TaskDef.class)))
                 .thenReturn(subWorkflowParamMap);
 
@@ -87,7 +86,7 @@ public class SubWorkflowTaskMapperTest {
         WorkflowTask workflowTask = new WorkflowTask();
         SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         subWorkflowParams.setName("Foo");
-        subWorkflowParams.setVersion("2");
+        subWorkflowParams.setVersion(2);
         workflowTask.setSubWorkflowParam(subWorkflowParams);
 
         assertEquals(subWorkflowParams, subWorkflowTaskMapper.getSubWorkflowParams(workflowTask));
@@ -103,42 +102,6 @@ public class SubWorkflowTaskMapperTest {
                 "Please check the blueprint", workflowTask.getName()));
 
         subWorkflowTaskMapper.getSubWorkflowParams(workflowTask);
-    }
-
-
-    @Test
-    public void getSubWorkflowVersion() throws Exception {
-        Map<String, Object> subWorkflowParamMap = new HashMap<>();
-        subWorkflowParamMap.put("name","FooWorkFlow");
-        subWorkflowParamMap.put("version","2");
-
-        Integer version = subWorkflowTaskMapper.getSubWorkflowVersion(subWorkflowParamMap, "FooWorkFlow");
-
-        assertEquals(version, Integer.valueOf(2));
-    }
-
-    @Test
-    public void getSubworkflowVersionFromMeta() throws Exception {
-        Map<String, Object> subWorkflowParamMap = new HashMap<>();
-        WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setName("FooWorkFlow");
-        workflowDef.setVersion(2);
-        when(metadataDAO.getLatest(any())).thenReturn(Optional.of(workflowDef));
-
-        Integer version = subWorkflowTaskMapper.getSubWorkflowVersion(subWorkflowParamMap, "FooWorkFlow");
-
-        assertEquals(version, Integer.valueOf(2));
-    }
-
-    @Test
-    public void getSubworkflowVersionFromMetaException() throws Exception {
-        Map<String, Object> subWorkflowParamMap = new HashMap<>();
-        when(metadataDAO.getLatest(any())).thenReturn(Optional.empty());
-
-        expectedException.expect(TerminateWorkflowException.class);
-        expectedException.expectMessage(String.format("The Task %s defined as a sub-workflow has no workflow definition available ", "FooWorkFlow"));
-
-        subWorkflowTaskMapper.getSubWorkflowVersion(subWorkflowParamMap, "FooWorkFlow");
     }
 
 }

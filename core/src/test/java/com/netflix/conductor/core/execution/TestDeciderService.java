@@ -16,7 +16,6 @@
 package com.netflix.conductor.core.execution;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -45,7 +44,6 @@ import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DefaultRegistry;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
-
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -111,17 +109,17 @@ public class TestDeciderService {
         parametersUtils = new ParametersUtils();
         Map<String, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put("DECISION", new DecisionTaskMapper());
-        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils));
         taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
         taskMappers.put("JOIN", new JoinTaskMapper());
         taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper));
-        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils));
+        taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
+        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils));
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 
-        deciderService = new DeciderService(metadataDAO, taskMappers);
+        deciderService = new DeciderService(taskMappers);
     }
 
     @Test
@@ -670,6 +668,12 @@ public class TestDeciderService {
         task.setExecuted(false);
         task.setStatus(Status.FAILED);
 
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskReferenceName("s1");
+        workflowTask.setName("junit_task_l1");
+        workflowTask.setTaskDefinition(new TaskDef("junit_task_l1"));
+        task.setWorkflowTask(workflowTask);
+
         workflow.getTasks().add(task);
 
         DeciderOutcome deciderOutcome = deciderService.decide(workflow);
@@ -693,8 +697,10 @@ public class TestDeciderService {
         workflow.setStatus(WorkflowStatus.RUNNING);
 
         WorkflowTask workflowTask1 = new WorkflowTask();
+        workflowTask1.setName("s1");
         workflowTask1.setTaskReferenceName("s1");
         workflowTask1.setType(Type.SIMPLE.name());
+        workflowTask1.setTaskDefinition(new TaskDef("s1"));
 
         List<Task> tasksToBeScheduled = deciderService.getTasksToBeScheduled(workflow, workflowTask1, 0, null);
         assertNotNull(tasksToBeScheduled);
@@ -702,8 +708,10 @@ public class TestDeciderService {
         assertEquals("s1", tasksToBeScheduled.get(0).getReferenceTaskName());
 
         WorkflowTask workflowTask2 = new WorkflowTask();
+        workflowTask2.setName("s2");
         workflowTask2.setTaskReferenceName("s2");
         workflowTask2.setType(Type.SIMPLE.name());
+        workflowTask2.setTaskDefinition(new TaskDef("s2"));
         tasksToBeScheduled = deciderService.getTasksToBeScheduled(workflow, workflowTask2, 0, null);
         assertNotNull(tasksToBeScheduled);
         assertEquals(1, tasksToBeScheduled.size());
@@ -736,6 +744,7 @@ public class TestDeciderService {
         inputParams1.put("p2", "workflow.input.param2");
         workflowTask1.setInputParameters(inputParams1);
         workflowTask1.setTaskReferenceName("t1");
+        workflowTask1.setTaskDefinition(new TaskDef("junit_task_1"));
 
         WorkflowTask workflowTask2 = new WorkflowTask();
         workflowTask2.setName("junit_task_2");
@@ -743,6 +752,7 @@ public class TestDeciderService {
         inputParams2.put("tp1", "workflow.input.param1");
         workflowTask2.setInputParameters(inputParams2);
         workflowTask2.setTaskReferenceName("t2");
+        workflowTask2.setTaskDefinition(new TaskDef("junit_task_2"));
 
         WorkflowTask workflowTask3 = new WorkflowTask();
         workflowTask3.setName("junit_task_3");
@@ -750,6 +760,7 @@ public class TestDeciderService {
         inputParams2.put("tp3", "workflow.input.param2");
         workflowTask3.setInputParameters(inputParams3);
         workflowTask3.setTaskReferenceName("t3");
+        workflowTask3.setTaskDefinition(new TaskDef("junit_task_3"));
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("Conditional Workflow");
@@ -784,6 +795,7 @@ public class TestDeciderService {
         WorkflowTask notifyTask = new WorkflowTask();
         notifyTask.setName("junit_task_4");
         notifyTask.setTaskReferenceName("junit_task_4");
+        notifyTask.setTaskDefinition(new TaskDef("junit_task_4"));
 
         WorkflowTask finalDecisionTask = new WorkflowTask();
         finalDecisionTask.setName("finalcondition");
@@ -809,11 +821,13 @@ public class TestDeciderService {
         workflowTask1.setName("junit_task_l1");
         workflowTask1.setInputParameters(inputParams);
         workflowTask1.setTaskReferenceName("s1");
+        workflowTask1.setTaskDefinition(new TaskDef("junit_task_l1"));
 
         WorkflowTask workflowTask2 = new WorkflowTask();
         workflowTask2.setName("junit_task_l2");
         workflowTask2.setInputParameters(inputParams);
         workflowTask2.setTaskReferenceName("s2");
+        workflowTask2.setTaskDefinition(new TaskDef("junit_task_l2"));
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setSchemaVersion(2);
@@ -886,6 +900,7 @@ public class TestDeciderService {
             workflowTask.setName("junit_task_" + i);
             workflowTask.setInputParameters(inputParams);
             workflowTask.setTaskReferenceName("t" + i);
+            workflowTask.setTaskDefinition(new TaskDef("junit_task_" + i));
             tasks.add(workflowTask);
         }
 
@@ -939,4 +954,5 @@ public class TestDeciderService {
 
         return workflowDef;
     }
+
 }

@@ -38,6 +38,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.core.execution.MetadataMapperService;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.WorkflowSweeper;
@@ -123,6 +124,9 @@ public class WorkflowServiceTest {
 
     @Inject
     private WorkflowExecutor workflowExecutor;
+
+    @Inject
+    private MetadataMapperService metadataMapperService;
 
     private static boolean registered;
 
@@ -623,17 +627,17 @@ public class WorkflowServiceTest {
         Task t1 = workflowExecutionService.poll("junit_task_1", "test");
         //assertTrue(ess.ackTaskRecieved(t1.getTaskId(), "test"));
 
-        DynamicForkJoinTaskList dtasks = new DynamicForkJoinTaskList();
+        DynamicForkJoinTaskList dynamicForkJoinTasks = new DynamicForkJoinTaskList();
 
         input = new HashMap<String, Object>();
         input.put("k1", "v1");
-        dtasks.add("junit_task_2", null, "xdt1", input);
+        dynamicForkJoinTasks.add("junit_task_2", null, "xdt1", input);
 
         HashMap<String, Object> input2 = new HashMap<String, Object>();
         input2.put("k2", "v2");
-        dtasks.add("junit_task_3", null, "xdt2", input2);
+        dynamicForkJoinTasks.add("junit_task_3", null, "xdt2", input2);
 
-        t1.getOutputData().put("dynamicTasks", dtasks);
+        t1.getOutputData().put("dynamicTasks", dynamicForkJoinTasks);
         t1.setStatus(COMPLETED);
 
         workflowExecutionService.updateTask(t1);
@@ -1056,6 +1060,8 @@ public class WorkflowServiceTest {
         def.getTasks().add(fanout);
         def.getTasks().add(join);
 
+        metadataMapperService.populateTaskDefinitions(def)
+
         metadataService.updateWorkflowDef(def);
 
     }
@@ -1069,6 +1075,7 @@ public class WorkflowServiceTest {
         ip1.put("p2", "workflow.input.param2");
         wft1.setInputParameters(ip1);
         wft1.setTaskReferenceName("t1");
+        wft1.setTaskDefinition(new TaskDef("junit_task_1"));
 
         WorkflowTask wft2 = new WorkflowTask();
         wft2.setName("junit_task_2");
@@ -1076,6 +1083,7 @@ public class WorkflowServiceTest {
         ip2.put("tp1", "workflow.input.param1");
         wft2.setInputParameters(ip2);
         wft2.setTaskReferenceName("t2");
+        wft2.setTaskDefinition(new TaskDef("junit_task_2"));
 
         WorkflowTask wft3 = new WorkflowTask();
         wft3.setName("junit_task_3");
@@ -1083,6 +1091,7 @@ public class WorkflowServiceTest {
         ip2.put("tp3", "workflow.input.param2");
         wft3.setInputParameters(ip3);
         wft3.setTaskReferenceName("t3");
+        wft3.setTaskDefinition(new TaskDef("junit_task_3"));
 
         WorkflowDef def2 = new WorkflowDef();
         def2.setName(COND_TASK_WF);
@@ -1117,6 +1126,7 @@ public class WorkflowServiceTest {
         WorkflowTask notifyTask = new WorkflowTask();
         notifyTask.setName("junit_task_4");
         notifyTask.setTaskReferenceName("junit_task_4");
+        notifyTask.setTaskDefinition(new TaskDef("junit_task_4"));
 
         WorkflowTask finalTask = new WorkflowTask();
         finalTask.setName("finalcondition");

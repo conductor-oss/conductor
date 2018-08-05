@@ -157,7 +157,7 @@ public class DeciderService {
                 if (workflowTask != null && workflowTask.isOptional()) {
                     pendingTask.setStatus(COMPLETED_WITH_ERRORS);
                 } else {
-                    Task retryTask = retry(taskDefinition.get(), workflowTask, pendingTask, workflow);
+                    Task retryTask = retry(taskDefinition.orElse(null), workflowTask, pendingTask, workflow);
                     tasksToBeScheduled.put(retryTask.getReferenceTaskName(), retryTask);
                     executedTaskRefNames.remove(retryTask.getReferenceTaskName());
                     outcome.tasksToBeUpdated.add(pendingTask);

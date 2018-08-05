@@ -8,7 +8,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
-import com.netflix.conductor.dao.MetadataDAO;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -17,16 +16,12 @@ import org.junit.rules.ExpectedException;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class UserDefinedTaskMapperTest {
 
     ParametersUtils parametersUtils;
-    MetadataDAO metadataDAO;
-
-    //subject
     UserDefinedTaskMapper userDefinedTaskMapper;
 
     @Rule
@@ -35,8 +30,7 @@ public class UserDefinedTaskMapperTest {
     @Before
     public void setUp() throws Exception {
         parametersUtils = mock(ParametersUtils.class);
-        metadataDAO = mock(MetadataDAO.class);
-        userDefinedTaskMapper = new UserDefinedTaskMapper(parametersUtils, metadataDAO);
+        userDefinedTaskMapper = new UserDefinedTaskMapper(parametersUtils);
     }
 
     @Test
@@ -45,9 +39,9 @@ public class UserDefinedTaskMapperTest {
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setName("user_task");
         taskToSchedule.setType(WorkflowTask.Type.USER_DEFINED.name());
+        taskToSchedule.setTaskDefinition(new TaskDef("user_task"));
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
-        when(metadataDAO.getTaskDef("user_task")).thenReturn(new TaskDef());
 
         WorkflowDef  wd = new WorkflowDef();
         Workflow w = new Workflow();
@@ -71,7 +65,6 @@ public class UserDefinedTaskMapperTest {
         taskToSchedule.setType(WorkflowTask.Type.USER_DEFINED.name());
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
-        when(metadataDAO.getTaskDef("user_task")).thenReturn(null);
 
         WorkflowDef  wd = new WorkflowDef();
         Workflow w = new Workflow();
