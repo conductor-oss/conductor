@@ -20,12 +20,14 @@ package com.netflix.conductor.tests.integration;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 
+import com.netflix.conductor.client.http.MetadataClient;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -45,6 +47,9 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.server.ConductorConfig;
 import com.netflix.conductor.server.ConductorServer;
+import com.sun.jersey.api.client.UniformInterfaceException;
+import com.sun.jersey.api.client.ClientResponse;
+
 
 /**
  * @author Viren
@@ -65,7 +70,8 @@ public class End2EndTests {
 	private static TaskClient tc;
 	
 	private static WorkflowClient wc;
-	
+
+	private static MetadataClient mc;
 	
 	@BeforeClass
 	public static void setup() throws Exception {
@@ -78,6 +84,9 @@ public class End2EndTests {
 		
 		wc = new WorkflowClient();
 		wc.setRootURI("http://localhost:8080/api/");
+
+		mc = new MetadataClient();
+		mc.setRootURI("http://localhost:8080/api/");
 	}
 	
 	@Test
@@ -203,7 +212,37 @@ public class End2EndTests {
 		assertNotNull(wf);
 		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
 		assertEquals(1, wf.getTasks().size());
-		
+
+	}
+
+	@Test
+	public void testMetadataWorkflowDefinition() {
+		WorkflowDef def = new WorkflowDef();
+		def.setName("testWorkflowDel");
+		def.setVersion(1);
+		WorkflowTask t0 = new WorkflowTask();
+		t0.setName("t0");
+		t0.setWorkflowTaskType(Type.SIMPLE);
+		t0.setTaskReferenceName("t0");
+
+		WorkflowTask t1 = new WorkflowTask();
+		t1.setName("t1");
+		t1.setWorkflowTaskType(Type.SIMPLE);
+		t1.setTaskReferenceName("t1");
+
+		def.getTasks().add(t0);
+		def.getTasks().add(t1);
+
+		mc.registerWorkflowDef(def);
+		mc.unregisterWorkflowDef("testWorkflowDel", 1);
+
+		try {
+			WorkflowDef getDef = mc.getWorkflowDef("testWorkflowDel", 1);
+		} catch (UniformInterfaceException ue) {
+			ClientResponse response = ue.getResponse();
+			// TODO: fix this to NOT_FOUND once error handling is fixed
+			assertEquals(204, response.getStatus());
+		}
 	}
 	
 }

@@ -1,9 +1,6 @@
 {
   "workflow": {
     "properties": {
-      "archived": {
-        "type": "boolean"
-      },
       "correlationId": {
         "type": "string",
         "index": "not_analyzed",
@@ -69,6 +66,10 @@
         "type": "string",
         "index": "no",
         "include_in_all": false
+      },
+      "event": {
+        "index": "not_analyzed",
+        "type": "string"
       }
     }
   }

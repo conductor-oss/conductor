@@ -128,6 +128,18 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     }
 
     @Override
+    public void removeWorkflowDef(String name, int version) {
+        final String DELETE_WORKFLOW_QUERY = "DELETE from meta_workflow_def WHERE name = ? AND version = ?";
+
+        executeWithTransaction(DELETE_WORKFLOW_QUERY, q -> {
+            if (!q.addParameter(name).addParameter(version).executeDelete()) {
+                throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
+                        String.format("No such workflow definition: %s version: %d", name, version));
+            }
+        });
+    }
+
+    @Override
     public List<String> findAll() {
         final String FIND_ALL_WORKFLOW_DEF_QUERY = "SELECT DISTINCT name FROM meta_workflow_def";
         return queryWithTransaction(FIND_ALL_WORKFLOW_DEF_QUERY, q -> q.executeAndFetch(String.class));

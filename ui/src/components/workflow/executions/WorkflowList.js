@@ -1,11 +1,10 @@
-import React, { Component } from 'react';
-import { Link, browserHistory } from 'react-router';
+import React from 'react';
+import { Link } from 'react-router';
 import { Input, Button, Panel, Popover, OverlayTrigger, ButtonGroup, Grid, Row, Col  } from 'react-bootstrap';
 import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 import { connect } from 'react-redux';
 import { searchWorkflows, getWorkflowDefs } from '../../../actions/WorkflowActions';
 import Typeahead from 'react-bootstrap-typeahead';
-
 
 function linkMaker(cell) {
     return <Link to={`/workflow/id/${cell}`}>{cell}</Link>;
@@ -49,9 +48,7 @@ function miniDetails(cell, row){
 }
 
 const Workflow = React.createClass({
-
   getInitialState() {
-
     let workflowTypes = this.props.location.query.workflowTypes;
     if(workflowTypes != null && workflowTypes != '') {
       workflowTypes = workflowTypes.split(',');
@@ -90,7 +87,6 @@ const Workflow = React.createClass({
     this.doDispatch();
   },
   componentWillReceiveProps(nextProps) {
-
     let workflowDefs = nextProps.workflows;
     workflowDefs = workflowDefs ? workflowDefs : [];
     workflowDefs = workflowDefs.map(workflowDef => workflowDef.name);
@@ -151,7 +147,6 @@ const Workflow = React.createClass({
     this.props.history.pushState(null, "/workflow?q=" + q + "&h=" + h + "&workflowTypes=" + workflowTypes + "&status=" + status + "&start=" + start);
   },
   doDispatch() {
-
     let search = '';
     if(this.state.search != '') {
       search = this.state.search;
@@ -243,7 +238,6 @@ const Workflow = React.createClass({
         filteredWfs = wfs;
     }
 
-
     return (
       <div className="ui-content">
         <div>
@@ -298,4 +292,5 @@ const Workflow = React.createClass({
     );
   }
 });
+
 export default connect(state => state.workflow)(Workflow);

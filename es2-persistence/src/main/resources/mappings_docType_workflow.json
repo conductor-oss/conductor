@@ -15,6 +15,11 @@
         "type": "long",
         "doc_values": true
       },
+      "failedReferenceTaskNames": {
+        "type": "string",
+        "index": "no",
+        "include_in_all": false
+      },
       "input": {
         "type": "string",
         "index": "analyzed"
@@ -61,6 +66,10 @@
         "type": "string",
         "index": "no",
         "include_in_all": false
+      },
+      "event": {
+        "index": "not_analyzed",
+        "type": "string"
       }
     }
   }
