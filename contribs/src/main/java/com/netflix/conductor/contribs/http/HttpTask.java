@@ -60,7 +60,7 @@ public class HttpTask extends WorkflowSystemTask {
 
 	public static final String REQUEST_PARAMETER_NAME = "http_request";
 	
-	static final String MISSING_REQUEST = "Missing HTTP request. Task input MUST have a '" + REQUEST_PARAMETER_NAME + "' key wiht HttpTask.Input as value. See documentation for HttpTask for required input parameters";
+	static final String MISSING_REQUEST = "Missing HTTP request. Task input MUST have a '" + REQUEST_PARAMETER_NAME + "' key with HttpTask.Input as value. See documentation for HttpTask for required input parameters";
 
 	private static final Logger logger = LoggerFactory.getLogger(HttpTask.class);
 	
@@ -96,8 +96,7 @@ public class HttpTask extends WorkflowSystemTask {
 		Object request = task.getInputData().get(requestParameter);
 		task.setWorkerId(config.getServerId());
 		if(request == null) {
-			String reason = MISSING_REQUEST;
-			task.setReasonForIncompletion(reason);
+			task.setReasonForIncompletion(MISSING_REQUEST);
 			task.setStatus(Status.FAILED);
 			return;
 		}

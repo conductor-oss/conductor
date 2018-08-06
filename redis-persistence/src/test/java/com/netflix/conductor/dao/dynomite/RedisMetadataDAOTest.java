@@ -203,12 +203,12 @@ public class RedisMetadataDAOTest {
         dao.createTaskDef(def);
 
         TaskDef found = dao.getTaskDef(def.getName());
-        assertTrue(EqualsBuilder.reflectionEquals(def, found));
+        assertEquals(found, def);
 
         def.setDescription("updated description");
         dao.updateTaskDef(def);
         found = dao.getTaskDef(def.getName());
-        assertTrue(EqualsBuilder.reflectionEquals(def, found));
+        assertEquals(found, def);
         assertEquals("updated description", found.getDescription());
 
         for(int i = 0; i < 9; i++) {

@@ -41,6 +41,7 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.service.RateLimitingService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -85,6 +86,8 @@ public class WorkflowExecutor {
 
     private Configuration config;
 
+    private RateLimitingService rateLimitingService;
+
     private ParametersUtils parametersUtils = new ParametersUtils();
 
     public static final String deciderQueue = "_deciderQueue";
@@ -92,12 +95,15 @@ public class WorkflowExecutor {
     private int activeWorkerLastPollnSecs;
 
     @Inject
-    public WorkflowExecutor(DeciderService deciderService, MetadataDAO metadataDAO, ExecutionDAO executionDAO, QueueDAO queueDAO, Configuration config) {
+    public WorkflowExecutor(DeciderService deciderService, MetadataDAO metadataDAO, ExecutionDAO executionDAO,
+                            QueueDAO queueDAO, Configuration config, RateLimitingService rateLimitingService) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
         this.executionDAO = executionDAO;
         this.queueDAO = queueDAO;
         this.config = config;
+        this.rateLimitingService = rateLimitingService;
+
         activeWorkerLastPollnSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
     }
 
@@ -146,7 +152,7 @@ public class WorkflowExecutor {
             //because everything else is a system defined task
             Set<String> missingTaskDefs = workflowDefinition.all().stream()
                     .filter(wft -> wft.getType().equals(WorkflowTask.Type.SIMPLE.name()))
-                    .map(wft2 -> wft2.getName())
+                    .map(WorkflowTask::getName)
                     .filter(task -> metadataDAO.getTaskDef(task) == null)
                     .collect(Collectors.toSet());
 
@@ -738,7 +744,11 @@ public class WorkflowExecutor {
             if (task.getStatus().equals(SCHEDULED)) {
 
                 if (executionDAO.exceedsInProgressLimit(task)) {
-                    logger.warn("Rate limited for {}", task.getTaskDefName());
+                    //to do add a metric to record this
+                    logger.warn("Concurrent Execution limited for {}", task.getTaskDefName());
+                    return;
+                } if(task.getRateLimitPerSecond() > 0 && !rateLimitingService.evaluateRateLimitBoundary(task)) {
+                    logger.warn("RateLimit Execution limited for {}", task.getTaskDefName());
                     return;
                 }
             }

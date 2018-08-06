@@ -110,11 +110,8 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
     @Override
     public TaskDef getTaskDef(String name) {
-        TaskDef taskDef = taskDefCache.get(name);
-        if(taskDef == null) {
-            taskDef = getTaskDefFromDB(name);
-        }
-        return taskDef;
+        return Optional.ofNullable(taskDefCache.get(name))
+                .orElseGet(() -> getTaskDefFromDB(name));
     }
 
     private TaskDef getTaskDefFromDB(String name) {
