@@ -21,6 +21,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -103,11 +104,8 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
     @Override
     public TaskDef getTaskDef(String name) {
-        TaskDef taskDef = taskDefCache.get(name);
-        if(taskDef == null) {
-            taskDef = getTaskDefFromDB(name);
-        }
-        return taskDef;
+        return Optional.ofNullable(taskDefCache.get(name))
+                .orElseGet(() -> getTaskDefFromDB(name));
     }
 
     private TaskDef getTaskDefFromDB(String name) {
