@@ -426,7 +426,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 	@Override
 	public void updateWorkflow(String workflowInstanceId, String[] keys, Object[] values) {
 		if (keys.length != values.length) {
-			throw new IllegalArgumentException("Number of keys and values should be same.");
+			throw new ApplicationException(Code.INVALID_INPUT, "Number of keys and values do not match");
 		}
 
 		UpdateRequest request = new UpdateRequest(indexName, WORKFLOW_DOC_TYPE, workflowInstanceId);

@@ -4,13 +4,13 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.341"
+            "locked": "1.11.380"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.341"
+            "locked": "1.11.380"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -172,6 +172,12 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
@@ -207,7 +213,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.6.3"
+            "locked": "3.2.0"
         },
         "commons-io:commons-io": {
             "firstLevelTransitive": [
@@ -264,7 +270,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "5.1.43"
+            "locked": "8.0.11"
         },
         "net.thisptr:jackson-jq": {
             "firstLevelTransitive": [
@@ -354,13 +360,13 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.341"
+            "locked": "1.11.380"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.341"
+            "locked": "1.11.380"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -522,6 +528,12 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
@@ -557,7 +569,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.6.3"
+            "locked": "3.2.0"
         },
         "commons-io:commons-io": {
             "firstLevelTransitive": [
@@ -614,7 +626,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "5.1.43"
+            "locked": "8.0.11"
         },
         "net.thisptr:jackson-jq": {
             "firstLevelTransitive": [
@@ -704,13 +716,13 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.341"
+            "locked": "1.11.380"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.341"
+            "locked": "1.11.380"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -872,6 +884,12 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
@@ -907,7 +925,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.6.3"
+            "locked": "3.2.0"
         },
         "commons-io:commons-io": {
             "firstLevelTransitive": [
@@ -964,7 +982,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "5.1.43"
+            "locked": "8.0.11"
         },
         "net.thisptr:jackson-jq": {
             "firstLevelTransitive": [
@@ -1054,13 +1072,13 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.341"
+            "locked": "1.11.380"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.341"
+            "locked": "1.11.380"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -1222,6 +1240,12 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
@@ -1257,7 +1281,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.6.3"
+            "locked": "3.2.0"
         },
         "commons-io:commons-io": {
             "firstLevelTransitive": [
@@ -1314,7 +1338,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "5.1.43"
+            "locked": "8.0.11"
         },
         "net.thisptr:jackson-jq": {
             "firstLevelTransitive": [

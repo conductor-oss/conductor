@@ -1,17 +1,5 @@
 package com.netflix.conductor.dao.mysql;
 
-import java.sql.Connection;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-import javax.sql.DataSource;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
@@ -27,6 +15,17 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
+
+import javax.inject.Inject;
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
@@ -248,8 +247,8 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
             if (archiveWorkflow) {
                 // Add to elasticsearch
-                indexer.updateWorkflow(workflowId, new String[] { RAW_JSON_FIELD, ARCHIVED_FIELD },
-                        new Object[] { objectMapper.writeValueAsString(wf), true });
+                indexer.updateWorkflow(workflowId, new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD},
+                        new Object[]{objectMapper.writeValueAsString(wf), true});
             } else {
                 // Not archiving, also remove workflowId from index
                 indexer.removeWorkflow(workflowId);
@@ -389,6 +388,16 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     }
 
     @Override
+    public void removeEventExecution(EventExecution eventExecution) {
+        try {
+            withTransaction(tx -> removeEventExecution(tx, eventExecution));
+        } catch (Exception e) {
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR,
+                    "Unable to remove event execution " + eventExecution.getId(), e);
+        }
+    }
+
+    @Override
     public void updateEventExecution(EventExecution eventExecution) {
         try {
             withTransaction(tx -> updateEventExecution(tx, eventExecution));
@@ -401,13 +410,13 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
     @Override
     public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId,
-            int max) {
+                                                   int max) {
         try {
             List<EventExecution> executions = Lists.newLinkedList();
             withTransaction(tx -> {
                 for (int i = 0; i < max; i++) {
                     String executionId = messageId + "_" + i; // see EventProcessor.handle to understand how the
-                                                              // execution id is set
+                    // execution id is set
                     EventExecution ee = readEventExecution(tx, eventHandlerName, eventName, messageId, executionId);
                     if (ee == null) {
                         break;
@@ -577,7 +586,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     }
 
     private void insertOrUpdateTaskData(Connection connection, Task task) {
-        
+
         String INSERT_TASK = "INSERT INTO task (task_id, json_data, modified_on) VALUES (?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE json_data=VALUES(json_data), modified_on=VALUES(modified_on)";
         execute(connection, INSERT_TASK, q -> q.addParameter(task.getTaskId()).addJsonParameter(task).executeUpdate());
 
@@ -712,8 +721,17 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
                         .addParameter(eventExecution.getId()).executeUpdate());
     }
 
+    private void removeEventExecution(Connection connection, EventExecution eventExecution) {
+        String REMOVE_EVENT_EXECUTION = "DELETE FROM event_execution " + "WHERE event_handler_name = ? "
+                + "AND event_name = ? " + "AND message_id = ? " + "AND execution_id = ?";
+
+        execute(connection, REMOVE_EVENT_EXECUTION,
+                q -> q.addParameter(eventExecution.getName()).addParameter(eventExecution.getEvent())
+                        .addParameter(eventExecution.getMessageId()).addParameter(eventExecution.getId()).executeUpdate());
+    }
+
     private EventExecution readEventExecution(Connection connection, String eventHandlerName, String eventName,
-            String messageId, String executionId) {
+                                              String messageId, String executionId) {
         // @formatter:off
         String GET_EVENT_EXECUTION = "SELECT json_data FROM event_execution " + "WHERE event_handler_name = ? "
                 + "AND event_name = ? " + "AND message_id = ? " + "AND execution_id = ?";
