@@ -38,8 +38,10 @@ import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Join;
+import com.netflix.conductor.dao.MetadataDAO;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -53,6 +55,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Viren
@@ -60,6 +65,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestDeciderOutcomes {
 
+    private MetadataDAO metadataDAO;
     private DeciderService deciderService;
 
     private static ObjectMapper objectMapper = new ObjectMapper();
@@ -74,13 +80,15 @@ public class TestDeciderOutcomes {
 
     @Before
     public void init() throws Exception {
+        metadataDAO = Mockito.mock(MetadataDAO.class);
+        when(metadataDAO.getTaskDef(anyString())).thenReturn(new TaskDef());
         ParametersUtils parametersUtils = new ParametersUtils();
         Map<String, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put("DECISION", new DecisionTaskMapper());
         taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils));
         taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
         taskMappers.put("JOIN", new JoinTaskMapper());
-        taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper));
+        taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO));
         taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils));
         taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
         taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils));

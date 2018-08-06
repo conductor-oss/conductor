@@ -49,6 +49,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -98,7 +99,9 @@ public class End2EndTests {
     public void testAll() throws Exception {
         List<TaskDef> definitions = createAndRegisterTaskDefinitions("t", 5);
 
-        List<TaskDef> found = taskClient.getTaskDef();
+        List<TaskDef> found = taskClient.getTaskDef().stream()
+                .filter(taskDefinition -> taskDefinition.getName().startsWith("t"))
+                .collect(Collectors.toList());
         assertNotNull(found);
         assertEquals(definitions.size(), found.size());
 

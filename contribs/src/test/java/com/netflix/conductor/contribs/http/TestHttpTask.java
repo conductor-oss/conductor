@@ -39,6 +39,7 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
+import com.netflix.conductor.dao.MetadataDAO;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -88,6 +89,8 @@ public class TestHttpTask {
 
     private Workflow workflow = new Workflow();
 
+    private MetadataDAO metadataDAO;
+
     private static Server server;
 
     private static ObjectMapper objectMapper = new ObjectMapper();
@@ -121,6 +124,7 @@ public class TestHttpTask {
     public void setup() {
         RestClientManager rcm = new RestClientManager();
         Configuration config = mock(Configuration.class);
+        metadataDAO = mock(MetadataDAO.class);
         when(config.getServerId()).thenReturn("test_server_id");
         httpTask = new HttpTask(rcm, config);
     }
@@ -299,7 +303,7 @@ public class TestHttpTask {
         taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils));
         taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
         taskMappers.put("JOIN", new JoinTaskMapper());
-        taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper));
+        taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO));
         taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils));
         taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
         taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils));

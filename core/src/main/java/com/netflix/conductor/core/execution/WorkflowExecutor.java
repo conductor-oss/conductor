@@ -33,6 +33,7 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.ExecutionDAO;

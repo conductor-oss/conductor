@@ -15,10 +15,9 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
-import com.google.common.annotations.VisibleForTesting;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.DynamicForkJoinTaskList;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -28,7 +27,7 @@ import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
-
+import com.netflix.conductor.dao.MetadataDAO;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -54,12 +53,15 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
 
     private ObjectMapper objectMapper;
 
+    private MetadataDAO metadataDAO;
+
     private static final TypeReference<List<WorkflowTask>> ListOfWorkflowTasks = new TypeReference<List<WorkflowTask>>() {
     };
 
-    public ForkJoinDynamicTaskMapper(ParametersUtils parametersUtils, ObjectMapper objectMapper) {
+    public ForkJoinDynamicTaskMapper(ParametersUtils parametersUtils, ObjectMapper objectMapper, MetadataDAO metadataDAO) {
         this.parametersUtils = parametersUtils;
         this.objectMapper = objectMapper;
+        this.metadataDAO = metadataDAO;
     }
 
     /**
@@ -236,6 +238,11 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         Map<String, Object> input = parametersUtils.getTaskInput(taskToSchedule.getInputParameters(), workflowInstance, null, null);
         Object dynamicForkTasksJson = input.get(dynamicForkTaskParam);
         List<WorkflowTask> dynamicForkWorkflowTasks = objectMapper.convertValue(dynamicForkTasksJson, ListOfWorkflowTasks);
+        for (WorkflowTask workflowTask : dynamicForkWorkflowTasks) {
+            if (workflowTask.shouldPopulateDefinition()) {
+                workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
+            }
+        }
         Object dynamicForkTasksInput = input.get(taskToSchedule.getDynamicForkTasksInputParamName());
         if (!(dynamicForkTasksInput instanceof Map)) {
             throw new TerminateWorkflowException("Input to the dynamically forked tasks is not a map -> expecting a map of K,V  but found " + dynamicForkTasksInput);
@@ -275,6 +282,10 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                     dynamicForkJoinWorkflowTask.setTaskReferenceName(dynamicForkJoinTask.getReferenceName());
                     dynamicForkJoinWorkflowTask.setName(dynamicForkJoinTask.getTaskName());
                     dynamicForkJoinWorkflowTask.setType(dynamicForkJoinTask.getType());
+                    if (dynamicForkJoinWorkflowTask.shouldPopulateDefinition()) {
+                        dynamicForkJoinWorkflowTask.setTaskDefinition(
+                                metadataDAO.getTaskDef(dynamicForkJoinTask.getTaskName()));
+                    }
                     return dynamicForkJoinWorkflowTask;
                 })
                 .collect(Collectors.toCollection(LinkedList::new));

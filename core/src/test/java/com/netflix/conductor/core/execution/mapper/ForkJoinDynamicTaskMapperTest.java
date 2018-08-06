@@ -13,6 +13,7 @@ import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
+import com.netflix.conductor.dao.MetadataDAO;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,6 +37,7 @@ import static org.mockito.Mockito.when;
 
 public class ForkJoinDynamicTaskMapperTest {
 
+    private MetadataDAO metadataDAO;
     private ParametersUtils parametersUtils;
     private ObjectMapper objectMapper;
     private DeciderService deciderService;
@@ -47,11 +49,12 @@ public class ForkJoinDynamicTaskMapperTest {
 
     @Before
     public void setUp() throws Exception {
+        metadataDAO = Mockito.mock(MetadataDAO.class);
         parametersUtils = Mockito.mock(ParametersUtils.class);
         objectMapper = Mockito.mock(ObjectMapper.class);
         deciderService = Mockito.mock(DeciderService.class);
 
-        forkJoinDynamicTaskMapper = new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper);
+        forkJoinDynamicTaskMapper = new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO);
 
     }
 

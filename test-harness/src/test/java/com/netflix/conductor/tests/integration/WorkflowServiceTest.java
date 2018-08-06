@@ -38,7 +38,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.core.execution.MetadataMapperService;
+import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.WorkflowSweeper;
@@ -1025,6 +1025,8 @@ public class WorkflowServiceTest {
         def.getTasks().add(join);
         def.getTasks().add(workflowTask4);
 
+        metadataMapperService.populateTaskDefinitions(def);
+
         metadataService.updateWorkflowDef(def);
     }
 
@@ -1060,7 +1062,7 @@ public class WorkflowServiceTest {
         def.getTasks().add(fanout);
         def.getTasks().add(join);
 
-        metadataMapperService.populateTaskDefinitions(def)
+        metadataMapperService.populateTaskDefinitions(def);
 
         metadataService.updateWorkflowDef(def);
 

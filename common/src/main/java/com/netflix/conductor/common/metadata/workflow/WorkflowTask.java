@@ -561,6 +561,10 @@ public class WorkflowTask {
 		return null;
 		
 	}
+
+	public boolean shouldPopulateDefinition() {
+		return getType().equals(WorkflowTask.Type.SIMPLE.name()) && getTaskDefinition() == null;
+	}
 	
 	@Override
 	public String toString() {

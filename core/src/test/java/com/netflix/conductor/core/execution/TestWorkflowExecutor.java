@@ -38,6 +38,7 @@ import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -86,7 +87,7 @@ public class TestWorkflowExecutor {
         taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils));
         taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
         taskMappers.put("JOIN", new JoinTaskMapper());
-        taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper));
+        taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO));
         taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils));
         taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
         taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils));

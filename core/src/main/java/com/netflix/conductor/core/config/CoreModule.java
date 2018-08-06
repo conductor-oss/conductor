@@ -47,6 +47,7 @@ import com.netflix.conductor.core.execution.tasks.Event;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator;
 import com.netflix.conductor.core.execution.tasks.Wait;
+import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 
 
@@ -112,8 +113,8 @@ public class CoreModule extends AbstractModule {
     @StringMapKey("FORK_JOIN_DYNAMIC")
     @Singleton
     @Named("TaskMappers")
-    public TaskMapper getForkJoinDynamicTaskMapper(ParametersUtils parametersUtils, ObjectMapper objectMapper) {
-        return new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper);
+    public TaskMapper getForkJoinDynamicTaskMapper(ParametersUtils parametersUtils, ObjectMapper objectMapper, MetadataDAO metadataDAO) {
+        return new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO);
     }
 
     @ProvidesIntoMap
