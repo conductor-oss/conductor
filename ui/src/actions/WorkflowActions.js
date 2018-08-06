@@ -92,7 +92,6 @@ export function bulkRestartWorkflow(workflows){
 
 
     return http.post('/api/wfe/bulk/restart', workflows).then((data) => {
-      console.log("Bulk restart returned")
       dispatch({
         type: 'RECEIVED_BULK_RESTART_WORKFLOW',
         workflows

@@ -83,7 +83,11 @@ const Workflow = React.createClass({
       selectedWFEs:[],
       bulkProcessOperation: "",
       bulkProcessInFlight: false,
-      bulkProcessSuccess: false
+      bulkProcessSuccess: false,
+      error:false,
+      bulkError:false,
+      bulkValidationMessage:"",
+      bulkPanelOpen:false
     }
   },
   componentWillMount(){
@@ -114,6 +118,10 @@ const Workflow = React.createClass({
       status = [];
     }
 
+    if(!this.state.bulkProcessSuccess && nextProps.bulkProcessSuccess){
+      this.onBulkSuccess();
+    }
+
     let update = true;
     update = this.state.search != search;
     update = update || (this.state.h != h);
@@ -128,7 +136,9 @@ const Workflow = React.createClass({
       workflows : workflowDefs,
       bulkProcessInFlight : nextProps.bulkProcessInFlight,
       bulkProcessSuccess : nextProps.bulkProcessSuccess,
-      start : start
+      start : start,
+      error: nextProps.error,
+      bulkError: (!this.state.error && nextProps.error && this.state.bulkProcessInFlight) ? true : this.state.bulkError
     });
 
     this.refreshResults();
@@ -217,11 +227,11 @@ const Workflow = React.createClass({
   },
 
   handleRowSelect(row, isSelected, e) {
-    var currWFEs = this.state.selectedWFEs;
+    let currWFEs = this.state.selectedWFEs;
     this.state.update = true;
     if(isSelected){
       currWFEs.push(row);
-      this.setState({selectedWFEs: currWFEs})
+      this.setState({selectedWFEs: currWFEs, bulkValidationMessage:""})
     } else {
       var index = this.state.selectedWFEs.filter((storedRow) => {
         return row.workflowId === storedRow.workflowId
@@ -230,66 +240,69 @@ const Workflow = React.createClass({
         return true;
       }
       currWFEs.splice(index, 1)
-      this.setState({selectedWFEs: currWFEs})
+      this.setState({selectedWFEs: currWFEs, bulkValidationMessage:""})
     }
 
     return true;
   },
 
   handleSelectAll(isSelected, rows, e) {
-    this.state.update = true;
     if(isSelected){
-      this.setState({selectedWFEs: rows})
+      this.setState({selectedWFEs: rows,bulkValidationMessage:""})
     } else {
-      this.setState({selectedWFEs: []})
+      this.setState({selectedWFEs: [],bulkValidationMessage:""})
     }
 
     return true;
   },
 
   onChangeBulkProcessSelection(e){
-    this.setState({bulkProcessOperation:e.target.value})
+    this.setState({bulkProcessOperation:e.target.value, bulkValidationMessage:""})
   },
 
-  bulkProcess(){
-    var wfes = this.state.selectedWFEs.map((wfe) => {return wfe.workflowId});
-    var operation = this.state.bulkProcessOperation;
-    this.setState({bulkProcessSuccess:false});
-    if(wfes.length === 0){
-      return;
-    }
-
-    switch(operation){
-      case "retry":
-        this.setState({bulkProcessInFlight:true});
-        this.props.dispatch(bulkRetryWorkflow(wfes));
-        break;
-      case "restart":
-        this.setState({bulkProcessInFlight:true});
-        this.props.dispatch(bulkRestartWorkflow(wfes))
-        break;
-      case "resume":
-        this.setState({bulkProcessInFlight:true});
-        this.props.dispatch(bulkResumeWorkflow(wfes))
-        break;
-      case "terminate":
-        this.setState({bulkProcessInFlight:true});
-        this.props.dispatch(bulkTerminateWorkflow(wfes))
-        break;
-      case "pause":
-        this.setState({bulkProcessInFlight:true});
-        this.props.dispatch(bulkPauseWorkflow(wfes))
-        break;
-      default: return;
-    }
-
+  onBulkSuccess(){
     this.refs.bulkProcessSelect.refs.input.value = "";
     this.setState({selectedWFEs:[], bulkProcessOperation:""});
     this.refs.table.cleanSelected();
   },
 
+  bulkProcess(){
+
+    let wfes = this.state.selectedWFEs.map((wfe) => {return wfe.workflowId});
+    let operation = this.state.bulkProcessOperation;
+    this.setState({bulkProcessSuccess:false, bulkError:false, bulkValidationMessage: ""});
+
+    if(wfes.length === 0){
+      this.setState({bulkValidationMessage:"Error: No workflows selected"})
+      return;
+    }
+
+    switch(operation){
+      case "retry":
+        this.props.dispatch(bulkRetryWorkflow(wfes));
+        break;
+      case "restart":
+        this.props.dispatch(bulkRestartWorkflow(wfes))
+        break;
+      case "resume":
+        this.props.dispatch(bulkResumeWorkflow(wfes))
+        break;
+      case "terminate":
+        this.props.dispatch(bulkTerminateWorkflow(wfes))
+        break;
+      case "pause":
+        this.props.dispatch(bulkPauseWorkflow(wfes))
+        break;
+      default:
+        this.setState({bulkValidationMessage:"Error: No Workflow Operation selected"})
+      return;
+    }
+
+  },
+
  render() {
     let wfs = [];
+    let filteredWfs = [];
     let totalHits = 0;
     let found = 0;
     if(this.props.data.hits) {
@@ -311,18 +324,19 @@ const Workflow = React.createClass({
       onSelect: this.handleRowSelect,
       onSelectAll: this.handleSelectAll
     };
-    const bulkSpin = (this.state.bulkProcessInFlight ? (<i style={{"font-size":"150%"}} className="fa fa-spinner fa-spin"></i>) : "");
-    const bulkSuccess = (this.state.bulkProcessSuccess ? (<span style={{"font-size":"150%", "color":"green"}}>Success!</span>) : "");
-
+    const bulkSpin = (this.state.bulkProcessInFlight ? (<i style={{"fontSize":"150%"}} className="fa fa-spinner fa-spin"></i>) : "");
+    const bulkSuccess = (this.state.bulkProcessSuccess ? (<span style={{"fontSize":"150%", "color":"green"}}>Success!</span>) : "");
+    const bulkValidation = (this.state.bulkValidationMessage !== "" ? (<span style={{"fontSize":"150%", "color":"red"}}>{this.state.bulkValidationMessage}</span>) : "");
+    const bulkError = (this.state.bulkError ? (<span style={{"fontSize":"150%", "color":"red"}}>Error! Please remove invalid workflows and resubmit!</span>) : "");
     //secondary filter to match sure we only show workflows that match the the status
     var currentStatusArray = this.state.status;
-    /*if(currentStatusArray.length>0 && wfs.length>0) {
+    if(currentStatusArray.length>0 && wfs.length>0) {
         filteredWfs = wfs.filter( function (wf) {
             return currentStatusArray.includes(wf.status); //remove wft if status doesn't match search
         });
     } else {
         filteredWfs = wfs;
-    }*/
+    }
 
 
     return (
@@ -356,7 +370,8 @@ const Workflow = React.createClass({
           </form>
           </Panel>
         </div>
-        <Panel header="Bulk Processing">
+        <Panel header="Bulk Processing  (click to expand)" collapsible >
+        <label>Select workflows from table below</label>
         <Grid fluid={true}>
           <Row className="show-grid">
               <Col md={3}>
@@ -387,6 +402,8 @@ const Workflow = React.createClass({
             <Col md={2}>
               {bulkSpin}
               {bulkSuccess}
+              {bulkError}
+              {bulkValidation}
             </Col>
           </Row>
         </Grid>
@@ -396,7 +413,7 @@ const Workflow = React.createClass({
           {parseInt(this.state.start) >= 100?<a onClick={this.prevPage}><i className="fa fa-backward"/>&nbsp;Previous Page</a>:''}
           {parseInt(this.state.start) + 100 <= totalHits?<a onClick={this.nextPage}>&nbsp;&nbsp;Next Page&nbsp;<i className="fa fa-forward"/></a>:''}
         </span>
-        <BootstrapTable ref="table" data={wfs} striped={true} hover={true} search={false} exportCSV={false} pagination={false} selectRow={selectRow} options={{sizePerPage:100}}>
+        <BootstrapTable ref="table" data={filteredWfs} striped={true} hover={true} search={false} exportCSV={false} pagination={false} selectRow={selectRow} options={{sizePerPage:100}}>
           <TableHeaderColumn dataField="workflowType"  dataAlign="left" dataSort={true}>Workflow</TableHeaderColumn>
           <TableHeaderColumn dataField="workflowId" isKey={true} dataSort={true} dataFormat={linkMaker}>Workflow ID</TableHeaderColumn>
           <TableHeaderColumn dataField="status" dataSort={true}>Status</TableHeaderColumn>
