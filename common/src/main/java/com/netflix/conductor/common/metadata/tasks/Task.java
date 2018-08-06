@@ -598,9 +598,9 @@ public class Task {
      * @return {@link Optional} containing the task definition if available
      */
     public Optional<TaskDef> getTaskDefinition() {
-        return this.getWorkflowTask() != null ?
-                Optional.ofNullable(this.getWorkflowTask().getTaskDefinition()) :
-                Optional.empty();
+        return Optional.ofNullable(this.getWorkflowTask())
+                .map(workflowTask -> Optional.ofNullable(workflowTask.getTaskDefinition()))
+                .orElse(Optional.empty());
     }
 
     public Task copy() {

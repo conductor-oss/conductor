@@ -26,20 +26,8 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.contribs.http.HttpTask.Input;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.DeciderService;
-import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
-import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
-import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
-import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
-import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
-import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
-import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
-import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
-import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
-import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
-import com.netflix.conductor.dao.MetadataDAO;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -89,8 +77,6 @@ public class TestHttpTask {
 
     private Workflow workflow = new Workflow();
 
-    private MetadataDAO metadataDAO;
-
     private static Server server;
 
     private static ObjectMapper objectMapper = new ObjectMapper();
@@ -124,7 +110,6 @@ public class TestHttpTask {
     public void setup() {
         RestClientManager rcm = new RestClientManager();
         Configuration config = mock(Configuration.class);
-        metadataDAO = mock(MetadataDAO.class);
         when(config.getServerId()).thenReturn("test_server_id");
         httpTask = new HttpTask(rcm, config);
     }
@@ -297,18 +282,7 @@ public class TestHttpTask {
         workflow.setWorkflowDefinition(def);
         workflow.getTasks().add(task);
 
-        ParametersUtils parametersUtils = new ParametersUtils();
         Map<String, TaskMapper> taskMappers = new HashMap<>();
-        taskMappers.put("DECISION", new DecisionTaskMapper());
-        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils));
-        taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
-        taskMappers.put("JOIN", new JoinTaskMapper());
-        taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO));
-        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils));
-        taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
-        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils));
-        taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
-        taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
         new DeciderService(taskMappers).decide(workflow);
 
         System.out.println(workflow.getTasks());

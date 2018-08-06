@@ -72,7 +72,7 @@ public class SimpleTaskMapperTest {
 
         //then
         expectedException.expect(TerminateWorkflowException.class);
-        expectedException.expectMessage(String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName()));
+        expectedException.expectMessage(String.format("Invalid task. Task %s does not have a definition", taskToSchedule.getName()));
 
         //when
         simpleTaskMapper.getMappedTasks(taskMapperContext);

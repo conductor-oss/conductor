@@ -17,7 +17,6 @@ package com.netflix.conductor.core.execution;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
-
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -40,11 +39,11 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -55,8 +54,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import javax.inject.Inject;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -79,23 +76,23 @@ public class WorkflowExecutor {
 
     private static final Logger logger = LoggerFactory.getLogger(WorkflowExecutor.class);
 
-    private MetadataDAO metadataDAO;
+    private final MetadataDAO metadataDAO;
 
-    private ExecutionDAO executionDAO;
+    private final ExecutionDAO executionDAO;
 
-    private QueueDAO queueDAO;
+    private final QueueDAO queueDAO;
 
-    private DeciderService deciderService;
+    private final DeciderService deciderService;
 
-    private Configuration config;
+    private final Configuration config;
 
-    private ParametersUtils parametersUtils = new ParametersUtils();
+    private final MetadataMapperService metadataMapperService;
 
-    private int activeWorkerLastPollnSecs;
+    private final ParametersUtils parametersUtils = new ParametersUtils();
+
+    private int activeWorkerLastPollInSecs;
 
     public static final String DECIDER_QUEUE = "_deciderQueue";
-
-    public MetadataMapperService metadataMapperService;
 
 
     @Inject
@@ -113,7 +110,7 @@ public class WorkflowExecutor {
         this.queueDAO = queueDAO;
         this.config = config;
         this.metadataMapperService = metadataMapperService;
-        activeWorkerLastPollnSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
+        activeWorkerLastPollInSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
     }
 
     /**
@@ -245,7 +242,7 @@ public class WorkflowExecutor {
         );
     }
 
-    private final Predicate<PollData> validateLastPolledTime = pd -> pd.getLastPollTime() > System.currentTimeMillis() - (activeWorkerLastPollnSecs * 1000);
+    private final Predicate<PollData> validateLastPolledTime = pd -> pd.getLastPollTime() > System.currentTimeMillis() - (activeWorkerLastPollInSecs * 1000);
 
     private final Predicate<Task> isSystemTask = task -> SystemTaskType.is(task.getTaskType());
 
@@ -580,12 +577,13 @@ public class WorkflowExecutor {
 
             try {
 
-                WorkflowDef latestFailureWorkflow = Optional.of(workflow.getWorkflowDefinition()).orElse(
-                        metadataDAO.getLatest(failureWorkflow)
-                                .orElseThrow(() ->
-                                        new RuntimeException("Failure Workflow Definition not found for: " + failureWorkflow)
-                                )
-                );
+                WorkflowDef latestFailureWorkflow =
+                        metadataDAO.getLatest(failureWorkflow).orElse(
+                                Optional.ofNullable(workflow.getWorkflowDefinition())
+                                        .orElseThrow(() ->
+                                                new RuntimeException("Failure Workflow Definition not found for: " + failureWorkflow)
+                                        )
+                        );
 
                 String failureWFId = startWorkflow(
                         latestFailureWorkflow,

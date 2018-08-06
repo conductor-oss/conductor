@@ -67,7 +67,7 @@ public class SimpleTaskMapper implements TaskMapper {
 
         TaskDef taskDefinition = Optional.ofNullable(taskToSchedule.getTaskDefinition())
                 .orElseThrow(() -> {
-                    String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
+                    String reason = String.format("Invalid task. Task %s does not have a definition", taskToSchedule.getName());
                     return new TerminateWorkflowException(reason);
                 });
 

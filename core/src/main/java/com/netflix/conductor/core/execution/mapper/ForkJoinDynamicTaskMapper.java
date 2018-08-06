@@ -49,11 +49,11 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
 
     public static final Logger logger = LoggerFactory.getLogger(ForkJoinDynamicTaskMapper.class);
 
-    private ParametersUtils parametersUtils;
+    private final ParametersUtils parametersUtils;
 
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
-    private MetadataDAO metadataDAO;
+    private final MetadataDAO metadataDAO;
 
     private static final TypeReference<List<WorkflowTask>> ListOfWorkflowTasks = new TypeReference<List<WorkflowTask>>() {
     };

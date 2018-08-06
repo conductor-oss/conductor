@@ -25,16 +25,15 @@ public class MetadataMapperService {
     }
 
     public WorkflowDef populateTaskDefinitions(WorkflowDef workflowDefinition) {
-        List<WorkflowTask> workflowTasks = workflowDefinition.collectTasks();
-        for (WorkflowTask workflowTask : workflowTasks) {
-
-
-            if (workflowTask.shouldPopulateDefinition()) {
-                workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
-            } else if (workflowTask.getType().equals(WorkflowTask.Type.SUB_WORKFLOW.name())) {
-                populateVersionForSubWorkflow(workflowTask);
-            }
-        }
+        workflowDefinition.collectTasks().stream().forEach(
+                workflowTask -> {
+                    if (workflowTask.shouldPopulateDefinition()) {
+                        workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
+                    } else if (workflowTask.getType().equals(WorkflowTask.Type.SUB_WORKFLOW.name())) {
+                        populateVersionForSubWorkflow(workflowTask);
+                    }
+                }
+        );
         return workflowDefinition;
     }
 
