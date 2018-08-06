@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.DynamicForkJoinTaskList;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -71,7 +72,7 @@ public class ForkJoinDynamicTaskMapperTest {
         workflowInstance.setWorkflowDefinition(def);
 
         WorkflowTask dynamicForkJoinToSchedule = new WorkflowTask();
-        dynamicForkJoinToSchedule.setType(WorkflowTask.Type.FORK_JOIN_DYNAMIC.name());
+        dynamicForkJoinToSchedule.setType(TaskType.FORK_JOIN_DYNAMIC.name());
         dynamicForkJoinToSchedule.setTaskReferenceName("dynamicfanouttask");
         dynamicForkJoinToSchedule.setDynamicForkTasksParam("dynamicTasks");
         dynamicForkJoinToSchedule.setDynamicForkTasksInputParamName("dynamicTasksInput");
@@ -80,7 +81,7 @@ public class ForkJoinDynamicTaskMapperTest {
 
 
         WorkflowTask join = new WorkflowTask();
-        join.setType(WorkflowTask.Type.JOIN.name());
+        join.setType(TaskType.JOIN.name());
         join.setTaskReferenceName("dynamictask_join");
 
         def.getTasks().add(dynamicForkJoinToSchedule);
@@ -142,7 +143,7 @@ public class ForkJoinDynamicTaskMapperTest {
         workflowInstance.setWorkflowDefinition(def);
 
         WorkflowTask dynamicForkJoinToSchedule = new WorkflowTask();
-        dynamicForkJoinToSchedule.setType(WorkflowTask.Type.FORK_JOIN_DYNAMIC.name());
+        dynamicForkJoinToSchedule.setType(TaskType.FORK_JOIN_DYNAMIC.name());
         dynamicForkJoinToSchedule.setTaskReferenceName("dynamicfanouttask");
         dynamicForkJoinToSchedule.setDynamicForkTasksParam("dynamicTasks");
         dynamicForkJoinToSchedule.setDynamicForkTasksInputParamName("dynamicTasksInput");
@@ -151,7 +152,7 @@ public class ForkJoinDynamicTaskMapperTest {
 
 
         WorkflowTask join = new WorkflowTask();
-        join.setType(WorkflowTask.Type.JOIN.name());
+        join.setType(TaskType.JOIN.name());
         join.setTaskReferenceName("dynamictask_join");
 
         def.getTasks().add(dynamicForkJoinToSchedule);
@@ -212,7 +213,7 @@ public class ForkJoinDynamicTaskMapperTest {
     public void getDynamicForkJoinTasksAndInput() throws Exception {
         //Given
         WorkflowTask dynamicForkJoinToSchedule = new WorkflowTask();
-        dynamicForkJoinToSchedule.setType(WorkflowTask.Type.FORK_JOIN_DYNAMIC.name());
+        dynamicForkJoinToSchedule.setType(TaskType.FORK_JOIN_DYNAMIC.name());
         dynamicForkJoinToSchedule.setTaskReferenceName("dynamicfanouttask");
         dynamicForkJoinToSchedule.setDynamicForkJoinTasksParam("dynamicTasks");
         dynamicForkJoinToSchedule.getInputParameters().put("dynamicTasks", "dt1.output.dynamicTasks");
@@ -250,7 +251,7 @@ public class ForkJoinDynamicTaskMapperTest {
     public void getDynamicForkJoinTasksAndInputException() throws Exception {
         //Given
         WorkflowTask dynamicForkJoinToSchedule = new WorkflowTask();
-        dynamicForkJoinToSchedule.setType(WorkflowTask.Type.FORK_JOIN_DYNAMIC.name());
+        dynamicForkJoinToSchedule.setType(TaskType.FORK_JOIN_DYNAMIC.name());
         dynamicForkJoinToSchedule.setTaskReferenceName("dynamicfanouttask");
         dynamicForkJoinToSchedule.setDynamicForkJoinTasksParam("dynamicTasks");
         dynamicForkJoinToSchedule.getInputParameters().put("dynamicTasks", "dt1.output.dynamicTasks");
@@ -287,7 +288,7 @@ public class ForkJoinDynamicTaskMapperTest {
     public void getDynamicForkTasksAndInput() throws Exception {
         //Given
         WorkflowTask dynamicForkJoinToSchedule = new WorkflowTask();
-        dynamicForkJoinToSchedule.setType(WorkflowTask.Type.FORK_JOIN_DYNAMIC.name());
+        dynamicForkJoinToSchedule.setType(TaskType.FORK_JOIN_DYNAMIC.name());
         dynamicForkJoinToSchedule.setTaskReferenceName("dynamicfanouttask");
         dynamicForkJoinToSchedule.setDynamicForkTasksParam("dynamicTasks");
         dynamicForkJoinToSchedule.setDynamicForkTasksInputParamName("dynamicTasksInput");
@@ -330,7 +331,7 @@ public class ForkJoinDynamicTaskMapperTest {
 
         //Given
         WorkflowTask dynamicForkJoinToSchedule = new WorkflowTask();
-        dynamicForkJoinToSchedule.setType(WorkflowTask.Type.FORK_JOIN_DYNAMIC.name());
+        dynamicForkJoinToSchedule.setType(TaskType.FORK_JOIN_DYNAMIC.name());
         dynamicForkJoinToSchedule.setTaskReferenceName("dynamicfanouttask");
         dynamicForkJoinToSchedule.setDynamicForkTasksParam("dynamicTasks");
         dynamicForkJoinToSchedule.setDynamicForkTasksInputParamName("dynamicTasksInput");

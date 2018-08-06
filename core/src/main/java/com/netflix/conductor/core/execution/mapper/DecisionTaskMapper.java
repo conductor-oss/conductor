@@ -18,6 +18,7 @@ package com.netflix.conductor.core.execution.mapper;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -34,7 +35,7 @@ import java.util.Map;
 
 
 /**
- * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link WorkflowTask.Type#DECISION}
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DECISION}
  * to a List {@link Task} starting with Task of type {@link SystemTaskType#DECISION} which is marked as IN_PROGRESS,
  * followed by the list of {@link Task} based on the case expression evaluation in the Decision task.
  */
@@ -43,7 +44,7 @@ public class DecisionTaskMapper implements TaskMapper {
     Logger logger = LoggerFactory.getLogger(DecisionTaskMapper.class);
 
     /**
-     * This method gets the list of tasks that need to scheduled when the the task to scheduled is of type {@link WorkflowTask.Type#DECISION}.
+     * This method gets the list of tasks that need to scheduled when the the task to scheduled is of type {@link TaskType#DECISION}.
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId
      * @return List of tasks in the following order:

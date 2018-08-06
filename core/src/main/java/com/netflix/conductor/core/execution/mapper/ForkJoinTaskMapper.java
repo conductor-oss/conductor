@@ -17,6 +17,7 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -30,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link WorkflowTask.Type#FORK_JOIN}
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#FORK_JOIN}
  * to a LinkedList of {@link Task} beginning with a completed {@link SystemTaskType#FORK}, followed by the user defined fork tasks
  */
 public class ForkJoinTaskMapper implements TaskMapper {
@@ -38,7 +39,7 @@ public class ForkJoinTaskMapper implements TaskMapper {
     public static final Logger logger = LoggerFactory.getLogger(ForkJoinTaskMapper.class);
 
     /**
-     * This method gets the list of tasks that need to scheduled when the the task to scheduled is of type {@link WorkflowTask.Type#FORK_JOIN}.
+     * This method gets the list of tasks that need to scheduled when the the task to scheduled is of type {@link TaskType#FORK_JOIN}.
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId
      * @return List of tasks in the following order:
@@ -50,7 +51,7 @@ public class ForkJoinTaskMapper implements TaskMapper {
      * Might be any kind of task, but in most cases is a UserDefinedTask with {@link Task.Status#SCHEDULED}
      * </li>
      * </ul>
-     * @throws TerminateWorkflowException When the task after {@link WorkflowTask.Type#FORK_JOIN} is not a {@link WorkflowTask.Type#JOIN}
+     * @throws TerminateWorkflowException When the task after {@link TaskType#FORK_JOIN} is not a {@link TaskType#JOIN}
      */
     @Override
     public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) throws TerminateWorkflowException {
@@ -92,7 +93,7 @@ public class ForkJoinTaskMapper implements TaskMapper {
                 .getWorkflowDefinition()
                 .getNextTask(taskToSchedule.getTaskReferenceName());
 
-        if (joinWorkflowTask == null || !joinWorkflowTask.getType().equals(WorkflowTask.Type.JOIN.name())) {
+        if (joinWorkflowTask == null || !joinWorkflowTask.getType().equals(TaskType.JOIN.name())) {
             throw new TerminateWorkflowException("Dynamic join definition is not followed by a join task.  Check the blueprint");
         }
         return tasksToBeScheduled;

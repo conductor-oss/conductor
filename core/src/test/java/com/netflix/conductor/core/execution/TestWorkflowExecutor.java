@@ -23,7 +23,7 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
@@ -137,15 +137,15 @@ public class TestWorkflowExecutor {
         List<Task> tasks = new LinkedList<>();
 
         WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setWorkflowTaskType(Type.USER_DEFINED);
+        taskToSchedule.setWorkflowTaskType(TaskType.USER_DEFINED);
         taskToSchedule.setType("HTTP");
 
         WorkflowTask taskToSchedule2 = new WorkflowTask();
-        taskToSchedule2.setWorkflowTaskType(Type.USER_DEFINED);
+        taskToSchedule2.setWorkflowTaskType(TaskType.USER_DEFINED);
         taskToSchedule2.setType("HTTP2");
 
         WorkflowTask wait = new WorkflowTask();
-        wait.setWorkflowTaskType(Type.WAIT);
+        wait.setWorkflowTaskType(TaskType.WAIT);
         wait.setType("WAIT");
         wait.setTaskReferenceName("wait");
 

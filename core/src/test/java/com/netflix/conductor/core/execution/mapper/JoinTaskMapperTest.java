@@ -1,6 +1,7 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -20,7 +21,7 @@ public class JoinTaskMapperTest {
     public void getMappedTasks() throws Exception {
 
         WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setType(WorkflowTask.Type.JOIN.name());
+        taskToSchedule.setType(TaskType.JOIN.name());
         taskToSchedule.setJoinOn(Arrays.asList("task1, task2"));
 
         String taskId = IDGenerator.generate();

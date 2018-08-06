@@ -19,6 +19,7 @@ package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -34,7 +35,7 @@ import java.util.Optional;
 
 
 /**
- * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link WorkflowTask.Type#SIMPLE}
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#SIMPLE}
  * to a {@link Task} with status {@link Task.Status#SCHEDULED}. <b>NOTE:</b> There is not type defined for simples task.
  */
 public class SimpleTaskMapper implements TaskMapper {
@@ -48,7 +49,7 @@ public class SimpleTaskMapper implements TaskMapper {
     }
 
     /**
-     * This method maps a {@link WorkflowTask} of type {@link WorkflowTask.Type#SIMPLE}
+     * This method maps a {@link WorkflowTask} of type {@link TaskType#SIMPLE}
      * to a {@link Task}
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId

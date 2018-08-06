@@ -22,9 +22,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
@@ -442,10 +442,10 @@ public class DeciderService {
         Map<String, Object> input = parametersUtils.getTaskInput(taskToSchedule.getInputParameters(),
                 workflowInstance, null, null);
 
-        Type taskType = Type.USER_DEFINED;
+        TaskType taskType = TaskType.USER_DEFINED;
         String type = taskToSchedule.getType();
-        if (Type.isSystemTask(type)) {
-            taskType = Type.valueOf(type);
+        if (TaskType.isSystemTask(type)) {
+            taskType = TaskType.valueOf(type);
         }
 
         // get in progress tasks for this workflow instance

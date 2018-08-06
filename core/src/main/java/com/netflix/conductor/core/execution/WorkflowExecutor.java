@@ -23,6 +23,7 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -273,7 +274,7 @@ public class WorkflowExecutor {
         // Obtain the names of the tasks with missing definitions
         Set<String> missingTaskDefinitionNames = workflowDefinition.collectTasks().stream()
                 .filter(workflowTask ->
-                        (workflowTask.getType().equals(WorkflowTask.Type.SIMPLE.name()) && workflowTask.getTaskDefinition() == null))
+                        (workflowTask.getType().equals(TaskType.SIMPLE.name()) && workflowTask.getTaskDefinition() == null))
                 .map(workflowTask -> workflowTask.getName())
                 .collect(Collectors.toSet());
 
@@ -422,7 +423,7 @@ public class WorkflowExecutor {
 
         // Reschedule the cancelled task but if the join is cancelled set that to in progress
         cancelledTasks.forEach(task -> {
-            if (task.getTaskType().equalsIgnoreCase(WorkflowTask.Type.JOIN.toString())) {
+            if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())) {
                 task.setStatus(IN_PROGRESS);
                 executionDAO.updateTask(task);
             } else {
@@ -1000,7 +1001,7 @@ public class WorkflowExecutor {
                 String[] domains = domainstr.split(",");
                 tasks.forEach(task -> {
                     // Filter out SystemTask
-                    if (!WorkflowTask.Type.isSystemTask(task.getTaskType())) {
+                    if (!TaskType.isSystemTask(task.getTaskType())) {
                         // Check which domain worker is polling
                         // Set the task domain
                         task.setDomain(getActiveDomain(task.getTaskType(), domains));
@@ -1009,7 +1010,7 @@ public class WorkflowExecutor {
 
             } else {
                 tasks.forEach(task -> {
-                    if (!WorkflowTask.Type.isSystemTask(task.getTaskType())) {
+                    if (!TaskType.isSystemTask(task.getTaskType())) {
                         String taskDomainstr = taskToDomain.get(task.getTaskType());
                         if (taskDomainstr != null) {
                             task.setDomain(getActiveDomain(task.getTaskType(), taskDomainstr.split(",")));

@@ -17,6 +17,7 @@ package com.netflix.conductor.common.metadata.tasks;
 
 import com.google.protobuf.Any;
 import com.github.vmg.protogen.annotations.*;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import java.util.HashMap;
@@ -173,7 +174,7 @@ public class Task {
 
     /**
      * @return Type of the task
-     * @see WorkflowTask.Type
+     * @see TaskType
      */
     public String getTaskType() {
         return taskType;

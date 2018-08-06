@@ -17,8 +17,8 @@ package com.netflix.conductor.core.execution.tasks;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.MockQueueProvider;
@@ -104,7 +104,7 @@ public class TestEvent {
         Task task = new Task();
         task.setReferenceTaskName("event");
         task.getInputData().put("sink", sink);
-        task.setTaskType(WorkflowTask.Type.EVENT.name());
+        task.setTaskType(TaskType.EVENT.name());
         workflow.getTasks().add(task);
 
         Event event = new Event();

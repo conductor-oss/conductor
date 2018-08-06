@@ -13,18 +13,6 @@ message WorkflowTask {
     message WorkflowTaskList {
         repeated WorkflowTask tasks = 1;
     }
-    enum Type {
-        SIMPLE = 0;
-        DYNAMIC = 1;
-        FORK_JOIN = 2;
-        FORK_JOIN_DYNAMIC = 3;
-        DECISION = 4;
-        JOIN = 5;
-        SUB_WORKFLOW = 6;
-        EVENT = 7;
-        WAIT = 8;
-        USER_DEFINED = 9;
-    }
     string name = 1;
     string task_reference_name = 2;
     string description = 3;

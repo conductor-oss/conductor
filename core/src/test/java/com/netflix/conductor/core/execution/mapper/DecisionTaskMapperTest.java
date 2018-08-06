@@ -2,6 +2,7 @@ package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -79,7 +80,7 @@ public class DecisionTaskMapperTest {
 
         //Decision task instance
         WorkflowTask decisionTask = new WorkflowTask();
-        decisionTask.setType(WorkflowTask.Type.DECISION.name());
+        decisionTask.setType(TaskType.DECISION.name());
         decisionTask.setName("Decision");
         decisionTask.setTaskReferenceName("decisionTask");
         decisionTask.setDefaultCase(Arrays.asList(task1));
@@ -131,7 +132,7 @@ public class DecisionTaskMapperTest {
     public void getEvaluatedCaseValue() throws Exception {
 
         WorkflowTask decisionTask = new WorkflowTask();
-        decisionTask.setType(WorkflowTask.Type.DECISION.name());
+        decisionTask.setType(TaskType.DECISION.name());
         decisionTask.setName("Decision");
         decisionTask.setTaskReferenceName("decisionTask");
         decisionTask.setInputParameters(ip1);
@@ -169,7 +170,7 @@ public class DecisionTaskMapperTest {
 
         //Decision task instance
         WorkflowTask decisionTask = new WorkflowTask();
-        decisionTask.setType(WorkflowTask.Type.DECISION.name());
+        decisionTask.setType(TaskType.DECISION.name());
         decisionTask.setName("Decision");
         decisionTask.setTaskReferenceName("decisionTask");
         decisionTask.setDefaultCase(Arrays.asList(task1));
@@ -215,7 +216,7 @@ public class DecisionTaskMapperTest {
 
         //Decision task instance
         WorkflowTask decisionTask = new WorkflowTask();
-        decisionTask.setType(WorkflowTask.Type.DECISION.name());
+        decisionTask.setType(TaskType.DECISION.name());
         decisionTask.setName("Decision");
         decisionTask.setTaskReferenceName("decisionTask");
         decisionTask.setDefaultCase(Arrays.asList(task1));

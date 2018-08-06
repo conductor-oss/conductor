@@ -19,6 +19,7 @@ package com.netflix.conductor.core.execution.mapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -34,7 +35,7 @@ import java.util.Optional;
 
 
 /**
- * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link WorkflowTask.Type#DYNAMIC}
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DYNAMIC}
  * to a {@link Task} based on definition derived from the dynamic task name defined in {@link WorkflowTask#getInputParameters()}
  */
 public class DynamicTaskMapper implements TaskMapper {

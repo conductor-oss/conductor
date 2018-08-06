@@ -931,42 +931,6 @@ public abstract class AbstractProtoMapper {
         return to;
     }
 
-    public WorkflowTaskPb.WorkflowTask.Type toProto(WorkflowTask.Type from) {
-        WorkflowTaskPb.WorkflowTask.Type to;
-        switch (from) {
-            case SIMPLE: to = WorkflowTaskPb.WorkflowTask.Type.SIMPLE; break;
-            case DYNAMIC: to = WorkflowTaskPb.WorkflowTask.Type.DYNAMIC; break;
-            case FORK_JOIN: to = WorkflowTaskPb.WorkflowTask.Type.FORK_JOIN; break;
-            case FORK_JOIN_DYNAMIC: to = WorkflowTaskPb.WorkflowTask.Type.FORK_JOIN_DYNAMIC; break;
-            case DECISION: to = WorkflowTaskPb.WorkflowTask.Type.DECISION; break;
-            case JOIN: to = WorkflowTaskPb.WorkflowTask.Type.JOIN; break;
-            case SUB_WORKFLOW: to = WorkflowTaskPb.WorkflowTask.Type.SUB_WORKFLOW; break;
-            case EVENT: to = WorkflowTaskPb.WorkflowTask.Type.EVENT; break;
-            case WAIT: to = WorkflowTaskPb.WorkflowTask.Type.WAIT; break;
-            case USER_DEFINED: to = WorkflowTaskPb.WorkflowTask.Type.USER_DEFINED; break;
-            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
-        }
-        return to;
-    }
-
-    public WorkflowTask.Type fromProto(WorkflowTaskPb.WorkflowTask.Type from) {
-        WorkflowTask.Type to;
-        switch (from) {
-            case SIMPLE: to = WorkflowTask.Type.SIMPLE; break;
-            case DYNAMIC: to = WorkflowTask.Type.DYNAMIC; break;
-            case FORK_JOIN: to = WorkflowTask.Type.FORK_JOIN; break;
-            case FORK_JOIN_DYNAMIC: to = WorkflowTask.Type.FORK_JOIN_DYNAMIC; break;
-            case DECISION: to = WorkflowTask.Type.DECISION; break;
-            case JOIN: to = WorkflowTask.Type.JOIN; break;
-            case SUB_WORKFLOW: to = WorkflowTask.Type.SUB_WORKFLOW; break;
-            case EVENT: to = WorkflowTask.Type.EVENT; break;
-            case WAIT: to = WorkflowTask.Type.WAIT; break;
-            case USER_DEFINED: to = WorkflowTask.Type.USER_DEFINED; break;
-            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
-        }
-        return to;
-    }
-
     public TaskSummaryPb.TaskSummary toProto(TaskSummary from) {
         TaskSummaryPb.TaskSummary.Builder to = TaskSummaryPb.TaskSummary.newBuilder();
         if (from.getWorkflowId() != null) {

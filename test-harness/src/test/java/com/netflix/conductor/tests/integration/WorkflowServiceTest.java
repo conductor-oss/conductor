@@ -31,9 +31,9 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.DynamicForkJoinTaskList;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.WorkflowContext;
@@ -295,7 +295,7 @@ public class WorkflowServiceTest {
         templateWf.setName("template_workflow");
         WorkflowTask wft = new WorkflowTask();
         wft.setName(templatedTask.getName());
-        wft.setWorkflowTaskType(Type.SIMPLE);
+        wft.setWorkflowTaskType(TaskType.SIMPLE);
         wft.setTaskReferenceName("t0");
         templateWf.getTasks().add(wft);
         templateWf.setSchemaVersion(2);
@@ -815,7 +815,7 @@ public class WorkflowServiceTest {
         workflowDef.setInputParameters(Arrays.asList("param1", "param2"));
 
         WorkflowTask fanoutTask = new WorkflowTask();
-        fanoutTask.setType(Type.FORK_JOIN.name());
+        fanoutTask.setType(TaskType.FORK_JOIN.name());
         fanoutTask.setTaskReferenceName("fanouttask");
 
         WorkflowTask workflowTask1 = new WorkflowTask();
@@ -849,7 +849,7 @@ public class WorkflowServiceTest {
         workflowDef.getTasks().add(fanoutTask);
 
         WorkflowTask joinTask = new WorkflowTask();
-        joinTask.setType(Type.JOIN.name());
+        joinTask.setType(TaskType.JOIN.name());
         joinTask.setTaskReferenceName("fanouttask_join");
         joinTask.setJoinOn(Arrays.asList("t3", "t2"));
 
@@ -868,7 +868,7 @@ public class WorkflowServiceTest {
         def.setInputParameters(Arrays.asList("param1", "param2"));
 
         WorkflowTask fanout = new WorkflowTask();
-        fanout.setType(Type.FORK_JOIN.name());
+        fanout.setType(TaskType.FORK_JOIN.name());
         fanout.setTaskReferenceName("fanouttask");
 
         WorkflowTask wft1 = new WorkflowTask();
@@ -902,7 +902,7 @@ public class WorkflowServiceTest {
         def.getTasks().add(fanout);
 
         WorkflowTask join = new WorkflowTask();
-        join.setType(Type.JOIN.name());
+        join.setType(TaskType.JOIN.name());
         join.setTaskReferenceName("fanouttask_join");
         join.setJoinOn(Arrays.asList("t3", "t2"));
 
@@ -936,7 +936,7 @@ public class WorkflowServiceTest {
         }
 
         WorkflowTask d1 = new WorkflowTask();
-        d1.setType(Type.DECISION.name());
+        d1.setType(TaskType.DECISION.name());
         d1.setName("Decision");
         d1.setTaskReferenceName("d1");
         d1.setInputParameters(ip1);
@@ -948,26 +948,26 @@ public class WorkflowServiceTest {
         d1.setDecisionCases(decisionCases);
 
         WorkflowTask subWorkflow = new WorkflowTask();
-        subWorkflow.setType(Type.SUB_WORKFLOW.name());
+        subWorkflow.setType(TaskType.SUB_WORKFLOW.name());
         SubWorkflowParams sw = new SubWorkflowParams();
         sw.setName(LINEAR_WORKFLOW_T1_T2);
         subWorkflow.setSubWorkflowParam(sw);
         subWorkflow.setTaskReferenceName("sw1");
 
         WorkflowTask fork2 = new WorkflowTask();
-        fork2.setType(Type.FORK_JOIN.name());
+        fork2.setType(TaskType.FORK_JOIN.name());
         fork2.setName("fork2");
         fork2.setTaskReferenceName("fork2");
         fork2.getForkTasks().add(Arrays.asList(tasks[12], tasks[14]));
         fork2.getForkTasks().add(Arrays.asList(tasks[13], d1));
 
         WorkflowTask join2 = new WorkflowTask();
-        join2.setType(Type.JOIN.name());
+        join2.setType(TaskType.JOIN.name());
         join2.setTaskReferenceName("join2");
         join2.setJoinOn(Arrays.asList("t14", "t20"));
 
         WorkflowTask fork1 = new WorkflowTask();
-        fork1.setType(Type.FORK_JOIN.name());
+        fork1.setType(TaskType.FORK_JOIN.name());
         fork1.setTaskReferenceName("fork1");
         fork1.getForkTasks().add(Arrays.asList(tasks[11]));
         fork1.getForkTasks().add(Arrays.asList(fork2, join2));
@@ -975,7 +975,7 @@ public class WorkflowServiceTest {
 
 
         WorkflowTask join1 = new WorkflowTask();
-        join1.setType(Type.JOIN.name());
+        join1.setType(TaskType.JOIN.name());
         join1.setTaskReferenceName("join1");
         join1.setJoinOn(Arrays.asList("t11", "join2", "sw1"));
 
@@ -1005,7 +1005,7 @@ public class WorkflowServiceTest {
         workflowTask1.setTaskReferenceName("dt1");
 
         WorkflowTask fanout = new WorkflowTask();
-        fanout.setType(Type.FORK_JOIN_DYNAMIC.name());
+        fanout.setType(TaskType.FORK_JOIN_DYNAMIC.name());
         fanout.setTaskReferenceName("dynamicfanouttask");
         fanout.setDynamicForkTasksParam("dynamicTasks");
         fanout.setDynamicForkTasksInputParamName("dynamicTasksInput");
@@ -1013,7 +1013,7 @@ public class WorkflowServiceTest {
         fanout.getInputParameters().put("dynamicTasksInput", "dt1.output.dynamicTasksInput");
 
         WorkflowTask join = new WorkflowTask();
-        join.setType(Type.JOIN.name());
+        join.setType(TaskType.JOIN.name());
         join.setTaskReferenceName("dynamicfanouttask_join");
 
         WorkflowTask workflowTask4 = new WorkflowTask();
@@ -1048,14 +1048,14 @@ public class WorkflowServiceTest {
         wft1.setTaskReferenceName("dt1");
 
         WorkflowTask fanout = new WorkflowTask();
-        fanout.setType(Type.FORK_JOIN_DYNAMIC.name());
+        fanout.setType(TaskType.FORK_JOIN_DYNAMIC.name());
         fanout.setTaskReferenceName("dynamicfanouttask");
         fanout.setDynamicForkJoinTasksParam("dynamicTasks");
         fanout.getInputParameters().put("dynamicTasks", "dt1.output.dynamicTasks");
         fanout.getInputParameters().put("dynamicTasksInput", "dt1.output.dynamicTasksInput");
 
         WorkflowTask join = new WorkflowTask();
-        join.setType(Type.JOIN.name());
+        join.setType(TaskType.JOIN.name());
         join.setTaskReferenceName("dynamicfanouttask_join");
 
         def.getTasks().add(wft1);
@@ -1101,7 +1101,7 @@ public class WorkflowServiceTest {
         def2.setInputParameters(Arrays.asList("param1", "param2"));
 
         WorkflowTask c2 = new WorkflowTask();
-        c2.setType(Type.DECISION.name());
+        c2.setType(TaskType.DECISION.name());
         c2.setCaseValueParam("case");
         c2.setName("conditional2");
         c2.setTaskReferenceName("conditional2");
@@ -1113,7 +1113,7 @@ public class WorkflowServiceTest {
 
 
         WorkflowTask condition = new WorkflowTask();
-        condition.setType(Type.DECISION.name());
+        condition.setType(TaskType.DECISION.name());
         condition.setCaseValueParam("case");
         condition.setName("conditional");
         condition.setTaskReferenceName("conditional");
@@ -1133,7 +1133,7 @@ public class WorkflowServiceTest {
         WorkflowTask finalTask = new WorkflowTask();
         finalTask.setName("finalcondition");
         finalTask.setTaskReferenceName("tf");
-        finalTask.setType(Type.DECISION.name());
+        finalTask.setType(TaskType.DECISION.name());
         finalTask.setCaseValueParam("finalCase");
         Map<String, Object> fi = new HashMap<>();
         fi.put("finalCase", "workflow.input.finalCase");
@@ -3350,7 +3350,7 @@ public class WorkflowServiceTest {
         assertNotNull(es);
         assertNotNull(es.getTasks());
 
-        task = es.getTasks().stream().filter(t -> t.getTaskType().equals(Type.SUB_WORKFLOW.name().toString())).findAny().get();
+        task = es.getTasks().stream().filter(t -> t.getTaskType().equals(TaskType.SUB_WORKFLOW.name().toString())).findAny().get();
         assertNotNull(task);
         assertNotNull(task.getOutputData());
         assertNotNull("Output: " + task.getOutputData().toString() + ", status: " + task.getStatus(), task.getOutputData().get("subWorkflowId"));
@@ -3416,7 +3416,7 @@ public class WorkflowServiceTest {
         es = workflowExecutionService.getExecutionStatus(wfId, true);
         assertNotNull(es);
         assertNotNull(es.getTasks());
-        task = es.getTasks().stream().filter(t -> t.getTaskType().equals(Type.SUB_WORKFLOW.name().toString())).findAny().get();
+        task = es.getTasks().stream().filter(t -> t.getTaskType().equals(TaskType.SUB_WORKFLOW.name().toString())).findAny().get();
         assertNotNull(task);
         assertNotNull(task.getOutputData());
         assertNotNull(task.getOutputData().get("subWorkflowId"));
@@ -3480,7 +3480,7 @@ public class WorkflowServiceTest {
         es = workflowExecutionService.getExecutionStatus(wfId, true);
         assertNotNull(es);
         assertNotNull(es.getTasks());
-        task = es.getTasks().stream().filter(t -> t.getTaskType().equals(Type.SUB_WORKFLOW.name().toString())).findAny().get();
+        task = es.getTasks().stream().filter(t -> t.getTaskType().equals(TaskType.SUB_WORKFLOW.name().toString())).findAny().get();
         assertNotNull(task);
         assertNotNull(task.getOutputData());
         assertNotNull(task.getOutputData().get("subWorkflowId"));
@@ -3510,7 +3510,7 @@ public class WorkflowServiceTest {
         workflowDef.setSchemaVersion(2);
 
         WorkflowTask waitWorkflowTask = new WorkflowTask();
-        waitWorkflowTask.setWorkflowTaskType(Type.WAIT);
+        waitWorkflowTask.setWorkflowTaskType(TaskType.WAIT);
         waitWorkflowTask.setName("wait");
         waitWorkflowTask.setTaskReferenceName("wait0");
 
@@ -3529,7 +3529,7 @@ public class WorkflowServiceTest {
         assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
 
         Task waitTask = workflow.getTasks().get(0);
-        assertEquals(WorkflowTask.Type.WAIT.name(), waitTask.getTaskType());
+        assertEquals(TaskType.WAIT.name(), waitTask.getTaskType());
         waitTask.setStatus(COMPLETED);
         workflowExecutor.updateTask(new TaskResult(waitTask));
 
@@ -3557,7 +3557,7 @@ public class WorkflowServiceTest {
         workflowDef.setSchemaVersion(2);
 
         WorkflowTask eventWorkflowTask = new WorkflowTask();
-        eventWorkflowTask.setWorkflowTaskType(Type.EVENT);
+        eventWorkflowTask.setWorkflowTaskType(TaskType.EVENT);
         eventWorkflowTask.setName("eventX");
         eventWorkflowTask.setTaskReferenceName("wait0");
         eventWorkflowTask.setSink("conductor");
@@ -3576,7 +3576,7 @@ public class WorkflowServiceTest {
         assertNotNull(workflow);
 
         Task eventTask = workflow.getTasks().get(0);
-        assertEquals(Type.EVENT.name(), eventTask.getTaskType());
+        assertEquals(TaskType.EVENT.name(), eventTask.getTaskType());
         assertEquals(COMPLETED, eventTask.getStatus());
         assertTrue(!eventTask.getOutputData().isEmpty());
         assertNotNull(eventTask.getOutputData().get("event_produced"));
@@ -3735,7 +3735,7 @@ public class WorkflowServiceTest {
 
         WorkflowTask wft2 = new WorkflowTask();
         wft2.setName("subWorkflowTask");
-        wft2.setType(Type.SUB_WORKFLOW.name());
+        wft2.setType(TaskType.SUB_WORKFLOW.name());
         SubWorkflowParams swp = new SubWorkflowParams();
         swp.setName(LINEAR_WORKFLOW_T1_T2);
         wft2.setSubWorkflowParam(swp);
@@ -3822,7 +3822,7 @@ public class WorkflowServiceTest {
         wft1.setTaskReferenceName("t1");
 
         WorkflowTask subWorkflow = new WorkflowTask();
-        subWorkflow.setType(Type.SUB_WORKFLOW.name());
+        subWorkflow.setType(TaskType.SUB_WORKFLOW.name());
         SubWorkflowParams sw = new SubWorkflowParams();
         sw.setName(LINEAR_WORKFLOW_T1_T2);
         subWorkflow.setSubWorkflowParam(sw);

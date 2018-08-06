@@ -1,6 +1,7 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -46,7 +47,7 @@ public class ForkJoinTaskMapperTest {
         def.setInputParameters(Arrays.asList("param1", "param2"));
 
         WorkflowTask forkTask = new WorkflowTask();
-        forkTask.setType(WorkflowTask.Type.FORK_JOIN.name());
+        forkTask.setType(TaskType.FORK_JOIN.name());
         forkTask.setTaskReferenceName("forktask");
 
         WorkflowTask wft1 = new WorkflowTask();
@@ -80,7 +81,7 @@ public class ForkJoinTaskMapperTest {
         def.getTasks().add(forkTask);
 
         WorkflowTask join = new WorkflowTask();
-        join.setType(WorkflowTask.Type.JOIN.name());
+        join.setType(TaskType.JOIN.name());
         join.setTaskReferenceName("forktask_join");
         join.setJoinOn(Arrays.asList("t3","t2"));
 
@@ -120,7 +121,7 @@ public class ForkJoinTaskMapperTest {
         def.setInputParameters(Arrays.asList("param1", "param2"));
 
         WorkflowTask forkTask = new WorkflowTask();
-        forkTask.setType(WorkflowTask.Type.FORK_JOIN.name());
+        forkTask.setType(TaskType.FORK_JOIN.name());
         forkTask.setTaskReferenceName("forktask");
 
         WorkflowTask wft1 = new WorkflowTask();
@@ -154,7 +155,7 @@ public class ForkJoinTaskMapperTest {
         def.getTasks().add(forkTask);
 
         WorkflowTask join = new WorkflowTask();
-        join.setType(WorkflowTask.Type.JOIN.name());
+        join.setType(TaskType.JOIN.name());
         join.setTaskReferenceName("forktask_join");
         join.setJoinOn(Arrays.asList("t3","t2"));
 

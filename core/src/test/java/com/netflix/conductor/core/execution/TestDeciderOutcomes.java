@@ -21,9 +21,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
@@ -175,7 +175,7 @@ public class TestDeciderOutcomes {
 
         WorkflowTask fork = new WorkflowTask();
         fork.setName("fork0");
-        fork.setWorkflowTaskType(Type.FORK_JOIN_DYNAMIC);
+        fork.setWorkflowTaskType(TaskType.FORK_JOIN_DYNAMIC);
         fork.setTaskReferenceName("fork0");
         fork.setDynamicForkTasksInputParamName("forkedInputs");
         fork.setDynamicForkTasksParam("forks");
@@ -198,7 +198,7 @@ public class TestDeciderOutcomes {
             WorkflowTask wft = new WorkflowTask();
             wft.setName("f" + i);
             wft.setTaskReferenceName("f" + i);
-            wft.setWorkflowTaskType(Type.SIMPLE);
+            wft.setWorkflowTaskType(TaskType.SIMPLE);
             wft.getInputParameters().put("requestId", "${workflow.input.requestId}");
             wft.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
             wft.setTaskDefinition(new TaskDef("f" + i));
@@ -304,7 +304,7 @@ public class TestDeciderOutcomes {
 
         WorkflowTask task1 = new WorkflowTask();
         task1.setName("fork0");
-        task1.setWorkflowTaskType(Type.FORK_JOIN_DYNAMIC);
+        task1.setWorkflowTaskType(TaskType.FORK_JOIN_DYNAMIC);
         task1.setTaskReferenceName("fork0");
         task1.setDynamicForkTasksInputParamName("forkedInputs");
         task1.setDynamicForkTasksParam("forks");
@@ -330,7 +330,7 @@ public class TestDeciderOutcomes {
             WorkflowTask workflowTask = new WorkflowTask();
             workflowTask.setName("f" + i);
             workflowTask.setTaskReferenceName("f" + i);
-            workflowTask.setWorkflowTaskType(Type.SIMPLE);
+            workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
             workflowTask.setOptional(true);
             workflowTask.setTaskDefinition(new TaskDef("f" + i));
             forks.add(workflowTask);
@@ -398,7 +398,7 @@ public class TestDeciderOutcomes {
 
         WorkflowTask decide = new WorkflowTask();
         decide.setName("decide");
-        decide.setWorkflowTaskType(Type.DECISION);
+        decide.setWorkflowTaskType(TaskType.DECISION);
         decide.setTaskReferenceName("d0");
         decide.getInputParameters().put("Id", "${workflow.input.Id}");
         decide.getInputParameters().put("location", "${workflow.input.location}");

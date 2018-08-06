@@ -2,6 +2,7 @@ package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -38,7 +39,7 @@ public class UserDefinedTaskMapperTest {
         //Given
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setName("user_task");
-        taskToSchedule.setType(WorkflowTask.Type.USER_DEFINED.name());
+        taskToSchedule.setType(TaskType.USER_DEFINED.name());
         taskToSchedule.setTaskDefinition(new TaskDef("user_task"));
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
@@ -54,7 +55,7 @@ public class UserDefinedTaskMapperTest {
 
         //Then
         assertEquals(1, mappedTasks.size());
-        assertEquals(WorkflowTask.Type.USER_DEFINED.name(), mappedTasks.get(0).getTaskType());
+        assertEquals(TaskType.USER_DEFINED.name(), mappedTasks.get(0).getTaskType());
     }
 
     @Test
@@ -62,7 +63,7 @@ public class UserDefinedTaskMapperTest {
         //Given
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setName("user_task");
-        taskToSchedule.setType(WorkflowTask.Type.USER_DEFINED.name());
+        taskToSchedule.setType(TaskType.USER_DEFINED.name());
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
 

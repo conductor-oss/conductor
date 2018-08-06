@@ -23,14 +23,12 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * @author Viren
@@ -38,29 +36,6 @@ import java.util.Set;
  */
 @ProtoMessage
 public class WorkflowTask {
-
-	@ProtoEnum
-	public enum Type {
-		SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, EVENT, WAIT, USER_DEFINED;
-		
-		private static Set<String> systemTasks = new HashSet<>();
-		static {
-			systemTasks.add(Type.SIMPLE.name());
-			systemTasks.add(Type.DYNAMIC.name());
-			systemTasks.add(Type.FORK_JOIN.name());
-			systemTasks.add(Type.FORK_JOIN_DYNAMIC.name());
-			systemTasks.add(Type.DECISION.name());
-			systemTasks.add(Type.JOIN.name());
-			systemTasks.add(Type.SUB_WORKFLOW.name());
-			systemTasks.add(Type.EVENT.name());
-			systemTasks.add(Type.WAIT.name());
-			//Do NOT add USER_DEFINED here...
-		}
-		
-		public static boolean isSystemTask(String name) {
-			return systemTasks.contains(name);
-		}
-	}
 
 	@ProtoField(id = 1)
 	private String name;
@@ -77,7 +52,7 @@ public class WorkflowTask {
 	private Map<String, Object> inputParameters = new HashMap<String, Object>();
 
 	@ProtoField(id = 5)
-	private String type = Type.SIMPLE.name();
+	private String type = TaskType.SIMPLE.name();
 
 	@ProtoField(id = 6)
 	private String dynamicTaskNameParam;
@@ -202,7 +177,7 @@ public class WorkflowTask {
 		return type;
 	}
 
-	public void setWorkflowTaskType(Type type) {
+	public void setWorkflowTaskType(TaskType type) {
 		this.type = type.name();
 	}
 	
@@ -423,9 +398,9 @@ public class WorkflowTask {
 
 	private Collection<List<WorkflowTask>> children() {
 		Collection<List<WorkflowTask>> workflowTaskLists = new LinkedList<>();
-		Type taskType = Type.USER_DEFINED;
-		if (Type.isSystemTask(type)) {
-			taskType = Type.valueOf(type);
+		TaskType taskType = TaskType.USER_DEFINED;
+		if (TaskType.isSystemTask(type)) {
+			taskType = TaskType.valueOf(type);
 		}
 
 		switch (taskType) {
@@ -455,9 +430,9 @@ public class WorkflowTask {
 	}
 
 	public WorkflowTask next(String taskReferenceName, WorkflowTask parent) {
-		Type taskType = Type.USER_DEFINED;
-		if (Type.isSystemTask(type)) {
-			taskType = Type.valueOf(type);
+		TaskType taskType = TaskType.USER_DEFINED;
+		if (TaskType.isSystemTask(type)) {
+			taskType = TaskType.valueOf(type);
 		}
 
 		switch (taskType) {
@@ -520,9 +495,9 @@ public class WorkflowTask {
 			return true;
 		}
 		
-		Type tt = Type.USER_DEFINED;
-		if(Type.isSystemTask(type)) {
-			tt = Type.valueOf(type);
+		TaskType tt = TaskType.USER_DEFINED;
+		if(TaskType.isSystemTask(type)) {
+			tt = TaskType.valueOf(type);
 		}
 		
 		switch(tt){
@@ -563,7 +538,7 @@ public class WorkflowTask {
 	}
 
 	public boolean shouldPopulateDefinition() {
-		return getType().equals(WorkflowTask.Type.SIMPLE.name()) && getTaskDefinition() == null;
+		return getType().equals(TaskType.SIMPLE.name()) && getTaskDefinition() == null;
 	}
 	
 	@Override

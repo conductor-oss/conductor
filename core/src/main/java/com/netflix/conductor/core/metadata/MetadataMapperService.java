@@ -2,6 +2,7 @@ package com.netflix.conductor.core.metadata;
 
 import com.google.inject.Singleton;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
@@ -10,7 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import java.util.List;
 
 @Singleton
 public class MetadataMapperService {
@@ -29,7 +29,7 @@ public class MetadataMapperService {
                 workflowTask -> {
                     if (workflowTask.shouldPopulateDefinition()) {
                         workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
-                    } else if (workflowTask.getType().equals(WorkflowTask.Type.SUB_WORKFLOW.name())) {
+                    } else if (workflowTask.getType().equals(TaskType.SUB_WORKFLOW.name())) {
                         populateVersionForSubWorkflow(workflowTask);
                     }
                 }

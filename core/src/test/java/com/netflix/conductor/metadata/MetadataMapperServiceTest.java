@@ -2,6 +2,7 @@ package com.netflix.conductor.metadata;
 
 import com.google.common.collect.ImmutableList;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
@@ -119,7 +120,7 @@ public class MetadataMapperServiceTest {
     private WorkflowTask createWorkflowTask(String name) {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName(name);
-        workflowTask.setType(WorkflowTask.Type.SIMPLE.name());
+        workflowTask.setType(TaskType.SIMPLE.name());
         return workflowTask;
     }
 

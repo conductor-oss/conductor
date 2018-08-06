@@ -28,9 +28,9 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
@@ -109,12 +109,12 @@ public class End2EndTests {
         def.setName("test");
         WorkflowTask t0 = new WorkflowTask();
         t0.setName("t0");
-        t0.setWorkflowTaskType(Type.SIMPLE);
+        t0.setWorkflowTaskType(TaskType.SIMPLE);
         t0.setTaskReferenceName("t0");
 
         WorkflowTask t1 = new WorkflowTask();
         t1.setName("t1");
-        t1.setWorkflowTaskType(Type.SIMPLE);
+        t1.setWorkflowTaskType(TaskType.SIMPLE);
         t1.setTaskReferenceName("t1");
 
 
@@ -286,7 +286,7 @@ public class End2EndTests {
     private WorkflowTask createWorkflowTask(String name) {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName(name);
-        workflowTask.setWorkflowTaskType(Type.SIMPLE);
+        workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
         workflowTask.setTaskReferenceName(name);
         return workflowTask;
     }

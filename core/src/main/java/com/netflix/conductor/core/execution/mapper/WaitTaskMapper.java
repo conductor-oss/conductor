@@ -17,6 +17,7 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
@@ -30,7 +31,7 @@ import java.util.Map;
 
 
 /**
- * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link WorkflowTask.Type#WAIT}
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#WAIT}
  * to a {@link Task} of type {@link Wait} with {@link Task.Status#IN_PROGRESS}
  */
 public class WaitTaskMapper implements TaskMapper {

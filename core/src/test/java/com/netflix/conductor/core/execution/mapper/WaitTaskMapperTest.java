@@ -1,6 +1,7 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -22,7 +23,7 @@ public class WaitTaskMapperTest {
         //Given
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setName("Wait_task");
-        taskToSchedule.setType(WorkflowTask.Type.WAIT.name());
+        taskToSchedule.setType(TaskType.WAIT.name());
         String taskId = IDGenerator.generate();
 
         ParametersUtils parametersUtils = new ParametersUtils();
