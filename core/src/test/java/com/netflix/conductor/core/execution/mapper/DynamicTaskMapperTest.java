@@ -26,8 +26,8 @@ import static org.mockito.Mockito.when;
 
 public class DynamicTaskMapperTest {
 
-    ParametersUtils parametersUtils;
-    DynamicTaskMapper dynamicTaskMapper;
+    private ParametersUtils parametersUtils;
+    private DynamicTaskMapper dynamicTaskMapper;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

@@ -21,8 +21,8 @@ import static org.mockito.Mockito.mock;
 
 public class UserDefinedTaskMapperTest {
 
-    ParametersUtils parametersUtils;
-    UserDefinedTaskMapper userDefinedTaskMapper;
+    private ParametersUtils parametersUtils;
+    private UserDefinedTaskMapper userDefinedTaskMapper;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

@@ -16,7 +16,6 @@ import static org.junit.Assert.*;
 
 public class WaitTaskMapperTest {
 
-
     @Test
     public void getMappedTasks() throws Exception {
 
@@ -40,9 +39,6 @@ public class WaitTaskMapperTest {
         //Then
         assertEquals(1, mappedTasks.size());
         assertEquals(Wait.NAME, mappedTasks.get(0).getTaskType());
-
-
-
 
     }
 

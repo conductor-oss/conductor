@@ -23,9 +23,9 @@ import static org.junit.Assert.*;
 
 public class ForkJoinTaskMapperTest {
 
-    DeciderService deciderService;
+    private DeciderService deciderService;
 
-    ForkJoinTaskMapper  forkJoinTaskMapper;
+    private ForkJoinTaskMapper  forkJoinTaskMapper;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();

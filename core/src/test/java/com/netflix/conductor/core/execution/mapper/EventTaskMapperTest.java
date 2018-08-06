@@ -22,8 +22,6 @@ import static org.mockito.Mockito.when;
 
 public class EventTaskMapperTest {
 
-
-
     @Test
     public void getMappedTasks() throws Exception {
         ParametersUtils parametersUtils = Mockito.mock(ParametersUtils.class);

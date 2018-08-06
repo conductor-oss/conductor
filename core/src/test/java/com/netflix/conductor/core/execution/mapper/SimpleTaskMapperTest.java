@@ -22,10 +22,8 @@ import static org.mockito.Mockito.mock;
 
 public class SimpleTaskMapperTest {
 
-    ParametersUtils parametersUtils;
-
-    //subject
-    SimpleTaskMapper simpleTaskMapper;
+    private ParametersUtils parametersUtils;
+    private SimpleTaskMapper simpleTaskMapper;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
