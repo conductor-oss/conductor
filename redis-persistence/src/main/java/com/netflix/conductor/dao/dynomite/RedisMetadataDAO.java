@@ -173,6 +173,13 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         _createOrUpdate(def);
     }
 
+    private Optional<Integer> getWorkflowMaxVersion(String workflowName) {
+        return dynoClient.hkeys(nsKey(WORKFLOW_DEF, workflowName)).stream()
+                .filter(key -> !key.equals(LATEST))
+                .map(Integer::valueOf)
+                .max(Comparator.naturalOrder());
+    }
+
     @Override
     /*
      * @param name Name of the workflow definition
@@ -183,10 +190,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         Preconditions.checkNotNull(name, "WorkflowDef name cannot be null");
         WorkflowDef workflowDef = null;
 
-        Optional<Integer> optionalMaxVersion = dynoClient.hkeys(nsKey(WORKFLOW_DEF, name)).stream()
-                .filter(key -> !key.equals(LATEST))
-                .map(Integer::valueOf)
-                .max(Comparator.naturalOrder());
+        Optional<Integer> optionalMaxVersion = getWorkflowMaxVersion(name);
 
         if (optionalMaxVersion.isPresent()) {
             String latestdata = dynoClient.hget(nsKey(WORKFLOW_DEF, name), optionalMaxVersion.get().toString());
@@ -244,10 +248,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
         // check if there are any more versions remaining if not delete the
         // workflow name
-        Optional<Integer> optionMaxVersion = dynoClient.hkeys(nsKey(WORKFLOW_DEF, name)).stream()
-                .filter(key -> !key.equals(LATEST))
-                .map(Integer::valueOf)
-                .max(Comparator.naturalOrder());
+        Optional<Integer> optionMaxVersion = getWorkflowMaxVersion(name);
 
         // delete workflow name
         if (!optionMaxVersion.isPresent()) {
