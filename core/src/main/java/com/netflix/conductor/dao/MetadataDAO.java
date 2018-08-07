@@ -100,10 +100,10 @@ public interface MetadataDAO {
 
 	/**
 	 *
-	 * @param name Name of the workflow
-	 * @param version version
+	 * @param name Name of the workflow definition to be removed
+	 * @param version Version of the workflow definition to be removed
 	 */
-	void removeWorkflowDef(String name, int version);
+	void removeWorkflowDef(String name, Integer version);
 
 	/**
 	 * 
@@ -120,14 +120,7 @@ public interface MetadataDAO {
 	List<WorkflowDef> getAll();
 
 	/**
-	 * 
-	 * @return List of all the latest workflow definitions
-	 * 
-	 */
-	List<WorkflowDef> getAllLatest();
-
-	/**
-	 * 
+	 *
 	 * @param name name of the workflow
 	 * @return List of all the workflow definitions
 	 * 
