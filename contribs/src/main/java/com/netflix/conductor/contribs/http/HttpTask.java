@@ -140,12 +140,12 @@ public class HttpTask extends WorkflowSystemTask {
 	}
 
 	/**
-	 * 
 	 * @param input HTTP Request
 	 * @return Response of the http call
 	 * @throws Exception If there was an error making http call
+	 * Note: protected access is so that tasks extended from this task can re-use this to make http calls
 	 */
-	private HttpResponse httpCall(Input input) throws Exception {
+	protected HttpResponse httpCall(Input input) throws Exception {
 		Client client = rcm.getClient(input);
 
 		if(input.oauthConsumerKey != null) {
