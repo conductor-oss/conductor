@@ -218,7 +218,7 @@ public class TestEvent {
 		
 		event.start(workflow, task, null);
 		assertEquals(Task.Status.FAILED, task.getStatus());
-		assertTrue(task.getReasonForIncompletion() != null);
+		assertNotNull(task.getReasonForIncompletion());
 		System.out.println(task.getReasonForIncompletion());
 		
 		task.getInputData().put("sink", "bad_sink");
@@ -226,7 +226,7 @@ public class TestEvent {
 		
 		event.start(workflow, task, null);
 		assertEquals(Task.Status.FAILED, task.getStatus());
-		assertTrue(task.getReasonForIncompletion() != null);
+		assertNotNull(task.getReasonForIncompletion());
 		System.out.println(task.getReasonForIncompletion());
 
 		task.setStatus(Status.SCHEDULED);

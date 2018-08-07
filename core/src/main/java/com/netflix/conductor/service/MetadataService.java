@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Netflix, Inc.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.service;
 
@@ -34,8 +34,8 @@ import javax.inject.Singleton;
 import java.util.List;
 
 /**
- * @author Viren 
- * 
+ * @author Viren
+ *
  */
 @Singleton
 @Trace
@@ -155,10 +155,10 @@ public class MetadataService {
     }
 
     public void registerWorkflowDef(WorkflowDef def) {
-        if(def.getName().contains(":")) {
+        if (def.getName().contains(":")) {
             throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
         }
-        if(def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
+        if (def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
             def.setSchemaVersion(2);
         }
         metadataDAO.create(def);
@@ -231,6 +231,6 @@ public class MetadataService {
         Preconditions.checkNotNull(eh.getEvent(), "Missing event location");
         Preconditions.checkNotNull(eh.getActions().isEmpty(), "No actions specified.  Please specify at-least one action");
         String event = eh.getEvent();
-        EventQueues.getQueue(event, true);
+        EventQueues.getQueue(event);
     }
 }

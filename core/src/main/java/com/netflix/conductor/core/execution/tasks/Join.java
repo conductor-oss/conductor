@@ -18,12 +18,12 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
-import java.util.List;
-
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+
+import java.util.List;
 
 /**
  * @author Viren
@@ -37,7 +37,7 @@ public class Join extends WorkflowSystemTask {
 	
 	@Override
 	@SuppressWarnings("unchecked")
-	public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) throws Exception {
+	public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) {
 		
 		boolean allDone = true;
 		boolean hasFailures = false;

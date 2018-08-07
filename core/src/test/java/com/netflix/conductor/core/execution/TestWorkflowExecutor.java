@@ -112,7 +112,7 @@ public class TestWorkflowExecutor {
             }
 
             @Override
-            public void start(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+            public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
                 httpTaskExecuted.set(true);
                 task.setStatus(Status.COMPLETED);
                 super.start(workflow, task, executor);
@@ -123,7 +123,7 @@ public class TestWorkflowExecutor {
         new WorkflowSystemTask("HTTP2") {
 
             @Override
-            public void start(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+            public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
                 http2TaskExecuted.set(true);
                 task.setStatus(Status.COMPLETED);
                 super.start(workflow, task, executor);
