@@ -36,13 +36,15 @@ import com.netflix.conductor.core.execution.ParametersUtils;
  * Static holders for internal event queues
  */
 public class EventQueues {
-	
+
+	public static final String EVENT_QUEUE_PROVIDERS_QUALIFIER = "EventQueueProviders";
+
 	private static Logger logger = LoggerFactory.getLogger(EventQueues.class);
 
 	private static ParametersUtils parametersUtils = new ParametersUtils();
 
 	@Inject
-	@Named("EventQueueProviders")
+	@Named(EVENT_QUEUE_PROVIDERS_QUALIFIER)
 	public static Map<String, EventQueueProvider> providers; //TODO this is a leaky abstraction, when the static injection is moved to singleton this will be fixed
 
 	private EventQueues() {

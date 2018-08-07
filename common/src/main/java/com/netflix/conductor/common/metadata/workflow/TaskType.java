@@ -12,7 +12,7 @@ public enum TaskType {
 
     /**
      * TaskType constants representing each of the possible enumeration values.
-     * Motivation: to not have any hardcoded TaskType enum value across the code.
+     * Motivation: to not have any hardcoded/inline strings used in the code.
      * Example of use: CoreModule
      */
     public static final String TASK_TYPE_DECISION = "DECISION";

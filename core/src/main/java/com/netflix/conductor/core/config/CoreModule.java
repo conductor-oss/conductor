@@ -28,6 +28,7 @@ import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_SUB_WORKFLOW;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_USER_DEFINED;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_WAIT;
+import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
@@ -66,11 +67,8 @@ import com.netflix.conductor.dao.QueueDAO;
  */
 public class CoreModule extends AbstractModule {
 
-    private static final String CONDUCTOR_QUALIFIER = "conductor";
-    private static final String PROVIDER_EVENT_QUEUE = "EventQueueProviders";
-
-    private static final String TASK_MAPPERS_QUALIFIER = "TaskMappers";
-
+    public static final String CONDUCTOR_QUALIFIER = "conductor";
+    public static final String TASK_MAPPERS_QUALIFIER = "TaskMappers";
 
     @Override
     protected void configure() {
@@ -94,7 +92,7 @@ public class CoreModule extends AbstractModule {
     @ProvidesIntoMap
     @StringMapKey(CONDUCTOR_QUALIFIER)
     @Singleton
-    @Named(PROVIDER_EVENT_QUEUE)
+    @Named(EVENT_QUEUE_PROVIDERS_QUALIFIER)
     public EventQueueProvider getDynoEventQueueProvider(QueueDAO queueDAO, Configuration configuration) {
         return new DynoEventQueueProvider(queueDAO, configuration);
     }
