@@ -18,6 +18,17 @@
  */
 package com.netflix.conductor.core.config;
 
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_DECISION;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_DYNAMIC;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_EVENT;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_FORK_JOIN;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_JOIN;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_SIMPLE;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_USER_DEFINED;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_WAIT;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -50,7 +61,6 @@ import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 
-
 /**
  * @author Viren
  */
@@ -60,16 +70,7 @@ public class CoreModule extends AbstractModule {
     private static final String PROVIDER_EVENT_QUEUE = "EventQueueProviders";
 
     private static final String TASK_MAPPERS_QUALIFIER = "TaskMappers";
-    private static final String TASK_TYPE_DECISION = "DECISION";
-    private static final String TASK_TYPE_DYNAMIC = "DYNAMIC";
-    private static final String TASK_TYPE_JOIN = "JOIN";
-    private static final String TASK_TYPE_FORK_JOIN_DYNAMIC = "FORK_JOIN_DYNAMIC";
-    private static final String TASK_TYPE_EVENT = "EVENT";
-    private static final String TASK_TYPE_WAIT = "WAIT";
-    private static final String TASK_TYPE_SUB_WORKFLOW = "SUB_WORKFLOW";
-    private static final String TASK_TYPE_FORK_JOIN = "FORK_JOIN";
-    private static final String TASK_TYPE_USER_DEFINED = "USER_DEFINED";
-    private static final String TASK_TYPE_SIMPLE = "SIMPLE";
+
 
     @Override
     protected void configure() {
@@ -121,7 +122,6 @@ public class CoreModule extends AbstractModule {
     public TaskMapper getJoinTaskMapper() {
         return new JoinTaskMapper();
     }
-
 
 
     @ProvidesIntoMap
