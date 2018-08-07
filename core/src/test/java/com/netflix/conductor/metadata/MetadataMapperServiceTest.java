@@ -2,9 +2,11 @@ package com.netflix.conductor.metadata;
 
 import com.google.common.collect.ImmutableList;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.junit.Test;
@@ -14,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.List;
+import java.util.Optional;
 
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -95,19 +98,86 @@ public class MetadataMapperServiceTest {
     }
 
     @Test
-    public void testVersionPopulationForSubworkflowTaskIfNotAvailable() {
-        // TODO
+    public void testVersionPopulationForSubworkflowTaskIfVersionIsNotAvailable() {
+        String nameTaskDefinition = "taskSubworkflow6";
+        String workflowDefinitionName = "subworkflow";
+        Integer version = 3;
+
+        WorkflowDef subWorkflowDefinition = createWorkflowDefinition("workflowDefinitionName");
+        subWorkflowDefinition.setVersion(version);
+
+        WorkflowTask workflowTask = createWorkflowTask(nameTaskDefinition);
+        workflowTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
+        subWorkflowParams.setName(workflowDefinitionName);
+        workflowTask.setSubWorkflowParam(subWorkflowParams);
+
+        WorkflowDef workflowDefinition = createWorkflowDefinition("testMetadataPopulation");
+        workflowDefinition.setTasks(ImmutableList.of(workflowTask));
+
+        when(metadataDAO.getLatest(workflowDefinitionName)).thenReturn(Optional.of(subWorkflowDefinition));
+
+        metadataMapperService.populateTaskDefinitions(workflowDefinition);
+
+        assertEquals(1, workflowDefinition.getTasks().size());
+        List<WorkflowTask> workflowTasks = workflowDefinition.getTasks();
+        SubWorkflowParams params = workflowTasks.get(0).getSubWorkflowParam();
+
+        assertEquals(workflowDefinitionName, params.getName());
+        assertEquals(version, params.getVersion());
+
+        verify(metadataDAO).getLatest(workflowDefinitionName);
+        verifyNoMoreInteractions(metadataDAO);
     }
 
     @Test
     public void testNoVersionPopulationForSubworkflowTaskIfAvailable() {
-        // TODO
+        String nameTaskDefinition = "taskSubworkflow7";
+        String workflowDefinitionName = "subworkflow";
+        Integer version = 2;
+
+        WorkflowTask workflowTask = createWorkflowTask(nameTaskDefinition);
+        workflowTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
+        subWorkflowParams.setName(workflowDefinitionName);
+        subWorkflowParams.setVersion(version);
+        workflowTask.setSubWorkflowParam(subWorkflowParams);
+
+        WorkflowDef workflowDefinition = createWorkflowDefinition("testMetadataPopulation");
+        workflowDefinition.setTasks(ImmutableList.of(workflowTask));
+
+        metadataMapperService.populateTaskDefinitions(workflowDefinition);
+
+        assertEquals(1, workflowDefinition.getTasks().size());
+        List<WorkflowTask> workflowTasks = workflowDefinition.getTasks();
+        SubWorkflowParams params = workflowTasks.get(0).getSubWorkflowParam();
+
+        assertEquals(workflowDefinitionName, params.getName());
+        assertEquals(version, params.getVersion());
+
+        verifyZeroInteractions(metadataDAO);
     }
 
 
-    @Test
+    @Test(expected = TerminateWorkflowException.class)
     public void testExceptionWhenWorkflowDefinitionNotAvailable() {
-        // TODO
+        String nameTaskDefinition = "taskSubworkflow8";
+        String workflowDefinitionName = "subworkflow";
+
+        WorkflowTask workflowTask = createWorkflowTask(nameTaskDefinition);
+        workflowTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
+        subWorkflowParams.setName(workflowDefinitionName);
+        workflowTask.setSubWorkflowParam(subWorkflowParams);
+
+        WorkflowDef workflowDefinition = createWorkflowDefinition("testMetadataPopulation");
+        workflowDefinition.setTasks(ImmutableList.of(workflowTask));
+
+        when(metadataDAO.getLatest(workflowDefinitionName)).thenReturn(Optional.empty());
+
+        metadataMapperService.populateTaskDefinitions(workflowDefinition);
+
+        verify(metadataDAO).getLatest(workflowDefinitionName);
     }
 
 
@@ -128,5 +198,4 @@ public class MetadataMapperServiceTest {
         TaskDef taskDefinition = new TaskDef(name);
         return taskDefinition;
     }
-
 }
