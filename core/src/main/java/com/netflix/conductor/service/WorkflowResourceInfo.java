@@ -1,5 +1,6 @@
 package com.netflix.conductor.service;
 
+import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -10,7 +11,9 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import org.apache.commons.lang3.StringUtils;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -27,6 +30,7 @@ public class WorkflowResourceInfo {
 
     private int maxSearchSize;
 
+    @Inject
     public WorkflowResourceInfo(WorkflowExecutor workflowExecutor, ExecutionService executionService,
                                 MetadataService metadata, Configuration config) {
         this.workflowExecutor = workflowExecutor;
@@ -84,8 +88,8 @@ public class WorkflowResourceInfo {
      * @param includeTasks
      * @return the list of workflows.
      */
-    public List<Workflow> getWorklfows(String name, String correlationId,
-                                       boolean includeClosed, boolean includeTasks) throws Exception {
+    public List<Workflow> getWorkflows(String name, String correlationId,
+                                       boolean includeClosed, boolean includeTasks) {
         return executionService.getWorkflowInstances(name, correlationId, includeClosed, includeTasks);
     }
 
@@ -98,7 +102,7 @@ public class WorkflowResourceInfo {
      * @return
      */
     public Map<String, List<Workflow>> getWorkflows(String name, boolean includeClosed,
-                                                    boolean includeTasks, List<String> correlationIds) throws Exception {
+                                                    boolean includeTasks, List<String> correlationIds) {
         Map<String, List<Workflow>> workflowMap = new HashMap<>();
         for (String correlationId : correlationIds) {
             List<Workflow> workflows = executionService.getWorkflowInstances(name, correlationId, includeClosed, includeTasks);
@@ -116,11 +120,12 @@ public class WorkflowResourceInfo {
      * @return
      */
     public Workflow getExecutionStatus(String workflowId, boolean includeTasks) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
+                "WorkflowId cannot be null or empty.");
         Workflow workflow = executionService.getExecutionStatus(workflowId, includeTasks);
-
         if (workflow == null) {
             throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                    String.format("Workflow with Id= %s not found.", workflowId));
+                    String.format("Workflow with Id=%s not found.", workflowId));
         }
         return workflow;
     }
@@ -131,15 +136,20 @@ public class WorkflowResourceInfo {
      * @param archiveWorkflow
      */
     public void deleteWorkflow(String workflowId, boolean archiveWorkflow) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
+                "WorkflowId cannot be null or empty.");
         executionService.removeWorkflow(workflowId, archiveWorkflow);
     }
 
     /*
-     * "Retrieve all the running workflows".
+     * Retrieves all the running workflows.
      * @param workflowId
      * @param archiveWorkflow
      */
-    public List<String> getRunningWorkflows(String workflowName, Integer version, Long startTime, Long endTime) throws Exception {
+    public List<String> getRunningWorkflows(String workflowName, Integer version,
+                                            Long startTime, Long endTime) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowName),
+                "Workflow name cannot be null or empty.");
         if (startTime != null && endTime != null) {
             return workflowExecutor.getWorkflows(workflowName, version, startTime, endTime);
         } else {
@@ -153,6 +163,8 @@ public class WorkflowResourceInfo {
      * @param archiveWorkflow
      */
     public void decideWorkflow(String workflowId) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
+                "WorkflowId cannot be null or empty.");
         workflowExecutor.decide(workflowId);
     }
 
@@ -162,6 +174,8 @@ public class WorkflowResourceInfo {
      * @param archiveWorkflow
      */
     public void pauseWorkflow(String workflowId) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
+                "WorkflowId cannot be null or empty.");
         workflowExecutor.pauseWorkflow(workflowId);
     }
 
@@ -170,24 +184,36 @@ public class WorkflowResourceInfo {
      * @param workflowId
      */
     public void resumeWorkflow(String workflowId) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
+                "WorkflowId cannot be null or empty.");
         workflowExecutor.resumeWorkflow(workflowId);
     }
 
     /*
      * Skips a given task from a current running workflow.
      * @param workflowId
+     * @param taskReferenceName
+     * @param skipTaskCount
      */
     public void skipTaskFromWorkflow(String workflowId, String taskReferenceName,
                                      SkipTaskRequest skipTaskRequest) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
+                "WorkflowId cannot be null or empty.");
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskReferenceName),
+                "TaskReferenceName cannot be null or empty.");
         workflowExecutor.skipTaskFromWorkflow(workflowId, taskReferenceName, skipTaskRequest);
     }
-
 
     /*
      * Reruns the workflow from a specific task
      * @param workflowId
+     * @param RerunWorkflowRequest
      */
     public String rerunWorkflow(String workflowId, RerunWorkflowRequest request) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
+                "WorkflowId cannot be null or empty.");
+        //TODO: Should we use checkNotNull which will throws NullPointerException
+        Preconditions.checkArgument(request != null, "RerunWorkflowRequest cannot be null.");
         request.setReRunFromWorkflowId(workflowId);
         return workflowExecutor.rerun(request);
     }
@@ -197,6 +223,8 @@ public class WorkflowResourceInfo {
      * @param workflowId
      */
     public void restartWorkflow(String workflowId) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
+                "WorkflowId cannot be null or empty.");
         workflowExecutor.rewind(workflowId);
     }
 
@@ -205,6 +233,8 @@ public class WorkflowResourceInfo {
      * @param workflowId
      */
     public void retryWorkflow(String workflowId) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
+                "WorkflowId cannot be null or empty.");
         workflowExecutor.retry(workflowId);
     }
 
@@ -213,29 +243,31 @@ public class WorkflowResourceInfo {
      * @param workflowId
      */
     public void resetWorkflow(String workflowId) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
+                "WorkflowId cannot be null or empty.");
         workflowExecutor.resetCallbacksForInProgressTasks(workflowId);
     }
 
     /*
-     * Terminate workflow execution
+     * Terminate workflow execution.
+     * @param workflowId
+     * @param reason
      */
     public void terminateWorkflow(String workflowId, String reason) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
+                "WorkflowId cannot be null or empty.");
         workflowExecutor.terminateWorkflow(workflowId, reason);
     }
-
 
     /*
      * Search for workflows based on payload and given parameters. Use sort options as sort=<field>:ASC|DESC
      * e.g. sort=name&sort=workflowId:DESC. If order is not specified, defaults to ASC
      */
     public SearchResult<WorkflowSummary> searchWorkflows(int start, int size, String sort, String freeText, String query) {
-        if (size > maxSearchSize) {
-            throw new ApplicationException(ApplicationException.Code.INVALID_INPUT,
-                    String.format("Cannot return more than %d workflows. Please use pagination.", maxSearchSize));
-        }
+        Preconditions.checkArgument(size < maxSearchSize, String.format("Cannot return more than %d workflows." +
+                " Please use pagination.", maxSearchSize));
         return executionService.search(query, freeText, start, size, convertToSortedList(sort));
     }
-
 
     /*
      * Search for workflows based on task parameters. Use sort options as sort=<field>:ASC|DESC e.g.

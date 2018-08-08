@@ -33,7 +33,6 @@ import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.netflix.conductor.server.resources.v2.GenericExceptionMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
