@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.conductor.server.resources.v1;
+package com.netflix.conductor.server.resources;
 
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.server.resources.MetadataResource;
 import com.netflix.conductor.service.MetadataService;
 import org.junit.Before;
 import org.junit.Test;
@@ -39,7 +40,6 @@ public class MetadataResourceTest {
     private MetadataResource metadataResource;
 
     private MetadataService mockMetadataService;
-
     @Before
     public void before(){
         this.mockMetadataService = Mockito.mock(MetadataService.class);

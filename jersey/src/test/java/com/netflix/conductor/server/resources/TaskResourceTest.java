@@ -1,4 +1,4 @@
-package com.netflix.conductor.server.resources.v1;
+package com.netflix.conductor.server.resources;
 
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -6,12 +6,12 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.server.resources.TaskResource;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import org.junit.Test;
 
 import org.junit.Before;
-import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.ArrayList;
@@ -25,7 +25,6 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
-import static org.mockito.Matchers.anyList;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
