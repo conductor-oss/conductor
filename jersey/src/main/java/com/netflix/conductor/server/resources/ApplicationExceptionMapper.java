@@ -25,11 +25,15 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.netflix.conductor.server.resources.v2.GenericExceptionMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,38 +51,73 @@ import com.sun.jersey.api.core.HttpContext;
 public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationException> {
 
 	private static Logger logger = LoggerFactory.getLogger(ApplicationExceptionMapper.class);
-	
-	private static List<Variant> supportedMediaTypes = Variant.mediaTypes(MediaType.APPLICATION_JSON_TYPE, MediaType.TEXT_HTML_TYPE, MediaType.TEXT_PLAIN_TYPE).add().build();
-	
-	@Context 
-    private HttpContext context;
-	
+
+	private static List<Variant> supportedMediaTypes = Variant.mediaTypes(MediaType.APPLICATION_JSON_TYPE,
+			MediaType.TEXT_HTML_TYPE, MediaType.TEXT_PLAIN_TYPE).add().build();
+
+	private static final String LOG_MESSAGE_FORMAT = "%s message= '%s' url= '%s'";
+
+	@Context
+	private HttpContext context;
+
+	@Context
+	private UriInfo uriInfo;
+
+	@Context
+	private javax.inject.Provider<Request> request;
+
 	private String host;
-	
+
 	@Inject
 	public ApplicationExceptionMapper(Configuration config) {
 		this.host = config.getServerId();
 	}
-	
+
 	@Override
 	public Response toResponse(ApplicationException e) {
-		logger.error(e.getMessage(), e);
+		logException(e);
+
+		Response.ResponseBuilder responseBuilder = Response.status(e.getHttpStatusCode());
+
 		if(e.getHttpStatusCode() == 500) {
 			Monitors.error("error", "error");
 		}
+
 		MediaType mediaType = context.getRequest().selectVariant(supportedMediaTypes).getMediaType();
+
+		Map<String, Object> entityMap = e.toMap();
+		entityMap.put("instance", host);
+
 		if(mediaType == null){
 			mediaType = MediaType.APPLICATION_JSON_TYPE;
 		}
-		
-		Map<String, Object> entityMap = e.toMap();
-		entityMap.put("instance", host);
+
 		Object entity = entityMap;
-		
-		if (mediaType == null || MediaType.APPLICATION_JSON_TYPE != mediaType) {
+
+		if (mediaType != MediaType.APPLICATION_JSON_TYPE) {
 			entity = e.toMap().toString();
 		}
-		return Response.status(e.getHttpStatusCode()).entity(entity).type(mediaType).build();
+
+		responseBuilder.type(mediaType);
+		responseBuilder.entity(entity);
+
+		return responseBuilder.build();
+	}
+
+	@VisibleForTesting
+	UriInfo getUriInfo() {
+		return uriInfo;
+	}
+
+	@VisibleForTesting
+	Request getRequest() {
+		return request.get();
+	}
+
+	private void logException(ApplicationException exception) {
+		String logMessage = String.format(LOG_MESSAGE_FORMAT, exception.getClass().getSimpleName(),
+				exception.getMessage(), getUriInfo().getPath());
+		logger.error(logMessage, exception);
 	}
 	
 }

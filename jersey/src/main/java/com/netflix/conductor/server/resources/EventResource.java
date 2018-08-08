@@ -16,7 +16,7 @@
 /**
  * 
  */
-package com.netflix.conductor.server.resources;
+package com.netflix.conductor.server.resources.v1;
 
 import java.util.List;
 import java.util.Map;
@@ -55,26 +55,26 @@ import io.swagger.annotations.ApiOperation;
 @Singleton
 public class EventResource {
 
-	private MetadataService service;
+	private MetadataService metadataService;
 	
-	private EventProcessor ep;
+	private EventProcessor eventProcessor;
 	
 	@Inject
-	public EventResource(MetadataService service, EventProcessor ep) {
-		this.service = service;
-		this.ep = ep;
+	public EventResource(MetadataService metadataService, EventProcessor eventProcessor) {
+		this.metadataService = metadataService;
+		this.eventProcessor = eventProcessor;
 	}
 
 	@POST
 	@ApiOperation("Add a new event handler.")
 	public void addEventHandler(EventHandler eventHandler) {
-		service.addEventHandler(eventHandler);
+		metadataService.addEventHandler(eventHandler);
 	}
 
 	@PUT
 	@ApiOperation("Update an existing event handler.")
 	public void updateEventHandler(EventHandler eventHandler) {
-		service.updateEventHandler(eventHandler);
+		metadataService.updateEventHandler(eventHandler);
 	}
 	
 
@@ -82,27 +82,27 @@ public class EventResource {
 	@Path("/{name}")
 	@ApiOperation("Remove an event handler")
 	public void removeEventHandlerStatus(@PathParam("name") String name) {
-		service.removeEventHandlerStatus(name);
+		metadataService.removeEventHandlerStatus(name);
 	}
 
 	@GET
 	@ApiOperation("Get all the event handlers")
 	public List<EventHandler> getEventHandlers() {
-		return service.getEventHandlers();
+		return metadataService.getEventHandlers();
 	}
 	
 	@GET
 	@Path("/{event}")
 	@ApiOperation("Get event handlers for a given event")
 	public List<EventHandler> getEventHandlersForEvent(@PathParam("event") String event, @QueryParam("activeOnly") @DefaultValue("true") boolean activeOnly) {
-		return service.getEventHandlersForEvent(event, activeOnly);
+		return metadataService.getEventHandlersForEvent(event, activeOnly);
 	}
 	
 	@GET
 	@Path("/queues")
 	@ApiOperation("Get registered queues")
 	public Map<String, ?> getEventQueues(@QueryParam("verbose") @DefaultValue("false") boolean verbose) {
-		return (verbose ? ep.getQueueSizes() : ep.getQueues());
+		return (verbose ? eventProcessor.getQueueSizes() : eventProcessor.getQueues());
 	}
 
 	@GET

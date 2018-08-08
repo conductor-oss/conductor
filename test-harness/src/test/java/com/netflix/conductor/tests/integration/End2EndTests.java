@@ -241,7 +241,7 @@ public class End2EndTests {
 		} catch (UniformInterfaceException ue) {
 			ClientResponse response = ue.getResponse();
 			// TODO: fix this to NOT_FOUND once error handling is fixed
-			assertEquals(204, response.getStatus());
+			assertEquals(404, response.getStatus());
 		}
 	}
 	

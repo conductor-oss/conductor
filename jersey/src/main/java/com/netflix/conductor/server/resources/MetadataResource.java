@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.conductor.server.resources;
+package com.netflix.conductor.server.resources.v1;
 
 import java.util.List;
 
@@ -47,83 +47,83 @@ import io.swagger.annotations.ApiOperation;
 @Consumes({MediaType.APPLICATION_JSON})
 public class MetadataResource {
 
-	private MetadataService service;
+	private MetadataService metadataService;
 	
 	@Inject
-	public MetadataResource(MetadataService service) {
-		this.service = service;
+	public MetadataResource(MetadataService metadataService) {
+		this.metadataService = metadataService;
 	}
 
 	@POST
 	@Path("/workflow")
 	@ApiOperation("Create a new workflow definition")
-	public void create(WorkflowDef def) throws Exception{
-		service.registerWorkflowDef(def);
+	public void create(WorkflowDef workflowDef) {
+		metadataService.registerWorkflowDef(workflowDef);
 	}
 	
 	@PUT
 	@Path("/workflow")
 	@ApiOperation("Create or update workflow definition")
-	public void update(List<WorkflowDef> defs) throws Exception{
-		service.updateWorkflowDef(defs);
+	public void update(List<WorkflowDef> defs) {
+		metadataService.updateWorkflowDef(defs);
 	}
 
 	@GET
 	@ApiOperation("Retrieves workflow definition along with blueprint")
 	@Path("/workflow/{name}")
-	public WorkflowDef get(@PathParam("name") String name, @QueryParam("version") Integer version) throws Exception {
-		return service.getWorkflowDef(name, version);
+	public WorkflowDef get(@PathParam("name") String name, @QueryParam("version") Integer version) {
+		return metadataService.getWorkflowDef(name, version);
 	}
 
 	@GET
 	@ApiOperation("Retrieves all workflow definition along with blueprint")
 	@Path("/workflow")
-	public List<WorkflowDef> getAll() throws Exception {
-		return service.getWorkflowDefs();
+	public List<WorkflowDef> getAll() {
+		return metadataService.getWorkflowDefs();
 	}
 
 	@DELETE
 	@Path("/workflow/{name}/version/{version}")
 	@ApiOperation("Removes workflow definition")
-	public void unregisterWorkflowDef(@PathParam("name") String name, @PathParam("version") Integer version) throws Exception {
-		service.unregisterWorkflowDef(name, version);
+	public void unregisterWorkflowDef(@PathParam("name") String name,
+									  @PathParam("version") Integer version) {
+		metadataService.unregisterWorkflowDef(name, version);
 	}
 	
 	@POST
 	@Path("/taskdefs")
 	@ApiOperation("Create new task definition(s)")
-	public void registerTaskDef(List<TaskDef> taskDefs) throws Exception {
-		service.registerTaskDef(taskDefs);
+	public void registerTaskDef(List<TaskDef> taskDefs) {
+		metadataService.registerTaskDef(taskDefs);
 	}
 	
 	@PUT
 	@Path("/taskdefs")
 	@ApiOperation("Update an existing task")
-	public void registerTaskDef(TaskDef taskDef) throws Exception {
-		service.updateTaskDef(taskDef);
+	public void registerTaskDef(TaskDef taskDef) {
+		metadataService.updateTaskDef(taskDef);
 	}
 
 	@GET
 	@Path("/taskdefs")
 	@ApiOperation("Gets all task definition")
-	@Consumes({MediaType.WILDCARD})
-	public List<TaskDef> getTaskDefs() throws Exception{
-		return service.getTaskDefs();
+	@Consumes(MediaType.WILDCARD)
+	public List<TaskDef> getTaskDefs() {
+		return metadataService.getTaskDefs();
 	}
 	
 	@GET
 	@Path("/taskdefs/{tasktype}")
 	@ApiOperation("Gets the task definition")
-	@Consumes({MediaType.WILDCARD})
-	public TaskDef getTaskDef(@PathParam("tasktype") String taskType) throws Exception {
-		return service.getTaskDef(taskType);
+	@Consumes(MediaType.WILDCARD)
+	public TaskDef getTaskDef(@PathParam("tasktype") String taskType) {
+		return metadataService.getTaskDef(taskType);
 	}
 	
 	@DELETE
 	@Path("/taskdefs/{tasktype}")
 	@ApiOperation("Remove a task definition")
 	public void unregisterTaskDef(@PathParam("tasktype") String taskType){
-		service.unregisterTaskDef(taskType);
+		metadataService.unregisterTaskDef(taskType);
 	}
-
 }

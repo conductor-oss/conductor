@@ -16,13 +16,12 @@
 /**
  * 
  */
-package com.netflix.conductor.server.resources;
+package com.netflix.conductor.server.resources.v2;
 
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-import com.sun.jersey.api.NotFoundException;
 
 /**
  * @author Viren
@@ -33,9 +32,7 @@ public class WebAppExceptionMapper implements ExceptionMapper<WebApplicationExce
 
 	@Override
 	public Response toResponse(WebApplicationException exception) {
-
-        return Response.status(Response.Status.BAD_REQUEST).entity(exception.getResponse()).build();
+		return exception.getResponse();
 	}
 
 }
-

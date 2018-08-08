@@ -16,12 +16,17 @@
 /**
  * 
  */
-package com.netflix.conductor.server.resources.v1;
+package com.netflix.conductor.server.resources.v2;
 
-import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.service.ExecutionService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -34,25 +39,17 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.service.ExecutionService;
-
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import java.io.InputStream;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author Viren
  *
  */
-@Api(value = "/admin", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON, tags = "Admin")
-@Path("/admin")
+@Api(value = "/v2/admin", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON, tags = "Admin")
+@Path("/v2/admin")
 @Produces({ MediaType.APPLICATION_JSON })
 @Consumes({ MediaType.APPLICATION_JSON })
 @Singleton
@@ -79,7 +76,6 @@ public class AdminResource {
 		this.buildDate = "UNKNOWN";
 		
 		try {
-			
 			InputStream propertiesIs = this.getClass().getClassLoader().getResourceAsStream("META-INF/conductor-core.properties");
 			Properties prop = new Properties();
 			prop.load(propertiesIs);
@@ -101,14 +97,13 @@ public class AdminResource {
 		map.put("buildDate", buildDate);
 		return map;
 	}
-	
+
 	@GET
 	@Path("/task/{tasktype}")
 	@ApiOperation("Get the list of pending tasks for a given task type")
-	@Consumes({ MediaType.WILDCARD })
-	public List<Task> view(@PathParam("tasktype") String taskType,
-                           @DefaultValue("0") @QueryParam("start") Integer start,
-                           @DefaultValue("100") @QueryParam("count") Integer count) throws Exception {
+	@Consumes(MediaType.WILDCARD)
+	public List<Task> view(@PathParam("tasktype") String taskType, @DefaultValue("0") @QueryParam("start") Integer start,
+						   @DefaultValue("100") @QueryParam("count") Integer count) throws Exception {
 		List<Task> tasks = executionService.getPendingTasksForTaskType(taskType);
 		int total = start + count;
 		total = (tasks.size() > total) ? total : tasks.size();
@@ -119,11 +114,10 @@ public class AdminResource {
 	@POST
 	@Path("/sweep/requeue/{workflowId}")
 	@ApiOperation("Queue up all the running workflows for sweep")
-	@Consumes({ MediaType.WILDCARD })
-	@Produces({ MediaType.TEXT_PLAIN })
+	@Consumes(MediaType.WILDCARD)
+	@Produces(MediaType.TEXT_PLAIN)
 	public String requeueSweep(@PathParam("workflowId") String workflowId) throws Exception {
 		boolean pushed = queue.pushIfNotExists(WorkflowExecutor.deciderQueue, workflowId, config.getSweepFrequency());
 		return pushed + "." + workflowId;
 	}
-
 }

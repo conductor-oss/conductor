@@ -38,6 +38,7 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.metrics.Monitors;
 import com.sun.jersey.api.core.HttpContext;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 
 /**
  * @author Viren
@@ -62,24 +63,34 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 	}
 	
 	@Override
-	public Response toResponse(Throwable t) {
-		logger.error(t.getMessage(), t);
+	public Response toResponse(Throwable exception) {
+		logger.error(exception.getMessage(), exception);
 		Monitors.error("error", "error");
-		ApplicationException e = new ApplicationException(Code.INTERNAL_ERROR, t.getMessage(), t);
+
+		ApplicationException applicationException = null;
+
+        if (exception instanceof IllegalArgumentException) {
+            applicationException = new ApplicationException(Code.INVALID_INPUT, exception.getMessage(), exception);
+        } else if (exception instanceof InvalidFormatException) {
+            applicationException = new ApplicationException(Code.INVALID_INPUT, exception.getMessage(), exception);
+        } else {
+            applicationException = new ApplicationException(Code.INTERNAL_ERROR, exception.getMessage(), exception);
+        }
+
 		MediaType mediaType = context.getRequest().selectVariant(supportedMediaTypes).getMediaType();
+
 		if(mediaType == null){
 			mediaType = MediaType.APPLICATION_JSON_TYPE;
 		}
 		
-		Map<String, Object> entityMap = e.toMap();
+		Map<String, Object> entityMap = applicationException.toMap();
 		entityMap.put("instance", host);
 		Object entity = entityMap;
 		if (MediaType.APPLICATION_JSON_TYPE != mediaType) {
 			entity = entity.toString();
 		}
 		
-		return Response.status(e.getHttpStatusCode()).entity(entity).type(mediaType).build();
-		
+		return Response.status(applicationException.getHttpStatusCode()).entity(entity).type(mediaType).build();
 	}
 	
 }

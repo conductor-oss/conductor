@@ -16,7 +16,7 @@
 /**
  *
  */
-package com.netflix.conductor.server.resources;
+package com.netflix.conductor.server.resources.v1;
 
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
@@ -31,6 +31,7 @@ import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
+import com.netflix.conductor.service.WorkflowResourceInfo;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
@@ -65,56 +66,41 @@ import java.util.Map;
 @Singleton
 public class WorkflowResource {
 
-	private WorkflowExecutor executor;
+	private WorkflowResourceInfo workflowResourceInfo;
 
-	private ExecutionService service;
-
-	private MetadataService metadata;
-
-	private int maxSearchSize;
-
-	@Inject
-	public WorkflowResource(WorkflowExecutor executor, ExecutionService service, MetadataService metadata, Configuration config) {
-		this.executor = executor;
-		this.service = service;
-		this.metadata = metadata;
-		this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
-	}
+    public WorkflowResource(WorkflowExecutor workflowExecutor, ExecutionService executionService,
+                            MetadataService metadata, Configuration config) {
+        this.workflowResourceInfo = new WorkflowResourceInfo(workflowExecutor, executionService,
+                metadata, config);
+    }
 
 	@POST
 	@Produces({ MediaType.TEXT_PLAIN })
 	@ApiOperation("Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain")
 	public String startWorkflow (StartWorkflowRequest request) throws Exception {
-		WorkflowDef def = metadata.getWorkflowDef(request.getName(), request.getVersion());
-		if(def == null){
-			throw new ApplicationException(Code.NOT_FOUND, "No such workflow found by name=" + request.getName() + ", version=" + request.getVersion());
-		}
-		return executor.startWorkflow(def.getName(), def.getVersion(), request.getCorrelationId(), request.getInput(), null, request.getTaskToDomain());
+		return workflowResourceInfo.startWorkflow(request);
 	}
 
 	@POST
 	@Path("/{name}")
 	@Produces({ MediaType.TEXT_PLAIN })
 	@ApiOperation("Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking")
-	public String startWorkflow (
-			@PathParam("name") String name, @QueryParam("version") Integer version,
-			@QueryParam("correlationId") String correlationId, Map<String, Object> input) throws Exception {
-
-		WorkflowDef def = metadata.getWorkflowDef(name, version);
-		if(def == null){
-			throw new ApplicationException(Code.NOT_FOUND, "No such workflow found by name=" + name + ", version=" + version);
-		}
-		return executor.startWorkflow(def.getName(), def.getVersion(), correlationId, input, null);
+	public String startWorkflow (@PathParam("name") String name,
+								 @QueryParam("version") Integer version,
+								 @QueryParam("correlationId") String correlationId,
+								 Map<String, Object> input) throws Exception {
+		return workflowResourceInfo.startWorkflow(name, version, correlationId, input);
 	}
 
 	@GET
 	@Path("/{name}/correlated/{correlationId}")
 	@ApiOperation("Lists workflows for the given correlation id")
 	@Consumes(MediaType.WILDCARD)
-	public List<Workflow> getWorkflows(@PathParam("name") String name, @PathParam("correlationId") String correlationId,
-				@QueryParam("includeClosed") @DefaultValue("false") boolean includeClosed,
-				@QueryParam("includeTasks") @DefaultValue("false") boolean includeTasks) throws Exception {
-			return service.getWorkflowInstances(name, correlationId, includeClosed, includeTasks);
+	public List<Workflow> getWorkflows(@PathParam("name") String name,
+									   @PathParam("correlationId") String correlationId,
+									   @QueryParam("includeClosed") @DefaultValue("false") boolean includeClosed,
+									   @QueryParam("includeTasks") @DefaultValue("false") boolean includeTasks) throws Exception {
+			return workflowResourceInfo.getWorklfows(name, correlationId, includeClosed, includeTasks);
 	}
 
 	@POST
@@ -122,24 +108,19 @@ public class WorkflowResource {
 	@ApiOperation("Lists workflows for the given correlation id list")
 	@Consumes(MediaType.WILDCARD)
 	public Map<String, List<Workflow>> getWorkflows(@PathParam("name") String name,
-				@QueryParam("includeClosed") @DefaultValue("false") boolean includeClosed,
-				@QueryParam("includeTasks") @DefaultValue("false") boolean includeTasks, List<String> correlationIds) throws Exception {
-			Map<String, List<Workflow>> workflows = new HashMap<>();
-			for(String correlationId : correlationIds) {
-				List<Workflow> ws = service.getWorkflowInstances(name, correlationId, includeClosed, includeTasks);
-				workflows.put(correlationId, ws);
-			}
-			return workflows;
+													@QueryParam("includeClosed") @DefaultValue("false") boolean includeClosed,
+													@QueryParam("includeTasks") @DefaultValue("false") boolean includeTasks,
+													List<String> correlationIds) throws Exception {
+		return workflowResourceInfo.getWorkflows(name, includeClosed, includeTasks, correlationIds);
 	}
 
 	@GET
 	@Path("/{workflowId}")
 	@ApiOperation("Gets the workflow by workflow id")
 	@Consumes(MediaType.WILDCARD)
-	public Workflow getExecutionStatus(
-			@PathParam("workflowId") String workflowId,
-			@QueryParam("includeTasks") @DefaultValue("true") boolean includeTasks) throws Exception {
-		return service.getExecutionStatus(workflowId, includeTasks);
+	public Workflow getExecutionStatus(@PathParam("workflowId") String workflowId,
+									   @QueryParam("includeTasks") @DefaultValue("true") boolean includeTasks) throws Exception {
+		return workflowResourceInfo.getExecutionStatus(workflowId, includeTasks);
 	}
 
 	@DELETE
@@ -148,20 +129,18 @@ public class WorkflowResource {
 	@Consumes(MediaType.WILDCARD)
 	public void delete(@PathParam("workflowId") String workflowId,
 	                   @QueryParam("archiveWorkflow") @DefaultValue("true") boolean archiveWorkflow) throws Exception {
-		service.removeWorkflow(workflowId, archiveWorkflow);
+		workflowResourceInfo.deleteWorkflow(workflowId, archiveWorkflow);
 	}
 
 	@GET
 	@Path("/running/{name}")
 	@ApiOperation("Retrieve all the running workflows")
 	@Consumes(MediaType.WILDCARD)
-	public List<String> getRunningWorkflow(@PathParam("name") String workflowName, @QueryParam("version") @DefaultValue("1") Integer version,
-											@QueryParam("startTime") Long startTime, @QueryParam("endTime") Long endTime) throws Exception {
-		if(startTime != null && endTime != null){
-			return executor.getWorkflows(workflowName, version, startTime, endTime);
-		} else {
-			return executor.getRunningWorkflowIds(workflowName);
-		}
+	public List<String> getRunningWorkflow(@PathParam("name") String workflowName,
+										   @QueryParam("version") @DefaultValue("1") Integer version,
+										   @QueryParam("startTime") Long startTime,
+										   @QueryParam("endTime") Long endTime) throws Exception {
+		return workflowResourceInfo.getRunningWorkflows(workflowName, version, startTime, endTime);
 	}
 
 	@PUT
@@ -169,7 +148,7 @@ public class WorkflowResource {
 	@ApiOperation("Starts the decision task for a workflow")
 	@Consumes(MediaType.WILDCARD)
 	public void decide(@PathParam("workflowId") String workflowId) throws Exception {
-		executor.decide(workflowId);
+		workflowResourceInfo.decideWorkflow(workflowId);
 	}
 
 	@PUT
@@ -177,7 +156,7 @@ public class WorkflowResource {
 	@ApiOperation("Pauses the workflow")
 	@Consumes(MediaType.WILDCARD)
 	public void pauseWorkflow(@PathParam("workflowId") String workflowId) throws Exception {
-		executor.pauseWorkflow(workflowId);
+		workflowResourceInfo.pauseWorkflow(workflowId);
 	}
 
 	@PUT
@@ -185,7 +164,7 @@ public class WorkflowResource {
 	@ApiOperation("Resumes the workflow")
 	@Consumes(MediaType.WILDCARD)
 	public void resumeWorkflow(@PathParam("workflowId") String workflowId) throws Exception {
-		executor.resumeWorkflow(workflowId);
+		workflowResourceInfo.resumeWorkflow(workflowId);
 	}
 
 	@PUT
@@ -194,7 +173,7 @@ public class WorkflowResource {
 	@Consumes(MediaType.WILDCARD)
 	public void skipTaskFromWorkflow(@PathParam("workflowId") String workflowId, @PathParam("taskReferenceName") String taskReferenceName,
 												SkipTaskRequest skipTaskRequest) throws Exception {
-		executor.skipTaskFromWorkflow(workflowId, taskReferenceName, skipTaskRequest);
+		workflowResourceInfo.skipTaskFromWorkflow(workflowId, taskReferenceName, skipTaskRequest);
 	}
 
 	@POST
@@ -203,8 +182,7 @@ public class WorkflowResource {
 	@Consumes(MediaType.APPLICATION_JSON)
 	@Produces({MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON})
 	public String rerun(@PathParam("workflowId") String workflowId, RerunWorkflowRequest request) throws Exception {
-		request.setReRunFromWorkflowId(workflowId);
-		return executor.rerun(request);
+		return workflowResourceInfo.rerunWorkflow(workflowId, request);
 	}
 
 	@POST
@@ -212,7 +190,7 @@ public class WorkflowResource {
 	@ApiOperation("Restarts a completed workflow")
 	@Consumes(MediaType.WILDCARD)
 	public void restart(@PathParam("workflowId") String workflowId) throws Exception {
-		executor.rewind(workflowId);
+		workflowResourceInfo.restartWorkflow(workflowId);
 	}
 
 	@POST
@@ -220,15 +198,15 @@ public class WorkflowResource {
 	@ApiOperation("Retries the last failed task")
 	@Consumes(MediaType.WILDCARD)
 	public void retry(@PathParam("workflowId") String workflowId) throws Exception {
-		executor.retry(workflowId);
+		workflowResourceInfo.retryWorkflow(workflowId);
 	}
 
 	@POST
 	@Path("/{workflowId}/resetcallbacks")
 	@ApiOperation("Resets callback times of all in_progress tasks to 0")
 	@Consumes(MediaType.WILDCARD)
-	public void reset(@PathParam("workflowId") String workflowId) throws Exception {
-		executor.resetCallbacksForInProgressTasks(workflowId);
+	public void resetWorkflow(@PathParam("workflowId") String workflowId) throws Exception {
+		workflowResourceInfo.resetWorkflow(workflowId);
 	}
 
 	@DELETE
@@ -236,10 +214,12 @@ public class WorkflowResource {
 	@ApiOperation("Terminate workflow execution")
 	@Consumes(MediaType.WILDCARD)
 	public void terminate(@PathParam("workflowId") String workflowId, @QueryParam("reason") String reason) throws Exception {
-		executor.terminateWorkflow(workflowId, reason);
+		workflowResourceInfo.terminateWorkflow(workflowId, reason);
 	}
 
-	@ApiOperation(value="Search for workflows based on payload and other parameters", notes="use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC.  If order is not specified, defaults to ASC")
+	@ApiOperation(value="Search for workflows based on payload and other parameters",
+			notes="use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
+					" If order is not specified, defaults to ASC.")
 	@GET
 	@Consumes(MediaType.WILDCARD)
 	@Produces(MediaType.APPLICATION_JSON)
@@ -251,14 +231,12 @@ public class WorkflowResource {
     		@QueryParam("freeText") @DefaultValue("*") String freeText,
     		@QueryParam("query") String query
     		){
-
-		if(size > maxSearchSize) {
-			throw new ApplicationException(Code.INVALID_INPUT, "Cannot return more than " + maxSearchSize + " workflows.  Please use pagination");
-		}
-		return service.search(query, freeText, start, size, convert(sort));
+		return workflowResourceInfo.searchWorkflows(start, size, sort, freeText, query);
 	}
 
-	@ApiOperation(value = "Search for workflows based on task parameters", notes="use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC.  If order is not specified, defaults to ASC")
+	@ApiOperation(value = "Search for workflows based on task parameters",
+			notes="use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
+					" If order is not specified, defaults to ASC")
     @GET
     @Consumes(MediaType.WILDCARD)
     @Produces(MediaType.APPLICATION_JSON)
@@ -270,14 +248,6 @@ public class WorkflowResource {
             @QueryParam("freeText") @DefaultValue("*") String freeText,
             @QueryParam("query") String query
     ) {
-        return service.searchWorkflowByTasks(query, freeText, start, size, convert(sort));
+        return workflowResourceInfo.searchWorkflowsByTasks(start, size, sort, freeText, query);
     }
-
-	private List<String> convert(String sortStr) {
-		List<String> list = new ArrayList<String>();
-		if(sortStr != null && sortStr.length() != 0){
-			list = Arrays.asList(sortStr.split("\\|"));
-		}
-		return list;
-	}
 }
