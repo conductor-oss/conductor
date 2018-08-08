@@ -578,12 +578,9 @@ public class WorkflowExecutor {
 
             try {
 
-                WorkflowDef latestFailureWorkflow =
-                        metadataDAO.getLatest(failureWorkflow).orElse(
-                                Optional.ofNullable(workflow.getWorkflowDefinition())
-                                        .orElseThrow(() ->
-                                                new RuntimeException("Failure Workflow Definition not found for: " + failureWorkflow)
-                                        )
+                WorkflowDef latestFailureWorkflow = metadataDAO.getLatest(failureWorkflow)
+                        .orElseThrow(() ->
+                                new RuntimeException("Failure Workflow Definition not found for: " + failureWorkflow)
                         );
 
                 String failureWFId = startWorkflow(
