@@ -16,7 +16,7 @@
 /**
  * 
  */
-package com.netflix.conductor.server.resources.v1;
+package com.netflix.conductor.server.resources;
 
 import java.util.List;
 import java.util.Map;
@@ -35,6 +35,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.events.EventProcessor;
 import com.netflix.conductor.core.events.EventQueues;
@@ -42,6 +43,7 @@ import com.netflix.conductor.service.MetadataService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -82,6 +84,7 @@ public class EventResource {
 	@Path("/{name}")
 	@ApiOperation("Remove an event handler")
 	public void removeEventHandlerStatus(@PathParam("name") String name) {
+		Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be null or empty.");
 		metadataService.removeEventHandlerStatus(name);
 	}
 
@@ -94,8 +97,10 @@ public class EventResource {
 	@GET
 	@Path("/{event}")
 	@ApiOperation("Get event handlers for a given event")
-	public List<EventHandler> getEventHandlersForEvent(@PathParam("event") String event, @QueryParam("activeOnly") @DefaultValue("true") boolean activeOnly) {
-		return metadataService.getEventHandlersForEvent(event, activeOnly);
+	public List<EventHandler> getEventHandlersForEvent(@PathParam("event") String event,
+                                                       @QueryParam("activeOnly") @DefaultValue("true") boolean activeOnly) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(event), "Event cannot be null or empty.");
+        return metadataService.getEventHandlersForEvent(event, activeOnly);
 	}
 	
 	@GET

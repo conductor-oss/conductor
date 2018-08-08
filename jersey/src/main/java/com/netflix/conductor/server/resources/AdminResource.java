@@ -16,7 +16,7 @@
 /**
  * 
  */
-package com.netflix.conductor.server.resources.v1;
+package com.netflix.conductor.server.resources;
 
 import java.io.InputStream;
 import java.util.List;
@@ -35,6 +35,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import com.google.common.base.Preconditions;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -109,6 +111,7 @@ public class AdminResource {
 	public List<Task> view(@PathParam("tasktype") String taskType,
                            @DefaultValue("0") @QueryParam("start") Integer start,
                            @DefaultValue("100") @QueryParam("count") Integer count) throws Exception {
+		Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
 		List<Task> tasks = executionService.getPendingTasksForTaskType(taskType);
 		int total = start + count;
 		total = (tasks.size() > total) ? total : tasks.size();
@@ -121,7 +124,8 @@ public class AdminResource {
 	@ApiOperation("Queue up all the running workflows for sweep")
 	@Consumes({ MediaType.WILDCARD })
 	@Produces({ MediaType.TEXT_PLAIN })
-	public String requeueSweep(@PathParam("workflowId") String workflowId) throws Exception {
+	public String requeueSweep(@PathParam("workflowId") String workflowId) {
+		Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
 		boolean pushed = queue.pushIfNotExists(WorkflowExecutor.deciderQueue, workflowId, config.getSweepFrequency());
 		return pushed + "." + workflowId;
 	}

@@ -29,12 +29,14 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.service.MetadataService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.lang3.StringUtils;
 
 
 /**
@@ -64,15 +66,17 @@ public class MetadataResource {
 	@PUT
 	@Path("/workflow")
 	@ApiOperation("Create or update workflow definition")
-	public void update(List<WorkflowDef> defs) {
-		metadataService.updateWorkflowDef(defs);
+	public void update(List<WorkflowDef> workflowDefs) {
+		metadataService.updateWorkflowDef(workflowDefs);
 	}
 
 	@GET
 	@ApiOperation("Retrieves workflow definition along with blueprint")
 	@Path("/workflow/{name}")
-	public WorkflowDef get(@PathParam("name") String name, @QueryParam("version") Integer version) {
-		return metadataService.getWorkflowDef(name, version);
+	public WorkflowDef get(@PathParam("name") String name,
+						   @QueryParam("version") Integer version) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be null or empty.");
+        return metadataService.getWorkflowDef(name, version);
 	}
 
 	@GET
@@ -87,7 +91,7 @@ public class MetadataResource {
 	@ApiOperation("Removes workflow definition")
 	public void unregisterWorkflowDef(@PathParam("name") String name,
 									  @PathParam("version") Integer version) {
-		metadataService.unregisterWorkflowDef(name, version);
+        metadataService.unregisterWorkflowDef(name, version);
 	}
 	
 	@POST
@@ -117,13 +121,15 @@ public class MetadataResource {
 	@ApiOperation("Gets the task definition")
 	@Consumes(MediaType.WILDCARD)
 	public TaskDef getTaskDef(@PathParam("tasktype") String taskType) {
-		return metadataService.getTaskDef(taskType);
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
+        return metadataService.getTaskDef(taskType);
 	}
 	
 	@DELETE
 	@Path("/taskdefs/{tasktype}")
 	@ApiOperation("Remove a task definition")
 	public void unregisterTaskDef(@PathParam("tasktype") String taskType){
-		metadataService.unregisterTaskDef(taskType);
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
+        metadataService.unregisterTaskDef(taskType);
 	}
 }

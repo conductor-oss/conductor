@@ -36,6 +36,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
+import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -48,6 +49,7 @@ import com.netflix.conductor.service.ExecutionService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +84,7 @@ public class TaskResource {
 	public Task poll(@PathParam("tasktype") String taskType,
                      @QueryParam("workerid") String workerId,
                      @QueryParam("domain") String domain) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
 		logger.debug("Task being polled: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
 		Task task = taskService.getLastPollTask(taskType, workerId, domain);
 
@@ -101,7 +104,7 @@ public class TaskResource {
 								@QueryParam("domain") String domain,
 								@DefaultValue("1") @QueryParam("count") Integer count,
 								@DefaultValue("100") @QueryParam("timeout") Integer timeout) throws Exception {
-
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
 		List<Task> polledTasks = taskService.poll(taskType, workerId, domain, count, timeout);
 		//TODO: is it okay to put this in service layer
 		logger.debug("The Tasks {} being returned for /tasks/poll/{}?{}&{}",
@@ -118,6 +121,7 @@ public class TaskResource {
 	public List<Task> getTasks(@PathParam("tasktype") String taskType,
                                @QueryParam("startKey") String startKey,
                                @QueryParam("count") @DefaultValue("100") Integer count) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
 		return taskService.getTasks(taskType, startKey, count);
 	}
 
@@ -127,12 +131,15 @@ public class TaskResource {
 	@Consumes(MediaType.WILDCARD)
 	public Task getPendingTaskForWorkflow(@PathParam("workflowId") String workflowId,
                                           @PathParam("taskRefName") String taskReferenceName) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskReferenceName), "TaskReferenceName cannot be null or empty.");
 		return taskService.getPendingTaskForWorkflow(taskReferenceName, workflowId);
 	}
 
 	@POST
 	@ApiOperation("Update a task")
 	public String updateTask(TaskResult taskResult) throws Exception {
+	    //TODO: add validation here
 		logger.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
 		taskService.updateTask(taskResult);
 		logger.debug("Task: {} updated successfully with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
@@ -145,7 +152,8 @@ public class TaskResource {
 	@Consumes(MediaType.WILDCARD)
 	public String ack(@PathParam("taskId") String taskId,
                       @QueryParam("workerid") String workerId) throws Exception {
-		logger.debug("Ack received for task: {} from worker: {}", taskId, workerId);
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "TaskId cannot be null or empty.");
+        logger.debug("Ack received for task: {} from worker: {}", taskId, workerId);
 		return String.valueOf(taskService.ackTaskReceived(taskId));
 	}
 	
@@ -153,14 +161,16 @@ public class TaskResource {
 	@Path("/{taskId}/log")
 	@ApiOperation("Log Task Execution Details")
 	public void log(@PathParam("taskId") String taskId, String log) {
-		taskService.log(taskId, log);		
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "TaskId cannot be null or empty.");
+        taskService.log(taskId, log);
 	}
 	
 	@GET
 	@Path("/{taskId}/log")
 	@ApiOperation("Get Task Execution Logs")
 	public List<TaskExecLog> getTaskLogs(@PathParam("taskId") String taskId) {
-		return taskService.getTaskLogs(taskId);		
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "TaskId cannot be null or empty.");
+        return taskService.getTaskLogs(taskId);
 	}
 
 	@GET
@@ -168,7 +178,8 @@ public class TaskResource {
 	@ApiOperation("Get task by Id")
 	@Consumes(MediaType.WILDCARD)
 	public Task getTask(@PathParam("taskId") String taskId) throws Exception {
-		return taskService.getTask(taskId);
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "TaskId cannot be null or empty.");
+        return taskService.getTask(taskId);
 	}
 
 	@DELETE
@@ -177,7 +188,9 @@ public class TaskResource {
 	@Consumes({ MediaType.WILDCARD })
 	public void removeTaskFromQueue(@PathParam("taskType") String taskType,
 									@PathParam("taskId") String taskId) {
-		taskService.removeTaskfromQueue(taskType, taskId);
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "TaskId cannot be null or empty.");
+        taskService.removeTaskfromQueue(taskType, taskId);
 	}
 
 	@GET
@@ -193,6 +206,7 @@ public class TaskResource {
 	@ApiOperation("Get the details about each queue")
 	@Consumes({ MediaType.WILDCARD })
 	public Map<String, Map<String, Map<String, Long>>> allVerbose() {
+	    //TODO: add validation here
 		return queueDAO.queuesDetailVerbose();
 	}
 
@@ -213,7 +227,6 @@ public class TaskResource {
 	public List<PollData> getPollData(@QueryParam("taskType") String taskType) throws Exception {
 		return taskService.getPollData(taskType);
 	}
-	
 
 	@GET
 	@Path("/queue/polldata/all")
@@ -238,6 +251,7 @@ public class TaskResource {
 	@Consumes(MediaType.WILDCARD)
 	@Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON })
 	public String requeue(@PathParam("taskType") String taskType) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
 		return String.valueOf(taskService.requeuePendingTasks(taskType));
 	}
 	
