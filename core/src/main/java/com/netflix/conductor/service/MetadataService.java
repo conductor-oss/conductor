@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Netflix, Inc.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.service;
 
@@ -34,8 +34,8 @@ import javax.inject.Singleton;
 import java.util.List;
 
 /**
- * @author Viren 
- * 
+ * @author Viren
+ *
  */
 @Singleton
 @Trace
@@ -43,9 +43,12 @@ public class MetadataService {
 
     private MetadataDAO metadataDAO;
 
+    private RateLimitingService rateLimitingService;
+
     @Inject
-    public MetadataService(MetadataDAO metadataDAO) {
+    public MetadataService(MetadataDAO metadataDAO, RateLimitingService rateLimitingService) {
         this.metadataDAO = metadataDAO;
+        this.rateLimitingService = rateLimitingService;
     }
 
     /**
@@ -59,6 +62,9 @@ public class MetadataService {
             taskDefinition.setUpdatedBy(null);
             taskDefinition.setUpdateTime(null);
             metadataDAO.createTaskDef(taskDefinition);
+            if(taskDefinition.getRateLimitPerSecond() != 0) {
+                rateLimitingService.updateRateLimitRules(taskDefinition);
+            }
         }
     }
 
@@ -74,6 +80,9 @@ public class MetadataService {
         taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
         taskDefinition.setUpdateTime(System.currentTimeMillis());
         metadataDAO.updateTaskDef(taskDefinition);
+        if(taskDefinition.getRateLimitPerSecond() != 0) {
+            rateLimitingService.updateRateLimitRules(taskDefinition);
+        }
     }
 
     /**
@@ -99,12 +108,10 @@ public class MetadataService {
      */
     public TaskDef getTaskDef(String taskType) {
         TaskDef taskDef = metadataDAO.getTaskDef(taskType);
-
-        if(taskDef == null){
+        if (taskDef == null){
             throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
                     String.format("No such taskType found by name= %s", taskType));
         }
-
         return taskDef;
     }
 
@@ -134,7 +141,6 @@ public class MetadataService {
      */
     public WorkflowDef getWorkflowDef(String name, Integer version) {
         WorkflowDef workflowDef = null;
-
         if (version == null) {
             workflowDef = metadataDAO.getLatest(name);
         } else {
@@ -145,7 +151,6 @@ public class MetadataService {
             throw new ApplicationException(Code.NOT_FOUND,
                     String.format("No such workflow found by name= %s, version= %d", name, version));
         }
-
         return workflowDef;
     }
 
@@ -163,10 +168,10 @@ public class MetadataService {
     }
 
     public void registerWorkflowDef(WorkflowDef def) {
-        if(def.getName().contains(":")) {
+        if (def.getName().contains(":")) {
             throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
         }
-        if(def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
+        if (def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
             def.setSchemaVersion(2);
         }
         metadataDAO.create(def);
@@ -175,7 +180,7 @@ public class MetadataService {
     /**
      *
      * @param name Name of the workflow definition to be removed
-     * @param version Version of the workflow definition.
+     * @param version Version of the workflow definition to be removed
      */
     public void unregisterWorkflowDef(String name, Integer version) {
         if (name == null) {
@@ -239,6 +244,6 @@ public class MetadataService {
         Preconditions.checkNotNull(eh.getEvent(), "Missing event location");
         Preconditions.checkNotNull(eh.getActions().isEmpty(), "No actions specified.  Please specify at-least one action");
         String event = eh.getEvent();
-        EventQueues.getQueue(event, true);
+        EventQueues.getQueue(event);
     }
 }

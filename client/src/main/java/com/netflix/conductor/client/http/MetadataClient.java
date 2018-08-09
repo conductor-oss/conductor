@@ -117,14 +117,15 @@ public class MetadataClient extends ClientBase {
 
     /**
      * Removes the workflow definition of a workflow from the conductor server.
-     * User with caution.
+     * It does not remove associated workflows. Use with caution.
      *
      * @param name Name of the workflow to be unregistered.
+     * @param version Version of the workflow definition to be unregistered.
      */
     public void unregisterWorkflowDef(String name, Integer version) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Workflow name cannot be blank");
         Preconditions.checkNotNull(version, "Version cannot be null");
-        delete("metadata/workflow/{name}/version/{version}",  name, version);
+        delete("metadata/workflow/{name}/{version}",  name, version);
     }
 
     // Task Metadata Operations

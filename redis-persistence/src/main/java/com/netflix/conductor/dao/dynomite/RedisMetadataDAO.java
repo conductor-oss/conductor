@@ -17,10 +17,12 @@ package com.netflix.conductor.dao.dynomite;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -34,16 +36,21 @@ import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Singleton
 @Trace
 public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
+
+    private static final Logger logger = LoggerFactory.getLogger(RedisMetadataDAO.class);
 
     // Keys Families
     private final static String ALL_TASK_DEFS = "TASK_DEFS";
@@ -103,11 +110,8 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
     @Override
     public TaskDef getTaskDef(String name) {
-        TaskDef taskDef = taskDefCache.get(name);
-        if(taskDef == null) {
-            taskDef = getTaskDefFromDB(name);
-        }
-        return taskDef;
+        return Optional.ofNullable(taskDefCache.get(name))
+                .orElseGet(() -> getTaskDefFromDB(name));
     }
 
     private TaskDef getTaskDefFromDB(String name) {
@@ -169,19 +173,33 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         _createOrUpdate(def);
     }
 
+    private Optional<Integer> getWorkflowMaxVersion(String workflowName) {
+        return dynoClient.hkeys(nsKey(WORKFLOW_DEF, workflowName)).stream()
+                .filter(key -> !key.equals(LATEST))
+                .map(Integer::valueOf)
+                .max(Comparator.naturalOrder());
+    }
+
     @Override
+    /*
+     * @param name Name of the workflow definition
+     * @return     Latest version of workflow definition
+     * @see        WorkflowDef
+     */
     public WorkflowDef getLatest(String name) {
         Preconditions.checkNotNull(name, "WorkflowDef name cannot be null");
-        WorkflowDef def = null;
+        WorkflowDef workflowDef = null;
 
-        String workflowDefJsonString = dynoClient.hget(nsKey(WORKFLOW_DEF, name), LATEST);
-        if (workflowDefJsonString != null) {
-            def = readValue(workflowDefJsonString, WorkflowDef.class);
-            recordRedisDaoRequests("getWorkflowDef");
-            recordRedisDaoPayloadSize("getWorkflowDef", workflowDefJsonString.length(), "n/a", def.getName());
+        Optional<Integer> optionalMaxVersion = getWorkflowMaxVersion(name);
+
+        if (optionalMaxVersion.isPresent()) {
+            String latestdata = dynoClient.hget(nsKey(WORKFLOW_DEF, name), optionalMaxVersion.get().toString());
+            if (latestdata != null) {
+                workflowDef = readValue(latestdata, WorkflowDef.class);
+            }
         }
 
-        return def;
+        return workflowDef;
     }
 
     public List<WorkflowDef> getAllVersions(String name) {
@@ -219,14 +237,24 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
     }
 
     @Override
-    public void removeWorkflowDef(String name, int version) {
+    public void removeWorkflowDef(String name, Integer version) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "WorkflowDef name cannot be null");
-        Preconditions.checkArgument(version > 0, "Input version is not valid");
+        Preconditions.checkNotNull(version, "Input version cannot be null");
         Long result = dynoClient.hdel(nsKey(WORKFLOW_DEF, name), String.valueOf(version));
         if (!result.equals(1L)) {
             throw new ApplicationException(Code.NOT_FOUND, String.format("Cannot remove the workflow - no such workflow" +
                     " definition: %s version: %d", name, version));
         }
+
+        // check if there are any more versions remaining if not delete the
+        // workflow name
+        Optional<Integer> optionMaxVersion = getWorkflowMaxVersion(name);
+
+        // delete workflow name
+        if (!optionMaxVersion.isPresent()) {
+            dynoClient.srem(nsKey(WORKFLOW_DEF_NAMES), name);
+        }
+
         recordRedisDaoRequests("removeWorkflowDef");
     }
 
@@ -256,24 +284,6 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
             }
         }
         recordRedisDaoPayloadSize("getAllWorkflowDefs", size, "n/a", "n/a");
-        return workflows;
-    }
-
-    @Override
-    public List<WorkflowDef> getAllLatest() {
-        List<WorkflowDef> workflows = new LinkedList<WorkflowDef>();
-        int size = 0;
-
-        // Get all from WORKFLOW_DEF_NAMES
-        recordRedisDaoRequests("getAllLatestWorkflowDefs");
-        Set<String> workflowNames = dynoClient.smembers(nsKey(WORKFLOW_DEF_NAMES));
-        for (String workflowName : workflowNames) {
-            String workflowDefJsonString = dynoClient.hget(nsKey(WORKFLOW_DEF, workflowName), LATEST);
-            workflows.add(readValue(workflowDefJsonString, WorkflowDef.class));
-            size += workflowDefJsonString.length();
-        }
-        recordRedisDaoPayloadSize("getAllLatestWorkflowDefs", size, "n/a", "n/a");
-
         return workflows;
     }
 
@@ -373,20 +383,9 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
         Preconditions.checkNotNull(workflowDef.getName(), "WorkflowDef name cannot be null");
 
         // First set the workflow def
-        dynoClient.hset(nsKey(WORKFLOW_DEF, workflowDef.getName()), String.valueOf(workflowDef.getVersion()), toJson(workflowDef));
+        dynoClient.hset(nsKey(WORKFLOW_DEF, workflowDef.getName()), String.valueOf(workflowDef.getVersion()),
+                toJson(workflowDef));
 
-        // If it is getting created then make sure the latest field is updated
-        // and WORKFLOW_DEF_NAMES is updated
-        List<Integer> versions = new ArrayList<Integer>();
-        dynoClient.hkeys(nsKey(WORKFLOW_DEF, workflowDef.getName())).forEach(key -> {
-            if (!key.equals(LATEST)) {
-                versions.add(Integer.valueOf(key));
-            }
-        });
-        Collections.sort(versions);
-        String latestKey = versions.get(versions.size() - 1).toString();
-        String latestdata = dynoClient.hget(nsKey(WORKFLOW_DEF, workflowDef.getName()), latestKey);
-        dynoClient.hset(nsKey(WORKFLOW_DEF, workflowDef.getName()), LATEST, latestdata);
         dynoClient.sadd(nsKey(WORKFLOW_DEF_NAMES), workflowDef.getName());
         recordRedisDaoRequests("storeWorkflowDef", "n/a", workflowDef.getName());
     }

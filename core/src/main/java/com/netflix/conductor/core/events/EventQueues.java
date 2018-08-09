@@ -18,18 +18,16 @@
  */
 package com.netflix.conductor.core.events;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
 import com.google.inject.Inject;
 import com.google.inject.name.Named;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.core.execution.ParametersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.netflix.conductor.core.events.queue.ObservableQueue;
-import com.netflix.conductor.core.execution.ParametersUtils;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author Viren
@@ -46,7 +44,6 @@ public class EventQueues {
 	public static Map<String, EventQueueProvider> providers; //TODO this is a leaky abstraction, when the static injection is moved to singleton this will be fixed
 
 	private EventQueues() {
-
 	}
 
 	public static List<String> providers() {
@@ -55,24 +52,22 @@ public class EventQueues {
 				.collect(Collectors.toList());
 	}
 
-	public static ObservableQueue getQueue(String eventt, boolean throwException) {
-		String event = parametersUtils.replace(eventt).toString();
-		String type = event.substring(0, event.indexOf(':'));
-		String queueURI = event.substring(event.indexOf(':') + 1);
+	public static ObservableQueue getQueue(String eventType) {
+		String event = parametersUtils.replace(eventType).toString();
+		int index = event.indexOf(':');
+		if (index == -1) {
+			logger.error("Queue cannot be configured for illegal event: {}", event);
+			throw new IllegalArgumentException("Illegal event " + event);
+		}
+
+		String type = event.substring(0, index);
+		String queueURI = event.substring(index + 1);
 		EventQueueProvider provider = providers.get(type);
 		if (provider != null) {
-			try {
-				return provider.getQueue(queueURI);
-			} catch (Exception e) {
-				logger.error(e.getMessage(), e);
-				if (throwException) {
-					throw e;
-				}
-			}
+			return provider.getQueue(queueURI);
 		} else {
+			logger.error("Queue {} is not configured for event:{}", type, eventType);
 			throw new IllegalArgumentException("Unknown queue type " + type);
 		}
-		return null;
-
 	}
 }

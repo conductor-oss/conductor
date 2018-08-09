@@ -47,6 +47,7 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.server.ConductorConfig;
 import com.netflix.conductor.server.ConductorServer;
+import com.netflix.conductor.client.exceptions.ConductorClientException;
 import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.ClientResponse;
 
@@ -238,10 +239,11 @@ public class End2EndTests {
 
 		try {
 			WorkflowDef getDef = mc.getWorkflowDef("testWorkflowDel", 1);
-		} catch (UniformInterfaceException ue) {
-			ClientResponse response = ue.getResponse();
-			// TODO: fix this to NOT_FOUND once error handling is fixed
-			assertEquals(404, response.getStatus());
+		} catch (ConductorClientException e) {
+			int status = e.getStatus();
+			String errorMessage = e.getMessage();
+			assertEquals(404, status);
+			assertEquals("No such workflow found by name= testWorkflowDel, version= 1", errorMessage);
 		}
 	}
 	

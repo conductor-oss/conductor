@@ -87,11 +87,10 @@ public class MetadataResource {
 	}
 
 	@DELETE
-	@Path("/workflow/{name}/version/{version}")
-	@ApiOperation("Removes workflow definition")
-	public void unregisterWorkflowDef(@PathParam("name") String name,
-									  @PathParam("version") Integer version) {
-        metadataService.unregisterWorkflowDef(name, version);
+	@Path("/workflow/{name}/{version}")
+	@ApiOperation("Removes workflow definition. It does not remove workflows associated with the definition.")
+	public void unregisterWorkflowDef(@PathParam("name") String name, @PathParam("version") Integer version) {
+            metadataService.unregisterWorkflowDef(name, version);
 	}
 	
 	@POST
