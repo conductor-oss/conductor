@@ -82,11 +82,11 @@ public class WorkflowResourceInfo {
     /**
      * Lists workflows for the given correlation id.
      *
-     * @param name          Name of the workflow.
+     * @param name Name of the workflow.
      * @param correlationId CorrelationID of the workflow you want to start.
-     * @param includeClosed
-     * @param includeTasks
-     * @return the list of workflows.
+     * @param includeClosed IncludeClosed workflow which are not running.
+     * @param includeTasks  Includes tasks associated with workflows.
+     * @return a list of {@link Workflow}
      */
     public List<Workflow> getWorkflows(String name, String correlationId,
                                        boolean includeClosed, boolean includeTasks) {
@@ -95,11 +95,11 @@ public class WorkflowResourceInfo {
 
     /*
      * Lists workflows for the given correlation id.
-     * @param name
-     * @param includeClosed
-     * @param includeTasks
-     * @param correlationIds
-     * @return
+     * @param name Name of the workflow.
+     * @param includeClosed CorrelationID of the workflow you want to start.
+     * @param includeTasks  IncludeClosed workflow which are not running.
+     * @param correlationIds Includes tasks associated with workflows.
+     * @return a {@link Map} of {@link String} as key and a list of {@link Workflow} as value
      */
     public Map<String, List<Workflow>> getWorkflows(String name, boolean includeClosed,
                                                     boolean includeTasks, List<String> correlationIds) {
@@ -113,11 +113,9 @@ public class WorkflowResourceInfo {
 
     /*
      * Gets the workflow by workflow Id.
-     * @param name
-     * @param includeClosed
-     * @param includeTasks
-     * @param correlationIds
-     * @return
+     * @param name         Name of the workflow.
+     * @param includeTasks Includes tasks associated with workflow.
+     * @return an instance of {@link Workflow}
      */
     public Workflow getExecutionStatus(String workflowId, boolean includeTasks) throws Exception {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
@@ -132,8 +130,8 @@ public class WorkflowResourceInfo {
 
     /*
      * Removes the workflow from the system.
-     * @param workflowId
-     * @param archiveWorkflow
+     * @param workflowId WorkflowID of the workflow you want to remove from system.
+     * @param archiveWorkflow Archives the workflow.
      */
     public void deleteWorkflow(String workflowId, boolean archiveWorkflow) throws Exception {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
@@ -143,11 +141,14 @@ public class WorkflowResourceInfo {
 
     /*
      * Retrieves all the running workflows.
-     * @param workflowId
-     * @param archiveWorkflow
+     * @param workflowId WorkflowID of the workflow.
+     * @param version Version of the workflow.
+     * @param startTime
+     * @param endTime
+     * @return a list of workflow Ids.
      */
     public List<String> getRunningWorkflows(String workflowName, Integer version,
-                                            Long startTime, Long endTime) throws Exception {
+                                            Long startTime, Long endTime) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowName),
                 "Workflow name cannot be null or empty.");
         if (startTime != null && endTime != null) {
@@ -159,8 +160,7 @@ public class WorkflowResourceInfo {
 
     /*
      * Starts the decision task for a workflow.
-     * @param workflowId
-     * @param archiveWorkflow
+     * @param workflowId WorkflowId of the workflow.
      */
     public void decideWorkflow(String workflowId) throws Exception {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
@@ -169,9 +169,8 @@ public class WorkflowResourceInfo {
     }
 
     /*
-     * Pauses the workflow
-     * @param workflowId
-     * @param archiveWorkflow
+     * Pauses the workflow given a worklfowId.
+     * @param workflowId WorkflowId of the workflow.
      */
     public void pauseWorkflow(String workflowId) throws Exception {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
@@ -181,7 +180,7 @@ public class WorkflowResourceInfo {
 
     /*
      * Resumes the workflow.
-     * @param workflowId
+     * @param workflowId WorkflowId of the workflow.
      */
     public void resumeWorkflow(String workflowId) throws Exception {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
@@ -191,9 +190,9 @@ public class WorkflowResourceInfo {
 
     /*
      * Skips a given task from a current running workflow.
-     * @param workflowId
-     * @param taskReferenceName
-     * @param skipTaskCount
+     * @param workflowId WorkflowId of the workflow.
+     * @param taskReferenceName The task reference name.
+     * @param skipTaskRequest {@link SkipTaskRequest} for task you want to skip.
      */
     public void skipTaskFromWorkflow(String workflowId, String taskReferenceName,
                                      SkipTaskRequest skipTaskRequest) throws Exception {
@@ -205,14 +204,14 @@ public class WorkflowResourceInfo {
     }
 
     /*
-     * Reruns the workflow from a specific task
-     * @param workflowId
-     * @param RerunWorkflowRequest
+     * Reruns the workflow from a specific task.
+     * @param workflowId WorkflowId of the workflow you want to rerun.
+     * @param RerunWorkflowRequest (@link RerunWorkflowRequest) for the workflow.
      */
     public String rerunWorkflow(String workflowId, RerunWorkflowRequest request) throws Exception {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
                 "WorkflowId cannot be null or empty.");
-        //TODO: Should we use checkNotNull which will throws NullPointerException
+        //TODO: add validation for RerunWorkflowRequest
         Preconditions.checkArgument(request != null, "RerunWorkflowRequest cannot be null.");
         request.setReRunFromWorkflowId(workflowId);
         return workflowExecutor.rerun(request);
@@ -220,9 +219,9 @@ public class WorkflowResourceInfo {
 
     /*
      * Restarts a completed workflow.
-     * @param workflowId
+     * @param workflowId WorkflowId of the workflow.
      */
-    public void restartWorkflow(String workflowId) throws Exception {
+    public void restartWorkflow(String workflowId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
                 "WorkflowId cannot be null or empty.");
         workflowExecutor.rewind(workflowId);
@@ -230,9 +229,9 @@ public class WorkflowResourceInfo {
 
     /*
      * Retries the last failed task.
-     * @param workflowId
+     * @param workflowId WorkflowId of the workflow.
      */
-    public void retryWorkflow(String workflowId) throws Exception {
+    public void retryWorkflow(String workflowId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
                 "WorkflowId cannot be null or empty.");
         workflowExecutor.retry(workflowId);
@@ -240,9 +239,9 @@ public class WorkflowResourceInfo {
 
     /*
      * Resets callback times of all in_progress tasks to 0.
-     * @param workflowId
+     * @param workflowId WorkflowId of the workflow.
      */
-    public void resetWorkflow(String workflowId) throws Exception {
+    public void resetWorkflow(String workflowId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
                 "WorkflowId cannot be null or empty.");
         workflowExecutor.resetCallbacksForInProgressTasks(workflowId);
@@ -250,10 +249,10 @@ public class WorkflowResourceInfo {
 
     /*
      * Terminate workflow execution.
-     * @param workflowId
-     * @param reason
+     * @param workflowId WorkflowId of the workflow.
+     * @param reason Reason for terminating the workflow.
      */
-    public void terminateWorkflow(String workflowId, String reason) throws Exception {
+    public void terminateWorkflow(String workflowId, String reason) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId),
                 "WorkflowId cannot be null or empty.");
         workflowExecutor.terminateWorkflow(workflowId, reason);

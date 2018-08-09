@@ -1,5 +1,8 @@
 package com.netflix.conductor.client.exceptions;
 
+/**
+ * Client exception thrown from Conductor api clients.
+ */
 public class ConductorClientException extends RuntimeException {
 
     private Integer status;
@@ -50,7 +53,6 @@ public class ConductorClientException extends RuntimeException {
         this.code = code;
     }
 
-
     public void setStatus(Integer status) {
         this.status = status;
     }
@@ -66,7 +68,6 @@ public class ConductorClientException extends RuntimeException {
     public void setInstance(String instance) {
         this.instance = instance;
     }
-
 
     @Override
     public String getMessage() {

@@ -2,15 +2,17 @@ package com.netflix.conductor.client.exceptions;
 
 public class ErrorResponse {
 
+    private String statusCode;
+    private String message;
+    private String instance;
+
     public String getCode() {
-        return code;
+        return statusCode;
     }
 
     public void setCode(String code) {
-        this.code = code;
+        this.statusCode = code;
     }
-
-    private String code;
 
     public String getMessage() {
         return message;
@@ -20,8 +22,6 @@ public class ErrorResponse {
         this.message = message;
     }
 
-    private String message;
-
     public String getInstance() {
         return instance;
     }
@@ -29,6 +29,4 @@ public class ErrorResponse {
     public void setInstance(String instance) {
         this.instance = instance;
     }
-
-    private String instance;
 }
