@@ -73,17 +73,20 @@ public class WorkflowResource {
     @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation("Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain")
     public String startWorkflow(StartWorkflowRequest request) throws Exception {
+        Preconditions.checkArgument(request!=null
+                , "StartWorkflowRequest cannot be null or empty.");
         return workflowResourceInfo.startWorkflow(request);
     }
 
     @POST
     @Path("/{name}")
     @Produces({MediaType.TEXT_PLAIN})
-    @ApiOperation("Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking")
+    @ApiOperation("Start a new workflow. Returns the ID of the workflow instance that can be later used for tracking")
     public String startWorkflow(@PathParam("name") String name,
                                 @QueryParam("version") Integer version,
                                 @QueryParam("correlationId") String correlationId,
                                 Map<String, Object> input) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be null or empty.");
         return workflowResourceInfo.startWorkflow(name, version, correlationId, input);
     }
 

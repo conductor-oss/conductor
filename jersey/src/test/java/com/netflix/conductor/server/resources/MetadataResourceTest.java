@@ -88,7 +88,7 @@ public class MetadataResourceTest {
     }
 
     @Test
-    public void testUnregisterWorkflowDef() {
+    public void testUnregisterWorkflowDef() throws Exception {
         metadataResource.unregisterWorkflowDef("test", 1);
         verify(mockMetadataService, times(1)).unregisterWorkflowDef(anyString(), any());
     }

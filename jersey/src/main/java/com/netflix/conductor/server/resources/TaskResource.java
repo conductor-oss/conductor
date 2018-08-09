@@ -80,25 +80,23 @@ public class TaskResource {
 	@GET
 	@Path("/poll/{tasktype}")
 	@ApiOperation("Poll for a task of a certain type")
-	@Consumes(MediaType.WILDCARD)
+	@Consumes({MediaType.WILDCARD})
 	public Task poll(@PathParam("tasktype") String taskType,
                      @QueryParam("workerid") String workerId,
                      @QueryParam("domain") String domain) throws Exception {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
 		logger.debug("Task being polled: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
 		Task task = taskService.getLastPollTask(taskType, workerId, domain);
-
 		if (task != null) {
             logger.debug("The Task {} being returned for /tasks/poll/{}?{}&{}", task, taskType, workerId, domain);
         }
-
 		return task;
 	}
 
 	@GET
 	@Path("/poll/batch/{tasktype}")
 	@ApiOperation("batch Poll for a task of a certain type")
-	@Consumes(MediaType.WILDCARD)
+	@Consumes({MediaType.WILDCARD})
 	public List<Task> batchPoll(@PathParam("tasktype") String taskType,
 								@QueryParam("workerid") String workerId,
 								@QueryParam("domain") String domain,
@@ -117,7 +115,7 @@ public class TaskResource {
 	@GET
 	@Path("/in_progress/{tasktype}")
 	@ApiOperation("Get in progress tasks. The results are paginated.")
-	@Consumes(MediaType.WILDCARD)
+	@Consumes({MediaType.WILDCARD})
 	public List<Task> getTasks(@PathParam("tasktype") String taskType,
                                @QueryParam("startKey") String startKey,
                                @QueryParam("count") @DefaultValue("100") Integer count) throws Exception {
@@ -128,7 +126,7 @@ public class TaskResource {
 	@GET
 	@Path("/in_progress/{workflowId}/{taskRefName}")
 	@ApiOperation("Get in progress task for a given workflow id.")
-	@Consumes(MediaType.WILDCARD)
+	@Consumes({MediaType.WILDCARD})
 	public Task getPendingTaskForWorkflow(@PathParam("workflowId") String workflowId,
                                           @PathParam("taskRefName") String taskReferenceName) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
@@ -139,7 +137,7 @@ public class TaskResource {
 	@POST
 	@ApiOperation("Update a task")
 	public String updateTask(TaskResult taskResult) throws Exception {
-	    //TODO: add validation here
+		Preconditions.checkArgument(taskResult!=null, "TaskResult cannot be null or empty.");
 		logger.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
 		taskService.updateTask(taskResult);
 		logger.debug("Task: {} updated successfully with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
@@ -149,7 +147,7 @@ public class TaskResource {
 	@POST
 	@Path("/{taskId}/ack")
 	@ApiOperation("Ack Task is recieved")
-	@Consumes(MediaType.WILDCARD)
+	@Consumes({MediaType.WILDCARD})
 	public String ack(@PathParam("taskId") String taskId,
                       @QueryParam("workerid") String workerId) throws Exception {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "TaskId cannot be null or empty.");
@@ -185,7 +183,7 @@ public class TaskResource {
 	@DELETE
 	@Path("/queue/{taskType}/{taskId}")
 	@ApiOperation("Remove Task from a Task type queue")
-	@Consumes({ MediaType.WILDCARD })
+	@Consumes({MediaType.WILDCARD})
 	public void removeTaskFromQueue(@PathParam("taskType") String taskType,
 									@PathParam("taskId") String taskId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
@@ -196,7 +194,7 @@ public class TaskResource {
 	@GET
 	@Path("/queue/sizes")
 	@ApiOperation("Get Task type queue sizes")
-	@Consumes(MediaType.WILDCARD)
+	@Consumes({MediaType.WILDCARD})
 	public Map<String, Integer> size(@QueryParam("taskType") List<String> taskTypes) {
 		return taskService.getTaskQueueSizes(taskTypes);
 	}
@@ -204,7 +202,7 @@ public class TaskResource {
 	@GET
 	@Path("/queue/all/verbose")
 	@ApiOperation("Get the details about each queue")
-	@Consumes({ MediaType.WILDCARD })
+	@Consumes({MediaType.WILDCARD})
 	public Map<String, Map<String, Map<String, Long>>> allVerbose() {
 	    //TODO: add validation here
 		return queueDAO.queuesDetailVerbose();
@@ -223,7 +221,7 @@ public class TaskResource {
 	@GET
 	@Path("/queue/polldata")
 	@ApiOperation("Get the last poll data for a given task type")
-	@Consumes({ MediaType.WILDCARD })
+	@Consumes({MediaType.WILDCARD})
 	public List<PollData> getPollData(@QueryParam("taskType") String taskType) throws Exception {
 		return taskService.getPollData(taskType);
 	}

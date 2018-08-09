@@ -38,6 +38,8 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
 
+import static java.lang.Thread.*;
+
 
 /**
  * @author Viren
@@ -89,8 +91,11 @@ public class MetadataResource {
 	@DELETE
 	@Path("/workflow/{name}/{version}")
 	@ApiOperation("Removes workflow definition. It does not remove workflows associated with the definition.")
-	public void unregisterWorkflowDef(@PathParam("name") String name, @PathParam("version") Integer version) {
-            metadataService.unregisterWorkflowDef(name, version);
+	public void unregisterWorkflowDef(@PathParam("name") String name,
+                                      @PathParam("version") Integer version) throws Exception {
+        Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be null or empty.");
+        Preconditions.checkArgument(version!=null, "Version cannot be null.");
+	    metadataService.unregisterWorkflowDef(name, version);
 	}
 	
 	@POST
