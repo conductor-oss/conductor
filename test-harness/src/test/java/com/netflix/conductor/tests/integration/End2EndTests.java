@@ -246,5 +246,23 @@ public class End2EndTests {
 			assertEquals("No such workflow found by name= testWorkflowDel, version= 1", errorMessage);
 		}
 	}
+
+	@Test
+	public void testInvalidResource() {
+        MetadataClient metadataClient = new MetadataClient();
+        metadataClient.setRootURI("http://localhost:8080/api/invalid");
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName("testWorkflowDel");
+        def.setVersion(1);
+
+        try {
+            metadataClient.registerWorkflowDef(def);
+        } catch (ConductorClientException e) {
+            int status = e.getStatus();
+            //TODO: this should be 404
+            assertEquals(500, status);
+        }
+	}
 	
 }
