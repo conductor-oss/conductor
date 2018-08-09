@@ -186,11 +186,9 @@ public class MetadataService {
         if (name == null) {
             throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot be null");
         }
-
         if (version == null) {
             throw new ApplicationException(Code.INVALID_INPUT, "Version is not valid");
         }
-
         metadataDAO.removeWorkflowDef(name, version);
     }
 

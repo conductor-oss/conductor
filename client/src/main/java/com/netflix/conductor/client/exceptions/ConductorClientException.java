@@ -21,24 +21,16 @@ public class ConductorClientException extends RuntimeException {
         this.message = message;
     }
 
-    public ConductorClientException(Integer status, String message, Throwable cause) {
-        super(status + " - " + message, cause);
-        this.status = status;
-    }
-
-    public ConductorClientException(Integer status, Throwable cause) {
-        super(status.toString(), cause);
-        this.status = status;
-    }
-
     public ConductorClientException(Integer status, String message) {
         super(message);
         this.status = status;
+        this.message = message;
     }
 
     public ConductorClientException(Integer status, String message, String instance) {
         super(message);
         this.status = status;
+        this.message = message;
         this.instance = instance;
     }
 

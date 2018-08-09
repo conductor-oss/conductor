@@ -50,6 +50,8 @@ public abstract class ClientBase {
 
     private static Logger logger = LoggerFactory.getLogger(ClientBase.class);
 
+    private static final String CLIENT_MESSAGE_FORMAT = "Unable to invoke Conductor API with uri: %s, failure to process request or response";
+
     protected final Client client;
 
     protected String root = "";
@@ -92,11 +94,12 @@ public abstract class ClientBase {
 
     protected void delete(Object[] queryParams, String url, Object... uriVariables) {
         URI uri = null;
+        ClientResponse clientResponse = null;
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
             client.resource(uri).delete();
         } catch (RuntimeException e) {
-            handleException(uri, e);
+            parseException(uri, e);
         }
     }
 
@@ -106,7 +109,7 @@ public abstract class ClientBase {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
             getWebResourceBuilder(uri, request).put();
         } catch (RuntimeException e) {
-            handleException(uri, e);
+            parseException(uri, e);
         }
     }
 
@@ -157,7 +160,7 @@ public abstract class ClientBase {
             }
             return postWithEntity.apply(webResourceBuilder);
         } catch (RuntimeException e) {
-            handleException(uri, e);
+            parseException(uri, e);
         }
         return null;
     }
@@ -181,11 +184,11 @@ public abstract class ClientBase {
             if (clientResponse.getStatus() < 300) {
                 return entityPvoider.apply(clientResponse);
             } else {
-                throw new UniformInterfaceException(clientResponse); // let handleException to handle unexpected response consistently
+                throw new UniformInterfaceException(clientResponse); // let handleUniformInterfaceException to handle unexpected response consistently
             }
         } catch (RuntimeException e) {
-            //handleException(uri, e);
-            handleServiceResponse(clientResponse, uri);
+            //handleUniformInterfaceException(uri, e);
+            handleUniformInterfaceException(clientResponse, uri);
         }
         return null;
     }
@@ -194,20 +197,27 @@ public abstract class ClientBase {
         return client.resource(URI).type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON);
     }
 
-    private void handleServiceResponse(ClientResponse clientResponse, URI uri) {
+    private void handleClientHandlerException(ClientHandlerException exception, URI uri){
+        String errorMessage = String.format("Unable to invoke Conductor API with uri: %s, failure to process request or response", uri);
+        logger.error(errorMessage);
+        throw new ConductorClientException(errorMessage, exception);
+    }
 
-        //what if client response is null
+    private void handleRuntimeException(RuntimeException exception, URI uri) {
+        String errorMessage = String.format("Unable to invoke Conductor API with uri: %s, runtime exception occurred", uri);
+        logger.error(errorMessage);
+        throw new ConductorClientException(errorMessage, exception);
+    }
+
+    private void handleUniformInterfaceException(ClientResponse clientResponse, URI uri) {
         if (clientResponse == null) {
             throw new ConductorClientException(String.format("Unable to invoke Conductor API with uri: %s", uri));
         }
-
         try {
             if (clientResponse.getStatus() < 300) {
                 return;
             }
-            //this return client handleException or Uniforminterfaceexception
             String errorMessage = clientResponse.getEntity(String.class);
-            logger.error(errorMessage);
             ErrorResponse errorResponse = null;
             ObjectMapper mapper = new ObjectMapper();
             try {
@@ -215,32 +225,25 @@ public abstract class ClientBase {
             } catch (IOException e) {
                 throw new ConductorClientException(clientResponse.getStatus(), errorMessage);
             }
-
             throw new ConductorClientException(clientResponse.getStatus(), errorResponse);
-
         } catch (ConductorClientException e) {
             throw e;
         } catch (ClientHandlerException e) {
-            String errorMessage = String.format("Unable to invoke Conductor API with uri: %s, failure to process request or response", uri);
-            logger.error(errorMessage);
-            throw new ConductorClientException(errorMessage, e);
-
+            handleClientHandlerException(e, uri);
         } catch (RuntimeException e) {
-            String errorMessage = String.format("Unable to invoke Conductor API with uri: %s, runtime exception occurred", uri);
-            logger.error(errorMessage);
-            throw new ConductorClientException(errorMessage, e);
+            handleRuntimeException(e, uri);
         }
     }
 
-    private void handleException(URI uri, RuntimeException e) {
-        if (e instanceof ClientHandlerException) {
-            logger.error("Unable to invoke Conductor API with uri: {}, failure to process request or response", uri, e);
-        } else if (e instanceof UniformInterfaceException) {
+    private void parseException(URI uri, RuntimeException e) {
+        if (e instanceof UniformInterfaceException) {
             logger.error("Unable to invoke Conductor API with uri: {}, unexpected response from server: {}", uri, clientResponseToString(((UniformInterfaceException) e).getResponse()), e);
+            handleUniformInterfaceException(((UniformInterfaceException) e).getResponse(), uri);
+        } else if (e instanceof ClientHandlerException) {
+            handleClientHandlerException((ClientHandlerException)e, uri);
         } else {
-            logger.error("Unable to invoke Conductor API with uri: {}, runtime exception occurred", uri, e);
+            handleRuntimeException(e, uri);
         }
-        throw e;
     }
 
     /**
