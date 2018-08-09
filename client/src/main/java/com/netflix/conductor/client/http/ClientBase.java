@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.netflix.conductor.client.exceptions.ConductorClientException;
+import com.netflix.conductor.client.exceptions.ErrorResponse;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -36,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
 import java.util.function.Function;
@@ -169,24 +172,64 @@ public abstract class ClientBase {
 
     private <T> T getForEntity(String url, Object[] queryParams, Function<ClientResponse, T> entityPvoider, Object... uriVariables) {
         URI uri = null;
+        ClientResponse clientResponse = null;
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
-            ClientResponse response = client.resource(uri)
+            clientResponse = client.resource(uri)
                     .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
                     .get(ClientResponse.class);
-            if (response.getStatus() < 300) {
-                return entityPvoider.apply(response);
+            if (clientResponse.getStatus() < 300) {
+                return entityPvoider.apply(clientResponse);
             } else {
-                throw new UniformInterfaceException(response); // let handleException to handle unexpected response consistently
+                throw new UniformInterfaceException(clientResponse); // let handleException to handle unexpected response consistently
             }
         } catch (RuntimeException e) {
-            handleException(uri, e);
+            //handleException(uri, e);
+            handleServiceResponse(clientResponse, uri);
         }
         return null;
     }
 
     private Builder getWebResourceBuilder(URI URI, Object entity) {
         return client.resource(URI).type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON);
+    }
+
+    private void handleServiceResponse(ClientResponse clientResponse, URI uri) {
+
+        //what if client response is null
+        if (clientResponse == null) {
+            throw new ConductorClientException(String.format("Unable to invoke Conductor API with uri: %s", uri));
+        }
+
+        try {
+            if (clientResponse.getStatus() < 300) {
+                return;
+            }
+            //this return client handleException or Uniforminterfaceexception
+            String errorMessage = clientResponse.getEntity(String.class);
+            logger.error(errorMessage);
+            ErrorResponse errorResponse = null;
+            ObjectMapper mapper = new ObjectMapper();
+            try {
+                errorResponse = mapper.readValue(errorMessage, ErrorResponse.class);
+            } catch (IOException e) {
+                throw new ConductorClientException(clientResponse.getStatus(), errorMessage);
+            }
+
+            throw new ConductorClientException(clientResponse.getStatus(), errorResponse);
+
+        } catch (ConductorClientException e) {
+            throw e;
+        } catch (ClientHandlerException e) {
+            String errorMessage = String.format("Unable to invoke Conductor API with uri: %s, failure to process request or response", uri);
+            logger.error(errorMessage);
+            throw new ConductorClientException(errorMessage, e);
+
+        } catch (RuntimeException e) {
+            String errorMessage = String.format("Unable to invoke Conductor API with uri: %s, runtime exception occurred", uri);
+            logger.error(errorMessage);
+            throw new ConductorClientException(errorMessage, e);
+        }
     }
 
     private void handleException(URI uri, RuntimeException e) {
