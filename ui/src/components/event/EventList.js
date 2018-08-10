@@ -74,7 +74,8 @@ const Events = React.createClass({
     };
     function getActions(eh) {
       let trs = [];
-      eh.actions.forEach(action => {
+      let actions = eh.actions || [];
+      actions.forEach(action => {
         let row = <div><b>{action.action}</b><pre>{JSON.stringify(action[action.action], null, 2)}</pre></div>
         trs.push(row);
       });
