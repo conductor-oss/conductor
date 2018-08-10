@@ -48,8 +48,6 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.server.ConductorConfig;
 import com.netflix.conductor.server.ConductorServer;
 import com.netflix.conductor.client.exceptions.ConductorClientException;
-import com.sun.jersey.api.client.UniformInterfaceException;
-import com.sun.jersey.api.client.ClientResponse;
 
 
 /**
@@ -213,7 +211,6 @@ public class End2EndTests {
 		assertNotNull(wf);
 		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
 		assertEquals(1, wf.getTasks().size());
-
 	}
 
 	@Test
@@ -240,9 +237,9 @@ public class End2EndTests {
 		try {
 			WorkflowDef getDef = mc.getWorkflowDef("testWorkflowDel", 1);
 		} catch (ConductorClientException e) {
-			int status = e.getStatus();
+			int statusCode = e.getStatus();
 			String errorMessage = e.getMessage();
-			assertEquals(404, status);
+			assertEquals(404, statusCode);
 			assertEquals("No such workflow found by name= testWorkflowDel, version= 1", errorMessage);
 		}
 	}
@@ -259,9 +256,9 @@ public class End2EndTests {
         try {
             metadataClient.registerWorkflowDef(def);
         } catch (ConductorClientException e) {
-            int status = e.getStatus();
+            int statusCode = e.getStatus();
             //TODO: this should be 404
-            assertEquals(500, status);
+            assertEquals(500, statusCode);
         }
 	}
 	

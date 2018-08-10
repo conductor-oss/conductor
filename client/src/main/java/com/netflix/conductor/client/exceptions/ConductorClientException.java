@@ -10,6 +10,8 @@ public class ConductorClientException extends RuntimeException {
     private String instance;
     private String code;
 
+    private boolean retryable = false;
+
     public ConductorClientException() {
         super();
     }
@@ -30,19 +32,43 @@ public class ConductorClientException extends RuntimeException {
         this.message = message;
     }
 
-    public ConductorClientException(Integer status, String message, String instance) {
-        super(message);
-        this.status = status;
-        this.message = message;
-        this.instance = instance;
-    }
-
     public ConductorClientException(Integer status, ErrorResponse errorResponse) {
         super(errorResponse.getMessage());
-        this.message = errorResponse.getMessage();
         this.status = status;
+        this.message = errorResponse.getMessage();
         this.code = errorResponse.getCode();
         this.instance = errorResponse.getInstance();
+
+        if(this.code.equals("BACKEND_ERROR")) {
+            retryable = true;
+        }
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder builder = new StringBuilder();
+
+        builder.append(getClass().getName()).append(": ");
+
+        if (this.message != null) {
+            builder.append(message);
+        }
+
+        if (status > 0) {
+            builder.append(" {status=").append(status);
+            if (this.code != null) {
+                builder.append(", code='").append(code).append("'");
+            }
+
+            builder.append(", retryable: ").append(retryable);
+        }
+
+        if (this.instance != null) {
+            builder.append(", instance: ").append(instance);
+        }
+
+        builder.append("}");
+        return builder.toString();
     }
 
     public String getCode() {
@@ -67,6 +93,14 @@ public class ConductorClientException extends RuntimeException {
 
     public void setInstance(String instance) {
         this.instance = instance;
+    }
+
+    public boolean isRetryable() {
+        return retryable;
+    }
+
+    public void setRetryable(boolean retryable) {
+        this.retryable = retryable;
     }
 
     @Override
