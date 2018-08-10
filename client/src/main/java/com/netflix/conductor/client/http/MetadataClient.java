@@ -17,6 +17,7 @@
 package com.netflix.conductor.client.http;
 
 import com.google.common.base.Preconditions;
+import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.sun.jersey.api.client.ClientHandler;
@@ -66,6 +67,20 @@ public class MetadataClient extends ClientBase {
      */
     public MetadataClient(ClientConfig config, ClientHandler handler, ClientFilter... filters) {
         super(config, handler);
+        for (ClientFilter filter : filters) {
+            super.client.addFilter(filter);
+        }
+    }
+
+    /**
+     *
+     * @param config REST Client configuration
+     * @param clientConfiguration Specific properties configured for the client, see {@link ConductorClientConfiguration}
+     * @param handler Jersey client handler. Useful when plugging in various http client interaction modules (e.g. ribbon)
+     * @param filters Chain of client side filters to be applied per request
+     */
+    public MetadataClient(ClientConfig config, ConductorClientConfiguration clientConfiguration, ClientHandler handler, ClientFilter... filters) {
+        super(config, clientConfiguration, handler);
         for (ClientFilter filter : filters) {
             super.client.addFilter(filter);
         }

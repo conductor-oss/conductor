@@ -20,11 +20,14 @@ package com.netflix.conductor.server;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.contribs.http.HttpTask;
 import com.netflix.conductor.contribs.http.RestClientManager;
 import com.netflix.conductor.contribs.json.JsonJqTransform;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
+import com.netflix.conductor.core.utils.DummyPayloadStorage;
+import com.netflix.conductor.core.utils.S3PayloadStorage;
 import com.netflix.conductor.dao.RedisWorkflowModule;
 import com.netflix.conductor.dao.es.index.ElasticSearchModule;
 import com.netflix.conductor.dao.es5.index.ElasticSearchModuleV5;
@@ -58,14 +61,16 @@ public class ServerModule extends AbstractModule {
 	
 	private ConductorServer.DB db;
 
-	public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, ConductorConfig conductorConfig, ConductorServer.DB db) {
+	private ConductorServer.ExternalPayloadStorage externalPayloadStorage;
+
+	public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, ConductorConfig conductorConfig, ConductorServer.DB db, ConductorServer.ExternalPayloadStorage externalPayloadStorage) {
 		this.dynoConn = jedis;
 		this.hostSupplier = hostSupplier;
 		this.conductorConfig = conductorConfig;
 		this.region = conductorConfig.getRegion();
 		this.localRack = conductorConfig.getAvailabilityZone();
 		this.db = db;
-		
+		this.externalPayloadStorage = externalPayloadStorage;
 	}
 	
 	@Override
@@ -100,6 +105,12 @@ public class ServerModule extends AbstractModule {
 			for(AbstractModule additionalModule : additionalModules) {
 				install(additionalModule);
 			}
+		}
+
+		if (externalPayloadStorage == ConductorServer.ExternalPayloadStorage.S3) {
+			bind(ExternalPayloadStorage.class).to(S3PayloadStorage.class);
+		} else {
+			bind(ExternalPayloadStorage.class).to(DummyPayloadStorage.class);
 		}
 	}
 	

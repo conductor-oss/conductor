@@ -438,7 +438,8 @@ public class Task {
 
 
     /**
-     * @param workflowType workflow type
+     * @param workflowType the name of the workflow
+     * @return the task object with the workflow type set
      */
     public Task setWorkflowType(String workflowType) {
         this.workflowType = workflowType;

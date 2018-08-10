@@ -273,15 +273,15 @@ public class WorkflowTaskCoordinator {
 		});
 	}
 
-    	public void shutdown() {
-        	this.scheduledExecutorService.shutdown();
-        	this.executorService.shutdown();
+	public void shutdown() {
+		this.scheduledExecutorService.shutdown();
+		this.executorService.shutdown();
 
-        	shutdownExecutorService(this.scheduledExecutorService, SHUTDOWN_WAIT_TIME_IN_SEC);
-        	shutdownExecutorService(this.executorService, SHUTDOWN_WAIT_TIME_IN_SEC);
-    	}
+		shutdownExecutorService(this.scheduledExecutorService, SHUTDOWN_WAIT_TIME_IN_SEC);
+		shutdownExecutorService(this.executorService, SHUTDOWN_WAIT_TIME_IN_SEC);
+	}
 
-    	private void shutdownExecutorService(ExecutorService executorService, long timeout) {
+	private void shutdownExecutorService(ExecutorService executorService, long timeout) {
 		try {
 			if (executorService.awaitTermination(timeout, TimeUnit.SECONDS)) {
 				logger.debug("tasks completed, shutting down");

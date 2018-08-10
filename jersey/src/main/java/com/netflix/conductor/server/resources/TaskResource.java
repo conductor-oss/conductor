@@ -19,6 +19,7 @@ import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.service.TaskService;
@@ -221,4 +222,11 @@ public class TaskResource {
 		return taskService.search(start, size, sort, freeText, query);
 	}
 
+	@GET
+	@ApiOperation("Get the external uri where the task output payload is to be stored")
+	@Consumes(MediaType.WILDCARD)
+	@Path("/externalstoragelocation")
+	public ExternalStorageLocation getPayloadURI() {
+		return taskService.getPayloadUri();
+	}
 }

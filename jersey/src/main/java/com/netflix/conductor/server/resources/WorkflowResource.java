@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
@@ -240,5 +241,13 @@ public class WorkflowResource {
                                                                 @QueryParam("freeText") @DefaultValue("*") String freeText,
                                                                 @QueryParam("query") String query) {
         return workflowService.searchWorkflowsByTasks(start, size, sort, freeText, query);
+    }
+
+    @GET
+    @ApiOperation("Get the uri and path of the external storage where the workflow input payload is to be stored")
+    @Consumes(MediaType.WILDCARD)
+    @Path("/externalstoragelocation")
+    public ExternalStorageLocation getExternalPayloadURI() {
+        return workflowService.getExternalPayloadUri();
     }
 }

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,17 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- *
- */
+
 package com.netflix.conductor.client.http;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.netflix.conductor.client.config.ConductorClientConfiguration;
+import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.client.exceptions.ConductorClientException;
 import com.netflix.conductor.client.exceptions.ErrorResponse;
+import com.netflix.conductor.client.util.PayloadStorage;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -38,6 +41,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
@@ -56,15 +60,23 @@ public abstract class ClientBase {
 
     protected ObjectMapper objectMapper;
 
+    protected PayloadStorage payloadStorage;
+
+    protected ConductorClientConfiguration conductorClientConfiguration;
+
     protected ClientBase() {
         this(new DefaultClientConfig(), null);
     }
 
-    protected ClientBase(ClientConfig clientConfig) {
-        this(clientConfig, null);
+    protected ClientBase(ClientConfig config) {
+        this(config, null);
     }
 
-    protected ClientBase(ClientConfig clientConfig, ClientHandler handler) {
+    protected ClientBase(ClientConfig config, ClientHandler handler) {
+        this(config, new DefaultConductorClientConfiguration(), handler);
+    }
+
+    protected  ClientBase(ClientConfig config, ConductorClientConfiguration clientConfiguration, ClientHandler handler) {
         objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
@@ -72,14 +84,18 @@ public abstract class ClientBase {
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.setSerializationInclusion(Include.NON_EMPTY);
 
+        payloadStorage = new PayloadStorage();
+
         JacksonJsonProvider provider = new JacksonJsonProvider(objectMapper);
-        clientConfig.getSingletons().add(provider);
+        config.getSingletons().add(provider);
 
         if (handler == null) {
-            this.client = Client.create(clientConfig);
+            this.client = Client.create(config);
         } else {
-            this.client = new Client(handler, clientConfig);
+            this.client = new Client(handler, config);
         }
+
+        conductorClientConfiguration = clientConfiguration;
     }
 
     public void setRootURI(String root) {
@@ -173,18 +189,19 @@ public abstract class ClientBase {
         return getForEntity(url, queryParams, response -> response.getEntity(responseType), uriVariables);
     }
 
-    private <T> T getForEntity(String url, Object[] queryParams, Function<ClientResponse, T> entityPvoider, Object... uriVariables) {
+    private <T> T getForEntity(String url, Object[] queryParams, Function<ClientResponse, T> entityProvider, Object... uriVariables) {
         URI uri = null;
-        ClientResponse clientResponse = null;
+        ClientResponse clientResponse;
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
             clientResponse = client.resource(uri)
                     .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
                     .get(ClientResponse.class);
             if (clientResponse.getStatus() < 300) {
-                return entityPvoider.apply(clientResponse);
+                return entityProvider.apply(clientResponse);
+
             } else {
-                throw new UniformInterfaceException(clientResponse); // let handleUniformInterfaceException to handle unexpected response consistently
+                throw new UniformInterfaceException(clientResponse);
             }
         } catch (UniformInterfaceException e) {
             handleUniformInterfaceException(e, uri);
@@ -194,11 +211,26 @@ public abstract class ClientBase {
         return null;
     }
 
+    /**
+     * Uses the {@link PayloadStorage} for storing large payloads.
+     * Gets the uri for storing the payload from the server and then uploads to this location.
+     *
+     * @param uri specify "tasks"/"workflow" depending on the type of payload
+     * @param payloadBytes a byte array containing the payload
+     * @param payloadSize the size of the payload
+     * @return the path where the payload is stored in external storage
+     */
+    protected String useExternalPayloadStorage(String uri, byte[] payloadBytes, long payloadSize) {
+        ExternalStorageLocation externalStorageLocation = getForEntity(String.format("%s/externalstoragelocation", uri), null, ExternalStorageLocation.class);
+        payloadStorage.upload(externalStorageLocation.getUri(), new ByteArrayInputStream(payloadBytes), payloadSize);
+        return externalStorageLocation.getPath();
+    }
+
     private Builder getWebResourceBuilder(URI URI, Object entity) {
         return client.resource(URI).type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON);
     }
 
-    private void handleClientHandlerException(ClientHandlerException exception, URI uri){
+    private void handleClientHandlerException(ClientHandlerException exception, URI uri) {
         String errorMessage = String.format("Unable to invoke Conductor API with uri: %s, failure to process request or response", uri);
         logger.error(errorMessage, exception);
         throw new ConductorClientException(errorMessage, exception);
@@ -221,7 +253,7 @@ public abstract class ClientBase {
             }
             String errorMessage = clientResponse.getEntity(String.class);
             logger.error("Unable to invoke Conductor API with uri: {}, unexpected response from server: {}", uri, clientResponseToString(exception.getResponse()), exception);
-            ErrorResponse errorResponse = null;
+            ErrorResponse errorResponse;
             try {
                 errorResponse = objectMapper.readValue(errorMessage, ErrorResponse.class);
             } catch (IOException e) {
@@ -243,7 +275,7 @@ public abstract class ClientBase {
         if (e instanceof UniformInterfaceException) {
             handleUniformInterfaceException(((UniformInterfaceException) e), uri);
         } else if (e instanceof ClientHandlerException) {
-            handleClientHandlerException((ClientHandlerException)e, uri);
+            handleClientHandlerException((ClientHandlerException) e, uri);
         } else {
             handleRuntimeException(e, uri);
         }
@@ -296,5 +328,4 @@ public abstract class ClientBase {
         }
         return builder;
     }
-
 }

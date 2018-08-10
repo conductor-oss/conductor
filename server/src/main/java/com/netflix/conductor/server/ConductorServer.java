@@ -64,6 +64,10 @@ public class ConductorServer {
 	enum DB {
 		redis, dynomite, memory, redis_cluster, mysql
 	}
+
+	enum ExternalPayloadStorage {
+		S3
+	}
 	
 	private ServerModule serverModule;
 	
@@ -72,6 +76,8 @@ public class ConductorServer {
 	private ConductorConfig conductorConfig;
 	
 	private DB database;
+
+	private ExternalPayloadStorage externalPayloadStorage;
 	
 	public ConductorServer(ConductorConfig conductorConfig) {
 		this.conductorConfig = conductorConfig;
@@ -103,12 +109,19 @@ public class ConductorServer {
 				Host dynoHost = new Host(host, port, rack, Status.Up);
 				dynoHosts.add(dynoHost);
 			}
-				
 		}else {
 			//Create a single shard host supplier
 			Host dynoHost = new Host("localhost", 0, conductorConfig.getAvailabilityZone(), Status.Up);
 			dynoHosts.add(dynoHost);
 		}
+
+		String externalPayloadStorageString = conductorConfig.getProperty("workflow.external.payload.storage", "");
+		try {
+			externalPayloadStorage = ConductorServer.ExternalPayloadStorage.valueOf(externalPayloadStorageString);
+		} catch(IllegalArgumentException e) {
+			logger.info("External payload storage is not configured, provided: {}, supported values are: {}", externalPayloadStorageString, Arrays.toString(ConductorServer.ExternalPayloadStorage.values()), e);
+		}
+
 		init(dynoClusterName, dynoHosts);
 	}
 	
@@ -174,7 +187,7 @@ public class ConductorServer {
 			break;
 		}
 		
-		this.serverModule = new ServerModule(jedis, hostSupplier, conductorConfig, database);
+		this.serverModule = new ServerModule(jedis, hostSupplier, conductorConfig, database, externalPayloadStorage);
 	}
 
 	private TokenMapSupplier getTokenMapSupplier(List<Host> dynoHosts) {

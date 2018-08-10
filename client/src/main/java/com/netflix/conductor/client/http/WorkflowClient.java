@@ -16,6 +16,9 @@
 package com.netflix.conductor.client.http;
 
 import com.google.common.base.Preconditions;
+import com.netflix.conductor.client.config.ConductorClientConfiguration;
+import com.netflix.conductor.client.exceptions.ConductorClientException;
+import com.netflix.conductor.client.task.WorkflowTaskMetrics;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -27,7 +30,11 @@ import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.filter.ClientFilter;
 import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -42,6 +49,8 @@ public class WorkflowClient extends ClientBase {
 
     private static GenericType<SearchResult<WorkflowSummary>> searchResultWorkflowSummary = new GenericType<SearchResult<WorkflowSummary>>() {
     };
+
+    private static final Logger logger = LoggerFactory.getLogger(WorkflowClient.class);
 
     /**
      * Creates a default task client
@@ -66,12 +75,25 @@ public class WorkflowClient extends ClientBase {
     }
 
     /**
-     * @param config  config REST Client configuration
-     * @param handler handler Jersey client handler.  Useful when plugging in various http client interaction modules (e.g. ribbon)
+     * @param config  REST Client configuration
+     * @param handler Jersey client handler.  Useful when plugging in various http client interaction modules (e.g. ribbon)
      * @param filters Chain of client side filters to be applied per request
      */
     public WorkflowClient(ClientConfig config, ClientHandler handler, ClientFilter... filters) {
         super(config, handler);
+        for (ClientFilter filter : filters) {
+            super.client.addFilter(filter);
+        }
+    }
+
+    /**
+     * @param config              REST Client configuration
+     * @param clientConfiguration Specific properties configured for the client, see {@link ConductorClientConfiguration}
+     * @param handler             Jersey client handler. Useful when plugging in various http client interaction modules (e.g. ribbon)
+     * @param filters             Chain of client side filters to be applied per request
+     */
+    public WorkflowClient(ClientConfig config, ConductorClientConfiguration clientConfiguration, ClientHandler handler, ClientFilter... filters) {
+        super(config, clientConfiguration, handler);
         for (ClientFilter filter : filters) {
             super.client.addFilter(filter);
         }
@@ -120,12 +142,19 @@ public class WorkflowClient extends ClientBase {
      * @param correlationId the correlation id
      * @param input         the input to set in the workflow
      * @return the id of the workflow instance that can be used for tracking
+     *
+     * @deprecated This API is deprecated and will be removed in the next version
+     * use {@link #startWorkflow(StartWorkflowRequest)} instead
      */
+    @Deprecated
     public String startWorkflow(String name, Integer version, String correlationId, Map<String, Object> input) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "name cannot be blank");
-
-        Object[] params = new Object[]{"version", version, "correlationId", correlationId};
-        return postForEntity("workflow/{name}", input, params, String.class, name);
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        startWorkflowRequest.setName(name);
+        startWorkflowRequest.setVersion(version);
+        startWorkflowRequest.setCorrelationId(correlationId);
+        startWorkflowRequest.setInput(input);
+        return startWorkflow(startWorkflowRequest);
     }
 
     /**
@@ -136,6 +165,30 @@ public class WorkflowClient extends ClientBase {
      */
     public String startWorkflow(StartWorkflowRequest startWorkflowRequest) {
         Preconditions.checkNotNull(startWorkflowRequest, "StartWorkflowRequest cannot be null");
+        Preconditions.checkArgument(StringUtils.isNotBlank(startWorkflowRequest.getName()), "Workflow name cannot be null or empty");
+        Preconditions.checkArgument(StringUtils.isBlank(startWorkflowRequest.getExternalStoragePath()), "External Storage Path must be blank");
+
+        String version = startWorkflowRequest.getVersion() != null ? startWorkflowRequest.getVersion().toString() : "latest";
+        try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
+            objectMapper.writeValue(byteArrayOutputStream, startWorkflowRequest.getInput());
+            byte[] workflowInputBytes = byteArrayOutputStream.toByteArray();
+            long workflowInputSize = workflowInputBytes.length;
+            WorkflowTaskMetrics.recordWorkflowInputPayloadSize(startWorkflowRequest.getName(), version, workflowInputSize);
+            if (workflowInputSize > conductorClientConfiguration.getWorkflowInputPayloadThresholdKB() * 1024) {
+                if (conductorClientConfiguration.isExternalPayloadStorageEnabled()) {
+                    String externalStoragePath = useExternalPayloadStorage("workflow", workflowInputBytes, workflowInputSize);
+                    startWorkflowRequest.setExternalStoragePath(externalStoragePath);
+                    startWorkflowRequest.setInput(null);
+                } else {
+                    String errorMsg = String.format("Input payload larger than the allowed threshold of: %d KB", conductorClientConfiguration.getWorkflowInputPayloadThresholdKB());
+                    throw new ConductorClientException(errorMsg);
+                }
+            }
+        } catch (IOException e) {
+            String errorMsg = String.format("Unable to start workflow:%s, version:%s", startWorkflowRequest.getName(), version);
+            logger.error(errorMsg, e);
+            throw new ConductorClientException(errorMsg, e);
+        }
         return postForEntity("workflow", startWorkflowRequest, null, String.class, startWorkflowRequest.getName());
     }
 
@@ -201,7 +254,8 @@ public class WorkflowClient extends ClientBase {
      */
     public List<String> getRunningWorkflow(String workflowName, Integer version) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowName), "Workflow name cannot be blank");
-        return getForEntity("workflow/running/{name}", new Object[]{"version", version}, new GenericType<List<String>>() {}, workflowName);
+        return getForEntity("workflow/running/{name}", new Object[]{"version", version}, new GenericType<List<String>>() {
+        }, workflowName);
     }
 
     /**
@@ -219,7 +273,8 @@ public class WorkflowClient extends ClientBase {
         Preconditions.checkNotNull(endTime, "End time cannot be null");
 
         Object[] params = new Object[]{"version", version, "startTime", startTime, "endTime", endTime};
-        return getForEntity("workflow/running/{name}", params, new GenericType<List<String>>() {}, workflowName);
+        return getForEntity("workflow/running/{name}", params, new GenericType<List<String>>() {
+        }, workflowName);
     }
 
     /**
@@ -343,5 +398,10 @@ public class WorkflowClient extends ClientBase {
     public SearchResult<WorkflowSummary> search(Integer start, Integer size, String sort, String freeText, String query) {
         Object[] params = new Object[]{"start", start, "size", size, "sort", sort, "freeText", freeText, "query", query};
         return getForEntity("workflow/search", params, searchResultWorkflowSummary);
+    }
+
+    public String getExternalPayloadUri(String workflowId) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
+        return getForEntity("workflow/externalpayloaduri/{workflowId}", null, String.class, workflowId);
     }
 }

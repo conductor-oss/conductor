@@ -18,16 +18,9 @@
  */
 package com.netflix.conductor.tests.utils;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -41,8 +34,13 @@ import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
 import com.netflix.conductor.redis.utils.JedisMock;
 import com.netflix.conductor.server.ConductorConfig;
 import com.netflix.dyno.queues.ShardSupplier;
-
 import redis.clients.jedis.JedisCommands;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Viren
@@ -89,6 +87,7 @@ public class TestModule extends AbstractModule {
 		bind(DynoProxy.class).toInstance(proxy);
 		install(new CoreModule());
 		bind(UserTask.class).asEagerSingleton();
+		bind(ExternalPayloadStorage.class).to(MockExternalPayloadStorage.class);
 	}
 	
 	@Provides

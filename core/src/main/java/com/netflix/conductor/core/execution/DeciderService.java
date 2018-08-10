@@ -151,7 +151,7 @@ public class DeciderService {
             TaskDef taskDefinition = metadataDAO.getTaskDef(pendingTask.getTaskDefName());
             if (taskDefinition != null) {
                 checkForTimeout(taskDefinition, pendingTask);
-                // If the task has not been updated for "responseTimeout" then mark task as TIMED_OUT
+                // If the task has not been updated for "responseTimeoutSeconds" then mark task as TIMED_OUT
                 if (isResponseTimedOut(taskDefinition, pendingTask)) {
                     timeoutTask(pendingTask);
                 }

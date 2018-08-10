@@ -5,9 +5,11 @@ import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -279,4 +281,12 @@ public class WorkflowService {
         return executionService.searchWorkflowByTasks(query, freeText, start, size, ServiceUtils.convertStringToList(sort));
     }
 
+    /**
+     * Get the external storage location where the workflow input payload is stored/to be stored
+     *
+     * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external storage
+     */
+    public ExternalStorageLocation getExternalPayloadUri() {
+        return executionService.getPayloadUri(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT);
+    }
 }

@@ -18,6 +18,12 @@
  */
 package com.netflix.conductor.server;
 
+import com.google.inject.AbstractModule;
+import com.netflix.conductor.core.config.Configuration;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -26,13 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.inject.AbstractModule;
-import com.netflix.conductor.core.config.Configuration;
 
 /**
  * @author Viren
@@ -98,7 +97,9 @@ public class ConductorConfig implements Configuration {
 		String val = getProperty(key, Integer.toString(defaultValue));
 		try{
 			defaultValue = Integer.parseInt(val);
-		}catch(NumberFormatException e){}
+		} catch(NumberFormatException e){
+			logger.error("Error parsing the Int value for Key:{} , returning a default value: {}", key, defaultValue);
+		}
 		return defaultValue;
 	}
 
@@ -132,7 +133,7 @@ public class ConductorConfig implements Configuration {
 	public Map<String, Object> getAll() {
 		Map<String, Object> map = new HashMap<>();
 		Properties props = System.getProperties();
-		props.entrySet().forEach(entry -> map.put(entry.getKey().toString(), entry.getValue()));
+		props.forEach((key, value) -> map.put(key.toString(), value));
 		return map;
 	}
 

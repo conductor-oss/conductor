@@ -21,8 +21,10 @@ import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.utils.ServiceUtils;
@@ -60,9 +62,10 @@ public class TaskService {
 
     /**
      * Poll for a task of a certain type.
+     *
      * @param taskType Task name
      * @param workerId Id of the workflow
-     * @param domain Domain of the workflow
+     * @param domain   Domain of the workflow
      * @return polled {@link Task}
      */
     public Task poll(String taskType, String workerId, String domain) {
@@ -78,11 +81,12 @@ public class TaskService {
 
     /**
      * Batch Poll for a task of a certain type.
+     *
      * @param taskType Task Name
      * @param workerId Id of the workflow
-     * @param domain Domain of the workflow
-     * @param count Number of tasks
-     * @param timeout Timeout for polling in milliseconds
+     * @param domain   Domain of the workflow
+     * @param count    Number of tasks
+     * @param timeout  Timeout for polling in milliseconds
      * @return list of {@link Task}
      */
     public List<Task> batchPoll(String taskType, String workerId, String domain, Integer count, Integer timeout) {
@@ -98,9 +102,10 @@ public class TaskService {
 
     /**
      * Get in progress tasks. The results are paginated.
+     *
      * @param taskType Task Name
      * @param startKey Start index of pagination
-     * @param count Number of entries
+     * @param count    Number of entries
      * @return list of {@link Task}
      */
     public List<Task> getTasks(String taskType, String startKey, Integer count) {
@@ -110,7 +115,8 @@ public class TaskService {
 
     /**
      * Get in progress task for a given workflow id.
-     * @param workflowId Id of the workflow
+     *
+     * @param workflowId        Id of the workflow
      * @param taskReferenceName Task reference name.
      * @return instance of {@link Task}
      */
@@ -122,6 +128,7 @@ public class TaskService {
 
     /**
      * Updates a task.
+     *
      * @param taskResult Instance of {@link TaskResult}
      * @return task Id of the updated task.
      */
@@ -137,7 +144,8 @@ public class TaskService {
 
     /**
      * Ack Task is received.
-     * @param taskId Id of the task
+     *
+     * @param taskId   Id of the task
      * @param workerId Id of the worker
      * @return `true|false` if task if received or not
      */
@@ -149,8 +157,9 @@ public class TaskService {
 
     /**
      * Log Task Execution Details.
+     *
      * @param taskId Id of the task
-     * @param log Details you want to log
+     * @param log    Details you want to log
      */
     public void log(String taskId, String log) {
         ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
@@ -159,6 +168,7 @@ public class TaskService {
 
     /**
      * Get Task Execution Logs.
+     *
      * @param taskId Id of the task.
      * @return list of {@link TaskExecLog}
      */
@@ -169,6 +179,7 @@ public class TaskService {
 
     /**
      * Get task by Id.
+     *
      * @param taskId Id of the task.
      * @return instance of {@link Task}
      */
@@ -180,8 +191,9 @@ public class TaskService {
 
     /**
      * Remove Task from a Task type queue.
+     *
      * @param taskType Task Name
-     * @param taskId ID of the task
+     * @param taskId   ID of the task
      */
     public void removeTaskFromQueue(String taskType, String taskId) {
         ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
@@ -191,6 +203,7 @@ public class TaskService {
 
     /**
      * Get Task type queue sizes.
+     *
      * @param taskTypes List of task types.
      * @return map of task type as Key and queue size as value.
      */
@@ -200,6 +213,7 @@ public class TaskService {
 
     /**
      * Get the details about each queue.
+     *
      * @return map of queue details.
      */
     public Map<String, Map<String, Map<String, Long>>> allVerbose() {
@@ -208,6 +222,7 @@ public class TaskService {
 
     /**
      * Get the details about each queue.
+     *
      * @return map of details about each queue.
      */
     public Map<String, Long> getAllQueueDetails() {
@@ -218,6 +233,7 @@ public class TaskService {
 
     /**
      * Get the last poll data for a given task type.
+     *
      * @param taskType Task Name
      * @return list of {@link PollData}
      */
@@ -229,6 +245,7 @@ public class TaskService {
 
     /**
      * Get the last poll data for all task types.
+     *
      * @return list of {@link PollData}
      */
     public List<PollData> getAllPollData() {
@@ -237,6 +254,7 @@ public class TaskService {
 
     /**
      * Requeue pending tasks for all the running workflows.
+     *
      * @return number of tasks requeued.
      */
     public String requeue() {
@@ -245,26 +263,37 @@ public class TaskService {
 
     /**
      * Requeue pending tasks.
+     *
      * @param taskType Task name.
      * @return number of tasks requeued.
      */
     public String requeuePendingTask(String taskType) {
-        ServiceUtils.checkNotNullOrEmpty(taskType,"TaskType cannot be null or empty.");
+        ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
         return String.valueOf(executionService.requeuePendingTasks(taskType));
     }
 
     /**
      * Search for tasks based in payload and other parameters. Use sort options as ASC or DESC e.g.
      * sort=name or sort=workflowId. If order is not specified, defaults to ASC.
-     * @param start Start index of pagination
-     * @param size  Number of entries
-     * @param sort Sorting type ASC|DESC
+     *
+     * @param start    Start index of pagination
+     * @param size     Number of entries
+     * @param sort     Sorting type ASC|DESC
      * @param freeText Text you want to search
-     * @param query Query you want to search
+     * @param query    Query you want to search
      * @return instance of {@link SearchResult}
      */
     public SearchResult<TaskSummary> search(int start, int size, String sort, String freeText, String query) {
         return executionService.getSearchTasks(query, freeText, start, size, sort);
+    }
+
+    /**
+     * Get the external storage location where the task output payload is stored/to be stored
+     *
+     * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external storage
+     */
+    public ExternalStorageLocation getPayloadUri() {
+        return executionService.getPayloadUri(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.TASK_OUTPUT);
     }
 }
 

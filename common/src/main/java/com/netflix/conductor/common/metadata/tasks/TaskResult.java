@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- *
- */
+
 package com.netflix.conductor.common.metadata.tasks;
 
 import java.util.HashMap;
@@ -49,6 +47,8 @@ public class TaskResult {
     private Map<String, Object> outputData = new HashMap<>();
 
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
+
+    private String externalPayloadStoragePath;
 
     public TaskResult(Task task) {
         this.workflowInstanceId = task.getWorkflowInstanceId();
@@ -191,6 +191,22 @@ public class TaskResult {
         return this;
     }
 
+    /**
+     *
+     * @return the path where the task output is stored in external storage
+     */
+    public String getExternalPayloadStoragePath() {
+        return externalPayloadStoragePath;
+    }
+
+    /**
+     *
+     * @param externalPayloadStoragePath path in the external storage where the task output is stored
+     */
+    public void setExternalPayloadStoragePath(String externalPayloadStoragePath) {
+        this.externalPayloadStoragePath = externalPayloadStoragePath;
+    }
+
     @Override
     public String toString() {
         return "TaskResult{" +
@@ -202,6 +218,7 @@ public class TaskResult {
                 ", status=" + status +
                 ", outputData=" + outputData +
                 ", logs=" + logs +
+                ", externalPayloadStoragePath='" + externalPayloadStoragePath + '\'' +
                 '}';
     }
 

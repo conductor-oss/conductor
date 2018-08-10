@@ -298,11 +298,8 @@ public class End2EndTests {
         StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
         try{
             wc.startWorkflow(startWorkflowRequest);
-        } catch (ConductorClientException e) {
-            int statuCode = e.getStatus();
-            assertEquals(400, statuCode);
+        } catch (IllegalArgumentException e) {
             assertEquals("Workflow name cannot be null or empty", e.getMessage());
-            assertFalse(e.isRetryable());
         }
     }
 

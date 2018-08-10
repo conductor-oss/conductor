@@ -42,6 +42,8 @@ import java.util.concurrent.atomic.AtomicLong;
 public class WorkflowTaskMetrics {
 
 	private static final String TASK_TYPE = "taskType";
+	private static final String WORFLOW_TYPE = "workflowType";
+	private static final String WORKFLOW_VERSION = "version";
 	private static final String EXCEPTION = "exception";
 
 	private static final String TASK_EXECUTION_QUEUE_FULL = "task_execution_queue_full";
@@ -54,7 +56,9 @@ public class WorkflowTaskMetrics {
 	private static final String TASK_POLL_COUNTER = "task_poll_counter";
 	private static final String TASK_EXECUTE_TIME = "task_execute_time";
 	private static final String TASK_POLL_TIME = "task_poll_time";
-	public static final String TASK_RESULT_SIZE = "task_result_size";
+	private static final String TASK_RESULT_SIZE = "task_result_size";
+	private static final String WORKFLOW_INPUT_SIZE = "workflow_input_size";
+
 
 
 	private static Registry registry = Spectator.globalRegistry();
@@ -158,5 +162,7 @@ public class WorkflowTaskMetrics {
 		getCounter(TASK_POLL_COUNTER, TASK_TYPE, taskType).increment(taskCount);
 	}
 
-
+	public static void recordWorkflowInputPayloadSize(String workflowType, String version, long payloadSize) {
+		getGauge(WORKFLOW_INPUT_SIZE, WORFLOW_TYPE, workflowType, WORKFLOW_VERSION, version).getAndSet(payloadSize);
+	}
 }
