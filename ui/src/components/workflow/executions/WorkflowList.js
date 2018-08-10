@@ -228,7 +228,7 @@ const Workflow = React.createClass({
 
   handleRowSelect(row, isSelected, e) {
     let currWFEs = this.state.selectedWFEs;
-    this.state.update = true;
+    this.setState({update:true});
     if(isSelected){
       currWFEs.push(row);
       this.setState({selectedWFEs: currWFEs, bulkValidationMessage:""})
