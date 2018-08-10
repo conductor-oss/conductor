@@ -61,13 +61,13 @@ public class ActionProcessor {
         this.metadataService = metadataService;
     }
 
-    public Map<String, Object> execute(Action action, String payload, String event, String messageId) {
+    public Map<String, Object> execute(Action action, Object payloadObject, String event, String messageId) {
 
         logger.debug("Executing action: {} for event: {} with messageId:{}", action.getAction(), event, messageId);
 
-        Object jsonObject = payload;
+        Object jsonObject = payloadObject;
         if (action.isExpandInlineJSON()) {
-            jsonObject = expand(payload);
+            jsonObject = expand(payloadObject);
         }
 
         switch (action.getAction()) {
