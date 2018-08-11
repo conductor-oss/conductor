@@ -127,7 +127,6 @@ public class DeciderService {
         Map<String, Task> tasksToBeScheduled = new LinkedHashMap<>();
 
         preScheduledTasks.forEach(preScheduledTask -> {
-            executedTaskRefNames.remove(preScheduledTask.getReferenceTaskName());
             tasksToBeScheduled.put(preScheduledTask.getReferenceTaskName(), preScheduledTask);
         });
 

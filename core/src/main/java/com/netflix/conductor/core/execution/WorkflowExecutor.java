@@ -399,10 +399,7 @@ public class WorkflowExecutor {
                 cancelledTasks.add(t);
             }
         }
-        if (failedTask != null && !failedTask.getStatus().isTerminal()) {
-            throw new ApplicationException(CONFLICT,
-                    "The last task is still not completed!  I can only retry the last failed task.  Use restart if you want to attempt entire workflow execution again.");
-        }
+
         if (failedTask != null && failedTask.getStatus().isSuccessful()) {
             throw new ApplicationException(CONFLICT,
                     "The last task has not failed!  I can only retry the last failed task.  Use restart if you want to attempt entire workflow execution again.");
@@ -446,7 +443,6 @@ public class WorkflowExecutor {
         executionDAO.updateTasks(workflow.getTasks());
 
         decide(workflowId);
-
     }
 
     public Task getPendingTaskByWorkflow(String taskReferenceName, String workflowId) {
@@ -484,11 +480,20 @@ public class WorkflowExecutor {
         logger.debug("Completed workflow execution for {}", wf.getWorkflowId());
         executionDAO.updateTasks(wf.getTasks());
 
-        // If the following task, for some reason fails, the sweep will take
-        // care of this again!
+        // If the following task, for some reason fails, the sweep will take care of this again!
         if (workflow.getParentWorkflowId() != null) {
             Workflow parent = executionDAO.getWorkflow(workflow.getParentWorkflowId(), false);
+            WorkflowDef parentDef = Optional.ofNullable(parent.getWorkflowDefinition()).orElse(metadataDAO.get(parent.getWorkflowType(), parent.getVersion()).get());
             logger.debug("Completed sub-workflow {}, deciding parent workflow {}", wf.getWorkflowId(), wf.getParentWorkflowId());
+
+            Task parentWorkflowTask = executionDAO.getTask(workflow.getParentWorkflowTaskId());
+            // If parent is FAILED and the sub workflow task in parent is FAILED, we want to resume them
+            if (StringUtils.isBlank(parentDef.getFailureWorkflow()) && parent.getStatus() == WorkflowStatus.FAILED && parentWorkflowTask.getStatus() == FAILED) {
+                parentWorkflowTask.setStatus(IN_PROGRESS);
+                executionDAO.updateTask(parentWorkflowTask);
+                parent.setStatus(WorkflowStatus.RUNNING);
+                executionDAO.updateWorkflow(parent);
+            }
             decide(parent.getWorkflowId());
         }
         Monitors.recordWorkflowCompletion(workflow.getWorkflowName(), workflow.getEndTime() - workflow.getStartTime(), wf.getOwnerApp());
@@ -616,7 +621,7 @@ public class WorkflowExecutor {
      */
     public void updateTask(TaskResult taskResult) {
         if (taskResult == null) {
-            logger.info("null task given for update..." + taskResult);
+            logger.info("null task given for update");
             throw new ApplicationException(Code.INVALID_INPUT, "Task object is null");
         }
 

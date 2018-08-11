@@ -19,12 +19,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
 
+import com.netflix.archaius.guice.ArchaiusModule;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
 import com.netflix.conductor.dyno.SystemPropertiesDynomiteConfiguration;
 import com.netflix.conductor.grpc.server.GRPCModule;
 import com.netflix.conductor.jetty.server.JettyModule;
+import com.netflix.runtime.health.guice.HealthModule;
 
 import java.util.concurrent.ExecutorService;
 
@@ -37,6 +39,8 @@ public class ServerModule extends AbstractModule {
     @Override
     protected void configure() {
         install(new CoreModule());
+        install(new ArchaiusModule());
+        install(new HealthModule());
         install(new JettyModule());
         install(new GRPCModule());
 

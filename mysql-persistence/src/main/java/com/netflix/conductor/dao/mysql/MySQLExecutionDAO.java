@@ -576,17 +576,10 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     }
 
     private void insertOrUpdateTaskData(Connection connection, Task task) {
-        String UPDATE_TASK = "UPDATE task SET json_data = ?, modified_on = CURRENT_TIMESTAMP WHERE task_id = ?";
+        
+        String INSERT_TASK = "INSERT INTO task (task_id, json_data, modified_on) VALUES (?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE json_data=VALUES(json_data), modified_on=VALUES(modified_on)";
+        execute(connection, INSERT_TASK, q -> q.addParameter(task.getTaskId()).addJsonParameter(task).executeUpdate());
 
-        int result = query(connection, UPDATE_TASK,
-                q -> q.addJsonParameter(task).addParameter(task.getTaskId()).executeUpdate());
-
-        if (result == 0) {
-            String INSERT_TASK = "INSERT INTO task (task_id, json_data) VALUES (?, ?)";
-
-            execute(connection, INSERT_TASK,
-                    q -> q.addParameter(task.getTaskId()).addJsonParameter(task).executeUpdate());
-        }
     }
 
     private void removeTaskData(Connection connection, Task task) {
@@ -730,10 +723,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
     private void insertOrUpdatePollData(Connection connection, PollData pollData, String domain) {
 
-        //String INSERT_POLL_DATA = "INSERT INTO poll_data (queue_name, domain, json_data) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE queue_name=VALUES(queue_name), domain=VALUES(domain)";
-        
         String INSERT_POLL_DATA = "INSERT INTO poll_data (queue_name, domain, json_data, modified_on) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE json_data=VALUES(json_data), modified_on=VALUES(modified_on)";
-                
         execute(connection, INSERT_POLL_DATA, q -> q.addParameter(pollData.getQueueName()).addParameter(domain)
                 .addJsonParameter(pollData).executeUpdate());
     }
