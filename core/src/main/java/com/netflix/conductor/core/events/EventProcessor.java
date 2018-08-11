@@ -29,6 +29,7 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
@@ -73,6 +74,7 @@ public class EventProcessor {
     private ExecutorService executorService;
     private final Map<String, ObservableQueue> eventToQueueMap = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
+    private final JsonUtils jsonUtils = new JsonUtils();
 
     @Inject
     public EventProcessor(ExecutionService executionService, MetadataService metadataService,
@@ -175,7 +177,7 @@ public class EventProcessor {
             String condition = eventHandler.getCondition();
             if (StringUtils.isNotEmpty(condition)) {
                 logger.debug("Checking condition: {} for event: {}", condition, event);
-                Boolean success = ScriptEvaluator.evalBool(condition, payloadObject);
+                Boolean success = ScriptEvaluator.evalBool(condition, jsonUtils.expand(payloadObject));
                 if (!success) {
                     String id = msg.getId() + "_" + 0;
                     EventExecution eventExecution = new EventExecution(id, msg.getId());
@@ -186,6 +188,7 @@ public class EventProcessor {
                     eventExecution.getOutput().put("msg", msg.getPayload());
                     eventExecution.getOutput().put("condition", condition);
                     executionService.addEventExecution(eventExecution);
+                    logger.debug("Condition: {} not successful for event: {} with payload: {}", condition, eventHandler.getEvent(), msg.getPayload());
                     continue;
                 }
             }
