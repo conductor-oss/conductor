@@ -33,9 +33,7 @@ import java.util.concurrent.CompletableFuture;
 public interface IndexDAO {
 
     /**
-     * This method should return an unique identifier of the indexed doc
-     * @param workflow Workflow to be indexed
-     *
+     * Setup method in charge or initializing/populating the index.
      */
     void setup() throws Exception;
 
@@ -47,8 +45,6 @@ public interface IndexDAO {
     void indexWorkflow(Workflow workflow);
 
     /**
-     *
-     * /**
      * This method should return an unique identifier of the indexed doc
      * @param workflow Workflow to be indexed
      * @return CompletableFuture of type void
