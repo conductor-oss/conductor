@@ -10,13 +10,20 @@ plugins {
     id "com.google.protobuf" version "0.8.5"
 }
 
+repositories{
+    maven { url "https://dl.bintray.com/chaos-systems/mvn" }
+}
+
 dependencies {
     compile project(':conductor-common')
     compile project(':conductor-core')
 
+    protobuf 'io.chaossystems.grpc:grpc-healthcheck:1.0.+:protos'
     compile "com.google.api.grpc:proto-google-common-protos:1.0.0"
     compile "io.grpc:grpc-protobuf:${revGrpc}"
     compile "io.grpc:grpc-stub:${revGrpc}"
+
+    compile "com.netflix.runtime:health-api:${revHealth}"
 }
 
 protobuf {

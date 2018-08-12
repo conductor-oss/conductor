@@ -1,5 +1,6 @@
 package com.netflix.conductor.elasticsearch;
 
+import com.google.common.base.Strings;
 import com.netflix.conductor.core.config.Configuration;
 
 import java.net.URI;
@@ -8,6 +9,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public interface ElasticSearchConfiguration extends Configuration {
+
+    String ELASTICSEARCH_PROPERTY_NAME = "workflow.elasticsearch.instanceType";
+    ElasticSearchInstanceType ELASTICSEARCH_INSTANCE_TYPE_DEFAULT_VALUE = ElasticSearchInstanceType.MEMORY;
 
     String ELASTIC_SEARCH_URL_PROPERTY_NAME = "workflow.elasticsearch.url";
     String ELASTIC_SEARCH_URL_DEFAULT_VALUE = "localhost:9300";
@@ -75,4 +79,18 @@ public interface ElasticSearchConfiguration extends Configuration {
     default String getEmbeddedSettingsFile() {
         return getProperty(EMBEDDED_SETTINGS_FILE_PROPERTY_NAME, EMBEDDED_SETTINGS_FILE_DEFAULT_VALUE);
     }
+
+    default ElasticSearchInstanceType getElasticSearchInstanceType() {
+        ElasticSearchInstanceType elasticSearchInstanceType = ELASTICSEARCH_INSTANCE_TYPE_DEFAULT_VALUE;
+        String instanceTypeConfig = getProperty(ELASTICSEARCH_PROPERTY_NAME, "");
+        if (!Strings.isNullOrEmpty(instanceTypeConfig)) {
+            elasticSearchInstanceType = ElasticSearchInstanceType.valueOf(instanceTypeConfig.toUpperCase());
+        }
+        return elasticSearchInstanceType;
+    }
+
+    enum ElasticSearchInstanceType {
+        MEMORY, EXTERNAL
+    }
+
 }

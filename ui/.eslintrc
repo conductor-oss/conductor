@@ -1,0 +1,57 @@
+{
+  "extends": "airbnb",
+  "parser": "babel-eslint",
+  "env": {
+    "es6": true,
+    "node": true,
+    "browser": true
+  },
+  "plugins": ["react"],
+  "parserOptions": {
+    "ecmaVersion": 6,
+    "sourceType": "module",
+    "experimentalDecorators": true,
+    "ecmaFeatures": {
+      "experimentalObjectRestSpread": true
+    }
+  },
+  "rules": {
+    "import/extensions": ["off", "never"],
+    "import/no-extraneous-dependencies": 0,
+    "import/no-unresolved": 0,
+    "comma-dangle": [2, "never"],
+    "no-underscore-dangle": ["warn"],
+    "max-len": ["warn", 120],
+    "func-names": 0,
+    "linebreak-style": [0, "unix"],
+    "no-console": ["warn"],
+    "no-magic-numbers": 0,
+    "react/forbid-prop-types": 0,
+    "react/jsx-filename-extension": [
+      1,
+      {
+        "extensions": [".js"]
+      }
+    ],
+    "react/no-array-index-key": 0,
+    "react/no-unused-state": 1,
+    "react/prop-types": 0,
+    "react/require-default-props": 0,
+    "jsx-a11y/anchor-is-valid": [
+      "warn",
+      {
+        "specialLink": ["hrefLeft", "hrefRight"],
+        "aspects": ["noHref", "invalidHref", "preferButton"]
+      }
+    ],
+    "jsx-a11y/click-events-have-key-events": 0,
+    "jsx-a11y/mouse-events-have-key-events": 0,
+    "jsx-a11y/alt-text": 0,
+    "jsx-a11y/no-static-element-interactions": 0,
+    "jsx-a11y/label-has-for": ["warn"],
+    "arrow-parens": ["warn", "as-needed"],
+    "arrow-body-style": ["warn", "as-needed"],
+    "function-paren-newline": 0,
+    "object-curly-newline": 0
+  }
+}
