@@ -18,9 +18,6 @@
  */
 package com.netflix.conductor.dao;
 
-import java.util.Comparator;
-import java.util.List;
-
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -28,6 +25,8 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.queue.Message;
+
+import java.util.List;
 
 /**
  * @author Viren
@@ -245,6 +244,12 @@ public interface ExecutionDAO {
 	 * @param ee Event execution to be updated
 	 */
 	void updateEventExecution(EventExecution ee);
+
+	/**
+	 *
+	 * @param ee Event execution to be removed
+	 */
+	void removeEventExecution(EventExecution ee);
 
 	/**
 	 * 

@@ -1,13 +1,10 @@
-import React, { Component } from 'react';
+import React from 'react';
 import moment from 'moment';
-import { Link, browserHistory } from 'react-router';
-import { Breadcrumb, BreadcrumbItem, Input, Well, Button, Panel, DropdownButton, ButtonToolbar, MenuItem, Popover, OverlayTrigger, ButtonGroup } from 'react-bootstrap';
 import {BootstrapTable, TableHeaderColumn} from 'react-bootstrap-table';
 import { connect } from 'react-redux';
 import { getQueueData } from '../../../actions/WorkflowActions';
 
 const QueueListList = React.createClass({
-
   getInitialState() {
     return {
       name: '',
@@ -15,15 +12,12 @@ const QueueListList = React.createClass({
       queueData: []
     }
   },
-
   componentWillMount(){
     this.props.dispatch(getQueueData());
   },
-
   componentWillReceiveProps(nextProps){
     this.state.queueData = nextProps.queueData;
   },
-
   render() {
     var wfs = this.state.queueData;
 
@@ -52,4 +46,5 @@ const QueueListList = React.createClass({
     );
   }
 });
+
 export default connect(state => state.workflow)(QueueListList);

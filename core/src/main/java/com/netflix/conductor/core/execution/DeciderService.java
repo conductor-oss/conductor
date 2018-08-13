@@ -43,7 +43,9 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED_WITH_ERRORS;
@@ -128,17 +130,16 @@ public class DeciderService {
                 .map(Task::getReferenceTaskName)
                 .collect(Collectors.toSet());
 
-        Map<String, Task> tasksToBeScheduled = new LinkedHashMap<>();
-
-        preScheduledTasks.forEach(pst -> {
-            tasksToBeScheduled.put(pst.getReferenceTaskName(), pst);
-        });
+        //Traverse the pre-scheduled tasks to a linkedHasMap
+        Map<String, Task> tasksToBeScheduled = preScheduledTasks.stream()
+                .collect(Collectors.toMap(Task::getReferenceTaskName, Function.identity(),
+                        (element1, element2) -> element2, LinkedHashMap::new));
 
         // A new workflow does not enter this code branch
         for (Task pendingTask : pendingTasks) {
 
             if (SystemTaskType.is(pendingTask.getTaskType()) && !pendingTask.getStatus().isTerminal()) {
-                tasksToBeScheduled.putIfAbsent(pendingTask.getReferenceTaskName(), pendingTask);
+                tasksToBeScheduled.putIfAbsent(pendingTask.getReferenceTaskName(), pendingTask);//TODO This line is not needed
                 executedTaskRefNames.remove(pendingTask.getReferenceTaskName());
             }
 
@@ -202,15 +203,15 @@ public class DeciderService {
         logger.debug("Starting workflow " + def.getName() + "/" + workflow.getWorkflowId());
         //The tasks will be empty in case of new workflow
         List<Task> tasks = workflow.getTasks();
-        // Check if the workflow isSystemTask a re-run case or if it isSystemTask a new workflow execution
+        // Check if the workflow is a re-run case or if it is a new workflow execution
         if (workflow.getReRunFromWorkflowId() == null || tasks.isEmpty()) {
 
             if (def.getTasks().isEmpty()) {
                 throw new TerminateWorkflowException("No tasks found to be executed", WorkflowStatus.COMPLETED);
             }
 
-            WorkflowTask taskToSchedule = def.getTasks().getFirst(); //Nothing isSystemTask running yet - so schedule the first task
-            //Loop until a non-skipped task isSystemTask found
+            WorkflowTask taskToSchedule = def.getTasks().getFirst(); //Nothing is running yet - so schedule the first task
+            //Loop until a non-skipped task is found
             while (isTaskSkipped(taskToSchedule, workflow)) {
                 taskToSchedule = def.getNextTask(taskToSchedule.getTaskReferenceName());
             }
@@ -454,9 +455,21 @@ public class DeciderService {
                 .map(Task::getReferenceTaskName)
                 .collect(Collectors.toList());
 
-        String taskId = IDGenerator.generate();
-        TaskMapperContext taskMapperContext = new TaskMapperContext(workflowDefinition, workflowInstance, taskToSchedule,
-                input, retryCount, retriedTaskId, taskId, this);
+        TaskDef taskDef = Optional.ofNullable(taskToSchedule.getName())
+                .map(metadataDAO::getTaskDef)
+                .orElse(null);
+
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(workflowDefinition)
+                .withWorkflowInstance(workflowInstance)
+                .withTaskDefinition(taskDef)
+                .withTaskToSchedule(taskToSchedule)
+                .withTaskInput(input)
+                .withRetryCount(retryCount)
+                .withRetryTaskId(retriedTaskId)
+                .withTaskId(IDGenerator.generate())
+                .withDeciderService(this)
+                .build();
 
         // for static forks, each branch of the fork creates a join task upon completion
         // for dynamic forks, a join task is created with the fork and also with each branch of the fork

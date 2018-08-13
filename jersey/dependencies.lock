@@ -57,6 +57,12 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
             "requested": "1.19.1"
@@ -150,6 +156,12 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
             "requested": "1.19.1"
@@ -242,6 +254,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
         },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
@@ -342,6 +360,12 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
             "requested": "1.19.1"
@@ -435,6 +459,12 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
             "requested": "1.19.1"
@@ -527,6 +557,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
         },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
@@ -629,6 +665,12 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
             "requested": "1.19.1"
@@ -730,6 +772,12 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",
             "requested": "1.19.1"
@@ -830,6 +878,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
         },
         "com.sun.jersey:jersey-bundle": {
             "locked": "1.19.1",

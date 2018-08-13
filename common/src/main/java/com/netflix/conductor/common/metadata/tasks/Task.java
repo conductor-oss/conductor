@@ -15,8 +15,10 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import com.github.vmg.protogen.annotations.ProtoEnum;
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.google.protobuf.Any;
-import com.github.vmg.protogen.annotations.*;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import java.util.HashMap;
@@ -165,6 +167,9 @@ public class Task {
 
     @ProtoField(id = 30)
     private Any outputMessage;
+
+    @ProtoField(id = 31)
+    private int rateLimitPerSecond;
 
     public Task() {
 
@@ -585,6 +590,14 @@ public class Task {
         this.inputMessage = inputMessage;
     }
 
+    public int getRateLimitPerSecond() {
+        return rateLimitPerSecond;
+    }
+
+    public void setRateLimitPerSecond(int rateLimitPerSecond) {
+        this.rateLimitPerSecond = rateLimitPerSecond;
+    }
+
     public Any getOutputMessage() {
         return outputMessage;
     }
@@ -616,6 +629,7 @@ public class Task {
         copy.setDomain(domain);
         copy.setInputMessage(inputMessage);
         copy.setOutputMessage(outputMessage);
+        copy.setRateLimitPerSecond(rateLimitPerSecond);
         return copy;
     }
 

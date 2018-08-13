@@ -1,15 +1,5 @@
-import React, {Component} from "react";
+import React from 'react';
 
-export default class Tab extends Component {
-    constructor(props) {
-        super(props)
-    }
+const Tab = ({ children, active }) => <div className={'tab-pane' + (active ? ' active' : ' ')}>{children}</div>;
 
-    render() {
-        const {children, active} = this.props;
-
-        return <div className={"tab-pane" + ((active) ? " active" : " ")}>
-            {children}
-        </div>;
-    }
-}
+export default Tab;
