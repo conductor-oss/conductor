@@ -66,9 +66,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 
 		ApplicationException applicationException = null;
 
-        if (exception instanceof IllegalArgumentException) {
-            applicationException = new ApplicationException(Code.INVALID_INPUT, exception.getMessage(), exception);
-        } else if (exception instanceof InvalidFormatException) {
+        if (exception instanceof IllegalArgumentException || exception instanceof InvalidFormatException) {
             applicationException = new ApplicationException(Code.INVALID_INPUT, exception.getMessage(), exception);
         } else {
             applicationException = new ApplicationException(Code.INTERNAL_ERROR, exception.getMessage(), exception);

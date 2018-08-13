@@ -83,19 +83,19 @@ public class ExecutionService {
 
 	private static final Logger logger = LoggerFactory.getLogger(ExecutionService.class);
 
-	private WorkflowExecutor executor;
+	private final WorkflowExecutor executor;
 
-	private ExecutionDAO executionDAO;
+	private final ExecutionDAO executionDAO;
 
-	private IndexDAO indexer;
+	private final IndexDAO indexer;
 
-	private QueueDAO queue;
+	private final QueueDAO queue;
 
-	private MetadataDAO metadata;
+	private final MetadataDAO metadata;
 
-	private int taskRequeueTimeout;
+	private final int taskRequeueTimeout;
 
-    private int maxSearchSize;
+    private final int maxSearchSize;
 
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
 
@@ -244,7 +244,7 @@ public class ExecutionService {
 		queue.remove(QueueUtils.getQueueName(task), taskId);
 	}
 
-	public int requeuePendingTasks() throws Exception {
+	public int requeuePendingTasks() {
 		long threshold = System.currentTimeMillis() - taskRequeueTimeout;
 		List<WorkflowDef> workflowDefs = metadata.getAll();
 		int count = 0;
@@ -257,7 +257,7 @@ public class ExecutionService {
 		return count;
 	}
 
-	public int requeuePendingTasks(Workflow workflow, long threshold) {
+	private int requeuePendingTasks(Workflow workflow, long threshold) {
 
 		int count = 0;
 		List<Task> tasks = workflow.getTasks();
@@ -335,7 +335,7 @@ public class ExecutionService {
 		return result;
 	}
 
-	public Workflow getExecutionStatus(String workflowId, boolean includeTasks) throws Exception {
+	public Workflow getExecutionStatus(String workflowId, boolean includeTasks) {
 		return executionDAO.getWorkflow(workflowId, includeTasks);
 	}
 
@@ -352,7 +352,7 @@ public class ExecutionService {
 		SearchResult<String> result = indexer.searchWorkflows(query, freeText, start, size, sortOptions);
 		List<WorkflowSummary> workflows = result.getResults().stream().parallel().map(workflowId -> {
 			try {
-				return new WorkflowSummary(executionDAO.getWorkflow(workflowId, false));
+				return new WorkflowSummary(executionDAO.getWorkflow(workflowId,false));
 			} catch(Exception e) {
 				logger.error(e.getMessage(), e);
 				return null;

@@ -25,11 +25,7 @@ import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.service.ExecutionService;
-import com.netflix.conductor.service.MetadataService;
-import com.netflix.conductor.service.WorkflowResourceInfo;
+import com.netflix.conductor.service.WorkflowService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
@@ -62,20 +58,18 @@ import java.util.Map;
 @Singleton
 public class WorkflowResource {
 
-    private WorkflowResourceInfo workflowResourceInfo;
+    private final WorkflowService workflowService;
 
     @Inject
-    public WorkflowResource(WorkflowResourceInfo workflowResourceInfo) {
-        this.workflowResourceInfo = workflowResourceInfo;
+    public WorkflowResource(WorkflowService workflowService) {
+        this.workflowService = workflowService;
     }
 
     @POST
     @Produces({MediaType.TEXT_PLAIN})
     @ApiOperation("Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain")
-    public String startWorkflow(StartWorkflowRequest request) throws Exception {
-        Preconditions.checkArgument(request!=null
-                , "StartWorkflowRequest cannot be null or empty.");
-        return workflowResourceInfo.startWorkflow(request);
+    public String startWorkflow(StartWorkflowRequest request) {
+        return workflowService.startWorkflow(request);
     }
 
     @POST
@@ -86,8 +80,7 @@ public class WorkflowResource {
                                 @QueryParam("version") Integer version,
                                 @QueryParam("correlationId") String correlationId,
                                 Map<String, Object> input) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be null or empty.");
-        return workflowResourceInfo.startWorkflow(name, version, correlationId, input);
+        return workflowService.startWorkflow(name, version, correlationId, input);
     }
 
     @GET
@@ -98,9 +91,7 @@ public class WorkflowResource {
                                        @PathParam("correlationId") String correlationId,
                                        @QueryParam("includeClosed") @DefaultValue("false") boolean includeClosed,
                                        @QueryParam("includeTasks") @DefaultValue("false") boolean includeTasks) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be null or empty.");
-        Preconditions.checkArgument(StringUtils.isNotBlank(correlationId), "CorrelationId cannot be null or empty.");
-        return workflowResourceInfo.getWorkflows(name, correlationId, includeClosed, includeTasks);
+        return workflowService.getWorkflows(name, correlationId, includeClosed, includeTasks);
     }
 
     @POST
@@ -110,9 +101,8 @@ public class WorkflowResource {
     public Map<String, List<Workflow>> getWorkflows(@PathParam("name") String name,
                                                     @QueryParam("includeClosed") @DefaultValue("false") boolean includeClosed,
                                                     @QueryParam("includeTasks") @DefaultValue("false") boolean includeTasks,
-                                                    List<String> correlationIds) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be null or empty.");
-        return workflowResourceInfo.getWorkflows(name, includeClosed, includeTasks, correlationIds);
+                                                    List<String> correlationIds) {
+        return workflowService.getWorkflows(name, includeClosed, includeTasks, correlationIds);
     }
 
     @GET
@@ -120,9 +110,8 @@ public class WorkflowResource {
     @ApiOperation("Gets the workflow by workflow id")
     @Consumes(MediaType.WILDCARD)
     public Workflow getExecutionStatus(@PathParam("workflowId") String workflowId,
-                                       @QueryParam("includeTasks") @DefaultValue("true") boolean includeTasks) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-        return workflowResourceInfo.getExecutionStatus(workflowId, includeTasks);
+                                       @QueryParam("includeTasks") @DefaultValue("true") boolean includeTasks) {
+        return workflowService.getExecutionStatus(workflowId, includeTasks);
     }
 
     @DELETE
@@ -131,8 +120,7 @@ public class WorkflowResource {
     @Consumes(MediaType.WILDCARD)
     public void delete(@PathParam("workflowId") String workflowId,
                        @QueryParam("archiveWorkflow") @DefaultValue("true") boolean archiveWorkflow) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-        workflowResourceInfo.deleteWorkflow(workflowId, archiveWorkflow);
+        workflowService.deleteWorkflow(workflowId, archiveWorkflow);
     }
 
     @GET
@@ -142,36 +130,33 @@ public class WorkflowResource {
     public List<String> getRunningWorkflow(@PathParam("name") String workflowName,
                                            @QueryParam("version") @DefaultValue("1") Integer version,
                                            @QueryParam("startTime") Long startTime,
-                                           @QueryParam("endTime") Long endTime) throws Exception {
+                                           @QueryParam("endTime") Long endTime) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowName), "Name cannot be null or empty.");
-        return workflowResourceInfo.getRunningWorkflows(workflowName, version, startTime, endTime);
+        return workflowService.getRunningWorkflows(workflowName, version, startTime, endTime);
     }
 
     @PUT
     @Path("/decide/{workflowId}")
     @ApiOperation("Starts the decision task for a workflow")
     @Consumes(MediaType.WILDCARD)
-    public void decide(@PathParam("workflowId") String workflowId) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-        workflowResourceInfo.decideWorkflow(workflowId);
+    public void decide(@PathParam("workflowId") String workflowId) {
+        workflowService.decideWorkflow(workflowId);
     }
 
     @PUT
     @Path("/{workflowId}/pause")
     @ApiOperation("Pauses the workflow")
     @Consumes(MediaType.WILDCARD)
-    public void pauseWorkflow(@PathParam("workflowId") String workflowId) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-        workflowResourceInfo.pauseWorkflow(workflowId);
+    public void pauseWorkflow(@PathParam("workflowId") String workflowId) {
+        workflowService.pauseWorkflow(workflowId);
     }
 
     @PUT
     @Path("/{workflowId}/resume")
     @ApiOperation("Resumes the workflow")
     @Consumes(MediaType.WILDCARD)
-    public void resumeWorkflow(@PathParam("workflowId") String workflowId) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-        workflowResourceInfo.resumeWorkflow(workflowId);
+    public void resumeWorkflow(@PathParam("workflowId") String workflowId) {
+        workflowService.resumeWorkflow(workflowId);
     }
 
     @PUT
@@ -181,9 +166,7 @@ public class WorkflowResource {
     public void skipTaskFromWorkflow(@PathParam("workflowId") String workflowId,
                                      @PathParam("taskReferenceName") String taskReferenceName,
                                      SkipTaskRequest skipTaskRequest) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskReferenceName), "TaskReferenceName cannot be null or empty.");
-        workflowResourceInfo.skipTaskFromWorkflow(workflowId, taskReferenceName, skipTaskRequest);
+        workflowService.skipTaskFromWorkflow(workflowId, taskReferenceName, skipTaskRequest);
     }
 
     @POST
@@ -192,36 +175,32 @@ public class WorkflowResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces({MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON})
     public String rerun(@PathParam("workflowId") String workflowId,
-                        RerunWorkflowRequest request) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-        return workflowResourceInfo.rerunWorkflow(workflowId, request);
+                        RerunWorkflowRequest request) {
+        return workflowService.rerunWorkflow(workflowId, request);
     }
 
     @POST
     @Path("/{workflowId}/restart")
     @ApiOperation("Restarts a completed workflow")
     @Consumes(MediaType.WILDCARD)
-    public void restart(@PathParam("workflowId") String workflowId) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-        workflowResourceInfo.restartWorkflow(workflowId);
+    public void restart(@PathParam("workflowId") String workflowId) {
+        workflowService.restartWorkflow(workflowId);
     }
 
     @POST
     @Path("/{workflowId}/retry")
     @ApiOperation("Retries the last failed task")
     @Consumes(MediaType.WILDCARD)
-    public void retry(@PathParam("workflowId") String workflowId) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-        workflowResourceInfo.retryWorkflow(workflowId);
+    public void retry(@PathParam("workflowId") String workflowId) {
+        workflowService.retryWorkflow(workflowId);
     }
 
     @POST
     @Path("/{workflowId}/resetcallbacks")
     @ApiOperation("Resets callback times of all in_progress tasks to 0")
     @Consumes(MediaType.WILDCARD)
-    public void resetWorkflow(@PathParam("workflowId") String workflowId) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-        workflowResourceInfo.resetWorkflow(workflowId);
+    public void resetWorkflow(@PathParam("workflowId") String workflowId) {
+        workflowService.resetWorkflow(workflowId);
     }
 
     @DELETE
@@ -229,9 +208,8 @@ public class WorkflowResource {
     @ApiOperation("Terminate workflow execution")
     @Consumes(MediaType.WILDCARD)
     public void terminate(@PathParam("workflowId") String workflowId,
-                          @QueryParam("reason") String reason) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-        workflowResourceInfo.terminateWorkflow(workflowId, reason);
+                          @QueryParam("reason") String reason) {
+        workflowService.terminateWorkflow(workflowId, reason);
     }
 
     @ApiOperation(value = "Search for workflows based on payload and other parameters",
@@ -246,7 +224,7 @@ public class WorkflowResource {
                                                 @QueryParam("sort") String sort,
                                                 @QueryParam("freeText") @DefaultValue("*") String freeText,
                                                 @QueryParam("query") String query) {
-        return workflowResourceInfo.searchWorkflows(start, size, sort, freeText, query);
+        return workflowService.searchWorkflows(start, size, sort, freeText, query);
     }
 
     @ApiOperation(value = "Search for workflows based on task parameters",
@@ -261,6 +239,6 @@ public class WorkflowResource {
                                                                 @QueryParam("sort") String sort,
                                                                 @QueryParam("freeText") @DefaultValue("*") String freeText,
                                                                 @QueryParam("query") String query) {
-        return workflowResourceInfo.searchWorkflowsByTasks(start, size, sort, freeText, query);
+        return workflowService.searchWorkflowsByTasks(start, size, sort, freeText, query);
     }
 }

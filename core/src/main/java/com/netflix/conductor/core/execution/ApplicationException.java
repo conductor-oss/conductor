@@ -47,7 +47,19 @@ public class ApplicationException extends RuntimeException {
 	}
 	
 	private Code code;
-	
+
+	public boolean getRetryable() {
+	    return retryable;
+	}
+
+	private boolean retryable;
+
+	private void checkIsRetryable() {
+	    if(this.code == Code.BACKEND_ERROR) {
+	        this.retryable = true;
+	    }
+	}
+
 	public ApplicationException(String msg, Throwable t){
 		this(Code.INTERNAL_ERROR, msg, t);
 	}
@@ -55,16 +67,19 @@ public class ApplicationException extends RuntimeException {
 	public ApplicationException(Code code, String msg, Throwable t){
 		super(code + " - " + msg, t);
 		this.code = code;
+		checkIsRetryable();
 	}
 	
 	public ApplicationException(Code code, Throwable t){
 		super(code.name(), t);
 		this.code = code;
+		checkIsRetryable();
 	}
 	
 	public ApplicationException(Code code, String message){
 		super(message);
 		this.code = code;
+		checkIsRetryable();
 	}
 	
 	public int getHttpStatusCode(){

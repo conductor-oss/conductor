@@ -54,8 +54,6 @@ public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationEx
 	private static List<Variant> supportedMediaTypes = Variant.mediaTypes(MediaType.APPLICATION_JSON_TYPE,
 			MediaType.TEXT_HTML_TYPE, MediaType.TEXT_PLAIN_TYPE).add().build();
 
-	private static final String LOG_MESSAGE_FORMAT = "%s message= '%s' url= '%s'";
-
 	@Context
 	private HttpContext context;
 
@@ -87,7 +85,7 @@ public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationEx
 		Map<String, Object> entityMap = e.toMap();
 		entityMap.put("instance", host);
 
-		if(mediaType == null){
+		if(mediaType == null) {
 			mediaType = MediaType.APPLICATION_JSON_TYPE;
 		}
 
@@ -114,7 +112,7 @@ public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationEx
 	}
 
 	private void logException(ApplicationException exception) {
-		String logMessage = String.format(LOG_MESSAGE_FORMAT, exception.getClass().getSimpleName(),
+		String logMessage = String.format("%s message= '%s' url= '%s'", exception.getClass().getSimpleName(),
 				exception.getMessage(), getUriInfo().getPath());
 		logger.error(logMessage, exception);
 	}

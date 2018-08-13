@@ -2,16 +2,16 @@ package com.netflix.conductor.client.exceptions;
 
 public class ErrorResponse {
 
-    private String statusCode;
+    private String code;
     private String message;
     private String instance;
 
     public String getCode() {
-        return statusCode;
+        return code;
     }
 
     public void setCode(String code) {
-        this.statusCode = code;
+        this.code = code;
     }
 
     public String getMessage() {

@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
+
 package com.netflix.conductor.server.resources;
 
 import java.util.List;
@@ -37,9 +35,8 @@ import javax.ws.rs.core.MediaType;
 
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.core.events.EventProcessor;
 import com.netflix.conductor.core.events.EventQueues;
-import com.netflix.conductor.service.MetadataService;
+import com.netflix.conductor.service.EventService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -57,41 +54,37 @@ import org.apache.commons.lang3.StringUtils;
 @Singleton
 public class EventResource {
 
-	private MetadataService metadataService;
-	
-	private EventProcessor eventProcessor;
+	private final EventService eventService;
 	
 	@Inject
-	public EventResource(MetadataService metadataService, EventProcessor eventProcessor) {
-		this.metadataService = metadataService;
-		this.eventProcessor = eventProcessor;
+	public EventResource(EventService eventService) {
+		this.eventService = eventService;
 	}
 
 	@POST
 	@ApiOperation("Add a new event handler.")
 	public void addEventHandler(EventHandler eventHandler) {
-		metadataService.addEventHandler(eventHandler);
+        eventService.addEventHandler(eventHandler);
 	}
 
 	@PUT
 	@ApiOperation("Update an existing event handler.")
 	public void updateEventHandler(EventHandler eventHandler) {
-		metadataService.updateEventHandler(eventHandler);
+        eventService.updateEventHandler(eventHandler);
 	}
-	
 
 	@DELETE
 	@Path("/{name}")
 	@ApiOperation("Remove an event handler")
 	public void removeEventHandlerStatus(@PathParam("name") String name) {
 		Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be null or empty.");
-		metadataService.removeEventHandlerStatus(name);
+        eventService.removeEventHandlerStatus(name);
 	}
 
 	@GET
 	@ApiOperation("Get all the event handlers")
 	public List<EventHandler> getEventHandlers() {
-		return metadataService.getEventHandlers();
+		return eventService.getEventHandlers();
 	}
 	
 	@GET
@@ -99,22 +92,21 @@ public class EventResource {
 	@ApiOperation("Get event handlers for a given event")
 	public List<EventHandler> getEventHandlersForEvent(@PathParam("event") String event,
                                                        @QueryParam("activeOnly") @DefaultValue("true") boolean activeOnly) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(event), "Event cannot be null or empty.");
-        return metadataService.getEventHandlersForEvent(event, activeOnly);
+        return eventService.getEventHandlersForEvent(event, activeOnly);
 	}
 	
 	@GET
 	@Path("/queues")
 	@ApiOperation("Get registered queues")
 	public Map<String, ?> getEventQueues(@QueryParam("verbose") @DefaultValue("false") boolean verbose) {
-		return (verbose ? eventProcessor.getQueueSizes() : eventProcessor.getQueues());
+		return eventService.getEventQueues(verbose);
 	}
 
 	@GET
 	@Path("/queues/providers")
 	@ApiOperation("Get registered queue providers")
 	public List<String> getEventQueueProviders() {
-		return EventQueues.providers();
+		return eventService.getEventQueueProviders();
 	}
 	
 }

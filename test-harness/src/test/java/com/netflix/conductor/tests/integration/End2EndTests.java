@@ -189,9 +189,9 @@ public class End2EndTests {
 		getTasks = tc.getPendingTasksByType(t1.getName(), null, 1);
 		assertNotNull(getTasks);
 		assertEquals(1, getTasks.size());
-		
-		
+
 		Task pending = tc.getPendingTaskForWorkflow(workflowId, t1.getTaskReferenceName());
+        Thread.sleep(5000);
 		assertNotNull(pending);
 		assertEquals(t1.getTaskReferenceName(), pending.getReferenceTaskName());
 		assertEquals(workflowId, pending.getWorkflowInstanceId());
@@ -258,7 +258,7 @@ public class End2EndTests {
         } catch (ConductorClientException e) {
             int statusCode = e.getStatus();
             //TODO: this should be 404
-            assertEquals(500, statusCode);
+            assertEquals(404, statusCode);
         }
 	}
 	

@@ -51,7 +51,7 @@ import static java.lang.Thread.*;
 @Consumes({MediaType.APPLICATION_JSON})
 public class MetadataResource {
 
-	private MetadataService metadataService;
+	private final MetadataService metadataService;
 	
 	@Inject
 	public MetadataResource(MetadataService metadataService) {
@@ -77,7 +77,6 @@ public class MetadataResource {
 	@Path("/workflow/{name}")
 	public WorkflowDef get(@PathParam("name") String name,
 						   @QueryParam("version") Integer version) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be null or empty.");
         return metadataService.getWorkflowDef(name, version);
 	}
 
@@ -92,9 +91,7 @@ public class MetadataResource {
 	@Path("/workflow/{name}/{version}")
 	@ApiOperation("Removes workflow definition. It does not remove workflows associated with the definition.")
 	public void unregisterWorkflowDef(@PathParam("name") String name,
-                                      @PathParam("version") Integer version) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be null or empty.");
-        Preconditions.checkArgument(version!=null, "Version cannot be null.");
+                                      @PathParam("version") Integer version) {
 	    metadataService.unregisterWorkflowDef(name, version);
 	}
 	
@@ -125,7 +122,6 @@ public class MetadataResource {
 	@ApiOperation("Gets the task definition")
 	@Consumes(MediaType.WILDCARD)
 	public TaskDef getTaskDef(@PathParam("tasktype") String taskType) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
         return metadataService.getTaskDef(taskType);
 	}
 	
@@ -133,7 +129,6 @@ public class MetadataResource {
 	@Path("/taskdefs/{tasktype}")
 	@ApiOperation("Remove a task definition")
 	public void unregisterTaskDef(@PathParam("tasktype") String taskType){
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
-        metadataService.unregisterTaskDef(taskType);
+		metadataService.unregisterTaskDef(taskType);
 	}
 }

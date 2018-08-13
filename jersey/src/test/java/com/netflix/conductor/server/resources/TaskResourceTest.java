@@ -9,6 +9,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.server.resources.TaskResource;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.service.TaskService;
 import org.junit.Test;
 
 import org.junit.Before;
@@ -31,17 +32,18 @@ import static org.mockito.Mockito.verify;
 
 public class TaskResourceTest {
 
-    private ExecutionService mockTaskService;
+    private TaskService mockTaskService;
 
     private QueueDAO mockQueueDAO;
 
     private TaskResource taskResource;
 
+
     @Before
     public void before() {
-        this.mockTaskService = Mockito.mock(ExecutionService.class);
+        this.mockTaskService = Mockito.mock(TaskService.class);
         this.mockQueueDAO = Mockito.mock(QueueDAO.class);
-        this.taskResource = new TaskResource(this.mockTaskService, this.mockQueueDAO);
+        this.taskResource = new TaskResource(this.mockTaskService);
     }
 
     @Test
@@ -51,7 +53,7 @@ public class TaskResourceTest {
         task.setWorkerId("123");
         task.setDomain("test");
 
-        when(mockTaskService.getLastPollTask(anyString(), anyString(), anyString())).thenReturn(task);
+        when(mockTaskService.poll(anyString(), anyString(), anyString())).thenReturn(task);
         assertEquals(task, taskResource.poll("SIMPLE", "123", "test"));
     }
 
@@ -64,7 +66,7 @@ public class TaskResourceTest {
         List<Task> listOfTasks = new ArrayList<>();
         listOfTasks.add(task);
 
-        when(mockTaskService.poll(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(listOfTasks);
+        when(mockTaskService.batchPoll(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(listOfTasks);
         assertEquals(listOfTasks, taskResource.batchPoll("SIMPLE", "123",
                 "test", 1, 100));
     }
@@ -99,13 +101,14 @@ public class TaskResourceTest {
         TaskResult taskResult = new TaskResult();
         taskResult.setStatus(TaskResult.Status.COMPLETED);
         taskResult.setTaskId("123");
+        when(mockTaskService.updateTask(any(TaskResult.class))).thenReturn("123");
         assertEquals("123", taskResource.updateTask(taskResult));
     }
 
     @Test
     public void testAck() throws Exception {
-        Boolean acked = true;
-        when(mockTaskService.ackTaskReceived(anyString())).thenReturn(acked);
+        String acked = "true";
+        when(mockTaskService.ackTaskReceived(anyString(), anyString())).thenReturn(acked);
         assertEquals("true", taskResource.ack("123", "456"));
     }
 
@@ -137,7 +140,7 @@ public class TaskResourceTest {
     @Test
     public void testRemoveTaskFromQueue() {
         taskResource.removeTaskFromQueue("SIMPLE", "123");
-        verify(mockTaskService, times(1)).removeTaskfromQueue(anyString(), anyString());
+        verify(mockTaskService, times(1)).removeTaskFromQueue(anyString(), anyString());
     }
 
     @Test
@@ -146,10 +149,9 @@ public class TaskResourceTest {
         map.put("test1", 1);
         map.put("test2", 2);
 
-        ArrayList<String> list = new ArrayList<String>() {{
-            add("test1");
-            add("test2");
-        }};
+        List<String> list = new ArrayList<String>();
+        list.add("test1");
+        list.add("test2");
 
         when(mockTaskService.getTaskQueueSizes(anyListOf(String.class))).thenReturn(map);
         assertEquals(map, taskResource.size(list));
@@ -157,7 +159,6 @@ public class TaskResourceTest {
 
     @Test
     public void testAllVerbose() {
-
         Map<String, Long> map = new HashMap<>();
         map.put("queue1", 1L);
         map.put("queue2", 2L);
@@ -168,7 +169,7 @@ public class TaskResourceTest {
         Map<String, Map<String, Map<String, Long>>> queueSizeMap = new HashMap<>();
         queueSizeMap.put("queue", mapOfMap);
 
-        when(mockQueueDAO.queuesDetailVerbose()).thenReturn(queueSizeMap);
+        when(mockTaskService.allVerbose()).thenReturn(queueSizeMap);
         assertEquals(queueSizeMap, taskResource.allVerbose());
     }
 
@@ -178,7 +179,7 @@ public class TaskResourceTest {
         map.put("queue1", 1L);
         map.put("queue2", 2L);
 
-        when(mockQueueDAO.queuesDetail()).thenReturn(map);
+        when(mockTaskService.getAllQueueDetails()).thenReturn(map);
         assertEquals(map, taskResource.all());
     }
 
@@ -204,14 +205,14 @@ public class TaskResourceTest {
 
     @Test
     public void testRequeue() throws Exception {
-        when(mockTaskService.requeuePendingTasks()).thenReturn(1);
+        when(mockTaskService.requeue()).thenReturn("1");
         assertEquals("1", taskResource.requeue());
     }
 
     @Test
     public void testRequeueTaskType() throws Exception {
-        when(mockTaskService.requeuePendingTasks(anyString())).thenReturn(1);
-        assertEquals("1", taskResource.requeue("SIMPLE"));
+        when(mockTaskService.requeuePendingTask(anyString())).thenReturn("1");
+        assertEquals("1", taskResource.requeuePendingTask("SIMPLE"));
     }
 
     @Test
@@ -228,7 +229,7 @@ public class TaskResourceTest {
         SearchResult<TaskSummary> searchResult = new SearchResult<TaskSummary>(100, listOfTaskSummary);
         listOfTaskSummary.add(taskSummary);
 
-        when(mockTaskService.getSearchTasks(anyString(), anyString(), anyInt(), anyInt(), anyString())).thenReturn(searchResult);
+        when(mockTaskService.search(anyInt(), anyInt(), anyString(), anyString(), anyString())).thenReturn(searchResult);
         assertEquals(searchResult, taskResource.search(0,100,"asc", "*", "*"));
     }
 }

@@ -47,6 +47,7 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 
+import com.netflix.conductor.service.TaskService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.apache.commons.lang3.StringUtils;
@@ -67,14 +68,11 @@ public class TaskResource {
 
 	private static final Logger logger = LoggerFactory.getLogger(TaskResource.class);
 
-	private ExecutionService taskService;
-
-	private QueueDAO queueDAO;
+	private final TaskService taskService;
 
 	@Inject
-	public TaskResource(ExecutionService taskService, QueueDAO queueDAO) {
+	public TaskResource(TaskService taskService) {
 		this.taskService = taskService;
-		this.queueDAO = queueDAO;
 	}
 
 	@GET
@@ -84,13 +82,7 @@ public class TaskResource {
 	public Task poll(@PathParam("tasktype") String taskType,
                      @QueryParam("workerid") String workerId,
                      @QueryParam("domain") String domain) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
-		logger.debug("Task being polled: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
-		Task task = taskService.getLastPollTask(taskType, workerId, domain);
-		if (task != null) {
-            logger.debug("The Task {} being returned for /tasks/poll/{}?{}&{}", task, taskType, workerId, domain);
-        }
-		return task;
+		return taskService.poll(taskType, workerId, domain);
 	}
 
 	@GET
@@ -102,14 +94,7 @@ public class TaskResource {
 								@QueryParam("domain") String domain,
 								@DefaultValue("1") @QueryParam("count") Integer count,
 								@DefaultValue("100") @QueryParam("timeout") Integer timeout) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
-		List<Task> polledTasks = taskService.poll(taskType, workerId, domain, count, timeout);
-		//TODO: is it okay to put this in service layer
-		logger.debug("The Tasks {} being returned for /tasks/poll/{}?{}&{}",
-				polledTasks.stream()
-						.map(Task::getTaskId)
-						.collect(Collectors.toList()), taskType, workerId, domain);
-		return polledTasks;
+		return taskService.batchPoll(taskType, workerId, domain, count, timeout);
 	}
 
 	@GET
@@ -119,7 +104,6 @@ public class TaskResource {
 	public List<Task> getTasks(@PathParam("tasktype") String taskType,
                                @QueryParam("startKey") String startKey,
                                @QueryParam("count") @DefaultValue("100") Integer count) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
 		return taskService.getTasks(taskType, startKey, count);
 	}
 
@@ -129,37 +113,28 @@ public class TaskResource {
 	@Consumes({MediaType.WILDCARD})
 	public Task getPendingTaskForWorkflow(@PathParam("workflowId") String workflowId,
                                           @PathParam("taskRefName") String taskReferenceName) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskReferenceName), "TaskReferenceName cannot be null or empty.");
-		return taskService.getPendingTaskForWorkflow(taskReferenceName, workflowId);
+		return taskService.getPendingTaskForWorkflow(workflowId, taskReferenceName);
 	}
 
 	@POST
 	@ApiOperation("Update a task")
 	public String updateTask(TaskResult taskResult) throws Exception {
-		Preconditions.checkArgument(taskResult!=null, "TaskResult cannot be null or empty.");
-		logger.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
-		taskService.updateTask(taskResult);
-		logger.debug("Task: {} updated successfully with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
-		return taskResult.getTaskId();
+		return taskService.updateTask(taskResult);
 	}
 
 	@POST
 	@Path("/{taskId}/ack")
-	@ApiOperation("Ack Task is recieved")
+	@ApiOperation("Ack Task is received")
 	@Consumes({MediaType.WILDCARD})
 	public String ack(@PathParam("taskId") String taskId,
-                      @QueryParam("workerid") String workerId) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "TaskId cannot be null or empty.");
-        logger.debug("Ack received for task: {} from worker: {}", taskId, workerId);
-		return String.valueOf(taskService.ackTaskReceived(taskId));
+                      @QueryParam("workerid") String workerId) throws Exception{
+		return taskService.ackTaskReceived(taskId, workerId);
 	}
 	
 	@POST
 	@Path("/{taskId}/log")
 	@ApiOperation("Log Task Execution Details")
 	public void log(@PathParam("taskId") String taskId, String log) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "TaskId cannot be null or empty.");
         taskService.log(taskId, log);
 	}
 	
@@ -167,7 +142,6 @@ public class TaskResource {
 	@Path("/{taskId}/log")
 	@ApiOperation("Get Task Execution Logs")
 	public List<TaskExecLog> getTaskLogs(@PathParam("taskId") String taskId) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "TaskId cannot be null or empty.");
         return taskService.getTaskLogs(taskId);
 	}
 
@@ -176,7 +150,6 @@ public class TaskResource {
 	@ApiOperation("Get task by Id")
 	@Consumes(MediaType.WILDCARD)
 	public Task getTask(@PathParam("taskId") String taskId) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "TaskId cannot be null or empty.");
         return taskService.getTask(taskId);
 	}
 
@@ -186,9 +159,7 @@ public class TaskResource {
 	@Consumes({MediaType.WILDCARD})
 	public void removeTaskFromQueue(@PathParam("taskType") String taskType,
 									@PathParam("taskId") String taskId) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "TaskId cannot be null or empty.");
-        taskService.removeTaskfromQueue(taskType, taskId);
+        taskService.removeTaskFromQueue(taskType, taskId);
 	}
 
 	@GET
@@ -204,8 +175,7 @@ public class TaskResource {
 	@ApiOperation("Get the details about each queue")
 	@Consumes({MediaType.WILDCARD})
 	public Map<String, Map<String, Map<String, Long>>> allVerbose() {
-	    //TODO: add validation here
-		return queueDAO.queuesDetailVerbose();
+		return taskService.allVerbose();
 	}
 
 	@GET
@@ -213,9 +183,7 @@ public class TaskResource {
 	@ApiOperation("Get the details about each queue")
 	@Consumes({MediaType.WILDCARD})
 	public Map<String, Long> all() {
-		return queueDAO.queuesDetail().entrySet().stream()
-				.sorted(Comparator.comparing(Entry::getKey))
-				.collect(Collectors.toMap(Entry::getKey, Entry::getValue, (v1, v2) -> v1, LinkedHashMap::new));
+		return taskService.getAllQueueDetails();
 	}
 
 	@GET
@@ -237,10 +205,8 @@ public class TaskResource {
 	@POST
 	@Path("/queue/requeue")
 	@ApiOperation("Requeue pending tasks for all the running workflows")
-	@Consumes(MediaType.WILDCARD)
-	@Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON })
 	public String requeue() throws Exception {
-		return String.valueOf(taskService.requeuePendingTasks());
+		return taskService.requeue();
 	}
 	
 	@POST
@@ -248,9 +214,8 @@ public class TaskResource {
 	@ApiOperation("Requeue pending tasks")
 	@Consumes(MediaType.WILDCARD)
 	@Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON })
-	public String requeue(@PathParam("taskType") String taskType) throws Exception {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
-		return String.valueOf(taskService.requeuePendingTasks(taskType));
+	public String requeuePendingTask(@PathParam("taskType") String taskType) throws Exception {
+		return taskService.requeuePendingTask(taskType);
 	}
 	
 	@ApiOperation(value="Search for tasks based in payload and other parameters",
@@ -265,7 +230,7 @@ public class TaskResource {
                                             @QueryParam("sort") String sort,
                                             @QueryParam("freeText") @DefaultValue("*") String freeText,
                                             @QueryParam("query") String query) {
-		return taskService.getSearchTasks(query , freeText, start, size, sort);
+		return taskService.search(start, size, sort, freeText, query);
 	}
 
 }

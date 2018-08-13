@@ -5,12 +5,12 @@ package com.netflix.conductor.client.exceptions;
  */
 public class ConductorClientException extends RuntimeException {
 
-    private Integer status;
+    private int status;
     private String message;
     private String instance;
     private String code;
 
-    private boolean retryable = false;
+    private boolean retryable;
 
     public ConductorClientException() {
         super();
@@ -26,22 +26,18 @@ public class ConductorClientException extends RuntimeException {
         this.message = message;
     }
 
-    public ConductorClientException(Integer status, String message) {
+    public ConductorClientException(int status, String message) {
         super(message);
         this.status = status;
         this.message = message;
     }
 
-    public ConductorClientException(Integer status, ErrorResponse errorResponse) {
+    public ConductorClientException(int status, ErrorResponse errorResponse) {
         super(errorResponse.getMessage());
         this.status = status;
         this.message = errorResponse.getMessage();
         this.code = errorResponse.getCode();
         this.instance = errorResponse.getInstance();
-
-        if(this.code.equals("BACKEND_ERROR")) {
-            retryable = true;
-        }
     }
 
     @Override
@@ -79,7 +75,7 @@ public class ConductorClientException extends RuntimeException {
         this.code = code;
     }
 
-    public void setStatus(Integer status) {
+    public void setStatus(int status) {
         this.status = status;
     }
 
@@ -108,7 +104,7 @@ public class ConductorClientException extends RuntimeException {
         return this.message;
     }
 
-    public Integer getStatus() {
+    public int getStatus() {
         return this.status;
     }
 }

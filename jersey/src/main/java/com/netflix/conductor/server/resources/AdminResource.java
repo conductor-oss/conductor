@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,15 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
+
 package com.netflix.conductor.server.resources;
 
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -36,15 +32,10 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 import com.google.common.base.Preconditions;
+import com.netflix.conductor.service.AdminService;
 import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.service.ExecutionService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
@@ -60,36 +51,11 @@ import io.swagger.annotations.ApiOperation;
 @Singleton
 public class AdminResource {
 
-	private static Logger logger = LoggerFactory.getLogger(AdminResource.class);
-	
-	private Configuration config;
+	private final AdminService adminService;
 
-	private ExecutionService executionService;
-	
-	private QueueDAO queue;
-	
-	private String version;
-	
-	private String buildDate;
-	
-	@Inject
-	public AdminResource(Configuration config, ExecutionService executionService, QueueDAO queue) {
-		this.config = config;
-		this.executionService = executionService;
-		this.queue = queue;
-		this.version = "UNKNOWN";
-		this.buildDate = "UNKNOWN";
-		
-		try {
-			
-			InputStream propertiesIs = this.getClass().getClassLoader().getResourceAsStream("META-INF/conductor-core.properties");
-			Properties prop = new Properties();
-			prop.load(propertiesIs);
-			this.version = prop.getProperty("Implementation-Version");
-			this.buildDate = prop.getProperty("Build-Date");
-		}catch(Exception e) {
-			logger.error(e.getMessage(), e);
-		}
+    @Inject
+	public AdminResource(AdminService adminService) {
+		this.adminService = adminService;
 	}
 
 	@ApiOperation(value = "Get all the configuration parameters")
@@ -98,10 +64,7 @@ public class AdminResource {
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/config")
 	public Map<String, Object> getAllConfig() {
-		Map<String, Object> map = config.getAll();
-		map.put("version", version);
-		map.put("buildDate", buildDate);
-		return map;
+        return adminService.getAllConfig();
 	}
 	
 	@GET
@@ -111,12 +74,7 @@ public class AdminResource {
 	public List<Task> view(@PathParam("tasktype") String taskType,
                            @DefaultValue("0") @QueryParam("start") Integer start,
                            @DefaultValue("100") @QueryParam("count") Integer count) throws Exception {
-		Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "TaskType cannot be null or empty.");
-		List<Task> tasks = executionService.getPendingTasksForTaskType(taskType);
-		int total = start + count;
-		total = (tasks.size() > total) ? total : tasks.size();
-		if(start > tasks.size()) start = tasks.size();
-		return tasks.subList(start, total); 
+        return adminService.getListOfPendingTask(taskType, start, count);
 	}
 
 	@POST
@@ -125,9 +83,7 @@ public class AdminResource {
 	@Consumes({ MediaType.WILDCARD })
 	@Produces({ MediaType.TEXT_PLAIN })
 	public String requeueSweep(@PathParam("workflowId") String workflowId) {
-		Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "WorkflowId cannot be null or empty.");
-		boolean pushed = queue.pushIfNotExists(WorkflowExecutor.deciderQueue, workflowId, config.getSweepFrequency());
-		return pushed + "." + workflowId;
+        return adminService.requeueSweep(workflowId);
 	}
 
 }

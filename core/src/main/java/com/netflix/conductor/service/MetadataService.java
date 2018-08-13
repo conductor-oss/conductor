@@ -28,6 +28,7 @@ import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.service.utils.ServiceUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -183,12 +184,8 @@ public class MetadataService {
      * @param version Version of the workflow definition to be removed
      */
     public void unregisterWorkflowDef(String name, Integer version) {
-        if (name == null) {
-            throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot be null");
-        }
-        if (version == null) {
-            throw new ApplicationException(Code.INVALID_INPUT, "Version is not valid");
-        }
+        ServiceUtils.isValid(name, "Workflow name cannot be null");
+        ServiceUtils.isValid(version, "Version is not valid");
         metadataDAO.removeWorkflowDef(name, version);
     }
 
