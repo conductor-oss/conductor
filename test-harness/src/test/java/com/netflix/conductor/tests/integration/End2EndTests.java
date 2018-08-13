@@ -17,9 +17,9 @@ package com.netflix.conductor.tests.integration;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-
 import com.netflix.conductor.bootstrap.BootstrapModule;
 import com.netflix.conductor.bootstrap.ModulesProvider;
+import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -40,7 +40,8 @@ import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
 import com.netflix.conductor.jetty.server.JettyServer;
 import com.netflix.conductor.tests.utils.TestEnvironment;
-
+import com.sun.jersey.api.client.ClientResponse;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -60,9 +61,11 @@ import static org.junit.Assert.assertTrue;
  *
  */
 public class End2EndTests {
+
     private static TaskClient taskClient;
     private static WorkflowClient workflowClient;
     private static EmbeddedElasticSearch search;
+    private static MetadataClient metadataClient;
 
     private static final int SERVER_PORT = 8080;
     private static final String TASK_DEFINITION_PREFIX = "task_";
@@ -87,6 +90,9 @@ public class End2EndTests {
 
         workflowClient = new WorkflowClient();
         workflowClient.setRootURI("http://localhost:8080/api/");
+
+        metadataClient = new MetadataClient();
+        metadataClient.setRootURI("http://localhost:8080/api/");
     }
 
     @AfterClass
@@ -213,6 +219,32 @@ public class End2EndTests {
         assertNotNull(wf);
         assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
         assertEquals(1, wf.getTasks().size());
+    }
+
+    @Test
+    public void testMetadataWorkflowDefinition() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("testWorkflowDel");
+        def.setVersion(1);
+        WorkflowTask t0 = new WorkflowTask();
+        t0.setName("t0");
+        t0.setWorkflowTaskType(TaskType.SIMPLE);
+        t0.setTaskReferenceName("t0");
+        WorkflowTask t1 = new WorkflowTask();
+        t1.setName("t1");
+        t1.setWorkflowTaskType(TaskType.SIMPLE);
+        t1.setTaskReferenceName("t1");
+        def.getTasks().add(t0);
+        def.getTasks().add(t1);
+        metadataClient.registerWorkflowDef(def);
+        metadataClient.unregisterWorkflowDef("testWorkflowDel", 1);
+        try {
+            WorkflowDef workflowDefinition = metadataClient.getWorkflowDef("testWorkflowDel", 1);
+        } catch (UniformInterfaceException ue) {
+            ClientResponse response = ue.getResponse();
+            // TODO: fix this to NOT_FOUND once error handling is fixed
+            assertEquals(404, response.getStatus());
+        }
     }
 
     @Test

@@ -40,6 +40,7 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.service.RateLimitingService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +48,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +70,7 @@ import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.INVALID_INPUT;
+import static com.netflix.conductor.core.execution.ApplicationException.Code.NOT_FOUND;
 
 /**
  * @author Viren Workflow services provider interface
@@ -89,6 +92,8 @@ public class WorkflowExecutor {
 
     private final MetadataMapperService metadataMapperService;
 
+    private RateLimitingService rateLimitingService;
+
     private final ParametersUtils parametersUtils = new ParametersUtils();
 
     private int activeWorkerLastPollInSecs;
@@ -103,7 +108,8 @@ public class WorkflowExecutor {
             ExecutionDAO executionDAO,
             QueueDAO queueDAO,
             MetadataMapperService metadataMapperService,
-            Configuration config
+            Configuration config,
+            RateLimitingService rateLimitingService
     ) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
@@ -111,6 +117,7 @@ public class WorkflowExecutor {
         this.queueDAO = queueDAO;
         this.config = config;
         this.metadataMapperService = metadataMapperService;
+        this.rateLimitingService = rateLimitingService;
         activeWorkerLastPollInSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
     }
 
@@ -559,7 +566,6 @@ public class WorkflowExecutor {
                                 e
                         );
                     }
-                    //SystemTaskType.valueOf(task.getTaskType()).cancel(workflow, task, this);
                 }
                 executionDAO.updateTask(task);
             }
@@ -575,8 +581,7 @@ public class WorkflowExecutor {
         }
 
         if (!StringUtils.isBlank(failureWorkflow)) {
-            Map<String, Object> input = new HashMap<>();
-            input.putAll(workflow.getInput());
+            Map<String, Object> input = new HashMap<>(workflow.getInput());
             input.put("workflowId", workflowId);
             input.put("reason", reason);
             input.put("failureStatus", workflow.getStatus().toString());
@@ -599,7 +604,6 @@ public class WorkflowExecutor {
                 );
 
                 workflow.getOutput().put("conductor.failure_workflow", failureWFId);
-
             } catch (Exception e) {
                 logger.error("Failed to start error workflow", e);
                 workflow.getOutput().put("conductor.failure_workflow", "Error workflow " + failureWorkflow + " failed to start.  reason: " + e.getMessage());
@@ -675,7 +679,6 @@ public class WorkflowExecutor {
 
         executionDAO.updateTask(task);
 
-
         //If the task has failed update the failed task reference name in the workflow.
         //This gives the ability to look at workflow and see what tasks have failed at a high level.
         if (FAILED.equals(task.getStatus()) || FAILED_WITH_TERMINAL_ERROR.equals(task.getStatus())) {
@@ -705,7 +708,6 @@ public class WorkflowExecutor {
         executionDAO.addTaskExecLog(taskResult.getLogs());
 
         switch (task.getStatus()) {
-
             case COMPLETED:
             case CANCELED:
             case FAILED:
@@ -822,6 +824,9 @@ public class WorkflowExecutor {
             logger.debug(tw.getMessage(), tw);
             terminate(workflow, tw);
             return true;
+        } catch (RuntimeException e) {
+            logger.error("Error deciding workflow: {}", workflowId, e);
+            throw e;
         }
         return false;
     }
@@ -901,7 +906,7 @@ public class WorkflowExecutor {
             theTask.setInputMessage(skipTaskRequest.getTaskInputMessage());
             theTask.setOutputMessage(skipTaskRequest.getTaskOutputMessage());
         }
-        executionDAO.createTasks(Arrays.asList(theTask));
+        executionDAO.createTasks(Collections.singletonList(theTask));
         decide(workflowId);
     }
 
@@ -909,11 +914,10 @@ public class WorkflowExecutor {
         return executionDAO.getWorkflow(workflowId, includeTasks);
     }
 
-
     public void addTaskToQueue(Task task) {
         // put in queue
         String taskQueueName = QueueUtils.getQueueName(task);
-        queueDAO.remove(taskQueueName, task.getTaskId()); //QQ why do we need to remove the existing task ??
+        queueDAO.remove(taskQueueName, task.getTaskId());
         if (task.getCallbackAfterSeconds() > 0) {
             queueDAO.push(taskQueueName, task.getTaskId(), task.getCallbackAfterSeconds());
         } else {
@@ -924,12 +928,9 @@ public class WorkflowExecutor {
 
     //Executes the async system task
     public void executeSystemTask(WorkflowSystemTask systemTask, String taskId, int unackTimeout) {
-
-
         try {
-
             Task task = executionDAO.getTask(taskId);
-            logger.info("Task: {} fetched from execution DAO for TaskId: {}", task, taskId);
+            logger.info("Task: {} fetched from execution DAO for taskId: {}", task, taskId);
             if (task.getStatus().isTerminal()) {
                 //Tune the SystemTaskWorkerCoordinator's queues - if the queue size is very big this can happen!
                 logger.info("Task {}/{} was already completed.", task.getTaskType(), task.getTaskId());
@@ -956,9 +957,13 @@ public class WorkflowExecutor {
             }
 
             if (task.getStatus().equals(SCHEDULED)) {
-
                 if (executionDAO.exceedsInProgressLimit(task)) {
-                    logger.warn("Rate limited for {}", task.getTaskDefName());
+                    //to do add a metric to record this
+                    logger.warn("Concurrent Execution limited for {}", task.getTaskDefName());
+                    return;
+                }
+                if (task.getRateLimitPerSecond() > 0 && !rateLimitingService.evaluateRateLimitBoundary(task)) {
+                    logger.warn("RateLimit Execution limited for {}", task.getTaskDefName());
                     return;
                 }
             }
@@ -970,7 +975,6 @@ public class WorkflowExecutor {
             executionDAO.updateTask(task);
 
             switch (task.getStatus()) {
-
                 case SCHEDULED:
                     systemTask.start(workflow, task, this);
                     break;
@@ -1031,7 +1035,7 @@ public class WorkflowExecutor {
                 .filter(Objects::nonNull)
                 .filter(validateLastPolledTime)
                 .findFirst()
-                .map(PollData::getDomain) //QQ is the domain saved in the executionDAO same as the domain passed in ??
+                .map(PollData::getDomain)
                 .orElse(null);
     }
 
@@ -1080,7 +1084,7 @@ public class WorkflowExecutor {
         for (Task task : createdSystemTasks) {
             WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
             if (workflowSystemTask == null) {
-                throw new RuntimeException("No system task found by name " + task.getTaskType());
+                throw new ApplicationException(NOT_FOUND, "No system task found by name " + task.getTaskType());
             }
             task.setStartTime(System.currentTimeMillis());
             if (!workflowSystemTask.isAsync()) {
@@ -1204,13 +1208,10 @@ public class WorkflowExecutor {
             if (workflowInput != null) {
                 workflow.setInput(workflowInput);
             }
-
             executionDAO.updateWorkflow(workflow);
-
             decide(workflowId);
             return true;
         }
-
         return false;
     }
 

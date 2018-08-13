@@ -1,14 +1,17 @@
 /**
  * Copyright 2016 Netflix, Inc.
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
- * the License. You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * http://www.apache.org/licenses/LICENSE-2.0
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
- * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
- * specific language governing permissions and limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
 /**
  *
@@ -23,7 +26,8 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * @author Viren Data access layer for the workflow metadata - task definitions and workflow definitions
+ * @author Viren
+ * Data access layer for the workflow metadata - task definitions and workflow definitions
  */
 public interface MetadataDAO {
 
@@ -72,11 +76,17 @@ public interface MetadataDAO {
     Optional<WorkflowDef> getLatest(String name);
 
     /**
-     * @param name    Name of the workflow
+     * @param name Name of the workflow
      * @param version version
      * @return workflow definition
      */
     Optional<WorkflowDef> get(String name, int version);
+
+    /**
+     * @param name Name of the workflow definition to be removed
+     * @param version Version of the workflow definition to be removed
+     */
+    void removeWorkflowDef(String name, Integer version);
 
     /**
      * @return Names of all the workflows
@@ -87,11 +97,6 @@ public interface MetadataDAO {
      * @return List of all the workflow definitions
      */
     List<WorkflowDef> getAll();
-
-    /**
-     * @return List of all the latest workflow definitions
-     */
-    List<WorkflowDef> getAllLatest();
 
     /**
      * @param name name of the workflow

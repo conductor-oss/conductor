@@ -123,7 +123,15 @@ public class ForkJoinDynamicTaskMapperTest {
 
         String taskId = IDGenerator.generate();
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(workflowInstance, dynamicForkJoinToSchedule, null,0, null, taskId, deciderService);
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(def)
+                .withWorkflowInstance(workflowInstance)
+                .withTaskToSchedule(dynamicForkJoinToSchedule)
+                .withRetryCount(0)
+                .withTaskId(taskId)
+                .withDeciderService(deciderService)
+                .build();
+
         //then
         expectedException.expect(TerminateWorkflowException.class);
         forkJoinDynamicTaskMapper.getMappedTasks(taskMapperContext);
@@ -180,7 +188,6 @@ public class ForkJoinDynamicTaskMapperTest {
         //when
         when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(TaskDef.class), anyString()))
                 .thenReturn(dynamicTasksInput);
-
         when(objectMapper.convertValue(anyMap(),any(TypeReference.class))).thenReturn(Arrays.asList(wt2, wt3));
 
 
@@ -194,8 +201,15 @@ public class ForkJoinDynamicTaskMapperTest {
         when(deciderService.getTasksToBeScheduled(workflowInstance, wt3, 0 )).thenReturn(Arrays.asList(simpleTask2));
 
         String taskId = IDGenerator.generate();
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(def)
+                .withWorkflowInstance(workflowInstance)
+                .withTaskToSchedule(dynamicForkJoinToSchedule)
+                .withRetryCount(0)
+                .withTaskId(taskId)
+                .withDeciderService(deciderService)
+                .build();
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(workflowInstance, dynamicForkJoinToSchedule, null,0, null, taskId, deciderService);
         //then
         List<Task> mappedTasks = forkJoinDynamicTaskMapper.getMappedTasks(taskMapperContext);
 

@@ -1,6 +1,7 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -13,7 +14,7 @@ import org.junit.Test;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class WaitTaskMapperTest {
 
@@ -27,12 +28,20 @@ public class WaitTaskMapperTest {
         String taskId = IDGenerator.generate();
 
         ParametersUtils parametersUtils = new ParametersUtils();
+        Workflow workflow = new Workflow();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflow.setWorkflowDefinition(workflowDef);
 
-        WorkflowDef  wd = new WorkflowDef();
-        Workflow w = new Workflow();
-        w.setWorkflowDefinition(wd);
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(workflowDef)
+                .withWorkflowInstance(workflow)
+                .withTaskDefinition(new TaskDef())
+                .withTaskToSchedule(taskToSchedule)
+                .withTaskInput(new HashMap<>())
+                .withRetryCount(0)
+                .withTaskId(taskId)
+                .build();
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(w, taskToSchedule, new HashMap<>(), 0, null, taskId, null);
         WaitTaskMapper waitTaskMapper = new WaitTaskMapper(parametersUtils);
         //When
         List<Task> mappedTasks = waitTaskMapper.getMappedTasks(taskMapperContext);

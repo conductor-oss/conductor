@@ -52,4 +52,5 @@ message Task {
     string domain = 28;
     google.protobuf.Any input_message = 29;
     google.protobuf.Any output_message = 30;
+    int32 rate_limit_per_second = 31;
 }

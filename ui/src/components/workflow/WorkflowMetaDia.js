@@ -3,7 +3,6 @@ import Grapher from '../common/Grapher'
 import Workflow2Graph from '../../api/wfegraph'
 import defaultTo from "lodash/fp/defaultTo"
 
-
 class WorkflowMetaDia extends Component {
     constructor(props) {
         super(props);
@@ -24,7 +23,7 @@ class WorkflowMetaDia extends Component {
             subworkflows[refname] = wfe2graph.convert(subwfe, submeta);
         }
 
-        return {edges, vertices, subworkflows};
+        return { edges, vertices, subworkflows };
 
     }
 
@@ -33,7 +32,7 @@ class WorkflowMetaDia extends Component {
     };
 
     render() {
-        const {edges, vertices, subworkflows} = this.state;
+        const { edges, vertices, subworkflows } = this.state;
 
         return <Grapher edges={edges} vertices={vertices} layout="TD-auto" innerGraph={subworkflows}/>;
     }

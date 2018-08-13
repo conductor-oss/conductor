@@ -27,7 +27,7 @@ import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -64,7 +64,7 @@ public class UserDefinedTaskMapper implements TaskMapper {
         String taskId = taskMapperContext.getTaskId();
         int retryCount = taskMapperContext.getRetryCount();
 
-        TaskDef taskDefinition = Optional.ofNullable(taskToSchedule.getTaskDefinition())
+        TaskDef taskDefinition = Optional.ofNullable(taskMapperContext.getTaskDefinition())
                 .orElseThrow(() -> {
                     String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
                     return new TerminateWorkflowException(reason);
@@ -86,7 +86,8 @@ public class UserDefinedTaskMapper implements TaskMapper {
         userDefinedTask.setRetryCount(retryCount);
         userDefinedTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
         userDefinedTask.setWorkflowTask(taskToSchedule);
-        return Arrays.asList(userDefinedTask);
+        userDefinedTask.setRateLimitPerSecond(taskDefinition.getRateLimitPerSecond());
+        return Collections.singletonList(userDefinedTask);
     }
 
 }

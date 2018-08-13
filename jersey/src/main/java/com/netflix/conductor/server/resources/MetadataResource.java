@@ -19,8 +19,8 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.service.MetadataService;
-
-import java.util.List;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 
 import javax.inject.Inject;
 import javax.ws.rs.Consumes;
@@ -33,9 +33,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import java.util.List;
 
 
 /**
@@ -87,6 +85,13 @@ public class MetadataResource {
         return service.getWorkflowDefs();
     }
 
+    @DELETE
+    @Path("/workflow/{name}/{version}")
+    @ApiOperation("Removes workflow definition. It does not remove workflows associated with the definition.")
+    public void unregisterWorkflowDef(@PathParam("name") String name, @PathParam("version") Integer version) throws Exception {
+        service.unregisterWorkflowDef(name, version);
+    }
+
     @POST
     @Path("/taskdefs")
     @ApiOperation("Create new task definition(s)")
@@ -123,6 +128,5 @@ public class MetadataResource {
     public void unregisterTaskDef(@PathParam("tasktype") String taskType) {
         service.unregisterTaskDef(taskType);
     }
-
 
 }

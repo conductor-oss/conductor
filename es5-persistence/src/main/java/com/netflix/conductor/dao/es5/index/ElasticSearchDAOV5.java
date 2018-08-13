@@ -64,6 +64,7 @@ import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -139,12 +140,13 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         this.objectMapper = objectMapper;
         this.elasticSearchClient = elasticSearchClient;
         this.indexName = config.getProperty("workflow.elasticsearch.index.name", null);
+        this.logIndexPrefix = config.getProperty("workflow.elasticsearch.tasklog.index.name", "task_log");
 
         try {
 
             initIndex();
-            updateIndexName(config);
-            Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> updateIndexName(config), 0, 1, TimeUnit.HOURS);
+            updateIndexName();
+            Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> updateIndexName(), 0, 1, TimeUnit.HOURS);
 
         } catch (Exception e) {
             logger.error(e.getMessage(), e);
@@ -160,40 +162,18 @@ public class ElasticSearchDAOV5 implements IndexDAO {
                 new LinkedBlockingQueue<>());
     }
 
-    private void updateIndexName(Configuration config) {
-        this.logIndexPrefix = config.getProperty("workflow.elasticsearch.tasklog.index.name", "task_log");
-        this.logIndexName = this.logIndexPrefix + "_" + SIMPLE_DATE_FORMAT.format(new Date());
+    @Override
+    public void setup() throws Exception {
+        elasticSearchClient.admin().cluster().prepareHealth().setWaitForGreenStatus().execute().get();
 
         try {
-            elasticSearchClient.admin().indices().prepareGetIndex().addIndices(logIndexName).execute().actionGet();
-        } catch (IndexNotFoundException infe) {
-            try {
-                elasticSearchClient.admin().indices().prepareCreate(logIndexName).execute().actionGet();
-            } catch (ResourceAlreadyExistsException ilee) {
 
-            } catch (Exception e) {
-                logger.error("Failed to update log index name: {}", logIndexName, e);
-            }
-        }
-    }
+            initIndex();
+            updateIndexName();
+            Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> updateIndexName(), 0, 1, TimeUnit.HOURS);
 
-    /**
-     * Initializes the index with required templates and mappings.
-     */
-    private void initIndex() throws Exception {
-
-        //0. Add the tasklog template
-        GetIndexTemplatesResponse result = elasticSearchClient.admin().indices().prepareGetTemplates("tasklog_template").execute().actionGet();
-        if(result.getIndexTemplates().isEmpty()) {
-            logger.info("Creating the index template 'tasklog_template'");
-            InputStream stream = ElasticSearchDAOV5.class.getResourceAsStream("/template_tasklog.json");
-            byte[] templateSource = IOUtils.toByteArray(stream);
-
-            try {
-                elasticSearchClient.admin().indices().preparePutTemplate("tasklog_template").setSource(templateSource, XContentType.JSON).execute().actionGet();
-            }catch(Exception e) {
-                logger.error("Failed to init tasklog_template", e);
-            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
         }
 
         //1. Create the required index
@@ -232,6 +212,43 @@ public class ElasticSearchDAOV5 implements IndexDAO {
                 logger.error(e.getMessage(), e);
             }
         }
+    }
+
+    private void updateIndexName() {
+        this.logIndexName = this.logIndexPrefix + "_" + SIMPLE_DATE_FORMAT.format(new Date());
+
+        try {
+            elasticSearchClient.admin().indices().prepareGetIndex().addIndices(logIndexName).execute().actionGet();
+        } catch (IndexNotFoundException infe) {
+            try {
+                elasticSearchClient.admin().indices().prepareCreate(logIndexName).execute().actionGet();
+            } catch (ResourceAlreadyExistsException ilee) {
+
+            } catch (Exception e) {
+                logger.error("Failed to update log index name: {}", logIndexName, e);
+            }
+        }
+    }
+
+    /**
+     * Initializes the index with required templates and mappings.
+     */
+    private void initIndex() throws Exception {
+
+        //0. Add the tasklog template
+        GetIndexTemplatesResponse result = elasticSearchClient.admin().indices().prepareGetTemplates("tasklog_template").execute().actionGet();
+        if(result.getIndexTemplates().isEmpty()) {
+            logger.info("Creating the index template 'tasklog_template'");
+            InputStream stream = ElasticSearchDAOV5.class.getResourceAsStream("/template_tasklog.json");
+            byte[] templateSource = IOUtils.toByteArray(stream);
+
+            try {
+                elasticSearchClient.admin().indices().preparePutTemplate("tasklog_template").setSource(templateSource, XContentType.JSON).execute().actionGet();
+            }catch(Exception e) {
+                logger.error("Failed to init tasklog_template", e);
+            }
+        }
+
     }
 
     @Override
@@ -317,7 +334,10 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery("*");
             BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
 
-            final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(indexName).setQuery(fq).setTypes(TASK_DOC_TYPE);
+            final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(logIndexPrefix + "*")
+                    .setQuery(fq).setTypes(LOG_DOC_TYPE)
+                    .addSort(SortBuilders.fieldSort("createdTime")
+                            .order(SortOrder.ASC));
             SearchResponse response = srb.execute().actionGet();
             SearchHit[] hits = response.getHits().getHits();
             List<TaskExecLog> logs = new ArrayList<>(hits.length);
@@ -425,7 +445,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
     @Override
     public void updateWorkflow(String workflowInstanceId, String[] keys, Object[] values) {
         if (keys.length != values.length) {
-            throw new IllegalArgumentException("Number of keys and values should be same.");
+            throw new ApplicationException(Code.INVALID_INPUT, "Number of keys and values do not match");
         }
 
         UpdateRequest request = new UpdateRequest(indexName, WORKFLOW_DOC_TYPE, workflowInstanceId);

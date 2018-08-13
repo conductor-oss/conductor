@@ -44,8 +44,6 @@ public class MySQLExecutionDAOTest extends ExecutionDAOTest {
         String idBase = workflow.getWorkflowId();
         generateWorkflows(workflow, idBase, 10);
 
-
-
         List<Workflow> bycorrelationId = getExecutionDAO().getWorkflowsByCorrelationId("corr001", true);
         assertNotNull(bycorrelationId);
         assertEquals(10, bycorrelationId.size());

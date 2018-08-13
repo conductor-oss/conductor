@@ -48,7 +48,16 @@ public class SimpleTaskMapperTest {
         Workflow w = new Workflow();
         w.setWorkflowDefinition(wd);
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(w, taskToSchedule, new HashMap<>(), 0, retriedTaskId, taskId, null);
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(wd)
+                .withWorkflowInstance(w)
+                .withTaskDefinition(new TaskDef())
+                .withTaskToSchedule(taskToSchedule)
+                .withTaskInput(new HashMap<>())
+                .withRetryCount(0)
+                .withRetryTaskId(retriedTaskId)
+                .withTaskId(taskId)
+                .build();
 
         List<Task> mappedTasks = simpleTaskMapper.getMappedTasks(taskMapperContext);
         assertNotNull(mappedTasks);
@@ -68,7 +77,16 @@ public class SimpleTaskMapperTest {
         Workflow w = new Workflow();
         w.setWorkflowDefinition(wd);
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(w, taskToSchedule, new HashMap<>(), 0, retriedTaskId, taskId, null);
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(wd)
+                .withWorkflowInstance(w)
+                .withTaskDefinition(new TaskDef())
+                .withTaskToSchedule(taskToSchedule)
+                .withTaskInput(new HashMap<>())
+                .withRetryCount(0)
+                .withRetryTaskId(retriedTaskId)
+                .withTaskId(taskId)
+                .build();
 
         //then
         expectedException.expect(TerminateWorkflowException.class);

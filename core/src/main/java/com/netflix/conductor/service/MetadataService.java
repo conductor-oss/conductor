@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Netflix, Inc.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.service;
 
@@ -35,177 +35,189 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * @author Viren 
- * 
+ * @author Viren
+ *
  */
 @Singleton
 @Trace
 public class MetadataService {
 
-	private MetadataDAO metadataDAO;
+    private MetadataDAO metadataDAO;
+    private RateLimitingService rateLimitingService;
 
-	@Inject
-	public MetadataService(MetadataDAO metadataDAO) {
-		this.metadataDAO = metadataDAO;
-	}
+    @Inject
+    public MetadataService(MetadataDAO metadataDAO, RateLimitingService rateLimitingService) {
+        this.metadataDAO = metadataDAO;
+        this.rateLimitingService = rateLimitingService;
+    }
 
-	/**
-	 * 
-	 * @param taskDefinitions Task Definitions to register
-	 */
-	public void registerTaskDef(List<TaskDef> taskDefinitions) {
-		for (TaskDef taskDefinition : taskDefinitions) {
-			taskDefinition.setCreatedBy(WorkflowContext.get().getClientApp());
-	   		taskDefinition.setCreateTime(System.currentTimeMillis());
-	   		taskDefinition.setUpdatedBy(null);
-	   		taskDefinition.setUpdateTime(null);
-			metadataDAO.createTaskDef(taskDefinition);
-		}
-	}
+    /**
+     * @param taskDefinitions Task Definitions to register
+     */
+    public void registerTaskDef(List<TaskDef> taskDefinitions) {
+        for (TaskDef taskDefinition : taskDefinitions) {
+            taskDefinition.setCreatedBy(WorkflowContext.get().getClientApp());
+            taskDefinition.setCreateTime(System.currentTimeMillis());
+            taskDefinition.setUpdatedBy(null);
+            taskDefinition.setUpdateTime(null);
+            metadataDAO.createTaskDef(taskDefinition);
+            if (taskDefinition.getRateLimitPerSecond() != 0) {
+                rateLimitingService.updateRateLimitRules(taskDefinition);
+            }
+        }
+    }
 
-	/**
-	 * 
-	 * @param taskDefinition Task Definition to be updated
-	 */
-	public void updateTaskDef(TaskDef taskDefinition) {
-		TaskDef existing = metadataDAO.getTaskDef(taskDefinition.getName());
-		if (existing == null) {
-			throw new ApplicationException(Code.NOT_FOUND, "No such task by name " + taskDefinition.getName());
-		}
-   		taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
-   		taskDefinition.setUpdateTime(System.currentTimeMillis());
-		metadataDAO.updateTaskDef(taskDefinition);
-	}
+    /**
+     * @param taskDefinition Task Definition to be updated
+     */
+    public void updateTaskDef(TaskDef taskDefinition) {
+        TaskDef existing = metadataDAO.getTaskDef(taskDefinition.getName());
+        if (existing == null) {
+            throw new ApplicationException(Code.NOT_FOUND, "No such task by name " + taskDefinition.getName());
+        }
+        taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
+        taskDefinition.setUpdateTime(System.currentTimeMillis());
+        metadataDAO.updateTaskDef(taskDefinition);
+        if (taskDefinition.getRateLimitPerSecond() != 0) {
+            rateLimitingService.updateRateLimitRules(taskDefinition);
+        }
+    }
 
-	/**
-	 * 
-	 * @param taskType Remove task definition
-	 */
-	public void unregisterTaskDef(String taskType) {
-		metadataDAO.removeTaskDef(taskType);
-	}
+    /**
+     * @param taskType Remove task definition
+     */
+    public void unregisterTaskDef(String taskType) {
+        metadataDAO.removeTaskDef(taskType);
+    }
 
-	/**
-	 * 
-	 * @return List of all the registered tasks
-	 */
-	public List<TaskDef> getTaskDefs() {
-		return metadataDAO.getAllTaskDefs();
-	}
+    /**
+     * @return List of all the registered tasks
+     */
+    public List<TaskDef> getTaskDefs() {
+        return metadataDAO.getAllTaskDefs();
+    }
 
-	/**
-	 * 
-	 * @param taskType Task to retrieve
-	 * @return Task Definition
-	 */
-	public TaskDef getTaskDef(String taskType) {
-		return metadataDAO.getTaskDef(taskType);
-	}
+    /**
+     * @param taskType Task to retrieve
+     * @return Task Definition
+     */
+    public TaskDef getTaskDef(String taskType) {
+        return metadataDAO.getTaskDef(taskType);
+    }
 
-	/**
-	 * 
-	 * @param def Workflow definition to be updated
-	 */
-	public void updateWorkflowDef(WorkflowDef def) {
-		metadataDAO.update(def);
-	}
-	
-	/**
-	 * 
-	 * @param wfs Workflow definitions to be updated.
-	 */
-	public void updateWorkflowDef(List<WorkflowDef> wfs) {
-		for (WorkflowDef wf : wfs) {
-			metadataDAO.update(wf);
-		}
-	}
+    /**
+     * @param def Workflow definition to be updated
+     */
+    public void updateWorkflowDef(WorkflowDef def) {
+        metadataDAO.update(def);
+    }
 
-	/**
-	 * 
-	 * @param name Name of the workflow to retrieve
-	 * @param version Optional.  Version.  If null, then retrieves the latest
-	 * @return Workflow definition
-	 */
-	public Optional<WorkflowDef> getWorkflowDef(String name, Integer version) {
-		if (version == null) {
-			return getLatestWorkflow(name);
-		}
-		return metadataDAO.get(name, version);
-	}
-	
-	/**
-	 * 
-	 * @param name Name of the workflow to retrieve
-	 * @return Latest version of the workflow definition
-	 */
-	public Optional<WorkflowDef> getLatestWorkflow(String name) {
-		return metadataDAO.getLatest(name);
-	}
+    /**
+     * @param wfs Workflow definitions to be updated.
+     */
+    public void updateWorkflowDef(List<WorkflowDef> wfs) {
+        for (WorkflowDef wf : wfs) {
+            metadataDAO.update(wf);
+        }
+    }
 
-	public List<WorkflowDef> getWorkflowDefs() {
-		return metadataDAO.getAll();
-	}
+    /**
+     * @param name    Name of the workflow to retrieve
+     * @param version Optional.  Version.  If null, then retrieves the latest
+     * @return Workflow definition
+     */
+    public Optional<WorkflowDef> getWorkflowDef(String name, Integer version) {
+        if (version == null) {
+            return getLatestWorkflow(name);
+        }
+        return metadataDAO.get(name, version);
+    }
 
-	public void registerWorkflowDef(WorkflowDef def) {
-		if(def.getName().contains(":")) {
-			throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
-		}
-		if(def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
-			def.setSchemaVersion(2);
-		}
-		metadataDAO.create(def);
-	}
+    /**
+     * @param name Name of the workflow to retrieve
+     * @return Latest version of the workflow definition
+     */
+    public Optional<WorkflowDef> getLatestWorkflow(String name) {
+        return metadataDAO.getLatest(name);
+    }
 
-	/**
-	 * 
-	 * @param eventHandler Event handler to be added.  
-	 * Will throw an exception if an event handler already exists with the name
-	 */
-	public void addEventHandler(EventHandler eventHandler) {
-		validateEvent(eventHandler);
-		metadataDAO.addEventHandler(eventHandler);
-	}
+    public List<WorkflowDef> getWorkflowDefs() {
+        return metadataDAO.getAll();
+    }
 
-	/**
-	 * 
-	 * @param eventHandler Event handler to be updated.
-	 */
-	public void updateEventHandler(EventHandler eventHandler) {
-		validateEvent(eventHandler);
-		metadataDAO.updateEventHandler(eventHandler);
-	}
-	
-	/**
-	 * 
-	 * @param name Removes the event handler from the system
-	 */
-	public void removeEventHandlerStatus(String name) {
-		metadataDAO.removeEventHandlerStatus(name);
-	}
+    public void registerWorkflowDef(WorkflowDef def) {
+        if (def.getName().contains(":")) {
+            throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
+        }
+        if (def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
+            def.setSchemaVersion(2);
+        }
+        metadataDAO.create(def);
+    }
 
-	/**
-	 * 
-	 * @return All the event handlers registered in the system
-	 */
-	public List<EventHandler> getEventHandlers() {
-		return metadataDAO.getEventHandlers();
-	}
-	
-	/**
-	 * 
-	 * @param event name of the event
-	 * @param activeOnly if true, returns only the active handlers
-	 * @return Returns the list of all the event handlers for a given event
-	 */
-	public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
-		return metadataDAO.getEventHandlersForEvent(event, activeOnly);
-	}
-	
-	private void validateEvent(EventHandler eh) {
-		Preconditions.checkNotNull(eh.getName(), "Missing event handler name");
-		Preconditions.checkNotNull(eh.getEvent(), "Missing event location");
-		Preconditions.checkNotNull(eh.getActions().isEmpty(), "No actions specified.  Please specify at-least one action");
-		String event = eh.getEvent();
-		EventQueues.getQueue(event, true);
-	}
+    /**
+     *
+     * @param name Name of the workflow definition to be removed
+     * @param version Version of the workflow definition to be removed
+     */
+    public void unregisterWorkflowDef(String name, Integer version) {
+        if (name == null) {
+            throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot be null");
+        }
+
+        if (version == null) {
+            throw new ApplicationException(Code.INVALID_INPUT, "Version is not valid");
+        }
+
+        metadataDAO.removeWorkflowDef(name, version);
+    }
+
+    /**
+     * @param eventHandler Event handler to be added.
+     *                     Will throw an exception if an event handler already exists with the name
+     */
+    public void addEventHandler(EventHandler eventHandler) {
+        validateEvent(eventHandler);
+        metadataDAO.addEventHandler(eventHandler);
+    }
+
+    /**
+     * @param eventHandler Event handler to be updated.
+     */
+    public void updateEventHandler(EventHandler eventHandler) {
+        validateEvent(eventHandler);
+        metadataDAO.updateEventHandler(eventHandler);
+    }
+
+    /**
+     * @param name Removes the event handler from the system
+     */
+    public void removeEventHandlerStatus(String name) {
+        metadataDAO.removeEventHandlerStatus(name);
+    }
+
+    /**
+     * @return All the event handlers registered in the system
+     */
+    public List<EventHandler> getEventHandlers() {
+        return metadataDAO.getEventHandlers();
+    }
+
+    /**
+     * @param event      name of the event
+     * @param activeOnly if true, returns only the active handlers
+     * @return Returns the list of all the event handlers for a given event
+     */
+    public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
+        return metadataDAO.getEventHandlersForEvent(event, activeOnly);
+    }
+
+    private void validateEvent(EventHandler eh) {
+        Preconditions.checkNotNull(eh.getName(), "Missing event handler name");
+        Preconditions.checkNotNull(eh.getEvent(), "Missing event location");
+        Preconditions.checkNotNull(eh.getActions().isEmpty(), "No actions specified.  Please specify at-least one action");
+        String event = eh.getEvent();
+        EventQueues.getQueue(event);
+    }
+
 }

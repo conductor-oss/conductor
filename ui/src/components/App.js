@@ -1,13 +1,11 @@
 import React from 'react';
 import packageJSON from '../../package.json';
-import Header from './common/Header';
 import Footer from './common/Footer';
 import ErrorPage from './common/Error'
 import LeftMenu from './common/LeftMenu'
 import { connect } from 'react-redux';
 
 const App = React.createClass({
-
   getInitialState() {
     return {
       minimize: false
@@ -16,15 +14,12 @@ const App = React.createClass({
   handleResize(e) {
     this.setState({windowWidth: window.innerWidth, minimize: window.innerWidth < 600});
   },
-
   componentDidMount() {
    window.addEventListener('resize', this.handleResize);
  },
-
  componentWillUnmount() {
    window.removeEventListener('resize', this.handleResize);
  },
-
   render() {
     const version = packageJSON.version;
     const marginLeft = this.state.minimize?'52px':'177px';
@@ -41,8 +36,6 @@ const App = React.createClass({
       </div>
     ) : this.props.children;
   }
-
 });
-
 
 export default connect(state => state.global)(App);

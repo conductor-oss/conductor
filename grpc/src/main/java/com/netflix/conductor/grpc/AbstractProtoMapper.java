@@ -361,6 +361,7 @@ public abstract class AbstractProtoMapper {
         if (from.getOutputMessage() != null) {
             to.setOutputMessage( toProto( from.getOutputMessage() ) );
         }
+        to.setRateLimitPerSecond( from.getRateLimitPerSecond() );
         return to.build();
     }
 
@@ -410,6 +411,7 @@ public abstract class AbstractProtoMapper {
         if (from.hasOutputMessage()) {
             to.setOutputMessage( fromProto( from.getOutputMessage() ) );
         }
+        to.setRateLimitPerSecond( from.getRateLimitPerSecond() );
         return to;
     }
 
@@ -475,6 +477,9 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getInputTemplate().entrySet()) {
             to.putInputTemplate( pair.getKey(), toProto( pair.getValue() ) );
         }
+        if (from.getRateLimitPerSecond() != null) {
+            to.setRateLimitPerSecond( from.getRateLimitPerSecond() );
+        }
         return to.build();
     }
 
@@ -496,6 +501,7 @@ public abstract class AbstractProtoMapper {
             inputTemplateMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setInputTemplate(inputTemplateMap);
+        to.setRateLimitPerSecond( from.getRateLimitPerSecond() );
         return to;
     }
 

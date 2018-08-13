@@ -240,7 +240,6 @@ class Workflow2Graph {
     return nodes;
 
   }
-
 }
 
 export default Workflow2Graph;

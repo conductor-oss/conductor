@@ -47,9 +47,8 @@ public class WorkflowSystemTask {
 	 * @param workflow Workflow for which the task is being started
 	 * @param task Instance of the Task
 	 * @param executor Workflow Executor
-	 * @throws Exception If there is an error when starting the task
 	 */
-	public void start(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+	public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
 		//Do nothing unless overridden by the task implementation
 	}
 	
@@ -59,9 +58,8 @@ public class WorkflowSystemTask {
 	 * @param task Instance of the Task
 	 * @param executor Workflow Executor
 	 * @return true, if the execution has changed the task status.  return false otherwise.
-	 * @throws Exception If there is an error when starting the task
 	 */
-	public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+	public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) {
 		return false;
 	}
 	
@@ -70,9 +68,8 @@ public class WorkflowSystemTask {
 	 * @param workflow Workflow for which the task is being started
 	 * @param task Instance of the Task
 	 * @param executor Workflow Executor
-	 * @throws Exception If there is an error when starting the task
 	 */
-	public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+	public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) {
 	}
 	
 	/**

@@ -1,6 +1,7 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -12,7 +13,8 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class JoinTaskMapperTest {
 
@@ -30,8 +32,14 @@ public class JoinTaskMapperTest {
         Workflow w = new Workflow();
         w.setWorkflowDefinition(wd);
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(w, taskToSchedule,
-                null, 0, null, taskId, null);
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(wd)
+                .withWorkflowInstance(w)
+                .withTaskDefinition(new TaskDef())
+                .withTaskToSchedule(taskToSchedule)
+                .withRetryCount(0)
+                .withTaskId(taskId)
+                .build();
 
         List<Task> mappedTasks = new JoinTaskMapper().getMappedTasks(taskMapperContext);
 

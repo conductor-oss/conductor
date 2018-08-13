@@ -18,7 +18,8 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
-import com.github.vmg.protogen.annotations.*;
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 
 import java.util.Collection;
@@ -33,6 +34,8 @@ import java.util.Objects;
 /**
  * @author Viren
  *
+ * This is the task definition definied as part of the {@link WorkflowDef}. The tasks definied in the Workflow definition are saved
+ * as part of {@link WorkflowDef#tasks}
  */
 @ProtoMessage
 public class WorkflowTask {
@@ -113,7 +116,9 @@ public class WorkflowTask {
 
 	@ProtoField(id = 19)
 	private TaskDef taskDefinition;
-	
+
+	private Boolean rateLimited;
+
 	/**
 	 * @return the name
 	 */
@@ -394,6 +399,18 @@ public class WorkflowTask {
 	 */
 	public void setOptional(boolean optional) {
 		this.optional = optional;
+	}
+
+	public Boolean getRateLimited() {
+		return rateLimited;
+	}
+
+	public void setRateLimited(Boolean rateLimited) {
+		this.rateLimited = rateLimited;
+	}
+
+	public Boolean isRateLimited() {
+		return rateLimited != null && rateLimited;
 	}
 
 	private Collection<List<WorkflowTask>> children() {

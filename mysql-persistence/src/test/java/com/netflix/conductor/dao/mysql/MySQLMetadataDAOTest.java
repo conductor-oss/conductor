@@ -4,7 +4,6 @@ import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.execution.ApplicationException;
-
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.junit.Before;
 import org.junit.Test;
@@ -13,11 +12,13 @@ import org.junit.runners.JUnit4;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -110,6 +111,10 @@ public class MySQLMetadataDAOTest {
         assertNotNull(allnames);
         assertEquals(1, allnames.size());
         assertEquals(def.getName(), allnames.get(0));
+
+        dao.removeWorkflowDef("test", 1);
+        Optional<WorkflowDef> deleted = dao.get("test", 1);
+        assertFalse(deleted.isPresent());
     }
 
     @Test

@@ -21,9 +21,9 @@ package com.netflix.conductor.core.execution;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
@@ -43,6 +43,8 @@ import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.service.DummyRateLimitingService;
+import com.netflix.conductor.service.RateLimitingService;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -95,7 +97,8 @@ public class TestWorkflowExecutor {
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
         DeciderService deciderService = new DeciderService(taskMappers);
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
-        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, executionDAO, queueDAO, metadataMapperService, config);
+        RateLimitingService rateLimitingService = new DummyRateLimitingService();
+        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, executionDAO, queueDAO, metadataMapperService, config, rateLimitingService);
     }
 
     @Test
@@ -112,7 +115,7 @@ public class TestWorkflowExecutor {
             }
 
             @Override
-            public void start(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+            public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
                 httpTaskExecuted.set(true);
                 task.setStatus(Status.COMPLETED);
                 super.start(workflow, task, executor);
@@ -123,7 +126,7 @@ public class TestWorkflowExecutor {
         new WorkflowSystemTask("HTTP2") {
 
             @Override
-            public void start(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+            public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
                 http2TaskExecuted.set(true);
                 task.setStatus(Status.COMPLETED);
                 super.start(workflow, task, executor);

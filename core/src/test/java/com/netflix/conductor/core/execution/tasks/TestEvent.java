@@ -283,7 +283,6 @@ public class TestEvent {
         queue = event.getQueue(workflow, task);
         assertEquals(Task.Status.FAILED, task.getStatus());
 
-
     }
 
 }

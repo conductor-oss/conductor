@@ -44,11 +44,20 @@ public class UserDefinedTaskMapperTest {
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
 
-        WorkflowDef  wd = new WorkflowDef();
-        Workflow w = new Workflow();
-        w.setWorkflowDefinition(wd);
+        Workflow workflow = new Workflow();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflow.setWorkflowDefinition(workflowDef);
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(w, taskToSchedule, new HashMap<>(), 0, retriedTaskId, taskId, null);
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(workflowDef)
+                .withWorkflowInstance(workflow)
+                .withTaskDefinition(new TaskDef())
+                .withTaskToSchedule(taskToSchedule)
+                .withTaskInput(new HashMap<>())
+                .withRetryCount(0)
+                .withRetryTaskId(retriedTaskId)
+                .withTaskId(taskId)
+                .build();
 
         //when
         List<Task> mappedTasks = userDefinedTaskMapper.getMappedTasks(taskMapperContext);
@@ -67,11 +76,19 @@ public class UserDefinedTaskMapperTest {
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
 
-        WorkflowDef  wd = new WorkflowDef();
-        Workflow w = new Workflow();
-        w.setWorkflowDefinition(wd);
+        Workflow workflow = new Workflow();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflow.setWorkflowDefinition(workflowDef);
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(w, taskToSchedule, new HashMap<>(), 0, retriedTaskId, taskId, null);
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(workflowDef)
+                .withWorkflowInstance(workflow)
+                .withTaskToSchedule(taskToSchedule)
+                .withTaskInput(new HashMap<>())
+                .withRetryCount(0)
+                .withRetryTaskId(retriedTaskId)
+                .withTaskId(taskId)
+                .build();
 
         //then
         expectedException.expect(TerminateWorkflowException.class);

@@ -56,4 +56,5 @@ public class TestWorkflowTask {
 		assertEquals(task.getType(), read.getType());
 		assertEquals(TaskType.SUB_WORKFLOW.name(), read.getType());
 	}
+
 }

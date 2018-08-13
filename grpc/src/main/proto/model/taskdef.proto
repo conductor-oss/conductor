@@ -29,4 +29,5 @@ message TaskDef {
     int32 response_timeout_seconds = 10;
     int32 concurrent_exec_limit = 11;
     map<string, google.protobuf.Value> input_template = 12;
+    int32 rate_limit_per_second = 13;
 }
