@@ -72,7 +72,7 @@ public class WorkflowService {
      * @return the id of the workflow instance that can be use for tracking.
      */
     public String startWorkflow(String name, Integer version,
-                                String correlationId, Map<String, Object> input) throws Exception {
+                                String correlationId, Map<String, Object> input) {
 
         WorkflowDef workflowDef = metadata.getWorkflowDef(name, version);
         if (workflowDef == null) {

@@ -59,6 +59,7 @@ public class AdminService {
 
     /**
      * Get all the configuration parameters.
+     * @return all the configuration parameters.
      */
     public Map<String, Object> getAllConfig() {
         Map<String, Object> map = config.getAll();
@@ -70,10 +71,10 @@ public class AdminService {
     /**
      * Get the list of pending tasks for a given task type.
      *
-     * @param taskType
-     * @param start
-     * @param count
-     * @return the id of the workflow instance that can be use for tracking.
+     * @param taskType Name of the task
+     * @param start Start index of pagination
+     * @param count Number of entries
+     * @return list of pending {@link Task}
      */
     public List<Task> getListOfPendingTask(String taskType, Integer start, Integer count) {
         ServiceUtils.isValid(taskType, "TaskType cannot be null or empty.");
@@ -87,7 +88,7 @@ public class AdminService {
     /**
      * Queue up all the running workflows for sweep.
      *
-     * @param workflowId
+     * @param workflowId Id of the workflow
      * @return the id of the workflow instance that can be use for tracking.
      */
     public String requeueSweep(String workflowId) {

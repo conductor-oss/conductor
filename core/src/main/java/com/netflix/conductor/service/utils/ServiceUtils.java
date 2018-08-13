@@ -77,7 +77,8 @@ public class ServiceUtils {
     /**
      * This method checks if the object is null or empty.
      * @param object    input of type {@link Object}
-     *  @throws com.netflix.conductor.core.execution.ApplicationException if input object is not valid
+     * @param errorMessage The exception message use if the object is empty or null
+     * @throws com.netflix.conductor.core.execution.ApplicationException if input object is not valid
      */
     public static void isValid(Object object, String errorMessage){
         try {

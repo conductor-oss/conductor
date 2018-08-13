@@ -32,6 +32,7 @@ public class EventService {
 
     /**
      * Add a new event handler.
+     * @param eventHandler Instance of {@link EventHandler}
      */
     public void addEventHandler(EventHandler eventHandler) {
         metadataService.addEventHandler(eventHandler);
@@ -39,6 +40,7 @@ public class EventService {
 
     /**
      * Update an existing event handler.
+     * @param eventHandler Instance of {@link EventHandler}
      */
     public void updateEventHandler(EventHandler eventHandler) {
         metadataService.updateEventHandler(eventHandler);
@@ -46,6 +48,7 @@ public class EventService {
 
     /**
      * Remove an event handler.
+     * @param name Event name
      */
     public void removeEventHandlerStatus(String name) {
         ServiceUtils.isValid(name, "Name cannot be null or empty.");
@@ -54,6 +57,7 @@ public class EventService {
 
     /**
      * Get all the event handlers.
+     * @return list of {@link EventHandler}
      */
     public List<EventHandler> getEventHandlers() {
         return metadataService.getEventHandlers();
@@ -61,6 +65,9 @@ public class EventService {
 
     /**
      * Get event handlers for a given event.
+     * @param event Event Name
+     * @param activeOnly `true|false` for active only events
+     * @return list of {@link EventHandler}
      */
     public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
         ServiceUtils.isValid(event, "Event cannot be null or empty.");
@@ -69,6 +76,8 @@ public class EventService {
 
     /**
      * Get registered queues.
+     * @param verbose `true|false` for verbose logs
+     * @return map of event queues
      */
     public Map<String, ?> getEventQueues(boolean verbose) {
         return (verbose ? eventProcessor.getQueueSizes() : eventProcessor.getQueues());
@@ -76,6 +85,7 @@ public class EventService {
 
     /**
      * Get registered queue providers.
+     * @return list of registered queue providers.
      */
     public List<String> getEventQueueProviders() {
         return EventQueues.providers();
