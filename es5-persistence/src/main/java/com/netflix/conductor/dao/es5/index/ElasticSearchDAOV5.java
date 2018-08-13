@@ -28,12 +28,12 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.common.utils.RetryUtil;
-import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.es5.index.query.parser.Expression;
+import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.query.parser.ParserException;
 import com.netflix.conductor.metrics.Monitors;
 import org.apache.commons.io.IOUtils;
@@ -135,21 +135,11 @@ public class ElasticSearchDAOV5 implements IndexDAO {
     }
 
     @Inject
-    public ElasticSearchDAOV5(Client elasticSearchClient, Configuration config, ObjectMapper objectMapper) {
+    public ElasticSearchDAOV5(Client elasticSearchClient, ElasticSearchConfiguration config, ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.elasticSearchClient = elasticSearchClient;
-        this.indexName = config.getProperty("workflow.elasticsearch.index.name", null);
-        this.logIndexPrefix = config.getProperty("workflow.elasticsearch.tasklog.index.name", "task_log");
-
-        try {
-
-            initIndex();
-            updateIndexName();
-            Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> updateIndexName(), 0, 1, TimeUnit.HOURS);
-
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
+        this.indexName = config.getIndexName();
+        this.logIndexPrefix = config.getTasklogIndexName();
 
         int corePoolSize = 6;
         int maximumPoolSize = 12;
