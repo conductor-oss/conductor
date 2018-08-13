@@ -135,7 +135,7 @@ class MetadataClient(BaseClient):
         return self.get(url)
 
     def unRegisterWorkflowDef(self, wfname, version):
-        url = self.makeUrl("workflow/{name}/version/{version}".format(name=wfname, version=version))
+        url = self.makeUrl("workflow/{name}/{version}".format(name=wfname, version=version))
         self.delete(url, None)
 
     def getTaskDef(self, tdName):

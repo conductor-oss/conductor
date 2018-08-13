@@ -31,6 +31,8 @@ import java.util.Set;
 /**
  * @author Viren
  *
+ * This is the task definition definied as part of the {@link WorkflowDef}. The tasks definied in the Workflow definition are saved
+ * as part of {@link WorkflowDef#tasks}
  */
 public class WorkflowTask {
 
@@ -97,6 +99,8 @@ public class WorkflowTask {
 	private String sink;
 	
 	private Boolean optional;
+
+	private Boolean rateLimited;
 	
 	/**
 	 * @return the name
@@ -372,7 +376,19 @@ public class WorkflowTask {
 	public void setOptional(Boolean optional) {
 		this.optional = optional;
 	}
-	
+
+	public Boolean getRateLimited() {
+		return rateLimited;
+	}
+
+	public void setRateLimited(Boolean rateLimited) {
+		this.rateLimited = rateLimited;
+	}
+
+	public boolean isRateLimited() {
+		return (rateLimited !=null && rateLimited.booleanValue());
+	}
+
 	private Collection<List<WorkflowTask>> children(){
 		Collection<List<WorkflowTask>> v1 = new LinkedList<>();
 		Type tt = Type.USER_DEFINED;

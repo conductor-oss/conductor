@@ -1,12 +1,12 @@
 /**
  * Copyright 2017 Netflix, Inc.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,41 +14,46 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.core.events;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import com.netflix.conductor.metrics.Monitors;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventExecution.Status;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
+import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
+import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.core.utils.JsonUtils;
+import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
+import com.spotify.futures.CompletableFutures;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * @author Viren
@@ -57,179 +62,232 @@ import com.netflix.conductor.service.MetadataService;
 @Singleton
 public class EventProcessor {
 
-	private static Logger logger = LoggerFactory.getLogger(EventProcessor.class);
-	
-	private MetadataService metadataService;
-	
-	private ExecutionService executionService;
-	
-	private ActionProcessor actionProcessor;
-	
-	private Map<String, ObservableQueue> queuesMap = new ConcurrentHashMap<>();
-	
-	private ExecutorService executors;
-	
-	private ObjectMapper objectMapper;
+    private static final Logger logger = LoggerFactory.getLogger(EventProcessor.class);
+    private static final String className = EventProcessor.class.getSimpleName();
+    private static final int RETRY_COUNT = 3;
 
-	private static final String className = EventProcessor.class.getSimpleName();
 
-	@Inject
-	public EventProcessor(ExecutionService executionService, MetadataService metadataService,
-						  ActionProcessor actionProcessor, Configuration config, ObjectMapper objectMapper) {
-		this.executionService = executionService;
-		this.metadataService = metadataService;
-		this.actionProcessor = actionProcessor;
-		this.objectMapper = objectMapper;
+    private final MetadataService metadataService;
+    private final ExecutionService executionService;
+    private final ActionProcessor actionProcessor;
 
-		int executorThreadCount = config.getIntProperty("workflow.event.processor.thread.count", 2);
-		if(executorThreadCount > 0) {
-			this.executors = Executors.newFixedThreadPool(executorThreadCount);
-			refresh();
-			Executors.newScheduledThreadPool(1).scheduleAtFixedRate(() -> refresh(), 60, 60, TimeUnit.SECONDS);
-		} else {
-			logger.warn("Event processing is DISABLED.  executorThreadCount set to {}", executorThreadCount);
-		}
-	}
-	
-	/**
-	 * 
-	 * @return Returns a map of queues which are active.  Key is event name and value is queue URI
-	 */
-	public Map<String, String> getQueues() {
-		Map<String, String> queues = new HashMap<>();
-		queuesMap.entrySet().stream().forEach(q -> queues.put(q.getKey(), q.getValue().getName()));
-		return queues;
-	}
-	
-	public Map<String, Map<String, Long>> getQueueSizes() {
-		Map<String, Map<String, Long>> queues = new HashMap<>();
-		queuesMap.entrySet().stream().forEach(q -> {
-			Map<String, Long> size = new HashMap<>();
-			size.put(q.getValue().getName(), q.getValue().size());
-			queues.put(q.getKey(), size);
-		});
-		return queues;
-	}
-	
-	private void refresh() {
+    private ExecutorService executorService;
+    private final Map<String, ObservableQueue> eventToQueueMap = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final JsonUtils jsonUtils = new JsonUtils();
+
+    @Inject
+    public EventProcessor(ExecutionService executionService, MetadataService metadataService,
+                          ActionProcessor actionProcessor, Configuration config) {
+        this.executionService = executionService;
+        this.metadataService = metadataService;
+        this.actionProcessor = actionProcessor;
+
+        int executorThreadCount = config.getIntProperty("workflow.event.processor.thread.count", 2);
+        if (executorThreadCount > 0) {
+            executorService = Executors.newFixedThreadPool(executorThreadCount);
+            refresh();
+            Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::refresh, 60, 60, TimeUnit.SECONDS);
+        } else {
+            logger.warn("Event processing is DISABLED. executorThreadCount set to {}", executorThreadCount);
+        }
+    }
+
+    /**
+     * @return Returns a map of queues which are active.  Key is event name and value is queue URI
+     */
+    public Map<String, String> getQueues() {
+        Map<String, String> queues = new HashMap<>();
+        eventToQueueMap.forEach((key, value) -> queues.put(key, value.getName()));
+        return queues;
+    }
+
+    public Map<String, Map<String, Long>> getQueueSizes() {
+        Map<String, Map<String, Long>> queues = new HashMap<>();
+        eventToQueueMap.forEach((key, value) -> {
+            Map<String, Long> size = new HashMap<>();
+            size.put(value.getName(), value.size());
+            queues.put(key, size);
+        });
+        return queues;
+    }
+
+    private void refresh() {
         try {
-            Set<String> events = metadataService.getEventHandlers().stream().map(eh -> eh.getEvent()).collect(
-                Collectors.toSet());
-            List<ObservableQueue> created = new LinkedList<>();
-            events.stream().forEach(event -> queuesMap.computeIfAbsent(event, s -> {
-                ObservableQueue q = EventQueues.getQueue(event, false);
-                created.add(q);
-                return q;
-            }));
-            if (!created.isEmpty()) {
-                created.stream().filter(q -> q != null).forEach(queue -> listen(queue));
-            }
+            Set<String> events = metadataService.getEventHandlers().stream()
+                    .map(EventHandler::getEvent)
+                    .collect(Collectors.toSet());
+
+            List<ObservableQueue> createdQueues = new LinkedList<>();
+            events.forEach(event -> eventToQueueMap.computeIfAbsent(event, s -> {
+                        ObservableQueue q = EventQueues.getQueue(event);
+                        createdQueues.add(q);
+                        return q;
+                    }
+            ));
+
+            // start listening on all of the created queues
+            createdQueues.stream()
+                    .filter(Objects::nonNull)
+                    .forEach(this::listen);
+
         } catch (Exception e) {
-			Monitors.error(className, "refresh");
+            Monitors.error(className, "refresh");
             logger.error("refresh event queues failed", e);
         }
-	}
-	
-	private void listen(ObservableQueue queue) {
-		queue.observe().subscribe((Message msg) -> handle(queue, msg));
-	}
-	
-	private void handle(ObservableQueue queue, Message msg) {
-		
-		try {
-			
-			List<Future<Void>> futures = new LinkedList<>();
-			
-			String payload = msg.getPayload();
-			Object payloadObj = null;
-			if(payload != null) {
-				try {
-					payloadObj = objectMapper.readValue(payload, Object.class);
-				}catch(Exception e) {
-					payloadObj = payload;
-				}
-			}
-			
-			executionService.addMessage(queue.getName(), msg);
-			
-			String event = queue.getType() + ":" + queue.getName();
-			List<EventHandler> handlers = metadataService.getEventHandlersForEvent(event, true);
-			
-			for(EventHandler handler : handlers) {
-				
-				String condition = handler.getCondition();
-				logger.debug("condition: {}", condition);
-				if(!StringUtils.isEmpty(condition)) {
-					Boolean success = ScriptEvaluator.evalBool(condition, payloadObj);
-					if(!success) {
-						logger.info("handler {} condition {} did not match payload {}", handler.getName(), condition, payloadObj);
-						EventExecution ee = new EventExecution(msg.getId() + "_0", msg.getId());
-						ee.setCreated(System.currentTimeMillis());
-						ee.setEvent(handler.getEvent());
-						ee.setName(handler.getName());
-						ee.setStatus(Status.SKIPPED);
-						ee.getOutput().put("msg", payload);
-						ee.getOutput().put("condition", condition);
-						executionService.addEventExecution(ee);
-						continue;
-					}
-				}
-				
-				int i = 0;
-				List<Action> actions = handler.getActions();
-				for(Action action : actions) {
-					String id = msg.getId() + "_" + i++;
-					
-					EventExecution ee = new EventExecution(id, msg.getId());
-					ee.setCreated(System.currentTimeMillis());
-					ee.setEvent(handler.getEvent());
-					ee.setName(handler.getName());
-					ee.setAction(action.getAction());
-					ee.setStatus(Status.IN_PROGRESS);
-					if (executionService.addEventExecution(ee)) {
-						Future<Void> future = execute(ee, action, payload);
-						futures.add(future);
-					} else {
-						logger.warn("Duplicate delivery/execution? {}", id);
-					}
-				}
-			}
-			
-			for (Future<Void> future : futures) {
-				try {
-					future.get();
-				} catch (Exception e) {
-					logger.error(e.getMessage(), e);
-				}
-			}
-			
-			queue.ack(Arrays.asList(msg));
-			
-		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
-		}
-	}
+    }
 
-	private Future<Void> execute(EventExecution ee, Action action, String payload) {
-		return executors.submit(()->{
-			try {
-				
-				logger.debug("Executing {} with payload {}", action.getAction(), payload);
-				Map<String, Object> output = actionProcessor.execute(action, payload, ee.getEvent(), ee.getMessageId());
-				if(output != null) {
-					ee.getOutput().putAll(output);
-				}
-				ee.setStatus(Status.COMPLETED);
-				executionService.updateEventExecution(ee);
-				
-				return null;
-			}catch(Exception e) {
-				logger.error(e.getMessage(), e);
-				ee.setStatus(Status.FAILED);
-				ee.getOutput().put("exception", e.getMessage());
-				return null;
-			}
-		});
-	}
-	
+    private void listen(ObservableQueue queue) {
+        queue.observe().subscribe((Message msg) -> handle(queue, msg));
+    }
+
+    @SuppressWarnings({"unchecked", "ToArrayCallWithZeroLengthArrayArgument"})
+    private void handle(ObservableQueue queue, Message msg) {
+        try {
+            executionService.addMessage(queue.getName(), msg);
+
+            String event = queue.getType() + ":" + queue.getName();
+            logger.debug("Evaluating message: {} for event: {}", msg.getId(), event);
+            List<EventExecution> transientFailures = executeEvent(event, msg);
+
+            if (transientFailures.isEmpty()) {
+                queue.ack(Collections.singletonList(msg));
+            } else if (queue.rePublishIfNoAck()) {
+                // re-submit this message to the queue, to be retried later
+                // This is needed for queues with no unack timeout, since messages are removed from the queue
+                queue.publish(Collections.singletonList(msg));
+            }
+        } catch (Exception e) {
+            logger.error("Error handling message: {} on queue:{}", msg, queue.getName(), e);
+        }
+    }
+
+    /**
+     * Executes all the actions configured on all the event handlers triggered by the {@link Message} on the queue
+     * If any of the actions on an event handler fails due to a transient failure, the execution is not persisted such that it can be retried
+     *
+     * @return a list of {@link EventExecution} that failed due to transient failures.
+     */
+    private List<EventExecution> executeEvent(String event, Message msg) throws Exception {
+        List<EventHandler> eventHandlerList = metadataService.getEventHandlersForEvent(event, true);
+        Object payloadObject = getPayloadObject(msg.getPayload());
+
+        List<EventExecution> transientFailures = new ArrayList<>();
+        for (EventHandler eventHandler : eventHandlerList) {
+            String condition = eventHandler.getCondition();
+            if (StringUtils.isNotEmpty(condition)) {
+                logger.debug("Checking condition: {} for event: {}", condition, event);
+                Boolean success = ScriptEvaluator.evalBool(condition, jsonUtils.expand(payloadObject));
+                if (!success) {
+                    String id = msg.getId() + "_" + 0;
+                    EventExecution eventExecution = new EventExecution(id, msg.getId());
+                    eventExecution.setCreated(System.currentTimeMillis());
+                    eventExecution.setEvent(eventHandler.getEvent());
+                    eventExecution.setName(eventHandler.getName());
+                    eventExecution.setStatus(Status.SKIPPED);
+                    eventExecution.getOutput().put("msg", msg.getPayload());
+                    eventExecution.getOutput().put("condition", condition);
+                    executionService.addEventExecution(eventExecution);
+                    logger.debug("Condition: {} not successful for event: {} with payload: {}", condition, eventHandler.getEvent(), msg.getPayload());
+                    continue;
+                }
+            }
+
+            CompletableFuture<List<EventExecution>> future = executeActionsForEventHandler(eventHandler, msg);
+            future.whenComplete((result, error) -> result.forEach(eventExecution -> {
+                if (error != null || eventExecution.getStatus() == Status.IN_PROGRESS) {
+                    executionService.removeEventExecution(eventExecution);
+                    transientFailures.add(eventExecution);
+                } else {
+                    executionService.updateEventExecution(eventExecution);
+                }
+            })).get();
+        }
+        return transientFailures;
+    }
+
+    /**
+     * @param eventHandler the {@link EventHandler} for which the actions are to be executed
+     * @param msg          the {@link Message} that triggered the event
+     * @return a {@link CompletableFuture} holding a list of {@link EventExecution}s for the {@link Action}s executed in the event handler
+     */
+    private CompletableFuture<List<EventExecution>> executeActionsForEventHandler(EventHandler eventHandler, Message msg) {
+        List<CompletableFuture<EventExecution>> futuresList = new ArrayList<>();
+        int i = 0;
+        for (Action action : eventHandler.getActions()) {
+            String id = msg.getId() + "_" + i++;
+            EventExecution eventExecution = new EventExecution(id, msg.getId());
+            eventExecution.setCreated(System.currentTimeMillis());
+            eventExecution.setEvent(eventHandler.getEvent());
+            eventExecution.setName(eventHandler.getName());
+            eventExecution.setAction(action.getAction());
+            eventExecution.setStatus(Status.IN_PROGRESS);
+            if (executionService.addEventExecution(eventExecution)) {
+                futuresList.add(CompletableFuture.supplyAsync(() -> execute(eventExecution, action, getPayloadObject(msg.getPayload())), executorService));
+            } else {
+                logger.warn("Duplicate delivery/execution of message: {}", msg.getId());
+            }
+        }
+        return CompletableFutures.allAsList(futuresList);
+    }
+
+    /**
+     * @param eventExecution the instance of {@link EventExecution}
+     * @param action         the {@link Action} to be executed for the event
+     * @param payload        the {@link Message#payload}
+     * @return the event execution updated with execution output, if the execution is completed/failed with non-transient error
+     * the input event execution, if the execution failed due to transient error
+     */
+    @SuppressWarnings("Guava")
+    @VisibleForTesting
+    EventExecution execute(EventExecution eventExecution, Action action, Object payload) {
+        try {
+            String methodName = "executeEventAction";
+            String description = String.format("Executing action: %s for event: %s with messageId: %s with payload: %s", action.getAction(), eventExecution.getId(), eventExecution.getMessageId(), payload);
+            logger.debug(description);
+
+            Map<String, Object> output = new RetryUtil<Map<String, Object>>().retryOnException(() -> actionProcessor.execute(action, payload, eventExecution.getEvent(), eventExecution.getMessageId()),
+                    this::isTransientException, null, RETRY_COUNT, description, methodName);
+            if (output != null) {
+                eventExecution.getOutput().putAll(output);
+            }
+            eventExecution.setStatus(Status.COMPLETED);
+        } catch (RuntimeException e) {
+            logger.error("Error executing action: {} for event: {} with messageId: {}", action.getAction(), eventExecution.getEvent(), eventExecution.getMessageId(), e);
+            if (!isTransientException(e.getCause())) {
+                // not a transient error, fail the event execution
+                eventExecution.setStatus(Status.FAILED);
+                eventExecution.getOutput().put("exception", e.getMessage());
+            }
+        }
+        return eventExecution;
+    }
+
+    /**
+     * Used to determine if the exception is thrown due to a transient failure
+     * and the operation is expected to succeed upon retrying.
+     *
+     * @param throwableException the exception that is thrown
+     * @return true - if the exception is a transient failure
+     * false - if the exception is non-transient
+     */
+    private boolean isTransientException(Throwable throwableException) {
+        if (throwableException != null) {
+            return !((throwableException instanceof UnsupportedOperationException) ||
+                    (throwableException instanceof ApplicationException && ((ApplicationException) throwableException).getCode() != ApplicationException.Code.BACKEND_ERROR));
+        }
+        return true;
+    }
+
+    private Object getPayloadObject(String payload) {
+        Object payloadObject = null;
+        if (payload != null) {
+            try {
+                payloadObject = objectMapper.readValue(payload, Object.class);
+            } catch (Exception e) {
+                payloadObject = payload;
+            }
+        }
+        return payloadObject;
+    }
 }

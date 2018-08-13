@@ -118,7 +118,15 @@ public class ForkJoinDynamicTaskMapperTest {
 
         String taskId = IDGenerator.generate();
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(def, workflowInstance, dynamicForkJoinToSchedule, null,0, null, taskId, deciderService);
+        //TaskMapperContext taskMapperContext = new TaskMapperContext(def, workflowInstance, dynamicForkJoinToSchedule, null,0, null, taskId, deciderService);
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(def)
+                .withWorkflowInstance(workflowInstance)
+                .withTaskToSchedule(dynamicForkJoinToSchedule)
+                .withRetryCount(0)
+                .withTaskId(taskId)
+                .withDeciderService(deciderService)
+                .build();
         //then
         expectedException.expect(TerminateWorkflowException.class);
         forkJoinDynamicTaskMapper.getMappedTasks(taskMapperContext);
@@ -188,8 +196,15 @@ public class ForkJoinDynamicTaskMapperTest {
         when(deciderService.getTasksToBeScheduled(def, workflowInstance, wt3, 0 )).thenReturn(Arrays.asList(simpleTask2));
 
         String taskId = IDGenerator.generate();
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(def)
+                .withWorkflowInstance(workflowInstance)
+                .withTaskToSchedule(dynamicForkJoinToSchedule)
+                .withRetryCount(0)
+                .withTaskId(taskId)
+                .withDeciderService(deciderService)
+                .build();
 
-        TaskMapperContext taskMapperContext = new TaskMapperContext(def, workflowInstance, dynamicForkJoinToSchedule, null,0, null, taskId, deciderService);
         //then
         List<Task> mappedTasks = forkJoinDynamicTaskMapper.getMappedTasks(taskMapperContext);
 

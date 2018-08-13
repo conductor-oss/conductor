@@ -128,6 +128,8 @@ public class Task {
 
     private String domain;
 
+    private int rateLimitPerSecond;
+
     public Task() {
 
     }
@@ -539,6 +541,14 @@ public class Task {
         this.domain = domain;
     }
 
+    public int getRateLimitPerSecond() {
+        return rateLimitPerSecond;
+    }
+
+    public void setRateLimitPerSecond(int rateLimitPerSecond) {
+        this.rateLimitPerSecond = rateLimitPerSecond;
+    }
+
     public Task copy() {
 
         Task copy = new Task();
@@ -561,6 +571,7 @@ public class Task {
         copy.setWorkerId(workerId);
         copy.setWorkflowTask(workflowTask);
         copy.setDomain(domain);
+        copy.setRateLimitPerSecond(rateLimitPerSecond);
         return copy;
     }
 

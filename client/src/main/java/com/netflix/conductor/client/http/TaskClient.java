@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -215,22 +216,21 @@ public class TaskClient extends ClientBase {
     public void updateTask(TaskResult taskResult, String taskType) {
         Preconditions.checkNotNull(taskResult, "Task result cannot be null");
 
-        long taskResultSize = 0;
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
              CountingOutputStream countingOutputStream = new CountingOutputStream(byteArrayOutputStream)) {
             objectMapper.writeValue(countingOutputStream, taskResult);
-            taskResultSize = countingOutputStream.getCount();
+            long taskResultSize = countingOutputStream.getCount();
             WorkflowTaskMetrics.recordTaskResultPayloadSize(taskType, taskResultSize);
             if (taskResultSize > (3 * 1024 * 1024)) { //There is hard coded since there is no easy way to pass a config in here
                 taskResult.setReasonForIncompletion(String.format("The TaskResult payload: %d is greater than the permissible 3MB", taskResultSize));
                 taskResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
                 taskResult.setOutputData(null);
             }
-        } catch (Exception e) {
-            logger.error("Unable to parse the TaskResult: {}", taskResult);
-            throw new RuntimeException(e);
+        } catch (IOException e) {
+            logger.error("Unable to update task with task result: {}", taskResult, e);
+            throw new RuntimeException("Unable to update task", e);
         }
-        postForEntity("tasks", taskResult);
+        postForEntityWithRequestOnly("tasks", taskResult);
     }
 
     /**

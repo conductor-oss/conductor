@@ -44,6 +44,7 @@ ext {
     revRarefiedRedis = '0.0.17'
     revServo = '0.12.17'
     revServletApi = '3.1.0'
+    revSpotifyCompletableFutures = '0.3.1'
     revSwagger = '1.5.9'
     revSwaggerJersey = '1.5.0'
     revSlf4j = '1.7.25'
