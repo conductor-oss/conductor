@@ -92,7 +92,7 @@ func (c *ConductorHttpClient) UnRegisterWorkflowDef(workflowDefName string, vers
 
     versionString = strconv.Itoa(version)
 
-    url := c.httpClient.MakeUrl("/metadata/workflow/{workflowDefName}/version/{version}", "{workflowDefName}",
+    url := c.httpClient.MakeUrl("/metadata/workflow/{workflowDefName}/{version}", "{workflowDefName}",
      workflowDefName, "{version}", versionString)
 
     outputString, err := c.httpClient.Delete(url, nil, nil, "")

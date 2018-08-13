@@ -49,6 +49,8 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.service.DummyRateLimitingService;
+import com.netflix.conductor.service.RateLimitingService;
 
 
 /**
@@ -66,6 +68,7 @@ public class CoreModule extends AbstractModule {
         bind(SubWorkflow.class).asEagerSingleton();
         bind(Wait.class).asEagerSingleton();
         bind(Event.class).asEagerSingleton();
+        bind(RateLimitingService.class).to(DummyRateLimitingService.class);
     }
 
     @Provides

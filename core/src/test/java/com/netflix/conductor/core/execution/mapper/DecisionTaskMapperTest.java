@@ -112,8 +112,16 @@ public class DecisionTaskMapperTest {
 
         when(deciderService.getTasksToBeScheduled(workflowDef, workflowInstance, task2, 0, null))
                 .thenReturn(Arrays.asList(theTask));
-        TaskMapperContext taskMapperContext = new TaskMapperContext(workflowDef, workflowInstance, decisionTask,
-                input, 0, null, IDGenerator.generate(), deciderService);
+
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(workflowDef)
+                .withWorkflowInstance(workflowInstance)
+                .withTaskToSchedule(decisionTask)
+                .withTaskInput(input)
+                .withRetryCount(0)
+                .withTaskId(IDGenerator.generate())
+                .withDeciderService(deciderService)
+                .build();
 
         //When
         List<Task> mappedTasks = decisionTaskMapper.getMappedTasks(taskMapperContext);

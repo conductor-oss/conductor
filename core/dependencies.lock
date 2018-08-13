@@ -37,6 +37,10 @@
             "locked": "0.68.0",
             "requested": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.1",
+            "requested": "0.3.1"
+        },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
             "requested": "1.2.2"
@@ -89,6 +93,10 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "requested": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.1",
+            "requested": "0.3.1"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
@@ -143,6 +151,10 @@
             "locked": "0.68.0",
             "requested": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.1",
+            "requested": "0.3.1"
+        },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
             "requested": "1.2.2"
@@ -195,6 +207,10 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "requested": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.1",
+            "requested": "0.3.1"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
@@ -249,6 +265,10 @@
             "locked": "0.68.0",
             "requested": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.1",
+            "requested": "0.3.1"
+        },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
             "requested": "1.2.2"
@@ -301,6 +321,10 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "requested": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.1",
+            "requested": "0.3.1"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
@@ -367,6 +391,10 @@
             "locked": "0.68.0",
             "requested": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.1",
+            "requested": "0.3.1"
+        },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
             "requested": "1.2.2"
@@ -432,6 +460,10 @@
             "locked": "0.68.0",
             "requested": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.1",
+            "requested": "0.3.1"
+        },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
             "requested": "1.2.2"
@@ -496,6 +528,10 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "requested": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.1",
+            "requested": "0.3.1"
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
