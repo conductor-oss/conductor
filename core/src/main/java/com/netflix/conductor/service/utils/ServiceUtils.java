@@ -27,12 +27,11 @@ public class ServiceUtils {
      * @param errorMessage The exception message use if the input condition is not valid
      * @throws com.netflix.conductor.core.execution.ApplicationException if input condition is not valid
      */
-    public static void isValid(boolean condition, String errorMessage){
+    public static void checkArgument(boolean condition, String errorMessage){
         if(!condition) {
             throw new ApplicationException(ApplicationException.Code.INVALID_INPUT, errorMessage);
         }
     }
-
 
     /*
      * This method checks if the collection is null or is empty.
@@ -40,7 +39,7 @@ public class ServiceUtils {
      * @param errorMessage The exception message use if the collection is empty or null
      * @throws com.netflix.conductor.core.execution.ApplicationException if input Collection is not valid
      */
-    public static void isValid( Collection<?> collection, String errorMessage){
+    public static void checkNotNullOrEmpty(Collection<?> collection, String errorMessage){
         if(collection == null || collection.isEmpty()) {
                 throw new ApplicationException(ApplicationException.Code.INVALID_INPUT, errorMessage);
             }
@@ -53,7 +52,7 @@ public class ServiceUtils {
      * @param errorMessage The exception message use if the map is empty or null
      * @throws com.netflix.conductor.core.execution.ApplicationException if input map is not valid
      */
-    public static void isValid(Map<?, ?> map, String errorMessage) {
+    public static void checkNotNullOrEmpty(Map<?, ?> map, String errorMessage) {
         if(map == null || map.isEmpty()) {
             throw new ApplicationException(ApplicationException.Code.INVALID_INPUT, errorMessage);
         }
@@ -66,7 +65,7 @@ public class ServiceUtils {
      * @param errorMessage The exception message use if the string is empty or null
      * @throws com.netflix.conductor.core.execution.ApplicationException if input string is not valid
      */
-    public static void isValid(String input, String errorMessage) {
+    public static void checkNotNullOrEmpty(String input, String errorMessage) {
         try {
             Preconditions.checkArgument(StringUtils.isNotBlank(input), errorMessage);
         } catch (IllegalArgumentException exception) {
@@ -80,7 +79,7 @@ public class ServiceUtils {
      * @param errorMessage The exception message use if the object is empty or null
      * @throws com.netflix.conductor.core.execution.ApplicationException if input object is not valid
      */
-    public static void isValid(Object object, String errorMessage){
+    public static void checkNotNull(Object object, String errorMessage){
         try {
             Preconditions.checkNotNull(object, errorMessage);
         } catch (NullPointerException exception) {

@@ -51,7 +51,7 @@ public class EventService {
      * @param name Event name
      */
     public void removeEventHandlerStatus(String name) {
-        ServiceUtils.isValid(name, "Name cannot be null or empty.");
+        ServiceUtils.checkNotNullOrEmpty(name, "Name cannot be null or empty.");
         metadataService.removeEventHandlerStatus(name);
     }
 
@@ -70,7 +70,7 @@ public class EventService {
      * @return list of {@link EventHandler}
      */
     public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
-        ServiceUtils.isValid(event, "Event cannot be null or empty.");
+        ServiceUtils.checkNotNullOrEmpty(event, "Event cannot be null or empty.");
         return metadataService.getEventHandlersForEvent(event, activeOnly);
     }
 

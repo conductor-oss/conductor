@@ -34,15 +34,11 @@ public class TaskResourceTest {
 
     private TaskService mockTaskService;
 
-    private QueueDAO mockQueueDAO;
-
     private TaskResource taskResource;
-
 
     @Before
     public void before() {
         this.mockTaskService = Mockito.mock(TaskService.class);
-        this.mockQueueDAO = Mockito.mock(QueueDAO.class);
         this.taskResource = new TaskResource(this.mockTaskService);
     }
 

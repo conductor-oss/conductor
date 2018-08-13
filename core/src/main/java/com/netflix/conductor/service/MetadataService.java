@@ -111,7 +111,7 @@ public class MetadataService {
         TaskDef taskDef = metadataDAO.getTaskDef(taskType);
         if (taskDef == null){
             throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                    String.format("No such taskType found by name= %s", taskType));
+                    String.format("No such taskType found by name: %s", taskType));
         }
         return taskDef;
     }
@@ -150,7 +150,7 @@ public class MetadataService {
 
         if(workflowDef == null){
             throw new ApplicationException(Code.NOT_FOUND,
-                    String.format("No such workflow found by name= %s, version= %d", name, version));
+                    String.format("No such workflow found by name: %s, version: %d", name, version));
         }
         return workflowDef;
     }
@@ -184,8 +184,8 @@ public class MetadataService {
      * @param version Version of the workflow definition to be removed
      */
     public void unregisterWorkflowDef(String name, Integer version) {
-        ServiceUtils.isValid(name, "Workflow name cannot be null");
-        ServiceUtils.isValid(version, "Version is not valid");
+        ServiceUtils.checkNotNullOrEmpty(name, "Workflow name cannot be null");
+        ServiceUtils.checkNotNull(version, "Version is not valid");
         metadataDAO.removeWorkflowDef(name, version);
     }
 
@@ -235,9 +235,9 @@ public class MetadataService {
     }
 
     private void validateEvent(EventHandler eh) {
-        Preconditions.checkNotNull(eh.getName(), "Missing event handler name");
-        Preconditions.checkNotNull(eh.getEvent(), "Missing event location");
-        Preconditions.checkNotNull(eh.getActions().isEmpty(), "No actions specified.  Please specify at-least one action");
+        ServiceUtils.checkNotNullOrEmpty(eh.getName(), "Missing event handler name");
+        ServiceUtils.checkNotNullOrEmpty(eh.getEvent(), "Missing event location");
+        ServiceUtils.checkNotNullOrEmpty(eh.getActions(), "No actions specified. Please specify at-least one action");
         String event = eh.getEvent();
         EventQueues.getQueue(event);
     }

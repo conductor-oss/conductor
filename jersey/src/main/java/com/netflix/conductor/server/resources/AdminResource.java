@@ -73,7 +73,7 @@ public class AdminResource {
 	@Consumes({ MediaType.WILDCARD })
 	public List<Task> view(@PathParam("tasktype") String taskType,
                            @DefaultValue("0") @QueryParam("start") Integer start,
-                           @DefaultValue("100") @QueryParam("count") Integer count) throws Exception {
+                           @DefaultValue("100") @QueryParam("count") Integer count) {
         return adminService.getListOfPendingTask(taskType, start, count);
 	}
 

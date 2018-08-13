@@ -19,6 +19,7 @@
 package com.netflix.conductor.tests.integration;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -191,7 +192,6 @@ public class End2EndTests {
 		assertEquals(1, getTasks.size());
 
 		Task pending = tc.getPendingTaskForWorkflow(workflowId, t1.getTaskReferenceName());
-        Thread.sleep(5000);
 		assertNotNull(pending);
 		assertEquals(t1.getTaskReferenceName(), pending.getReferenceTaskName());
 		assertEquals(workflowId, pending.getWorkflowInstanceId());
@@ -239,8 +239,10 @@ public class End2EndTests {
 		} catch (ConductorClientException e) {
 			int statusCode = e.getStatus();
 			String errorMessage = e.getMessage();
+			boolean retryable = e.isRetryable();
 			assertEquals(404, statusCode);
-			assertEquals("No such workflow found by name= testWorkflowDel, version= 1", errorMessage);
+			assertEquals("No such workflow found by name: testWorkflowDel, version: 1", errorMessage);
+			assertFalse(retryable);
 		}
 	}
 
@@ -257,7 +259,6 @@ public class End2EndTests {
             metadataClient.registerWorkflowDef(def);
         } catch (ConductorClientException e) {
             int statusCode = e.getStatus();
-            //TODO: this should be 404
             assertEquals(404, statusCode);
         }
 	}

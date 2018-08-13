@@ -77,7 +77,7 @@ public class AdminService {
      * @return list of pending {@link Task}
      */
     public List<Task> getListOfPendingTask(String taskType, Integer start, Integer count) {
-        ServiceUtils.isValid(taskType, "TaskType cannot be null or empty.");
+        ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
         List<Task> tasks = executionService.getPendingTasksForTaskType(taskType);
         int total = start + count;
         total = (tasks.size() > total) ? total : tasks.size();
@@ -92,7 +92,7 @@ public class AdminService {
      * @return the id of the workflow instance that can be use for tracking.
      */
     public String requeueSweep(String workflowId) {
-        ServiceUtils.isValid(workflowId, "WorkflowId cannot be null or empty.");
+        ServiceUtils.checkNotNullOrEmpty(workflowId, "WorkflowId cannot be null or empty.");
         boolean pushed = queue.pushIfNotExists(WorkflowExecutor.deciderQueue, workflowId, config.getSweepFrequency());
         return pushed + "." + workflowId;
     }

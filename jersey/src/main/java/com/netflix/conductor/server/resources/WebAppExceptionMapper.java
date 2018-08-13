@@ -56,6 +56,7 @@ public class WebAppExceptionMapper implements ExceptionMapper<WebApplicationExce
         entityMap.put("instance", host);
         entityMap.put("code", code.toString());
         entityMap.put("message", response.toString());
+        entityMap.put("isRetryable", false);
 
         return Response.status(response.getStatus()).entity(entityMap.toString()).build();
 	}

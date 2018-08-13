@@ -16,7 +16,6 @@
 package com.netflix.conductor.service;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -29,6 +28,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.service.utils.ServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,22 +54,8 @@ import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import com.netflix.conductor.core.execution.ApplicationException.Code;
 
 /**
  *
@@ -81,25 +67,25 @@ import com.netflix.conductor.core.execution.ApplicationException.Code;
 @Trace
 public class ExecutionService {
 
-	private static final Logger logger = LoggerFactory.getLogger(ExecutionService.class);
+    private static final Logger logger = LoggerFactory.getLogger(ExecutionService.class);
 
-	private final WorkflowExecutor executor;
+    private final WorkflowExecutor executor;
 
-	private final ExecutionDAO executionDAO;
+    private final ExecutionDAO executionDAO;
 
-	private final IndexDAO indexer;
+    private final IndexDAO indexer;
 
-	private final QueueDAO queue;
+    private final QueueDAO queue;
 
-	private final MetadataDAO metadata;
+    private final MetadataDAO metadata;
 
-	private final int taskRequeueTimeout;
+    private final int taskRequeueTimeout;
 
     private final int maxSearchSize;
 
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
 
-    private static final int POLL_COUNT = 1;
+    private static final int POLL_COUNT_ONE = 1;
 
     private static final int POLLING_TIMEOUT_IN_MS = 100;
 
@@ -130,7 +116,7 @@ public class ExecutionService {
 		return poll(taskType, workerId, null, count, timeoutInMilliSecond);
 	}
 
-	public List<Task> poll(String taskType, String workerId, String domain, int count, int timeoutInMilliSecond) throws Exception {
+	public List<Task> poll(String taskType, String workerId, String domain, int count, int timeoutInMilliSecond) {
 		if (timeoutInMilliSecond > MAX_POLL_TIMEOUT_MS) {
 			throw new ApplicationException(ApplicationException.Code.INVALID_INPUT,
                     "Long Poll Timeout value cannot be more than 5 seconds");
@@ -164,9 +150,8 @@ public class ExecutionService {
 		return tasks;
 	}
 
-	public Task getLastPollTask(String taskType, String workerId, String domain) throws Exception{
-		List<Task> tasks = poll(taskType, workerId, domain, POLL_COUNT, POLLING_TIMEOUT_IN_MS);
-		//TODO: Should this throw 404 ?
+	public Task getLastPollTask(String taskType, String workerId, String domain) {
+		List<Task> tasks = poll(taskType, workerId, domain, POLL_COUNT_ONE, POLLING_TIMEOUT_IN_MS);
 		if (tasks.isEmpty()) {
 			logger.debug("No Task available for the poll: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
 			return null;
@@ -176,7 +161,7 @@ public class ExecutionService {
 		return task;
 	}
 
-	public List<PollData> getPollData(String taskType) throws Exception {
+	public List<PollData> getPollData(String taskType) {
 		return executionDAO.getPollData(taskType);
 	}
 
@@ -197,19 +182,19 @@ public class ExecutionService {
 	}
 
 	//For backward compatibility - to be removed in the later versions
-	public void updateTask(Task task) throws Exception {
+	public void updateTask(Task task) {
 		updateTask(new TaskResult(task));
 	}
 
-	public void updateTask(TaskResult taskResult) throws Exception {
+	public void updateTask(TaskResult taskResult) {
 		executor.updateTask(taskResult);
 	}
 
-	public List<Task> getTasks(String taskType, String startKey, int count) throws Exception {
+	public List<Task> getTasks(String taskType, String startKey, int count) {
 		return executor.getTasks(taskType, startKey, count);
 	}
 
-	public Task getTask(String taskId) throws Exception {
+	public Task getTask(String taskId) {
 		return executionDAO.getTask(taskId);
 	}
 
@@ -224,7 +209,7 @@ public class ExecutionService {
 	 * @throws Exception In case of an error while getting the Task from the executionDao
 	 * @return True in case of successful removal of the taskId from the un-acked queue
 	 */
-	public boolean ackTaskReceived(String taskId) throws Exception {
+	public boolean ackTaskReceived(String taskId) {
 		return Optional.ofNullable(getTask(taskId))
 				.map(QueueUtils::getQueueName)
 				.map(queueName -> queue.ack(queueName, taskId))
@@ -284,7 +269,7 @@ public class ExecutionService {
 		return count;
 	}
 
-	public int requeuePendingTasks(String taskType) throws Exception {
+	public int requeuePendingTasks(String taskType) {
 
 		int count = 0;
 		List<Task> tasks = getPendingTasksForTaskType(taskType);
@@ -308,7 +293,7 @@ public class ExecutionService {
 		return count;
 	}
 
-	private boolean requeue(Task pending) throws Exception {
+	private boolean requeue(Task pending) {
 		long callback = pending.getCallbackAfterSeconds();
 		if (callback < 0) {
 			callback = 0;
@@ -405,18 +390,9 @@ public class ExecutionService {
 
 	public SearchResult<TaskSummary> getSearchTasks(String query, String freeText, int start, int size, String sortString) {
 
-        if(size > maxSearchSize) {
-            throw new ApplicationException(Code.INVALID_INPUT,
-                    String.format("Cannot return more than %d workflows. Please use pagination", maxSearchSize));
-        }
-
-        List<String> list = new ArrayList<String>();
-
-	    if (sortString != null && sortString.length() != 0){
-	        list = Arrays.asList(sortString.split("\\|"));
-	    }
-
-	    return searchTasks(query, freeText, start, size, list);
+	    ServiceUtils.checkArgument(size < maxSearchSize, String.format("Cannot return more than %d workflows." +
+                " Please use pagination.", maxSearchSize));
+	    return searchTasks(query, freeText, start, size, ServiceUtils.convertToSortedList(sortString));
     }
 
 	public List<Task> getPendingTasksForTaskType(String taskType) {

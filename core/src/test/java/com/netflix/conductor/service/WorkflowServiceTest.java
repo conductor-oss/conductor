@@ -34,7 +34,6 @@ import static org.mockito.Mockito.when;
 
 public class WorkflowServiceTest {
 
-
     private WorkflowExecutor mockWorkflowExecutor;
 
     private ExecutionService mockExecutionService;
@@ -88,7 +87,7 @@ public class WorkflowServiceTest {
             startWorkflowRequest.setVersion(1);
             workflowService.startWorkflow(startWorkflowRequest);
         } catch (ApplicationException ex) {
-            String message = "No such workflow found by name=w123, version=1";
+            String message = "No such workflow found by name: w123, version: 1";
             assertEquals(message, ex.getMessage());
             throw ex;
         }
@@ -121,7 +120,7 @@ public class WorkflowServiceTest {
 
             workflowService.startWorkflow("test", 1, "c123", input);
         } catch (ApplicationException ex) {
-            String message = "No such workflow found by name=test, version=1";
+            String message = "No such workflow found by name: test, version: 1";
             assertEquals(message, ex.getMessage());
             throw ex;
         }

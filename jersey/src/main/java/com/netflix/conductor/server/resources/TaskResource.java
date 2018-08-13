@@ -81,7 +81,7 @@ public class TaskResource {
 	@Consumes({MediaType.WILDCARD})
 	public Task poll(@PathParam("tasktype") String taskType,
                      @QueryParam("workerid") String workerId,
-                     @QueryParam("domain") String domain) throws Exception {
+                     @QueryParam("domain") String domain) {
 		return taskService.poll(taskType, workerId, domain);
 	}
 
@@ -93,7 +93,7 @@ public class TaskResource {
 								@QueryParam("workerid") String workerId,
 								@QueryParam("domain") String domain,
 								@DefaultValue("1") @QueryParam("count") Integer count,
-								@DefaultValue("100") @QueryParam("timeout") Integer timeout) throws Exception {
+								@DefaultValue("100") @QueryParam("timeout") Integer timeout) {
 		return taskService.batchPoll(taskType, workerId, domain, count, timeout);
 	}
 
@@ -103,7 +103,7 @@ public class TaskResource {
 	@Consumes({MediaType.WILDCARD})
 	public List<Task> getTasks(@PathParam("tasktype") String taskType,
                                @QueryParam("startKey") String startKey,
-                               @QueryParam("count") @DefaultValue("100") Integer count) throws Exception {
+                               @QueryParam("count") @DefaultValue("100") Integer count) {
 		return taskService.getTasks(taskType, startKey, count);
 	}
 
@@ -118,7 +118,7 @@ public class TaskResource {
 
 	@POST
 	@ApiOperation("Update a task")
-	public String updateTask(TaskResult taskResult) throws Exception {
+	public String updateTask(TaskResult taskResult) {
 		return taskService.updateTask(taskResult);
 	}
 
@@ -149,7 +149,7 @@ public class TaskResource {
 	@Path("/{taskId}")
 	@ApiOperation("Get task by Id")
 	@Consumes(MediaType.WILDCARD)
-	public Task getTask(@PathParam("taskId") String taskId) throws Exception {
+	public Task getTask(@PathParam("taskId") String taskId) {
         return taskService.getTask(taskId);
 	}
 
@@ -190,7 +190,7 @@ public class TaskResource {
 	@Path("/queue/polldata")
 	@ApiOperation("Get the last poll data for a given task type")
 	@Consumes({MediaType.WILDCARD})
-	public List<PollData> getPollData(@QueryParam("taskType") String taskType) throws Exception {
+	public List<PollData> getPollData(@QueryParam("taskType") String taskType) {
 		return taskService.getPollData(taskType);
 	}
 
@@ -214,7 +214,7 @@ public class TaskResource {
 	@ApiOperation("Requeue pending tasks")
 	@Consumes(MediaType.WILDCARD)
 	@Produces({ MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON })
-	public String requeuePendingTask(@PathParam("taskType") String taskType) throws Exception {
+	public String requeuePendingTask(@PathParam("taskType") String taskType) {
 		return taskService.requeuePendingTask(taskType);
 	}
 	
