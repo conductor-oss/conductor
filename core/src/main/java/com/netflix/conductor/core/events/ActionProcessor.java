@@ -18,7 +18,6 @@
  */
 package com.netflix.conductor.core.events;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
@@ -30,6 +29,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.service.MetadataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -47,13 +46,12 @@ import java.util.Map;
  */
 @Singleton
 public class ActionProcessor {
-
     private static final Logger logger = LoggerFactory.getLogger(ActionProcessor.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private final WorkflowExecutor executor;
     private final MetadataService metadataService;
     private final ParametersUtils parametersUtils = new ParametersUtils();
+    private final JsonUtils jsonUtils = new JsonUtils();
 
     @Inject
     public ActionProcessor(WorkflowExecutor executor, MetadataService metadataService) {
@@ -61,13 +59,13 @@ public class ActionProcessor {
         this.metadataService = metadataService;
     }
 
-    public Map<String, Object> execute(Action action, String payload, String event, String messageId) {
+    public Map<String, Object> execute(Action action, Object payloadObject, String event, String messageId) {
 
         logger.debug("Executing action: {} for event: {} with messageId:{}", action.getAction(), event, messageId);
 
-        Object jsonObject = payload;
+        Object jsonObject = payloadObject;
         if (action.isExpandInlineJSON()) {
-            jsonObject = expand(payload);
+            jsonObject = jsonUtils.expand(payloadObject);
         }
 
         switch (action.getAction()) {
@@ -138,57 +136,5 @@ public class ActionProcessor {
             throw e;
         }
         return output;
-    }
-
-    private Object getJson(String jsonAsString) {
-        try {
-            return objectMapper.readValue(jsonAsString, Object.class);
-        } catch (Exception e) {
-            return jsonAsString;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    @VisibleForTesting
-    Object expand(Object input) {
-        if (input instanceof List) {
-            expandList((List<Object>) input);
-            return input;
-        } else if (input instanceof Map) {
-            expandMap((Map<String, Object>) input);
-            return input;
-        } else if (input instanceof String) {
-            return getJson((String) input);
-        } else {
-            return input;
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void expandList(List<Object> input) {
-        for (Object value : input) {
-            if (value instanceof String) {
-                value = getJson(value.toString());
-            } else if (value instanceof Map) {
-                expandMap((Map<String, Object>) value);
-            } else if (value instanceof List) {
-                expandList((List<Object>) value);
-            }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void expandMap(Map<String, Object> input) {
-        for (Map.Entry<String, Object> e : input.entrySet()) {
-            Object value = e.getValue();
-            if (value instanceof String) {
-                value = getJson(value.toString());
-                e.setValue(value);
-            } else if (value instanceof Map) {
-                expandMap((Map<String, Object>) value);
-            } else if (value instanceof List) {
-                expandList((List<Object>) value);
-            }
-        }
     }
 }

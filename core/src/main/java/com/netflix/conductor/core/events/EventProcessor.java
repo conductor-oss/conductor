@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.core.events;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventExecution.Status;
@@ -28,6 +29,7 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
@@ -71,6 +73,8 @@ public class EventProcessor {
 
     private ExecutorService executorService;
     private final Map<String, ObservableQueue> eventToQueueMap = new ConcurrentHashMap<>();
+    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final JsonUtils jsonUtils = new JsonUtils();
 
     @Inject
     public EventProcessor(ExecutionService executionService, MetadataService metadataService,
@@ -160,19 +164,20 @@ public class EventProcessor {
 
     /**
      * Executes all the actions configured on all the event handlers triggered by the {@link Message} on the queue
-     * If any of the actions on a event handler fails due to a transient failure, the execution is not persisted such that it can retried
+     * If any of the actions on an event handler fails due to a transient failure, the execution is not persisted such that it can be retried
      *
      * @return a list of {@link EventExecution} that failed due to transient failures.
      */
     private List<EventExecution> executeEvent(String event, Message msg) throws Exception {
         List<EventHandler> eventHandlerList = metadataService.getEventHandlersForEvent(event, true);
+        Object payloadObject = getPayloadObject(msg.getPayload());
 
         List<EventExecution> transientFailures = new ArrayList<>();
         for (EventHandler eventHandler : eventHandlerList) {
             String condition = eventHandler.getCondition();
             if (StringUtils.isNotEmpty(condition)) {
                 logger.debug("Checking condition: {} for event: {}", condition, event);
-                Boolean success = ScriptEvaluator.evalBool(condition, msg.getPayload());
+                Boolean success = ScriptEvaluator.evalBool(condition, jsonUtils.expand(payloadObject));
                 if (!success) {
                     String id = msg.getId() + "_" + 0;
                     EventExecution eventExecution = new EventExecution(id, msg.getId());
@@ -183,6 +188,7 @@ public class EventProcessor {
                     eventExecution.getOutput().put("msg", msg.getPayload());
                     eventExecution.getOutput().put("condition", condition);
                     executionService.addEventExecution(eventExecution);
+                    logger.debug("Condition: {} not successful for event: {} with payload: {}", condition, eventHandler.getEvent(), msg.getPayload());
                     continue;
                 }
             }
@@ -217,7 +223,7 @@ public class EventProcessor {
             eventExecution.setAction(action.getAction());
             eventExecution.setStatus(Status.IN_PROGRESS);
             if (executionService.addEventExecution(eventExecution)) {
-                futuresList.add(CompletableFuture.supplyAsync(() -> execute(eventExecution, action, msg.getPayload()), executorService));
+                futuresList.add(CompletableFuture.supplyAsync(() -> execute(eventExecution, action, getPayloadObject(msg.getPayload())), executorService));
             } else {
                 logger.warn("Duplicate delivery/execution of message: {}", msg.getId());
             }
@@ -234,7 +240,7 @@ public class EventProcessor {
      */
     @SuppressWarnings("Guava")
     @VisibleForTesting
-    EventExecution execute(EventExecution eventExecution, Action action, String payload) {
+    EventExecution execute(EventExecution eventExecution, Action action, Object payload) {
         try {
             String methodName = "executeEventAction";
             String description = String.format("Executing action: %s for event: %s with messageId: %s with payload: %s", action.getAction(), eventExecution.getId(), eventExecution.getMessageId(), payload);
@@ -271,5 +277,17 @@ public class EventProcessor {
                     (throwableException instanceof ApplicationException && ((ApplicationException) throwableException).getCode() != ApplicationException.Code.BACKEND_ERROR));
         }
         return true;
+    }
+
+    private Object getPayloadObject(String payload) {
+        Object payloadObject = null;
+        if (payload != null) {
+            try {
+                payloadObject = objectMapper.readValue(payload, Object.class);
+            } catch (Exception e) {
+                payloadObject = payload;
+            }
+        }
+        return payloadObject;
     }
 }

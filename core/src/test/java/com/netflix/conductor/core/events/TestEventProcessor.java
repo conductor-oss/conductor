@@ -42,6 +42,7 @@ import rx.Observable;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
@@ -83,7 +84,7 @@ public class TestEventProcessor {
 
         queue = mock(ObservableQueue.class);
         Message[] messages = new Message[1];
-        messages[0] = new Message("t0", "{}", "t0");
+        messages[0] = new Message("t0", "{\"Type\":\"Notification\",\"MessageId\":\"7e4e6415-01e9-5caf-abaa-37fd05d446ff\",\"Message\":\"{\\n    \\\"testKey1\\\": \\\"level1\\\",\\n    \\\"metadata\\\": {\\n      \\\"testKey2\\\": 123456 }\\n  }\",\"Timestamp\":\"2018-08-10T21:22:05.029Z\",\"SignatureVersion\":\"1\"}", "t0");
 
         Observable<Message> msgObservable = Observable.from(messages);
         when(queue.observe()).thenReturn(msgObservable);
@@ -172,6 +173,55 @@ public class TestEventProcessor {
 
         verify(queue, atMost(1)).ack(any());
         verify(queue, never()).publish(any());
+    }
+
+    @Test
+    public void testEventHandlerWithCondition() {
+        EventHandler eventHandler = new EventHandler();
+        eventHandler.setName("cms_intermediate_video_ingest_handler");
+        eventHandler.setActive(true);
+        eventHandler.setEvent("sqs:dev_cms_asset_ingest_queue");
+        eventHandler.setCondition("$.Message.testKey1 == 'level1' && $.Message.metadata.testKey2 == 123456");
+
+        Map<String, Object> startWorkflowInput = new LinkedHashMap<>();
+        startWorkflowInput.put("param1", "${Message.metadata.testKey2}");
+        startWorkflowInput.put("param2", "SQS-${MessageId}");
+
+        Action startWorkflowAction = new Action();
+        startWorkflowAction.setAction(Type.start_workflow);
+        startWorkflowAction.setStart_workflow(new StartWorkflow());
+        startWorkflowAction.getStart_workflow().setName("cms_artwork_automation");
+        startWorkflowAction.getStart_workflow().setVersion(1);
+        startWorkflowAction.getStart_workflow().setInput(startWorkflowInput);
+        startWorkflowAction.setExpandInlineJSON(true);
+        eventHandler.getActions().add(startWorkflowAction);
+
+        eventHandler.setEvent(event);
+
+        when(metadataService.getEventHandlers()).thenReturn(Collections.singletonList(eventHandler));
+        when(metadataService.getEventHandlersForEvent(event, true)).thenReturn(Collections.singletonList(eventHandler));
+        when(executionService.addEventExecution(any())).thenReturn(true);
+        when(queue.rePublishIfNoAck()).thenReturn(false);
+
+        String id = UUID.randomUUID().toString();
+        AtomicBoolean started = new AtomicBoolean(false);
+        doAnswer((Answer<String>) invocation -> {
+            started.set(true);
+            return id;
+        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStart_workflow().getName(), startWorkflowAction.getStart_workflow().getVersion(), startWorkflowAction.getStart_workflow().getCorrelationId(), startWorkflowAction.getStart_workflow().getInput(), event);
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName(startWorkflowAction.getStart_workflow().getName());
+        when(metadataService.getWorkflowDef(any(), any())).thenReturn(workflowDef);
+
+        ActionProcessor actionProcessor = new ActionProcessor(workflowExecutor, metadataService);
+
+        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, new TestConfiguration());
+        assertNotNull(eventProcessor.getQueues());
+        assertEquals(1, eventProcessor.getQueues().size());
+
+        Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+        assertTrue(started.get());
     }
 
     @Test
