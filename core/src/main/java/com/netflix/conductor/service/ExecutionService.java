@@ -206,7 +206,6 @@ public class ExecutionService {
 	 * This method removes the task from the un-acked Queue
 	 *
 	 * @param taskId: the taskId that needs to be updated and removed from the unacked queue
-	 * @throws Exception In case of an error while getting the Task from the executionDao
 	 * @return True in case of successful removal of the taskId from the un-acked queue
 	 */
 	public boolean ackTaskReceived(String taskId) {

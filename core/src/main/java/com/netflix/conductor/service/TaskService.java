@@ -85,7 +85,6 @@ public class TaskService {
      * @param count Number of tasks
      * @param timeout Timeout for polling in milliseconds
      * @return list of {@link Task}
-     * @throws Exception
      */
     public List<Task> batchPoll(String taskType, String workerId, String domain, Integer count, Integer timeout) {
         ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
@@ -140,7 +139,7 @@ public class TaskService {
      * @param workerId Id of the worker
      * @return `true|false` if task if received or not
      */
-    public String ackTaskReceived(String taskId, String workerId) throws Exception {
+    public String ackTaskReceived(String taskId, String workerId) {
         ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
         logger.debug("Ack received for task: {} from worker: {}", taskId, workerId);
         return String.valueOf(executionService.ackTaskReceived(taskId));
@@ -244,7 +243,6 @@ public class TaskService {
      * Requeue pending tasks.
      * @param taskType Task name.
      * @return number of tasks requeued.
-     * @throws Exception
      */
     public String requeuePendingTask(String taskType) {
         ServiceUtils.checkNotNullOrEmpty(taskType,"TaskType cannot be null or empty.");
