@@ -162,6 +162,11 @@ public abstract class NATSAbstractQueue implements ObservableQueue {
             }
         });
     }
+
+    @Override
+    public boolean rePublishIfNoAck() {
+        return true;
+    }
     
     @Override
     public void close() {

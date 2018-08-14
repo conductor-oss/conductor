@@ -65,9 +65,18 @@ public class SubWorkflowTaskMapperTest {
         when(parametersUtils.getTaskInputV2(anyMap(), any(Workflow.class), anyString(), any(TaskDef.class)))
                 .thenReturn(subWorkflowParamMap);
 
+
         //When
-        TaskMapperContext taskMapperContext = new TaskMapperContext(workflowDef, workflowInstance, taskToSchedule,
-                taskInput, 0, null, IDGenerator.generate(), deciderService);
+        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+                .withWorkflowDefinition(workflowDef)
+                .withWorkflowInstance(workflowInstance)
+                .withTaskToSchedule(taskToSchedule)
+                .withTaskInput(taskInput)
+                .withRetryCount(0)
+                .withTaskId(IDGenerator.generate())
+                .withDeciderService(deciderService)
+                .build();
+
         List<Task> mappedTasks = subWorkflowTaskMapper.getMappedTasks(taskMapperContext);
 
         //Then

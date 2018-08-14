@@ -16,16 +16,6 @@
 
 package com.netflix.conductor.contribs.json;
 
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-
-import javax.annotation.Nonnull;
-import javax.inject.Singleton;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.cache.CacheBuilder;
@@ -37,24 +27,31 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import net.thisptr.jackson.jq.JsonQuery;
 import net.thisptr.jackson.jq.exception.JsonQueryException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nonnull;
+import javax.inject.Singleton;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 @Singleton
 public class JsonJqTransform extends WorkflowSystemTask {
 
 	private static final Logger logger = LoggerFactory.getLogger(JsonJqTransform.class);
-	
+	private static final String NAME = "JSON_JQ_TRANSFORM";
 	private static final String QUERY_EXPRESSION_PARAMETER = "queryExpression";
 	
-	private ObjectMapper om = new ObjectMapper();
-	
-	private LoadingCache<String, JsonQuery> queryCache = createQueryCache();
+	private final ObjectMapper objectMapper = new ObjectMapper();
+	private final LoadingCache<String, JsonQuery> queryCache = createQueryCache();
 
 	public JsonJqTransform() {
-		super("JSON_JQ_TRANSFORM");
+		super(NAME);
 	}
 	
 	@Override
-	public void start(Workflow workflow, Task task, WorkflowExecutor executor) throws Exception {
+	public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
 		Map<String, Object> taskInput = task.getInputData();
 		Map<String, Object> taskOutput = task.getOutputData();
 
@@ -67,7 +64,7 @@ public class JsonJqTransform extends WorkflowSystemTask {
 		}
 		
 		try {
-			JsonNode input = om.valueToTree(taskInput);
+			JsonNode input = objectMapper.valueToTree(taskInput);
 			JsonQuery query = queryCache.get(queryExpression);
 			List<JsonNode> result = query.apply(input);
 			

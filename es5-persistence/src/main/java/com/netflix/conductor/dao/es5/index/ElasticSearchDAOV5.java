@@ -64,6 +64,7 @@ import org.elasticsearch.index.query.QueryStringQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
+import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
@@ -323,7 +324,10 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery("*");
             BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
 
-            final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(indexName).setQuery(fq).setTypes(TASK_DOC_TYPE);
+            final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(logIndexPrefix + "*")
+                    .setQuery(fq).setTypes(LOG_DOC_TYPE)
+                    .addSort(SortBuilders.fieldSort("createdTime")
+                            .order(SortOrder.ASC));
             SearchResponse response = srb.execute().actionGet();
             SearchHit[] hits = response.getHits().getHits();
             List<TaskExecLog> logs = new ArrayList<>(hits.length);
@@ -431,7 +435,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
     @Override
     public void updateWorkflow(String workflowInstanceId, String[] keys, Object[] values) {
         if (keys.length != values.length) {
-            throw new IllegalArgumentException("Number of keys and values should be same.");
+            throw new ApplicationException(Code.INVALID_INPUT, "Number of keys and values do not match");
         }
 
         UpdateRequest request = new UpdateRequest(indexName, WORKFLOW_DOC_TYPE, workflowInstanceId);

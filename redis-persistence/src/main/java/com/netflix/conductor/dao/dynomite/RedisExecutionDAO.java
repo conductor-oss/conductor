@@ -391,9 +391,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			for(Task task : wf.getTasks()) {
 				removeTask(task.getTaskId());
 			}
-
 		}catch(Exception e) {
-			throw new ApplicationException(e.getMessage(), e);
+			throw new ApplicationException(Code.BACKEND_ERROR, "Error removing workflow: " + workflowId, e);
 		}
 	}
 
@@ -445,17 +444,17 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	@Override
 	public List<String> getRunningWorkflowIds(String workflowName) {
 		Preconditions.checkNotNull(workflowName, "workflowName cannot be null");
-		List<String> wfIds = new LinkedList<String>();
+		List<String> workflowIds;
 		recordRedisDaoRequests("getRunningWorkflowsByName");
-		Set<String> pendingWfs = dynoClient.smembers(nsKey(PENDING_WORKFLOWS, workflowName));
-		wfIds = new LinkedList<String>(pendingWfs);
-		return wfIds;
+		Set<String> pendingWorkflows = dynoClient.smembers(nsKey(PENDING_WORKFLOWS, workflowName));
+		workflowIds = new LinkedList<>(pendingWorkflows);
+		return workflowIds;
 	}
 
 	@Override
 	public List<Workflow> getPendingWorkflowsByType(String workflowName) {
 		Preconditions.checkNotNull(workflowName, "workflowName cannot be null");
-		List<Workflow> workflows = new LinkedList<Workflow>();
+		List<Workflow> workflows = new LinkedList<>();
 		List<String> wfIds = getRunningWorkflowIds(workflowName);
 		for(String wfId : wfIds) {
 			workflows.add(getWorkflow(wfId));
@@ -469,7 +468,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		Preconditions.checkNotNull(startTime, "startTime cannot be null");
 		Preconditions.checkNotNull(endTime, "endTime cannot be null");
 
-		List<Workflow> workflows = new LinkedList<Workflow>();
+		List<Workflow> workflows = new LinkedList<>();
 
 		// Get all date strings between start and end
 		List<String> dateStrs = dateStrBetweenDates(startTime, endTime);
@@ -621,7 +620,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			return false;
 
 		} catch (Exception e) {
-			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
+			throw new ApplicationException(Code.BACKEND_ERROR, "Unable to add event execution for " + eventExecution.getId(), e);
 		}
 	}
 
@@ -638,7 +637,19 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			indexDAO.addEventExecution(eventExecution);
 
 		} catch (Exception e) {
-			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
+			throw new ApplicationException(Code.BACKEND_ERROR, "Unable to update event execution for " + eventExecution.getId(), e);
+		}
+	}
+
+	@Override
+	public void removeEventExecution(EventExecution eventExecution) {
+		try {
+			String key = nsKey(EVENT_EXECUTION, eventExecution.getName(), eventExecution.getEvent(), eventExecution.getMessageId());
+			logger.info("removing event execution {}", key);
+			dynoClient.hdel(key, eventExecution.getId());
+			recordRedisDaoEventRequests("removeEventExecution", eventExecution.getEvent());
+		} catch	(Exception e) {
+			throw new ApplicationException(Code.BACKEND_ERROR, "Unable to remove event execution for " + eventExecution.getId(), e);
 		}
 	}
 
@@ -662,7 +673,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			return executions;
 
 		} catch (Exception e) {
-			throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
+			throw new ApplicationException(Code.BACKEND_ERROR, "Unable to get event executions for " + eventHandlerName, e);
 		}
 	}
 

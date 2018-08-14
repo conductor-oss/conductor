@@ -15,10 +15,10 @@
  */
 package com.netflix.conductor.dao;
 
+import com.netflix.conductor.core.events.queue.Message;
+
 import java.util.List;
 import java.util.Map;
-
-import com.netflix.conductor.core.events.queue.Message;
 
 /**
  * 
@@ -34,13 +34,13 @@ public interface QueueDAO {
 	 * @param id message id
 	 * @param offsetTimeInSecond time in seconds, after which the message should be marked visible.  (for timed queues)
 	 */
-	public void push(String queueName, String id, long offsetTimeInSecond);
+	void push(String queueName, String id, long offsetTimeInSecond);
 	
 	/**
 	 * @param queueName Name of the queue
 	 * @param messages messages to be pushed.
 	 */
-	public void push(String queueName, List<Message> messages);
+	void push(String queueName, List<Message> messages);
 
 	/**
 	 * 
@@ -49,7 +49,7 @@ public interface QueueDAO {
 	 * @param offsetTimeInSecond time in seconds, after which the message should be marked visible.  (for timed queues)
 	 * @return true if the element was added to the queue.  false otherwise indicating the element already exists in the queue.
 	 */
-	public boolean pushIfNotExists(String queueName, String id, long offsetTimeInSecond);
+	boolean pushIfNotExists(String queueName, String id, long offsetTimeInSecond);
 
 	/**
 	 * 
@@ -58,7 +58,7 @@ public interface QueueDAO {
 	 * @param timeout timeout in milliseconds
 	 * @return list of elements from the named queue
 	 */
-	public List<String> pop(String queueName, int count, int timeout);
+	List<String> pop(String queueName, int count, int timeout);
 
 	
 	/**
@@ -68,21 +68,21 @@ public interface QueueDAO {
 	 * @param timeout timeout in milliseconds
 	 * @return list of elements from the named queue
 	 */
-	public List<Message> pollMessages(String queueName, int count, int timeout);
+	List<Message> pollMessages(String queueName, int count, int timeout);
 	
 	/**
 	 * 
 	 * @param queueName Name of the queue
 	 * @param messageId Message id
 	 */
-	public void remove(String queueName, String messageId);
+	void remove(String queueName, String messageId);
 
 	/**
 	 * 
 	 * @param queueName Name of the queue
 	 * @return size of the queue
 	 */
-	public int getSize(String queueName);
+	int getSize(String queueName);
 
 	/**
 	 * 
@@ -90,7 +90,7 @@ public interface QueueDAO {
 	 * @param messageId Message Id
 	 * @return true if the message was found and ack'ed
 	 */
-	public boolean ack(String queueName, String messageId);
+	boolean ack(String queueName, String messageId);
 	
 	/**
 	 * Extend the lease of the unacknowledged message for longer period.
@@ -99,27 +99,27 @@ public interface QueueDAO {
 	 * @param unackTimeout timeout in milliseconds for which the unack lease should be extended. (replaces the current value with this value)
 	 * @return true if the message was updated with extended lease.  false otherwise.
 	 */
-	public boolean setUnackTimeout(String queueName, String messageId, long unackTimeout);
+	boolean setUnackTimeout(String queueName, String messageId, long unackTimeout);
 
 	/**
 	 * 
 	 * @param queueName Name of the queue
 	 */
-	public void flush(String queueName);
+	void flush(String queueName);
 
 	/**
 	 * 
 	 * @return key : queue name, value: size of the queue
 	 */
-	public Map<String, Long> queuesDetail();
+	Map<String, Long> queuesDetail();
 
 	/**
 	 * 
 	 * @return key : queue name, value: map of shard name to size and unack queue size
 	 */
-	public Map<String, Map<String, Map<String, Long>>> queuesDetailVerbose();
+	Map<String, Map<String, Map<String, Long>>> queuesDetailVerbose();
 	
-	public default void processUnacks(String queueName) {
+	default void processUnacks(String queueName) {
 		
 	}
 	
@@ -130,7 +130,7 @@ public interface QueueDAO {
 	 * @param offsetTimeInSecond time in seconds, after which the message should be marked visible.  (for timed queues)
 	 * @return true if the message is in queue and the change was successful else returns false  
 	 */
-	public boolean setOffsetTime(String queueName, String id, long offsetTimeInSecond);
+	boolean setOffsetTime(String queueName, String id, long offsetTimeInSecond);
 
 
 }
