@@ -1,6 +1,7 @@
 package com.netflix.conductor.service;
 
 import com.google.inject.Singleton;
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.service.utils.ServiceUtils;
 
@@ -8,6 +9,7 @@ import javax.inject.Inject;
 import java.util.List;
 
 @Singleton
+@Trace
 public class WorkflowBulkService {
     private static final int MAX_REQUEST_ITEMS = 1000;
     private final WorkflowExecutor workflowExecutor;

@@ -143,7 +143,6 @@ public class WorkflowServiceTest {
             return;
         }
 
-
         WorkflowContext.set(new WorkflowContext("junit_app"));
         for (int i = 0; i < 21; i++) {
 

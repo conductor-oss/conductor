@@ -5,6 +5,15 @@ public class ErrorResponse {
     private String code;
     private String message;
     private String instance;
+    private boolean retryable;
+
+    public boolean isRetryable() {
+        return retryable;
+    }
+
+    public void setRetryable(boolean retryable) {
+        this.retryable = retryable;
+    }
 
     public String getCode() {
         return code;

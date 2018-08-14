@@ -159,8 +159,10 @@ public abstract class ClientBase {
                 return null;
             }
             return postWithEntity.apply(webResourceBuilder);
+        } catch (UniformInterfaceException e) {
+            handleUniformInterfaceException(e, uri);
         } catch (RuntimeException e) {
-            handleException(uri, e);
+            handleRuntimeException(e, uri);
         }
         return null;
     }
@@ -215,12 +217,12 @@ public abstract class ClientBase {
         if (clientResponse == null) {
             throw new ConductorClientException(String.format("Unable to invoke Conductor API with uri: %s", uri));
         }
-        logger.error("Unable to invoke Conductor API with uri: {}, unexpected response from server: {}", uri, clientResponseToString(clientResponse), exception);
         try {
             if (clientResponse.getStatus() < 300) {
                 return;
             }
             String errorMessage = clientResponse.getEntity(String.class);
+            logger.error("Unable to invoke Conductor API with uri: {}, unexpected response from server: {}", uri, clientResponseToString(exception.getResponse()), exception);
             ErrorResponse errorResponse = null;
             try {
                 errorResponse = objectMapper.readValue(errorMessage, ErrorResponse.class);
@@ -234,6 +236,8 @@ public abstract class ClientBase {
             handleClientHandlerException(e, uri);
         } catch (RuntimeException e) {
             handleRuntimeException(e, uri);
+        } finally {
+            clientResponse.close();
         }
     }
 

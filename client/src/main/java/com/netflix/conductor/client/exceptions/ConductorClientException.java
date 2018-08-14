@@ -9,7 +9,6 @@ public class ConductorClientException extends RuntimeException {
     private String message;
     private String instance;
     private String code;
-
     private boolean retryable;
 
     public ConductorClientException() {

@@ -80,23 +80,11 @@ public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationEx
 			Monitors.error("error", "error");
 		}
 
-		MediaType mediaType = context.getRequest().selectVariant(supportedMediaTypes).getMediaType();
-
 		Map<String, Object> entityMap = e.toMap();
 		entityMap.put("instance", host);
 
-		if(mediaType == null) {
-			mediaType = MediaType.APPLICATION_JSON_TYPE;
-		}
-
-		Object entity = entityMap;
-
-		if (mediaType != MediaType.APPLICATION_JSON_TYPE) {
-			entity = e.toMap().toString();
-		}
-
-		responseBuilder.type(mediaType);
-		responseBuilder.entity(entity);
+		responseBuilder.type(MediaType.APPLICATION_JSON_TYPE);
+		responseBuilder.entity(entityMap);
 
 		return responseBuilder.build();
 	}

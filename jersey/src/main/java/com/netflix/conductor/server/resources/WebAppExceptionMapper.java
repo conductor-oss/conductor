@@ -24,6 +24,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
 
+
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.Code;
 import com.sun.jersey.api.NotFoundException;
@@ -55,10 +56,10 @@ public class WebAppExceptionMapper implements ExceptionMapper<WebApplicationExce
         Map<String, Object> entityMap = new LinkedHashMap<>();
         entityMap.put("instance", host);
         entityMap.put("code", code.toString());
-        entityMap.put("message", response.toString());
+        entityMap.put("message", exception.getCause());
         entityMap.put("isRetryable", false);
 
-        return Response.status(response.getStatus()).entity(entityMap.toString()).build();
+        return Response.status(response.getStatus()).entity(entityMap).build();
 	}
 
 }

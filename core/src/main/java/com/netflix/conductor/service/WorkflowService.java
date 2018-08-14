@@ -48,6 +48,7 @@ public class WorkflowService {
      */
     public String startWorkflow(StartWorkflowRequest startWorkflowRequest) {
         ServiceUtils.checkNotNull(startWorkflowRequest, "StartWorkflowRequest cannot be null");
+        ServiceUtils.checkNotNullOrEmpty(startWorkflowRequest.getName(), "Workflow name cannot be null or empty");
         WorkflowDef workflowDef = metadata.getWorkflowDef(startWorkflowRequest.getName(), startWorkflowRequest.getVersion());
         if (workflowDef == null) {
             throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
@@ -71,7 +72,7 @@ public class WorkflowService {
      */
     public String startWorkflow(String name, Integer version,
                                 String correlationId, Map<String, Object> input) {
-
+        ServiceUtils.checkNotNullOrEmpty(name, "Name cannot be null or empty");
         WorkflowDef workflowDef = metadata.getWorkflowDef(name, version);
         if (workflowDef == null) {
             throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
@@ -95,7 +96,7 @@ public class WorkflowService {
         return executionService.getWorkflowInstances(name, correlationId, includeClosed, includeTasks);
     }
 
-    /*
+    /**
      * Lists workflows for the given correlation id.
      * @param name Name of the workflow.
      * @param includeClosed CorrelationID of the workflow you want to start.
@@ -105,6 +106,7 @@ public class WorkflowService {
      */
     public Map<String, List<Workflow>> getWorkflows(String name, boolean includeClosed,
                                                     boolean includeTasks, List<String> correlationIds) {
+        ServiceUtils.checkNotNullOrEmpty(name,"Name of the workflow cannot be null or empty.");
         Map<String, List<Workflow>> workflowMap = new HashMap<>();
         for (String correlationId : correlationIds) {
             List<Workflow> workflows = executionService.getWorkflowInstances(name, correlationId, includeClosed, includeTasks);
@@ -113,9 +115,9 @@ public class WorkflowService {
         return workflowMap;
     }
 
-    /*
+    /**
      * Gets the workflow by workflow Id.
-     * @param name         Name of the workflow.
+     * @param workflowId Id of the workflow.
      * @param includeTasks Includes tasks associated with workflow.
      * @return an instance of {@link Workflow}
      */
@@ -124,27 +126,27 @@ public class WorkflowService {
         Workflow workflow = executionService.getExecutionStatus(workflowId, includeTasks);
         if (workflow == null) {
             throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                    String.format("Workflow with Id=%s not found.", workflowId));
+                    String.format("Workflow with Id: %s not found.", workflowId));
         }
         return workflow;
     }
 
-    /*
+    /**
      * Removes the workflow from the system.
      * @param workflowId WorkflowID of the workflow you want to remove from system.
      * @param archiveWorkflow Archives the workflow.
      */
-    public void deleteWorkflow(String workflowId, boolean archiveWorkflow) throws Exception {
+    public void deleteWorkflow(String workflowId, boolean archiveWorkflow) {
         ServiceUtils.checkNotNullOrEmpty(workflowId,"WorkflowId cannot be null or empty.");
         executionService.removeWorkflow(workflowId, archiveWorkflow);
     }
 
-    /*
+    /**
      * Retrieves all the running workflows.
-     * @param workflowId WorkflowID of the workflow.
+     * @param workflowName Name of the workflow.
      * @param version Version of the workflow.
-     * @param startTime
-     * @param endTime
+     * @param startTime Starttime of the workflow.
+     * @param endTime EndTime of the workflow
      * @return a list of workflow Ids.
      */
     public List<String> getRunningWorkflows(String workflowName, Integer version,
@@ -157,7 +159,7 @@ public class WorkflowService {
         }
     }
 
-    /*
+    /**
      * Starts the decision task for a workflow.
      * @param workflowId WorkflowId of the workflow.
      */
@@ -166,7 +168,7 @@ public class WorkflowService {
         workflowExecutor.decide(workflowId);
     }
 
-    /*
+    /**
      * Pauses the workflow given a worklfowId.
      * @param workflowId WorkflowId of the workflow.
      */
@@ -175,7 +177,7 @@ public class WorkflowService {
         workflowExecutor.pauseWorkflow(workflowId);
     }
 
-    /*
+    /**
      * Resumes the workflow.
      * @param workflowId WorkflowId of the workflow.
      */
@@ -184,23 +186,24 @@ public class WorkflowService {
         workflowExecutor.resumeWorkflow(workflowId);
     }
 
-    /*
+    /**
      * Skips a given task from a current running workflow.
      * @param workflowId WorkflowId of the workflow.
      * @param taskReferenceName The task reference name.
      * @param skipTaskRequest {@link SkipTaskRequest} for task you want to skip.
      */
     public void skipTaskFromWorkflow(String workflowId, String taskReferenceName,
-                                     SkipTaskRequest skipTaskRequest) throws Exception {
+                                     SkipTaskRequest skipTaskRequest) {
         ServiceUtils.checkNotNullOrEmpty(workflowId,"WorkflowId cannot be null or empty.");
         ServiceUtils.checkNotNullOrEmpty(taskReferenceName,"TaskReferenceName cannot be null or empty.");
         workflowExecutor.skipTaskFromWorkflow(workflowId, taskReferenceName, skipTaskRequest);
     }
 
-    /*
+    /**
      * Reruns the workflow from a specific task.
      * @param workflowId WorkflowId of the workflow you want to rerun.
-     * @param RerunWorkflowRequest (@link RerunWorkflowRequest) for the workflow.
+     * @param request (@link RerunWorkflowRequest) for the workflow.
+     * @return WorkflowId of the rerun workflow.
      */
     public String rerunWorkflow(String workflowId, RerunWorkflowRequest request) {
         ServiceUtils.checkNotNullOrEmpty(workflowId,"WorkflowId cannot be null or empty.");
@@ -209,7 +212,7 @@ public class WorkflowService {
         return workflowExecutor.rerun(request);
     }
 
-    /*
+    /**
      * Restarts a completed workflow.
      * @param workflowId WorkflowId of the workflow.
      */
@@ -218,7 +221,7 @@ public class WorkflowService {
         workflowExecutor.rewind(workflowId);
     }
 
-    /*
+    /**
      * Retries the last failed task.
      * @param workflowId WorkflowId of the workflow.
      */
@@ -227,7 +230,7 @@ public class WorkflowService {
         workflowExecutor.retry(workflowId);
     }
 
-    /*
+    /**
      * Resets callback times of all in_progress tasks to 0.
      * @param workflowId WorkflowId of the workflow.
      */
@@ -236,7 +239,7 @@ public class WorkflowService {
         workflowExecutor.resetCallbacksForInProgressTasks(workflowId);
     }
 
-    /*
+    /**
      * Terminate workflow execution.
      * @param workflowId WorkflowId of the workflow.
      * @param reason Reason for terminating the workflow.
@@ -246,9 +249,15 @@ public class WorkflowService {
         workflowExecutor.terminateWorkflow(workflowId, reason);
     }
 
-    /*
-     * Search for workflows based on payload and given parameters. Use sort options as sort=<field>:ASC|DESC
-     * e.g. sort=name&sort=workflowId:DESC. If order is not specified, defaults to ASC
+    /**
+     * Search for workflows based on payload and given parameters. Use sort options as sort ASCor DESC
+     * e.g. sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
+     * @param start Start index of pagination
+     * @param size  Number of entries
+     * @param sort Sorting type ASC|DESC
+     * @param freeText Text you want to search
+     * @param query Query you want to search
+     * @return instance of {@link SearchResult}
      */
     public SearchResult<WorkflowSummary> searchWorkflows(int start, int size, String sort, String freeText, String query) {
         ServiceUtils.checkArgument(size < maxSearchSize, String.format("Cannot return more than %d workflows." +
@@ -256,9 +265,15 @@ public class WorkflowService {
         return executionService.search(query, freeText, start, size, ServiceUtils.convertToSortedList(sort));
     }
 
-    /*
-     * Search for workflows based on task parameters. Use sort options as sort=<field>:ASC|DESC e.g.
-     * sort=name&sort=workflowId:DESC. If order is not specified, defaults to ASC."
+    /**
+     * Search for workflows based on task parameters. Use sort options as sort ASC or DESC e.g.
+     * sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
+     * @param start Start index of pagination
+     * @param size  Number of entries
+     * @param sort Sorting type ASC|DESC
+     * @param freeText Text you want to search
+     * @param query Query you want to search
+     * @return instance of {@link SearchResult}
      */
     public SearchResult<WorkflowSummary> searchWorkflowsByTasks(int start, int size, String sort, String freeText, String query) {
         return executionService.searchWorkflowByTasks(query, freeText, start, size, ServiceUtils.convertToSortedList(sort));

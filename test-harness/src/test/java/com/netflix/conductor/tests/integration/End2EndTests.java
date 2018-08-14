@@ -29,6 +29,7 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.netflix.conductor.client.http.MetadataClient;
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -114,8 +115,7 @@ public class End2EndTests {
 		t1.setName("t1");
 		t1.setWorkflowTaskType(Type.SIMPLE);
 		t1.setTaskReferenceName("t1");
-		
-		
+
 		def.getTasks().add(t0);
 		def.getTasks().add(t1);
 		
@@ -133,7 +133,11 @@ public class End2EndTests {
 		Workflow wf = wc.getWorkflow(workflowId, false);
 		assertEquals(0, wf.getTasks().size());
 		assertEquals(workflowId, wf.getWorkflowId());
-		
+
+		List<Workflow> workflowList = wc.getWorkflows(def.getName(), correlationId, false, false);
+		assertEquals(1, workflowList.size());
+		assertEquals(workflowId, workflowList.get(0).getWorkflowId());
+
 		wf = wc.getWorkflow(workflowId, true);
 		assertNotNull(wf);
 		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
@@ -259,8 +263,47 @@ public class End2EndTests {
             metadataClient.registerWorkflowDef(def);
         } catch (ConductorClientException e) {
             int statusCode = e.getStatus();
+			boolean retryable = e.isRetryable();
             assertEquals(404, statusCode);
+			assertFalse(retryable);
         }
 	}
+
+	@Test
+	public void testStartWorkflow() {
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        try{
+            wc.startWorkflow(startWorkflowRequest);
+        } catch (ConductorClientException e) {
+            int statuCode = e.getStatus();
+            assertEquals(400, statuCode);
+            assertEquals("Workflow name cannot be null or empty", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
+
+    @Test
+    public void testUpdateTask() {
+	    TaskResult taskResult = new TaskResult();
+	    try{
+	        tc.updateTask(taskResult, "taskTest");
+        } catch (ConductorClientException e){
+            int statuCode = e.getStatus();
+            assertEquals(400, statuCode);
+            assertEquals("Task workerId cannot be null or empty", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
+
+    @Test
+    public void testGetWorfklowNotFound() {
+	    try{
+	        wc.getWorkflow("w123", true);
+        } catch (ConductorClientException e) {
+	        assertEquals(404, e.getStatus());
+            assertEquals("No such workflow found by id: w123", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
 	
 }

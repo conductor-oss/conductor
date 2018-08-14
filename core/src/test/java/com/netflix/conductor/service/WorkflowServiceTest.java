@@ -179,7 +179,7 @@ public class WorkflowServiceTest {
             when(mockExecutionService.getExecutionStatus(anyString(), anyBoolean())).thenReturn(null);
             workflowService.getExecutionStatus("w123", true);
         } catch (ApplicationException ex) {
-            String message = "Workflow with Id=w123 not found.";
+            String message = "Workflow with Id: w123 not found.";
             assertEquals(message, ex.getMessage());
             throw ex;
         }

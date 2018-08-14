@@ -27,6 +27,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import com.google.common.base.Preconditions;
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -46,6 +47,7 @@ import org.slf4j.LoggerFactory;
  */
 
 @Singleton
+@Trace
 public class TaskService {
 
     private static final Logger logger = LoggerFactory.getLogger(TaskService.class);
@@ -127,6 +129,8 @@ public class TaskService {
      */
     public String updateTask(TaskResult taskResult) {
         ServiceUtils.checkNotNull(taskResult, "TaskResult cannot be null or empty.");
+        ServiceUtils.checkNotNullOrEmpty(taskResult.getWorkerId(), "Task workerId cannot be null or empty");
+        ServiceUtils.checkNotNullOrEmpty(taskResult.getTaskId(), "Task ID cannot be null or empty");
         logger.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
         executionService.updateTask(taskResult);
         logger.debug("Task: {} updated successfully with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());

@@ -71,21 +71,11 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
         } else {
             applicationException = new ApplicationException(Code.INTERNAL_ERROR, exception.getMessage(), exception);
         }
-
-		MediaType mediaType = context.getRequest().selectVariant(supportedMediaTypes).getMediaType();
-
-		if(mediaType == null){
-			mediaType = MediaType.APPLICATION_JSON_TYPE;
-		}
 		
 		Map<String, Object> entityMap = applicationException.toMap();
 		entityMap.put("instance", host);
-		Object entity = entityMap;
-		if (MediaType.APPLICATION_JSON_TYPE != mediaType) {
-			entity = entity.toString();
-		}
 		
-		return Response.status(applicationException.getHttpStatusCode()).entity(entity).type(mediaType).build();
+		return Response.status(applicationException.getHttpStatusCode()).entity(entityMap).type(MediaType.APPLICATION_JSON_TYPE).build();
 	}
 	
 }

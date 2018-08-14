@@ -91,7 +91,7 @@ public class ApplicationException extends RuntimeException {
 		HashMap<String, Object> map = new LinkedHashMap<>();
 		map.put("code", code.name());
 		map.put("message", super.getMessage());
-		map.put("isRetryable", isRetryable());
+		map.put("retryable", isRetryable());
 		return map;
 	}
 }

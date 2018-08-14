@@ -327,7 +327,7 @@ public class ExecutionService {
 		return executionDAO.getRunningWorkflowIds(workflowName);
 	}
 
-	public void removeWorkflow(String workflowId, boolean archiveWorkflow) throws Exception {
+	public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
 		executionDAO.removeWorkflow(workflowId, archiveWorkflow);
 	}
 
