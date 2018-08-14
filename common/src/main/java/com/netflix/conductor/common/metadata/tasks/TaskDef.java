@@ -22,6 +22,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import com.netflix.conductor.common.metadata.Auditable;
 
@@ -31,9 +32,9 @@ import com.netflix.conductor.common.metadata.Auditable;
  */
 public class TaskDef extends Auditable {
 	
-	public static enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY}
+	public enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY}
 	
-	public static enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF}
+	public enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF}
 	
 	private static final int ONE_HOUR = 60 * 60;
 	
@@ -61,12 +62,14 @@ public class TaskDef extends Auditable {
 	private int responseTimeoutSeconds = ONE_HOUR;
 	
 	private Integer concurrentExecLimit;
-	
+
+	private Integer rateLimitPerSecond;
+
 	private Map<String, Object> inputTemplate = new HashMap<>();
-		
+
 	public TaskDef() {
 	}
-	
+
 	public TaskDef(String name) {
 		this.name = name;
 	}
@@ -140,7 +143,7 @@ public class TaskDef extends Auditable {
 	}
 
 	/**
-	 * 
+	 *
 	 * @return Returns the input keys
 	 */
 	public List<String> getInputKeys() {
@@ -168,7 +171,7 @@ public class TaskDef extends Auditable {
 		this.outputKeys = outputKeys;
 	}
 
-	
+
 	/**
 	 * @return the timeoutPolicy
 	 */
@@ -203,17 +206,17 @@ public class TaskDef extends Auditable {
 	public int getRetryDelaySeconds() {
 		return retryDelaySeconds;
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @return the timeout for task to send response.  After this timeout, the task will be re-queued
 	 */
 	public int getResponseTimeoutSeconds() {
 		return responseTimeoutSeconds;
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @param responseTimeoutSeconds - timeout for task to send response.  After this timeout, the task will be re-queued
 	 */
 	public void setResponseTimeoutSeconds(int responseTimeoutSeconds) {
@@ -226,7 +229,7 @@ public class TaskDef extends Auditable {
 	public void setRetryDelaySeconds(int retryDelaySeconds) {
 		this.retryDelaySeconds = retryDelaySeconds;
 	}
-	
+
 	/**
 	 * @return the inputTemplate
 	 */
@@ -234,32 +237,49 @@ public class TaskDef extends Auditable {
 		return inputTemplate;
 	}
 
+
 	/**
-	 * 
+	 *
+	 * @return rateLimitPerSecond The max number of tasks that will be allowed to be executed per second at any given point of time.
+	 */
+	public Integer getRateLimitPerSecond() {
+		return rateLimitPerSecond == null ? 0 : rateLimitPerSecond;
+	}
+
+	/**
+	 *
+	 * @param rateLimitPerSecond The max number of tasks that will be allowed to be executed per second at any given point of time. Setting the value to 0 removes the rate limit
+	 */
+	public void setRateLimitPerSecond(Integer rateLimitPerSecond) {
+		this.rateLimitPerSecond = rateLimitPerSecond;
+	}
+
+	/**
+	 *
 	 * @param concurrentExecLimit Limit of number of concurrent task that can be  IN_PROGRESS at a given time.  Seting the value to 0 removes the limit.
 	 */
 	public void setConcurrentExecLimit(Integer concurrentExecLimit) {
 		this.concurrentExecLimit = concurrentExecLimit;
 	}
-	
+
 	/**
-	 * 
+	 *
 	 * @return Limit of number of concurrent task that can be  IN_PROGRESS at a given time
 	 */
 	public Integer getConcurrentExecLimit() {
 		return concurrentExecLimit;
 	}
 	/**
-	 * 
+	 *
 	 * @return concurrency limit
 	 */
 	public int concurrencyLimit() {
 		return concurrentExecLimit == null ? 0 : concurrentExecLimit.intValue();
 	}
-	
+
 	/**
 	 * @param inputTemplate the inputTemplate to set
-	 * 
+	 *
 	 */
 	public void setInputTemplate(Map<String, Object> inputTemplate) {
 		this.inputTemplate = inputTemplate;
@@ -268,5 +288,33 @@ public class TaskDef extends Auditable {
 	@Override
 	public String toString(){
 		return name;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		TaskDef taskDef = (TaskDef) o;
+		return getRetryCount() == taskDef.getRetryCount() &&
+				getTimeoutSeconds() == taskDef.getTimeoutSeconds() &&
+				getRetryDelaySeconds() == taskDef.getRetryDelaySeconds() &&
+				getResponseTimeoutSeconds() == taskDef.getResponseTimeoutSeconds() &&
+				Objects.equals(getName(), taskDef.getName()) &&
+				Objects.equals(getDescription(), taskDef.getDescription()) &&
+				Objects.equals(getInputKeys(), taskDef.getInputKeys()) &&
+				Objects.equals(getOutputKeys(), taskDef.getOutputKeys()) &&
+				getTimeoutPolicy() == taskDef.getTimeoutPolicy() &&
+				getRetryLogic() == taskDef.getRetryLogic() &&
+				Objects.equals(getConcurrentExecLimit(), taskDef.getConcurrentExecLimit()) &&
+				Objects.equals(getRateLimitPerSecond(), taskDef.getRateLimitPerSecond()) &&
+				Objects.equals(getInputTemplate(), taskDef.getInputTemplate());
+	}
+
+	@Override
+	public int hashCode() {
+
+		return Objects.hash(getName(), getDescription(), getRetryCount(), getTimeoutSeconds(), getInputKeys(),
+				getOutputKeys(), getTimeoutPolicy(), getRetryLogic(), getRetryDelaySeconds(),
+				getResponseTimeoutSeconds(), getConcurrentExecLimit(), getRateLimitPerSecond(), getInputTemplate());
 	}
 }

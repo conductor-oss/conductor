@@ -31,7 +31,6 @@ import rx.Observable.OnSubscribe;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -48,15 +47,11 @@ public class DynoObservableQueue implements ObservableQueue {
 
     private static final String QUEUE_TYPE = "conductor";
 
-    private String queueName;
-
-    private QueueDAO queueDAO;
-
-    private int pollTimeInMS;
-
-    private int longPollTimeout;
-
-    private int pollCount;
+    private final String queueName;
+    private final QueueDAO queueDAO;
+    private final int pollTimeInMS;
+    private final int longPollTimeout;
+    private final int pollCount;
 
     @Inject
     DynoObservableQueue(String queueName, QueueDAO queueDAO, Configuration config) {

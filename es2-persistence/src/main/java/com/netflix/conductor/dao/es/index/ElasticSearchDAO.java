@@ -317,7 +317,7 @@ public class ElasticSearchDAO implements IndexDAO {
 			QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery("*");
 			BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
 
-			final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(logIndexPrefix + "*").setQuery(fq).setTypes(TASK_DOC_TYPE).addSort(SortBuilders.fieldSort("createdTime").order(SortOrder.ASC).unmappedType("long"));
+			final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(logIndexPrefix + "*").setQuery(fq).setTypes(LOG_DOC_TYPE).addSort(SortBuilders.fieldSort("createdTime").order(SortOrder.ASC).unmappedType("long"));
 			SearchResponse response = srb.execute().actionGet();
 			SearchHit[] hits = response.getHits().getHits();
 			List<TaskExecLog> logs = new ArrayList<>(hits.length);

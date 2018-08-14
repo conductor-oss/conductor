@@ -1,7 +1,7 @@
 {
     "compile": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.341",
+            "locked": "1.11.380",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -61,6 +61,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
         },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "locked": "1.19.4",
@@ -107,7 +113,7 @@
     },
     "compileClasspath": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.341",
+            "locked": "1.11.380",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -167,6 +173,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
         },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "locked": "1.19.4",
@@ -213,7 +225,7 @@
     },
     "default": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.341",
+            "locked": "1.11.380",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -273,6 +285,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
         },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "locked": "1.19.4",
@@ -329,7 +347,7 @@
     },
     "runtime": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.341",
+            "locked": "1.11.380",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -389,6 +407,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
         },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "locked": "1.19.4",
@@ -435,7 +459,7 @@
     },
     "runtimeClasspath": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.341",
+            "locked": "1.11.380",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -495,6 +519,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
         },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "locked": "1.19.4",
@@ -541,7 +571,7 @@
     },
     "testCompile": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.341",
+            "locked": "1.11.380",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -601,6 +631,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
         },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "locked": "1.19.4",
@@ -663,7 +699,7 @@
     },
     "testCompileClasspath": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.341",
+            "locked": "1.11.380",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -723,6 +759,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
         },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "locked": "1.19.4",
@@ -785,7 +827,7 @@
     },
     "testRuntime": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.341",
+            "locked": "1.11.380",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -845,6 +887,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
         },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "locked": "1.19.4",
@@ -907,7 +955,7 @@
     },
     "testRuntimeClasspath": {
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.341",
+            "locked": "1.11.380",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -967,6 +1015,12 @@
                 "com.netflix.conductor:conductor-core"
             ],
             "locked": "0.68.0"
+        },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
         },
         "com.sun.jersey.contribs.jersey-oauth:oauth-client": {
             "locked": "1.19.4",

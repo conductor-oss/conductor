@@ -132,13 +132,9 @@ class Events extends React.Component {
     }
     function getActions(eh) {
       const trs = [];
-      eh.actions.forEach(action => {
-        const row = (
-          <div>
-            <b>{action.action}</b>
-            <pre>{JSON.stringify(action[action.action], null, 2)}</pre>
-          </div>
-        );
+      const actions = eh.actions || [];
+      actions.forEach(action => {
+        const row = <div><b>{action.action}</b><pre>{JSON.stringify(action[action.action], null, 2)}</pre></div>;
         trs.push(row);
       });
       return <div>{trs}</div>;

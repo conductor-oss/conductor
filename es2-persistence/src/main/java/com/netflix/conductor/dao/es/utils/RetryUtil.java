@@ -84,6 +84,7 @@ public class RetryUtil<T> {
      *                          <li>And a reference to the original exception generated during the last {@link Attempt} of the retry</li>
      *                          </ul>
      */
+    @SuppressWarnings("Guava")
     public T retryOnException(Supplier<T> supplierCommand,
                               Predicate<Throwable> throwablePredicate,
                               Predicate<T> resultRetryPredicate,
@@ -115,7 +116,7 @@ public class RetryUtil<T> {
             String errorMessage = String.format("Operation '%s:%s' failed for the %d time in RetryUtil", operationName,
                     shortDescription, internalNumberOfRetries.get());
             logger.debug(errorMessage);
-            throw new RuntimeException(errorMessage, executionException);
+            throw new RuntimeException(errorMessage, executionException.getCause());
         } catch (RetryException retryException) {
             String errorMessage = String.format("Operation '%s:%s' failed after retrying %d times, retry limit %d", operationName,
                     shortDescription, internalNumberOfRetries.get(), 3);

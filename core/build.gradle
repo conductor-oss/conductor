@@ -14,5 +14,7 @@ dependencies {
 
     compile "org.apache.commons:commons-lang3:${revCommonsLang3}"
 
+    compile "com.spotify:completable-futures:${revSpotifyCompletableFutures}"
+
     testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
 }
