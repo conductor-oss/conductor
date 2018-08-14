@@ -49,6 +49,7 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
 
 import io.swagger.annotations.Api;
@@ -95,6 +96,7 @@ public class TaskResource {
 			return null;
 		}
 		Task task = tasks.get(0);
+		Monitors.recordTaskPollCount(taskType, domain, 1);
 		logger.debug("The Task {} being returned for /tasks/poll/{}?{}&{}", task, taskType, workerId, domain);
 		return task;
 	}
@@ -117,6 +119,7 @@ public class TaskResource {
 				polledTasks.stream()
 						.map(Task::getTaskId)
 						.collect(Collectors.toList()), taskType, workerId, domain);
+		Monitors.recordTaskPollCount(taskType, domain, polledTasks.size());
 		return polledTasks;
 	}
 
