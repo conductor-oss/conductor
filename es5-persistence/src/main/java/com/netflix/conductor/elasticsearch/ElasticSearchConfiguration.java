@@ -20,7 +20,7 @@ public interface ElasticSearchConfiguration extends Configuration {
     String ELASTIC_SEARCH_INDEX_NAME_DEFAULT_VALUE = "conductor";
 
     String TASK_LOG_INDEX_NAME_PROPERTY_NAME = "workflow.elasticsearch.tasklog.index.name";
-    String TASK_LOG_INDEX__NAME_DEFAULT_VALUE = "task_log";
+    String TASK_LOG_INDEX_NAME_DEFAULT_VALUE = "task_log";
 
     String EMBEDDED_DATA_PATH_PROPERTY_NAME = "workflow.elasticsearch.embedded.data.path";
     String EMBEDDED_DATA_PATH_DEFAULT_VALUE = "path.data";
@@ -60,7 +60,7 @@ public interface ElasticSearchConfiguration extends Configuration {
     }
 
     default String getTasklogIndexName() {
-        return getProperty(TASK_LOG_INDEX_NAME_PROPERTY_NAME, TASK_LOG_INDEX__NAME_DEFAULT_VALUE);
+        return getProperty(TASK_LOG_INDEX_NAME_PROPERTY_NAME, TASK_LOG_INDEX_NAME_DEFAULT_VALUE);
     }
 
     default String getEmbeddedDataPath() {
