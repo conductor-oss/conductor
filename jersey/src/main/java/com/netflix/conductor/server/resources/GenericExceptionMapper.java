@@ -65,8 +65,7 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 	
 	@Override
 	public Response toResponse(Throwable exception) {
-		logger.error(String.format("%s message= '%s' url= '%s'", exception.getClass().getSimpleName(),
-				exception.getMessage(), uriInfo.getPath()));
+		logger.error(String.format("Error %s url: '%s'", exception.getClass().getSimpleName(), uriInfo.getPath()), exception);
 		Monitors.error("error", "error");
 
 		ApplicationException applicationException = null;

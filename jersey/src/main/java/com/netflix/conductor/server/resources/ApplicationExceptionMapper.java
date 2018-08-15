@@ -100,8 +100,8 @@ public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationEx
 	}
 
 	private void logException(ApplicationException exception) {
-		logger.error(String.format("%s message= '%s' url= '%s'", exception.getClass().getSimpleName(),
-				exception.getMessage(), getUriInfo().getPath()));
+		logger.error(String.format("Error %s url: '%s'", exception.getClass().getSimpleName(),
+				getUriInfo().getPath()), exception);
 	}
 	
 }
