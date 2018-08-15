@@ -69,15 +69,15 @@ public class ExecutionService {
 
     private static final Logger logger = LoggerFactory.getLogger(ExecutionService.class);
 
-    private final WorkflowExecutor executor;
+    private final WorkflowExecutor workflowExecutor;
 
     private final ExecutionDAO executionDAO;
 
-    private final IndexDAO indexer;
+    private final IndexDAO indexDAO;
 
-    private final QueueDAO queue;
+    private final QueueDAO queueDAO;
 
-    private final MetadataDAO metadata;
+    private final MetadataDAO metadataDAO;
 
     private final int taskRequeueTimeout;
 
@@ -90,12 +90,12 @@ public class ExecutionService {
     private static final int POLLING_TIMEOUT_IN_MS = 100;
 
 	@Inject
-	public ExecutionService(WorkflowExecutor wfProvider, ExecutionDAO executionDAO, QueueDAO queue, MetadataDAO metadata, IndexDAO indexer, Configuration config) {
-		this.executor = wfProvider;
+	public ExecutionService(WorkflowExecutor wfProvider, ExecutionDAO executionDAO, QueueDAO queueDAO, MetadataDAO metadataDAO, IndexDAO indexDAO, Configuration config) {
+		this.workflowExecutor = wfProvider;
 		this.executionDAO = executionDAO;
-		this.queue = queue;
-		this.metadata = metadata;
-		this.indexer = indexer;
+		this.queueDAO = queueDAO;
+		this.metadataDAO = metadataDAO;
+		this.indexDAO = indexDAO;
 		this.taskRequeueTimeout = config.getIntProperty("task.requeue.timeout", 60_000);
         this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
 	}
@@ -123,7 +123,7 @@ public class ExecutionService {
 		}
 		String queueName = QueueUtils.getQueueName(taskType, domain);
 
-		List<String> taskIds = queue.pop(queueName, count, timeoutInMilliSecond);
+		List<String> taskIds = queueDAO.pop(queueName, count, timeoutInMilliSecond);
 		List<Task> tasks = new LinkedList<>();
 		for(String taskId : taskIds) {
 			Task task = getTask(taskId);
@@ -166,7 +166,7 @@ public class ExecutionService {
 	}
 
 	public List<PollData> getAllPollData() {
-		Map<String, Long> queueSizes = queue.queuesDetail();
+		Map<String, Long> queueSizes = queueDAO.queuesDetail();
 		List<PollData> allPollData = new ArrayList<PollData>();
 		queueSizes.keySet().forEach(k -> {
 			try {
@@ -187,11 +187,11 @@ public class ExecutionService {
 	}
 
 	public void updateTask(TaskResult taskResult) {
-		executor.updateTask(taskResult);
+		workflowExecutor.updateTask(taskResult);
 	}
 
 	public List<Task> getTasks(String taskType, String startKey, int count) {
-		return executor.getTasks(taskType, startKey, count);
+		return workflowExecutor.getTasks(taskType, startKey, count);
 	}
 
 	public Task getTask(String taskId) {
@@ -199,41 +199,41 @@ public class ExecutionService {
 	}
 
 	public Task getPendingTaskForWorkflow(String taskReferenceName, String workflowId) {
-		return executor.getPendingTaskByWorkflow(taskReferenceName, workflowId);
+		return workflowExecutor.getPendingTaskByWorkflow(taskReferenceName, workflowId);
 	}
 
 	/**
 	 * This method removes the task from the un-acked Queue
 	 *
-	 * @param taskId: the taskId that needs to be updated and removed from the unacked queue
-	 * @return True in case of successful removal of the taskId from the un-acked queue
+	 * @param taskId: the taskId that needs to be updated and removed from the unacked queueDAO
+	 * @return True in case of successful removal of the taskId from the un-acked queueDAO
 	 */
 	public boolean ackTaskReceived(String taskId) {
 		return Optional.ofNullable(getTask(taskId))
 				.map(QueueUtils::getQueueName)
-				.map(queueName -> queue.ack(queueName, taskId))
+				.map(queueName -> queueDAO.ack(queueName, taskId))
 				.orElse(false);
 	}
 
 	public Map<String, Integer> getTaskQueueSizes(List<String> taskDefNames) {
 		Map<String, Integer> sizes = new HashMap<>();
 		for (String taskDefName : taskDefNames) {
-			sizes.put(taskDefName, queue.getSize(taskDefName));
+			sizes.put(taskDefName, queueDAO.getSize(taskDefName));
 		}
 		return sizes;
 	}
 
 	public void removeTaskfromQueue(String taskType, String taskId) {
 		Task task = executionDAO.getTask(taskId);
-		queue.remove(QueueUtils.getQueueName(task), taskId);
+		queueDAO.remove(QueueUtils.getQueueName(task), taskId);
 	}
 
 	public int requeuePendingTasks() {
 		long threshold = System.currentTimeMillis() - taskRequeueTimeout;
-		List<WorkflowDef> workflowDefs = metadata.getAll();
+		List<WorkflowDef> workflowDefs = metadataDAO.getAll();
 		int count = 0;
 		for (WorkflowDef workflowDef : workflowDefs) {
-			List<Workflow> workflows = executor.getRunningWorkflows(workflowDef.getName());
+			List<Workflow> workflows = workflowExecutor.getRunningWorkflows(workflowDef.getName());
 			for (Workflow workflow : workflows) {
 				count += requeuePendingTasks(workflow, threshold);
 			}
@@ -259,7 +259,7 @@ public class ExecutionService {
 				if (callback < 0) {
 					callback = 0;
 				}
-				boolean pushed = queue.pushIfNotExists(QueueUtils.getQueueName(pending), pending.getTaskId(), callback);
+				boolean pushed = queueDAO.pushIfNotExists(QueueUtils.getQueueName(pending), pending.getTaskId(), callback);
 				if (pushed) {
 					count++;
 				}
@@ -297,13 +297,13 @@ public class ExecutionService {
 		if (callback < 0) {
 			callback = 0;
 		}
-		queue.remove(QueueUtils.getQueueName(pending), pending.getTaskId());
+		queueDAO.remove(QueueUtils.getQueueName(pending), pending.getTaskId());
 		long now = System.currentTimeMillis();
 		callback = callback - ((now - pending.getUpdateTime())/1000);
 		if(callback < 0) {
 			callback = 0;
 		}
-		return queue.pushIfNotExists(QueueUtils.getQueueName(pending), pending.getTaskId(), callback);
+		return queueDAO.pushIfNotExists(QueueUtils.getQueueName(pending), pending.getTaskId(), callback);
 	}
 
 	public List<Workflow> getWorkflowInstances(String workflowName, String correlationId, boolean includeClosed, boolean includeTasks) {
@@ -333,7 +333,7 @@ public class ExecutionService {
 
 	public SearchResult<WorkflowSummary> search(String query, String freeText, int start, int size, List<String> sortOptions) {
 
-		SearchResult<String> result = indexer.searchWorkflows(query, freeText, start, size, sortOptions);
+		SearchResult<String> result = indexDAO.searchWorkflows(query, freeText, start, size, sortOptions);
 		List<WorkflowSummary> workflows = result.getResults().stream().parallel().map(workflowId -> {
 			try {
 				return new WorkflowSummary(executionDAO.getWorkflow(workflowId,false));
@@ -369,7 +369,7 @@ public class ExecutionService {
 
 	public SearchResult<TaskSummary> searchTasks(String query, String freeText, int start, int size, List<String> sortOptions) {
 
-		SearchResult<String> result = indexer.searchTasks(query, freeText, start, size, sortOptions);
+		SearchResult<String> result = indexDAO.searchTasks(query, freeText, start, size, sortOptions);
 		List<TaskSummary> workflows = result.getResults().stream()
 				.parallel()
 				.map(taskId -> {
@@ -391,7 +391,7 @@ public class ExecutionService {
 
 	    ServiceUtils.checkArgument(size < maxSearchSize, String.format("Cannot return more than %d workflows." +
                 " Please use pagination.", maxSearchSize));
-	    return searchTasks(query, freeText, start, size, ServiceUtils.convertToSortedList(sortString));
+	    return searchTasks(query, freeText, start, size, ServiceUtils.convertStringToList(sortString));
     }
 
 	public List<Task> getPendingTasksForTaskType(String taskType) {
@@ -412,7 +412,7 @@ public class ExecutionService {
 
 	/**
 	 *
-	 * @param queue Name of the registered queue
+	 * @param queue Name of the registered queueDAO
 	 * @param msg Message
 	 */
 	public void addMessage(String queue, Message msg) {
@@ -438,7 +438,7 @@ public class ExecutionService {
 	 * @return Execution Logs (logged by the worker)
 	 */
 	public List<TaskExecLog> getTaskLogs(String taskId) {
-		return indexer.getTaskExecutionLogs(taskId);
+		return indexDAO.getTaskExecutionLogs(taskId);
 	}
 
 }

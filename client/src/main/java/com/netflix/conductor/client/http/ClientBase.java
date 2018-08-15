@@ -50,8 +50,6 @@ public abstract class ClientBase {
 
     private static Logger logger = LoggerFactory.getLogger(ClientBase.class);
 
-    private static final String CLIENT_MESSAGE_FORMAT = "Unable to invoke Conductor API with uri: %s, failure to process request or response";
-
     protected final Client client;
 
     protected String root = "";

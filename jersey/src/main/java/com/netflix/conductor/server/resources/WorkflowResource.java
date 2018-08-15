@@ -119,7 +119,7 @@ public class WorkflowResource {
     @ApiOperation("Removes the workflow from the system")
     @Consumes(MediaType.WILDCARD)
     public void delete(@PathParam("workflowId") String workflowId,
-                       @QueryParam("archiveWorkflow") @DefaultValue("true") boolean archiveWorkflow) throws Exception {
+                       @QueryParam("archiveWorkflow") @DefaultValue("true") boolean archiveWorkflow) {
         workflowService.deleteWorkflow(workflowId, archiveWorkflow);
     }
 

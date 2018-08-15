@@ -77,7 +77,6 @@ public class EventResource {
 	@Path("/{name}")
 	@ApiOperation("Remove an event handler")
 	public void removeEventHandlerStatus(@PathParam("name") String name) {
-		Preconditions.checkArgument(StringUtils.isNotBlank(name), "Name cannot be null or empty.");
         eventService.removeEventHandlerStatus(name);
 	}
 

@@ -1,12 +1,10 @@
 package com.netflix.conductor.service;
 
-import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
-import org.apache.commons.lang3.StringUtils;
 import com.netflix.conductor.service.utils.ServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,17 +30,17 @@ public class AdminService {
 
     private final ExecutionService executionService;
 
-    private final QueueDAO queue;
+    private final QueueDAO queueDAO;
 
     private String version;
 
     private String buildDate;
 
     @Inject
-    public AdminService(Configuration config, ExecutionService executionService, QueueDAO queue) {
+    public AdminService(Configuration config, ExecutionService executionService, QueueDAO queueDAO) {
         this.config = config;
         this.executionService = executionService;
-        this.queue = queue;
+        this.queueDAO = queueDAO;
         this.version = "UNKNOWN";
         this.buildDate = "UNKNOWN";
 
@@ -93,7 +91,7 @@ public class AdminService {
      */
     public String requeueSweep(String workflowId) {
         ServiceUtils.checkNotNullOrEmpty(workflowId, "WorkflowId cannot be null or empty.");
-        boolean pushed = queue.pushIfNotExists(WorkflowExecutor.deciderQueue, workflowId, config.getSweepFrequency());
+        boolean pushed = queueDAO.pushIfNotExists(WorkflowExecutor.deciderQueue, workflowId, config.getSweepFrequency());
         return pushed + "." + workflowId;
     }
 }

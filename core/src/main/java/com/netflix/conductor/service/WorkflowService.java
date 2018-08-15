@@ -27,16 +27,16 @@ public class WorkflowService {
 
     private final ExecutionService executionService;
 
-    private final MetadataService metadata;
+    private final MetadataService metadataService;
 
     private int maxSearchSize;
 
     @Inject
     public WorkflowService(WorkflowExecutor workflowExecutor, ExecutionService executionService,
-                           MetadataService metadata, Configuration config) {
+                           MetadataService metadataService, Configuration config) {
         this.workflowExecutor = workflowExecutor;
         this.executionService = executionService;
-        this.metadata = metadata;
+        this.metadataService = metadataService;
         this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
     }
 
@@ -49,7 +49,7 @@ public class WorkflowService {
     public String startWorkflow(StartWorkflowRequest startWorkflowRequest) {
         ServiceUtils.checkNotNull(startWorkflowRequest, "StartWorkflowRequest cannot be null");
         ServiceUtils.checkNotNullOrEmpty(startWorkflowRequest.getName(), "Workflow name cannot be null or empty");
-        WorkflowDef workflowDef = metadata.getWorkflowDef(startWorkflowRequest.getName(), startWorkflowRequest.getVersion());
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(startWorkflowRequest.getName(), startWorkflowRequest.getVersion());
         if (workflowDef == null) {
             throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
                     String.format("No such workflow found by name: %s, version: %d", startWorkflowRequest.getName(),
@@ -73,7 +73,7 @@ public class WorkflowService {
     public String startWorkflow(String name, Integer version,
                                 String correlationId, Map<String, Object> input) {
         ServiceUtils.checkNotNullOrEmpty(name, "Name cannot be null or empty");
-        WorkflowDef workflowDef = metadata.getWorkflowDef(name, version);
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(name, version);
         if (workflowDef == null) {
             throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
                     String.format("No such workflow found by name: %s, version: %d", name, version));
@@ -262,7 +262,7 @@ public class WorkflowService {
     public SearchResult<WorkflowSummary> searchWorkflows(int start, int size, String sort, String freeText, String query) {
         ServiceUtils.checkArgument(size < maxSearchSize, String.format("Cannot return more than %d workflows." +
                 " Please use pagination.", maxSearchSize));
-        return executionService.search(query, freeText, start, size, ServiceUtils.convertToSortedList(sort));
+        return executionService.search(query, freeText, start, size, ServiceUtils.convertStringToList(sort));
     }
 
     /**
@@ -276,7 +276,7 @@ public class WorkflowService {
      * @return instance of {@link SearchResult}
      */
     public SearchResult<WorkflowSummary> searchWorkflowsByTasks(int start, int size, String sort, String freeText, String query) {
-        return executionService.searchWorkflowByTasks(query, freeText, start, size, ServiceUtils.convertToSortedList(sort));
+        return executionService.searchWorkflowByTasks(query, freeText, start, size, ServiceUtils.convertStringToList(sort));
     }
 
 }

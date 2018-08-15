@@ -23,6 +23,7 @@ import javax.inject.Singleton;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
@@ -51,7 +52,10 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 	
 	@Context 
     private HttpContext context;
-	
+
+	@Context
+	private UriInfo uriInfo;
+
 	private String host;
 	
 	@Inject
@@ -61,7 +65,8 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 	
 	@Override
 	public Response toResponse(Throwable exception) {
-		logger.error(exception.getMessage(), exception);
+		logger.error(String.format("%s message= '%s' url= '%s'", exception.getClass().getSimpleName(),
+				exception.getMessage(), uriInfo.getPath()));
 		Monitors.error("error", "error");
 
 		ApplicationException applicationException = null;

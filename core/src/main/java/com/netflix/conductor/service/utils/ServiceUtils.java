@@ -12,10 +12,15 @@ import java.util.Map;
 
 public class ServiceUtils {
 
-    public static List<String> convertToSortedList(String sortStr) {
+    /**
+     * Split string with "|" as delimiter.
+     * @param inputStr Input string
+     * @return List of String
+     */
+    public static List<String> convertStringToList(String inputStr) {
         List<String> list = new ArrayList<String>();
-        if (sortStr != null && sortStr.length() != 0) {
-            list = Arrays.asList(sortStr.split("\\|"));
+        if (StringUtils.isNotBlank(inputStr)) {
+            list = Arrays.asList(inputStr.split("\\|"));
         }
         return list;
     }
