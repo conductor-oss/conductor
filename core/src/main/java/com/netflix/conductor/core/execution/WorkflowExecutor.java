@@ -734,11 +734,11 @@ public class WorkflowExecutor {
             if (task.getStatus().equals(SCHEDULED)) {
                 if (executionDAO.exceedsInProgressLimit(task)) {
                     //to do add a metric to record this
-                    logger.warn("Concurrent Execution limited for {}", task.getTaskDefName());
+                    logger.warn("Concurrent Execution limited for {}:{}", taskId, task.getTaskDefName());
                     return;
                 }
                 if (task.getRateLimitPerSecond() > 0 && !rateLimitingService.evaluateRateLimitBoundary(task)) {
-                    logger.warn("RateLimit Execution limited for {}", task.getTaskDefName());
+                    logger.warn("RateLimit Execution limited for {}:{}, limit:{}", taskId, task.getTaskDefName(), task.getRateLimitPerSecond());
                     return;
                 }
             }
