@@ -37,6 +37,7 @@ import com.netflix.conductor.common.run.TaskSummary;
 
 import com.netflix.conductor.dao.QueueDAO;
 
+import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.utils.ServiceUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -76,6 +77,7 @@ public class TaskService {
         if (task != null) {
             logger.debug("The Task {} being returned for /tasks/poll/{}?{}&{}", task, taskType, workerId, domain);
         }
+        Monitors.recordTaskPollCount(taskType, domain, 1);
         return task;
     }
 
@@ -95,6 +97,7 @@ public class TaskService {
                 polledTasks.stream()
                         .map(Task::getTaskId)
                         .collect(Collectors.toList()), taskType, workerId, domain);
+        Monitors.recordTaskPollCount(taskType, domain, polledTasks.size());
         return polledTasks;
     }
 
