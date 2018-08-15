@@ -18,8 +18,7 @@
  */
 package com.netflix.conductor.server.resources;
 
-import com.google.common.base.Preconditions;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.service.WorkflowBulkService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 
@@ -47,36 +46,27 @@ import java.util.List;
 public class WorkflowBulkResource {
 
     private static final int MAX_REQUEST_ITEMS = 1000;
-    private WorkflowExecutor executor;
-
+    private final WorkflowBulkService workflowBulkService;
 
     @Inject
-    public WorkflowBulkResource(WorkflowExecutor executor) {
-        this.executor = executor;
+    public WorkflowBulkResource(WorkflowBulkService workflowBulkService) {
+        this.workflowBulkService = workflowBulkService;
     }
 
     @PUT
     @Path("/pause")
     @ApiOperation("Pause list of workflows")
     @Consumes(MediaType.WILDCARD)
-    public void pauseWorkflow(List<String> workflowIds) throws Exception {
-        Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
-        for (String workflowId : workflowIds) {
-            executor.pauseWorkflow(workflowId);
-        }
+    public void pauseWorkflow(List<String> workflowIds) {
+        workflowBulkService.pauseWorkflow(workflowIds);
     }
 
     @PUT
     @Path("/resume")
     @ApiOperation("Resume list of workflows")
     @Consumes(MediaType.WILDCARD)
-    public void resumeWorkflow(List<String> workflowIds) throws Exception {
-        Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
-        for (String workflowId : workflowIds) {
-            executor.resumeWorkflow(workflowId);
-        }
+    public void resumeWorkflow(List<String> workflowIds) {
+        workflowBulkService.resumeWorkflow(workflowIds);
     }
 
 
@@ -84,38 +74,24 @@ public class WorkflowBulkResource {
     @Path("/restart")
     @ApiOperation("Restart list of completed workflow")
     @Consumes(MediaType.WILDCARD)
-    public void restart(List<String> workflowIds) throws Exception {
-        Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
-        for (String workflowId : workflowIds) {
-            executor.rewind(workflowId);
-        }
+    public void restart(List<String> workflowIds) {
+        workflowBulkService.restart(workflowIds);
     }
 
     @POST
     @Path("/retry")
     @ApiOperation("Retry last failed task for each workflow from the list")
     @Consumes(MediaType.WILDCARD)
-    public void retry(List<String> workflowIds) throws Exception {
-        Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
-        for (String workflowId : workflowIds) {
-            executor.retry(workflowId);
-        }
+    public void retry(List<String> workflowIds) {
+        workflowBulkService.retry(workflowIds);
     }
 
     @DELETE
     @Path("/")
     @ApiOperation("Terminate workflows execution")
     @Consumes(MediaType.WILDCARD)
-    public void terminate(List<String> workflowIds, @QueryParam("reason") String reason) throws Exception {
-        Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
-        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
-        for (String workflowId : workflowIds) {
-            executor.terminateWorkflow(workflowId, reason);
-        }
-
+    public void terminate(List<String> workflowIds,
+                          @QueryParam("reason") String reason) {
+        workflowBulkService.terminate(workflowIds, reason);
     }
-
-
 }

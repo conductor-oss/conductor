@@ -25,8 +25,7 @@ import org.mockito.MockitoAnnotations;
  *
  */
 public class MetadataClientTest {
-
-    //private Client jerseyClient;
+    
     private MetadataClient metadataClient;
 
     @Rule
@@ -34,7 +33,6 @@ public class MetadataClientTest {
 
     @Before
     public void before() {
-        //this.jerseyClient = Mockito.mock(Client.class);
         this.metadataClient = new MetadataClient();
     }
 

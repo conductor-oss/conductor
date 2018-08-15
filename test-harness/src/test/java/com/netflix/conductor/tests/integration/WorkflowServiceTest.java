@@ -143,34 +143,37 @@ public class WorkflowServiceTest {
             return;
         }
 
-
         WorkflowContext.set(new WorkflowContext("junit_app"));
         for (int i = 0; i < 21; i++) {
 
             String name = "junit_task_" + i;
-            if (metadataService.getTaskDef(name) != null) {
-                continue;
+            try {
+                metadataService.getTaskDef(name);
+            } catch (ApplicationException e) {
+                if (e.getHttpStatusCode() == 404) {
+                    TaskDef task = new TaskDef();
+                    task.setName(name);
+                    task.setTimeoutSeconds(120);
+                    task.setRetryCount(RETRY_COUNT);
+                    metadataService.registerTaskDef(Collections.singletonList(task));
+                }
             }
-
-            TaskDef task = new TaskDef();
-            task.setName(name);
-            task.setTimeoutSeconds(120);
-            task.setRetryCount(RETRY_COUNT);
-            metadataService.registerTaskDef(Collections.singletonList(task));
         }
 
         for (int i = 0; i < 5; i++) {
 
             String name = "junit_task_0_RT_" + i;
-            if (metadataService.getTaskDef(name) != null) {
-                continue;
+            try {
+                metadataService.getTaskDef(name);
+            } catch (ApplicationException e) {
+                if (e.getHttpStatusCode() == 404) {
+                    TaskDef task = new TaskDef();
+                    task.setName(name);
+                    task.setTimeoutSeconds(120);
+                    task.setRetryCount(0);
+                    metadataService.registerTaskDef(Collections.singletonList(task));
+                }
             }
-
-            TaskDef task = new TaskDef();
-            task.setName(name);
-            task.setTimeoutSeconds(120);
-            task.setRetryCount(0);
-            metadataService.registerTaskDef(Collections.singletonList(task));
         }
 
         TaskDef task = new TaskDef();
