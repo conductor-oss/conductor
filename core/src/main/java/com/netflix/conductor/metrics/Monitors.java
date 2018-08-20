@@ -220,6 +220,10 @@ public class Monitors {
 		gauge(classQualifier, "task_rate_limited", limit, "taskType", taskDefName);
 	}
 
+	public static void recordTaskConcurrentExecutionLimited(String taskDefName, int limit) {
+		gauge(classQualifier, "task_concurrent_execution_limited", limit, "taskType", taskDefName);
+	}
+
 	public static void recordEventQueueMessagesProcessed(String queueType, String queueName, int count) {
 		getCounter(classQualifier, "event_queue_messages_processed", "queueType", queueType, "queueName", queueName).increment(count);
 	}

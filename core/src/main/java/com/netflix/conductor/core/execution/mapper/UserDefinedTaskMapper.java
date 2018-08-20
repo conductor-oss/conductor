@@ -88,7 +88,8 @@ public class UserDefinedTaskMapper implements TaskMapper {
         userDefinedTask.setRetryCount(retryCount);
         userDefinedTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
         userDefinedTask.setWorkflowTask(taskToSchedule);
-        userDefinedTask.setRateLimitPerSecond(taskDefinition.getRateLimitPerSecond());
+        userDefinedTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
+        userDefinedTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
         return Collections.singletonList(userDefinedTask);
     }
 

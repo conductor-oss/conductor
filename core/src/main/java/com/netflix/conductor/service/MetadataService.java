@@ -18,7 +18,6 @@
  */
 package com.netflix.conductor.service;
 
-import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -44,12 +43,10 @@ public class MetadataService {
 
     private MetadataDAO metadataDAO;
 
-    private RateLimitingService rateLimitingService;
 
     @Inject
-    public MetadataService(MetadataDAO metadataDAO, RateLimitingService rateLimitingService) {
+    public MetadataService(MetadataDAO metadataDAO) {
         this.metadataDAO = metadataDAO;
-        this.rateLimitingService = rateLimitingService;
     }
 
     /**
@@ -63,9 +60,6 @@ public class MetadataService {
             taskDefinition.setUpdatedBy(null);
             taskDefinition.setUpdateTime(null);
             metadataDAO.createTaskDef(taskDefinition);
-            if(taskDefinition.getRateLimitPerSecond() != 0) {
-                rateLimitingService.updateRateLimitRules(taskDefinition);
-            }
         }
     }
 
@@ -81,9 +75,6 @@ public class MetadataService {
         taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
         taskDefinition.setUpdateTime(System.currentTimeMillis());
         metadataDAO.updateTaskDef(taskDefinition);
-        if(taskDefinition.getRateLimitPerSecond() != 0) {
-            rateLimitingService.updateRateLimitRules(taskDefinition);
-        }
     }
 
     /**
