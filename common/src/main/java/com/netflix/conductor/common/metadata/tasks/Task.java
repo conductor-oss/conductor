@@ -613,8 +613,7 @@ public class Task {
      */
     public Optional<TaskDef> getTaskDefinition() {
         return Optional.ofNullable(this.getWorkflowTask())
-                .map(workflowTask -> Optional.ofNullable(workflowTask.getTaskDefinition()))
-                .orElse(Optional.empty());
+                .map(workflowTask -> workflowTask.getTaskDefinition());
     }
 
     public Task copy() {

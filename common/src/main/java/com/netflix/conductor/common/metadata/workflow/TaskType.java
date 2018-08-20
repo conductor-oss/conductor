@@ -8,7 +8,16 @@ import java.util.Set;
 @ProtoEnum
 public enum TaskType {
 
-    SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, EVENT, WAIT, USER_DEFINED;
+    SIMPLE(true),
+    DYNAMIC(true),
+    FORK_JOIN(true),
+    FORK_JOIN_DYNAMIC(true),
+    DECISION(true),
+    JOIN(true),
+    SUB_WORKFLOW(true),
+    EVENT(true),
+    WAIT(true),
+    USER_DEFINED(false);
 
     /**
      * TaskType constants representing each of the possible enumeration values.
@@ -26,21 +35,22 @@ public enum TaskType {
     public static final String TASK_TYPE_USER_DEFINED = "USER_DEFINED";
     public static final String TASK_TYPE_SIMPLE = "SIMPLE";
 
-    private static Set<String> systemTasks = new HashSet<>();
-    static {
-        systemTasks.add(TaskType.SIMPLE.name());
-        systemTasks.add(TaskType.DYNAMIC.name());
-        systemTasks.add(TaskType.FORK_JOIN.name());
-        systemTasks.add(TaskType.FORK_JOIN_DYNAMIC.name());
-        systemTasks.add(TaskType.DECISION.name());
-        systemTasks.add(TaskType.JOIN.name());
-        systemTasks.add(TaskType.SUB_WORKFLOW.name());
-        systemTasks.add(TaskType.EVENT.name());
-        systemTasks.add(TaskType.WAIT.name());
-        //Do NOT add USER_DEFINED here...
+    private boolean isSystemTask;
+
+    TaskType(boolean isSystemTask) {
+        this.isSystemTask = isSystemTask;
     }
 
+    /*
+     * TODO: Update code to use only enums rather than Strings.
+     * This method is only used as a helper until the transition is done.
+     */
     public static boolean isSystemTask(String name) {
-        return systemTasks.contains(name);
+        try {
+            TaskType taskType = TaskType.valueOf(name);
+            return taskType.isSystemTask;
+        } catch (IllegalArgumentException iae) {
+            return false;
+        }
     }
 }

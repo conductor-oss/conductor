@@ -278,18 +278,6 @@ public class WorkflowExecutor {
 
         metadataMapperService.populateTaskDefinitions(workflowDefinition);
 
-        // Obtain the names of the tasks with missing definitions
-        Set<String> missingTaskDefinitionNames = workflowDefinition.collectTasks().stream()
-                .filter(workflowTask ->
-                        (workflowTask.getType().equals(TaskType.SIMPLE.name()) && workflowTask.getTaskDefinition() == null))
-                .map(workflowTask -> workflowTask.getName())
-                .collect(Collectors.toSet());
-
-        if (!missingTaskDefinitionNames.isEmpty()) {
-            logger.error("Cannot find the task definitions for the following tasks used in workflow: {}", missingTaskDefinitionNames);
-            Monitors.recordWorkflowStartError(workflowDefinition.getName(), WorkflowContext.get().getClientApp());
-            throw new ApplicationException(Code.INVALID_INPUT, "Cannot find the task definitions for the following tasks used in workflow: " + missingTaskDefinitionNames);
-        }
         //A random UUID is assigned to the work flow instance
         String workflowId = IDGenerator.generate();
 
@@ -510,6 +498,7 @@ public class WorkflowExecutor {
 
     @VisibleForTesting
     Optional<WorkflowDef> lookupWorkflowDefinition(String workflowName, int workflowVersion) {
+        // TODO: Update to use ServiceUtils once this is merged with dev
         // FIXME: Add messages.
         checkNotNull(workflowName);
         checkArgument(StringUtils.isNotBlank(workflowName));
