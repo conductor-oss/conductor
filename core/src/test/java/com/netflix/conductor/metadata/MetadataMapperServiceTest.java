@@ -6,6 +6,7 @@ import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -95,6 +96,25 @@ public class MetadataMapperServiceTest {
 
         verify(metadataDAO).getTaskDef(nameTaskDefinition2);
         verifyNoMoreInteractions(metadataDAO);
+    }
+
+    @Test(expected = ApplicationException.class)
+    public void testMetadataPopulationMissingDefinitions() {
+        String nameTaskDefinition1 = "task4";
+        WorkflowTask workflowTask1 = createWorkflowTask(nameTaskDefinition1);
+
+        String nameTaskDefinition2 = "task5";
+        WorkflowTask workflowTask2 = createWorkflowTask(nameTaskDefinition2);
+
+        TaskDef taskDefinition = createTaskDefinition(nameTaskDefinition1);
+
+        WorkflowDef workflowDefinition = createWorkflowDefinition("testMetadataPopulation");
+        workflowDefinition.setTasks(ImmutableList.of(workflowTask1, workflowTask2));
+
+        when(metadataDAO.getTaskDef(nameTaskDefinition1)).thenReturn(taskDefinition);
+        when(metadataDAO.getTaskDef(nameTaskDefinition2)).thenReturn(null);
+
+        metadataMapperService.populateTaskDefinitions(workflowDefinition);
     }
 
     @Test
