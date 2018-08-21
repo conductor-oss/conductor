@@ -380,7 +380,7 @@ public class End2EndTests {
         }
     }
 
-    @Test
+    @Test(expected = Test.None.class /* no exception expected */)
     public void testListworkflowsByCorrelationId() {
 	    wc.getWorkflows("test", "test12", false, false);
     }
