@@ -35,6 +35,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 
+import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.QueueDAO;
 
 import com.netflix.conductor.metrics.Monitors;
@@ -179,6 +180,7 @@ public class TaskService {
      */
     public Task getTask(String taskId) {
         ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
+        //TODO: add check if return task is null or not
         return executionService.getTask(taskId);
     }
 
@@ -190,7 +192,7 @@ public class TaskService {
     public void removeTaskFromQueue(String taskType, String taskId) {
         ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
         ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
-        executionService.removeTaskfromQueue(taskType, taskId);
+        executionService.removeTaskfromQueue(taskId);
     }
 
     /**
@@ -227,6 +229,7 @@ public class TaskService {
      */
     public List<PollData> getPollData(String taskType) {
         ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
+        //TODO: check if taskType is valid or not
         return executionService.getPollData(taskType);
     }
 

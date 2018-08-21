@@ -223,8 +223,12 @@ public class ExecutionService {
 		return sizes;
 	}
 
-	public void removeTaskfromQueue(String taskType, String taskId) {
+	public void removeTaskfromQueue(String taskId) {
 		Task task = executionDAO.getTask(taskId);
+		if (task == null) {
+			throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
+					String.format("No such task found by taskId: %s", taskId));
+		}
 		queueDAO.remove(QueueUtils.getQueueName(task), taskId);
 	}
 

@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.service;
 
+import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -117,11 +118,15 @@ public class MetadataService {
 
     /**
      *
-     * @param wfs Workflow definitions to be updated.
+     * @param workflowDefList Workflow definitions to be updated.
      */
-    public void updateWorkflowDef(List<WorkflowDef> wfs) {
-        for (WorkflowDef wf : wfs) {
-            metadataDAO.update(wf);
+    public void updateWorkflowDef(List<WorkflowDef> workflowDefList) {
+        ServiceUtils.checkNotNullOrEmpty(workflowDefList, "WorkflowDef list name cannot be null or empty");
+        for (WorkflowDef workflowDef : workflowDefList) {
+            //TODO: revisit this error handling
+            ServiceUtils.checkNotNull(workflowDef, "WorkflowDef cannot be null");
+            ServiceUtils.checkNotNullOrEmpty(workflowDef.getName(), "WorkflowDef name cannot be null");
+            metadataDAO.update(workflowDef);
         }
     }
 
@@ -159,14 +164,16 @@ public class MetadataService {
         return metadataDAO.getAll();
     }
 
-    public void registerWorkflowDef(WorkflowDef def) {
-        if (def.getName().contains(":")) {
+    public void registerWorkflowDef(WorkflowDef workflowDef) {
+        ServiceUtils.checkNotNull(workflowDef, "WorkflowDef cannot be null");
+        ServiceUtils.checkNotNullOrEmpty(workflowDef.getName(), "Workflow name cannot be null or empty");
+        if (workflowDef.getName().contains(":")) {
             throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
         }
-        if (def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
-            def.setSchemaVersion(2);
+        if (workflowDef.getSchemaVersion() < 1 || workflowDef.getSchemaVersion() > 2) {
+            workflowDef.setSchemaVersion(2);
         }
-        metadataDAO.create(def);
+        metadataDAO.create(workflowDef);
     }
 
     /**
