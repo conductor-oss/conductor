@@ -97,7 +97,7 @@ public class WorkflowResource {
     @POST
     @Path("/{name}/correlated")
     @ApiOperation("Lists workflows for the given correlation id list")
-    @Consumes(MediaType.WILDCARD)
+    @Consumes(MediaType.APPLICATION_JSON)
     public Map<String, List<Workflow>> getWorkflows(@PathParam("name") String name,
                                                     @QueryParam("includeClosed") @DefaultValue("false") boolean includeClosed,
                                                     @QueryParam("includeTasks") @DefaultValue("false") boolean includeTasks,
