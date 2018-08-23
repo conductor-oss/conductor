@@ -58,7 +58,7 @@ public class WorkflowService {
                             startWorkflowRequest.getVersion()));
         }
         return workflowExecutor.startWorkflow(workflowDef.getName(), workflowDef.getVersion(),
-                startWorkflowRequest.getCorrelationId(), startWorkflowRequest.getInput(), null,
+                startWorkflowRequest.getCorrelationId(), startWorkflowRequest.getInput(), startWorkflowRequest.getExternalInputPayloadStoragePath(), null,
                 startWorkflowRequest.getTaskToDomain());
 
     }
@@ -286,7 +286,7 @@ public class WorkflowService {
      *
      * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external storage
      */
-    public ExternalStorageLocation getExternalPayloadUri() {
-        return executionService.getPayloadUri(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT);
+    public ExternalStorageLocation getExternalStorageLocation() {
+        return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT);
     }
 }

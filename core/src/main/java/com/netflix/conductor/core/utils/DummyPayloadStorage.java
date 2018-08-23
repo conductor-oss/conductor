@@ -22,12 +22,12 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import java.io.InputStream;
 
 /**
- *
+ * A dummy implementation of {@link ExternalPayloadStorage} used when no external payload is configured
  */
 public class DummyPayloadStorage implements ExternalPayloadStorage {
 
     @Override
-    public ExternalStorageLocation getExternalUri(Operation operation, PayloadType payloadType) {
+    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType) {
         return null;
     }
 

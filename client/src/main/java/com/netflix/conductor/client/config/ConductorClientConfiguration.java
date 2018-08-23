@@ -19,16 +19,28 @@ package com.netflix.conductor.client.config;
 public interface ConductorClientConfiguration {
 
     /**
-     * @return the workflow input payload threshold in KB,
+     * @return the workflow input payload size threshold in KB,
      * beyond which the payload will be processed based on {@link ConductorClientConfiguration#isExternalPayloadStorageEnabled()}.
      */
     int getWorkflowInputPayloadThresholdKB();
 
     /**
-     * @return the task output payload threshold in KB,
+     * @return the max value of workflow input payload size threshold in KB,
+     * beyond which the payload will be rejected regardless external payload storage is enabled.
+     */
+    int getWorkflowInputMaxPayloadThresholdKB();
+
+    /**
+     * @return the task output payload size threshold in KB,
      * beyond which the payload will be processed based on {@link ConductorClientConfiguration#isExternalPayloadStorageEnabled()}.
      */
     int getTaskOutputPayloadThresholdKB();
+
+    /**
+     * @return the max value of task output payload size threshold in KB,
+     * beyond which the payload will be rejected regardless external payload storage is enabled.
+     */
+    int getTaskOutputMaxPayloadThresholdKB();
 
     /**
      * @return the flag which controls the use of external storage for storing workflow/task

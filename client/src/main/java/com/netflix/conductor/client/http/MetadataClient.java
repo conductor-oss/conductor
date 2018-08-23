@@ -18,16 +18,16 @@ package com.netflix.conductor.client.http;
 
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
+import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.config.ClientConfig;
+import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.ClientFilter;
 import org.apache.commons.lang.StringUtils;
 
-import javax.ws.rs.QueryParam;
-import java.util.Arrays;
 import java.util.List;
 
 public class MetadataClient extends ClientBase {
@@ -42,14 +42,14 @@ public class MetadataClient extends ClientBase {
      * Creates a default metadata client
      */
     public MetadataClient() {
-        super();
+        this(new DefaultClientConfig(), new DefaultConductorClientConfiguration(), null);
     }
 
     /**
      * @param clientConfig REST Client configuration
      */
     public MetadataClient(ClientConfig clientConfig) {
-        super(clientConfig);
+        this(clientConfig, new DefaultConductorClientConfiguration(), null);
     }
 
     /**
@@ -57,7 +57,7 @@ public class MetadataClient extends ClientBase {
      * @param clientHandler Jersey client handler. Useful when plugging in various http client interaction modules (e.g. ribbon)
      */
     public MetadataClient(ClientConfig clientConfig, ClientHandler clientHandler) {
-        super(clientConfig, clientHandler);
+        this(clientConfig, new DefaultConductorClientConfiguration(), clientHandler);
     }
 
     /**
@@ -66,18 +66,14 @@ public class MetadataClient extends ClientBase {
      * @param filters Chain of client side filters to be applied per request
      */
     public MetadataClient(ClientConfig config, ClientHandler handler, ClientFilter... filters) {
-        super(config, handler);
-        for (ClientFilter filter : filters) {
-            super.client.addFilter(filter);
-        }
+        this(config, new DefaultConductorClientConfiguration(), handler, filters);
     }
 
     /**
-     *
-     * @param config REST Client configuration
+     * @param config              REST Client configuration
      * @param clientConfiguration Specific properties configured for the client, see {@link ConductorClientConfiguration}
-     * @param handler Jersey client handler. Useful when plugging in various http client interaction modules (e.g. ribbon)
-     * @param filters Chain of client side filters to be applied per request
+     * @param handler             Jersey client handler. Useful when plugging in various http client interaction modules (e.g. ribbon)
+     * @param filters             Chain of client side filters to be applied per request
      */
     public MetadataClient(ClientConfig config, ConductorClientConfiguration clientConfiguration, ClientHandler handler, ClientFilter... filters) {
         super(config, clientConfiguration, handler);
@@ -96,7 +92,7 @@ public class MetadataClient extends ClientBase {
      */
     public void registerWorkflowDef(WorkflowDef workflowDef) {
         Preconditions.checkNotNull(workflowDef, "Worfklow definition cannot be null");
-        postForEntity("metadata/workflow", workflowDef);
+        postForEntityWithRequestOnly("metadata/workflow", workflowDef);
     }
 
     /**
@@ -134,13 +130,13 @@ public class MetadataClient extends ClientBase {
      * Removes the workflow definition of a workflow from the conductor server.
      * It does not remove associated workflows. Use with caution.
      *
-     * @param name Name of the workflow to be unregistered.
+     * @param name    Name of the workflow to be unregistered.
      * @param version Version of the workflow definition to be unregistered.
      */
     public void unregisterWorkflowDef(String name, Integer version) {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "Workflow name cannot be blank");
         Preconditions.checkNotNull(version, "Version cannot be null");
-        delete("metadata/workflow/{name}/{version}",  name, version);
+        delete("metadata/workflow/{name}/{version}", name, version);
     }
 
     // Task Metadata Operations
@@ -152,7 +148,7 @@ public class MetadataClient extends ClientBase {
      */
     public void registerTaskDefs(List<TaskDef> taskDefs) {
         Preconditions.checkNotNull(taskDefs, "Task defs list cannot be null");
-        postForEntity("metadata/taskdefs", taskDefs);
+        postForEntityWithRequestOnly("metadata/taskdefs", taskDefs);
     }
 
     /**

@@ -18,6 +18,8 @@
  */
 package com.netflix.conductor.core.execution;
 
+import com.amazonaws.util.IOUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -27,6 +29,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.utils.IDGenerator;
@@ -34,11 +37,14 @@ import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Named;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -48,6 +54,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED_WITH_ERRORS;
@@ -71,15 +78,24 @@ public class DeciderService {
 
     private final QueueDAO queueDAO;
 
-    private ParametersUtils parametersUtils = new ParametersUtils();
+    private final ParametersUtils parametersUtils;
 
     private final Map<String, TaskMapper> taskMappers;
 
+    private final ExternalPayloadStorage externalPayloadStorage;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
+
+    @SuppressWarnings("ConstantConditions")
+    private final Predicate<Task> isNonPendingTask = task -> !task.isRetried() && !task.getStatus().equals(SKIPPED) && !task.isExecuted() || SystemTaskType.isBuiltIn(task.getTaskType());
+
     @Inject
-    public DeciderService(MetadataDAO metadataDAO, QueueDAO queueDAO, @Named("TaskMappers") Map<String, TaskMapper> taskMappers) {
+    public DeciderService(MetadataDAO metadataDAO, ParametersUtils parametersUtils, QueueDAO queueDAO, ExternalPayloadStorage externalPayloadStorage, @Named("TaskMappers") Map<String, TaskMapper> taskMappers) {
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
+        this.parametersUtils = parametersUtils;
         this.taskMappers = taskMappers;
+        this.externalPayloadStorage = externalPayloadStorage;
     }
 
     //QQ public method validation of the input params
@@ -90,7 +106,7 @@ public class DeciderService {
         final List<Task> tasks = workflow.getTasks();
         //In case of a new workflow the list of executedTasks will also be empty
         List<Task> executedTasks = tasks.stream()
-                .filter(t -> !t.getStatus().equals(SKIPPED) && !t.getStatus().equals(READY_FOR_RERUN))
+                .filter(t -> !t.getStatus().equals(SKIPPED) && !t.getStatus().equals(READY_FOR_RERUN) && !t.isExecuted())
                 .collect(Collectors.toList());
 
         List<Task> tasksToBeScheduled = new LinkedList<>();
@@ -119,19 +135,19 @@ public class DeciderService {
             return outcome;
         }
 
-        // Filter the list of tasks and include only tasks that are not retried,
+        // Filter the list of tasks and include only tasks that are not retried, not executed,
         // marked to be skipped and not part of System tasks that is DECISION, FORK, JOIN
         // This list will be empty for a new workflow being started
         List<Task> pendingTasks = workflow.getTasks()
                 .stream()
-                .filter(task -> (!task.isRetried() && !task.getStatus().equals(SKIPPED)) || SystemTaskType.isBuiltIn(task.getTaskType()))
+                .filter(isNonPendingTask)
                 .collect(Collectors.toList());
 
         // Get all the tasks that are ready to rerun or not marked to be skipped
         // This list will be empty for a new workflow
         Set<String> executedTaskRefNames = workflow.getTasks()
                 .stream()
-                .filter(task -> !task.getStatus().equals(SKIPPED) && !task.getStatus().equals(READY_FOR_RERUN))
+                .filter(Task::isExecuted)
                 .map(Task::getReferenceTaskName)
                 .collect(Collectors.toSet());
 
@@ -153,7 +169,7 @@ public class DeciderService {
                 checkForTimeout(taskDefinition, pendingTask);
                 // If the task has not been updated for "responseTimeoutSeconds" then mark task as TIMED_OUT
                 if (isResponseTimedOut(taskDefinition, pendingTask)) {
-                    timeoutTask(pendingTask);
+                    timeoutTask(taskDefinition, pendingTask);
                 }
             }
 
@@ -203,26 +219,26 @@ public class DeciderService {
         return outcome;
     }
 
-    private List<Task> startWorkflow(Workflow workflow, WorkflowDef def) throws TerminateWorkflowException {
+    private List<Task> startWorkflow(Workflow workflow, WorkflowDef workflowDef) throws TerminateWorkflowException {
 
-        logger.debug("Starting workflow " + def.getName() + "/" + workflow.getWorkflowId());
+        logger.debug("Starting workflow " + workflowDef.getName() + "/" + workflow.getWorkflowId());
         //The tasks will be empty in case of new workflow
         List<Task> tasks = workflow.getTasks();
         // Check if the workflow is a re-run case or if it is a new workflow execution
         if (workflow.getReRunFromWorkflowId() == null || tasks.isEmpty()) {
 
-            if (def.getTasks().isEmpty()) {
+            if (workflowDef.getTasks().isEmpty()) {
                 throw new TerminateWorkflowException("No tasks found to be executed", WorkflowStatus.COMPLETED);
             }
 
-            WorkflowTask taskToSchedule = def.getTasks().getFirst(); //Nothing is running yet - so schedule the first task
+            WorkflowTask taskToSchedule = workflowDef.getTasks().getFirst(); //Nothing is running yet - so schedule the first task
             //Loop until a non-skipped task is found
             while (isTaskSkipped(taskToSchedule, workflow)) {
-                taskToSchedule = def.getNextTask(taskToSchedule.getTaskReferenceName());
+                taskToSchedule = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());
             }
 
             //In case of a new workflow a the first non-skippable task will be scheduled
-            return getTasksToBeScheduled(def, workflow, taskToSchedule, 0);
+            return getTasksToBeScheduled(workflowDef, workflow, taskToSchedule, 0);
         }
 
         // Get the first task to schedule
@@ -242,7 +258,6 @@ public class DeciderService {
                 });
 
         return Collections.singletonList(rerunFromTask);
-
     }
 
     private void updateOutput(final WorkflowDef def, final Workflow workflow) {
@@ -435,23 +450,44 @@ public class DeciderService {
         return true;
     }
 
-    private void timeoutTask(Task task) {
-        String reason = "responseTimeout: " + task.getResponseTimeoutSeconds() + " exceeded for the taskId: " + task.getTaskId() + " with Task Definition: " + task.getTaskDefName();
+    private void timeoutTask(TaskDef taskDef, Task task) {
+        String reason = "responseTimeout: " + taskDef.getResponseTimeoutSeconds() + " exceeded for the taskId: " + task.getTaskId() + " with Task Definition: " + task.getTaskDefName();
         logger.debug(reason);
         task.setStatus(TIMED_OUT);
         task.setReasonForIncompletion(reason);
     }
 
-    public List<Task> getTasksToBeScheduled(WorkflowDef def, Workflow workflow,
+    public List<Task> getTasksToBeScheduled(WorkflowDef workflowDef, Workflow workflow,
                                             WorkflowTask taskToSchedule, int retryCount) {
-        return getTasksToBeScheduled(def, workflow, taskToSchedule, retryCount, null);
+        return getTasksToBeScheduled(workflowDef, workflow, taskToSchedule, retryCount, null);
     }
 
     public List<Task> getTasksToBeScheduled(WorkflowDef workflowDefinition, Workflow workflowInstance,
                                             WorkflowTask taskToSchedule, int retryCount, String retriedTaskId) {
 
+        Workflow workflow = workflowInstance.copy();
+
+        if (StringUtils.isNotBlank(workflowInstance.getExternalInputPayloadStoragePath())) {
+            // download the workflow input from external storage here and plug it into the workflow
+            Map<String, Object> workflowInputParams = downloadFromExternalStorage(workflowInstance.getExternalInputPayloadStoragePath());
+            workflow.setInput(workflowInputParams);
+        }
+
+        workflow.getTasks().stream()
+                .filter(task -> StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath()) || StringUtils.isNotBlank(task.getExternalOutputPayloadStoragePath()))
+                .forEach(task -> {
+                    if (StringUtils.isNotBlank(task.getExternalOutputPayloadStoragePath())) {
+                        task.setOutputData(downloadFromExternalStorage(task.getExternalOutputPayloadStoragePath()));
+                        task.setExternalOutputPayloadStoragePath(null);
+                    }
+                    if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
+                        task.setInputData(downloadFromExternalStorage(task.getExternalInputPayloadStoragePath()));
+                        task.setExternalInputPayloadStoragePath(null);
+                    }
+                });
+
         Map<String, Object> input = parametersUtils.getTaskInput(taskToSchedule.getInputParameters(),
-                workflowInstance, null, null);
+                workflow, null, null);
 
         Type taskType = Type.USER_DEFINED;
         String type = taskToSchedule.getType();
@@ -460,8 +496,8 @@ public class DeciderService {
         }
 
         // get in progress tasks for this workflow instance
-        List<String> inProgressTasks = workflowInstance.getTasks().stream()
-                .filter(pendingTask -> pendingTask.getStatus().equals(Status.IN_PROGRESS))
+        List<String> inProgressTasks = workflow.getTasks().stream()
+                .filter(runningTask -> runningTask.getStatus().equals(Status.IN_PROGRESS))
                 .map(Task::getReferenceTaskName)
                 .collect(Collectors.toList());
 
@@ -471,7 +507,7 @@ public class DeciderService {
 
         TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
                 .withWorkflowDefinition(workflowDefinition)
-                .withWorkflowInstance(workflowInstance)
+                .withWorkflowInstance(workflow)
                 .withTaskDefinition(taskDef)
                 .withTaskToSchedule(taskToSchedule)
                 .withTaskInput(input)
@@ -489,6 +525,15 @@ public class DeciderService {
                 .collect(Collectors.toList());
     }
 
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> downloadFromExternalStorage(String path) {
+        try (InputStream inputStream = externalPayloadStorage.download(path)) {
+            return objectMapper.readValue(IOUtils.toString(inputStream), Map.class);
+        } catch (IOException e) {
+            logger.error("Unable to download payload from external storage path: {}", path, e);
+            throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, e);
+        }
+    }
 
     private boolean isTaskSkipped(WorkflowTask taskToSchedule, Workflow workflow) {
         try {

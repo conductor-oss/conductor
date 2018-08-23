@@ -28,8 +28,18 @@ public class DefaultConductorClientConfiguration implements ConductorClientConfi
     }
 
     @Override
+    public int getWorkflowInputMaxPayloadThresholdKB() {
+        return 10240;
+    }
+
+    @Override
     public int getTaskOutputPayloadThresholdKB() {
         return 3072;
+    }
+
+    @Override
+    public int getTaskOutputMaxPayloadThresholdKB() {
+        return 10240;
     }
 
     @Override

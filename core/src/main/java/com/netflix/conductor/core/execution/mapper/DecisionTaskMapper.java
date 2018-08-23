@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.script.ScriptException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -85,7 +86,7 @@ public class DecisionTaskMapper implements TaskMapper {
         decisionTask.setScheduledTime(System.currentTimeMillis());
         decisionTask.setEndTime(System.currentTimeMillis());
         decisionTask.getInputData().put("case", caseValue);
-        decisionTask.getOutputData().put("caseOutput", Arrays.asList(caseValue));
+        decisionTask.getOutputData().put("caseOutput", Collections.singletonList(caseValue));
         decisionTask.setTaskId(taskId);
         decisionTask.setStatus(Task.Status.IN_PROGRESS);
         decisionTask.setWorkflowTask(taskToSchedule);

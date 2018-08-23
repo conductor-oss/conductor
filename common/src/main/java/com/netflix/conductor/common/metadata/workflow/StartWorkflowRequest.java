@@ -7,7 +7,7 @@ public class StartWorkflowRequest {
 	private String name;
 	private Integer version;
 	private String correlationId;
-	private String externalStoragePath;
+	private String externalInputPayloadStoragePath;
 	private Map<String, Object> input = new HashMap<>();
 	private Map<String, String> taskToDomain = new HashMap<>();
 	
@@ -44,12 +44,12 @@ public class StartWorkflowRequest {
 		return this;
 	}
 
-	public String getExternalStoragePath() {
-		return externalStoragePath;
+	public String getExternalInputPayloadStoragePath() {
+		return externalInputPayloadStoragePath;
 	}
 
-	public void setExternalStoragePath(String externalStoragePath) {
-		this.externalStoragePath = externalStoragePath;
+	public void setExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
+		this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
 	}
 
 	public Map<String, Object> getInput() {

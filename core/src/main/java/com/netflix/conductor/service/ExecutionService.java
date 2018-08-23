@@ -104,7 +104,7 @@ public class ExecutionService {
         this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
 	}
 
-	public Task poll(String taskType, String workerId) throws Exception {
+	public Task poll(String taskType, String workerId) {
 		return poll(taskType, workerId, null);
 	}
 	public Task poll(String taskType, String workerId, String domain) {
@@ -172,7 +172,7 @@ public class ExecutionService {
 
 	public List<PollData> getAllPollData() {
 		Map<String, Long> queueSizes = queueDAO.queuesDetail();
-		List<PollData> allPollData = new ArrayList<PollData>();
+		List<PollData> allPollData = new ArrayList<>();
 		queueSizes.keySet().forEach(k -> {
 			try {
 				if(!k.contains(QueueUtils.DOMAIN_SEPARATOR)){
@@ -210,8 +210,8 @@ public class ExecutionService {
 	/**
 	 * This method removes the task from the un-acked Queue
 	 *
-	 * @param taskId: the taskId that needs to be updated and removed from the unacked queueDAO
-	 * @return True in case of successful removal of the taskId from the un-acked queueDAO
+	 * @param taskId: the taskId that needs to be updated and removed from the unacked queue
+	 * @return True in case of successful removal of the taskId from the un-acked queue
 	 */
 	public boolean ackTaskReceived(String taskId) {
 		return Optional.ofNullable(getTask(taskId))
@@ -457,7 +457,7 @@ public class ExecutionService {
      * @param payloadType the {@link PayloadType} at the external uri
      * @return the external uri at which the payload is stored/to be stored
      */
-	public ExternalStorageLocation getPayloadUri(Operation operation, PayloadType payloadType) {
-		return externalPayloadStorage.getExternalUri(operation, payloadType);
+	public ExternalStorageLocation getExternalStorageLocation(Operation operation, PayloadType payloadType) {
+		return externalPayloadStorage.getLocation(operation, payloadType);
 	}
 }

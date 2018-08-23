@@ -28,6 +28,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
@@ -86,6 +87,7 @@ public class TestDeciderOutcomes {
 		
 		MetadataDAO metadataDAO = mock(MetadataDAO.class);
 		QueueDAO queueDAO = mock(QueueDAO.class);
+		ExternalPayloadStorage externalPayloadStorage = mock(ExternalPayloadStorage.class);
 		TaskDef taskDef = new TaskDef();
 		taskDef.setRetryCount(1);
 		taskDef.setName("mockTaskDef");
@@ -104,7 +106,7 @@ public class TestDeciderOutcomes {
 		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
 		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 
-		this.deciderService = new DeciderService(metadataDAO, queueDAO, taskMappers);
+		this.deciderService = new DeciderService(metadataDAO, parametersUtils, queueDAO, externalPayloadStorage, taskMappers);
 	}
 
 	@Test

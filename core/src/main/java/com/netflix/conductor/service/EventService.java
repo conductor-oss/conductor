@@ -1,12 +1,10 @@
 package com.netflix.conductor.service;
 
-import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.events.EventProcessor;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.service.utils.ServiceUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -21,13 +19,14 @@ import java.util.Map;
 public class EventService {
 
     private final MetadataService metadataService;
-
     private final EventProcessor eventProcessor;
+    private final EventQueues eventQueues;
 
     @Inject
-    public EventService(MetadataService metadataService, EventProcessor eventProcessor) {
+    public EventService(MetadataService metadataService, EventProcessor eventProcessor, EventQueues eventQueues) {
         this.metadataService = metadataService;
         this.eventProcessor = eventProcessor;
+        this.eventQueues = eventQueues;
     }
 
     /**
@@ -88,6 +87,6 @@ public class EventService {
      * @return list of registered queue providers.
      */
     public List<String> getEventQueueProviders() {
-        return EventQueues.providers();
+        return eventQueues.getProviders();
     }
 }

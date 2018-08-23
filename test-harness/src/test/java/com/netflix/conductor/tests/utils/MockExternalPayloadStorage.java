@@ -15,15 +15,22 @@
  */
 package com.netflix.conductor.tests.utils;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
+import java.util.HashMap;
+import java.util.Map;
 
 public class MockExternalPayloadStorage implements ExternalPayloadStorage {
 
+    private ObjectMapper objectMapper = new ObjectMapper();
+
     @Override
-    public ExternalStorageLocation getExternalUri(Operation operation, PayloadType payloadType) {
+    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType) {
         return null;
     }
 
@@ -33,6 +40,27 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
 
     @Override
     public InputStream download(String path) {
-        return null;
+        try {
+
+            Map<String, Object> payload = getPayload(path);
+            String jsonString = objectMapper.writeValueAsString(payload);
+            return new ByteArrayInputStream(jsonString.getBytes());
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
+    private Map<String, Object> getPayload(String path) {
+        Map<String, Object> stringObjectMap = new HashMap<>();
+        switch (path) {
+            case "workflow/input":
+                stringObjectMap.put("param1", "p1 value");
+                stringObjectMap.put("param2", "p2 value");
+                break;
+            case "task/output":
+                stringObjectMap.put("op", "success_task1");
+                break;
+        }
+        return stringObjectMap;
     }
 }

@@ -116,7 +116,7 @@ public class TaskResource {
 	@ApiOperation("Ack Task is received")
 	@Consumes({MediaType.WILDCARD})
 	public String ack(@PathParam("taskId") String taskId,
-                      @QueryParam("workerid") String workerId) throws Exception{
+                      @QueryParam("workerid") String workerId) {
 		return taskService.ackTaskReceived(taskId, workerId);
 	}
 	
@@ -194,7 +194,7 @@ public class TaskResource {
 	@POST
 	@Path("/queue/requeue")
 	@ApiOperation("Requeue pending tasks for all the running workflows")
-	public String requeue() throws Exception {
+	public String requeue() {
 		return taskService.requeue();
 	}
 	
@@ -226,7 +226,7 @@ public class TaskResource {
 	@ApiOperation("Get the external uri where the task output payload is to be stored")
 	@Consumes(MediaType.WILDCARD)
 	@Path("/externalstoragelocation")
-	public ExternalStorageLocation getPayloadURI() {
-		return taskService.getPayloadUri();
+	public ExternalStorageLocation getExternalStorageLocation() {
+		return taskService.getExternalStorageLocation();
 	}
 }

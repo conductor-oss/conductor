@@ -48,7 +48,7 @@ public class TaskResult {
 
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
 
-    private String externalPayloadStoragePath;
+    private String externalOutputPayloadStoragePath;
 
     public TaskResult(Task task) {
         this.workflowInstanceId = task.getWorkflowInstanceId();
@@ -58,6 +58,7 @@ public class TaskResult {
         this.status = Status.valueOf(task.getStatus().name());
         this.workerId = task.getWorkerId();
         this.outputData = task.getOutputData();
+        this.externalOutputPayloadStoragePath = task.getExternalOutputPayloadStoragePath();
     }
 
     public TaskResult() {
@@ -195,16 +196,16 @@ public class TaskResult {
      *
      * @return the path where the task output is stored in external storage
      */
-    public String getExternalPayloadStoragePath() {
-        return externalPayloadStoragePath;
+    public String getExternalOutputPayloadStoragePath() {
+        return externalOutputPayloadStoragePath;
     }
 
     /**
      *
-     * @param externalPayloadStoragePath path in the external storage where the task output is stored
+     * @param externalOutputPayloadStoragePath path in the external storage where the task output is stored
      */
-    public void setExternalPayloadStoragePath(String externalPayloadStoragePath) {
-        this.externalPayloadStoragePath = externalPayloadStoragePath;
+    public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
+        this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
     }
 
     @Override
@@ -218,7 +219,7 @@ public class TaskResult {
                 ", status=" + status +
                 ", outputData=" + outputData +
                 ", logs=" + logs +
-                ", externalPayloadStoragePath='" + externalPayloadStoragePath + '\'' +
+                ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
                 '}';
     }
 

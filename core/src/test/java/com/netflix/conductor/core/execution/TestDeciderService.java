@@ -32,6 +32,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
@@ -114,6 +115,7 @@ public class TestDeciderService {
     public void setup() {
         MetadataDAO metadataDAO = mock(MetadataDAO.class);
         QueueDAO queueDAO = mock(QueueDAO.class);
+        ExternalPayloadStorage externalPayloadStorage = mock(ExternalPayloadStorage.class);
         TaskDef taskDef = new TaskDef();
         WorkflowDef workflowDef = new WorkflowDef();
         when(metadataDAO.getTaskDef(any())).thenReturn(taskDef);
@@ -131,7 +133,7 @@ public class TestDeciderService {
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 
-        deciderService = new DeciderService(metadataDAO, queueDAO, taskMappers);
+        deciderService = new DeciderService(metadataDAO, parametersUtils, queueDAO, externalPayloadStorage, taskMappers);
 
         workflow = new Workflow();
         workflow.getInput().put("requestId", "request id 001");
@@ -167,7 +169,7 @@ public class TestDeciderService {
     }
 
     @Test
-    public void testGetTaskInputV2() throws Exception {
+    public void testGetTaskInputV2() {
 
         workflow.setSchemaVersion(2);
         Map<String, Object> ip = new HashMap<>();
@@ -209,14 +211,16 @@ public class TestDeciderService {
         wfmap.put("output", workflow.getOutput());
         wfi.put("workflow", wfmap);
 
-        workflow.getTasks().stream().map(task -> task.getReferenceTaskName()).forEach(ref -> {
-            Map<String, Object> taskInput = workflow.getTaskByRefName(ref).getInputData();
-            Map<String, Object> taskOutput = workflow.getTaskByRefName(ref).getOutputData();
-            Map<String, Object> io = new HashMap<>();
-            io.put("input", taskInput);
-            io.put("output", taskOutput);
-            wfi.put(ref, io);
-        });
+        workflow.getTasks().stream()
+                .map(Task::getReferenceTaskName)
+                .forEach(ref -> {
+                    Map<String, Object> taskInput = workflow.getTaskByRefName(ref).getInputData();
+                    Map<String, Object> taskOutput = workflow.getTaskByRefName(ref).getOutputData();
+                    Map<String, Object> io = new HashMap<>();
+                    io.put("input", taskInput);
+                    io.put("output", taskOutput);
+                    wfi.put(ref, io);
+                });
 
         workflow.setSchemaVersion(2);
 
@@ -272,7 +276,7 @@ public class TestDeciderService {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testGetTaskInput() throws Exception {
+    public void testGetTaskInput() {
         Map<String, Object> ip = new HashMap<>();
         ip.put("workflowInputParam", "${workflow.input.requestId}");
         ip.put("taskOutputParam", "${task2.output.location}");
@@ -315,7 +319,7 @@ public class TestDeciderService {
     }
 
     @Test
-    public void testGetTaskInputV1() throws Exception {
+    public void testGetTaskInputV1() {
         Map<String, Object> ip = new HashMap<>();
         ip.put("workflowInputParam", "workflow.input.requestId");
         ip.put("taskOutputParam", "task2.output.location");
@@ -395,12 +399,12 @@ public class TestDeciderService {
     }
 
     @Test
-    public void testCaseStatement() throws Exception {
+    public void testCaseStatement() {
 
         WorkflowDef def = createConditionalWF();
 
         Workflow wf = new Workflow();
-        wf.setCreateTime(new Long(0));
+        wf.setCreateTime(0L);
         wf.setWorkflowId("a");
         wf.setCorrelationId("b");
         wf.setWorkflowType(def.getName());
@@ -464,7 +468,7 @@ public class TestDeciderService {
 
         //Task should be marked as timed out
         assertEquals(Status.TIMED_OUT, task.getStatus());
-        assertTrue(task.getReasonForIncompletion() != null);
+        assertNotNull(task.getReasonForIncompletion());
         assertEquals(1, counter.count());
 
         taskType.setTimeoutPolicy(TimeoutPolicy.ALERT_ONLY);
@@ -508,9 +512,6 @@ public class TestDeciderService {
     public void testConcurrentTaskInputCalc() throws InterruptedException {
 
         TaskDef def = new TaskDef();
-        ParametersUtils pu = new ParametersUtils();
-
-
         Map<String, Object> inputMap = new HashMap<>();
         inputMap.put("path", "${workflow.input.inputLocation}");
         inputMap.put("type", "${workflow.input.sourceType}");
@@ -542,7 +543,7 @@ public class TestDeciderService {
                     Workflow workflow = new Workflow();
                     workflow.setInput(workflowInput);
 
-                    Map<String, Object> taskInput = pu.getTaskInputV2(new HashMap<>(), workflow, null, def);
+                    Map<String, Object> taskInput = parametersUtils.getTaskInputV2(new HashMap<>(), workflow, null, def);
 
                     Object reqInputObj = taskInput.get("input");
                     assertNotNull(reqInputObj);
@@ -582,7 +583,7 @@ public class TestDeciderService {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testTaskRetry() throws Exception {
+    public void testTaskRetry() {
 
         workflow.setSchemaVersion(2);
 
@@ -638,7 +639,7 @@ public class TestDeciderService {
     }
 
     @Test
-    public void testDecideSuccessfulWorkflow() throws Exception {
+    public void testDecideSuccessfulWorkflow() {
         WorkflowDef workflowDef = createLinearWorkflow();
 
         Workflow workflow = new Workflow();
@@ -688,7 +689,7 @@ public class TestDeciderService {
     }
 
     @Test
-    public void testDecideFailedTask() throws Exception {
+    public void testDecideFailedTask() {
         WorkflowDef workflowDef = createLinearWorkflow();
 
         Workflow workflow = new Workflow();
@@ -719,7 +720,7 @@ public class TestDeciderService {
     }
 
     @Test
-    public void testGetTasksToBeScheduled() throws Exception {
+    public void testGetTasksToBeScheduled() {
         WorkflowDef workflowDef = createLinearWorkflow();
 
         Workflow workflow = new Workflow();
@@ -746,7 +747,7 @@ public class TestDeciderService {
     }
 
     @Test
-    public void testIsResponsedTimeOut() throws Exception {
+    public void testIsResponsedTimeOut() {
         TaskDef taskDef = new TaskDef();
         taskDef.setName("test_rt");
         taskDef.setResponseTimeoutSeconds(10);
@@ -762,7 +763,7 @@ public class TestDeciderService {
         assertTrue(flag);
     }
 
-    private WorkflowDef createConditionalWF() throws Exception {
+    private WorkflowDef createConditionalWF() {
 
         WorkflowTask workflowTask1 = new WorkflowTask();
         workflowTask1.setName("junit_task_1");

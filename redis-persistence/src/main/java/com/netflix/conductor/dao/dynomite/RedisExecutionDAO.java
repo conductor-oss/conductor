@@ -560,12 +560,12 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 
 	/**
-	 * This is not just an insert or update, the terminal state workflow is removed from the
-	 * QQ there can be partial updates if the node goes down
-	 * TODO add logger statements for different if conditions
-	 * @param workflow
-	 * @param update
-	 * @return
+	 * Inserts a new workflow/ updates an existing workflow in the datastore.
+	 * Additionally, if a workflow is in terminal state, it is removed from the set of pending workflows.
+	 *
+	 * @param workflow the workflow instance
+	 * @param update flag to identify if update or create operation
+	 * @return the workflowId
 	 */
 	private String insertOrUpdateWorkflow(Workflow workflow, boolean update) {
 		Preconditions.checkNotNull(workflow, "workflow object cannot be null");

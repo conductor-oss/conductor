@@ -20,13 +20,13 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.google.common.base.Preconditions;
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.client.exceptions.ConductorClientException;
 import com.netflix.conductor.client.exceptions.ErrorResponse;
-import com.netflix.conductor.client.util.PayloadStorage;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -65,11 +65,11 @@ public abstract class ClientBase {
     protected ConductorClientConfiguration conductorClientConfiguration;
 
     protected ClientBase() {
-        this(new DefaultClientConfig(), null);
+        this(new DefaultClientConfig(), new DefaultConductorClientConfiguration(), null);
     }
 
     protected ClientBase(ClientConfig config) {
-        this(config, null);
+        this(config, new DefaultConductorClientConfiguration(), null);
     }
 
     protected ClientBase(ClientConfig config, ClientHandler handler) {
@@ -84,8 +84,6 @@ public abstract class ClientBase {
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.setSerializationInclusion(Include.NON_EMPTY);
 
-        payloadStorage = new PayloadStorage();
-
         JacksonJsonProvider provider = new JacksonJsonProvider(objectMapper);
         config.getSingletons().add(provider);
 
@@ -96,6 +94,8 @@ public abstract class ClientBase {
         }
 
         conductorClientConfiguration = clientConfiguration;
+        payloadStorage = new PayloadStorage(this);
+
     }
 
     public void setRootURI(String root) {
@@ -181,11 +181,11 @@ public abstract class ClientBase {
         return null;
     }
 
-    protected <T> T getForEntity(String url, Object[] queryParams, Class<T> responseType, Object... uriVariables) {
+    <T> T getForEntity(String url, Object[] queryParams, Class<T> responseType, Object... uriVariables) {
         return getForEntity(url, queryParams, response -> response.getEntity(responseType), uriVariables);
     }
 
-    protected <T> T getForEntity(String url, Object[] queryParams, GenericType<T> responseType, Object... uriVariables) {
+    <T> T getForEntity(String url, Object[] queryParams, GenericType<T> responseType, Object... uriVariables) {
         return getForEntity(url, queryParams, response -> response.getEntity(responseType), uriVariables);
     }
 
@@ -215,13 +215,15 @@ public abstract class ClientBase {
      * Uses the {@link PayloadStorage} for storing large payloads.
      * Gets the uri for storing the payload from the server and then uploads to this location.
      *
-     * @param uri specify "tasks"/"workflow" depending on the type of payload
-     * @param payloadBytes a byte array containing the payload
+     * @param payloadType the {@link com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType} to be uploaded
+     * @param payloadBytes the byte array containing the payload
      * @param payloadSize the size of the payload
      * @return the path where the payload is stored in external storage
      */
-    protected String useExternalPayloadStorage(String uri, byte[] payloadBytes, long payloadSize) {
-        ExternalStorageLocation externalStorageLocation = getForEntity(String.format("%s/externalstoragelocation", uri), null, ExternalStorageLocation.class);
+    protected String uploadToExternalPayloadStorage(ExternalPayloadStorage.PayloadType payloadType, byte[] payloadBytes, long payloadSize) {
+        Preconditions.checkArgument(payloadType.equals(ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT) || payloadType.equals(ExternalPayloadStorage.PayloadType.TASK_OUTPUT),
+                "Payload type must be workflow input or task output");
+        ExternalStorageLocation externalStorageLocation = payloadStorage.getLocation(ExternalPayloadStorage.Operation.WRITE, payloadType);
         payloadStorage.upload(externalStorageLocation.getUri(), new ByteArrayInputStream(payloadBytes), payloadSize);
         return externalStorageLocation.getPath();
     }

@@ -26,6 +26,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.contribs.http.HttpTask.Input;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.DeciderService;
@@ -53,7 +54,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
@@ -131,7 +131,7 @@ public class TestHttpTask {
 	}
 	
 	@Test
-	public void testPost() throws Exception {
+	public void testPost() {
 
 		Task task = new Task();
 		Input input = new Input();
@@ -158,7 +158,7 @@ public class TestHttpTask {
 	
 
 	@Test
-	public void testPostNoContent() throws Exception {
+	public void testPostNoContent() {
 
 		Task task = new Task();
 		Input input = new Input();
@@ -179,7 +179,7 @@ public class TestHttpTask {
 	}
 	
 	@Test
-	public void testFailure() throws Exception {
+	public void testFailure() {
 
 		Task task = new Task();
 		Input input = new Input();
@@ -199,7 +199,7 @@ public class TestHttpTask {
 	}
 	
 	@Test
-	public void testTextGET() throws Exception {
+	public void testTextGET() {
 
 		Task task = new Task();
 		Input input = new Input();
@@ -215,7 +215,7 @@ public class TestHttpTask {
 	}
 	
 	@Test
-	public void testNumberGET() throws Exception {
+	public void testNumberGET() {
 
 		Task task = new Task();
 		Input input = new Input();
@@ -250,7 +250,7 @@ public class TestHttpTask {
 	}
 
 	@Test
-	public void testExecute() throws Exception {
+	public void testExecute() {
 
 		Task task = new Task();
 		Input input = new Input();
@@ -261,11 +261,10 @@ public class TestHttpTask {
 		task.setScheduledTime(0);
 		boolean executed = httpTask.execute(workflow, task, executor);
 		assertFalse(executed);
-
 	}
 	
 	@Test
-	public void testOptional() throws Exception {
+	public void testOptional() {
  		Task task = new Task();
  		Input input = new Input();
  		input.setUri("http://localhost:7009/failure");
@@ -297,7 +296,8 @@ public class TestHttpTask {
 		def.getTasks().add(wft);
  		MetadataDAO metadataDAO = mock(MetadataDAO.class);
 		QueueDAO queueDAO = mock(QueueDAO.class);
-		ParametersUtils parametersUtils = new ParametersUtils();
+		ExternalPayloadStorage externalPayloadStorage = mock(ExternalPayloadStorage.class);
+		ParametersUtils parametersUtils = mock(ParametersUtils.class);
 		Map<String, TaskMapper> taskMappers = new HashMap<>();
 		taskMappers.put("DECISION", new DecisionTaskMapper());
 		taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
@@ -309,14 +309,14 @@ public class TestHttpTask {
 		taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
 		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
 		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
- 		new DeciderService(metadataDAO, queueDAO, taskMappers).decide(workflow, def);
+ 		new DeciderService(metadataDAO, parametersUtils, queueDAO, externalPayloadStorage, taskMappers).decide(workflow, def);
  		
  		System.out.println(workflow.getTasks());
  		System.out.println(workflow.getStatus());
  	}
 
  	@Test
-	public void testOAuth() throws Exception {
+	public void testOAuth() {
 		Task task = new Task();
 		Input input = new Input();
 		input.setUri("http://localhost:7009/oauth");
@@ -346,7 +346,7 @@ public class TestHttpTask {
 		
 		@Override
 		public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-				throws IOException, ServletException {
+				throws IOException {
 			if(request.getMethod().equals("GET") && request.getRequestURI().equals("/text")) {
 				PrintWriter writer = response.getWriter();
 				writer.print(TEXT_RESPONSE);

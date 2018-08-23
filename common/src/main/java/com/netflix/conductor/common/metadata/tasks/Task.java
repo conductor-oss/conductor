@@ -132,8 +132,11 @@ public class Task {
 
     private int rateLimitFrequencyInSeconds;
 
-    public Task() {
+    private String externalInputPayloadStoragePath;
 
+    private String externalOutputPayloadStoragePath;
+
+    public Task() {
     }
 
     /**
@@ -560,8 +563,35 @@ public class Task {
         this.rateLimitFrequencyInSeconds = rateLimitFrequencyInSeconds;
     }
 
-    public Task copy() {
+    /**
+     * @return the external storage path for the task input payload
+     */
+    public String getExternalInputPayloadStoragePath() {
+        return externalInputPayloadStoragePath;
+    }
 
+    /**
+     * @param externalInputPayloadStoragePath the external storage path where the task input payload is stored
+     */
+    public void setExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
+        this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
+    }
+
+    /**
+     * @return the external storage path for the task output payload
+     */
+    public String getExternalOutputPayloadStoragePath() {
+        return externalOutputPayloadStoragePath;
+    }
+
+    /**
+     * @param externalOutputPayloadStoragePath the external storage path where the task output payload is stored
+     */
+    public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
+        this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
+    }
+
+    public Task copy() {
         Task copy = new Task();
         copy.setCallbackAfterSeconds(callbackAfterSeconds);
         copy.setCallbackFromWorker(callbackFromWorker);
@@ -584,6 +614,7 @@ public class Task {
         copy.setDomain(domain);
         copy.setRateLimitPerFrequency(rateLimitPerFrequency);
         copy.setRateLimitFrequencyInSeconds(rateLimitFrequencyInSeconds);
+        copy.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
         return copy;
     }
 
@@ -607,11 +638,11 @@ public class Task {
                 ", startDelayInSeconds=" + startDelayInSeconds +
                 ", retriedTaskId='" + retriedTaskId + '\'' +
                 ", retried=" + retried +
+                ", executed=" + executed +
                 ", callbackFromWorker=" + callbackFromWorker +
-                ", rateLimitFrequencyInSeconds=" + rateLimitFrequencyInSeconds +
-                ", rateLimitPerFrequency=" + rateLimitPerFrequency +
                 ", responseTimeoutSeconds=" + responseTimeoutSeconds +
                 ", workflowInstanceId='" + workflowInstanceId + '\'' +
+                ", workflowType='" + workflowType + '\'' +
                 ", taskId='" + taskId + '\'' +
                 ", reasonForIncompletion='" + reasonForIncompletion + '\'' +
                 ", callbackAfterSeconds=" + callbackAfterSeconds +
@@ -619,6 +650,10 @@ public class Task {
                 ", outputData=" + outputData +
                 ", workflowTask=" + workflowTask +
                 ", domain='" + domain + '\'' +
+                ", rateLimitPerFrequency=" + rateLimitPerFrequency +
+                ", rateLimitFrequencyInSeconds=" + rateLimitFrequencyInSeconds +
+                ", externalInputPayloadStoragePath='" + externalInputPayloadStoragePath + '\'' +
+                ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
                 '}';
     }
 }

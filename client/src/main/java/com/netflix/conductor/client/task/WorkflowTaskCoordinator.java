@@ -379,6 +379,7 @@ public class WorkflowTaskCoordinator {
 		TaskResult result = null;
 		try {
 			logger.debug("Executing task {} in worker {} at {}", task, worker.getClass().getSimpleName(), worker.getIdentity());
+			// TODO
 			result = worker.execute(task);
 			result.setWorkflowInstanceId(task.getWorkflowInstanceId());
 			result.setTaskId(task.getTaskId());

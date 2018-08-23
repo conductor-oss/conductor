@@ -39,6 +39,8 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.netflix.conductor.server.ConductorServer.ExternalPayloadStorageType.S3;
+
 /**
  * @author Viren
  *
@@ -61,16 +63,16 @@ public class ServerModule extends AbstractModule {
 	
 	private ConductorServer.DB db;
 
-	private ConductorServer.ExternalPayloadStorage externalPayloadStorage;
+	private ConductorServer.ExternalPayloadStorageType externalPayloadStorageType;
 
-	public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, ConductorConfig conductorConfig, ConductorServer.DB db, ConductorServer.ExternalPayloadStorage externalPayloadStorage) {
+	public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, ConductorConfig conductorConfig, ConductorServer.DB db, ConductorServer.ExternalPayloadStorageType externalPayloadStorageType) {
 		this.dynoConn = jedis;
 		this.hostSupplier = hostSupplier;
 		this.conductorConfig = conductorConfig;
 		this.region = conductorConfig.getRegion();
 		this.localRack = conductorConfig.getAvailabilityZone();
 		this.db = db;
-		this.externalPayloadStorage = externalPayloadStorage;
+		this.externalPayloadStorageType = externalPayloadStorageType;
 	}
 	
 	@Override
@@ -93,13 +95,13 @@ public class ServerModule extends AbstractModule {
 			// Use ES2 as default.
 			install(new ElasticSearchModule());
 		}
-		
+
 		install(new CoreModule());
 		install(new JerseyModule());
-		
+
 		new HttpTask(new RestClientManager(), conductorConfig);
 		new JsonJqTransform();
-		
+
 		List<AbstractModule> additionalModules = conductorConfig.getAdditionalModules();
 		if(additionalModules != null) {
 			for(AbstractModule additionalModule : additionalModules) {
@@ -107,7 +109,7 @@ public class ServerModule extends AbstractModule {
 			}
 		}
 
-		if (externalPayloadStorage == ConductorServer.ExternalPayloadStorage.S3) {
+		if (externalPayloadStorageType == S3) {
 			bind(ExternalPayloadStorage.class).to(S3PayloadStorage.class);
 		} else {
 			bind(ExternalPayloadStorage.class).to(DummyPayloadStorage.class);

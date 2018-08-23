@@ -36,7 +36,7 @@ public interface ExternalPayloadStorage {
      * @param payloadType the {@link PayloadType} that is being accessed at the uri
      * @return a {@link ExternalStorageLocation} object which contains the uri and the path for the json payload
      */
-    ExternalStorageLocation getExternalUri(Operation operation, PayloadType payloadType);
+    ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType);
 
     /**
      * Upload a json payload to the specified external storage location.

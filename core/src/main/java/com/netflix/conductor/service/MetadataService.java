@@ -18,7 +18,6 @@
  */
 package com.netflix.conductor.service;
 
-import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -42,12 +41,14 @@ import java.util.List;
 @Trace
 public class MetadataService {
 
-    private MetadataDAO metadataDAO;
+    private final MetadataDAO metadataDAO;
+    private final EventQueues eventQueues;
 
 
     @Inject
-    public MetadataService(MetadataDAO metadataDAO) {
+    public MetadataService(MetadataDAO metadataDAO, EventQueues eventQueues) {
         this.metadataDAO = metadataDAO;
+        this.eventQueues = eventQueues;
     }
 
     /**
@@ -237,6 +238,6 @@ public class MetadataService {
         ServiceUtils.checkNotNullOrEmpty(eh.getEvent(), "Missing event location");
         ServiceUtils.checkNotNullOrEmpty(eh.getActions(), "No actions specified. Please specify at-least one action");
         String event = eh.getEvent();
-        EventQueues.getQueue(event);
+        eventQueues.getQueue(event);
     }
 }

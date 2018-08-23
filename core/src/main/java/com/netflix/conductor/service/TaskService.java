@@ -292,8 +292,8 @@ public class TaskService {
      *
      * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external storage
      */
-    public ExternalStorageLocation getPayloadUri() {
-        return executionService.getPayloadUri(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.TASK_OUTPUT);
+    public ExternalStorageLocation getExternalStorageLocation() {
+        return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.TASK_OUTPUT);
     }
 }
 

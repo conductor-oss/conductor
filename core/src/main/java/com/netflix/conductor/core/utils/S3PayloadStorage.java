@@ -56,7 +56,7 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
     public S3PayloadStorage(Configuration config) {
         s3Client = AmazonS3ClientBuilder.standard().withRegion("us-east-1").build();
         bucketName = config.getProperty("s3bucket", "");
-        expirationSec = config.getIntProperty("s3signedurlexpirationseconds", 3600);
+        expirationSec = config.getIntProperty("s3signedurlexpirationseconds", 5);
     }
 
     /**
@@ -65,7 +65,7 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
      * @return a {@link ExternalStorageLocation} object which contains the pre-signed URL and the s3 object key for the json payload
      */
     @Override
-    public ExternalStorageLocation getExternalUri(Operation operation, PayloadType payloadType) {
+    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType) {
         try {
             ExternalStorageLocation externalStorageLocation = new ExternalStorageLocation();
 
@@ -78,18 +78,7 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
                 httpMethod = HttpMethod.PUT;
             }
 
-            StringBuilder stringBuilder = new StringBuilder();
-            if (payloadType == PayloadType.WORKFLOW_INPUT) {
-                stringBuilder.append("workflow/input/");
-            } else if (payloadType == PayloadType.WORKFLOW_OUTPUT) {
-                stringBuilder.append("workflow/output/");
-            } else if (payloadType == PayloadType.TASK_INPUT) {
-                stringBuilder.append("task/input/");
-            } else {
-                stringBuilder.append("task/output/");
-            }
-            stringBuilder.append(IDGenerator.generate()).append(".json");
-            String objectKey = stringBuilder.toString();
+            String objectKey = getObjectKey(payloadType);
             externalStorageLocation.setPath(objectKey);
 
             GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, objectKey)
@@ -124,6 +113,11 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
         }
     }
 
+    /**
+     * @param path the S3 key of the object
+     * @return an input stream containing the contents of the object
+     * Caller is expected to close the input stream.
+     */
     @Override
     public InputStream download(String path) {
         try {
@@ -134,5 +128,25 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
             logger.error(msg, e);
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, msg, e);
         }
+    }
+
+    private String getObjectKey(PayloadType payloadType) {
+        StringBuilder stringBuilder = new StringBuilder();
+        switch (payloadType) {
+            case WORKFLOW_INPUT:
+                stringBuilder.append("workflow/input/");
+                break;
+            case WORKFLOW_OUTPUT:
+                stringBuilder.append("workflow/output/");
+                break;
+            case TASK_INPUT:
+                stringBuilder.append("task/input/");
+                break;
+            case TASK_OUTPUT:
+                stringBuilder.append("task/output/");
+                break;
+        }
+        stringBuilder.append(IDGenerator.generate()).append(".json");
+        return stringBuilder.toString();
     }
 }

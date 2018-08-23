@@ -70,6 +70,7 @@ public class EventProcessor {
     private final MetadataService metadataService;
     private final ExecutionService executionService;
     private final ActionProcessor actionProcessor;
+    private final EventQueues eventQueues;
 
     private ExecutorService executorService;
     private final Map<String, ObservableQueue> eventToQueueMap = new ConcurrentHashMap<>();
@@ -78,10 +79,11 @@ public class EventProcessor {
 
     @Inject
     public EventProcessor(ExecutionService executionService, MetadataService metadataService,
-                          ActionProcessor actionProcessor, Configuration config) {
+                          ActionProcessor actionProcessor, EventQueues eventQueues, Configuration config) {
         this.executionService = executionService;
         this.metadataService = metadataService;
         this.actionProcessor = actionProcessor;
+        this.eventQueues = eventQueues;
 
         int executorThreadCount = config.getIntProperty("workflow.event.processor.thread.count", 2);
         if (executorThreadCount > 0) {
@@ -120,7 +122,7 @@ public class EventProcessor {
 
             List<ObservableQueue> createdQueues = new LinkedList<>();
             events.forEach(event -> eventToQueueMap.computeIfAbsent(event, s -> {
-                        ObservableQueue q = EventQueues.getQueue(event);
+                        ObservableQueue q = eventQueues.getQueue(event);
                         createdQueues.add(q);
                         return q;
                     }

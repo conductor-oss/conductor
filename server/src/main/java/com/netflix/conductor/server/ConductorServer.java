@@ -65,7 +65,7 @@ public class ConductorServer {
 		redis, dynomite, memory, redis_cluster, mysql
 	}
 
-	enum ExternalPayloadStorage {
+	enum ExternalPayloadStorageType {
 		S3
 	}
 	
@@ -77,7 +77,7 @@ public class ConductorServer {
 	
 	private DB database;
 
-	private ExternalPayloadStorage externalPayloadStorage;
+	private ExternalPayloadStorageType externalPayloadStorageType;
 	
 	public ConductorServer(ConductorConfig conductorConfig) {
 		this.conductorConfig = conductorConfig;
@@ -117,9 +117,9 @@ public class ConductorServer {
 
 		String externalPayloadStorageString = conductorConfig.getProperty("workflow.external.payload.storage", "");
 		try {
-			externalPayloadStorage = ConductorServer.ExternalPayloadStorage.valueOf(externalPayloadStorageString);
+			externalPayloadStorageType = ExternalPayloadStorageType.valueOf(externalPayloadStorageString);
 		} catch(IllegalArgumentException e) {
-			logger.info("External payload storage is not configured, provided: {}, supported values are: {}", externalPayloadStorageString, Arrays.toString(ConductorServer.ExternalPayloadStorage.values()), e);
+			logger.info("External payload storage is not configured, provided: {}, supported values are: {}", externalPayloadStorageString, Arrays.toString(ExternalPayloadStorageType.values()), e);
 		}
 
 		init(dynoClusterName, dynoHosts);
@@ -187,7 +187,7 @@ public class ConductorServer {
 			break;
 		}
 		
-		this.serverModule = new ServerModule(jedis, hostSupplier, conductorConfig, database, externalPayloadStorage);
+		this.serverModule = new ServerModule(jedis, hostSupplier, conductorConfig, database, externalPayloadStorageType);
 	}
 
 	private TokenMapSupplier getTokenMapSupplier(List<Host> dynoHosts) {

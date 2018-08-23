@@ -12,7 +12,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -20,13 +19,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class DecisionTaskMapperTest {
 
-    private ParametersUtils parametersUtils = new ParametersUtils();
+    private ParametersUtils parametersUtils;
     private DeciderService deciderService;
     //Subject
     private DecisionTaskMapper decisionTaskMapper;
@@ -34,14 +33,14 @@ public class DecisionTaskMapperTest {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-
     Map<String, Object> ip1;
     WorkflowTask task1;
     WorkflowTask task2;
     WorkflowTask task3;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
+        parametersUtils = new ParametersUtils();
 
         ip1 = new HashMap<>();
         ip1.put("p1", "workflow.input.param1");
@@ -67,7 +66,7 @@ public class DecisionTaskMapperTest {
     }
 
     @Test
-    public void getMappedTasks() throws Exception {
+    public void getMappedTasks() {
 
         //Given
         //Task Definition
@@ -134,7 +133,7 @@ public class DecisionTaskMapperTest {
     }
 
     @Test
-    public void getEvaluatedCaseValue() throws Exception {
+    public void getEvaluatedCaseValue() {
 
         WorkflowTask decisionTask = new WorkflowTask();
         decisionTask.setType(WorkflowTask.Type.DECISION.name());
@@ -163,7 +162,7 @@ public class DecisionTaskMapperTest {
     }
 
     @Test
-    public void getEvaluatedCaseValueUsingExpression() throws Exception {
+    public void getEvaluatedCaseValueUsingExpression() {
         //Given
         //Task Definition
         TaskDef taskDef = new TaskDef();
@@ -246,10 +245,5 @@ public class DecisionTaskMapperTest {
         expectedException.expectMessage("Error while evaluating the script " + decisionTask.getCaseExpression());
 
         decisionTaskMapper.getEvaluatedCaseValue(decisionTask, evaluatorInput);
-
     }
-
-
-
-
 }

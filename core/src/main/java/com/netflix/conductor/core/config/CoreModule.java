@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -29,7 +29,6 @@ import com.google.inject.name.Named;
 import com.netflix.conductor.core.events.ActionProcessor;
 import com.netflix.conductor.core.events.EventProcessor;
 import com.netflix.conductor.core.events.EventQueueProvider;
-import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.queue.dyno.DynoEventQueueProvider;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
@@ -50,7 +49,6 @@ import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 
-
 /**
  * @author Viren
  */
@@ -59,7 +57,6 @@ public class CoreModule extends AbstractModule {
     @Override
     protected void configure() {
         install(MultibindingsScanner.asModule());
-        requestStaticInjection(EventQueues.class);
         bind(ActionProcessor.class).asEagerSingleton();
         bind(EventProcessor.class).asEagerSingleton();
         bind(SystemTaskWorkerCoordinator.class).asEagerSingleton();
@@ -73,7 +70,6 @@ public class CoreModule extends AbstractModule {
     public ParametersUtils getParameterUtils() {
         return new ParametersUtils();
     }
-
 
     @ProvidesIntoMap
     @StringMapKey("conductor")
@@ -106,7 +102,6 @@ public class CoreModule extends AbstractModule {
     public TaskMapper getJoinTaskMapper() {
         return new JoinTaskMapper();
     }
-
 
 
     @ProvidesIntoMap
@@ -164,6 +159,4 @@ public class CoreModule extends AbstractModule {
     public TaskMapper getSimpleTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
         return new SimpleTaskMapper(parametersUtils, metadataDAO);
     }
-
-
 }
