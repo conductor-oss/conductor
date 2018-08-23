@@ -30,7 +30,9 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.utils.IDGenerator;
+import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -65,15 +67,18 @@ public class DeciderService {
 
     private static Logger logger = LoggerFactory.getLogger(DeciderService.class);
 
-    private MetadataDAO metadataDAO;
+    private final MetadataDAO metadataDAO;
+
+    private final QueueDAO queueDAO;
 
     private ParametersUtils parametersUtils = new ParametersUtils();
 
-    private Map<String, TaskMapper> taskMappers;
+    private final Map<String, TaskMapper> taskMappers;
 
     @Inject
-    public DeciderService(MetadataDAO metadataDAO, @Named("TaskMappers") Map<String, TaskMapper> taskMappers) {
+    public DeciderService(MetadataDAO metadataDAO, QueueDAO queueDAO, @Named("TaskMappers") Map<String, TaskMapper> taskMappers) {
         this.metadataDAO = metadataDAO;
+        this.queueDAO = queueDAO;
         this.taskMappers = taskMappers;
     }
 
@@ -401,15 +406,20 @@ public class DeciderService {
     @VisibleForTesting
     boolean isResponseTimedOut(TaskDef taskDefinition, Task task) {
 
-        logger.debug("Evaluating responseTimeOut for Task: {}, with Task Definition: {} ", task, taskDefinition);
-
         if (taskDefinition == null) {
             logger.warn("missing task type : {}, workflowId= {}", task.getTaskDefName(), task.getWorkflowInstanceId());
             return false;
         }
-        if (task.getStatus().isTerminal() || !task.getStatus().equals(IN_PROGRESS) || taskDefinition.getResponseTimeoutSeconds() == 0) {
+        if (!task.getStatus().equals(IN_PROGRESS) || taskDefinition.getResponseTimeoutSeconds() == 0) {
             return false;
         }
+        if (queueDAO.exists(QueueUtils.getQueueName(task), task.getTaskId())) {
+            // this task is present in the queue
+            // this means that it has been updated with callbackAfterSeconds and is not being executed in a worker
+            return false;
+        }
+
+        logger.debug("Evaluating responseTimeOut for Task: {}, with Task Definition: {} ", task, taskDefinition);
 
         long responseTimeout = 1000 * taskDefinition.getResponseTimeoutSeconds();
         long now = System.currentTimeMillis();

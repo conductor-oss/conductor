@@ -15,23 +15,6 @@
  */
 package com.netflix.conductor.service;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.service.utils.ServiceUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.PollData;
@@ -46,6 +29,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
+import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.QueueUtils;
@@ -54,8 +38,21 @@ import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.service.utils.ServiceUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -103,7 +100,7 @@ public class ExecutionService {
 	public Task poll(String taskType, String workerId) throws Exception {
 		return poll(taskType, workerId, null);
 	}
-	public Task poll(String taskType, String workerId, String domain) throws Exception {
+	public Task poll(String taskType, String workerId, String domain) {
 
 		List<Task> tasks = poll(taskType, workerId, domain, 1, 100);
 		if(tasks.isEmpty()) {
@@ -112,7 +109,7 @@ public class ExecutionService {
 		return tasks.get(0);
 	}
 
-	public List<Task> poll(String taskType, String workerId, int count, int timeoutInMilliSecond) throws Exception {
+	public List<Task> poll(String taskType, String workerId, int count, int timeoutInMilliSecond) {
 		return poll(taskType, workerId, null, count, timeoutInMilliSecond);
 	}
 
@@ -140,6 +137,7 @@ public class ExecutionService {
 				task.setStartTime(System.currentTimeMillis());
 				Monitors.recordQueueWaitTime(task.getTaskDefName(), task.getQueueWaitTime());
 			}
+			task.setCallbackAfterSeconds(0);	// reset callbackAfterSeconds when giving the task to the worker
 			task.setWorkerId(workerId);
 			task.setPollCount(task.getPollCount() + 1);
 			executionDAO.updateTask(task);

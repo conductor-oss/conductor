@@ -91,7 +91,7 @@ public class TestWorkflowExecutor {
         taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
-        DeciderService deciderService = new DeciderService(metadataDAO, taskMappers);
+        DeciderService deciderService = new DeciderService(metadataDAO, queueDAO, taskMappers);
         workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, executionDAO, queueDAO, config);
     }
 

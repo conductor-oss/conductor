@@ -43,6 +43,7 @@ import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -295,6 +296,7 @@ public class TestHttpTask {
  		wft.setTaskReferenceName("t1");
 		def.getTasks().add(wft);
  		MetadataDAO metadataDAO = mock(MetadataDAO.class);
+		QueueDAO queueDAO = mock(QueueDAO.class);
 		ParametersUtils parametersUtils = new ParametersUtils();
 		Map<String, TaskMapper> taskMappers = new HashMap<>();
 		taskMappers.put("DECISION", new DecisionTaskMapper());
@@ -307,7 +309,7 @@ public class TestHttpTask {
 		taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
 		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
 		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
- 		new DeciderService(metadataDAO, taskMappers).decide(workflow, def);
+ 		new DeciderService(metadataDAO, queueDAO, taskMappers).decide(workflow, def);
  		
  		System.out.println(workflow.getTasks());
  		System.out.println(workflow.getStatus());
