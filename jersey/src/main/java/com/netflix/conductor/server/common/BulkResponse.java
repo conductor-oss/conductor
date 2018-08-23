@@ -1,47 +1,43 @@
 package com.netflix.conductor.server.common;
 
-import org.apache.commons.lang3.tuple.MutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /**
- * Synchronous response to return a list of failed and succeeded entities for the bulk request.
+ * Response object to return a list of succeeded entities and a map of failed ones, including error message, for the bulk request.
  */
 public class BulkResponse {
 
+    /**
+     * Key - entityId
+     * Value - error message processing this entity
+     */
+    private final Map<String, String> bulkErrorResults;
     private final List<String> bulkSuccessfulResults;
-    private final List<Pair<String,String>> bulkErrorResults;
     private final String message = "Bulk Request has been processed.";
 
     public BulkResponse() {
         this.bulkSuccessfulResults = new ArrayList<>();
-        this.bulkErrorResults = new ArrayList<>();
+        this.bulkErrorResults = new HashMap<>();
     }
-
 
     public List<String> getBulkSuccessfulResults() {
         return bulkSuccessfulResults;
     }
 
-    public List<Pair<String, String>> getBulkErrorResults() {
+    public Map<String, String> getBulkErrorResults() {
         return bulkErrorResults;
     }
-
 
     public void appendSuccessResponse(String id) {
         bulkSuccessfulResults.add(id);
     }
 
-    /**
-     *
-     * @param id - id of a failed entity
-     * @param message - error message
-     */
-    public void appendFailedResponse(String id, String message) {
-        bulkErrorResults.add(MutablePair.of(id,message));
+    public void appendFailedResponse(String id, String errorMessage) {
+        bulkErrorResults.put(id, errorMessage);
     }
 
     @Override
@@ -56,7 +52,6 @@ public class BulkResponse {
 
     @Override
     public int hashCode() {
-
         return Objects.hash(bulkSuccessfulResults, bulkErrorResults, message);
     }
 
