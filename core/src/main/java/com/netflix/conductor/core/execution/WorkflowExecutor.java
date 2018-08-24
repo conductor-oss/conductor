@@ -54,7 +54,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -224,20 +223,7 @@ public class WorkflowExecutor {
             String event,
             Map<String, String> taskToDomain
     ) {
-
-        Optional<WorkflowDef> potentialDef =
-                version == null ? lookupLatestWorkflowDefinition(name) : lookupWorkflowDefinition(name, version);
-
-        //Check if the workflow definition is valid
-        WorkflowDef workflowDefinition = potentialDef
-                .orElseThrow(() -> {
-                            logger.error("There is no workflow defined with name {} and version {}", name, version);
-                            return new ApplicationException(
-                                    Code.NOT_FOUND,
-                                    String.format("No such workflow defined. name=%s, version=%s", name, version)
-                            );
-                        }
-                );
+        WorkflowDef workflowDefinition = metadataMapperService.lookupForWorkflowDefinition(name, version);
 
         return startWorkflow(
                 workflowDefinition,
@@ -620,6 +606,7 @@ public class WorkflowExecutor {
 
         String workflowId = taskResult.getWorkflowInstanceId();
         Workflow workflowInstance = executionDAO.getWorkflow(workflowId);
+        metadataMapperService.populateWorkflowWithDefinitions(workflowInstance);
         Task task = executionDAO.getTask(taskResult.getTaskId());
 
         logger.debug("Task: {} belonging to Workflow {} being updated", task, workflowInstance);
@@ -758,7 +745,7 @@ public class WorkflowExecutor {
 
         //If it is a new workflow the tasks will be still empty even though include tasks is true
         Workflow workflow = executionDAO.getWorkflow(workflowId, true);
-        // FIXME: The workflow could be null.
+        metadataMapperService.populateWorkflowWithDefinitions(workflow);
 
         try {
             DeciderOutcome outcome = deciderService.decide(workflow);
@@ -862,6 +849,7 @@ public class WorkflowExecutor {
     public void skipTaskFromWorkflow(String workflowId, String taskReferenceName, SkipTaskRequest skipTaskRequest) {
 
         Workflow wf = executionDAO.getWorkflow(workflowId, true);
+        metadataMapperService.populateWorkflowWithDefinitions(wf);
 
         // If the wf is not running then cannot skip any task
         if (!wf.getStatus().equals(WorkflowStatus.RUNNING)) {

@@ -27,6 +27,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 
 @ProtoMessage
 public class Workflow extends Auditable {
+
     @ProtoEnum
     public enum WorkflowStatus {
         RUNNING(false, false), COMPLETED(true, true), FAILED(true, false), TIMED_OUT(true, false), TERMINATED(true, false), PAUSED(false, true);
@@ -317,7 +318,10 @@ public class Workflow extends Auditable {
      * @return the schemaVersion Version of the schema for the workflow definition
      */
     public int getSchemaVersion() {
-        return getWorkflowDefinition().getSchemaVersion();
+        return getWorkflowDefinition() != null ?
+                getWorkflowDefinition().getSchemaVersion() :
+                schemaVersion
+                ;
     }
 
     /**
@@ -359,19 +363,23 @@ public class Workflow extends Auditable {
     }
 
     /**
-     * Conveience method for accessing the workflow definition name.
+     * Convenience method for accessing the workflow definition name.
      * @return the workflow definition name.
      */
     public String getWorkflowName() {
-        return getWorkflowDefinition().getName();
+        return getWorkflowDefinition() != null ?
+                getWorkflowDefinition().getName() :
+                workflowType;
     }
 
     /**
-     * Conveience method for accessing the workflow definition version.
+     * Convenience method for accessing the workflow definition version.
      * @return the workflow definition version.
      */
     public int getWorkflowVersion() {
-        return getWorkflowDefinition().getVersion();
+        return getWorkflowDefinition() != null ?
+                getWorkflowDefinition().getVersion() :
+                version;
     }
 
     public Task getTaskByRefName(String refName) {

@@ -31,6 +31,7 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
@@ -76,13 +77,18 @@ public class ExecutionService {
 
 	private int taskRequeueTimeout;
 
+	private MetadataMapperService metadataMapperService;
+
 
 	@Inject
-	public ExecutionService(WorkflowExecutor wfProvider, ExecutionDAO executionDAO, QueueDAO queue, MetadataDAO metadata, IndexDAO indexer, Configuration config) {
+	public ExecutionService(WorkflowExecutor wfProvider, ExecutionDAO executionDAO, QueueDAO queue,
+							MetadataDAO metadata, MetadataMapperService metadataMapperService,
+							IndexDAO indexer, Configuration config) {
 		this.executor = wfProvider;
 		this.executionDAO = executionDAO;
 		this.queue = queue;
 		this.metadata = metadata;
+		this.metadataMapperService = metadataMapperService;
 		this.indexer = indexer;
 		this.taskRequeueTimeout = config.getIntProperty("task.requeue.timeout", 60_000);
 	}
@@ -167,7 +173,9 @@ public class ExecutionService {
 	}
 
 	public Task getTask(String taskId) throws Exception {
-		return executionDAO.getTask(taskId);
+		Task task = executionDAO.getTask(taskId);
+		metadataMapperService.populateTaskWithDefinitions(task);
+		return task;
 	}
 
 	public Task getPendingTaskForWorkflow(String taskReferenceName, String workflowId) {
