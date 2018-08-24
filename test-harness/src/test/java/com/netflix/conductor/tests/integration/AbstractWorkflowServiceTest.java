@@ -257,7 +257,7 @@ public abstract class AbstractWorkflowServiceTest {
         empty.setSchemaVersion(2);
         metadataService.registerWorkflowDef(empty);
 
-        String id = startOrLoadWorkflowExecution(empty.getName(), 1, "testWorkflowWithNoTasks", new HashMap<>());
+        String id = startOrLoadWorkflowExecution(empty.getName(), 1, "testWorkflowWithNoTasks", new HashMap<>(), null, null);
         assertNotNull(id);
         Workflow workflow = workflowExecutionService.getExecutionStatus(id, true);
         assertNotNull(workflow);
@@ -303,7 +303,7 @@ public abstract class AbstractWorkflowServiceTest {
         input.put("outputPath", "s3://bucket/outputPath");
         input.put("requestDetails", requestDetails);
 
-        String id = startOrLoadWorkflowExecution(templateWf.getName(), 1, "testTaskDefTemplate", input);
+        String id = startOrLoadWorkflowExecution(templateWf.getName(), 1, "testTaskDefTemplate", input, null, null);
         assertNotNull(id);
         Workflow workflow = workflowExecutionService.getExecutionStatus(id, true);
         assertNotNull(workflow);
@@ -377,7 +377,7 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.updateTaskDef(taskDef);
 
         Map<String, Object> input = new HashMap<>();
-        String workflowId = startOrLoadWorkflowExecution(FORK_JOIN_WF, 1, "fanouttest", input);
+        String workflowId = startOrLoadWorkflowExecution(FORK_JOIN_WF, 1, "fanouttest", input, null, null);
         System.out.println("testForkJoin.wfid=" + workflowId);
         printTaskStatuses(workflowId, "initiated");
 
@@ -662,7 +662,7 @@ public abstract class AbstractWorkflowServiceTest {
 
 
         Map<String, Object> input = new HashMap<String, Object>();
-        String wfid = startOrLoadWorkflowExecution(FORK_JOIN_WF, 1, "fanouttest", input);
+        String wfid = startOrLoadWorkflowExecution(FORK_JOIN_WF, 1, "fanouttest", input, null, null);
         System.out.println("testForkJoinFailure.wfid=" + wfid);
 
         Task t1 = workflowExecutionService.poll("junit_task_2", "test");
@@ -710,7 +710,7 @@ public abstract class AbstractWorkflowServiceTest {
         }
 
         Map<String, Object> input = new HashMap<String, Object>();
-        String wfid = startOrLoadWorkflowExecution(DYNAMIC_FORK_JOIN_WF_LEGACY, 1, "dynfanouttest1", input);
+        String wfid = startOrLoadWorkflowExecution(DYNAMIC_FORK_JOIN_WF_LEGACY, 1, "dynfanouttest1", input, null, null);
         System.out.println("testDynamicForkJoinLegacy.wfid=" + wfid);
 
         Task t1 = workflowExecutionService.poll("junit_task_1", "test");
@@ -784,7 +784,7 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.updateTaskDef(taskDef);
 
         Map<String, Object> workflowInput = new HashMap<>();
-        String workflowId = startOrLoadWorkflowExecution(DYNAMIC_FORK_JOIN_WF, 1, "dynfanouttest1", workflowInput);
+        String workflowId = startOrLoadWorkflowExecution(DYNAMIC_FORK_JOIN_WF, 1, "dynfanouttest1", workflowInput, null, null);
         System.out.println("testDynamicForkJoin.wfid=" + workflowId);
         Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
         assertNotNull(workflow);
@@ -1390,7 +1390,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String workflowInstanceId = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        String workflowInstanceId = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
         logger.info("testSimpleWorkflow.wfid= {}", workflowInstanceId);
         assertNotNull(workflowInstanceId);
 
@@ -1481,7 +1481,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         workflowInput.put("param1", inputParam1);
         workflowInput.put("param2", "p2 value");
-        String workflowId = startOrLoadWorkflowExecution("RTOWF", 1, correlationId, workflowInput);
+        String workflowId = startOrLoadWorkflowExecution("RTOWF", 1, correlationId, workflowInput, null, null);
         System.out.println("testSimpleWorkflowWithResponseTimeout.wfid=" + workflowId);
         assertNotNull(workflowId);
 
@@ -1903,7 +1903,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(LONG_RUNNING, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(LONG_RUNNING, 1, correlationId, input, null, null);
         System.out.println("testLongRunning.wfid=" + wfid);
         assertNotNull(wfid);
 
@@ -2011,7 +2011,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(LONG_RUNNING, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(LONG_RUNNING, 1, correlationId, input, null, null);
         System.out.println("testLongRunning.wfid=" + wfid);
         assertNotNull(wfid);
 
@@ -2202,7 +2202,7 @@ public abstract class AbstractWorkflowServiceTest {
         //default case
         input.put("param1", "xxx");
         input.put("param2", "two");
-        wfid = startOrLoadWorkflowExecution(COND_TASK_WF, 1, correlationId, input);
+        wfid = startOrLoadWorkflowExecution(COND_TASK_WF, 1, correlationId, input, null, null);
         System.out.println("testCaseStatements.wfid=" + wfid);
         assertNotNull(wfid);
         Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
@@ -2328,7 +2328,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
         System.out.println("testRetries.wfid=" + wfid);
         assertNotNull(wfid);
 
@@ -2395,7 +2395,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
         assertNotNull(wfid);
 
         List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
@@ -2504,7 +2504,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
         assertNotNull(wfid);
 
         Workflow workflow = workflowExecutor.getWorkflow(wfid, false);
@@ -2535,7 +2535,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
         assertNotNull(wfid);
 
         Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
@@ -2609,7 +2609,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
         assertNotNull(wfid);
 
         List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
@@ -2758,7 +2758,7 @@ public abstract class AbstractWorkflowServiceTest {
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
         input.put("failureWfName", "FanInOutTest");
-        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
         assertNotNull(wfid);
 
         Task task = getTask("junit_task_1");
@@ -2933,7 +2933,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(JUNIT_TEST_WF_NON_RESTARTABLE, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(JUNIT_TEST_WF_NON_RESTARTABLE, 1, correlationId, input, null, null);
         assertNotNull(wfid);
 
         Task task = getTask("junit_task_1");
@@ -3028,7 +3028,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
         assertNotNull(wfid);
 
         Task task = getTask("junit_task_1");
@@ -3159,7 +3159,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
         assertNotNull(wfid);
 
         Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
@@ -3306,7 +3306,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(TEST_WORKFLOW_NAME_3, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(TEST_WORKFLOW_NAME_3, 1, correlationId, input, null, null);
         assertNotNull(wfid);
 
         // Now Skip the second task
@@ -3376,7 +3376,7 @@ public abstract class AbstractWorkflowServiceTest {
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input);
+        String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
 
         assertNotNull(wfid);
 
@@ -3484,7 +3484,7 @@ public abstract class AbstractWorkflowServiceTest {
         input.put("param1", "param 1 value");
         input.put("param3", "param 2 value");
         input.put("wfName", LINEAR_WORKFLOW_T1_T2);
-        String wfId = startOrLoadWorkflowExecution(WF_WITH_SUB_WF, 1, "test", input);
+        String wfId = startOrLoadWorkflowExecution(WF_WITH_SUB_WF, 1, "test", input, null, null);
         assertNotNull(wfId);
 
         Workflow es = workflowExecutionService.getExecutionStatus(wfId, true);
@@ -3559,7 +3559,7 @@ public abstract class AbstractWorkflowServiceTest {
         input.put("param1", "param 1 value");
         input.put("param3", "param 2 value");
         input.put("wfName", LINEAR_WORKFLOW_T1_T2);
-        String wfId = startOrLoadWorkflowExecution(WF_WITH_SUB_WF, 1, "test", input);
+        String wfId = startOrLoadWorkflowExecution(WF_WITH_SUB_WF, 1, "test", input, null, null);
         assertNotNull(wfId);
 
         Workflow es = workflowExecutionService.getExecutionStatus(wfId, true);
@@ -3623,7 +3623,7 @@ public abstract class AbstractWorkflowServiceTest {
         input.put("param1", "param 1 value");
         input.put("param3", "param 2 value");
         input.put("wfName", LINEAR_WORKFLOW_T1_T2);
-        String wfId = startOrLoadWorkflowExecution(WF_WITH_SUB_WF, 1, "test", input);
+        String wfId = startOrLoadWorkflowExecution(WF_WITH_SUB_WF, 1, "test", input, null, null);
         assertNotNull(wfId);
 
         Workflow es = workflowExecutionService.getExecutionStatus(wfId, true);
@@ -3677,7 +3677,7 @@ public abstract class AbstractWorkflowServiceTest {
         workflowInputParams.put("param1", "param 1");
         workflowInputParams.put("param3", "param 2");
         workflowInputParams.put("wfName", LINEAR_WORKFLOW_T1_T2);
-        String workflowId = startOrLoadWorkflowExecution(WF_WITH_SUB_WF, 1, "test", workflowInputParams);
+        String workflowId = startOrLoadWorkflowExecution(WF_WITH_SUB_WF, 1, "test", workflowInputParams, null, null);
         assertNotNull(workflowId);
 
         Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
@@ -3785,7 +3785,7 @@ public abstract class AbstractWorkflowServiceTest {
         workflowDef.getTasks().add(workflowTask);
         metadataService.registerWorkflowDef(workflowDef);
 
-        String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", new HashMap<>());
+        String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", new HashMap<>(), null, null);
         Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
         assertNotNull(workflow);
         assertEquals(1, workflow.getTasks().size());
@@ -3833,7 +3833,7 @@ public abstract class AbstractWorkflowServiceTest {
         workflowDef.getTasks().add(workflowTask);
         metadataService.registerWorkflowDef(workflowDef);
 
-        String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", new HashMap<>());
+        String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", new HashMap<>(), null, null);
         Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
         Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
         assertNotNull(workflow);
@@ -3859,7 +3859,7 @@ public abstract class AbstractWorkflowServiceTest {
         WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
         assertNotNull(workflowDef);
 
-        String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", new HashMap<>());
+        String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", new HashMap<>(), null, null);
         Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
         assertNotNull(workflow);
 
@@ -3962,7 +3962,7 @@ public abstract class AbstractWorkflowServiceTest {
             final int index = i;
             es.submit(() -> {
                 try {
-                    String id = startOrLoadWorkflowExecution(def.getName(), def.getVersion(), "", new HashMap<>());
+                    String id = startOrLoadWorkflowExecution(def.getName(), def.getVersion(), "", new HashMap<>(), null, null);
                     ids[index] = id;
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -4166,7 +4166,7 @@ public abstract class AbstractWorkflowServiceTest {
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
 
-        String workflowId = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2_SW, 1, correlationId, input, null);
+        String workflowId = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2_SW, 1, correlationId, input, null, null);
         System.out.println("testSimpleWorkflow.wfid=" + workflowId);
         assertNotNull(workflowId);
 
@@ -4250,7 +4250,7 @@ public abstract class AbstractWorkflowServiceTest {
         }
 
         Map<String, Object> input = new HashMap<>();
-        String workflowId = startOrLoadWorkflowExecution(FORK_JOIN_WF + "_2", 1, "fanouttest", input);
+        String workflowId = startOrLoadWorkflowExecution(FORK_JOIN_WF + "_2", 1, "fanouttest", input, null, null);
         System.out.println("testForkJoin.wfid=" + workflowId);
         Task t1 = workflowExecutionService.poll("junit_task_0_RT_1", "test");
         assertTrue(workflowExecutionService.ackTaskReceived(t1.getTaskId()));
@@ -4294,16 +4294,8 @@ public abstract class AbstractWorkflowServiceTest {
         printTaskStatuses(wf, message);
     }
 
-    private String startOrLoadWorkflowExecution(String linearWorkflowT1T2, int i, String correlationId, Map<String, Object> input, Map taskToDomain) {
-        return startOrLoadWorkflowExecution(linearWorkflowT1T2, i, correlationId, input, null, taskToDomain);
-    }
-
-    private String startOrLoadWorkflowExecution(String linearWorkflowT1T2, int i, String correlationId, Map<String, Object> input) {
-        return startOrLoadWorkflowExecution(linearWorkflowT1T2, i, correlationId, input, null);
-    }
-
-    private String startOrLoadWorkflowExecution(String linearWorkflowT1T2Sw, int i, String correlationId, Map<String, Object> input, String event, Map<String, String> taskToDomain) {
-        return startOrLoadWorkflowExecution(linearWorkflowT1T2Sw, linearWorkflowT1T2Sw, i, correlationId, input, event, taskToDomain);
+    private String startOrLoadWorkflowExecution(String workflowName, int version, String correlationId, Map<String, Object> input, String event, Map<String, String> taskToDomain) {
+        return startOrLoadWorkflowExecution(workflowName, workflowName, version, correlationId, input, event, taskToDomain);
     }
 
     abstract String startOrLoadWorkflowExecution(String snapshotResourceName, String workflowName, int version, String correlationId, Map<String, Object> input, String event, Map<String, String> taskToDomain);

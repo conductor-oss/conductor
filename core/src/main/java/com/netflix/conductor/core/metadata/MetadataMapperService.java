@@ -88,7 +88,6 @@ public class MetadataMapperService {
             workflow.setWorkflowDefinition(workflowDefinition);
         }
 
-        // Populate definitions on the workflow definition
         workflowDefinition.collectTasks().stream().forEach(
                 workflowTask -> {
                     if (shouldPopulateDefinition(workflowTask)) {
@@ -105,7 +104,6 @@ public class MetadataMapperService {
     }
 
     public WorkflowDef populateTaskDefinitions(WorkflowDef workflowDefinition) {
-        // Populate definitions on the workflow definition
         workflowDefinition.collectTasks().stream().forEach(
                 workflowTask -> populateWorkflowTaskWithDefinition(workflowTask)
         );

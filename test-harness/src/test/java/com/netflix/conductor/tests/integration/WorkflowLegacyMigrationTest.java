@@ -27,7 +27,6 @@ import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.tests.utils.TestRunner;
 import org.apache.commons.io.Charsets;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,8 +39,9 @@ import static org.junit.Assert.fail;
 @RunWith(TestRunner.class)
 public class WorkflowLegacyMigrationTest extends AbstractWorkflowServiceTest {
 
-    private static final String WORKFLOW_SCENARIOS_PATH_PREFIX = "/integration/scenarios/";
+    private static final String WORKFLOW_SCENARIOS_PATH_PREFIX = "/integration/scenarios/legacy/";
     private static final String WORKFLOW_SCENARIO_EXTENSION = ".json";
+    private static final String WORKFLOW_INSTANCE_ID_PLACEHOLDER = "WORKFLOW_INSTANCE_ID";
 
     @Inject
     private ExecutionDAO executionDAO;
@@ -52,28 +52,13 @@ public class WorkflowLegacyMigrationTest extends AbstractWorkflowServiceTest {
     @Inject
     private Configuration configuration;
 
-    @Before
-    public void init() throws Exception {
-        super.init();
-    }
-
-    private Workflow loadWorkflow(String resourcePath) throws Exception {
-
-        String content = Resources.toString(WorkflowLegacyMigrationTest.class.getResource(resourcePath), Charsets.UTF_8);
-        String workflowId = IDGenerator.generate();
-        content = content.replace("WORKFLOW_INSTANCE_ID", workflowId);
-
-        Workflow workflow = objectMapper.readValue(content, Workflow.class);
-        workflow.setWorkflowId(workflowId);
-
-        return workflow;
-    }
-
     @Override
-    String startOrLoadWorkflowExecution(String snapshotResourceName, String workflowName, int version, String correlationId, Map<String, Object> input, String event, Map<String, String> taskToDomain) {
+    public String startOrLoadWorkflowExecution(String snapshotResourceName, String workflowName,
+                                               int version, String correlationId, Map<String, Object> input,
+                                               String event, Map<String, String> taskToDomain) {
         Workflow workflow = null;
         try {
-            workflow = loadWorkflow(getWorkflowResourcePath(snapshotResourceName));
+            workflow = loadWorkflowSnapshot(getWorkflowResourcePath(snapshotResourceName));
         } catch (Exception e) {
             fail("Error loading workflow scenario " + snapshotResourceName);
         }
@@ -94,12 +79,30 @@ public class WorkflowLegacyMigrationTest extends AbstractWorkflowServiceTest {
 
         executionDAO.createTasks(workflow.getTasks());
         executionDAO.createWorkflow(workflow);
+
+        /*
+         * Apart from loading a workflow snapshot,
+         * in order to represent a workflow on the system, we need to populate the
+         * respective queues related to tasks in progress or decisions.
+         */
         workflow.getTasks().stream().forEach(task -> {
             workflowExecutor.addTaskToQueue(task);
             queueDAO.push(WorkflowExecutor.DECIDER_QUEUE, workflowId, configuration.getSweepFrequency());
         });
 
         return workflow.getWorkflowId();
+    }
+
+    private Workflow loadWorkflowSnapshot(String resourcePath) throws Exception {
+
+        String content = Resources.toString(WorkflowLegacyMigrationTest.class.getResource(resourcePath), Charsets.UTF_8);
+        String workflowId = IDGenerator.generate();
+        content = content.replace(WORKFLOW_INSTANCE_ID_PLACEHOLDER, workflowId);
+
+        Workflow workflow = objectMapper.readValue(content, Workflow.class);
+        workflow.setWorkflowId(workflowId);
+
+        return workflow;
     }
 
     private String getWorkflowResourcePath(String workflowName) {
@@ -109,6 +112,10 @@ public class WorkflowLegacyMigrationTest extends AbstractWorkflowServiceTest {
     @Ignore
     @Test
     @Override
+    /*
+     * This scenario cannot be recreated loading a workflow snapshot.
+     * ForkJoins are also tested on testForkJoin()
+     */
     public void testForkJoinNestedWithSubWorkflow() {
     }
 }

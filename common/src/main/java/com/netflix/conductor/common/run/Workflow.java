@@ -320,8 +320,7 @@ public class Workflow extends Auditable {
     public int getSchemaVersion() {
         return getWorkflowDefinition() != null ?
                 getWorkflowDefinition().getSchemaVersion() :
-                schemaVersion
-                ;
+                schemaVersion;
     }
 
     /**
