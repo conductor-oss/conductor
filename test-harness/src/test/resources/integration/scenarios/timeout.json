@@ -1,0 +1,61 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1535068128051,
+  "updateTime": 1535068128223,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "junit_task_1",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": "p1 value",
+        "p2": "p2 value"
+      },
+      "referenceTaskName": "t1",
+      "retryCount": 0,
+      "seq": 1,
+      "correlationId": "unit_test_175105d0e-55a2-4bb0-bbf7-06e119de34fe",
+      "pollCount": 0,
+      "taskDefName": "junit_task_1",
+      "scheduledTime": 1535068128120,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1535068128120,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "junit_test_wf",
+      "taskId": "9b9c93d2-fe29-4a75-8771-d8e71f3cde84",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "junit_task_1",
+        "taskReferenceName": "t1",
+        "inputParameters": {
+          "p1": "${workflow.input.param1}",
+          "p2": "${workflow.input.param2}"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    }
+  ],
+  "input": {
+    "failureWfName": "FanInOutTest",
+    "param1": "p1 value",
+    "param2": "p2 value"
+  },
+  "workflowType": "junit_test_wf",
+  "version": 1,
+  "correlationId": "unit_test_175105d0e-55a2-4bb0-bbf7-06e119de34fe",
+  "schemaVersion": 2,
+  "startTime": 1535068128051
+}

@@ -1,0 +1,60 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1534986389370,
+  "updateTime": 1534986389594,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "task_rt",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": "p1 value",
+        "p2": "p2 value"
+      },
+      "referenceTaskName": "task_rt_t1",
+      "retryCount": 0,
+      "seq": 1,
+      "correlationId": "unit_test_1",
+      "pollCount": 0,
+      "taskDefName": "task_rt",
+      "scheduledTime": 1534986389470,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1534986389470,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 10,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "RTOWF",
+      "taskId": "225c5461-b21b-4934-8b09-65c24a3daeda",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "task_rt",
+        "taskReferenceName": "task_rt_t1",
+        "inputParameters": {
+          "p1": "${workflow.input.param1}",
+          "p2": "${workflow.input.param2}"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    }
+  ],
+  "input": {
+    "param1": "p1 value",
+    "param2": "p2 value"
+  },
+  "workflowType": "RTOWF",
+  "version": 1,
+  "correlationId": "unit_test_1",
+  "schemaVersion": 2,
+  "startTime": 1534986389370
+}
