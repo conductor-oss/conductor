@@ -81,9 +81,13 @@ public class ExecutionService {
 
 
 	@Inject
-	public ExecutionService(WorkflowExecutor wfProvider, ExecutionDAO executionDAO, QueueDAO queue,
-							MetadataDAO metadata, MetadataMapperService metadataMapperService,
-							IndexDAO indexer, Configuration config) {
+	public ExecutionService(WorkflowExecutor wfProvider,
+							ExecutionDAO executionDAO,
+							QueueDAO queue,
+							MetadataDAO metadata,
+							MetadataMapperService metadataMapperService,
+							IndexDAO indexer,
+							Configuration config) {
 		this.executor = wfProvider;
 		this.executionDAO = executionDAO;
 		this.queue = queue;
@@ -174,7 +178,7 @@ public class ExecutionService {
 
 	public Task getTask(String taskId) throws Exception {
 		Task task = executionDAO.getTask(taskId);
-		metadataMapperService.populateTaskWithDefinitions(task);
+		task = metadataMapperService.populateTaskWithDefinition(task);
 		return task;
 	}
 

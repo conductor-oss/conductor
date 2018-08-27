@@ -82,9 +82,10 @@ public class MetadataMapperService {
 
     public Workflow populateWorkflowWithDefinitions(Workflow workflow) {
 
-        WorkflowDef workflowDefinition = workflow.getWorkflowDefinition();
-        if (workflowDefinition == null) {
-            workflowDefinition = lookupForWorkflowDefinition(workflow.getWorkflowName(), workflow.getWorkflowVersion());
+        WorkflowDef workflowDefinition = Optional.ofNullable(workflow.getWorkflowDefinition())
+                .orElseGet(() -> lookupForWorkflowDefinition(workflow.getWorkflowName(), workflow.getWorkflowVersion()));
+
+        if (workflow.getWorkflowDefinition() == null) {
             workflow.setWorkflowDefinition(workflowDefinition);
         }
 
@@ -153,7 +154,7 @@ public class MetadataMapperService {
         }
     }
 
-    public Task populateTaskWithDefinitions(Task task) {
+    public Task populateTaskWithDefinition(Task task) {
         populateWorkflowTaskWithDefinition(task.getWorkflowTask());
         return task;
     }

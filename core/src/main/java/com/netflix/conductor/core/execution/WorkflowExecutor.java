@@ -607,8 +607,12 @@ public class WorkflowExecutor {
         String workflowId = taskResult.getWorkflowInstanceId();
         Workflow workflowInstance = executionDAO.getWorkflow(workflowId);
 
-        // Backwards compatibility for legacy workflows already running
-        metadataMapperService.populateWorkflowWithDefinitions(workflowInstance);
+
+        // FIXME Backwards compatibility for legacy workflows already running.
+        // This code will be removed in a future version.
+        if(workflowInstance.getWorkflowDefinition() == null) {
+            workflowInstance = metadataMapperService.populateWorkflowWithDefinitions(workflowInstance);
+        }
 
         Task task = executionDAO.getTask(taskResult.getTaskId());
 
@@ -749,8 +753,9 @@ public class WorkflowExecutor {
         //If it is a new workflow the tasks will be still empty even though include tasks is true
         Workflow workflow = executionDAO.getWorkflow(workflowId, true);
 
-        // Backwards compatibility for legacy workflows already running
-        metadataMapperService.populateWorkflowWithDefinitions(workflow);
+        // FIXME Backwards compatibility for legacy workflows already running.
+        // This code will be removed in a future version.
+        workflow = metadataMapperService.populateWorkflowWithDefinitions(workflow);
 
         try {
             DeciderOutcome outcome = deciderService.decide(workflow);
@@ -855,8 +860,9 @@ public class WorkflowExecutor {
 
         Workflow wf = executionDAO.getWorkflow(workflowId, true);
 
-        // Backwards compatibility for legacy workflows already running
-        metadataMapperService.populateWorkflowWithDefinitions(wf);
+        // FIXME Backwards compatibility for legacy workflows already running.
+        // This code will be removed in a future version.
+        wf = metadataMapperService.populateWorkflowWithDefinitions(wf);
 
         // If the wf is not running then cannot skip any task
         if (!wf.getStatus().equals(WorkflowStatus.RUNNING)) {
