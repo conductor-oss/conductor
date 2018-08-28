@@ -73,9 +73,8 @@ public class MetadataMapperService {
 
     @VisibleForTesting
     Optional<WorkflowDef> lookupLatestWorkflowDefinition(String workflowName) {
-        // FIXME: Add messages.
-        checkNotNull(workflowName);
-        checkArgument(StringUtils.isNotBlank(workflowName));
+        checkNotNull(workflowName, "Workflow name cannot be null when searching for a definition");
+        checkArgument(StringUtils.isNotBlank(workflowName), "Workflow name cannot be blank when searching for a definition");
 
         return metadataDAO.getLatest(workflowName);
     }
@@ -83,11 +82,11 @@ public class MetadataMapperService {
     public Workflow populateWorkflowWithDefinitions(Workflow workflow) {
 
         WorkflowDef workflowDefinition = Optional.ofNullable(workflow.getWorkflowDefinition())
-                .orElseGet(() -> lookupForWorkflowDefinition(workflow.getWorkflowName(), workflow.getWorkflowVersion()));
-
-        if (workflow.getWorkflowDefinition() == null) {
-            workflow.setWorkflowDefinition(workflowDefinition);
-        }
+                .orElseGet(() -> {
+                    WorkflowDef wd = lookupForWorkflowDefinition(workflow.getWorkflowName(), workflow.getWorkflowVersion());
+                    workflow.setWorkflowDefinition(wd);
+                    return wd;
+                });
 
         workflowDefinition.collectTasks().stream().forEach(
                 workflowTask -> {
@@ -99,7 +98,7 @@ public class MetadataMapperService {
                 }
         );
 
-        checkForMissingDefinitions(workflowDefinition);
+        checkNotEmptyDefinitions(workflowDefinition);
 
         return workflow;
     }
@@ -108,7 +107,7 @@ public class MetadataMapperService {
         workflowDefinition.collectTasks().stream().forEach(
                 workflowTask -> populateWorkflowTaskWithDefinition(workflowTask)
         );
-        checkForMissingDefinitions(workflowDefinition);
+        checkNotEmptyDefinitions(workflowDefinition);
         return workflowDefinition;
     }
 
@@ -139,7 +138,7 @@ public class MetadataMapperService {
         }
     }
 
-    private void checkForMissingDefinitions(WorkflowDef workflowDefinition) {
+    private void checkNotEmptyDefinitions(WorkflowDef workflowDefinition) {
 
         // Obtain the names of the tasks with missing definitions
         Set<String> missingTaskDefinitionNames = workflowDefinition.collectTasks().stream()
