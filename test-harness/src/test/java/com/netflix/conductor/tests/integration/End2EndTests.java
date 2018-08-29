@@ -314,7 +314,7 @@ public class End2EndTests {
         } catch (ConductorClientException e){
             int statuCode = e.getStatus();
             assertEquals(400, statuCode);
-            assertEquals("Task workerId cannot be null or empty", e.getMessage());
+            assertEquals("Workflow Id cannot be null or empty", e.getMessage());
             assertFalse(e.isRetryable());
         }
     }

@@ -127,7 +127,7 @@ public class TaskService {
      */
     public String updateTask(TaskResult taskResult) {
         ServiceUtils.checkNotNull(taskResult, "TaskResult cannot be null or empty.");
-        ServiceUtils.checkNotNullOrEmpty(taskResult.getWorkerId(), "Task workerId cannot be null or empty");
+        ServiceUtils.checkNotNullOrEmpty(taskResult.getWorkflowInstanceId(), "Workflow Id cannot be null or empty");
         ServiceUtils.checkNotNullOrEmpty(taskResult.getTaskId(), "Task ID cannot be null or empty");
         logger.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
         executionService.updateTask(taskResult);
