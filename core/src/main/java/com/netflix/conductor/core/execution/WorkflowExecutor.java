@@ -91,7 +91,7 @@ public class WorkflowExecutor {
 
     private final MetadataMapperService metadataMapperService;
 
-    private RateLimitingService rateLimitingService;
+    private final RateLimitingService rateLimitingService;
 
     private final ParametersUtils parametersUtils = new ParametersUtils();
 
@@ -117,7 +117,7 @@ public class WorkflowExecutor {
         this.config = config;
         this.metadataMapperService = metadataMapperService;
         this.rateLimitingService = rateLimitingService;
-        activeWorkerLastPollInSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
+        this.activeWorkerLastPollInSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
     }
 
     /**
