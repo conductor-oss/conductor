@@ -253,50 +253,28 @@ public class WorkflowExecutor {
             throw new ApplicationException(CONFLICT, "Workflow has not started yet");
         }
 
-        // First get the failed task and the cancelled task
-        Task failedTask = null;
-        List<Task> cancelledTasks = new ArrayList<>();
-        for (Task t : workflow.getTasks()) {
-            if (t.getStatus().equals(FAILED)) {
-                failedTask = t;
-            } else if (t.getStatus().equals(CANCELED)) {
-                cancelledTasks.add(t);
-            }
-        }
-
-        if (failedTask != null && failedTask.getStatus().isSuccessful()) {
+        List<Task> failedTasks = workflow.getTasks().stream()
+                .filter(x->FAILED.equals(x.getStatus())).collect(Collectors.toList());
+        if (failedTasks.isEmpty()) {
             throw new ApplicationException(CONFLICT,
-                    "The last task has not failed!  I can only retry the last failed task.  Use restart if you want to attempt entire workflow execution again.");
+                    "There are no failed tasks! Use restart if you want to attempt entire workflow execution again.");
         }
-
         List<Task> rescheduledTasks = new ArrayList<>();
-        // Now reschedule the failed task
-        Task taskToBeRetried = failedTask.copy();
-        taskToBeRetried.setTaskId(IDGenerator.generate());
-        taskToBeRetried.setRetriedTaskId(failedTask.getTaskId());
-        taskToBeRetried.setStatus(SCHEDULED);
-        taskToBeRetried.setRetryCount(failedTask.getRetryCount() + 1);
-        rescheduledTasks.add(taskToBeRetried);
+        failedTasks.forEach(failedTask -> {
+            rescheduledTasks.add(rescheduleTask(failedTask));
+        });
 
-        // update the failed task in the DAO
-        failedTask.setRetried(true);
-        executionDAO.updateTask(failedTask);
+
+        List<Task> cancelledTasks = workflow.getTasks().stream()
+                .filter(x->FAILED.equals(x.getStatus())).collect(Collectors.toList());
 
         // Reschedule the cancelled task but if the join is cancelled set that to in progress
-        cancelledTasks.forEach(task -> {
-            if (task.getTaskType().equalsIgnoreCase(WorkflowTask.Type.JOIN.toString())) {
-                task.setStatus(IN_PROGRESS);
-                executionDAO.updateTask(task);
+        cancelledTasks.forEach(cancelledTask -> {
+            if (cancelledTask.getTaskType().equalsIgnoreCase(WorkflowTask.Type.JOIN.toString())) {
+                cancelledTask.setStatus(IN_PROGRESS);
+                executionDAO.updateTask(cancelledTask);
             } else {
-                Task taskToBeRescheduled = task.copy();
-                taskToBeRescheduled.setTaskId(IDGenerator.generate());
-                taskToBeRescheduled.setRetriedTaskId(task.getTaskId());
-                taskToBeRescheduled.setStatus(SCHEDULED);
-                taskToBeRescheduled.setRetryCount(task.getRetryCount() + 1);
-                rescheduledTasks.add(taskToBeRescheduled);
-                // since the canceled task is being retried, update this
-                task.setRetried(true);
-                executionDAO.updateTask(task);
+                rescheduledTasks.add(rescheduleTask(cancelledTask));
             }
         });
 
@@ -307,6 +285,24 @@ public class WorkflowExecutor {
         executionDAO.updateTasks(workflow.getTasks());
 
         decide(workflowId);
+    }
+
+    /**
+     * Reschedule a task
+     * @param task failed or cancelled task
+     * @return new instance of a task with "SCHEDULED" status
+     */
+    private Task rescheduleTask(Task task) {
+        Task taskToBeRetried = task.copy();
+        taskToBeRetried.setTaskId(IDGenerator.generate());
+        taskToBeRetried.setRetriedTaskId(task.getTaskId());
+        taskToBeRetried.setStatus(SCHEDULED);
+        taskToBeRetried.setRetryCount(task.getRetryCount() + 1);
+
+        // update the failed task in the DAO
+        task.setRetried(true);
+        executionDAO.updateTask(task);
+        return taskToBeRetried;
     }
 
     public Task getPendingTaskByWorkflow(String taskReferenceName, String workflowId) {
