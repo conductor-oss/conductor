@@ -42,6 +42,7 @@ import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -81,9 +82,10 @@ public class TestDeciderOutcomes {
 
 
 	@Before
-	public void init() throws Exception {
+	public void init() {
 		
 		MetadataDAO metadataDAO = mock(MetadataDAO.class);
+		QueueDAO queueDAO = mock(QueueDAO.class);
 		TaskDef taskDef = new TaskDef();
 		taskDef.setRetryCount(1);
 		taskDef.setName("mockTaskDef");
@@ -102,7 +104,7 @@ public class TestDeciderOutcomes {
 		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
 		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 
-		this.deciderService = new DeciderService(metadataDAO, taskMappers);
+		this.deciderService = new DeciderService(metadataDAO, queueDAO, taskMappers);
 	}
 
 	@Test

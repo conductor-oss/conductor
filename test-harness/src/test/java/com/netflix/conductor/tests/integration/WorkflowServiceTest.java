@@ -73,6 +73,9 @@ import java.util.stream.Collectors;
 
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.TIMED_OUT;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -143,34 +146,37 @@ public class WorkflowServiceTest {
             return;
         }
 
-
         WorkflowContext.set(new WorkflowContext("junit_app"));
         for (int i = 0; i < 21; i++) {
 
             String name = "junit_task_" + i;
-            if (metadataService.getTaskDef(name) != null) {
-                continue;
+            try {
+                metadataService.getTaskDef(name);
+            } catch (ApplicationException e) {
+                if (e.getHttpStatusCode() == 404) {
+                    TaskDef task = new TaskDef();
+                    task.setName(name);
+                    task.setTimeoutSeconds(120);
+                    task.setRetryCount(RETRY_COUNT);
+                    metadataService.registerTaskDef(Collections.singletonList(task));
+                }
             }
-
-            TaskDef task = new TaskDef();
-            task.setName(name);
-            task.setTimeoutSeconds(120);
-            task.setRetryCount(RETRY_COUNT);
-            metadataService.registerTaskDef(Collections.singletonList(task));
         }
 
         for (int i = 0; i < 5; i++) {
 
             String name = "junit_task_0_RT_" + i;
-            if (metadataService.getTaskDef(name) != null) {
-                continue;
+            try {
+                metadataService.getTaskDef(name);
+            } catch (ApplicationException e) {
+                if (e.getHttpStatusCode() == 404) {
+                    TaskDef task = new TaskDef();
+                    task.setName(name);
+                    task.setTimeoutSeconds(120);
+                    task.setRetryCount(0);
+                    metadataService.registerTaskDef(Collections.singletonList(task));
+                }
             }
-
-            TaskDef task = new TaskDef();
-            task.setName(name);
-            task.setTimeoutSeconds(120);
-            task.setRetryCount(0);
-            metadataService.registerTaskDef(Collections.singletonList(task));
         }
 
         TaskDef task = new TaskDef();
@@ -1331,7 +1337,7 @@ public class WorkflowServiceTest {
         assertEquals(1, workflow.getTasks().size());        //The very first task is the one that should be scheduled.
         assertEquals(1, queueDAO.getSize("task_rt"));
 
-        // Polling for the first task should return the same task as before
+        // Polling for the first task should return the first task
         Task task = workflowExecutionService.poll("task_rt", "task1.junit.worker.testTimeout");
         assertNotNull(task);
         assertEquals("task_rt", task.getTaskType());
@@ -1346,33 +1352,59 @@ public class WorkflowServiceTest {
         workflowExecutor.decide(workflowId);
         assertEquals(1, queueDAO.getSize("task_rt"));
 
+        // The first task would be timed_out and a new task will be scheduled
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
         assertEquals(2, workflow.getTasks().size());
+        assertTrue(workflow.getTasks().stream().allMatch(t-> t.getReferenceTaskName().equals("task_rt_t1")));
+        assertEquals(TIMED_OUT, workflow.getTasks().get(0).getStatus());
+        assertEquals(SCHEDULED, workflow.getTasks().get(1).getStatus());
 
-        // Polling now should get the same task back because it should have been put back in the queue
+        // Polling now should get the seco task back because it is now scheduled
         Task taskAgain = workflowExecutionService.poll("task_rt", "task1.junit.worker");
         assertNotNull(taskAgain);
 
+        // update task with callback after seconds greater than the response timeout
+        taskAgain.setStatus(IN_PROGRESS);
+        taskAgain.setCallbackAfterSeconds(20);
+        workflowExecutionService.updateTask(taskAgain);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+        assertEquals(IN_PROGRESS, workflow.getTasks().get(1).getStatus());
+
+        // wait for callback after seconds which is longer than response timeout seconds and then call decide
+        Thread.sleep(20000);
+        workflowExecutor.decide(workflowId);
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+
+        // Poll for task again
+        taskAgain = workflowExecutionService.poll("task_rt", "task1.junit.worker");
+        assertNotNull(taskAgain);
+
+        // set task to completed
         taskAgain.getOutputData().put("op", "task1.Done");
         taskAgain.setStatus(COMPLETED);
         workflowExecutionService.updateTask(taskAgain);
 
+        // poll for next task
         task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker.testTimeout");
         assertNotNull(task);
         assertEquals("junit_task_2", task.getTaskType());
         assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
 
+        // set task to completed
         task.setStatus(COMPLETED);
         task.setReasonForIncompletion("unit test failure");
         workflowExecutionService.updateTask(task);
 
-
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
-
     }
 
     @Test
@@ -1437,7 +1469,7 @@ public class WorkflowServiceTest {
         // Since we are re running from the sub workflow task, there
         // should be only 1 task that is SCHEDULED
         assertEquals(1, subWorkflow.getTasks().size());
-        assertEquals(Status.SCHEDULED, subWorkflow.getTasks().get(0).getStatus());
+        assertEquals(SCHEDULED, subWorkflow.getTasks().get(0).getStatus());
 
         // Now execute the task
         Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
@@ -2268,7 +2300,7 @@ public class WorkflowServiceTest {
         assertEquals(WorkflowStatus.RUNNING, es.getStatus());
         // The first task would be marked as scheduled
         assertEquals(1, es.getTasks().size());
-        assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
+        assertEquals(SCHEDULED, es.getTasks().get(0).getStatus());
 
         // decideNow should be idempotent if re-run on the same state!
         es = workflowExecutionService.getExecutionStatus(wfid, true);
@@ -2276,7 +2308,7 @@ public class WorkflowServiceTest {
         assertEquals(WorkflowStatus.RUNNING, es.getStatus());
         assertEquals(1, es.getTasks().size());
         Task t = es.getTasks().get(0);
-        assertEquals(Status.SCHEDULED, t.getStatus());
+        assertEquals(SCHEDULED, t.getStatus());
 
         Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
         assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
@@ -2307,7 +2339,7 @@ public class WorkflowServiceTest {
             if (wfTask.getTaskId().equals(taskId)) {
                 assertEquals(COMPLETED, wfTask.getStatus());
             } else {
-                assertEquals(Status.SCHEDULED, wfTask.getStatus());
+                assertEquals(SCHEDULED, wfTask.getStatus());
             }
         });
 
@@ -2391,7 +2423,7 @@ public class WorkflowServiceTest {
         assertEquals(WorkflowStatus.RUNNING, es.getStatus());
         // The first task would be marked as scheduled
         assertEquals(1, es.getTasks().size());
-        assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
+        assertEquals(SCHEDULED, es.getTasks().get(0).getStatus());
 
         Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
         assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
@@ -2412,7 +2444,7 @@ public class WorkflowServiceTest {
             if (wfTask.getTaskId().equals(taskId)) {
                 assertEquals(COMPLETED, wfTask.getStatus());
             } else {
-                assertEquals(Status.SCHEDULED, wfTask.getStatus());
+                assertEquals(SCHEDULED, wfTask.getStatus());
             }
         });
 
@@ -2477,7 +2509,7 @@ public class WorkflowServiceTest {
         assertEquals(WorkflowStatus.RUNNING, es.getStatus());
         // The first task would be marked as scheduled
         assertEquals(1, es.getTasks().size());
-        assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
+        assertEquals(SCHEDULED, es.getTasks().get(0).getStatus());
 
         List<Future<Void>> futures = new LinkedList<>();
         for (int i = 0; i < 10; i++) {
@@ -2496,7 +2528,7 @@ public class WorkflowServiceTest {
         assertEquals(WorkflowStatus.RUNNING, es.getStatus());
         // The first task would be marked as scheduled
         assertEquals(1, es.getTasks().size());
-        assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
+        assertEquals(SCHEDULED, es.getTasks().get(0).getStatus());
 
 
         // decideNow should be idempotent if re-run on the same state!
@@ -2506,7 +2538,7 @@ public class WorkflowServiceTest {
         assertEquals(WorkflowStatus.RUNNING, es.getStatus());
         assertEquals(1, es.getTasks().size());
         Task t = es.getTasks().get(0);
-        assertEquals(Status.SCHEDULED, t.getStatus());
+        assertEquals(SCHEDULED, t.getStatus());
 
         Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
         assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
@@ -2537,7 +2569,7 @@ public class WorkflowServiceTest {
             if (wfTask.getTaskId().equals(taskId)) {
                 assertEquals(COMPLETED, wfTask.getStatus());
             } else {
-                assertEquals(Status.SCHEDULED, wfTask.getStatus());
+                assertEquals(SCHEDULED, wfTask.getStatus());
             }
         });
 
@@ -2977,7 +3009,7 @@ public class WorkflowServiceTest {
         Task task1 = es.getTasks().get(0);
         assertEquals(Status.TIMED_OUT, task1.getStatus());
         Task task2 = es.getTasks().get(1);
-        assertEquals(Status.SCHEDULED, task2.getStatus());
+        assertEquals(SCHEDULED, task2.getStatus());
 
         task = workflowExecutionService.poll(task2.getTaskDefName(), "task1.junit.worker");
         assertNotNull(task);
@@ -3023,7 +3055,7 @@ public class WorkflowServiceTest {
         // Check the tasks, at this time there should be 1 task
         assertEquals(es.getTasks().size(), 1);
         Task t = es.getTasks().get(0);
-        assertEquals(Status.SCHEDULED, t.getStatus());
+        assertEquals(SCHEDULED, t.getStatus());
 
         Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
         assertNotNull(task);
@@ -3049,7 +3081,7 @@ public class WorkflowServiceTest {
             if (wfTask.getTaskId().equals(t.getTaskId())) {
                 assertEquals(wfTask.getStatus(), COMPLETED);
             } else {
-                assertEquals(wfTask.getStatus(), Status.SCHEDULED);
+                assertEquals(wfTask.getStatus(), SCHEDULED);
             }
         });
 
@@ -3086,7 +3118,7 @@ public class WorkflowServiceTest {
         assertEquals(esRR.getTasks().toString(), 2, esRR.getTasks().size());
         assertEquals(COMPLETED, esRR.getTasks().get(0).getStatus());
         Task tRR = esRR.getTasks().get(1);
-        assertEquals(esRR.getTasks().toString(), Status.SCHEDULED, tRR.getStatus());
+        assertEquals(esRR.getTasks().toString(), SCHEDULED, tRR.getStatus());
         assertEquals(tRR.getTaskType(), "junit_task_2");
 
         task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
@@ -3119,7 +3151,7 @@ public class WorkflowServiceTest {
         assertEquals(WorkflowStatus.RUNNING, es.getStatus());
         // Check the tasks, at this time there should be 1 task
         assertEquals(es.getTasks().size(), 1);
-        assertEquals(Status.SCHEDULED, es.getTasks().get(0).getStatus());
+        assertEquals(SCHEDULED, es.getTasks().get(0).getStatus());
 
         task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
         assertNotNull(task);
@@ -3173,7 +3205,7 @@ public class WorkflowServiceTest {
         assertEquals(WorkflowStatus.RUNNING, es.getStatus());
         // Check the tasks, at this time there should be 3 task
         assertEquals(2, es.getTasks().size());
-        assertEquals(Task.Status.SCHEDULED, es.getTasks().get(0).getStatus());
+        assertEquals(SCHEDULED, es.getTasks().get(0).getStatus());
         assertEquals(Task.Status.SKIPPED, es.getTasks().get(1).getStatus());
 
         Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
@@ -3203,7 +3235,7 @@ public class WorkflowServiceTest {
             } else if (wfTask.getReferenceTaskName().equals("t2")) {
                 assertEquals(Status.SKIPPED, wfTask.getStatus());
             } else {
-                assertEquals(Status.SCHEDULED, wfTask.getStatus());
+                assertEquals(SCHEDULED, wfTask.getStatus());
             }
         });
 
@@ -3255,7 +3287,7 @@ public class WorkflowServiceTest {
         assertNotNull(es);
         assertEquals(WorkflowStatus.RUNNING, es.getStatus());
         Task t = es.getTasks().get(0);
-        assertEquals(Status.SCHEDULED, t.getStatus());
+        assertEquals(SCHEDULED, t.getStatus());
 
         // PAUSE
         workflowExecutor.pauseWorkflow(wfid);
@@ -3966,7 +3998,7 @@ public class WorkflowServiceTest {
         }
     }
 
-    private void createWFWithResponseTimeout() throws Exception {
+    private void createWFWithResponseTimeout() {
         TaskDef task = new TaskDef();
         task.setName("task_rt");
         task.setTimeoutSeconds(120);

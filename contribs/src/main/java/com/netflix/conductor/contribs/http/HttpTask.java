@@ -281,6 +281,8 @@ public class HttpTask extends WorkflowSystemTask {
 		private String method;	//PUT, POST, GET, DELETE, OPTIONS, HEAD
 		
 		private String vipAddress;
+
+		private String appName;
 		
 		private Map<String, Object> headers = new HashMap<>();
 		
@@ -422,6 +424,14 @@ public class HttpTask extends WorkflowSystemTask {
 		 */
 		public void setOauthConsumerSecret(String oauthConsumerSecret) {
 			this.oauthConsumerSecret = oauthConsumerSecret;
+		}
+
+		public String getAppName() {
+			return appName;
+		}
+
+		public void setAppName(String appName) {
+			this.appName = appName;
 		}
 	}
 }

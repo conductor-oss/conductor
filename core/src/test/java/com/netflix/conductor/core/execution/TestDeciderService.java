@@ -44,8 +44,8 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
-import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DefaultRegistry;
 import com.netflix.spectator.api.Registry;
@@ -113,6 +113,7 @@ public class TestDeciderService {
     @Before
     public void setup() {
         MetadataDAO metadataDAO = mock(MetadataDAO.class);
+        QueueDAO queueDAO = mock(QueueDAO.class);
         TaskDef taskDef = new TaskDef();
         WorkflowDef workflowDef = new WorkflowDef();
         when(metadataDAO.getTaskDef(any())).thenReturn(taskDef);
@@ -130,7 +131,7 @@ public class TestDeciderService {
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 
-        deciderService = new DeciderService(metadataDAO, taskMappers);
+        deciderService = new DeciderService(metadataDAO, queueDAO, taskMappers);
 
         workflow = new Workflow();
         workflow.getInput().put("requestId", "request id 001");

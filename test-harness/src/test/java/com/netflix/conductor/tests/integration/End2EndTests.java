@@ -18,19 +18,8 @@
  */
 package com.netflix.conductor.tests.integration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-
+import com.netflix.conductor.client.exceptions.ConductorClientException;
 import com.netflix.conductor.client.http.MetadataClient;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -38,6 +27,7 @@ import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
@@ -47,8 +37,18 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.server.ConductorConfig;
 import com.netflix.conductor.server.ConductorServer;
-import com.sun.jersey.api.client.UniformInterfaceException;
-import com.sun.jersey.api.client.ClientResponse;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -114,8 +114,7 @@ public class End2EndTests {
 		t1.setName("t1");
 		t1.setWorkflowTaskType(Type.SIMPLE);
 		t1.setTaskReferenceName("t1");
-		
-		
+
 		def.getTasks().add(t0);
 		def.getTasks().add(t1);
 		
@@ -133,7 +132,11 @@ public class End2EndTests {
 		Workflow wf = wc.getWorkflow(workflowId, false);
 		assertEquals(0, wf.getTasks().size());
 		assertEquals(workflowId, wf.getWorkflowId());
-		
+
+		List<Workflow> workflowList = wc.getWorkflows(def.getName(), correlationId, false, false);
+		assertEquals(1, workflowList.size());
+		assertEquals(workflowId, workflowList.get(0).getWorkflowId());
+
 		wf = wc.getWorkflow(workflowId, true);
 		assertNotNull(wf);
 		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
@@ -190,8 +193,7 @@ public class End2EndTests {
 		getTasks = tc.getPendingTasksByType(t1.getName(), null, 1);
 		assertNotNull(getTasks);
 		assertEquals(1, getTasks.size());
-		
-		
+
 		Task pending = tc.getPendingTaskForWorkflow(workflowId, t1.getTaskReferenceName());
 		assertNotNull(pending);
 		assertEquals(t1.getTaskReferenceName(), pending.getReferenceTaskName());
@@ -212,7 +214,6 @@ public class End2EndTests {
 		assertNotNull(wf);
 		assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
 		assertEquals(1, wf.getTasks().size());
-
 	}
 
 	@Test
@@ -238,11 +239,149 @@ public class End2EndTests {
 
 		try {
 			WorkflowDef getDef = mc.getWorkflowDef("testWorkflowDel", 1);
-		} catch (UniformInterfaceException ue) {
-			ClientResponse response = ue.getResponse();
-			// TODO: fix this to NOT_FOUND once error handling is fixed
-			assertEquals(204, response.getStatus());
+		} catch (ConductorClientException e) {
+			int statusCode = e.getStatus();
+			String errorMessage = e.getMessage();
+			boolean retryable = e.isRetryable();
+			assertEquals(404, statusCode);
+			assertEquals("No such workflow found by name: testWorkflowDel, version: 1", errorMessage);
+			assertFalse(retryable);
 		}
 	}
-	
+
+	@Test
+	public void testInvalidResource() {
+        MetadataClient metadataClient = new MetadataClient();
+        metadataClient.setRootURI("http://localhost:8080/api/invalid");
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName("testWorkflowDel");
+        def.setVersion(1);
+
+        try {
+            metadataClient.registerWorkflowDef(def);
+        } catch (ConductorClientException e) {
+            int statusCode = e.getStatus();
+			boolean retryable = e.isRetryable();
+            assertEquals(404, statusCode);
+			assertFalse(retryable);
+        }
+	}
+
+	@Test
+	public void testUpdateWorkflow() {
+		WorkflowDef def = new WorkflowDef();
+		def.setName("testWorkflowDel");
+		def.setVersion(1);
+		mc.registerWorkflowDef(def);
+		def.setVersion(2);
+		List<WorkflowDef> workflowList = new ArrayList<>();
+		workflowList.add(def);
+		mc.updateWorkflowDefs(workflowList);
+		WorkflowDef def1 = mc.getWorkflowDef(def.getName(), 2);
+		assertNotNull(def1);
+
+		try{
+			mc.getTaskDef("test");
+		} catch (ConductorClientException e) {
+			int statuCode = e.getStatus();
+			assertEquals(404, statuCode);
+			assertEquals("No such taskType found by name: test", e.getMessage());
+			assertFalse(e.isRetryable());
+		}
+	}
+
+
+
+	@Test
+	public void testStartWorkflow() {
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        try{
+            wc.startWorkflow(startWorkflowRequest);
+        } catch (ConductorClientException e) {
+            int statuCode = e.getStatus();
+            assertEquals(400, statuCode);
+            assertEquals("Workflow name cannot be null or empty", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
+
+    @Test
+    public void testUpdateTask() {
+	    TaskResult taskResult = new TaskResult();
+	    try{
+	        tc.updateTask(taskResult, "taskTest");
+        } catch (ConductorClientException e){
+            int statuCode = e.getStatus();
+            assertEquals(400, statuCode);
+            assertEquals("Workflow Id cannot be null or empty", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
+
+    @Test
+    public void testGetWorfklowNotFound() {
+	    try{
+	        wc.getWorkflow("w123", true);
+        } catch (ConductorClientException e) {
+	        assertEquals(404, e.getStatus());
+            assertEquals("No such workflow found by id: w123", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
+
+    @Test
+    public void testEmptyCreateWorkflowDef() {
+        try{
+            WorkflowDef workflowDef = new WorkflowDef();
+            mc.registerWorkflowDef(workflowDef);
+        } catch (ConductorClientException e){
+            assertEquals(400, e.getStatus());
+            assertEquals("Workflow name cannot be null or empty", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
+
+    @Test
+    public void testUpdateWorkflowDef() {
+        try{
+            WorkflowDef workflowDef = new WorkflowDef();
+            List<WorkflowDef> workflowDefList = new ArrayList<>();
+            workflowDefList.add(workflowDef);
+            mc.updateWorkflowDefs(workflowDefList);
+        } catch (ConductorClientException e){
+            assertEquals(400, e.getStatus());
+            assertEquals("WorkflowDef name cannot be null", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
+
+    @Test(expected = Test.None.class /* no exception expected */)
+    public void testGetTaskInProgress() {
+	    tc.getPendingTaskForWorkflow("test", "t1");
+    }
+
+    @Test
+    public void testRemoveTaskFromTaskQueue() {
+	    try {
+	        tc.removeTaskFromQueue("test", "fakeQueue");
+        } catch (ConductorClientException e) {
+	        assertEquals(404, e.getStatus());
+        }
+    }
+
+    @Test
+    public void testTaskByTaskId() {
+        try {
+            tc.getTaskDetails("test123");
+        } catch (ConductorClientException e) {
+            assertEquals(404, e.getStatus());
+            assertEquals("No such task found by taskId: test123", e.getMessage());
+        }
+    }
+
+    @Test(expected = Test.None.class /* no exception expected */)
+    public void testListworkflowsByCorrelationId() {
+	    wc.getWorkflows("test", "test12", false, false);
+    }
 }

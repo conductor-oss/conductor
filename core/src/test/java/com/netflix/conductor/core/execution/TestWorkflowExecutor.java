@@ -41,8 +41,6 @@ import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.service.DummyRateLimitingService;
-import com.netflix.conductor.service.RateLimitingService;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -93,9 +91,8 @@ public class TestWorkflowExecutor {
         taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
-        DeciderService deciderService = new DeciderService(metadataDAO, taskMappers);
-        RateLimitingService rateLimitingService = new DummyRateLimitingService();
-        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, executionDAO, queueDAO, config, rateLimitingService);
+        DeciderService deciderService = new DeciderService(metadataDAO, queueDAO, taskMappers);
+        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, executionDAO, queueDAO, config);
     }
 
     @Test

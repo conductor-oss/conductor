@@ -18,10 +18,23 @@
  */
 package com.netflix.conductor.server.resources;
 
+import javax.inject.Inject;
 import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+import javax.ws.rs.core.UriInfo;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+
+
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.Code;
+import com.sun.jersey.api.NotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 /**
  * @author Viren
@@ -30,9 +43,35 @@ import javax.ws.rs.ext.Provider;
 @Provider
 public class WebAppExceptionMapper implements ExceptionMapper<WebApplicationException> {
 
+    private static Logger logger = LoggerFactory.getLogger(WebAppExceptionMapper.class);
+
+    @Context
+    private UriInfo uriInfo;
+
+    private final String host;
+
+    private Code code;
+
+    @Inject
+    public WebAppExceptionMapper(Configuration config) {
+        this.host = config.getServerId();
+    }
+
 	@Override
 	public Response toResponse(WebApplicationException exception) {
-		return exception.getResponse();
+        logger.error(String.format("Error %s url: '%s'", exception.getClass().getSimpleName(),
+                uriInfo.getPath()), exception);
+
+        Response response = exception.getResponse();
+        this.code = Code.forValue(response.getStatus());
+        Map<String, Object> entityMap = new LinkedHashMap<>();
+        entityMap.put("instance", host);
+        entityMap.put("code", code.toString());
+        entityMap.put("message", exception.getCause());
+        entityMap.put("retryable", false);
+
+        return Response.status(response.getStatus()).entity(entityMap).build();
 	}
 
 }
+

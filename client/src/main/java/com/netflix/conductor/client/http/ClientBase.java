@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.netflix.conductor.client.exceptions.ConductorClientException;
+import com.netflix.conductor.client.exceptions.ErrorResponse;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -36,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
+import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
 import java.util.function.Function;
@@ -89,6 +92,7 @@ public abstract class ClientBase {
 
     protected void delete(Object[] queryParams, String url, Object... uriVariables) {
         URI uri = null;
+        ClientResponse clientResponse = null;
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
             client.resource(uri).delete();
@@ -153,8 +157,10 @@ public abstract class ClientBase {
                 return null;
             }
             return postWithEntity.apply(webResourceBuilder);
+        } catch (UniformInterfaceException e) {
+            handleUniformInterfaceException(e, uri);
         } catch (RuntimeException e) {
-            handleException(uri, e);
+            handleRuntimeException(e, uri);
         }
         return null;
     }
@@ -169,18 +175,21 @@ public abstract class ClientBase {
 
     private <T> T getForEntity(String url, Object[] queryParams, Function<ClientResponse, T> entityPvoider, Object... uriVariables) {
         URI uri = null;
+        ClientResponse clientResponse = null;
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
-            ClientResponse response = client.resource(uri)
+            clientResponse = client.resource(uri)
                     .accept(MediaType.APPLICATION_JSON, MediaType.TEXT_PLAIN)
                     .get(ClientResponse.class);
-            if (response.getStatus() < 300) {
-                return entityPvoider.apply(response);
+            if (clientResponse.getStatus() < 300) {
+                return entityPvoider.apply(clientResponse);
             } else {
-                throw new UniformInterfaceException(response); // let handleException to handle unexpected response consistently
+                throw new UniformInterfaceException(clientResponse); // let handleUniformInterfaceException to handle unexpected response consistently
             }
+        } catch (UniformInterfaceException e) {
+            handleUniformInterfaceException(e, uri);
         } catch (RuntimeException e) {
-            handleException(uri, e);
+            handleRuntimeException(e, uri);
         }
         return null;
     }
@@ -189,15 +198,55 @@ public abstract class ClientBase {
         return client.resource(URI).type(MediaType.APPLICATION_JSON).entity(entity).accept(MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON);
     }
 
-    private void handleException(URI uri, RuntimeException e) {
-        if (e instanceof ClientHandlerException) {
-            logger.error("Unable to invoke Conductor API with uri: {}, failure to process request or response", uri, e);
-        } else if (e instanceof UniformInterfaceException) {
-            logger.error("Unable to invoke Conductor API with uri: {}, unexpected response from server: {}", uri, clientResponseToString(((UniformInterfaceException) e).getResponse()), e);
-        } else {
-            logger.error("Unable to invoke Conductor API with uri: {}, runtime exception occurred", uri, e);
+    private void handleClientHandlerException(ClientHandlerException exception, URI uri){
+        String errorMessage = String.format("Unable to invoke Conductor API with uri: %s, failure to process request or response", uri);
+        logger.error(errorMessage, exception);
+        throw new ConductorClientException(errorMessage, exception);
+    }
+
+    private void handleRuntimeException(RuntimeException exception, URI uri) {
+        String errorMessage = String.format("Unable to invoke Conductor API with uri: %s, runtime exception occurred", uri);
+        logger.error(errorMessage, exception);
+        throw new ConductorClientException(errorMessage, exception);
+    }
+
+    private void handleUniformInterfaceException(UniformInterfaceException exception, URI uri) {
+        ClientResponse clientResponse = exception.getResponse();
+        if (clientResponse == null) {
+            throw new ConductorClientException(String.format("Unable to invoke Conductor API with uri: %s", uri));
         }
-        throw e;
+        try {
+            if (clientResponse.getStatus() < 300) {
+                return;
+            }
+            String errorMessage = clientResponse.getEntity(String.class);
+            logger.error("Unable to invoke Conductor API with uri: {}, unexpected response from server: {}", uri, clientResponseToString(exception.getResponse()), exception);
+            ErrorResponse errorResponse = null;
+            try {
+                errorResponse = objectMapper.readValue(errorMessage, ErrorResponse.class);
+            } catch (IOException e) {
+                throw new ConductorClientException(clientResponse.getStatus(), errorMessage);
+            }
+            throw new ConductorClientException(clientResponse.getStatus(), errorResponse);
+        } catch (ConductorClientException e) {
+            throw e;
+        } catch (ClientHandlerException e) {
+            handleClientHandlerException(e, uri);
+        } catch (RuntimeException e) {
+            handleRuntimeException(e, uri);
+        } finally {
+            clientResponse.close();
+        }
+    }
+
+    private void handleException(URI uri, RuntimeException e) {
+        if (e instanceof UniformInterfaceException) {
+            handleUniformInterfaceException(((UniformInterfaceException) e), uri);
+        } else if (e instanceof ClientHandlerException) {
+            handleClientHandlerException((ClientHandlerException)e, uri);
+        } else {
+            handleRuntimeException(e, uri);
+        }
     }
 
     /**

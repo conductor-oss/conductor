@@ -57,6 +57,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.when;
 
 /**
  * @author Viren
@@ -485,6 +486,33 @@ public class RedisExecutionDAOTest {
 		assertNotNull(tasks);
 		assertEquals(workflowId, tasks.get(0).getWorkflowInstanceId());
 		assertEquals(taskId, tasks.get(0).getTaskId());
+	}
+
+	@Test
+	public void testExceedsRateLimitWhenNoRateLimitSet() {
+		Task task =new Task();
+		assertFalse(executionDAO.exceedsRateLimitPerFrequency(task));
+	}
+
+	@Test
+	public void testExceedsRateLimitWithinLimit() {
+		Task task =new Task();
+		task.setRateLimitFrequencyInSeconds(60);
+		task.setRateLimitPerFrequency(20);
+
+		assertFalse(executionDAO.exceedsRateLimitPerFrequency(task));
+
+	}
+
+	@Test
+	public void testExceedsRateLimitOutOfLimit() {
+		Task task =new Task();
+		task.setRateLimitFrequencyInSeconds(60);
+		task.setRateLimitPerFrequency(1);
+
+		assertFalse(executionDAO.exceedsRateLimitPerFrequency(task));
+		assertTrue(executionDAO.exceedsRateLimitPerFrequency(task));
+
 	}
 
 }
