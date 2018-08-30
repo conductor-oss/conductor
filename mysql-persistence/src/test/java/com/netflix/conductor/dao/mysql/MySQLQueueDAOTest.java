@@ -3,7 +3,10 @@ package com.netflix.conductor.dao.mysql;
 import com.google.common.collect.ImmutableList;
 
 import com.netflix.conductor.core.events.queue.Message;
+import com.zaxxer.hikari.HikariDataSource;
 
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -28,15 +31,24 @@ import static org.junit.Assert.fail;
 public class MySQLQueueDAOTest {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MySQLQueueDAOTest.class);
+	private static final MySQLDAOTestUtil testUtil = new MySQLDAOTestUtil();
 
-	private final MySQLDAOTestUtil testUtil = new MySQLDAOTestUtil();
 	private MySQLQueueDAO dao;
 
 	@Before
 	public void setup() throws Exception {
 		dao = new MySQLQueueDAO(testUtil.getObjectMapper(), testUtil.getDataSource());
-		testUtil.resetAllData();
 	}
+
+	@After
+    public void teardown() throws Exception {
+        testUtil.resetAllData();
+    }
+
+    @AfterClass
+    public static void cleanup() throws Exception {
+	    testUtil.getDataSource().close();
+    }
 
 	@Rule
 	public ExpectedException expected = ExpectedException.none();

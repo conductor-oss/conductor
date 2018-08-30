@@ -7,6 +7,8 @@ import com.netflix.conductor.dao.ExecutionDAOTest;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -19,7 +21,7 @@ import static org.mockito.Mockito.mock;
 @SuppressWarnings("Duplicates")
 public class MySQLExecutionDAOTest extends ExecutionDAOTest {
 
-    private final MySQLDAOTestUtil testMySQL = new MySQLDAOTestUtil();
+    private static final MySQLDAOTestUtil testMySQL = new MySQLDAOTestUtil();
     private MySQLExecutionDAO executionDAO;
 
     @Before
@@ -30,6 +32,16 @@ public class MySQLExecutionDAOTest extends ExecutionDAOTest {
                 testMySQL.getDataSource()
         );
         testMySQL.resetAllData();
+    }
+
+    @After
+    public void teardown() throws Exception {
+        testMySQL.resetAllData();
+    }
+
+    @AfterClass
+    public static void cleanup() throws Exception {
+        testMySQL.getDataSource().close();
     }
 
     @Test

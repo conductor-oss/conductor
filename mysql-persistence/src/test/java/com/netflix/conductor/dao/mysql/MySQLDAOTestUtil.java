@@ -22,7 +22,7 @@ import javax.sql.DataSource;
 @SuppressWarnings("Duplicates")
 public class MySQLDAOTestUtil {
     private static final Logger logger = LoggerFactory.getLogger(MySQLDAOTestUtil.class);
-    private final DataSource dataSource;
+    private final HikariDataSource dataSource;
     private final TestConfiguration testConfiguration = new TestConfiguration();
     private final ObjectMapper objectMapper = new JsonMapperProvider().get();
 
@@ -38,7 +38,7 @@ public class MySQLDAOTestUtil {
         this.dataSource = getDataSource(testConfiguration);
     }
 
-    private DataSource getDataSource(Configuration config) {
+    private HikariDataSource getDataSource(Configuration config) {
 
         HikariDataSource dataSource = new HikariDataSource();
         dataSource.setJdbcUrl(config.getProperty("jdbc.url", "jdbc:mysql://localhost:33307/conductor"));
@@ -70,7 +70,7 @@ public class MySQLDAOTestUtil {
         }
     }
 
-    public DataSource getDataSource() {
+    public HikariDataSource getDataSource() {
         return dataSource;
     }
 

@@ -5,6 +5,8 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.execution.ApplicationException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -26,13 +28,23 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JUnit4.class)
 public class MySQLMetadataDAOTest {
 
-    private final MySQLDAOTestUtil testUtil = new MySQLDAOTestUtil();
+    private static final MySQLDAOTestUtil testUtil = new MySQLDAOTestUtil();
+
     private MySQLMetadataDAO dao;
 
     @Before
     public void setup() throws Exception {
         dao = new MySQLMetadataDAO(testUtil.getObjectMapper(), testUtil.getDataSource(), testUtil.getTestConfiguration());
+    }
+
+    @After
+    public void teardown() throws Exception {
         testUtil.resetAllData();
+    }
+
+    @AfterClass
+    public static void cleanup() throws Exception {
+        testUtil.getDataSource().close();
     }
 
     @Test(expected=NullPointerException.class)
