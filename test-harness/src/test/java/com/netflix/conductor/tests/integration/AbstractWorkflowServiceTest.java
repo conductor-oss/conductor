@@ -48,10 +48,12 @@ import com.netflix.conductor.service.MetadataService;
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,6 +71,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
@@ -79,6 +82,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public abstract class AbstractWorkflowServiceTest {
 
     private static final Logger logger = LoggerFactory.getLogger(AbstractWorkflowServiceTest.class);
@@ -1637,6 +1641,8 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testSimpleWorkflowWithTaskSpecificDomain() throws Exception {
 
+        long startTimeTimestamp = System.currentTimeMillis();
+
         clearWorkflows();
         createWorkflowDefForDomain();
 
@@ -1740,7 +1746,12 @@ public abstract class AbstractWorkflowServiceTest {
         assertTrue("Found " + es.getOutput().toString(), es.getOutput().containsKey("o3"));
         assertEquals("task1.Done", es.getOutput().get("o3"));
 
-        List<PollData> pddata = workflowExecutionService.getPollData("junit_task_3");
+        Predicate<PollData> pollDataWithinTestTimes = pollData -> pollData.getLastPollTime() != 0 && pollData.getLastPollTime() > startTimeTimestamp;
+
+        List<PollData> pddata = workflowExecutionService.getPollData("junit_task_3").stream()
+                .filter(pollDataWithinTestTimes)
+                .collect(Collectors.toList());
+
         assertTrue(pddata.size() == 2);
         for (PollData pd : pddata) {
             assertEquals(pd.getQueueName(), "junit_task_3");
@@ -1751,8 +1762,9 @@ public abstract class AbstractWorkflowServiceTest {
             }
         }
 
-
-        List<PollData> pdList = workflowExecutionService.getAllPollData();
+        List<PollData> pdList = workflowExecutionService.getAllPollData().stream()
+                .filter(pollDataWithinTestTimes)
+                .collect(Collectors.toList());
         int count = 0;
         for (PollData pd : pdList) {
             if (pd.getQueueName().equals("junit_task_3")) {
@@ -1762,7 +1774,6 @@ public abstract class AbstractWorkflowServiceTest {
         assertTrue(count == 2);
 
     }
-
 
     @Test
     public void testSimpleWorkflowWithAllTaskInOneDomain() throws Exception {
@@ -1872,7 +1883,6 @@ public abstract class AbstractWorkflowServiceTest {
 
         assertTrue("Found " + es.getOutput().toString(), es.getOutput().containsKey("o3"));
         assertEquals("task1.Done", es.getOutput().get("o3"));
-
     }
 
     @After
