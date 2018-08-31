@@ -249,6 +249,12 @@ public class WorkflowExecutor {
         decide(workflowId);
     }
 
+    /**
+     * Gets the last instance of each failed task and reschedule each
+     * Gets all cancelled tasks and schedule all of them except JOIN (join should change status to INPROGRESS)
+     * Switch workflow back to RUNNING status and aall decider.
+     * @param workflowId
+     */
     public void retry(String workflowId) {
         Workflow workflow = executionDAO.getWorkflow(workflowId, true);
         if (!workflow.getStatus().isTerminal()) {
@@ -258,16 +264,10 @@ public class WorkflowExecutor {
             throw new ApplicationException(CONFLICT, "Workflow has not started yet");
         }
 
-        //get all failed and cancelled tasks.
-
-        //for failed tasks - get one of each task definition(latest failed using seq id)
-        List<Task> failedTasks = workflow.getTasks().stream()
-                .filter(x->FAILED.equals(x.getStatus()))
-                .collect(groupingBy(Task::getTaskDefName, maxBy(comparingInt(Task::getSeq))))
-                .values().stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
+        List<Task> failedTasks = getFailedTasksToRetry(workflow);
 
         List<Task> cancelledTasks = workflow.getTasks().stream()
-                .filter(x->FAILED.equals(x.getStatus())).collect(Collectors.toList());
+                .filter(x->CANCELED.equals(x.getStatus())).collect(Collectors.toList());
 
         if (failedTasks.isEmpty()) {
             throw new ApplicationException(CONFLICT,
@@ -295,6 +295,20 @@ public class WorkflowExecutor {
         executionDAO.updateTasks(workflow.getTasks());
 
         decide(workflowId);
+    }
+
+    /**
+     * Get all failed and cancelled tasks.
+     * for failed tasks - get one of each task definition(latest failed using seq id)
+     * @param workflow
+     * @return list of latest failed tasks, one of each type.
+     */
+    @VisibleForTesting
+    List<Task> getFailedTasksToRetry(Workflow workflow) {
+        return workflow.getTasks().stream()
+                .filter(x -> FAILED.equals(x.getStatus()))
+                .collect(groupingBy(Task::getTaskDefName, maxBy(comparingInt(Task::getSeq))))
+                .values().stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
     }
 
     /**
