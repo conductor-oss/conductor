@@ -77,7 +77,11 @@ export default function workflows(state = initialState, action) {
         ...state,
         error:false,
         bulkProcessInFlight:false,
-        bulkProcessSuccess: true
+        bulkProcessSuccess: !action.data.bulkServerError && action.data.bulkErrorResults && action.data.bulkErrorResults.length === 0,
+        bulkServerErrors: !(!action.data.bulkServerError && action.data.bulkErrorResults && action.data.bulkErrorResults.length === 0),
+        bulkErrorResults: action.data.bulkErrorResults || [],
+        bulkServerErrorMessage: action.data.bulkServerErrorMessage,
+        bulkSuccessResults: action.data.bulkSuccessResults || []
       };
     case 'REQUESTED_BULK_TERMINATE_WORKFLOW':
     case 'REQUESTED_BULK_RESTART_WORKFLOW':

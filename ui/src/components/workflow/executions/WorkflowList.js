@@ -87,7 +87,9 @@ const Workflow = React.createClass({
       error:false,
       bulkError:false,
       bulkValidationMessage:"",
-      bulkPanelOpen:false
+      bulkPanelOpen:false,
+      bulkErrorMessages: [],
+      bulkSuccessResults:[]
     }
   },
   componentWillMount(){
@@ -128,6 +130,8 @@ const Workflow = React.createClass({
     update = update || (this.state.start != start);
     update = update || (this.state.status.join(',') != status.join(','));
 
+    this.constructBulkErrorMessages(nextProps);
+    this.removeSuccessfulWorkFlows((nextProps && nextProps.bulkSuccessResults) || []);
     this.setState({
       search : search,
       h : h,
@@ -136,11 +140,11 @@ const Workflow = React.createClass({
       workflows : workflowDefs,
       bulkProcessInFlight : nextProps.bulkProcessInFlight,
       bulkProcessSuccess : nextProps.bulkProcessSuccess,
+      bulkSuccessResults: nextProps.bulkSuccessResults,
       start : start,
       error: nextProps.error,
-      bulkError: (!this.state.error && nextProps.error && this.state.bulkProcessInFlight) ? true : this.state.bulkError
+      bulkError: ((!this.state.error && nextProps.error && this.state.bulkProcessInFlight) || nextProps.bulkServerErrors) ? true : this.state.bulkError
     });
-
     this.refreshResults();
   },
   searchBtnClick() {
@@ -266,11 +270,18 @@ const Workflow = React.createClass({
     this.refs.table.cleanSelected();
   },
 
+  removeSuccessfulWorkFlows(successfulWorkflows){
+    if(successfulWorkflows !== undefined && successfulWorkflows !== null){
+      this.refs.table.cleanSelected(),
+      this.setState({selectedWFEs: []});
+    }
+  },
+
   bulkProcess(){
 
     let wfes = this.state.selectedWFEs.map((wfe) => {return wfe.workflowId});
     let operation = this.state.bulkProcessOperation;
-    this.setState({bulkProcessSuccess:false, bulkError:false, bulkValidationMessage: ""});
+    this.setState({bulkProcessSuccess:false, bulkError:false, bulkValidationMessage: "", bulkErrorMessages:[], bulkSuccessResults:[]});
 
     if(wfes.length === 0){
       this.setState({bulkValidationMessage:"Error: No workflows selected"})
@@ -300,6 +311,24 @@ const Workflow = React.createClass({
 
   },
 
+  constructBulkErrorMessages(props){
+    var messages = [];
+
+    if(props.bulkServerErrorMessage){
+      messages.push(props.bulkServerErrorMessage);
+    }
+
+    if(props.bulkErrorResults && props.bulkErrorResults.length > 0){
+      for(var i in props.bulkErrorResults){
+        for(var id in props.bulkErrorResults[i]){
+          messages.push(id + " - " + props.bulkErrorResults[i][id] + "");
+        }
+      }
+    }
+    this.setState({bulkErrorMessages: messages});
+    return null;
+  },
+
  render() {
     let wfs = [];
     let filteredWfs = [];
@@ -324,10 +353,13 @@ const Workflow = React.createClass({
       onSelect: this.handleRowSelect,
       onSelectAll: this.handleSelectAll
     };
+    let bulkErrors = this.state.bulkErrorMessages.length === 0 ? [] :  this.state.bulkErrorMessages.map((mess) => {
+      return <p>{mess}</p>
+    });
     const bulkSpin = (this.state.bulkProcessInFlight ? (<i style={{"fontSize":"150%"}} className="fa fa-spinner fa-spin"></i>) : "");
-    const bulkSuccess = (this.state.bulkProcessSuccess ? (<span style={{"fontSize":"150%", "color":"green"}}>Success!</span>) : "");
+    const bulkSuccess = (this.state.bulkProcessSuccess ? (<span style={{"fontSize":"150%", "color":"green"}}>All Successful!</span>) : "");
     const bulkValidation = (this.state.bulkValidationMessage !== "" ? (<span style={{"fontSize":"150%", "color":"red"}}>{this.state.bulkValidationMessage}</span>) : "");
-    const bulkError = (this.state.bulkError ? (<span style={{"fontSize":"150%", "color":"red"}}>Error! Please remove invalid workflows and resubmit!</span>) : "");
+    const bulkError = (this.state.bulkError ? (<span><span style={{"fontSize":"125%", "color":"green"}}>Successful: {this.state.bulkSuccessResults.map((mess) => {return <p key={mess}>{mess}</p>})}</span><span style={{"fontSize":"125%", "color":"red"}}>Errors: {this.state.bulkErrorMessages.map((mess) => {return <p key={mess}>{mess}</p>})}</span></span>) : "");
     //secondary filter to match sure we only show workflows that match the the status
     var currentStatusArray = this.state.status;
     if(currentStatusArray.length>0 && wfs.length>0) {
@@ -399,7 +431,7 @@ const Workflow = React.createClass({
               &nbsp;
 
             </Col>
-            <Col md={2}>
+            <Col md={4}>
               {bulkSpin}
               {bulkSuccess}
               {bulkError}

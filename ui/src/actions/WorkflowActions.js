@@ -70,9 +70,14 @@ export function bulkTerminateWorkflow(workflows){
 
 
     return http.delete('/api/wfe/bulk/terminate', workflows).then((data) => {
+      var {code, message, bulkErrorResults, bulkSuccessResults} = JSON.parse(data.text);
       dispatch({
         type: 'RECEIVED_BULK_TERMINATE_WORKFLOW',
-        workflows
+        workflows,
+        data:{bulkServerError:code,
+        bulkServerErrorMessage:message,
+        bulkErrorResults,
+        bulkSuccessResults}
       });
     }).catch((e) => {
       dispatch({
@@ -92,9 +97,14 @@ export function bulkRestartWorkflow(workflows){
 
 
     return http.post('/api/wfe/bulk/restart', workflows).then((data) => {
+      var {code, message, bulkErrorResults, bulkSuccessResults} = JSON.parse(data.text);
       dispatch({
         type: 'RECEIVED_BULK_RESTART_WORKFLOW',
-        workflows
+        workflows,
+        data:{bulkServerError:code,
+        bulkServerErrorMessage:message,
+        bulkErrorResults,
+        bulkSuccessResults}
       });
     }).catch((e) => {
       dispatch({
@@ -114,9 +124,14 @@ export function bulkRetryWorkflow(workflows){
 
 
     return http.post('/api/wfe/bulk/retry', workflows).then((data) => {
+      var {code, message, bulkErrorResults, bulkSuccessResults} = JSON.parse(data.text);
       dispatch({
         type: 'RECEIVED_BULK_RETRY_WORKFLOW',
-        workflows
+        workflows,
+        data:{bulkServerError:code,
+        bulkServerErrorMessage:message,
+        bulkErrorResults,
+        bulkSuccessResults}
       });
     }).catch((e) => {
       dispatch({
@@ -136,9 +151,14 @@ export function bulkPauseWorkflow(workflows) {
 
 
     return http.put('/api/wfe/bulk/pause', workflows).then((data) => {
+      var {code, message, bulkErrorResults, bulkSuccessResults} = JSON.parse(data.text);
       dispatch({
         type: 'RECEIVED_BULK_PAUSE_WORKFLOW',
-        workflows
+        workflows,
+        data:{bulkServerError:code,
+        bulkServerErrorMessage:message,
+        bulkErrorResults,
+        bulkSuccessResults}
       });
     }).catch((e) => {
       dispatch({
@@ -158,9 +178,14 @@ export function bulkResumeWorkflow(workflows) {
 
 
     return http.put('/api/wfe/bulk/resume', workflows).then((data) => {
+      var {code, message, bulkErrorResults, bulkSuccessResults} = JSON.parse(data.text);
       dispatch({
         type: 'RECEIVED_BULK_RESUME_WORKFLOW',
-        workflows
+        workflows,
+        data:{bulkServerError:code,
+        bulkServerErrorMessage:message,
+        bulkErrorResults,
+        bulkSuccessResults}
       });
     }).catch((e) => {
       dispatch({
