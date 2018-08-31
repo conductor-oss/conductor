@@ -5,12 +5,12 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.ExecutionDAOTest;
 import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.dao.MetadataDAO;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 
 import java.util.List;
 
@@ -21,11 +21,14 @@ import static org.mockito.Mockito.mock;
 @SuppressWarnings("Duplicates")
 public class MySQLExecutionDAOTest extends ExecutionDAOTest {
 
-    private static final MySQLDAOTestUtil testMySQL = new MySQLDAOTestUtil();
+    private MySQLDAOTestUtil testMySQL;
     private MySQLExecutionDAO executionDAO;
+
+    @Rule public TestName name = new TestName();
 
     @Before
     public void setup() throws Exception {
+        testMySQL = new MySQLDAOTestUtil(name.getMethodName());
         executionDAO = new MySQLExecutionDAO(
                 mock(IndexDAO.class),
                 testMySQL.getObjectMapper(),
@@ -37,10 +40,6 @@ public class MySQLExecutionDAOTest extends ExecutionDAOTest {
     @After
     public void teardown() throws Exception {
         testMySQL.resetAllData();
-    }
-
-    @AfterClass
-    public static void cleanup() throws Exception {
         testMySQL.getDataSource().close();
     }
 

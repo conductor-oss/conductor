@@ -10,10 +10,11 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,22 +22,22 @@ import org.slf4j.LoggerFactory;
 public class MySQLPushPopQueueDAOTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLPushPopQueueDAOTest.class);
-    private static final MySQLDAOTestUtil testUtil = new MySQLDAOTestUtil();
 
+    private MySQLDAOTestUtil testUtil;
     private MySQLQueueDAO dao;
+
+    @Rule
+    public TestName name = new TestName();
 
     @Before
     public void setup() throws Exception {
+        testUtil = new MySQLDAOTestUtil(name.getMethodName());
         dao = new MySQLQueueDAO(testUtil.getObjectMapper(), testUtil.getDataSource());
     }
 
     @After
     public void teardown() throws Exception {
         testUtil.resetAllData();
-    }
-
-    @AfterClass
-    public static void cleanup() throws Exception {
         testUtil.getDataSource().close();
     }
 

@@ -14,7 +14,6 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.sql.DataSource;
 
@@ -26,14 +25,12 @@ public class MySQLDAOTestUtil {
     private final TestConfiguration testConfiguration = new TestConfiguration();
     private final ObjectMapper objectMapper = new JsonMapperProvider().get();
 
-    static AtomicBoolean migrated = new AtomicBoolean(false);
-
-    MySQLDAOTestUtil() {
-        testConfiguration.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/conductor");
+    MySQLDAOTestUtil(String dbName) throws Exception {
+        testConfiguration.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/" + dbName);
         testConfiguration.setProperty("jdbc.username", "root");
         testConfiguration.setProperty("jdbc.password", "");
         // Ensure the DB starts
-        EmbeddedDatabase.INSTANCE.getDB();
+        EmbeddedDatabase.INSTANCE.getDB().createDB(dbName);
 
         this.dataSource = getDataSource(testConfiguration);
     }
@@ -49,25 +46,17 @@ public class MySQLDAOTestUtil {
         // Prevent DB from getting exhausted during rapid testing
         dataSource.setMaximumPoolSize(8);
 
-        if (!migrated.get()) {
-            flywayMigrate(dataSource);
-        }
+        flywayMigrate(dataSource);
 
         return dataSource;
     }
 
-    private synchronized static void flywayMigrate(DataSource dataSource) {
-        if(migrated.get()) {
-            return;
-        }
+    private void flywayMigrate(DataSource dataSource) {
 
-        synchronized (MySQLDAOTestUtil.class) {
-            Flyway flyway = new Flyway();
-            flyway.setDataSource(dataSource);
-            flyway.setPlaceholderReplacement(false);
-            flyway.migrate();
-            migrated.getAndSet(true);
-        }
+        Flyway flyway = new Flyway();
+        flyway.setDataSource(dataSource);
+        flyway.setPlaceholderReplacement(false);
+        flyway.migrate();
     }
 
     public HikariDataSource getDataSource() {
@@ -85,23 +74,23 @@ public class MySQLDAOTestUtil {
     public void resetAllData() {
         logger.info("Resetting data for test");
         try (Connection connection = dataSource.getConnection()) {
-        	try(ResultSet rs = connection.prepareStatement("SHOW TABLES").executeQuery();
-				PreparedStatement keysOn = connection.prepareStatement("SET FOREIGN_KEY_CHECKS=1")) {
-        		try(PreparedStatement keysOff = connection.prepareStatement("SET FOREIGN_KEY_CHECKS=0")){
-        			keysOff.execute();
-					while(rs.next()) {
-						String table = rs.getString(1);
-						try(PreparedStatement ps = connection.prepareStatement("TRUNCATE TABLE " + table)) {
-							ps.execute();
-						}
-					}
-				} finally {
-        			keysOn.execute();
-				}
-			}
-		} catch (SQLException ex) {
-        	logger.error(ex.getMessage(), ex);
-        	throw new RuntimeException(ex);
-		}
+            try (ResultSet rs = connection.prepareStatement("SHOW TABLES").executeQuery();
+                 PreparedStatement keysOn = connection.prepareStatement("SET FOREIGN_KEY_CHECKS=1")) {
+                try (PreparedStatement keysOff = connection.prepareStatement("SET FOREIGN_KEY_CHECKS=0")) {
+                    keysOff.execute();
+                    while (rs.next()) {
+                        String table = rs.getString(1);
+                        try (PreparedStatement ps = connection.prepareStatement("TRUNCATE TABLE " + table)) {
+                            ps.execute();
+                        }
+                    }
+                } finally {
+                    keysOn.execute();
+                }
+            }
+        } catch (SQLException ex) {
+            logger.error(ex.getMessage(), ex);
+            throw new RuntimeException(ex);
+        }
     }
 }

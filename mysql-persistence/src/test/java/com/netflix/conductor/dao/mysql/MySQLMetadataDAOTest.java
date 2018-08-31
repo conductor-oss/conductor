@@ -6,9 +6,10 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.execution.ApplicationException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
@@ -28,22 +29,21 @@ import static org.junit.Assert.assertTrue;
 @RunWith(JUnit4.class)
 public class MySQLMetadataDAOTest {
 
-    private static final MySQLDAOTestUtil testUtil = new MySQLDAOTestUtil();
-
+    private MySQLDAOTestUtil testUtil;
     private MySQLMetadataDAO dao;
+
+    @Rule
+    public TestName name = new TestName();
 
     @Before
     public void setup() throws Exception {
+        testUtil = new MySQLDAOTestUtil(name.getMethodName());
         dao = new MySQLMetadataDAO(testUtil.getObjectMapper(), testUtil.getDataSource(), testUtil.getTestConfiguration());
     }
 
     @After
     public void teardown() throws Exception {
         testUtil.resetAllData();
-    }
-
-    @AfterClass
-    public static void cleanup() throws Exception {
         testUtil.getDataSource().close();
     }
 

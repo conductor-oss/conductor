@@ -274,7 +274,7 @@ public abstract class ExecutionDAOTest {
     }
 
     @Test
-    public void test() throws Exception {
+    public void complexExecutionTest() throws Exception {
         Workflow workflow = createTestWorkflow();
 
         String workflowId = getExecutionDAO().createWorkflow(workflow);

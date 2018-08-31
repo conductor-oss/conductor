@@ -3,7 +3,6 @@ package com.netflix.conductor.dao.mysql;
 import com.google.common.collect.ImmutableList;
 
 import com.netflix.conductor.core.events.queue.Message;
-import com.zaxxer.hikari.HikariDataSource;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -11,6 +10,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,30 +31,30 @@ import static org.junit.Assert.fail;
 public class MySQLQueueDAOTest {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(MySQLQueueDAOTest.class);
-	private static final MySQLDAOTestUtil testUtil = new MySQLDAOTestUtil();
 
+	private MySQLDAOTestUtil testUtil;
 	private MySQLQueueDAO dao;
+
+    @Rule
+    public TestName name = new TestName();
+
+    @Rule
+    public ExpectedException expected = ExpectedException.none();
 
 	@Before
 	public void setup() throws Exception {
+        testUtil = new MySQLDAOTestUtil(name.getMethodName());
 		dao = new MySQLQueueDAO(testUtil.getObjectMapper(), testUtil.getDataSource());
 	}
 
 	@After
     public void teardown() throws Exception {
         testUtil.resetAllData();
+        testUtil.getDataSource().close();
     }
-
-    @AfterClass
-    public static void cleanup() throws Exception {
-	    testUtil.getDataSource().close();
-    }
-
-	@Rule
-	public ExpectedException expected = ExpectedException.none();
 
 	@Test
-	public void test() {
+	public void complexQueueTest() {
 		String queueName = "TestQueue";
 		long offsetTimeInSecond = 0;
 
