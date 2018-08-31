@@ -53,6 +53,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -68,6 +69,10 @@ import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.INVALID_INPUT;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.NOT_FOUND;
+import static java.util.Comparator.comparingInt;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.maxBy;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * @author Viren Workflow services provider interface
@@ -152,7 +157,7 @@ public class WorkflowExecutor {
                     .filter(task -> task.getType().equals(WorkflowTask.Type.SIMPLE.name()))
                     .map(WorkflowTask::getName)
                     .filter(task -> metadataDAO.getTaskDef(task) == null)
-                    .collect(Collectors.toSet());
+                    .collect(toSet());
 
             if (!missingTaskDefs.isEmpty()) {
                 logger.error("Cannot find the task definitions for the following tasks used in workflow: {}", missingTaskDefs);
@@ -253,8 +258,17 @@ public class WorkflowExecutor {
             throw new ApplicationException(CONFLICT, "Workflow has not started yet");
         }
 
+        //get all failed and cancelled tasks.
+
+        //for failed tasks - get one of each task definition(latest failed using seq id)
         List<Task> failedTasks = workflow.getTasks().stream()
+                .filter(x->FAILED.equals(x.getStatus()))
+                .collect(groupingBy(Task::getTaskDefName, maxBy(comparingInt(Task::getSeq))))
+                .values().stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
+
+        List<Task> cancelledTasks = workflow.getTasks().stream()
                 .filter(x->FAILED.equals(x.getStatus())).collect(Collectors.toList());
+
         if (failedTasks.isEmpty()) {
             throw new ApplicationException(CONFLICT,
                     "There are no failed tasks! Use restart if you want to attempt entire workflow execution again.");
@@ -263,10 +277,6 @@ public class WorkflowExecutor {
         failedTasks.forEach(failedTask -> {
             rescheduledTasks.add(rescheduleTask(failedTask));
         });
-
-
-        List<Task> cancelledTasks = workflow.getTasks().stream()
-                .filter(x->FAILED.equals(x.getStatus())).collect(Collectors.toList());
 
         // Reschedule the cancelled task but if the join is cancelled set that to in progress
         cancelledTasks.forEach(cancelledTask -> {
@@ -312,6 +322,7 @@ public class WorkflowExecutor {
                 .findFirst() // There can only be one task by a given reference name running at a time.
                 .orElse(null);
     }
+    
 
     @VisibleForTesting
     void completeWorkflow(Workflow wf) {
