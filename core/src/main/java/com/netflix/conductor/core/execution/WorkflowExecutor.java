@@ -299,15 +299,15 @@ public class WorkflowExecutor {
 
     /**
      * Get all failed and cancelled tasks.
-     * for failed tasks - get one of each task definition(latest failed using seq id)
+     * for failed tasks - get one for each task reference name(latest failed using seq id)
      * @param workflow
-     * @return list of latest failed tasks, one of each type.
+     * @return list of latest failed tasks, one for each task reference reference type.
      */
     @VisibleForTesting
     List<Task> getFailedTasksToRetry(Workflow workflow) {
         return workflow.getTasks().stream()
                 .filter(x -> FAILED.equals(x.getStatus()))
-                .collect(groupingBy(Task::getTaskDefName, maxBy(comparingInt(Task::getSeq))))
+                .collect(groupingBy(Task::getReferenceTaskName, maxBy(comparingInt(Task::getSeq))))
                 .values().stream().filter(Optional::isPresent).map(Optional::get).collect(Collectors.toList());
     }
 

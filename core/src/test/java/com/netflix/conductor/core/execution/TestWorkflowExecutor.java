@@ -269,51 +269,76 @@ public class TestWorkflowExecutor {
         task_1_1.setTaskId(UUID.randomUUID().toString());
         task_1_1.setSeq(1);
         task_1_1.setStatus(Status.FAILED);
-        task_1_1.setTaskDefName("task_1");
+        task_1_1.setTaskDefName("task_1_def");
+        task_1_1.setReferenceTaskName("task_1_ref_1");
 
         Task task_1_2 = new Task();
         task_1_2.setTaskId(UUID.randomUUID().toString());
         task_1_2.setSeq(10);
         task_1_2.setStatus(Status.FAILED);
-        task_1_2.setTaskDefName("task_1");
+        task_1_2.setTaskDefName("task_1_def");
+        task_1_2.setReferenceTaskName("task_1_ref_2");
 
-        Task task_1_3 = new Task();
-        task_1_3.setTaskId(UUID.randomUUID().toString());
-        task_1_3.setSeq(100);
-        task_1_3.setStatus(Status.FAILED);
-        task_1_3.setTaskDefName("task_1");
+        Task task_1_3_1 = new Task();
+        task_1_3_1.setTaskId(UUID.randomUUID().toString());
+        task_1_3_1.setSeq(100);
+        task_1_3_1.setStatus(Status.FAILED);
+        task_1_3_1.setTaskDefName("task_1_def");
+        task_1_3_1.setReferenceTaskName("task_1_ref_3");
+
+
+        Task task_1_3_2 = new Task();
+        task_1_3_2.setTaskId(UUID.randomUUID().toString());
+        task_1_3_2.setSeq(101);
+        task_1_3_2.setStatus(Status.FAILED);
+        task_1_3_2.setTaskDefName("task_1_def");
+        task_1_3_2.setReferenceTaskName("task_1_ref_3");
+
 
         Task task_2_1 = new Task();
         task_2_1.setTaskId(UUID.randomUUID().toString());
         task_2_1.setSeq(2);
         task_2_1.setStatus(Status.COMPLETED);
-        task_2_1.setTaskDefName("task_2");
+        task_2_1.setTaskDefName("task_2_def");
+        task_2_1.setReferenceTaskName("task_2_ref_1");
 
         Task task_2_2 = new Task();
         task_2_2.setTaskId(UUID.randomUUID().toString());
         task_2_2.setSeq(20);
         task_2_2.setStatus(Status.FAILED);
-        task_2_2.setTaskDefName("task_2");
+        task_2_2.setTaskDefName("task_2_def");
+        task_2_2.setReferenceTaskName("task_2_ref_2");
 
         Task task_3_1 = new Task();
         task_3_1.setTaskId(UUID.randomUUID().toString());
         task_3_1.setSeq(20);
         task_3_1.setStatus(Status.TIMED_OUT);
-        task_3_1.setTaskDefName("task_3");
+        task_3_1.setTaskDefName("task_3_def");
+        task_3_1.setReferenceTaskName("task_3_ref_1");
 
         Workflow workflow = new Workflow();
 
+        //2 different task definitions
         workflow.setTasks(Arrays.asList(task_1_1,task_2_1));
         List<Task> tasks = workflowExecutor.getFailedTasksToRetry(workflow);
         assertEquals(1, tasks.size());
         assertEquals(task_1_1.getTaskId(), tasks.get(0).getTaskId());
 
-
-        workflow.setTasks(Arrays.asList(task_1_1,task_1_2, task_1_3,task_2_1, task_2_2, task_3_1));
+        //2 tasks witih the same  definition but different reference numbers
+        workflow.setTasks(Arrays.asList(task_1_3_1,task_1_3_2));
         tasks = workflowExecutor.getFailedTasksToRetry(workflow);
-        assertEquals(2, tasks.size());
-        assertTrue(tasks.contains(task_1_3));
+        assertEquals(1, tasks.size());
+        assertEquals(task_1_3_2.getTaskId(), tasks.get(0).getTaskId());
+
+        //3 tasks witih definitions and referece numbers
+
+        workflow.setTasks(Arrays.asList(task_1_1,task_1_2, task_1_3_1, task_1_3_2, task_2_1, task_2_2, task_3_1));
+        tasks = workflowExecutor.getFailedTasksToRetry(workflow);
+        assertEquals(4, tasks.size());
+        assertTrue(tasks.contains(task_1_1));
+        assertTrue(tasks.contains(task_1_2));
         assertTrue(tasks.contains(task_2_2));
+        assertTrue(tasks.contains(task_1_3_2));
 
 
     }
@@ -384,6 +409,7 @@ public class TestWorkflowExecutor {
         task_1_1.setTaskType(Type.SIMPLE.toString());
         task_1_1.setStatus(Status.CANCELED);
         task_1_1.setTaskDefName("task1");
+        task_1_1.setReferenceTaskName("task1_ref1");
 
         Task task_1_2 = new Task();
         task_1_2.setTaskId(UUID.randomUUID().toString());
@@ -391,6 +417,7 @@ public class TestWorkflowExecutor {
         task_1_2.setTaskType(Type.SIMPLE.toString());
         task_1_2.setStatus(Status.FAILED);
         task_1_2.setTaskDefName("task1");
+        task_1_2.setReferenceTaskName("task1_ref1");
 
         Task task_2_1 = new Task();
         task_2_1.setTaskId(UUID.randomUUID().toString());
@@ -398,6 +425,8 @@ public class TestWorkflowExecutor {
         task_2_1.setStatus(Status.FAILED);
         task_2_1.setTaskType(Type.SIMPLE.toString());
         task_2_1.setTaskDefName("task2");
+        task_2_1.setReferenceTaskName("task2_ref1");
+
 
         Task task_3_1 = new Task();
         task_3_1.setTaskId(UUID.randomUUID().toString());
@@ -405,7 +434,17 @@ public class TestWorkflowExecutor {
         task_3_1.setStatus(Status.CANCELED);
         task_3_1.setTaskType(Type.SIMPLE.toString());
         task_3_1.setTaskDefName("task3");
-            workflow.setTasks(Arrays.asList(task_1_1,task_1_2, task_2_1, task_3_1));
+        task_3_1.setReferenceTaskName("task3_ref1");
+
+        Task task_4_1 = new Task();
+        task_4_1.setTaskId(UUID.randomUUID().toString());
+        task_4_1.setSeq(122);
+        task_4_1.setStatus(Status.FAILED);
+        task_4_1.setTaskType(Type.SIMPLE.toString());
+        task_4_1.setTaskDefName("task1");
+        task_4_1.setReferenceTaskName("task4_refABC");
+
+        workflow.setTasks(Arrays.asList(task_1_1,task_1_2, task_2_1, task_3_1, task_4_1));
         //end of setup
 
         //when:
@@ -417,7 +456,7 @@ public class TestWorkflowExecutor {
 
         assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
         assertEquals(2, updateWorkflowCalledCounter.get());
-        assertEquals(6, updateTasksCalledCounter.get());
+        assertEquals(7, updateTasksCalledCounter.get());
         assertEquals(1, removeQueueEntryCalledCounter.get());
 
 
