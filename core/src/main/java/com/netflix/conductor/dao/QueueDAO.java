@@ -132,5 +132,12 @@ public interface QueueDAO {
 	 */
 	boolean setOffsetTime(String queueName, String id, long offsetTimeInSecond);
 
-
+	/**
+	 * Checks if a message with the given id exists on the queue
+	 * @param queueName name of the queue
+	 * @param id message id
+	 * @return true if the message with the specified id is present in the queue
+	 * false if the message with the given id is not present in the queue
+	 */
+	boolean exists(String queueName, String id);
 }

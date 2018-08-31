@@ -106,6 +106,10 @@ public class DynoProxy {
 		return dynoClient.zrem(key, member);
 	}
 
+	public long zremrangeByScore(String key, String start, String end) { return dynoClient.zremrangeByScore(key, start, end);}
+
+	public long zcount(String key, double min, double max) { return dynoClient.zcount(key, min, max);}
+
 	public String set(String key, String value) {
 		String retVal = dynoClient.set(key, value);
 		return retVal;

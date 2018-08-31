@@ -28,6 +28,7 @@ import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.service.utils.ServiceUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -43,12 +44,10 @@ public class MetadataService {
 
     private MetadataDAO metadataDAO;
 
-    private RateLimitingService rateLimitingService;
 
     @Inject
-    public MetadataService(MetadataDAO metadataDAO, RateLimitingService rateLimitingService) {
+    public MetadataService(MetadataDAO metadataDAO) {
         this.metadataDAO = metadataDAO;
-        this.rateLimitingService = rateLimitingService;
     }
 
     /**
@@ -62,9 +61,6 @@ public class MetadataService {
             taskDefinition.setUpdatedBy(null);
             taskDefinition.setUpdateTime(null);
             metadataDAO.createTaskDef(taskDefinition);
-            if(taskDefinition.getRateLimitPerSecond() != 0) {
-                rateLimitingService.updateRateLimitRules(taskDefinition);
-            }
         }
     }
 
@@ -80,9 +76,6 @@ public class MetadataService {
         taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
         taskDefinition.setUpdateTime(System.currentTimeMillis());
         metadataDAO.updateTaskDef(taskDefinition);
-        if(taskDefinition.getRateLimitPerSecond() != 0) {
-            rateLimitingService.updateRateLimitRules(taskDefinition);
-        }
     }
 
     /**
@@ -107,7 +100,12 @@ public class MetadataService {
      * @return Task Definition
      */
     public TaskDef getTaskDef(String taskType) {
-        return metadataDAO.getTaskDef(taskType);
+        TaskDef taskDef = metadataDAO.getTaskDef(taskType);
+        if (taskDef == null){
+            throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
+                    String.format("No such taskType found by name: %s", taskType));
+        }
+        return taskDef;
     }
 
     /**
@@ -120,11 +118,15 @@ public class MetadataService {
 
     /**
      *
-     * @param wfs Workflow definitions to be updated.
+     * @param workflowDefList Workflow definitions to be updated.
      */
-    public void updateWorkflowDef(List<WorkflowDef> wfs) {
-        for (WorkflowDef wf : wfs) {
-            metadataDAO.update(wf);
+    public void updateWorkflowDef(List<WorkflowDef> workflowDefList) {
+        ServiceUtils.checkNotNullOrEmpty(workflowDefList, "WorkflowDef list name cannot be null or empty");
+        for (WorkflowDef workflowDef : workflowDefList) {
+            //TODO: revisit this error handling
+            ServiceUtils.checkNotNull(workflowDef, "WorkflowDef cannot be null");
+            ServiceUtils.checkNotNullOrEmpty(workflowDef.getName(), "WorkflowDef name cannot be null");
+            metadataDAO.update(workflowDef);
         }
     }
 
@@ -135,10 +137,18 @@ public class MetadataService {
      * @return Workflow definition
      */
     public WorkflowDef getWorkflowDef(String name, Integer version) {
+        WorkflowDef workflowDef = null;
         if (version == null) {
-            return metadataDAO.getLatest(name);
+            workflowDef = metadataDAO.getLatest(name);
+        } else {
+            workflowDef =  metadataDAO.get(name, version);
         }
-        return metadataDAO.get(name, version);
+
+        if(workflowDef == null){
+            throw new ApplicationException(Code.NOT_FOUND,
+                    String.format("No such workflow found by name: %s, version: %d", name, version));
+        }
+        return workflowDef;
     }
 
     /**
@@ -154,14 +164,16 @@ public class MetadataService {
         return metadataDAO.getAll();
     }
 
-    public void registerWorkflowDef(WorkflowDef def) {
-        if (def.getName().contains(":")) {
+    public void registerWorkflowDef(WorkflowDef workflowDef) {
+        ServiceUtils.checkNotNull(workflowDef, "WorkflowDef cannot be null");
+        ServiceUtils.checkNotNullOrEmpty(workflowDef.getName(), "Workflow name cannot be null or empty");
+        if (workflowDef.getName().contains(":")) {
             throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
         }
-        if (def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
-            def.setSchemaVersion(2);
+        if (workflowDef.getSchemaVersion() < 1 || workflowDef.getSchemaVersion() > 2) {
+            workflowDef.setSchemaVersion(2);
         }
-        metadataDAO.create(def);
+        metadataDAO.create(workflowDef);
     }
 
     /**
@@ -170,14 +182,8 @@ public class MetadataService {
      * @param version Version of the workflow definition to be removed
      */
     public void unregisterWorkflowDef(String name, Integer version) {
-        if (name == null) {
-            throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot be null");
-        }
-
-        if (version == null) {
-            throw new ApplicationException(Code.INVALID_INPUT, "Version is not valid");
-        }
-
+        ServiceUtils.checkNotNullOrEmpty(name, "Workflow name cannot be null");
+        ServiceUtils.checkNotNull(version, "Version is not valid");
         metadataDAO.removeWorkflowDef(name, version);
     }
 
@@ -227,9 +233,9 @@ public class MetadataService {
     }
 
     private void validateEvent(EventHandler eh) {
-        Preconditions.checkNotNull(eh.getName(), "Missing event handler name");
-        Preconditions.checkNotNull(eh.getEvent(), "Missing event location");
-        Preconditions.checkNotNull(eh.getActions().isEmpty(), "No actions specified.  Please specify at-least one action");
+        ServiceUtils.checkNotNullOrEmpty(eh.getName(), "Missing event handler name");
+        ServiceUtils.checkNotNullOrEmpty(eh.getEvent(), "Missing event location");
+        ServiceUtils.checkNotNullOrEmpty(eh.getActions(), "No actions specified. Please specify at-least one action");
         String event = eh.getEvent();
         EventQueues.getQueue(event);
     }

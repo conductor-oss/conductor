@@ -4,7 +4,7 @@ import Bunyan from 'bunyan';
 import MiddlewareIndex from './api/middleware';
 import bodyParser from "body-parser";
 
-let log = Bunyan.createLogger({ src: true, name: 'Conductor UI' });
+const log = Bunyan.createLogger({ src: true, name: 'Conductor UI' });
 
 const wfeAPI = require('./api/wfe');
 const sysAPI = require('./api/sys');
@@ -21,33 +21,32 @@ class Main {
     this.startServer(app);
   }
 
-  preMiddlewareConfig(app, middlewareIndex) {
+  preMiddlewareConfig = (app, middlewareIndex) => {
     middlewareIndex.before(app);
-  }
+  };
 
-  routesConfig(app) {
-    log.info('Serving static ' + process.cwd());
+  routesConfig = app => {
+    log.info(`Serving static ${process.cwd()}`);
     app.use(express.static('public'));
 
     app.use('/api/wfe', bodyParser.json(), wfeAPI);
     app.use('/api/sys', sysAPI);
     app.use('/api/events', eventsAPI);
-  }
+  };
 
-  postMiddlewareConfig(app, middlewareIndex) {
+  postMiddlewareConfig = (app, middlewareIndex) => {
     middlewareIndex.after(app);
-  }
+  };
 
-  startServer(app) {
-    let server = app.listen(process.env.NODE_PORT || 5000, function() {
-      var host = server.address().address;
-      var port = server.address().port;
-      log.info('Workflow UI listening at http://%s:%s', host, port);
+  startServer = app => {
+    const server = app.listen(process.env.NODE_PORT || 5000, () => {
+      const { address, port } = server.address();
+      log.info('Workflow UI listening at http://%s:%s', address, port);
       if (process.send) {
         process.send('online');
       }
     });
-  }
+  };
 }
 
 const main = new Main();

@@ -171,6 +171,10 @@ public class Monitors {
 		counter(classQualifier, "task_poll", "taskType", taskType);
 	}
 
+	public static void recordTaskPollCount(String taskType, String domain, int count) {
+		getCounter(classQualifier, "task_poll_count", "taskType", taskType, "domain", domain).increment(count);
+	}
+
 	public static void recordQueueDepth(String taskType, long size, String ownerApp) {
 		gauge(classQualifier, "task_queue_depth", size, "taskType", taskType, "ownerApp", ""+ownerApp);
 	}
@@ -214,6 +218,10 @@ public class Monitors {
 
 	public static void recordTaskRateLimited(String taskDefName, int limit) {
 		gauge(classQualifier, "task_rate_limited", limit, "taskType", taskDefName);
+	}
+
+	public static void recordTaskConcurrentExecutionLimited(String taskDefName, int limit) {
+		gauge(classQualifier, "task_concurrent_execution_limited", limit, "taskType", taskDefName);
 	}
 
 	public static void recordEventQueueMessagesProcessed(String queueType, String queueName, int count) {

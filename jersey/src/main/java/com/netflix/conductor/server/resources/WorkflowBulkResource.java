@@ -196,5 +196,4 @@ public class WorkflowBulkResource {
         }
         return bulkResponse;
     }
-
 }

@@ -31,39 +31,43 @@ import com.netflix.conductor.common.metadata.Auditable;
  * Defines a workflow task definition 
  */
 public class TaskDef extends Auditable {
-	
-	public enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY}
-	
-	public enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF}
-	
+
+
+
+	public enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY;}
+
+
+	public enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF;}
 	private static final int ONE_HOUR = 60 * 60;
-	
+
 	/**
-	 * Unique name identifying the task.  The name is unique across 
+	 * Unique name identifying the task.  The name is unique across
 	 */
 	private String name;
-	
+
 	private String description;
-	
+
 	private int retryCount = 3; // Default
 
 	private long timeoutSeconds;
 
 	private List<String> inputKeys = new ArrayList<String>();
-	
+
 	private List<String> outputKeys = new ArrayList<String>();
-		
+
 	private TimeoutPolicy timeoutPolicy = TimeoutPolicy.TIME_OUT_WF;
-	
+
 	private RetryLogic retryLogic = RetryLogic.FIXED;
-	
+
 	private int retryDelaySeconds = 60;
-	
+
 	private int responseTimeoutSeconds = ONE_HOUR;
-	
+
 	private Integer concurrentExecLimit;
 
-	private Integer rateLimitPerSecond;
+	private Integer rateLimitPerFrequency;
+
+	private Integer rateLimitFrequencyInSeconds;
 
 	private Map<String, Object> inputTemplate = new HashMap<>();
 
@@ -240,18 +244,35 @@ public class TaskDef extends Auditable {
 
 	/**
 	 *
-	 * @return rateLimitPerSecond The max number of tasks that will be allowed to be executed per second at any given point of time.
+	 * @return rateLimitPerFrequency The max number of tasks that will be allowed to be executed per rateLimitFrequencyInSeconds.
 	 */
-	public Integer getRateLimitPerSecond() {
-		return rateLimitPerSecond == null ? 0 : rateLimitPerSecond;
+	public Integer getRateLimitPerFrequency() {
+		return rateLimitPerFrequency == null ? 0 : rateLimitPerFrequency;
 	}
 
 	/**
 	 *
-	 * @param rateLimitPerSecond The max number of tasks that will be allowed to be executed per second at any given point of time. Setting the value to 0 removes the rate limit
+	 * @param rateLimitPerFrequency The max number of tasks that will be allowed to be executed per rateLimitFrequencyInSeconds.
+	 *                                 Setting the value to 0 removes the rate limit
 	 */
-	public void setRateLimitPerSecond(Integer rateLimitPerSecond) {
-		this.rateLimitPerSecond = rateLimitPerSecond;
+	public void setRateLimitPerFrequency(Integer rateLimitPerFrequency) {
+		this.rateLimitPerFrequency = rateLimitPerFrequency;
+	}
+
+	/**
+	 * @return rateLimitFrequencyInSeconds: The time bucket that is used to rate limit tasks based on {@link #getRateLimitPerFrequency()}
+	 * If null or not set, then defaults to 1 second
+	 */
+	public Integer getRateLimitFrequencyInSeconds() {
+		return rateLimitFrequencyInSeconds == null ? 1 : rateLimitFrequencyInSeconds;
+	}
+
+	/**
+	 *
+	 * @param rateLimitFrequencyInSeconds: The time window/bucket for which the rate limit needs to be applied. This will only have affect if {@link #getRateLimitPerFrequency()} is greater than zero
+	 */
+	public void setRateLimitFrequencyInSeconds(Integer rateLimitFrequencyInSeconds) {
+		this.rateLimitFrequencyInSeconds = rateLimitFrequencyInSeconds;
 	}
 
 	/**
@@ -306,7 +327,7 @@ public class TaskDef extends Auditable {
 				getTimeoutPolicy() == taskDef.getTimeoutPolicy() &&
 				getRetryLogic() == taskDef.getRetryLogic() &&
 				Objects.equals(getConcurrentExecLimit(), taskDef.getConcurrentExecLimit()) &&
-				Objects.equals(getRateLimitPerSecond(), taskDef.getRateLimitPerSecond()) &&
+				Objects.equals(getRateLimitPerFrequency(), taskDef.getRateLimitPerFrequency()) &&
 				Objects.equals(getInputTemplate(), taskDef.getInputTemplate());
 	}
 
@@ -315,6 +336,6 @@ public class TaskDef extends Auditable {
 
 		return Objects.hash(getName(), getDescription(), getRetryCount(), getTimeoutSeconds(), getInputKeys(),
 				getOutputKeys(), getTimeoutPolicy(), getRetryLogic(), getRetryDelaySeconds(),
-				getResponseTimeoutSeconds(), getConcurrentExecLimit(), getRateLimitPerSecond(), getInputTemplate());
+				getResponseTimeoutSeconds(), getConcurrentExecLimit(), getRateLimitPerFrequency(), getInputTemplate());
 	}
 }
