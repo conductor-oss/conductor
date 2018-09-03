@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -153,7 +154,7 @@ public class TestEventProcessor {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setVersion(startWorkflowAction.getStartWorkflow().getVersion());
         workflowDef.setName(startWorkflowAction.getStartWorkflow().getName());
-        when(metadataService.getWorkflowDef(any(), any())).thenReturn(workflowDef);
+        when(metadataService.getWorkflowDef(any(), any())).thenReturn(Optional.of(workflowDef));
 
         ActionProcessor actionProcessor = new ActionProcessor(workflowExecutor, metadataService);
 
@@ -212,7 +213,7 @@ public class TestEventProcessor {
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(startWorkflowAction.getStartWorkflow().getName());
-        when(metadataService.getWorkflowDef(any(), any())).thenReturn(workflowDef);
+        when(metadataService.getWorkflowDef(any(), any())).thenReturn(Optional.of(workflowDef));
 
         ActionProcessor actionProcessor = new ActionProcessor(workflowExecutor, metadataService);
 
@@ -348,3 +349,4 @@ public class TestEventProcessor {
         assertNull(eventExecution.getOutput().get("exception"));
     }
 }
+

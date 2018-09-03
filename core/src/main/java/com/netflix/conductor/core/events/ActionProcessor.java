@@ -25,7 +25,6 @@ import com.netflix.conductor.common.metadata.events.EventHandler.TaskDetails;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
@@ -123,14 +122,14 @@ public class ActionProcessor {
 		StartWorkflow params = action.getStartWorkflow();
 		Map<String, Object> output = new HashMap<>();
 		try {
-			WorkflowDef def = metadataService.getWorkflowDef(params.getName(), params.getVersion());
 			Map<String, Object> inputParams = params.getInput();
 			Map<String, Object> workflowInput = parametersUtils.replace(inputParams, payload);
 			workflowInput.put("conductor.event.messageId", messageId);
 			workflowInput.put("conductor.event.name", event);
-
-			String id = executor.startWorkflow(def.getName(), def.getVersion(), params.getCorrelationId(), workflowInput, event);
+			
+			String id = executor.startWorkflow(params.getName(), params.getVersion(), params.getCorrelationId(), workflowInput, event);
 			output.put("workflowId", id);
+
 		} catch (RuntimeException e) {
 			logger.error("Error starting workflow: {}, version: {}, for event: {} for message: {}", params.getName(), params.getVersion(), event, messageId, e);
 			output.put("error", e.getMessage());

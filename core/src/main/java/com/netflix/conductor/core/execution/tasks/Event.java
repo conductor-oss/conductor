@@ -61,8 +61,8 @@ public class Event extends WorkflowSystemTask {
 
 		Map<String, Object> payload = new HashMap<>(task.getInputData());
 		payload.put("workflowInstanceId", workflow.getWorkflowId());
-		payload.put("workflowType", workflow.getWorkflowType());
-		payload.put("workflowVersion", workflow.getVersion());
+		payload.put("workflowType", workflow.getWorkflowName());
+		payload.put("workflowVersion", workflow.getWorkflowVersion());
 		payload.put("correlationId", workflow.getCorrelationId());
 
 		String payloadJson;
@@ -112,10 +112,10 @@ public class Event extends WorkflowSystemTask {
 
 		if(sinkValue.startsWith("conductor")) {
 			if("conductor".equals(sinkValue)) {
-				queueName = sinkValue + ":" + workflow.getWorkflowType() + ":" + task.getReferenceTaskName();
+				queueName = sinkValue + ":" + workflow.getWorkflowName() + ":" + task.getReferenceTaskName();
 			} else if(sinkValue.startsWith("conductor:")) {
 				queueName = sinkValue.replaceAll("conductor:", "");
-				queueName = "conductor:" + workflow.getWorkflowType() + ":" + queueName;
+				queueName = "conductor:" + workflow.getWorkflowName() + ":" + queueName;
 			} else {
 				task.setStatus(Status.FAILED);
 				task.setReasonForIncompletion("Invalid / Unsupported sink specified: " + sinkValue);

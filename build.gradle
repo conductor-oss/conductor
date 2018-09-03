@@ -36,8 +36,10 @@ subprojects {
     }
 
     dependencies {
-    	testCompile "junit:junit-dep:${revJUnit}"
-    	testCompile "org.mockito:mockito-all:${revMockito}"
+        testCompile "junit:junit:${revJUnit}"
+        testCompile("org.mockito:mockito-core:${revMockito}") {
+            exclude group: 'org.hamcrest', module: 'hamcrest-core'
+        }
     }
 
     group = "com.netflix.${githubProjectName}"

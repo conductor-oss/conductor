@@ -44,7 +44,6 @@ import java.lang.String;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -763,6 +762,9 @@ public abstract class AbstractProtoMapper {
             to.putInput( pair.getKey(), toProto( pair.getValue() ) );
         }
         to.putAllTaskToDomain( from.getTaskToDomain() );
+        if (from.getWorkflowDef() != null) {
+            to.setWorkflowDef( toProto( from.getWorkflowDef() ) );
+        }
         return to.build();
     }
 
@@ -777,6 +779,9 @@ public abstract class AbstractProtoMapper {
         }
         to.setInput(inputMap);
         to.setTaskToDomain( from.getTaskToDomainMap() );
+        if (from.hasWorkflowDef()) {
+            to.setWorkflowDef( fromProto( from.getWorkflowDef() ) );
+        }
         return to;
     }
 
@@ -786,7 +791,7 @@ public abstract class AbstractProtoMapper {
             to.setName( from.getName() );
         }
         if (from.getVersion() != null) {
-            to.setVersion( toProto( from.getVersion() ) );
+            to.setVersion( from.getVersion() );
         }
         return to.build();
     }
@@ -794,9 +799,7 @@ public abstract class AbstractProtoMapper {
     public SubWorkflowParams fromProto(SubWorkflowParamsPb.SubWorkflowParams from) {
         SubWorkflowParams to = new SubWorkflowParams();
         to.setName( from.getName() );
-        if (from.hasVersion()) {
-            to.setVersion( fromProto( from.getVersion() ) );
-        }
+        to.setVersion( from.getVersion() );
         return to;
     }
 
@@ -829,7 +832,7 @@ public abstract class AbstractProtoMapper {
         to.setName( from.getName() );
         to.setDescription( from.getDescription() );
         to.setVersion( from.getVersion() );
-        to.setTasks( from.getTasksList().stream().map(this::fromProto).collect(Collectors.toCollection(LinkedList::new)) );
+        to.setTasks( from.getTasksList().stream().map(this::fromProto).collect(Collectors.toCollection(ArrayList::new)) );
         to.setInputParameters( from.getInputParametersList().stream().collect(Collectors.toCollection(ArrayList::new)) );
         Map<String, Object> outputParametersMap = new HashMap<String, Object>();
         for (Map.Entry<String, Value> pair : from.getOutputParametersMap().entrySet()) {
@@ -892,8 +895,8 @@ public abstract class AbstractProtoMapper {
             to.setSink( from.getSink() );
         }
         to.setOptional( from.isOptional() );
-        if (from.isRateLimited() != null) {
-            to.setRateLimited( from.isRateLimited() );
+        if (from.getTaskDefinition() != null) {
+            to.setTaskDefinition( toProto( from.getTaskDefinition() ) );
         }
         return to.build();
     }
@@ -928,42 +931,8 @@ public abstract class AbstractProtoMapper {
         to.setJoinOn( from.getJoinOnList().stream().collect(Collectors.toCollection(ArrayList::new)) );
         to.setSink( from.getSink() );
         to.setOptional( from.getOptional() );
-        to.setRateLimited( from.getRateLimited() );
-        return to;
-    }
-
-    public WorkflowTaskPb.WorkflowTask.Type toProto(WorkflowTask.Type from) {
-        WorkflowTaskPb.WorkflowTask.Type to;
-        switch (from) {
-            case SIMPLE: to = WorkflowTaskPb.WorkflowTask.Type.SIMPLE; break;
-            case DYNAMIC: to = WorkflowTaskPb.WorkflowTask.Type.DYNAMIC; break;
-            case FORK_JOIN: to = WorkflowTaskPb.WorkflowTask.Type.FORK_JOIN; break;
-            case FORK_JOIN_DYNAMIC: to = WorkflowTaskPb.WorkflowTask.Type.FORK_JOIN_DYNAMIC; break;
-            case DECISION: to = WorkflowTaskPb.WorkflowTask.Type.DECISION; break;
-            case JOIN: to = WorkflowTaskPb.WorkflowTask.Type.JOIN; break;
-            case SUB_WORKFLOW: to = WorkflowTaskPb.WorkflowTask.Type.SUB_WORKFLOW; break;
-            case EVENT: to = WorkflowTaskPb.WorkflowTask.Type.EVENT; break;
-            case WAIT: to = WorkflowTaskPb.WorkflowTask.Type.WAIT; break;
-            case USER_DEFINED: to = WorkflowTaskPb.WorkflowTask.Type.USER_DEFINED; break;
-            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
-        }
-        return to;
-    }
-
-    public WorkflowTask.Type fromProto(WorkflowTaskPb.WorkflowTask.Type from) {
-        WorkflowTask.Type to;
-        switch (from) {
-            case SIMPLE: to = WorkflowTask.Type.SIMPLE; break;
-            case DYNAMIC: to = WorkflowTask.Type.DYNAMIC; break;
-            case FORK_JOIN: to = WorkflowTask.Type.FORK_JOIN; break;
-            case FORK_JOIN_DYNAMIC: to = WorkflowTask.Type.FORK_JOIN_DYNAMIC; break;
-            case DECISION: to = WorkflowTask.Type.DECISION; break;
-            case JOIN: to = WorkflowTask.Type.JOIN; break;
-            case SUB_WORKFLOW: to = WorkflowTask.Type.SUB_WORKFLOW; break;
-            case EVENT: to = WorkflowTask.Type.EVENT; break;
-            case WAIT: to = WorkflowTask.Type.WAIT; break;
-            case USER_DEFINED: to = WorkflowTask.Type.USER_DEFINED; break;
-            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        if (from.hasTaskDefinition()) {
+            to.setTaskDefinition( fromProto( from.getTaskDefinition() ) );
         }
         return to;
     }
@@ -1060,6 +1029,9 @@ public abstract class AbstractProtoMapper {
         }
         to.putAllTaskToDomain( from.getTaskToDomain() );
         to.addAllFailedReferenceTaskNames( from.getFailedReferenceTaskNames() );
+        if (from.getWorkflowDefinition() != null) {
+            to.setWorkflowDefinition( toProto( from.getWorkflowDefinition() ) );
+        }
         return to.build();
     }
 
@@ -1090,6 +1062,9 @@ public abstract class AbstractProtoMapper {
         to.setEvent( from.getEvent() );
         to.setTaskToDomain( from.getTaskToDomainMap() );
         to.setFailedReferenceTaskNames( from.getFailedReferenceTaskNamesList().stream().collect(Collectors.toCollection(HashSet::new)) );
+        if (from.hasWorkflowDefinition()) {
+            to.setWorkflowDefinition( fromProto( from.getWorkflowDefinition() ) );
+        }
         return to;
     }
 

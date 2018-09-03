@@ -1,0 +1,56 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1534985656537,
+  "updateTime": 1534985656670,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "junit_task_1",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": null,
+        "p2": null
+      },
+      "referenceTaskName": "dt1",
+      "retryCount": 0,
+      "seq": 1,
+      "correlationId": "dynfanouttest1",
+      "pollCount": 0,
+      "taskDefName": "junit_task_1",
+      "scheduledTime": 1534985656568,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1534985656568,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "DynamicFanInOutTestLegacy",
+      "taskId": "e04365be-93c3-4e36-ad05-664e0e6a27c3",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "junit_task_1",
+        "taskReferenceName": "dt1",
+        "inputParameters": {
+          "p1": "workflow.input.param1",
+          "p2": "workflow.input.param2"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    }
+  ],
+  "workflowType": "DynamicFanInOutTestLegacy",
+  "version": 1,
+  "correlationId": "dynfanouttest1",
+  "schemaVersion": 1,
+  "startTime": 1534985656537
+}

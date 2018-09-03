@@ -5,17 +5,21 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.grpc.MetadataServiceGrpc;
 import com.netflix.conductor.grpc.MetadataServicePb;
 import com.netflix.conductor.grpc.ProtoMapper;
+import com.netflix.conductor.grpc.WorkflowServicePb;
 import com.netflix.conductor.proto.TaskDefPb;
 import com.netflix.conductor.proto.WorkflowDefPb;
 import com.netflix.conductor.service.MetadataService;
-import io.grpc.Status;
-import io.grpc.stub.StreamObserver;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+
+import io.grpc.Status;
+import io.grpc.stub.StreamObserver;
 
 public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImplBase {
     private static final Logger LOGGER = LoggerFactory.getLogger(MetadataServiceImpl.class);
@@ -48,21 +52,24 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
     }
 
     @Override
-    public void getWorkflow(MetadataServicePb.GetWorkflowRequest req, StreamObserver<MetadataServicePb.GetWorkflowResponse> response) {
-        WorkflowDef def = service.getWorkflowDef(req.getName(), GRPC_HELPER.optional(req.getVersion()));
-        if (def != null) {
-            WorkflowDefPb.WorkflowDef workflow = PROTO_MAPPER.toProto(def);
-            response.onNext(MetadataServicePb.GetWorkflowResponse.newBuilder()
-                    .setWorkflow(workflow)
-                    .build()
-            );
-            response.onCompleted();
-        } else {
-            response.onError(Status.NOT_FOUND
-                    .withDescription("No such workflow found by name="+req.getName())
-                    .asRuntimeException()
-            );
-        }
+    public void getWorkflow(MetadataServicePb.GetWorkflowRequest req, StreamObserver<MetadataServicePb.GetWorkflowResponse > response) {
+        service.getWorkflowDef(req.getName(), GRPC_HELPER.optional(req.getVersion())).map(def -> {
+                    WorkflowDefPb.WorkflowDef workflow = PROTO_MAPPER.toProto(def);
+                    response.onNext(MetadataServicePb.GetWorkflowResponse.newBuilder()
+                            .setWorkflow(workflow)
+                            .build()
+                    );
+                    response.onCompleted();
+                    return def; // Throw away.
+                }
+        ).orElseGet(() -> {
+                    response.onError(Status.NOT_FOUND
+                            .withDescription("No such workflow found by name=" + req.getName())
+                            .asRuntimeException()
+                    );
+                    return null; // Throw away.
+                }
+        );
     }
 
     @Override
@@ -94,7 +101,7 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
             response.onCompleted();
         } else {
             response.onError(Status.NOT_FOUND
-                    .withDescription("No such TaskDef found by taskType="+req.getTaskType())
+                    .withDescription("No such TaskDef found by taskType=" + req.getTaskType())
                     .asRuntimeException()
             );
         }

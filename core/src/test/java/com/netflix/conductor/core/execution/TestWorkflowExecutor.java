@@ -21,8 +21,9 @@ package com.netflix.conductor.core.execution;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
@@ -37,6 +38,7 @@ import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -84,18 +86,19 @@ public class TestWorkflowExecutor {
         ParametersUtils parametersUtils = new ParametersUtils();
         Map<String, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put("DECISION", new DecisionTaskMapper());
-        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils));
         taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
         taskMappers.put("JOIN", new JoinTaskMapper());
-        taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper));
-        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO));
+        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils));
+        taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
+        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils));
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
-        DeciderService deciderService = new DeciderService(metadataDAO, taskMappers);
+        DeciderService deciderService = new DeciderService(taskMappers);
+        MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
         RateLimitingService rateLimitingService = new DummyRateLimitingService();
-        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, executionDAO, queueDAO, config, rateLimitingService);
+        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, executionDAO, queueDAO, metadataMapperService, config, rateLimitingService);
     }
 
     @Test
@@ -137,15 +140,15 @@ public class TestWorkflowExecutor {
         List<Task> tasks = new LinkedList<>();
 
         WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setWorkflowTaskType(Type.USER_DEFINED);
+        taskToSchedule.setWorkflowTaskType(TaskType.USER_DEFINED);
         taskToSchedule.setType("HTTP");
 
         WorkflowTask taskToSchedule2 = new WorkflowTask();
-        taskToSchedule2.setWorkflowTaskType(Type.USER_DEFINED);
+        taskToSchedule2.setWorkflowTaskType(TaskType.USER_DEFINED);
         taskToSchedule2.setType("HTTP2");
 
         WorkflowTask wait = new WorkflowTask();
-        wait.setWorkflowTaskType(Type.WAIT);
+        wait.setWorkflowTaskType(TaskType.WAIT);
         wait.setType("WAIT");
         wait.setTaskReferenceName("wait");
 
@@ -224,9 +227,12 @@ public class TestWorkflowExecutor {
     @Test
     @SuppressWarnings("unchecked")
     public void testCompleteWorkflow() throws Exception {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test");
+
         Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(def);
         workflow.setWorkflowId("1");
-        workflow.setWorkflowType("test");
         workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
         workflow.setOwnerApp("junit_test");
         workflow.setStartTime(10L);

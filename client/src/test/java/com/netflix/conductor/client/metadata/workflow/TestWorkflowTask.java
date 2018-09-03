@@ -17,11 +17,11 @@ package com.netflix.conductor.client.metadata.workflow;
 
 import static org.junit.Assert.*;
 
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import org.junit.Test;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 
 /**
  * 
@@ -45,7 +45,7 @@ public class TestWorkflowTask {
 		assertEquals(task.getType(), read.getType());
 		
 		task = new WorkflowTask();
-		task.setWorkflowTaskType(Type.SUB_WORKFLOW);
+		task.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
 		task.setName("name");
 		
 		json = om.writeValueAsString(task);
@@ -54,7 +54,7 @@ public class TestWorkflowTask {
 		assertNotNull(read);
 		assertEquals(task.getName(), read.getName());
 		assertEquals(task.getType(), read.getType());
-		assertEquals(Type.SUB_WORKFLOW.name(), read.getType());
+		assertEquals(TaskType.SUB_WORKFLOW.name(), read.getType());
 	}
 
 }

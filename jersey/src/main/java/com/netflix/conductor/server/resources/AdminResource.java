@@ -121,7 +121,7 @@ public class AdminResource {
 	@Consumes({ MediaType.WILDCARD })
 	@Produces({ MediaType.TEXT_PLAIN })
 	public String requeueSweep(@PathParam("workflowId") String workflowId) throws Exception {
-		boolean pushed = queue.pushIfNotExists(WorkflowExecutor.deciderQueue, workflowId, config.getSweepFrequency());
+		boolean pushed = queue.pushIfNotExists(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency());
 		return pushed + "." + workflowId;
 	}
 	

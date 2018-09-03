@@ -19,10 +19,12 @@ import com.github.vmg.protogen.annotations.ProtoEnum;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.google.protobuf.Any;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @ProtoMessage
 public class Task {
@@ -177,7 +179,7 @@ public class Task {
 
     /**
      * @return Type of the task
-     * @see WorkflowTask.Type
+     * @see TaskType
      */
     public String getTaskType() {
         return taskType;
@@ -604,6 +606,14 @@ public class Task {
 
     public void setOutputMessage(Any outputMessage) {
         this.outputMessage = outputMessage;
+    }
+
+    /**
+     * @return {@link Optional} containing the task definition if available
+     */
+    public Optional<TaskDef> getTaskDefinition() {
+        return Optional.ofNullable(this.getWorkflowTask())
+                .map(workflowTask -> workflowTask.getTaskDefinition());
     }
 
     public Task copy() {

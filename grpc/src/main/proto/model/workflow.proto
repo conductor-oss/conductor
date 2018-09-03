@@ -1,6 +1,7 @@
 syntax = "proto3";
 package conductor.proto;
 
+import "model/workflowdef.proto";
 import "model/task.proto";
 import "google/protobuf/struct.proto";
 
@@ -34,4 +35,5 @@ message Workflow {
     string event = 16;
     map<string, string> task_to_domain = 17;
     repeated string failed_reference_task_names = 18;
+    WorkflowDef workflow_definition = 19;
 }

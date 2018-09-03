@@ -1,6 +1,7 @@
 syntax = "proto3";
 package conductor.proto;
 
+import "model/workflowdef.proto";
 import "google/protobuf/struct.proto";
 
 option java_package = "com.netflix.conductor.proto";
@@ -13,4 +14,5 @@ message StartWorkflowRequest {
     string correlation_id = 3;
     map<string, google.protobuf.Value> input = 4;
     map<string, string> task_to_domain = 5;
+    WorkflowDef workflow_def = 6;
 }
