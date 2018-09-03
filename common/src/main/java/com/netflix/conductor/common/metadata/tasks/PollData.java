@@ -108,6 +108,14 @@ public class PollData {
 			return false;
 		return true;
 	}
-	
-	
+
+	@Override
+	public String toString() {
+		return "PollData{" +
+				"queueName='" + queueName + '\'' +
+				", domain='" + domain + '\'' +
+				", workerId='" + workerId + '\'' +
+				", lastPollTime=" + lastPollTime +
+				'}';
+	}
 }

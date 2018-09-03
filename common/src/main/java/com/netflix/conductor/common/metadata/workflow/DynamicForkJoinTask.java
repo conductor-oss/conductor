@@ -19,7 +19,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.github.vmg.protogen.annotations.*;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 
 @ProtoMessage
 public class DynamicForkJoinTask {
@@ -37,7 +36,7 @@ public class DynamicForkJoinTask {
     private Map<String, Object> input = new HashMap<>();
 
     @ProtoField(id = 5)
-    private String type = Type.SIMPLE.name();
+    private String type = TaskType.SIMPLE.name();
 
     public DynamicForkJoinTask() {
     }

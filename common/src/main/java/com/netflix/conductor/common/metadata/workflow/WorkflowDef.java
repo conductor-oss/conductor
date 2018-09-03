@@ -23,9 +23,11 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
-import com.github.vmg.protogen.annotations.*;
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.Auditable;
 
 /**
@@ -35,7 +37,7 @@ import com.netflix.conductor.common.metadata.Auditable;
 @ProtoMessage
 public class WorkflowDef extends Auditable {
 
-	@ProtoField(id = 1)
+    @ProtoField(id = 1)
 	private String name;
 
 	@ProtoField(id = 2)
@@ -45,10 +47,10 @@ public class WorkflowDef extends Auditable {
 	private int version = 1;
 
 	@ProtoField(id = 4)
-	private LinkedList<WorkflowTask> tasks = new LinkedList<WorkflowTask>();
+	private List<WorkflowTask> tasks = new LinkedList<>();
 
 	@ProtoField(id = 5)
-	private List<String> inputParameters = new LinkedList<String>();
+	private List<String> inputParameters = new LinkedList<>();
 
 	@ProtoField(id = 6)
 	private Map<String, Object> outputParameters = new HashMap<>();
@@ -94,14 +96,14 @@ public class WorkflowDef extends Auditable {
 	/**
 	 * @return the tasks
 	 */
-	public LinkedList<WorkflowTask> getTasks() {
+	public List<WorkflowTask> getTasks() {
 		return tasks;
 	}
 
 	/**
 	 * @param tasks the tasks to set
 	 */
-	public void setTasks(LinkedList<WorkflowTask> tasks) {
+	public void setTasks(List<WorkflowTask> tasks) {
 		this.tasks = tasks;
 	}
 
@@ -226,20 +228,49 @@ public class WorkflowDef extends Auditable {
 	}
 	
 	public WorkflowTask getTaskByRefName(String taskReferenceName){
-		Optional<WorkflowTask> found = all().stream()
-				.filter(wft -> wft.getTaskReferenceName().equals(taskReferenceName))
+		Optional<WorkflowTask> found = collectTasks().stream()
+				.filter(workflowTask -> workflowTask.getTaskReferenceName().equals(taskReferenceName))
 				.findFirst();
 		if(found.isPresent()){
 			return found.get();
 		}
 		return null;
 	}
-	
-	public List<WorkflowTask> all(){
-		List<WorkflowTask> all = new LinkedList<>();
-		for(WorkflowTask wft : tasks){
-			all.addAll(wft.all());
+
+	public List<WorkflowTask> collectTasks() {
+		List<WorkflowTask> tasks = new LinkedList<>();
+		for (WorkflowTask workflowTask : this.tasks) {
+			tasks.addAll(workflowTask.collectTasks());
 		}
-		return all;
+		return tasks;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		WorkflowDef that = (WorkflowDef) o;
+		return getVersion() == that.getVersion() &&
+				getSchemaVersion() == that.getSchemaVersion() &&
+				Objects.equals(getName(), that.getName()) &&
+				Objects.equals(getDescription(), that.getDescription()) &&
+				Objects.equals(getTasks(), that.getTasks()) &&
+				Objects.equals(getInputParameters(), that.getInputParameters()) &&
+				Objects.equals(getOutputParameters(), that.getOutputParameters()) &&
+				Objects.equals(getFailureWorkflow(), that.getFailureWorkflow());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(
+				getName(),
+				getDescription(),
+				getVersion(),
+				getTasks(),
+				getInputParameters(),
+				getOutputParameters(),
+				getFailureWorkflow(),
+				getSchemaVersion()
+		);
 	}
 }

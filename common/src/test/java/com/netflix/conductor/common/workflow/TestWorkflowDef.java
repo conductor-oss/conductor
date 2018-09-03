@@ -27,11 +27,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 
 /**
  * @author Viren
@@ -61,7 +61,7 @@ public class TestWorkflowDef {
 		wf.setDescription(COND_TASK_WF);
 		
 		WorkflowTask subCaseTask = new WorkflowTask();
-		subCaseTask.setType(Type.DECISION.name());
+		subCaseTask.setType(TaskType.DECISION.name());
 		subCaseTask.setCaseValueParam("case2");
 		subCaseTask.setName("case2");
 		subCaseTask.setTaskReferenceName("case2");
@@ -72,7 +72,7 @@ public class TestWorkflowDef {
 		
 		
 		WorkflowTask caseTask = new WorkflowTask();
-		caseTask.setType(Type.DECISION.name());
+		caseTask.setType(TaskType.DECISION.name());
 		caseTask.setCaseValueParam("case");
 		caseTask.setName("case");
 		caseTask.setTaskReferenceName("case");

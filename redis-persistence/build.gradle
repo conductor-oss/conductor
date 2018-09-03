@@ -9,4 +9,6 @@ dependencies {
 
     //In memory
     compile "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
+
+    testCompile project(':conductor-core').sourceSets.test.output
 }

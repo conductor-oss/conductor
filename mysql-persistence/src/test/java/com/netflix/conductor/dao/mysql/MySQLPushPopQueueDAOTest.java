@@ -9,23 +9,36 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TestName;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @SuppressWarnings("Duplicates")
-public class MySQLPushPopQueueDAOTest extends MySQLBaseDAOTest {
+public class MySQLPushPopQueueDAOTest {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLPushPopQueueDAOTest.class);
 
+    private MySQLDAOTestUtil testUtil;
     private MySQLQueueDAO dao;
+
+    @Rule
+    public TestName name = new TestName();
 
     @Before
     public void setup() throws Exception {
-        dao = new MySQLQueueDAO(objectMapper, dataSource);
-        resetAllData();
+        testUtil = new MySQLDAOTestUtil(name.getMethodName());
+        dao = new MySQLQueueDAO(testUtil.getObjectMapper(), testUtil.getDataSource());
+    }
+
+    @After
+    public void teardown() throws Exception {
+        testUtil.resetAllData();
+        testUtil.getDataSource().close();
     }
 
     @Test

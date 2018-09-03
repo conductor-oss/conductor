@@ -1,0 +1,14 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1534983504822,
+  "updateTime": 1534983504841,
+  "status": "COMPLETED",
+  "endTime": 1534983504841,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "workflowType": "empty_workflow",
+  "version": 1,
+  "correlationId": "testWorkflowWithNoTasks",
+  "reasonForIncompletion": "No tasks found to be executed",
+  "schemaVersion": 2,
+  "startTime": 1534983504822
+}

@@ -1,6 +1,7 @@
 syntax = "proto3";
 package conductor.proto;
 
+import "model/taskdef.proto";
 import "model/subworkflowparams.proto";
 import "google/protobuf/struct.proto";
 
@@ -11,18 +12,6 @@ option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model"
 message WorkflowTask {
     message WorkflowTaskList {
         repeated WorkflowTask tasks = 1;
-    }
-    enum Type {
-        SIMPLE = 0;
-        DYNAMIC = 1;
-        FORK_JOIN = 2;
-        FORK_JOIN_DYNAMIC = 3;
-        DECISION = 4;
-        JOIN = 5;
-        SUB_WORKFLOW = 6;
-        EVENT = 7;
-        WAIT = 8;
-        USER_DEFINED = 9;
     }
     string name = 1;
     string task_reference_name = 2;
@@ -42,5 +31,5 @@ message WorkflowTask {
     repeated string join_on = 16;
     string sink = 17;
     bool optional = 18;
-    bool rate_limited = 19;
+    TaskDef task_definition = 19;
 }

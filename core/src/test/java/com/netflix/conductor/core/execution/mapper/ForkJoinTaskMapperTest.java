@@ -1,6 +1,7 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -23,9 +24,9 @@ import static org.junit.Assert.*;
 
 public class ForkJoinTaskMapperTest {
 
-    DeciderService deciderService;
+    private DeciderService deciderService;
 
-    ForkJoinTaskMapper  forkJoinTaskMapper;
+    private ForkJoinTaskMapper  forkJoinTaskMapper;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -46,7 +47,7 @@ public class ForkJoinTaskMapperTest {
         def.setInputParameters(Arrays.asList("param1", "param2"));
 
         WorkflowTask forkTask = new WorkflowTask();
-        forkTask.setType(WorkflowTask.Type.FORK_JOIN.name());
+        forkTask.setType(TaskType.FORK_JOIN.name());
         forkTask.setTaskReferenceName("forktask");
 
         WorkflowTask wft1 = new WorkflowTask();
@@ -80,7 +81,7 @@ public class ForkJoinTaskMapperTest {
         def.getTasks().add(forkTask);
 
         WorkflowTask join = new WorkflowTask();
-        join.setType(WorkflowTask.Type.JOIN.name());
+        join.setType(TaskType.JOIN.name());
         join.setTaskReferenceName("forktask_join");
         join.setJoinOn(Arrays.asList("t3","t2"));
 
@@ -88,6 +89,7 @@ public class ForkJoinTaskMapperTest {
         def.getTasks().add(wft4);
 
         Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(def);
 
         Task task1 = new Task();
         task1.setReferenceTaskName(wft1.getTaskReferenceName());
@@ -95,11 +97,10 @@ public class ForkJoinTaskMapperTest {
         Task task3 = new Task();
         task3.setReferenceTaskName(wft3.getTaskReferenceName());
 
-        Mockito.when(deciderService.getTasksToBeScheduled(def, workflow, wft1,0)).thenReturn(Arrays.asList(task1));
-        Mockito.when(deciderService.getTasksToBeScheduled(def, workflow, wft2,0)).thenReturn(Arrays.asList(task3));
+        Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft1,0)).thenReturn(Arrays.asList(task1));
+        Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft2,0)).thenReturn(Arrays.asList(task3));
 
         String taskId = IDGenerator.generate();
-
         TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
                 .withWorkflowDefinition(def)
                 .withWorkflowInstance(workflow)
@@ -127,7 +128,7 @@ public class ForkJoinTaskMapperTest {
         def.setInputParameters(Arrays.asList("param1", "param2"));
 
         WorkflowTask forkTask = new WorkflowTask();
-        forkTask.setType(WorkflowTask.Type.FORK_JOIN.name());
+        forkTask.setType(TaskType.FORK_JOIN.name());
         forkTask.setTaskReferenceName("forktask");
 
         WorkflowTask wft1 = new WorkflowTask();
@@ -161,13 +162,14 @@ public class ForkJoinTaskMapperTest {
         def.getTasks().add(forkTask);
 
         WorkflowTask join = new WorkflowTask();
-        join.setType(WorkflowTask.Type.JOIN.name());
+        join.setType(TaskType.JOIN.name());
         join.setTaskReferenceName("forktask_join");
         join.setJoinOn(Arrays.asList("t3","t2"));
 
         def.getTasks().add(wft4);
 
         Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(def);
 
         Task task1 = new Task();
         task1.setReferenceTaskName(wft1.getTaskReferenceName());
@@ -175,8 +177,8 @@ public class ForkJoinTaskMapperTest {
         Task task3 = new Task();
         task3.setReferenceTaskName(wft3.getTaskReferenceName());
 
-        Mockito.when(deciderService.getTasksToBeScheduled(def, workflow, wft1,0)).thenReturn(Arrays.asList(task1));
-        Mockito.when(deciderService.getTasksToBeScheduled(def, workflow, wft2,0)).thenReturn(Arrays.asList(task3));
+        Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft1,0)).thenReturn(Arrays.asList(task1));
+        Mockito.when(deciderService.getTasksToBeScheduled(workflow, wft2,0)).thenReturn(Arrays.asList(task3));
 
         String taskId = IDGenerator.generate();
 
@@ -188,6 +190,7 @@ public class ForkJoinTaskMapperTest {
                 .withTaskId(taskId)
                 .withDeciderService(deciderService)
                 .build();
+
         expectedException.expect(TerminateWorkflowException.class);
         expectedException.expectMessage("Dynamic join definition is not followed by a join task.  Check the blueprint");
         forkJoinTaskMapper.getMappedTasks(taskMapperContext);

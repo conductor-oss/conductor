@@ -15,6 +15,7 @@
  */
 package com.netflix.conductor.jetty.server;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.inject.servlet.GuiceFilter;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +33,7 @@ import java.io.InputStream;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.DispatcherType;
 import javax.ws.rs.core.MediaType;
@@ -98,6 +100,9 @@ public class JettyServer implements Lifecycle {
 
 
     private static void createKitchenSink(int port) throws Exception {
+        Client client = Client.create();
+        ObjectMapper objectMapper = new ObjectMapper();
+
 
         List<TaskDef> taskDefs = new LinkedList<>();
         for (int i = 0; i < 40; i++) {
@@ -105,19 +110,37 @@ public class JettyServer implements Lifecycle {
         }
         taskDefs.add(new TaskDef("search_elasticsearch", "search_elasticsearch", 1, 0));
 
-        Client client = Client.create();
-        ObjectMapper om = new ObjectMapper();
-        client.resource("http://localhost:" + port + "/api/metadata/taskdefs").type(MediaType.APPLICATION_JSON).post(om.writeValueAsString(taskDefs));
+        client.resource("http://localhost:" + port + "/api/metadata/taskdefs").type(MediaType.APPLICATION_JSON).post(objectMapper.writeValueAsString(taskDefs));
 
+        /*
+         * Kitchensink example (stored workflow with stored tasks)
+         */
         InputStream stream = Main.class.getResourceAsStream("/kitchensink.json");
         client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(stream);
 
         stream = Main.class.getResourceAsStream("/sub_flow_1.json");
         client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(stream);
 
-        String input = "{\"task2Name\":\"task_5\"}";
-        client.resource("http://localhost:" + port + "/api/workflow/kitchensink").type(MediaType.APPLICATION_JSON).post(input);
+        Map<String, Object> payload = ImmutableMap.of("input",
+                                                      ImmutableMap.of("task2Name", "task_5"));
+        String payloadStr = objectMapper.writeValueAsString(payload);
+        client.resource("http://localhost:" + port + "/api/workflow/kitchensink").type(MediaType.APPLICATION_JSON).post(payloadStr);
 
-        logger.info("Kitchen sink workflows are created!");
+        logger.info("Kitchen sink workflow is created!");
+
+        /*
+         * Kitchensink example with ephemeral workflow and stored tasks
+         */
+        InputStream ephemeralInputStream = Main.class.getResourceAsStream("/kitchenSink-ephemeralWorkflowWithStoredTasks.json");
+        client.resource("http://localhost:" + port + "/api/workflow/").type(MediaType.APPLICATION_JSON).post(ephemeralInputStream);
+        logger.info("Ephemeral Kitchen sink workflow with stored tasks is created!");
+
+        /*
+         * Kitchensink example with ephemeral workflow and ephemeral tasks
+         */
+        ephemeralInputStream = Main.class.getResourceAsStream("/kitchenSink-ephemeralWorkflowWithEphemeralTasks.json");
+        client.resource("http://localhost:" + port + "/api/workflow/").type(MediaType.APPLICATION_JSON).post(ephemeralInputStream);
+        logger.info("Ephemeral Kitchen sink workflow with ephemeral tasks is created!");
+
     }
 }
