@@ -39,9 +39,12 @@ public class MySQLDataSourceProvider implements Provider<DataSource> {
 
     private HikariConfig createConfiguration(){
         HikariConfig cfg = new HikariConfig();
+        cfg.setMaximumPoolSize(configuration.getConnectionPoolMaxSize());
+        cfg.setMinimumIdle(configuration.getConnectionPoolMinIdle());
         cfg.setMaxLifetime(configuration.getConnectionMaxLifetime());
         cfg.setIdleTimeout(configuration.getConnectionIdleTimeout());
         cfg.setConnectionTimeout(configuration.getConnectionTimeout());
+        cfg.setTransactionIsolation(configuration.getTransactionIsolationLevel());
         cfg.setAutoCommit(configuration.isAutoCommit());
 
         ThreadFactory tf = new ThreadFactoryBuilder()

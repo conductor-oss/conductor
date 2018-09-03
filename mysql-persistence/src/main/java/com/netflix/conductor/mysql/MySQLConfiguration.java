@@ -24,6 +24,12 @@ public interface MySQLConfiguration extends Configuration {
     Optional<String> FLYWAY_TABLE_DEFAULT_VALUE = Optional.empty();
 
     // The defaults are currently in line with the HikariConfig defaults, which are unfortunately private.
+    String CONNECTION_POOL_MAX_SIZE_PROPERTY_NAME = "conductor.mysql.connection.pool.size.max";
+    int CONNECTION_POOL_MAX_SIZE_DEFAULT_VALUE = -1;
+
+    String CONNECTION_POOL_MINIMUM_IDLE_PROPERTY_NAME = "conductor.mysql.connection.pool.idle.min";
+    int CONNECTION_POOL_MINIMUM_IDLE_DEFAULT_VALUE = -1;
+
     String CONNECTION_MAX_LIFETIME_PROPERTY_NAME = "conductor.mysql.connection.lifetime.max";
     long CONNECTION_MAX_LIFETIME_DEFAULT_VALUE = TimeUnit.MINUTES.toMillis(30);
 
@@ -33,8 +39,12 @@ public interface MySQLConfiguration extends Configuration {
     String CONNECTION_TIMEOUT_PROPERTY_NAME = "conductor.mysql.connection.timeout";
     long CONNECTION_TIMEOUT_DEFAULT_VALUE = TimeUnit.SECONDS.toMillis(30);
 
+    String ISOLATION_LEVEL_PROPERTY_NAME = "conductor.mysql.transaction.isolation.level";
+    String ISOLATION_LEVEL_DEFAULT_VALUE = "";
+
     String AUTO_COMMIT_PROPERTY_NAME = "conductor.mysql.autocommit";
-    boolean AUTO_COMMIT_DEFAULT_VALUE = true;
+    // This is consistent with the current default when building the Hikari Client.
+    boolean AUTO_COMMIT_DEFAULT_VALUE = false;
 
     default String getJdbcUrl() {
         return getProperty(JDBC_URL_PROPERTY_NAME, JDBC_URL_DEFAULT_VALUE);
@@ -56,6 +66,14 @@ public interface MySQLConfiguration extends Configuration {
         return Optional.ofNullable(getProperty(FLYWAY_TABLE_PROPERTY_NAME, null));
     }
 
+    default int getConnectionPoolMaxSize() {
+        return getIntProperty(CONNECTION_POOL_MAX_SIZE_PROPERTY_NAME, CONNECTION_POOL_MAX_SIZE_DEFAULT_VALUE);
+    }
+
+    default int getConnectionPoolMinIdle() {
+        return getIntProperty(CONNECTION_POOL_MINIMUM_IDLE_PROPERTY_NAME, CONNECTION_POOL_MINIMUM_IDLE_DEFAULT_VALUE);
+    }
+
     default long getConnectionMaxLifetime() {
         return getLongProperty(CONNECTION_MAX_LIFETIME_PROPERTY_NAME, CONNECTION_MAX_LIFETIME_DEFAULT_VALUE);
     }
@@ -66,6 +84,10 @@ public interface MySQLConfiguration extends Configuration {
 
     default long getConnectionTimeout() {
         return getLongProperty(CONNECTION_TIMEOUT_PROPERTY_NAME, CONNECTION_TIMEOUT_DEFAULT_VALUE);
+    }
+
+    default String getTransactionIsolationLevel() {
+        return getProperty(ISOLATION_LEVEL_PROPERTY_NAME, ISOLATION_LEVEL_DEFAULT_VALUE);
     }
 
     default boolean isAutoCommit() {
