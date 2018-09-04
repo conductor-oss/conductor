@@ -117,6 +117,7 @@ public class WorkflowTask {
 	@ProtoField(id = 19)
 	private TaskDef taskDefinition;
 
+	@ProtoField(id = 20)
 	private Boolean rateLimited;
 
 	/**

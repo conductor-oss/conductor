@@ -898,6 +898,9 @@ public abstract class AbstractProtoMapper {
         if (from.getTaskDefinition() != null) {
             to.setTaskDefinition( toProto( from.getTaskDefinition() ) );
         }
+        if (from.isRateLimited() != null) {
+            to.setRateLimited( from.isRateLimited() );
+        }
         return to.build();
     }
 
@@ -934,6 +937,7 @@ public abstract class AbstractProtoMapper {
         if (from.hasTaskDefinition()) {
             to.setTaskDefinition( fromProto( from.getTaskDefinition() ) );
         }
+        to.setRateLimited( from.getRateLimited() );
         return to;
     }
 
