@@ -1,10 +1,12 @@
 package com.netflix.conductor.grpc.server;
 
+import com.google.common.collect.ImmutableList;
 import com.netflix.conductor.grpc.EventServiceGrpc;
 import com.netflix.conductor.grpc.MetadataServiceGrpc;
 import com.netflix.conductor.grpc.TaskServiceGrpc;
 import com.netflix.conductor.grpc.WorkflowServiceGrpc;
 
+import java.util.List;
 import java.util.Optional;
 
 import javax.inject.Inject;
@@ -12,6 +14,7 @@ import javax.inject.Provider;
 
 import io.grpc.BindableService;
 import io.grpc.health.v1.HealthGrpc;
+import io.grpc.protobuf.services.ProtoReflectionService;
 
 public class GRPCServerProvider implements Provider<Optional<GRPCServer>> {
 
@@ -24,14 +27,14 @@ public class GRPCServerProvider implements Provider<Optional<GRPCServer>> {
 
     @Inject
     public GRPCServerProvider(
-            GRPCServerConfiguration conf,
+            GRPCServerConfiguration grpcServerConfiguration,
             HealthGrpc.HealthImplBase healthServiceImpl,
             EventServiceGrpc.EventServiceImplBase eventServiceImpl,
             MetadataServiceGrpc.MetadataServiceImplBase metadataServiceImpl,
             TaskServiceGrpc.TaskServiceImplBase taskServiceImpl,
             WorkflowServiceGrpc.WorkflowServiceImplBase workflowServiceImpl
     ) {
-        this.configuration = conf;
+        this.configuration = grpcServerConfiguration;
         this.healthServiceImpl = healthServiceImpl;
 
         this.eventServiceImpl = eventServiceImpl;
@@ -43,15 +46,25 @@ public class GRPCServerProvider implements Provider<Optional<GRPCServer>> {
     @Override
     public Optional<GRPCServer> get() {
         return configuration.isEnabled() ?
-                Optional.of(
-                        new GRPCServer(
-                                configuration.getPort(),
-                                healthServiceImpl,
-                                eventServiceImpl,
-                                metadataServiceImpl,
-                                taskServiceImpl,
-                                workflowServiceImpl
-                        ))
+                Optional.of(getGRPCServer())
                 : Optional.empty();
+    }
+
+    private GRPCServer getGRPCServer() {
+        ImmutableList.Builder<BindableService> services = ImmutableList.<BindableService>builder().add(
+                healthServiceImpl,
+                eventServiceImpl,
+                metadataServiceImpl,
+                taskServiceImpl,
+                workflowServiceImpl);
+
+        if (configuration.isReflectionEnabled()) {
+            services.add(ProtoReflectionService.newInstance());
+        }
+
+        return new GRPCServer(
+                configuration.getPort(),
+                services.build()
+        );
     }
 }
