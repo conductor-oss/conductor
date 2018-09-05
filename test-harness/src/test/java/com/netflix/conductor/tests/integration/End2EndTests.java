@@ -129,8 +129,7 @@ public class End2EndTests extends AbstractEndToEndTest {
         workflowClient.registerWorkflow(def);
         WorkflowDef workflowDefinitionFromSystem = workflowClient.getWorkflowDef(def.getName(), null);
         assertNotNull(workflowDefinitionFromSystem);
-        assertEquals(def.getName(), workflowDefinitionFromSystem.getName());
-        assertEquals(def.getVersion(), workflowDefinitionFromSystem.getVersion());
+        assertEquals(def, workflowDefinitionFromSystem);
 
         String correlationId = "test_corr_id";
         String workflowId = workflowClient.startWorkflow(def.getName(), null, correlationId, new HashMap<>());
@@ -254,8 +253,7 @@ public class End2EndTests extends AbstractEndToEndTest {
         assertNotNull(found);
         assertTrue(definitions.size() > 0);
 
-        WorkflowDef workflowDefinition = new WorkflowDef();
-        workflowDefinition.setName("testEphemeralWorkflow");
+        WorkflowDef workflowDefinition = createWorkflowDefinition("testEphemeralWorkflow");
 
         WorkflowTask workflowTask1 = createWorkflowTask("storedTaskDef1");
         WorkflowTask workflowTask2 = createWorkflowTask("storedTaskDef2");
@@ -274,13 +272,12 @@ public class End2EndTests extends AbstractEndToEndTest {
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
         assertNotNull(ephemeralWorkflow);
-        assertEquals(workflowDefinition.getName(), ephemeralWorkflow.getName());
+        assertEquals(workflowDefinition, ephemeralWorkflow);
     }
 
     @Test
     public void testEphemeralWorkflowsWithEphemeralTasks() throws Exception {
-        WorkflowDef workflowDefinition = new WorkflowDef();
-        workflowDefinition.setName("testEphemeralWorkflowWithEphemeralTasks");
+        WorkflowDef workflowDefinition = createWorkflowDefinition("testEphemeralWorkflowWithEphemeralTasks");
 
         WorkflowTask workflowTask1 = createWorkflowTask("ephemeralTask1");
         TaskDef taskDefinition1 = createTaskDefinition("ephemeralTaskDef1");
@@ -304,7 +301,7 @@ public class End2EndTests extends AbstractEndToEndTest {
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
         assertNotNull(ephemeralWorkflow);
-        assertEquals(workflowDefinition.getName(), ephemeralWorkflow.getName());
+        assertEquals(workflowDefinition, ephemeralWorkflow);
 
         List<WorkflowTask> ephemeralTasks = ephemeralWorkflow.getTasks();
         assertEquals(2, ephemeralTasks.size());

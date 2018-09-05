@@ -112,27 +112,18 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
             assertEquals(taskName, def.getName());
         }
 
-        WorkflowDef def = new WorkflowDef();
-        def.setName("test");
-        WorkflowTask t0 = new WorkflowTask();
-        t0.setName("t0");
-        t0.setWorkflowTaskType(TaskType.SIMPLE);
-        t0.setTaskReferenceName("t0");
-
-        WorkflowTask t1 = new WorkflowTask();
-        t1.setName("t1");
-        t1.setWorkflowTaskType(TaskType.SIMPLE);
-        t1.setTaskReferenceName("t1");
+        WorkflowDef def = createWorkflowDefinition("test");
+        WorkflowTask t0 = createWorkflowTask("t0");
+        WorkflowTask t1 = createWorkflowTask("t1");
 
 
         def.getTasks().add(t0);
         def.getTasks().add(t1);
 
         metadataClient.registerWorkflowDef(def);
-        WorkflowDef foundd = metadataClient.getWorkflowDef(def.getName(), null);
-        assertNotNull(foundd);
-        assertEquals(def.getName(), foundd.getName());
-        assertEquals(def.getVersion(), foundd.getVersion());
+        WorkflowDef found = metadataClient.getWorkflowDef(def.getName(), null);
+        assertNotNull(found);
+        assertEquals(def, found);
 
         String correlationId = "test_corr_id";
         StartWorkflowRequest startWf = new StartWorkflowRequest();
@@ -229,10 +220,10 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
 
     @Test
     public void testEphemeralWorkflowsWithStoredTasks() throws Exception {
-        List<TaskDef> definitions = createAndRegisterTaskDefinitions("storedTaskDef", 5);
+        createAndRegisterTaskDefinitions("storedTaskDef", 5);
 
-        WorkflowDef workflowDefinition = new WorkflowDef();
-        workflowDefinition.setName("testEphemeralWorkflow");
+        String workflowName = "testEphemeralWorkflow";
+        WorkflowDef workflowDefinition = createWorkflowDefinition(workflowName);
 
         WorkflowTask workflowTask1 = createWorkflowTask("storedTaskDef1");
         WorkflowTask workflowTask2 = createWorkflowTask("storedTaskDef2");
@@ -251,13 +242,13 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
         assertNotNull(ephemeralWorkflow);
-        assertEquals(workflowDefinition.getName(), ephemeralWorkflow.getName());
+        assertEquals(workflowDefinition, ephemeralWorkflow);
     }
 
     @Test
     public void testEphemeralWorkflowsWithEphemeralTasks() throws Exception {
-        WorkflowDef workflowDefinition = new WorkflowDef();
-        workflowDefinition.setName("testEphemeralWorkflowWithEphemeralTasks");
+        String workflowName = "testEphemeralWorkflowWithEphemeralTasks";
+        WorkflowDef workflowDefinition = createWorkflowDefinition(workflowName);
 
         WorkflowTask workflowTask1 = createWorkflowTask("ephemeralTask1");
         TaskDef taskDefinition1 = createTaskDefinition("ephemeralTaskDef1");
@@ -281,7 +272,7 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
         Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
         assertNotNull(ephemeralWorkflow);
-        assertEquals(workflowDefinition.getName(), ephemeralWorkflow.getName());
+        assertEquals(workflowDefinition, ephemeralWorkflow);
 
         List<WorkflowTask> ephemeralTasks = ephemeralWorkflow.getTasks();
         assertEquals(2, ephemeralTasks.size());
