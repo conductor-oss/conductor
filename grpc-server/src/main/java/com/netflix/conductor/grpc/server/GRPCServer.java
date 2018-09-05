@@ -9,7 +9,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.util.List;
+import java.util.Arrays;
 
 @Singleton
 public class GRPCServer implements Lifecycle {
@@ -18,9 +18,9 @@ public class GRPCServer implements Lifecycle {
 
     private final Server server;
 
-    public GRPCServer(int port, List<BindableService> services) {
+    public GRPCServer(int port, BindableService... services) {
         ServerBuilder<?> builder = ServerBuilder.forPort(port);
-        services.stream().forEach(builder::addService);
+        Arrays.stream(services).forEach(builder::addService);
         server = builder.build();
     }
 

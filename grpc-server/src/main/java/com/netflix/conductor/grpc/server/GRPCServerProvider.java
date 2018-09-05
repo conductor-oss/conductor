@@ -6,7 +6,6 @@ import com.netflix.conductor.grpc.MetadataServiceGrpc;
 import com.netflix.conductor.grpc.TaskServiceGrpc;
 import com.netflix.conductor.grpc.WorkflowServiceGrpc;
 
-import java.util.List;
 import java.util.Optional;
 
 import javax.inject.Inject;
@@ -46,11 +45,11 @@ public class GRPCServerProvider implements Provider<Optional<GRPCServer>> {
     @Override
     public Optional<GRPCServer> get() {
         return configuration.isEnabled() ?
-                Optional.of(getGRPCServer())
+                Optional.of(buildGRPCServer(configuration))
                 : Optional.empty();
     }
 
-    private GRPCServer getGRPCServer() {
+    private GRPCServer buildGRPCServer(GRPCServerConfiguration grpcServerConfiguration) {
         ImmutableList.Builder<BindableService> services = ImmutableList.<BindableService>builder().add(
                 healthServiceImpl,
                 eventServiceImpl,
@@ -58,13 +57,13 @@ public class GRPCServerProvider implements Provider<Optional<GRPCServer>> {
                 taskServiceImpl,
                 workflowServiceImpl);
 
-        if (configuration.isReflectionEnabled()) {
+        if (grpcServerConfiguration.isReflectionEnabled()) {
             services.add(ProtoReflectionService.newInstance());
         }
 
         return new GRPCServer(
-                configuration.getPort(),
-                services.build()
+                grpcServerConfiguration.getPort(),
+                services.build().toArray(new BindableService[]{})
         );
     }
 }
