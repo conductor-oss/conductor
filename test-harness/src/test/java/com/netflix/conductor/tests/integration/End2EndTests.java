@@ -60,7 +60,7 @@ import static org.junit.Assert.assertTrue;
  * @author Viren
  *
  */
-public class End2EndTests {
+public class End2EndTests extends AbstractEndToEndTest {
 
     private static TaskClient taskClient;
     private static WorkflowClient workflowClient;
@@ -315,20 +315,6 @@ public class End2EndTests {
 
     }
 
-    private WorkflowTask createWorkflowTask(String name) {
-        WorkflowTask workflowTask = new WorkflowTask();
-        workflowTask.setName(name);
-        workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
-        workflowTask.setTaskReferenceName(name);
-        return workflowTask;
-    }
-
-    private TaskDef createTaskDefinition(String name) {
-        TaskDef taskDefinition = new TaskDef();
-        taskDefinition.setName(name);
-        return taskDefinition;
-    }
-
     // Helper method for creating task definitions on the server
     private List<TaskDef> createAndRegisterTaskDefinitions(String prefixTaskDefinition, int numberOfTaskDefinitions) {
         assertNotNull(taskClient);
@@ -339,7 +325,7 @@ public class End2EndTests {
             def.setTimeoutPolicy(TimeoutPolicy.RETRY);
             definitions.add(def);
         }
-        taskClient.registerTaskDefs(definitions);
+        metadataClient.registerTaskDefs(definitions);
         return definitions;
     }
 
