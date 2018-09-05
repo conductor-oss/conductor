@@ -5,6 +5,7 @@ import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 public class AbstractEndToEndTest {
+    protected static final String TASK_DEFINITION_PREFIX = "task_";
 
     protected WorkflowTask createWorkflowTask(String name) {
         WorkflowTask workflowTask = new WorkflowTask();

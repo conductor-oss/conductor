@@ -61,11 +61,10 @@ import static org.junit.Assert.assertTrue;
  *
  */
 public class End2EndGrpcTests extends AbstractEndToEndTest {
-    private static TaskClient tc;
-    private static WorkflowClient wc;
-    private static MetadataClient mc;
+    private static TaskClient taskClient;
+    private static WorkflowClient workflowClient;
+    private static MetadataClient metadataClient;
     private static EmbeddedElasticSearch search;
-    private static final String TASK_DEFINITION_PREFIX = "task_";
 
     @BeforeClass
     public static void setup() throws Exception {
@@ -84,9 +83,9 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
         assertTrue("failed to instantiate GRPCServer", server.isPresent());
         server.get().start();
 
-        tc = new TaskClient("localhost", 8090);
-        wc = new WorkflowClient("localhost", 8090);
-        mc = new MetadataClient("localhost", 8090);
+        taskClient = new TaskClient("localhost", 8090);
+        workflowClient = new WorkflowClient("localhost", 8090);
+        metadataClient = new MetadataClient("localhost", 8090);
     }
 
     @AfterClass
@@ -97,18 +96,18 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
 
     @Test
     public void testAll() throws Exception {
-        assertNotNull(tc);
+        assertNotNull(taskClient);
         List<TaskDef> defs = new LinkedList<>();
         for (int i = 0; i < 5; i++) {
             TaskDef def = new TaskDef("t" + i, "task " + i);
             def.setTimeoutPolicy(TimeoutPolicy.RETRY);
             defs.add(def);
         }
-        mc.registerTaskDefs(defs);
+        metadataClient.registerTaskDefs(defs);
 
         for (int i = 0; i < 5; i++) {
             final String taskName = "t" + i;
-            TaskDef def = mc.getTaskDef(taskName);
+            TaskDef def = metadataClient.getTaskDef(taskName);
             assertNotNull(def);
             assertEquals(taskName, def.getName());
         }
@@ -129,8 +128,8 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
         def.getTasks().add(t0);
         def.getTasks().add(t1);
 
-        mc.registerWorkflowDef(def);
-        WorkflowDef foundd = mc.getWorkflowDef(def.getName(), null);
+        metadataClient.registerWorkflowDef(def);
+        WorkflowDef foundd = metadataClient.getWorkflowDef(def.getName(), null);
         assertNotNull(foundd);
         assertEquals(def.getName(), foundd.getName());
         assertEquals(def.getVersion(), foundd.getVersion());
@@ -140,49 +139,49 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
         startWf.setName(def.getName());
         startWf.setCorrelationId(correlationId);
 
-        String workflowId = wc.startWorkflow(startWf);
+        String workflowId = workflowClient.startWorkflow(startWf);
         assertNotNull(workflowId);
         System.out.println("Started workflow id=" + workflowId);
 
-        Workflow wf = wc.getWorkflow(workflowId, false);
+        Workflow wf = workflowClient.getWorkflow(workflowId, false);
         assertEquals(0, wf.getTasks().size());
         assertEquals(workflowId, wf.getWorkflowId());
 
-        wf = wc.getWorkflow(workflowId, true);
+        wf = workflowClient.getWorkflow(workflowId, true);
         assertNotNull(wf);
         assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
         assertEquals(1, wf.getTasks().size());
         assertEquals(t0.getTaskReferenceName(), wf.getTasks().get(0).getReferenceTaskName());
         assertEquals(workflowId, wf.getWorkflowId());
 
-        List<String> runningIds = wc.getRunningWorkflow(def.getName(), def.getVersion());
+        List<String> runningIds = workflowClient.getRunningWorkflow(def.getName(), def.getVersion());
         assertNotNull(runningIds);
         assertEquals(1, runningIds.size());
         assertEquals(workflowId, runningIds.get(0));
 
-        List<Task> polled = tc.batchPollTasksByTaskType("non existing task", "test", 1, 100);
+        List<Task> polled = taskClient.batchPollTasksByTaskType("non existing task", "test", 1, 100);
         assertNotNull(polled);
         assertEquals(0, polled.size());
 
-        polled = tc.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
+        polled = taskClient.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
         assertNotNull(polled);
         assertEquals(1, polled.size());
         assertEquals(t0.getName(), polled.get(0).getTaskDefName());
         Task task = polled.get(0);
 
-        Boolean acked = tc.ack(task.getTaskId(), "test");
+        Boolean acked = taskClient.ack(task.getTaskId(), "test");
         assertNotNull(acked);
         assertTrue(acked);
 
         task.getOutputData().put("key1", "value1");
         task.setStatus(Status.COMPLETED);
-        tc.updateTask(new TaskResult(task));
+        taskClient.updateTask(new TaskResult(task));
 
-        polled = tc.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
+        polled = taskClient.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
         assertNotNull(polled);
         assertTrue(polled.toString(), polled.isEmpty());
 
-        wf = wc.getWorkflow(workflowId, true);
+        wf = workflowClient.getWorkflow(workflowId, true);
         assertNotNull(wf);
         assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
         assertEquals(2, wf.getTasks().size());
@@ -191,38 +190,38 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
         assertEquals(Status.COMPLETED, wf.getTasks().get(0).getStatus());
         assertEquals(Status.SCHEDULED, wf.getTasks().get(1).getStatus());
 
-        Task taskById = tc.getTaskDetails(task.getTaskId());
+        Task taskById = taskClient.getTaskDetails(task.getTaskId());
         assertNotNull(taskById);
         assertEquals(task.getTaskId(), taskById.getTaskId());
 
 
-        List<Task> getTasks = tc.getPendingTasksByType(t0.getName(), null, 1);
+        List<Task> getTasks = taskClient.getPendingTasksByType(t0.getName(), null, 1);
         assertNotNull(getTasks);
         assertEquals(0, getTasks.size());        //getTasks only gives pending tasks
 
 
-        getTasks = tc.getPendingTasksByType(t1.getName(), null, 1);
+        getTasks = taskClient.getPendingTasksByType(t1.getName(), null, 1);
         assertNotNull(getTasks);
         assertEquals(1, getTasks.size());
 
 
-        Task pending = tc.getPendingTaskForWorkflow(workflowId, t1.getTaskReferenceName());
+        Task pending = taskClient.getPendingTaskForWorkflow(workflowId, t1.getTaskReferenceName());
         assertNotNull(pending);
         assertEquals(t1.getTaskReferenceName(), pending.getReferenceTaskName());
         assertEquals(workflowId, pending.getWorkflowInstanceId());
 
         Thread.sleep(1000);
-        SearchResult<WorkflowSummary> searchResult = wc.search("workflowType='" + def.getName() + "'");
+        SearchResult<WorkflowSummary> searchResult = workflowClient.search("workflowType='" + def.getName() + "'");
         assertNotNull(searchResult);
         assertEquals(1, searchResult.getTotalHits());
 
-        wc.terminateWorkflow(workflowId, "terminate reason");
-        wf = wc.getWorkflow(workflowId, true);
+        workflowClient.terminateWorkflow(workflowId, "terminate reason");
+        wf = workflowClient.getWorkflow(workflowId, true);
         assertNotNull(wf);
         assertEquals(WorkflowStatus.TERMINATED, wf.getStatus());
 
-        wc.restart(workflowId);
-        wf = wc.getWorkflow(workflowId, true);
+        workflowClient.restart(workflowId);
+        wf = workflowClient.getWorkflow(workflowId, true);
         assertNotNull(wf);
         assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
         assertEquals(1, wf.getTasks().size());
@@ -246,10 +245,10 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
                 .withName(workflowExecutionName)
                 .withWorkflowDef(workflowDefinition);
 
-        String workflowId = wc.startWorkflow(workflowRequest);
+        String workflowId = workflowClient.startWorkflow(workflowRequest);
         assertNotNull(workflowId);
 
-        Workflow workflow = wc.getWorkflow(workflowId, true);
+        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
         assertNotNull(ephemeralWorkflow);
         assertEquals(workflowDefinition.getName(), ephemeralWorkflow.getName());
@@ -276,10 +275,10 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
                 .withName(workflowExecutionName)
                 .withWorkflowDef(workflowDefinition);
 
-        String workflowId = wc.startWorkflow(workflowRequest);
+        String workflowId = workflowClient.startWorkflow(workflowRequest);
         assertNotNull(workflowId);
 
-        Workflow workflow = wc.getWorkflow(workflowId, true);
+        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
         WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
         assertNotNull(ephemeralWorkflow);
         assertEquals(workflowDefinition.getName(), ephemeralWorkflow.getName());
@@ -301,7 +300,7 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
             def.setTimeoutPolicy(TimeoutPolicy.RETRY);
             definitions.add(def);
         }
-        mc.registerTaskDefs(definitions);
+        metadataClient.registerTaskDefs(definitions);
         return definitions;
     }
 }

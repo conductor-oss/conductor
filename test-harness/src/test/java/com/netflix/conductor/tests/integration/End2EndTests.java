@@ -68,7 +68,6 @@ public class End2EndTests extends AbstractEndToEndTest {
     private static MetadataClient metadataClient;
 
     private static final int SERVER_PORT = 8080;
-    private static final String TASK_DEFINITION_PREFIX = "task_";
 
     @BeforeClass
     public static void setup() throws Exception {
