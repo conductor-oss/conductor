@@ -62,7 +62,7 @@ public class WorkflowBulkResource {
 
     /**
      * Pause the list of workflows.
-     * @param workflowIds
+     * @param workflowIds - list of workflow Ids  to perform pause operation on
      * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
      * @throws IllegalArgumentException - too many workflowIds in one batch request
      * @throws NullPointerException workflowIds list is null
@@ -89,7 +89,7 @@ public class WorkflowBulkResource {
 
     /**
      * Resume the list of workflows.
-     * @param workflowIds
+     * @param workflowIds - list of workflow Ids  to perform resume operation on
      * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
      * @throws IllegalArgumentException - too many workflowIds in one batch request
      * @throws NullPointerException workflowIds list is null
@@ -117,7 +117,7 @@ public class WorkflowBulkResource {
 
     /**
      * Restart the list of workflows.
-     * @param workflowIds
+     * @param workflowIds - list of workflow Ids  to perform restart operation on
      * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
      * @throws IllegalArgumentException - too many workflowIds in one batch request
      * @throws NullPointerException workflowIds list is null
@@ -144,7 +144,7 @@ public class WorkflowBulkResource {
 
     /**
      * Retry the last failed task for each workflow from the list.
-     * @param workflowIds
+     * @param workflowIds - list of workflow Ids  to perform retry operation on
      * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
      * @throws IllegalArgumentException - too many workflowIds in one batch request
      * @throws NullPointerException workflowIds list is null
@@ -172,7 +172,8 @@ public class WorkflowBulkResource {
 
     /**
      * Terminate workflows execution.
-     * @param workflowIds
+     * @param workflowIds - list of workflow Ids  to perform terminate operation on
+     * @param reason - description to be specified for the terminated workflow for future references.
      * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
      * @throws IllegalArgumentException - too many workflowIds in one batch request
      * @throws NullPointerException workflowIds list is null
