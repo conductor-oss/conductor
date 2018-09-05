@@ -18,9 +18,13 @@
  */
 package com.netflix.conductor.server.resources;
 
-import com.netflix.conductor.service.WorkflowBulkService;
+import com.google.common.base.Preconditions;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.server.common.BulkResponse;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -36,7 +40,7 @@ import java.util.List;
 
 
 /**
- * @author Alex
+ * Synchronous Bulk APIs to process the workflows in batches
  */
 @Api(value = "/workflow/bulk", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON, tags = "Workflow Bulk Management")
 @Path("/workflow/bulk")
@@ -46,52 +50,151 @@ import java.util.List;
 public class WorkflowBulkResource {
 
     private static final int MAX_REQUEST_ITEMS = 1000;
-    private final WorkflowBulkService workflowBulkService;
+    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowBulkResource.class);
+
+    private WorkflowExecutor workflowExecutor;
+
 
     @Inject
-    public WorkflowBulkResource(WorkflowBulkService workflowBulkService) {
-        this.workflowBulkService = workflowBulkService;
+    public WorkflowBulkResource(WorkflowExecutor workflowExecutor) {
+        this.workflowExecutor = workflowExecutor;
     }
 
+    /**
+     * Pause the list of workflows.
+     * @param workflowIds - list of workflow Ids  to perform pause operation on
+     * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
+     * @throws IllegalArgumentException - too many workflowIds in one batch request
+     * @throws NullPointerException workflowIds list is null
+     */
     @PUT
     @Path("/pause")
-    @ApiOperation("Pause list of workflows")
-    @Consumes(MediaType.WILDCARD)
-    public void pauseWorkflow(List<String> workflowIds) {
-        workflowBulkService.pauseWorkflow(workflowIds);
+    @ApiOperation("Pause the list of workflows")
+    public BulkResponse pauseWorkflow(List<String> workflowIds) throws IllegalArgumentException, NullPointerException {
+        Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
+        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+
+        BulkResponse bulkResponse = new BulkResponse();
+        for (String workflowId : workflowIds) {
+            try {
+                workflowExecutor.pauseWorkflow(workflowId);
+                bulkResponse.appendSuccessResponse(workflowId);
+            } catch (Exception e) {
+                LOGGER.error("bulk pauseWorkflow exception, workflowId {}, message: {} ",workflowId, e.getMessage(), e);
+                bulkResponse.appendFailedResponse(workflowId, e.getMessage());
+            }
+        }
+        return bulkResponse;
     }
 
+    /**
+     * Resume the list of workflows.
+     * @param workflowIds - list of workflow Ids  to perform resume operation on
+     * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
+     * @throws IllegalArgumentException - too many workflowIds in one batch request
+     * @throws NullPointerException workflowIds list is null
+     */
     @PUT
     @Path("/resume")
-    @ApiOperation("Resume list of workflows")
-    @Consumes(MediaType.WILDCARD)
-    public void resumeWorkflow(List<String> workflowIds) {
-        workflowBulkService.resumeWorkflow(workflowIds);
+    @ApiOperation("Resume the list of workflows")
+    public BulkResponse resumeWorkflow(List<String> workflowIds) throws IllegalArgumentException, NullPointerException  {
+        Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
+        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+
+        BulkResponse bulkResponse = new BulkResponse();
+        for (String workflowId : workflowIds) {
+            try {
+                workflowExecutor.resumeWorkflow(workflowId);
+                bulkResponse.appendSuccessResponse(workflowId);
+            } catch (Exception e) {
+                LOGGER.error("bulk resumeWorkflow exception, workflowId {}, message: {} ",workflowId, e.getMessage(), e);
+                bulkResponse.appendFailedResponse(workflowId, e.getMessage());
+            }
+        }
+        return bulkResponse;
     }
 
 
+    /**
+     * Restart the list of workflows.
+     * @param workflowIds - list of workflow Ids  to perform restart operation on
+     * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
+     * @throws IllegalArgumentException - too many workflowIds in one batch request
+     * @throws NullPointerException workflowIds list is null
+     */
     @POST
     @Path("/restart")
-    @ApiOperation("Restart list of completed workflow")
-    @Consumes(MediaType.WILDCARD)
-    public void restart(List<String> workflowIds) {
-        workflowBulkService.restart(workflowIds);
+    @ApiOperation("Restart the list of completed workflow")
+    public BulkResponse restart(List<String> workflowIds) throws IllegalArgumentException, NullPointerException {
+        Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
+        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+
+        BulkResponse bulkResponse = new BulkResponse();
+        for (String workflowId : workflowIds) {
+            try {
+                workflowExecutor.rewind(workflowId);
+                bulkResponse.appendSuccessResponse(workflowId);
+            } catch (Exception e) {
+                LOGGER.error("bulk restart exception, workflowId {}, message: {} ",workflowId, e.getMessage(), e);
+                bulkResponse.appendFailedResponse(workflowId, e.getMessage());
+            }
+        }
+        return bulkResponse;
     }
 
+    /**
+     * Retry the last failed task for each workflow from the list.
+     * @param workflowIds - list of workflow Ids  to perform retry operation on
+     * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
+     * @throws IllegalArgumentException - too many workflowIds in one batch request
+     * @throws NullPointerException workflowIds list is null
+     */
     @POST
     @Path("/retry")
-    @ApiOperation("Retry last failed task for each workflow from the list")
-    @Consumes(MediaType.WILDCARD)
-    public void retry(List<String> workflowIds) {
-        workflowBulkService.retry(workflowIds);
+    @ApiOperation("Retry the last failed task for each workflow from the list")
+    public BulkResponse retry(List<String> workflowIds) throws IllegalArgumentException, NullPointerException {
+        Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
+        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+
+        BulkResponse bulkResponse = new BulkResponse();
+        for (String workflowId : workflowIds) {
+            try {
+                workflowExecutor.retry(workflowId);
+                bulkResponse.appendSuccessResponse(workflowId);
+            } catch (Exception e) {
+                LOGGER.error("bulk retry exception, workflowId {}, message: {} ",workflowId, e.getMessage(), e);
+                bulkResponse.appendFailedResponse(workflowId, e.getMessage());
+            }
+        }
+        return bulkResponse;
     }
 
+
+    /**
+     * Terminate workflows execution.
+     * @param workflowIds - list of workflow Ids  to perform terminate operation on
+     * @param reason - description to be specified for the terminated workflow for future references.
+     * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
+     * @throws IllegalArgumentException - too many workflowIds in one batch request
+     * @throws NullPointerException workflowIds list is null
+     */
     @DELETE
     @Path("/")
     @ApiOperation("Terminate workflows execution")
-    @Consumes(MediaType.WILDCARD)
-    public void terminate(List<String> workflowIds,
-                          @QueryParam("reason") String reason) {
-        workflowBulkService.terminate(workflowIds, reason);
+    public BulkResponse terminate(List<String> workflowIds, @QueryParam("reason") String reason) throws IllegalArgumentException, NullPointerException {
+        Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
+        Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
+
+        BulkResponse bulkResponse = new BulkResponse();
+        for (String workflowId : workflowIds) {
+            try {
+                workflowExecutor.terminateWorkflow(workflowId, reason);
+                bulkResponse.appendSuccessResponse(workflowId);
+            } catch (Exception e) {
+                LOGGER.error("bulk terminate exception, workflowId {}, message: {} ",workflowId, e.getMessage(), e);
+                bulkResponse.appendFailedResponse(workflowId, e.getMessage());
+            }
+        }
+        return bulkResponse;
     }
 }

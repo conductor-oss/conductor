@@ -61,6 +61,141 @@ export function getWorkflowDetails(workflowId){
   }
 }
 
+export function bulkTerminateWorkflow(workflows){
+  return function (dispatch) {
+    dispatch({
+      type: 'REQUESTED_BULK_TERMINATE_WORKFLOW',
+      workflows
+    });
+
+
+    return http.delete('/api/wfe/bulk/terminate', workflows).then((data) => {
+      var {code, message, bulkErrorResults, bulkSuccessResults} = data;
+      dispatch({
+        type: 'RECEIVED_BULK_TERMINATE_WORKFLOW',
+        workflows,
+        data:{bulkServerError:code,
+        bulkServerErrorMessage:message,
+        bulkErrorResults,
+        bulkSuccessResults}
+      });
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}
+
+export function bulkRestartWorkflow(workflows){
+  return function (dispatch) {
+    dispatch({
+      type: 'REQUESTED_BULK_RESTART_WORKFLOW',
+      workflows
+    });
+
+
+    return http.post('/api/wfe/bulk/restart', workflows).then((data) => {
+      var {code, message, bulkErrorResults, bulkSuccessfulResults} = data;
+      dispatch({
+        type: 'RECEIVED_BULK_RESTART_WORKFLOW',
+        workflows,
+        data:{bulkServerError:code,
+        bulkServerErrorMessage:message,
+        bulkErrorResults,
+        bulkSuccessfulResults}
+      });
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}
+
+export function bulkRetryWorkflow(workflows){
+  return function (dispatch) {
+    dispatch({
+      type: 'REQUESTED_BULK_RETRY_WORKFLOW',
+      workflows
+    });
+
+
+    return http.post('/api/wfe/bulk/retry', workflows).then((data) => {
+      var {code, message, bulkErrorResults, bulkSuccessfulResults} = data;
+      dispatch({
+        type: 'RECEIVED_BULK_RETRY_WORKFLOW',
+        workflows,
+        data:{bulkServerError:code,
+        bulkServerErrorMessage:message,
+        bulkErrorResults,
+        bulkSuccessfulResults}
+      });
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}
+
+export function bulkPauseWorkflow(workflows) {
+  return function (dispatch) {
+    dispatch({
+      type: 'REQUESTED_BULK_PAUSE_WORKFLOW',
+      workflows
+    });
+
+
+    return http.put('/api/wfe/bulk/pause', workflows).then((data) => {
+      var {code, message, bulkErrorResults, bulkSuccessfulResults} = data;
+      dispatch({
+        type: 'RECEIVED_BULK_PAUSE_WORKFLOW',
+        workflows,
+        data:{bulkServerError:code,
+        bulkServerErrorMessage:message,
+        bulkErrorResults,
+        bulkSuccessfulResults}
+      });
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}
+
+export function bulkResumeWorkflow(workflows) {
+  return function (dispatch) {
+    dispatch({
+      type: 'REQUESTED_BULK_RESUME_WORKFLOW',
+      workflows
+    });
+
+
+    return http.put('/api/wfe/bulk/resume', workflows).then((data) => {
+      var {code, message, bulkErrorResults, bulkSuccessfulResults} = data;
+      dispatch({
+        type: 'RECEIVED_BULK_RESUME_WORKFLOW',
+        workflows,
+        data:{bulkServerError:code,
+        bulkServerErrorMessage:message,
+        bulkErrorResults,
+        bulkSuccessfulResults}
+      });
+    }).catch((e) => {
+      dispatch({
+        type: 'REQUEST_ERROR',
+        e
+      });
+    });
+  }
+}
+
 export function terminateWorkflow(workflowId){
   return function (dispatch) {
     dispatch({

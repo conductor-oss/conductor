@@ -22,6 +22,7 @@
   "dependencies": {
     "autoprefixer": "^6.0.0",
     "babel-polyfill": "^6.3.14",
+    "body-parser": "^1.18.3",
     "bunyan": "^1.7.1",
     "clipboard": "^1.6.1",
     "create-react-class": "^15.5.3",

@@ -2,6 +2,7 @@ import 'babel-polyfill';
 import express from 'express';
 import Bunyan from 'bunyan';
 import MiddlewareIndex from './api/middleware';
+import bodyParser from "body-parser";
 
 const log = Bunyan.createLogger({ src: true, name: 'Conductor UI' });
 
@@ -28,7 +29,7 @@ class Main {
     log.info(`Serving static ${process.cwd()}`);
     app.use(express.static('public'));
 
-    app.use('/api/wfe', wfeAPI);
+    app.use('/api/wfe', bodyParser.json(), wfeAPI);
     app.use('/api/sys', sysAPI);
     app.use('/api/events', eventsAPI);
   };
