@@ -60,11 +60,12 @@ import static org.junit.Assert.assertTrue;
  * @author Viren
  *
  */
-public class End2EndGrpcTests {
+public class End2EndGrpcTests extends AbstractEndToEndTest {
     private static TaskClient tc;
     private static WorkflowClient wc;
     private static MetadataClient mc;
     private static EmbeddedElasticSearch search;
+    private static final String TASK_DEFINITION_PREFIX = "task_";
 
     @BeforeClass
     public static void setup() throws Exception {
@@ -225,5 +226,82 @@ public class End2EndGrpcTests {
         assertNotNull(wf);
         assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
         assertEquals(1, wf.getTasks().size());
+    }
+
+    @Test
+    public void testEphemeralWorkflowsWithStoredTasks() throws Exception {
+        List<TaskDef> definitions = createAndRegisterTaskDefinitions("storedTaskDef", 5);
+
+        WorkflowDef workflowDefinition = new WorkflowDef();
+        workflowDefinition.setName("testEphemeralWorkflow");
+
+        WorkflowTask workflowTask1 = createWorkflowTask("storedTaskDef1");
+        WorkflowTask workflowTask2 = createWorkflowTask("storedTaskDef2");
+
+        workflowDefinition.getTasks().add(workflowTask1);
+        workflowDefinition.getTasks().add(workflowTask2);
+
+        String workflowExecutionName = "ephemeralWorkflow";
+        StartWorkflowRequest workflowRequest = new StartWorkflowRequest()
+                .withName(workflowExecutionName)
+                .withWorkflowDef(workflowDefinition);
+
+        String workflowId = wc.startWorkflow(workflowRequest);
+        assertNotNull(workflowId);
+
+        Workflow workflow = wc.getWorkflow(workflowId, true);
+        WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
+        assertNotNull(ephemeralWorkflow);
+        assertEquals(workflowDefinition.getName(), ephemeralWorkflow.getName());
+    }
+
+    @Test
+    public void testEphemeralWorkflowsWithEphemeralTasks() throws Exception {
+        WorkflowDef workflowDefinition = new WorkflowDef();
+        workflowDefinition.setName("testEphemeralWorkflowWithEphemeralTasks");
+
+        WorkflowTask workflowTask1 = createWorkflowTask("ephemeralTask1");
+        TaskDef taskDefinition1 = createTaskDefinition("ephemeralTaskDef1");
+        workflowTask1.setTaskDefinition(taskDefinition1);
+
+        WorkflowTask workflowTask2 = createWorkflowTask("ephemeralTask2");
+        TaskDef taskDefinition2 = createTaskDefinition("ephemeralTaskDef2");
+        workflowTask2.setTaskDefinition(taskDefinition2);
+
+        workflowDefinition.getTasks().add(workflowTask1);
+        workflowDefinition.getTasks().add(workflowTask2);
+
+        String workflowExecutionName = "ephemeralWorkflowWithEphemeralTasks";
+        StartWorkflowRequest workflowRequest = new StartWorkflowRequest()
+                .withName(workflowExecutionName)
+                .withWorkflowDef(workflowDefinition);
+
+        String workflowId = wc.startWorkflow(workflowRequest);
+        assertNotNull(workflowId);
+
+        Workflow workflow = wc.getWorkflow(workflowId, true);
+        WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
+        assertNotNull(ephemeralWorkflow);
+        assertEquals(workflowDefinition.getName(), ephemeralWorkflow.getName());
+
+        List<WorkflowTask> ephemeralTasks = ephemeralWorkflow.getTasks();
+        assertEquals(2, ephemeralTasks.size());
+        for (WorkflowTask ephemeralTask : ephemeralTasks) {
+            assertNotNull(ephemeralTask.getTaskDefinition());
+        }
+
+    }
+
+    // Helper method for creating task definitions on the server
+    private List<TaskDef> createAndRegisterTaskDefinitions(String prefixTaskDefinition, int numberOfTaskDefinitions) {
+        String prefix = Optional.ofNullable(prefixTaskDefinition).orElse(TASK_DEFINITION_PREFIX);
+        List<TaskDef> definitions = new LinkedList<>();
+        for (int i = 0; i < numberOfTaskDefinitions; i++) {
+            TaskDef def = new TaskDef(prefix + i, "task " + i + "description");
+            def.setTimeoutPolicy(TimeoutPolicy.RETRY);
+            definitions.add(def);
+        }
+        mc.registerTaskDefs(definitions);
+        return definitions;
     }
 }
