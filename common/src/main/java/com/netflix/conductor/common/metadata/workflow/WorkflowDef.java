@@ -273,4 +273,19 @@ public class WorkflowDef extends Auditable {
 				getSchemaVersion()
 		);
 	}
+
+	@Override
+	public String toString() {
+		return "WorkflowDef{" +
+				"name='" + name + '\'' +
+				", description='" + description + '\'' +
+				", version=" + version +
+				", tasks=" + tasks +
+				", inputParameters=" + inputParameters +
+				", outputParameters=" + outputParameters +
+				", failureWorkflow='" + failureWorkflow + '\'' +
+				", schemaVersion=" + schemaVersion +
+				", restartable=" + restartable +
+				'}';
+	}
 }
