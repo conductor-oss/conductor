@@ -36,6 +36,7 @@ import com.sun.jersey.api.client.UniformInterfaceException;
 import com.sun.jersey.api.client.WebResource.Builder;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,8 +44,10 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Map;
 import java.util.function.Function;
 
 /**
@@ -76,7 +79,7 @@ public abstract class ClientBase {
         this(config, new DefaultConductorClientConfiguration(), handler);
     }
 
-    protected  ClientBase(ClientConfig config, ConductorClientConfiguration clientConfiguration, ClientHandler handler) {
+    protected ClientBase(ClientConfig config, ConductorClientConfiguration clientConfiguration, ClientHandler handler) {
         objectMapper = new ObjectMapper();
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
@@ -95,7 +98,6 @@ public abstract class ClientBase {
 
         conductorClientConfiguration = clientConfiguration;
         payloadStorage = new PayloadStorage(this);
-
     }
 
     public void setRootURI(String root) {
@@ -108,7 +110,6 @@ public abstract class ClientBase {
 
     protected void delete(Object[] queryParams, String url, Object... uriVariables) {
         URI uri = null;
-        ClientResponse clientResponse = null;
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
             client.resource(uri).delete();
@@ -127,26 +128,9 @@ public abstract class ClientBase {
         }
     }
 
-    /**
-     * @deprecated replaced by {@link #postForEntityWithRequestOnly(String, Object)} ()}
-     */
-    @Deprecated
-    protected void postForEntity(String url, Object request) {
-        postForEntityWithRequestOnly(url, request);
-    }
-
-
     protected void postForEntityWithRequestOnly(String url, Object request) {
         Class<?> type = null;
         postForEntity(url, request, null, type);
-    }
-
-    /**
-     * @deprecated replaced by {@link #postForEntityWithUriVariablesOnly(String, Object...)} ()}
-     */
-    @Deprecated
-    protected void postForEntity1(String url, Object... uriVariables) {
-        postForEntityWithUriVariablesOnly(url, uriVariables);
     }
 
     protected void postForEntityWithUriVariablesOnly(String url, Object... uriVariables) {
@@ -215,17 +199,38 @@ public abstract class ClientBase {
      * Uses the {@link PayloadStorage} for storing large payloads.
      * Gets the uri for storing the payload from the server and then uploads to this location.
      *
-     * @param payloadType the {@link com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType} to be uploaded
+     * @param payloadType  the {@link com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType} to be uploaded
      * @param payloadBytes the byte array containing the payload
-     * @param payloadSize the size of the payload
+     * @param payloadSize  the size of the payload
      * @return the path where the payload is stored in external storage
      */
     protected String uploadToExternalPayloadStorage(ExternalPayloadStorage.PayloadType payloadType, byte[] payloadBytes, long payloadSize) {
         Preconditions.checkArgument(payloadType.equals(ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT) || payloadType.equals(ExternalPayloadStorage.PayloadType.TASK_OUTPUT),
                 "Payload type must be workflow input or task output");
-        ExternalStorageLocation externalStorageLocation = payloadStorage.getLocation(ExternalPayloadStorage.Operation.WRITE, payloadType);
+        ExternalStorageLocation externalStorageLocation = payloadStorage.getLocation(ExternalPayloadStorage.Operation.WRITE, payloadType, "");
         payloadStorage.upload(externalStorageLocation.getUri(), new ByteArrayInputStream(payloadBytes), payloadSize);
         return externalStorageLocation.getPath();
+    }
+
+    /**
+     * Uses the {@link PayloadStorage} for downloading large payloads to be used by the client.
+     * Gets the uri of the payload fom the server and then downloads from this location.
+     *
+     * @param payloadType the {@link com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType} to be downloaded
+     * @param path        the relative of the payload in external storage
+     * @return the payload object that is stored in external storage
+     */
+    @SuppressWarnings("unchecked")
+    protected Map<String, Object> downloadFromExternalStorage(ExternalPayloadStorage.PayloadType payloadType, String path) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(path), "uri cannot be blank");
+        ExternalStorageLocation externalStorageLocation = payloadStorage.getLocation(ExternalPayloadStorage.Operation.READ, payloadType, path);
+        try (InputStream inputStream = payloadStorage.download(externalStorageLocation.getUri())) {
+            return objectMapper.readValue(inputStream, Map.class);
+        } catch (IOException e) {
+            String errorMsg = String.format("Unable to download payload frome external storage location: %s", path);
+            logger.error(errorMsg, e);
+            throw new ConductorClientException(errorMsg, e);
+        }
     }
 
     private Builder getWebResourceBuilder(URI URI, Object entity) {

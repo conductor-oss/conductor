@@ -15,11 +15,11 @@
  */
 package com.netflix.conductor.config;
 
-import java.util.Map;
-
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.netflix.conductor.core.config.Configuration;
+
+import java.util.Map;
 
 /**
  * @author Viren
@@ -62,6 +62,46 @@ public class TestConfiguration implements Configuration {
 	@Override
 	public String getAppId() {
 		return "workflow";
+	}
+
+	@Override
+	public Long getWorkflowInputPayloadSizeThresholdKB() {
+		return 5120L;
+	}
+
+	@Override
+	public Long getMaxWorkflowInputPayloadSizeThresholdKB() {
+		return 10240L;
+	}
+
+	@Override
+	public Long getWorkflowOutputPayloadSizeThresholdKB() {
+		return 5120L;
+	}
+
+	@Override
+	public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
+		return 10240L;
+	}
+
+	@Override
+	public Long getTaskInputPayloadSizeThresholdKB() {
+		return 3072L;
+	}
+
+	@Override
+	public Long getMaxTaskInputPayloadSizeThresholdKB() {
+		return 10240L;
+	}
+
+	@Override
+	public Long getTaskOutputPayloadSizeThresholdKB() {
+		return 3072L;
+	}
+
+	@Override
+	public Long getMaxTaskOutputPayloadSizeThresholdKB() {
+		return 10240L;
 	}
 
 	@Override

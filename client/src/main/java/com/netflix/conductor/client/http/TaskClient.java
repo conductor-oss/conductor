@@ -125,7 +125,9 @@ public class TaskClient extends ClientBase {
         Preconditions.checkArgument(StringUtils.isNotBlank(workerId), "Worker id cannot be blank");
 
         Object[] params = new Object[]{"workerid", workerId, "domain", domain};
-        return getForEntity("tasks/poll/{taskType}", params, Task.class, taskType);
+        Task task = getForEntity("tasks/poll/{taskType}", params, Task.class, taskType);
+        populateTaskInput(task);
+        return task;
     }
 
     /**
@@ -152,7 +154,9 @@ public class TaskClient extends ClientBase {
         Preconditions.checkArgument(count > 0, "Count must be greater than 0");
 
         Object[] params = new Object[]{"workerid", workerId, "count", count, "timeout", timeoutInMillisecond};
-        return getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
+        List<Task> tasks = getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
+        tasks.forEach(this::populateTaskInput);
+        return tasks;
     }
 
     /**
@@ -180,7 +184,22 @@ public class TaskClient extends ClientBase {
         Preconditions.checkArgument(count > 0, "Count must be greater than 0");
 
         Object[] params = new Object[]{"workerid", workerId, "count", count, "timeout", timeoutInMillisecond, "domain", domain};
-        return getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
+        List<Task> tasks = getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
+        tasks.forEach(this::populateTaskInput);
+        return tasks;
+    }
+
+    /**
+     * Populates the task input from external payload storage if the external storage path is specified.
+     *
+     * @param task the task for which the input is to be populated.
+     */
+    private void populateTaskInput(Task task) {
+        if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
+            WorkflowTaskMetrics.incrementExternalPayloadUsedCount(task.getTaskDefName(), ExternalPayloadStorage.Operation.READ.name(), ExternalPayloadStorage.PayloadType.TASK_INPUT.name());
+            task.setInputData(downloadFromExternalStorage(ExternalPayloadStorage.PayloadType.TASK_INPUT, task.getExternalInputPayloadStoragePath()));
+            task.setExternalInputPayloadStoragePath(null);
+        }
     }
 
     /**
@@ -448,6 +467,6 @@ public class TaskClient extends ClientBase {
     @Deprecated
     public void registerTaskDefs(List<TaskDef> taskDefs) {
         Preconditions.checkNotNull(taskDefs, "Task defs cannot be null");
-        postForEntity("metadata/taskdefs", taskDefs);
+        postForEntityWithRequestOnly("metadata/taskdefs", taskDefs);
     }
 }

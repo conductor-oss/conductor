@@ -615,6 +615,7 @@ public class Task {
         copy.setRateLimitPerFrequency(rateLimitPerFrequency);
         copy.setRateLimitFrequencyInSeconds(rateLimitFrequencyInSeconds);
         copy.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
+        copy.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
         return copy;
     }
 

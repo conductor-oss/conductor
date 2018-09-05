@@ -225,6 +225,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
      * @throws TerminateWorkflowException : In case of input parameters of the dynamic fork tasks not represented as {@link Map}
      * @return: a {@link Pair} representing the list of dynamic fork tasks in {@link Pair#getLeft()} and the input for the dynamic fork tasks in {@link Pair#getRight()}
      */
+    @SuppressWarnings("unchecked")
     @VisibleForTesting
     Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> getDynamicForkTasksAndInput(WorkflowTask taskToSchedule, Workflow workflowInstance,
                                                                                            String dynamicForkTaskParam) throws TerminateWorkflowException {

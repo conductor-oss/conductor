@@ -253,69 +253,6 @@ public class WorkflowServiceTest {
     }
 
     @Test
-    public void testWorkflowInputWithExternalPayload() {
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
-        assertNotNull(found);
-
-        String workflowInputPath = "workflow/input";
-        String correlationId = "wf_external_storage";
-        String workflowId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, null, workflowInputPath, null, null);
-        assertNotNull(workflowId);
-
-        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
-        assertNotNull(workflow);
-        assertNull("The workflow input should not be persisted", workflow.getInput());
-        assertEquals(workflowInputPath, workflow.getExternalInputPayloadStoragePath());
-        assertEquals(workflow.getReasonForIncompletion(), WorkflowStatus.RUNNING, workflow.getStatus());
-        assertEquals(1, workflow.getTasks().size());
-
-        // Polling for the first task
-        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
-        assertNotNull(task);
-        assertEquals("junit_task_1", task.getTaskType());
-        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
-        assertEquals(workflowId, task.getWorkflowInstanceId());
-
-        // update first task with COMPLETED
-        String taskOutputPath = "task/output";
-        task.setOutputData(null);
-        task.setExternalOutputPayloadStoragePath(taskOutputPath);
-        task.setStatus(COMPLETED);
-        workflowExecutionService.updateTask(task);
-
-        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
-        assertNotNull(workflow);
-        assertNull("The workflow input should not be persisted", workflow.getInput());
-        assertEquals(workflowInputPath, workflow.getExternalInputPayloadStoragePath());
-        assertEquals(workflow.getReasonForIncompletion(), WorkflowStatus.RUNNING, workflow.getStatus());
-        assertEquals(2, workflow.getTasks().size());
-        assertNull("The task output should not be persisted", workflow.getTasks().get(0).getOutputData());
-        assertEquals(taskOutputPath, workflow.getTasks().get(0).getExternalOutputPayloadStoragePath());
-
-        // Polling for the second task
-        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
-        assertNotNull(task);
-        assertEquals("junit_task_2", task.getTaskType());
-        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
-        assertEquals(workflowId, task.getWorkflowInstanceId());
-
-        // update first task with COMPLETED
-        task.getOutputData().put("op", "success_task2");
-        task.setStatus(COMPLETED);
-        workflowExecutionService.updateTask(task);
-
-        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
-        assertNotNull(workflow);
-        assertNull("The workflow input should not be persisted", workflow.getInput());
-        assertEquals(workflowInputPath, workflow.getExternalInputPayloadStoragePath());
-        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
-        assertEquals(2, workflow.getTasks().size());
-        assertNull("The task output should not be persisted", workflow.getTasks().get(0).getOutputData());
-        assertEquals(taskOutputPath, workflow.getTasks().get(0).getExternalOutputPayloadStoragePath());
-    }
-
-
-    @Test
     public void testWorkflowWithNoTasks() {
 
         WorkflowDef empty = new WorkflowDef();
@@ -3908,6 +3845,171 @@ public class WorkflowServiceTest {
             assertTrue(!eventTask.getOutputData().isEmpty());
             assertNotNull(eventTask.getOutputData().get("event_produced"));
         }
+    }
+
+    @Test
+    public void testWorkflowUsingExternalPayloadStorage() {
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
+        Map<String, Object> outputParameters = found.getOutputParameters();
+        outputParameters.put("workflow_output", "${t1.output.op}");
+        metadataService.updateWorkflowDef(found);
+
+        String workflowInputPath = "workflow/input";
+        String correlationId = "wf_external_storage";
+        String workflowId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, null, workflowInputPath, null, null);
+        assertNotNull(workflowId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertNull("The workflow input should not be persisted", workflow.getInput());
+        assertEquals(workflowInputPath, workflow.getExternalInputPayloadStoragePath());
+        assertEquals(workflow.getReasonForIncompletion(), WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(1, workflow.getTasks().size());
+
+        // Polling for the first task
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertEquals("junit_task_1", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(workflowId, task.getWorkflowInstanceId());
+
+        // update first task with COMPLETED
+        String taskOutputPath = "task/output";
+        task.setOutputData(null);
+        task.setExternalOutputPayloadStoragePath(taskOutputPath);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertNull("The workflow input should not be persisted", workflow.getInput());
+        assertEquals(workflowInputPath, workflow.getExternalInputPayloadStoragePath());
+        assertEquals(workflow.getReasonForIncompletion(), WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+        assertNull("The first task output should not be persisted", workflow.getTasks().get(0).getOutputData());
+        assertNull("The second task input should not be persisted", workflow.getTasks().get(1).getInputData());
+        assertEquals(taskOutputPath, workflow.getTasks().get(0).getExternalOutputPayloadStoragePath());
+        assertEquals("task/input", workflow.getTasks().get(1).getExternalInputPayloadStoragePath());
+
+        // Polling for the second task
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertEquals("junit_task_2", task.getTaskType());
+        assertNull(task.getInputData());
+        assertNotNull(task.getExternalInputPayloadStoragePath());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(workflowId, task.getWorkflowInstanceId());
+
+        // update second task with COMPLETED
+        task.getOutputData().put("op", "success_task2");
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertNull("The workflow input should not be persisted", workflow.getInput());
+        assertEquals(workflowInputPath, workflow.getExternalInputPayloadStoragePath());
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+        assertNull("The first task output should not be persisted", workflow.getTasks().get(0).getOutputData());
+        assertNull("The second task input should not be persisted", workflow.getTasks().get(1).getInputData());
+        assertEquals(taskOutputPath, workflow.getTasks().get(0).getExternalOutputPayloadStoragePath());
+        assertEquals("task/input", workflow.getTasks().get(1).getExternalInputPayloadStoragePath());
+        assertNull(workflow.getOutput());
+        assertNotNull(workflow.getExternalOutputPayloadStoragePath());
+        assertEquals("workflow/output", workflow.getExternalOutputPayloadStoragePath());
+    }
+
+    @Test
+    public void testRetryWorkflowUsingExternalPayloadStorage() {
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        assertNotNull(found);
+        Map<String, Object> outputParameters = found.getOutputParameters();
+        outputParameters.put("workflow_output", "${t1.output.op}");
+        metadataService.updateWorkflowDef(found);
+
+        String taskName = "junit_task_2";
+        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        taskDef.setRetryCount(2);
+        taskDef.setRetryDelaySeconds(0);
+        metadataService.updateTaskDef(taskDef);
+
+        String workflowInputPath = "workflow/input";
+        String correlationId = "wf_external_storage";
+        String workflowId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1, correlationId, null, workflowInputPath, null, null);
+        assertNotNull(workflowId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertNull("The workflow input should not be persisted", workflow.getInput());
+        assertEquals(workflowInputPath, workflow.getExternalInputPayloadStoragePath());
+        assertEquals(workflow.getReasonForIncompletion(), WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(1, workflow.getTasks().size());
+
+        // Polling for the first task
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertEquals("junit_task_1", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(workflowId, task.getWorkflowInstanceId());
+
+        // update first task with COMPLETED
+        String taskOutputPath = "task/output";
+        task.setOutputData(null);
+        task.setExternalOutputPayloadStoragePath(taskOutputPath);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        // Polling for the second task
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertEquals("junit_task_2", task.getTaskType());
+        assertNull(task.getInputData());
+        assertNotNull(task.getExternalInputPayloadStoragePath());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(workflowId, task.getWorkflowInstanceId());
+
+        // update second task with FAILED
+        task.getOutputData().put("op", "failed_task2");
+        task.setStatus(FAILED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertNull("The workflow input should not be persisted", workflow.getInput());
+        assertEquals(workflowInputPath, workflow.getExternalInputPayloadStoragePath());
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+
+        // Polling again for the second task
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
+        assertNotNull(task);
+        assertEquals("junit_task_2", task.getTaskType());
+        assertNull(task.getInputData());
+        assertNotNull(task.getExternalInputPayloadStoragePath());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(workflowId, task.getWorkflowInstanceId());
+
+        // update second task with COMPLETED
+        task.getOutputData().put("op", "success_task2");
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertNull("The workflow input should not be persisted", workflow.getInput());
+        assertEquals(workflowInputPath, workflow.getExternalInputPayloadStoragePath());
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals(3, workflow.getTasks().size());
+        assertNull("The first task output should not be persisted", workflow.getTasks().get(0).getOutputData());
+        assertNull("The second task input should not be persisted", workflow.getTasks().get(1).getInputData());
+        assertNull("The second task input should not be persisted", workflow.getTasks().get(2).getInputData());
+        assertEquals(taskOutputPath, workflow.getTasks().get(0).getExternalOutputPayloadStoragePath());
+        assertEquals("task/input", workflow.getTasks().get(1).getExternalInputPayloadStoragePath());
+        assertEquals("task/input", workflow.getTasks().get(2).getExternalInputPayloadStoragePath());
+        assertNull(workflow.getOutput());
+        assertNotNull(workflow.getExternalOutputPayloadStoragePath());
+        assertEquals("workflow/output", workflow.getExternalOutputPayloadStoragePath());
     }
 
     private void createSubWorkflow() {

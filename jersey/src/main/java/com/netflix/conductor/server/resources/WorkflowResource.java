@@ -247,7 +247,7 @@ public class WorkflowResource {
     @ApiOperation("Get the uri and path of the external storage where the workflow input payload is to be stored")
     @Consumes(MediaType.WILDCARD)
     @Path("/externalstoragelocation")
-    public ExternalStorageLocation getExternalStorageLocation() {
-        return workflowService.getExternalStorageLocation();
+    public ExternalStorageLocation getExternalStorageLocation(@QueryParam("path") String path) {
+        return workflowService.getExternalStorageLocation(path);
     }
 }

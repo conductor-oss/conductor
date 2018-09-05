@@ -118,7 +118,7 @@ public class WorkflowClient extends ClientBase {
     @Deprecated
     public void registerWorkflow(WorkflowDef workflowDef) {
         Preconditions.checkNotNull(workflowDef, "Worfklow definition cannot be null");
-        postForEntity("metadata/workflow", workflowDef);
+        postForEntityWithRequestOnly("metadata/workflow", workflowDef);
     }
 
     /**
@@ -211,7 +211,9 @@ public class WorkflowClient extends ClientBase {
      */
     public Workflow getWorkflow(String workflowId, boolean includeTasks) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
-        return getForEntity("workflow/{workflowId}", new Object[]{"includeTasks", includeTasks}, Workflow.class, workflowId);
+        Workflow workflow = getForEntity("workflow/{workflowId}", new Object[]{"includeTasks", includeTasks}, Workflow.class, workflowId);
+        populateWorkflowOutput(workflow);
+        return workflow;
     }
 
     /**
@@ -228,8 +230,22 @@ public class WorkflowClient extends ClientBase {
         Preconditions.checkArgument(StringUtils.isNotBlank(correlationId), "correlationId cannot be blank");
 
         Object[] params = new Object[]{"includeClosed", includeClosed, "includeTasks", includeTasks};
-        return getForEntity("workflow/{name}/correlated/{correlationId}", params, new GenericType<List<Workflow>>() {
+        List<Workflow> workflows = getForEntity("workflow/{name}/correlated/{correlationId}", params, new GenericType<List<Workflow>>() {
         }, name, correlationId);
+        workflows.forEach(this::populateWorkflowOutput);
+        return workflows;
+    }
+
+    /**
+     * Populates the workflow output from external payload storage if the external storage path is specified.
+     *
+     * @param workflow the workflow for which the output is to be populated.
+     */
+    private void populateWorkflowOutput(Workflow workflow) {
+        if (StringUtils.isNotBlank(workflow.getExternalOutputPayloadStoragePath())) {
+            WorkflowTaskMetrics.incrementExternalPayloadUsedCount(workflow.getWorkflowType(), ExternalPayloadStorage.Operation.READ.name(), ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT.name());
+            workflow.setOutput(downloadFromExternalStorage(ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT, workflow.getExternalOutputPayloadStoragePath()));
+        }
     }
 
     /**

@@ -93,6 +93,46 @@ public class ConductorConfig implements Configuration {
 	}
 
 	@Override
+	public Long getWorkflowInputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.workflow.input.payload.threshold.kb", 5120L);
+	}
+
+	@Override
+	public Long getMaxWorkflowInputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.max.workflow.input.payload.threshold.kb", 10240L);
+	}
+
+	@Override
+	public Long getWorkflowOutputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.workflow.output.payload.threshold.kb", 5120L);
+	}
+
+	@Override
+	public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.max.workflow.output.payload.threshold.kb", 10240L);
+	}
+
+	@Override
+	public Long getTaskInputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.task.input.payload.threshold.kb", 3072L);
+	}
+
+	@Override
+	public Long getMaxTaskInputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.max.task.input.payload.threshold.kb", 10240L);
+	}
+
+	@Override
+	public Long getTaskOutputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.task.output.payload.threshold.kb", 3072L);
+	}
+
+	@Override
+	public Long getMaxTaskOutputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.max.task.output.payload.threshold.kb", 10240L);
+	}
+
+	@Override
 	public int getIntProperty(String key, int defaultValue) {
 		String val = getProperty(key, Integer.toString(defaultValue));
 		try{
@@ -124,7 +164,7 @@ public class ConductorConfig implements Configuration {
 				val = Optional.ofNullable(System.getProperty(key)).orElse(defaultValue);
 			}
 		}catch(Exception e){
-			logger.error(e.getMessage(), e);
+			logger.error("Error reading property: {}", key, e);
 		}
 		return val;
 	}
@@ -156,7 +196,7 @@ public class ConductorConfig implements Configuration {
 				}
 				return modules;
 			}catch(Exception e) {
-				logger.warn(e.getMessage(), e);
+				logger.warn("Error loading additional modules", e);
 			}
 		}
 		return null;

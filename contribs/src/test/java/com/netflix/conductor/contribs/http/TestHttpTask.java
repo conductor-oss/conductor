@@ -26,7 +26,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.contribs.http.HttpTask.Input;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.DeciderService;
@@ -43,6 +42,7 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
+import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import org.eclipse.jetty.server.Request;
@@ -89,7 +89,9 @@ public class TestHttpTask {
 	
 	private HttpTask httpTask;
 	
-	private WorkflowExecutor executor = mock(WorkflowExecutor.class);
+	private WorkflowExecutor workflowExecutor;
+
+	private Configuration config;
 	
 	private Workflow workflow = new Workflow();
 	
@@ -125,7 +127,8 @@ public class TestHttpTask {
 	@Before
 	public void setup() {
 		RestClientManager rcm = new RestClientManager();
-		Configuration config = mock(Configuration.class);
+		workflowExecutor = mock(WorkflowExecutor.class);
+		config = mock(Configuration.class);
 		when(config.getServerId()).thenReturn("test_server_id");
 		httpTask = new HttpTask(rcm, config);
 	}
@@ -143,7 +146,7 @@ public class TestHttpTask {
 		input.setMethod("POST");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		assertEquals(task.getReasonForIncompletion(), Task.Status.COMPLETED, task.getStatus());
 		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
 		Object response = hr.get("body");
@@ -170,7 +173,7 @@ public class TestHttpTask {
 		input.setMethod("POST");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		assertEquals(task.getReasonForIncompletion(), Task.Status.COMPLETED, task.getStatus());
 		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
 		Object response = hr.get("body");
@@ -187,13 +190,13 @@ public class TestHttpTask {
 		input.setMethod("GET");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		assertEquals("Task output: " + task.getOutputData(), Task.Status.FAILED, task.getStatus());
 		assertEquals(ERROR_RESPONSE, task.getReasonForIncompletion());
 		
 		task.setStatus(Status.SCHEDULED);
 		task.getInputData().remove(HttpTask.REQUEST_PARAMETER_NAME);
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		assertEquals(Task.Status.FAILED, task.getStatus());
 		assertEquals(HttpTask.MISSING_REQUEST, task.getReasonForIncompletion());
 	}
@@ -207,7 +210,7 @@ public class TestHttpTask {
 		input.setMethod("GET");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
 		Object response = hr.get("body");
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
@@ -223,7 +226,7 @@ public class TestHttpTask {
 		input.setMethod("GET");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
 		Object response = hr.get("body");
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
@@ -240,7 +243,7 @@ public class TestHttpTask {
 		input.setMethod("GET");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
 		Object response = hr.get("body");
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
@@ -259,7 +262,7 @@ public class TestHttpTask {
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		task.setStatus(Status.SCHEDULED);
 		task.setScheduledTime(0);
-		boolean executed = httpTask.execute(workflow, task, executor);
+		boolean executed = httpTask.execute(workflow, task, workflowExecutor);
 		assertFalse(executed);
 	}
 	
@@ -271,7 +274,7 @@ public class TestHttpTask {
  		input.setMethod("GET");
  		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
  		
- 		httpTask.start(workflow, task, executor);
+ 		httpTask.start(workflow, task, workflowExecutor);
  		assertEquals("Task output: " + task.getOutputData(), Task.Status.FAILED, task.getStatus());
  		assertEquals(ERROR_RESPONSE, task.getReasonForIncompletion());
  		assertTrue(!task.getStatus().isSuccessful());
@@ -279,7 +282,7 @@ public class TestHttpTask {
  		task.setStatus(Status.SCHEDULED);
  		task.getInputData().remove(HttpTask.REQUEST_PARAMETER_NAME);
  		task.setReferenceTaskName("t1");
- 		httpTask.start(workflow, task, executor);
+ 		httpTask.start(workflow, task, workflowExecutor);
  		assertEquals(Task.Status.FAILED, task.getStatus());
  		assertEquals(HttpTask.MISSING_REQUEST, task.getReasonForIncompletion());
  		assertTrue(!task.getStatus().isSuccessful());
@@ -296,7 +299,7 @@ public class TestHttpTask {
 		def.getTasks().add(wft);
  		MetadataDAO metadataDAO = mock(MetadataDAO.class);
 		QueueDAO queueDAO = mock(QueueDAO.class);
-		ExternalPayloadStorage externalPayloadStorage = mock(ExternalPayloadStorage.class);
+		ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
 		ParametersUtils parametersUtils = mock(ParametersUtils.class);
 		Map<String, TaskMapper> taskMappers = new HashMap<>();
 		taskMappers.put("DECISION", new DecisionTaskMapper());
@@ -309,7 +312,7 @@ public class TestHttpTask {
 		taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
 		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
 		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
- 		new DeciderService(metadataDAO, parametersUtils, queueDAO, externalPayloadStorage, taskMappers).decide(workflow, def);
+ 		new DeciderService(metadataDAO, parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers).decide(workflow, def);
  		
  		System.out.println(workflow.getTasks());
  		System.out.println(workflow.getStatus());
@@ -325,7 +328,7 @@ public class TestHttpTask {
 		input.setOauthConsumerSecret("someSecret");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 
 		Map<String, Object> response = (Map<String, Object>) task.getOutputData().get("response");
 		Map<String, String> body = (Map<String, String>) response.get("body");

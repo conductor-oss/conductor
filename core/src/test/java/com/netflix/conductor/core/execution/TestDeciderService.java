@@ -21,7 +21,6 @@ package com.netflix.conductor.core.execution;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -32,7 +31,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
@@ -45,6 +43,7 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
+import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.spectator.api.Counter;
@@ -76,13 +75,13 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 
 /**
  * @author Viren
- *
  */
 @SuppressWarnings("Duplicates")
 public class TestDeciderService {
@@ -94,6 +93,8 @@ public class TestDeciderService {
     private ParametersUtils parametersUtils;
 
     private static Registry registry;
+
+    private ExternalPayloadStorageUtils externalPayloadStorageUtils;
 
     private static ObjectMapper objectMapper = new ObjectMapper();
 
@@ -115,7 +116,8 @@ public class TestDeciderService {
     public void setup() {
         MetadataDAO metadataDAO = mock(MetadataDAO.class);
         QueueDAO queueDAO = mock(QueueDAO.class);
-        ExternalPayloadStorage externalPayloadStorage = mock(ExternalPayloadStorage.class);
+        externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
+
         TaskDef taskDef = new TaskDef();
         WorkflowDef workflowDef = new WorkflowDef();
         when(metadataDAO.getTaskDef(any())).thenReturn(taskDef);
@@ -133,7 +135,7 @@ public class TestDeciderService {
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 
-        deciderService = new DeciderService(metadataDAO, parametersUtils, queueDAO, externalPayloadStorage, taskMappers);
+        deciderService = new DeciderService(metadataDAO, parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers);
 
         workflow = new Workflow();
         workflow.getInput().put("requestId", "request id 001");
@@ -198,7 +200,7 @@ public class TestDeciderService {
         assertNull(taskInput.get("taskOutputParam3"));
         assertNull(taskInput.get("nullValue"));
         assertEquals(workflow.getTasks().get(0).getStatus().name(), taskInput.get("task2Status"));    //task2 and task3 are the tasks respectively
-        System.out.println(taskInput);
+//        System.out.println(taskInput);
         workflow.setSchemaVersion(1);
     }
 
@@ -264,7 +266,7 @@ public class TestDeciderService {
         assertEquals("The Doors", taskInput.get("secondName"));
         assertEquals("The Band is: The Doors-\ti-123abcdef990", taskInput.get("concatenatedName"));
 
-        System.out.println(new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(taskInput));
+//        System.out.println(new ObjectMapper().enable(SerializationFeature.INDENT_OUTPUT).writeValueAsString(taskInput));
 
         assertEquals("request id 001", taskInput.get("workflowInputParam"));
         assertEquals("http://location", taskInput.get("taskOutputParam"));
@@ -305,7 +307,7 @@ public class TestDeciderService {
         workflow.getTasks().add(task);
         workflow.setSchemaVersion(2);
         Map<String, Object> taskInput = parametersUtils.getTaskInput(ip, workflow, null, null);
-        System.out.println(taskInput.get("complexJson"));
+//        System.out.println(taskInput.get("complexJson"));
         assertNotNull(taskInput);
         assertTrue(taskInput.containsKey("workflowInputParam"));
         assertTrue(taskInput.containsKey("taskOutputParam"));
@@ -553,7 +555,7 @@ public class TestDeciderService {
                     Object cmObj = reqInput.get(0).get("channelMapping");
                     assertNotNull(cmObj);
                     if (!(cmObj instanceof Number)) {
-                        System.out.println("Not a number @ " + x + ", found: " + cmObj.getClass());
+//                        System.out.println("Not a number @ " + x + ", found: " + cmObj.getClass());
                         result[x] = -1;
                     } else {
                         Number channelMapping = (Number) cmObj;
@@ -576,8 +578,7 @@ public class TestDeciderService {
         for (int i = 0; i < result.length; i++) {
             assertEquals(i, result[i]);
         }
-        System.out.println("Done");
-
+//        System.out.println("Done");
     }
 
 
@@ -612,8 +613,8 @@ public class TestDeciderService {
         workflowTask.getInputParameters().put("env", env);
 
         Task task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
-        System.out.println(task.getTaskId() + ":\n" + task.getInputData());
-        System.out.println(task2.getTaskId() + ":\n" + task2.getInputData());
+//        System.out.println(task.getTaskId() + ":\n" + task.getInputData());
+//        System.out.println(task2.getTaskId() + ":\n" + task2.getInputData());
 
         assertEquals("t1", task.getInputData().get("task_id"));
         assertEquals("t1", ((Map<String, Object>) task.getInputData().get("env")).get("env_task_id"));
@@ -626,10 +627,10 @@ public class TestDeciderService {
 
     @Test
     public void testFork() throws Exception {
-        InputStream stream = TestDeciderOutcomes.class.getResourceAsStream("/test.json");
+        InputStream stream = TestDeciderService.class.getResourceAsStream("/test.json");
         Workflow workflow = objectMapper.readValue(stream, Workflow.class);
 
-        InputStream defs = TestDeciderOutcomes.class.getResourceAsStream("/def.json");
+        InputStream defs = TestDeciderService.class.getResourceAsStream("/def.json");
         WorkflowDef def = objectMapper.readValue(defs, WorkflowDef.class);
 
         DeciderOutcome outcome = deciderService.decide(workflow, def);
@@ -747,7 +748,7 @@ public class TestDeciderService {
     }
 
     @Test
-    public void testIsResponsedTimeOut() {
+    public void testIsResponseTimedOut() {
         TaskDef taskDef = new TaskDef();
         taskDef.setName("test_rt");
         taskDef.setResponseTimeoutSeconds(10);
@@ -761,6 +762,49 @@ public class TestDeciderService {
         boolean flag = deciderService.isResponseTimedOut(taskDef, task);
         assertNotNull(task);
         assertTrue(flag);
+    }
+
+    @Test
+    public void testPopulateWorkflowAndTaskData() {
+        String workflowInputPath = "workflow/input/test.json";
+        String taskInputPath = "task/input/test.json";
+        String taskOutputPath = "task/output/test.json";
+
+        Map<String, Object> workflowParams = new HashMap<>();
+        workflowParams.put("key1", "value1");
+        workflowParams.put("key2", 100);
+        when(externalPayloadStorageUtils.downloadPayload(workflowInputPath)).thenReturn(workflowParams);
+
+        Map<String, Object> taskInputParams = new HashMap<>();
+        taskInputParams.put("key", "taskInput");
+        when(externalPayloadStorageUtils.downloadPayload(taskInputPath)).thenReturn(taskInputParams);
+
+        Map<String, Object> taskOutputParams = new HashMap<>();
+        taskOutputParams.put("key", "taskOutput");
+        when(externalPayloadStorageUtils.downloadPayload(taskOutputPath)).thenReturn(taskOutputParams);
+
+        Task task = new Task();
+        task.setExternalInputPayloadStoragePath(taskInputPath);
+        task.setExternalOutputPayloadStoragePath(taskOutputPath);
+
+        Workflow workflow = new Workflow();
+        workflow.setExternalInputPayloadStoragePath(workflowInputPath);
+        workflow.getTasks().add(task);
+
+        Workflow workflowInstance = deciderService.populateWorkflowAndTaskData(workflow);
+        assertNotNull(workflowInstance);
+
+        assertTrue(workflow.getInput().isEmpty());
+        assertNotNull(workflowInstance.getInput());
+        assertEquals(workflowParams, workflowInstance.getInput());
+
+        assertTrue(workflow.getTasks().get(0).getInputData().isEmpty());
+        assertNotNull(workflowInstance.getTasks().get(0).getInputData());
+        assertEquals(taskInputParams, workflowInstance.getTasks().get(0).getInputData());
+
+        assertTrue(workflow.getTasks().get(0).getOutputData().isEmpty());
+        assertNotNull(workflowInstance.getTasks().get(0).getOutputData());
+        assertEquals(taskOutputParams, workflowInstance.getTasks().get(0).getOutputData());
     }
 
     private WorkflowDef createConditionalWF() {

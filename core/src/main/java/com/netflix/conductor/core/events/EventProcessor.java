@@ -143,7 +143,7 @@ public class EventProcessor {
         queue.observe().subscribe((Message msg) -> handle(queue, msg));
     }
 
-    @SuppressWarnings({"unchecked", "ToArrayCallWithZeroLengthArrayArgument"})
+    @SuppressWarnings({"unchecked"})
     private void handle(ObservableQueue queue, Message msg) {
         try {
             executionService.addMessage(queue.getName(), msg);

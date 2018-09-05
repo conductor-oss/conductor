@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -290,10 +290,10 @@ public class TaskService {
     /**
      * Get the external storage location where the task output payload is stored/to be stored
      *
+     * @param path the path for which the external storage location is to be populated
      * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external storage
      */
-    public ExternalStorageLocation getExternalStorageLocation() {
-        return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.TASK_OUTPUT);
+    public ExternalStorageLocation getExternalStorageLocation(String path) {
+        return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.TASK_OUTPUT, path);
     }
 }
-

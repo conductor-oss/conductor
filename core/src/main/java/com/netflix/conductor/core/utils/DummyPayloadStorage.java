@@ -27,7 +27,7 @@ import java.io.InputStream;
 public class DummyPayloadStorage implements ExternalPayloadStorage {
 
     @Override
-    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType) {
+    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType, String path) {
         return null;
     }
 

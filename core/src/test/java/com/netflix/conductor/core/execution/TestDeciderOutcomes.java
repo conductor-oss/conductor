@@ -28,7 +28,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
@@ -42,9 +42,11 @@ import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Join;
+import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -84,10 +86,14 @@ public class TestDeciderOutcomes {
 
 	@Before
 	public void init() {
-		
+
 		MetadataDAO metadataDAO = mock(MetadataDAO.class);
 		QueueDAO queueDAO = mock(QueueDAO.class);
-		ExternalPayloadStorage externalPayloadStorage = mock(ExternalPayloadStorage.class);
+		ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
+		Configuration configuration = mock(Configuration.class);
+		when(configuration.getTaskInputPayloadSizeThresholdKB()).thenReturn(10L);
+		when(configuration.getMaxTaskInputPayloadSizeThresholdKB()).thenReturn(10240L);
+
 		TaskDef taskDef = new TaskDef();
 		taskDef.setRetryCount(1);
 		taskDef.setName("mockTaskDef");
@@ -106,7 +112,7 @@ public class TestDeciderOutcomes {
 		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
 		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 
-		this.deciderService = new DeciderService(metadataDAO, parametersUtils, queueDAO, externalPayloadStorage, taskMappers);
+		this.deciderService = new DeciderService(metadataDAO, parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers);
 	}
 
 	@Test
@@ -141,9 +147,6 @@ public class TestDeciderOutcomes {
 
 	@Test
 	public void testRetries() {
-		WorkflowDef def = new WorkflowDef();
-		def.setName("test");
-
 		WorkflowTask task = new WorkflowTask();
 		task.setName("test_task");
 		task.setType("USER_TASK");
@@ -151,15 +154,17 @@ public class TestDeciderOutcomes {
 		task.getInputParameters().put("taskId", "${CPEWF_TASK_ID}");
 		task.getInputParameters().put("requestId", "${workflow.input.requestId}");
 
+		WorkflowDef def = new WorkflowDef();
+		def.setName("test");
 		def.getTasks().add(task);
 		def.setSchemaVersion(2);
 
 		Workflow workflow = new Workflow();
 		workflow.getInput().put("requestId", 123);
 		workflow.setStartTime(System.currentTimeMillis());
+
 		DeciderOutcome outcome = deciderService.decide(workflow, def);
 		assertNotNull(outcome);
-
 		assertEquals(1, outcome.tasksToBeScheduled.size());
 		assertEquals(task.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
 
@@ -172,7 +177,6 @@ public class TestDeciderOutcomes {
 
 		outcome = deciderService.decide(workflow, def);
 		assertNotNull(outcome);
-
 		assertEquals(1, outcome.tasksToBeUpdated.size());
 		assertEquals(1, outcome.tasksToBeScheduled.size());
 		assertEquals(task1Id, outcome.tasksToBeUpdated.get(0).getTaskId());
@@ -180,7 +184,6 @@ public class TestDeciderOutcomes {
 		assertEquals(outcome.tasksToBeScheduled.get(0).getTaskId(), outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
 		assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getRetriedTaskId());
 		assertEquals(123, outcome.tasksToBeScheduled.get(0).getInputData().get("requestId"));
-
 
 		WorkflowTask fork = new WorkflowTask();
 		fork.setName("fork0");
@@ -219,7 +222,6 @@ public class TestDeciderOutcomes {
 		workflow = new Workflow();
 		workflow.getInput().put("requestId", 123);
 		workflow.setStartTime(System.currentTimeMillis());
-
 		workflow.getInput().put("forks", forks);
 		workflow.getInput().put("forkedInputs", forkedInputs);
 
@@ -232,13 +234,15 @@ public class TestDeciderOutcomes {
 		assertEquals(1, outcome.tasksToBeScheduled.get(1).getInputData().get("k1"));
 		assertEquals(outcome.tasksToBeScheduled.get(1).getTaskId(), outcome.tasksToBeScheduled.get(1).getInputData().get("taskId"));
 		System.out.println(outcome.tasksToBeScheduled.get(1).getInputData());
-		task1Id = outcome.tasksToBeScheduled.get(1).getTaskId();
 
+		task1Id = outcome.tasksToBeScheduled.get(1).getTaskId();
 		outcome.tasksToBeScheduled.get(1).setStatus(Status.FAILED);
 		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
 
 		outcome = deciderService.decide(workflow, def);
 		assertTrue(outcome.tasksToBeScheduled.stream().anyMatch(task1 -> task1.getReferenceTaskName().equals("f0")));
+
+		//noinspection ConstantConditions
 		Task task1 = outcome.tasksToBeScheduled.stream().filter(t -> t.getReferenceTaskName().equals("f0")).findFirst().get();
 		assertEquals("v", task1.getInputData().get("k"));
 		assertEquals(1, task1.getInputData().get("k1"));
@@ -246,7 +250,6 @@ public class TestDeciderOutcomes {
 		assertNotSame(task1Id, task1.getTaskId());
 		assertEquals(task1Id, task1.getRetriedTaskId());
 		System.out.println(task1.getInputData());
-
 	}
 
 	@Test
@@ -302,7 +305,7 @@ public class TestDeciderOutcomes {
 	}
 
 	@Test
-	public void testOptionalWithDynamicFork() throws Exception {
+	public void testOptionalWithDynamicFork() {
 		WorkflowDef workflowDef = new WorkflowDef();
 		workflowDef.setName("test");
 

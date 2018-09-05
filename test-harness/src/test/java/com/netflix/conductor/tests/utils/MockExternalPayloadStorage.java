@@ -30,8 +30,18 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
-    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType) {
-        return null;
+    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType, String path) {
+        ExternalStorageLocation location = new ExternalStorageLocation();
+        location.setUri("http://some/uri");
+        switch (payloadType) {
+            case TASK_INPUT:
+                location.setPath("task/input");
+                break;
+            case WORKFLOW_OUTPUT:
+                location.setPath("workflow/output");
+                break;
+        }
+        return location;
     }
 
     @Override
@@ -41,7 +51,6 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
     @Override
     public InputStream download(String path) {
         try {
-
             Map<String, Object> payload = getPayload(path);
             String jsonString = objectMapper.writeValueAsString(payload);
             return new ByteArrayInputStream(jsonString.getBytes());
@@ -50,16 +59,22 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
         }
     }
 
+    @SuppressWarnings("unchecked")
     private Map<String, Object> getPayload(String path) {
         Map<String, Object> stringObjectMap = new HashMap<>();
-        switch (path) {
-            case "workflow/input":
-                stringObjectMap.put("param1", "p1 value");
-                stringObjectMap.put("param2", "p2 value");
-                break;
-            case "task/output":
-                stringObjectMap.put("op", "success_task1");
-                break;
+        try {
+            switch (path) {
+                case "workflow/input":
+                    stringObjectMap.put("param1", "p1 value");
+                    stringObjectMap.put("param2", "p2 value");
+                    return stringObjectMap;
+                case "task/input":
+                case "task/output":
+                    InputStream stream = MockExternalPayloadStorage.class.getResourceAsStream("/payload.json");
+                    return objectMapper.readValue(stream, Map.class);
+            }
+        } catch (IOException e) {
+            // just handle this exception here and return empty map so that test will fail in case this exception is thrown
         }
         return stringObjectMap;
     }

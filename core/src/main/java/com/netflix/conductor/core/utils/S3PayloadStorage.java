@@ -29,6 +29,7 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +66,7 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
      * @return a {@link ExternalStorageLocation} object which contains the pre-signed URL and the s3 object key for the json payload
      */
     @Override
-    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType) {
+    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType, String path) {
         try {
             ExternalStorageLocation externalStorageLocation = new ExternalStorageLocation();
 
@@ -78,7 +79,12 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
                 httpMethod = HttpMethod.PUT;
             }
 
-            String objectKey = getObjectKey(payloadType);
+            String objectKey;
+            if (StringUtils.isNotBlank(path)) {
+                objectKey = path;
+            } else {
+                objectKey = getObjectKey(payloadType);
+            }
             externalStorageLocation.setPath(objectKey);
 
             GeneratePresignedUrlRequest generatePresignedUrlRequest = new GeneratePresignedUrlRequest(bucketName, objectKey)

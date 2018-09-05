@@ -18,11 +18,12 @@ package com.netflix.conductor.common.run;
 
 /**
  * Describes the location where the JSON payload is stored in external storage.
+ * <ul>
  * <li>
  * The location is described using the following fields:
- * <ul>uri: The uri of the json file in external storage</ul>
- * <ul>path: The relative path of the file in external storage</ul>
- * </li>
+ * <li>uri: The uri of the json file in external storage</li>
+ * <li>path: The relative path of the file in external storage</li>
+ * </ul>
  */
 public class ExternalStorageLocation {
 

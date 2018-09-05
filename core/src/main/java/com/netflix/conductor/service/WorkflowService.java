@@ -1,3 +1,18 @@
+/*
+ * Copyright 2016 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.conductor.service;
 
 import com.netflix.conductor.annotations.Trace;
@@ -284,9 +299,10 @@ public class WorkflowService {
     /**
      * Get the external storage location where the workflow input payload is stored/to be stored
      *
+     * @param path the path for which the external storage location is to be populated
      * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external storage
      */
-    public ExternalStorageLocation getExternalStorageLocation() {
-        return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT);
+    public ExternalStorageLocation getExternalStorageLocation(String path) {
+        return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT, path);
     }
 }

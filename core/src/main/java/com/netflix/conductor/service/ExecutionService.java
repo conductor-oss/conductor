@@ -455,9 +455,10 @@ public class ExecutionService {
      *
      * @param operation the type of {@link Operation} to be performed
      * @param payloadType the {@link PayloadType} at the external uri
+	 * @param path the path for which the external storage location is to be populated
      * @return the external uri at which the payload is stored/to be stored
      */
-	public ExternalStorageLocation getExternalStorageLocation(Operation operation, PayloadType payloadType) {
-		return externalPayloadStorage.getLocation(operation, payloadType);
+	public ExternalStorageLocation getExternalStorageLocation(Operation operation, PayloadType payloadType, String path) {
+		return externalPayloadStorage.getLocation(operation, payloadType, path);
 	}
 }

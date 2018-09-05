@@ -35,12 +35,12 @@ import java.net.URL;
 /**
  * An implementation of {@link ExternalPayloadStorage} for storing large JSON payload data.
  */
-public class PayloadStorage implements ExternalPayloadStorage {
+class PayloadStorage implements ExternalPayloadStorage {
     private static final Logger logger = LoggerFactory.getLogger(PayloadStorage.class);
 
     private final ClientBase clientBase;
 
-    public PayloadStorage(ClientBase clientBase) {
+    PayloadStorage(ClientBase clientBase) {
         this.clientBase = clientBase;
     }
 
@@ -49,7 +49,7 @@ public class PayloadStorage implements ExternalPayloadStorage {
      * The client makes a request to the server to get the {@link ExternalStorageLocation}
      */
     @Override
-    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType) {
+    public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType, String path) {
         String uri;
         switch (payloadType) {
             case WORKFLOW_INPUT:
@@ -63,7 +63,7 @@ public class PayloadStorage implements ExternalPayloadStorage {
             default:
                 throw new ConductorClientException(String.format("Invalid payload type: %s for operation: %s", payloadType.toString(), operation.toString()));
         }
-        return clientBase.getForEntity(String.format("%s/externalstoragelocation", uri), null, ExternalStorageLocation.class);
+        return clientBase.getForEntity(String.format("%s/externalstoragelocation", uri), new Object[]{"path", path}, ExternalStorageLocation.class);
     }
 
     /**
@@ -109,16 +109,16 @@ public class PayloadStorage implements ExternalPayloadStorage {
     /**
      * Downloads the payload from the given uri.
      *
-     * @param path the location from where the object is to be downloaded
+     * @param uri the location from where the object is to be downloaded
      * @return an inputstream of the payload in the external storage
      * @throws ConductorClientException if the download fails due to an invalid path or an error from external storage
      */
     @Override
-    public InputStream download(String path) {
+    public InputStream download(String uri) {
         HttpURLConnection connection = null;
         String errorMsg;
         try {
-            URL url = new URI(path).toURL();
+            URL url = new URI(uri).toURL();
             connection = (HttpURLConnection) url.openConnection();
             connection.setDoOutput(false);
 
@@ -132,11 +132,11 @@ public class PayloadStorage implements ExternalPayloadStorage {
             logger.error(errorMsg);
             throw new ConductorClientException(errorMsg);
         } catch (URISyntaxException | MalformedURLException e) {
-            errorMsg = String.format("Invalid path specified: %s", path);
+            errorMsg = String.format("Invalid uri specified: %s", uri);
             logger.error(errorMsg, e);
             throw new ConductorClientException(errorMsg, e);
         } catch (IOException e) {
-            errorMsg = String.format("Error downloading from path: %s", path);
+            errorMsg = String.format("Error downloading from uri: %s", uri);
             logger.error(errorMsg, e);
             throw new ConductorClientException(errorMsg, e);
         } finally {

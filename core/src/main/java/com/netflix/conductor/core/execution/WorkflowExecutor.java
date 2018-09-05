@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- *
- */
+
 package com.netflix.conductor.core.execution;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -366,6 +364,7 @@ public class WorkflowExecutor {
 
         workflow.setStatus(WorkflowStatus.COMPLETED);
         workflow.setOutput(wf.getOutput());
+        workflow.setExternalOutputPayloadStoragePath(wf.getExternalOutputPayloadStoragePath());
         executionDAO.updateWorkflow(workflow);
         logger.debug("Completed workflow execution for {}", wf.getWorkflowId());
         executionDAO.updateTasks(wf.getTasks());
@@ -524,11 +523,7 @@ public class WorkflowExecutor {
                 taskByRefName.setWorkerId(task.getWorkerId());
                 taskByRefName.setCallbackAfterSeconds(task.getCallbackAfterSeconds());
                 WorkflowDef workflowDef = metadataDAO.get(workflowInstance.getWorkflowType(), workflowInstance.getVersion());
-                Map<String, Object> outputData = task.getOutputData();
-                if (!workflowDef.getOutputParameters().isEmpty()) {
-                    outputData = parametersUtils.getTaskInput(workflowDef.getOutputParameters(), workflowInstance, null, null);
-                }
-                workflowInstance.setOutput(outputData);
+                deciderService.updateOutput(workflowDef, workflowInstance, task);
             }
             executionDAO.updateWorkflow(workflowInstance);
             logger.debug("Task: {} has a {} status and the Workflow has been updated with failed task reference", task, task.getStatus());
