@@ -1,11 +1,11 @@
 /**
  * Copyright 2016 Netflix, Inc.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -17,7 +17,6 @@ package com.netflix.conductor.tests.integration;
 
 import com.google.inject.Guice;
 import com.google.inject.Injector;
-
 import com.netflix.conductor.bootstrap.BootstrapModule;
 import com.netflix.conductor.bootstrap.ModulesProvider;
 import com.netflix.conductor.client.grpc.MetadataClient;
@@ -31,7 +30,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
@@ -43,7 +41,6 @@ import com.netflix.conductor.grpc.server.GRPCServer;
 import com.netflix.conductor.grpc.server.GRPCServerConfiguration;
 import com.netflix.conductor.grpc.server.GRPCServerProvider;
 import com.netflix.conductor.tests.utils.TestEnvironment;
-
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -282,16 +279,8 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
 
     }
 
-    // Helper method for creating task definitions on the server
-    private List<TaskDef> createAndRegisterTaskDefinitions(String prefixTaskDefinition, int numberOfTaskDefinitions) {
-        String prefix = Optional.ofNullable(prefixTaskDefinition).orElse(TASK_DEFINITION_PREFIX);
-        List<TaskDef> definitions = new LinkedList<>();
-        for (int i = 0; i < numberOfTaskDefinitions; i++) {
-            TaskDef def = new TaskDef(prefix + i, "task " + i + "description");
-            def.setTimeoutPolicy(TimeoutPolicy.RETRY);
-            definitions.add(def);
-        }
-        metadataClient.registerTaskDefs(definitions);
-        return definitions;
+    @Override
+    protected void registerTaskDefinitions(List<TaskDef> taskDefinitionList) {
+        metadataClient.registerTaskDefs(taskDefinitionList);
     }
 }

@@ -1,11 +1,11 @@
 /**
  * Copyright 2016 Netflix, Inc.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -25,7 +25,6 @@ import com.netflix.conductor.client.http.WorkflowClient;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
@@ -47,9 +46,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
@@ -308,21 +305,10 @@ public class End2EndTests extends AbstractEndToEndTest {
         for (WorkflowTask ephemeralTask : ephemeralTasks) {
             assertNotNull(ephemeralTask.getTaskDefinition());
         }
-
     }
 
-    // Helper method for creating task definitions on the server
-    private List<TaskDef> createAndRegisterTaskDefinitions(String prefixTaskDefinition, int numberOfTaskDefinitions) {
-        assertNotNull(taskClient);
-        String prefix = Optional.ofNullable(prefixTaskDefinition).orElse(TASK_DEFINITION_PREFIX);
-        List<TaskDef> definitions = new LinkedList<>();
-        for (int i = 0; i < numberOfTaskDefinitions; i++) {
-            TaskDef def = new TaskDef(prefix + i, "task " + i + "description");
-            def.setTimeoutPolicy(TimeoutPolicy.RETRY);
-            definitions.add(def);
-        }
-        metadataClient.registerTaskDefs(definitions);
-        return definitions;
+    @Override
+    protected void registerTaskDefinitions(List<TaskDef> taskDefinitionList) {
+        metadataClient.registerTaskDefs(taskDefinitionList);
     }
-
 }

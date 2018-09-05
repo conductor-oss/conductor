@@ -5,13 +5,16 @@ import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
-public class AbstractEndToEndTest {
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
-    protected static final String TASK_DEFINITION_PREFIX = "task_";
+public abstract class AbstractEndToEndTest {
+
+    private static final String TASK_DEFINITION_PREFIX = "task_";
     private static final String DEFAULT_DESCRIPTION = "description";
     // Represents null value deserialized from the redis in memory db
     private static final String DEFAULT_NULL_VALUE = "null";
-
 
     protected WorkflowTask createWorkflowTask(String name) {
         WorkflowTask workflowTask = new WorkflowTask();
@@ -42,7 +45,21 @@ public class AbstractEndToEndTest {
         return workflowDefinition;
     }
 
+    protected List<TaskDef> createAndRegisterTaskDefinitions(String prefixTaskDefinition, int numberOfTaskDefinitions) {
+        String prefix = Optional.ofNullable(prefixTaskDefinition).orElse(TASK_DEFINITION_PREFIX);
+        List<TaskDef> definitions = new LinkedList<>();
+        for (int i = 0; i < numberOfTaskDefinitions; i++) {
+            TaskDef def = new TaskDef(prefix + i, "task " + i + DEFAULT_DESCRIPTION);
+            def.setTimeoutPolicy(TaskDef.TimeoutPolicy.RETRY);
+            definitions.add(def);
+        }
+        this.registerTaskDefinitions(definitions);
+        return definitions;
+    }
+
     private String getDefaultDescription(String nameResource) {
         return nameResource + " " + DEFAULT_DESCRIPTION;
     }
+
+    protected abstract void registerTaskDefinitions(List<TaskDef> taskDefinitionList);
 }
