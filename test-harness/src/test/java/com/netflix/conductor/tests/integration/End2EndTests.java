@@ -55,7 +55,6 @@ import static org.junit.Assert.assertTrue;
 
 /**
  * @author Viren
- *
  */
 public class End2EndTests extends AbstractEndToEndTest {
 
@@ -305,6 +304,42 @@ public class End2EndTests extends AbstractEndToEndTest {
         for (WorkflowTask ephemeralTask : ephemeralTasks) {
             assertNotNull(ephemeralTask.getTaskDefinition());
         }
+    }
+
+    @Test
+    public void testEphemeralWorkflowsWithEphemeralAndStoredTasks() throws Exception {
+        createAndRegisterTaskDefinitions("storedTask", 1);
+
+        WorkflowDef workflowDefinition = createWorkflowDefinition("testEphemeralWorkflowsWithEphemeralAndStoredTasks");
+
+        WorkflowTask workflowTask1 = createWorkflowTask("ephemeralTask1");
+        TaskDef taskDefinition1 = createTaskDefinition("ephemeralTaskDef1");
+        workflowTask1.setTaskDefinition(taskDefinition1);
+
+        WorkflowTask workflowTask2 = createWorkflowTask("storedTask0");
+
+        workflowDefinition.getTasks().add(workflowTask1);
+        workflowDefinition.getTasks().add(workflowTask2);
+
+        String workflowExecutionName = "ephemeralWorkflowWithEphemeralAndStoredTasks";
+        StartWorkflowRequest workflowRequest = new StartWorkflowRequest()
+                .withName(workflowExecutionName)
+                .withWorkflowDef(workflowDefinition);
+
+        String workflowId = workflowClient.startWorkflow(workflowRequest);
+        assertNotNull(workflowId);
+
+        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
+        WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
+        assertNotNull(ephemeralWorkflow);
+        assertEquals(workflowDefinition, ephemeralWorkflow);
+
+        TaskDef storedTaskDefinition = metadataClient.getTaskDef("storedTask0");
+        List<WorkflowTask> tasks = ephemeralWorkflow.getTasks();
+        assertEquals(2, tasks.size());
+        assertEquals(workflowTask1, tasks.get(0));
+        assertEquals(storedTaskDefinition, tasks.get(1).getTaskDefinition());
+
     }
 
     @Override
