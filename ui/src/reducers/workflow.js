@@ -73,15 +73,16 @@ export default function workflows(state = initialState, action) {
     case 'RECEIVED_BULK_RETRY_WORKFLOW':
     case 'RECEIVED_BULK_PAUSE_WORKFLOW':
     case 'RECEIVED_BULK_RESUME_WORKFLOW':
+
       return {
         ...state,
         error:false,
         bulkProcessInFlight:false,
-        bulkProcessSuccess: !action.data.bulkServerError && action.data.bulkErrorResults && action.data.bulkErrorResults.length === 0,
-        bulkServerErrors: !(!action.data.bulkServerError && action.data.bulkErrorResults && action.data.bulkErrorResults.length === 0),
-        bulkErrorResults: action.data.bulkErrorResults || [],
+        bulkProcessSuccess: !action.data.bulkServerError && Object.keys(action.data.bulkErrorResults || {}).length === 0,
+        bulkServerErrors: !(!action.data.bulkServerError && Object.keys(action.data.bulkErrorResults || {}).length === 0),
+        bulkErrorResults: action.data.bulkErrorResults || {},
         bulkServerErrorMessage: action.data.bulkServerErrorMessage,
-        bulkSuccessResults: action.data.bulkSuccessResults || []
+        bulkSuccessfulResults: action.data.bulkSuccessfulResults || []
       };
     case 'REQUESTED_BULK_TERMINATE_WORKFLOW':
     case 'REQUESTED_BULK_RESTART_WORKFLOW':

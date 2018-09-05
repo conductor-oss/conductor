@@ -101,7 +101,7 @@ class Workflow extends React.Component {
       bulkValidationMessage:"",
       bulkPanelOpen:false,
       bulkErrorMessages: [],
-      bulkSuccessResults:[]
+      bulkSuccessfulResults:[]
     };
   }
 
@@ -131,7 +131,7 @@ class Workflow extends React.Component {
     update = update || this.state.start !== start;
 
     this.constructBulkErrorMessages(nextProps);
-    this.removeSuccessfulWorkFlows((nextProps && nextProps.bulkSuccessResults) || []);
+    this.removeSuccessfulWorkFlows((nextProps && nextProps.bulkSuccessfulResults) || []);
     this.setState({
       search : search,
       h: isNaN(h, 10) ? '' : h,
@@ -140,7 +140,7 @@ class Workflow extends React.Component {
       workflows : workflowDefs,
       bulkProcessInFlight : nextProps.bulkProcessInFlight,
       bulkProcessSuccess : nextProps.bulkProcessSuccess,
-      bulkSuccessResults: nextProps.bulkSuccessResults,
+      bulkSuccessfulResults: nextProps.bulkSuccessfulResults,
       start: isNaN(start, 10) ? 0 : start,
       error: nextProps.error,
       bulkError: ((!this.state.error && nextProps.error && this.state.bulkProcessInFlight) || nextProps.bulkServerErrors) ? true : this.state.bulkError
@@ -291,7 +291,7 @@ class Workflow extends React.Component {
 
     let wfes = this.state.selectedWFEs.map((wfe) => {return wfe.workflowId});
     let operation = this.state.bulkProcessOperation;
-    this.setState({bulkProcessSuccess:false, bulkError:false, bulkValidationMessage: "", bulkErrorMessages:[], bulkSuccessResults:[]});
+    this.setState({bulkProcessSuccess:false, bulkError:false, bulkValidationMessage: "", bulkErrorMessages:[], bulkSuccessfulResults:[]});
 
     if(wfes.length === 0){
       this.setState({bulkValidationMessage:"Error: No workflows selected"})
@@ -328,11 +328,9 @@ class Workflow extends React.Component {
       messages.push(props.bulkServerErrorMessage);
     }
 
-    if(props.bulkErrorResults && props.bulkErrorResults.length > 0){
-      for(var i in props.bulkErrorResults){
-        for(var id in props.bulkErrorResults[i]){
-          messages.push(id + " - " + props.bulkErrorResults[i][id] + "");
-        }
+    if(props.bulkErrorResults){
+      for(var id in props.bulkErrorResults){
+        messages.push(id + " - " + props.bulkErrorResults[id] + "");
       }
     }
     this.setState({bulkErrorMessages: messages});
@@ -366,10 +364,15 @@ class Workflow extends React.Component {
     let bulkErrors = this.state.bulkErrorMessages.length === 0 ? [] :  this.state.bulkErrorMessages.map((mess) => {
       return <p>{mess}</p>
     });
+
+    let bulkSuccessMessage = this.state.bulkSuccessfulResults && this.state.bulkSuccessfulResults.length > 0 ?  this.state.bulkSuccessfulResults.map((mess) => {
+      return <p key={mess}>{mess}</p>
+    }) : <p key="NONE">None</p> ;
+
     const bulkSpin = (this.state.bulkProcessInFlight ? (<i style={{"fontSize":"150%"}} className="fa fa-spinner fa-spin"></i>) : "");
     const bulkSuccess = (this.state.bulkProcessSuccess ? (<span style={{"fontSize":"150%", "color":"green"}}>All Successful!</span>) : "");
     const bulkValidation = (this.state.bulkValidationMessage !== "" ? (<span style={{"fontSize":"150%", "color":"red"}}>{this.state.bulkValidationMessage}</span>) : "");
-    const bulkError = (this.state.bulkError ? (<span><span style={{"fontSize":"125%", "color":"green"}}>Successful: {this.state.bulkSuccessResults.map((mess) => {return <p key={mess}>{mess}</p>})}</span><span style={{"fontSize":"125%", "color":"red"}}>Errors: {this.state.bulkErrorMessages.map((mess) => {return <p key={mess}>{mess}</p>})}</span></span>) : "");
+    const bulkError = (this.state.bulkError ? (<span><span style={{"fontSize":"125%", "color":"green"}}>Successful: {bulkSuccessMessage}</span><span style={{"fontSize":"125%", "color":"red"}}>Errors: {this.state.bulkErrorMessages.map((mess) => {return <p key={mess}>{mess}</p>})}</span></span>) : "");
     //secondary filter to match sure we only show workflows that match the the status
     var currentStatusArray = this.state.status;
     if (currentStatusArray.length > 0 && wfs.length > 0) {
