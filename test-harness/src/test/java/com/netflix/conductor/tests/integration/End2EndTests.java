@@ -96,6 +96,30 @@ public class End2EndTests extends AbstractEndToEndTest {
         search.stop();
     }
 
+    @Override
+    protected String startWorkflow(String workflowExecutionName, WorkflowDef workflowDefinition) {
+        StartWorkflowRequest workflowRequest = new StartWorkflowRequest()
+                .withName(workflowExecutionName)
+                .withWorkflowDef(workflowDefinition);
+
+        return workflowClient.startWorkflow(workflowRequest);
+    }
+
+    @Override
+    protected Workflow getWorkflow(String workflowId, boolean includeTasks) {
+        return workflowClient.getWorkflow(workflowId, includeTasks);
+    }
+
+    @Override
+    protected TaskDef getTaskDefinition(String taskName) {
+        return metadataClient.getTaskDef(taskName);
+    }
+
+    @Override
+    protected void registerTaskDefinitions(List<TaskDef> taskDefinitionList) {
+        metadataClient.registerTaskDefs(taskDefinitionList);
+    }
+
     @Test
     public void testAll() throws Exception {
         List<TaskDef> definitions = createAndRegisterTaskDefinitions("t", 5);
@@ -241,109 +265,4 @@ public class End2EndTests extends AbstractEndToEndTest {
         }
     }
 
-    @Test
-    public void testEphemeralWorkflowsWithStoredTasks() throws Exception {
-        List<TaskDef> definitions = createAndRegisterTaskDefinitions("storedTaskDef", 5);
-
-        List<TaskDef> found = taskClient.getTaskDef();
-        assertNotNull(found);
-        assertTrue(definitions.size() > 0);
-
-        WorkflowDef workflowDefinition = createWorkflowDefinition("testEphemeralWorkflow");
-
-        WorkflowTask workflowTask1 = createWorkflowTask("storedTaskDef1");
-        WorkflowTask workflowTask2 = createWorkflowTask("storedTaskDef2");
-
-        workflowDefinition.getTasks().add(workflowTask1);
-        workflowDefinition.getTasks().add(workflowTask2);
-
-        String workflowExecutionName = "ephemeralWorkflow";
-        StartWorkflowRequest workflowRequest = new StartWorkflowRequest()
-                .withName(workflowExecutionName)
-                .withWorkflowDef(workflowDefinition);
-
-        String workflowId = workflowClient.startWorkflow(workflowRequest);
-        assertNotNull(workflowId);
-
-        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-        WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
-        assertNotNull(ephemeralWorkflow);
-        assertEquals(workflowDefinition, ephemeralWorkflow);
-    }
-
-    @Test
-    public void testEphemeralWorkflowsWithEphemeralTasks() throws Exception {
-        WorkflowDef workflowDefinition = createWorkflowDefinition("testEphemeralWorkflowWithEphemeralTasks");
-
-        WorkflowTask workflowTask1 = createWorkflowTask("ephemeralTask1");
-        TaskDef taskDefinition1 = createTaskDefinition("ephemeralTaskDef1");
-        workflowTask1.setTaskDefinition(taskDefinition1);
-
-        WorkflowTask workflowTask2 = createWorkflowTask("ephemeralTask2");
-        TaskDef taskDefinition2 = createTaskDefinition("ephemeralTaskDef2");
-        workflowTask2.setTaskDefinition(taskDefinition2);
-
-        workflowDefinition.getTasks().add(workflowTask1);
-        workflowDefinition.getTasks().add(workflowTask2);
-
-        String workflowExecutionName = "ephemeralWorkflowWithEphemeralTasks";
-        StartWorkflowRequest workflowRequest = new StartWorkflowRequest()
-                .withName(workflowExecutionName)
-                .withWorkflowDef(workflowDefinition);
-
-        String workflowId = workflowClient.startWorkflow(workflowRequest);
-        assertNotNull(workflowId);
-
-        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-        WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
-        assertNotNull(ephemeralWorkflow);
-        assertEquals(workflowDefinition, ephemeralWorkflow);
-
-        List<WorkflowTask> ephemeralTasks = ephemeralWorkflow.getTasks();
-        assertEquals(2, ephemeralTasks.size());
-        for (WorkflowTask ephemeralTask : ephemeralTasks) {
-            assertNotNull(ephemeralTask.getTaskDefinition());
-        }
-    }
-
-    @Test
-    public void testEphemeralWorkflowsWithEphemeralAndStoredTasks() throws Exception {
-        createAndRegisterTaskDefinitions("storedTask", 1);
-
-        WorkflowDef workflowDefinition = createWorkflowDefinition("testEphemeralWorkflowsWithEphemeralAndStoredTasks");
-
-        WorkflowTask workflowTask1 = createWorkflowTask("ephemeralTask1");
-        TaskDef taskDefinition1 = createTaskDefinition("ephemeralTaskDef1");
-        workflowTask1.setTaskDefinition(taskDefinition1);
-
-        WorkflowTask workflowTask2 = createWorkflowTask("storedTask0");
-
-        workflowDefinition.getTasks().add(workflowTask1);
-        workflowDefinition.getTasks().add(workflowTask2);
-
-        String workflowExecutionName = "ephemeralWorkflowWithEphemeralAndStoredTasks";
-        StartWorkflowRequest workflowRequest = new StartWorkflowRequest()
-                .withName(workflowExecutionName)
-                .withWorkflowDef(workflowDefinition);
-
-        String workflowId = workflowClient.startWorkflow(workflowRequest);
-        assertNotNull(workflowId);
-
-        Workflow workflow = workflowClient.getWorkflow(workflowId, true);
-        WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
-        assertNotNull(ephemeralWorkflow);
-        assertEquals(workflowDefinition, ephemeralWorkflow);
-
-        TaskDef storedTaskDefinition = metadataClient.getTaskDef("storedTask0");
-        List<WorkflowTask> tasks = ephemeralWorkflow.getTasks();
-        assertEquals(2, tasks.size());
-        assertEquals(workflowTask1, tasks.get(0));
-        assertEquals(storedTaskDefinition, tasks.get(1).getTaskDefinition());
-
-    }
-
-    @Override
-    protected void registerTaskDefinitions(List<TaskDef> taskDefinitionList) {
-        metadataClient.registerTaskDefs(taskDefinitionList);
-    }
 }

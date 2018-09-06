@@ -4,10 +4,15 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.Workflow;
+import org.junit.Test;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public abstract class AbstractEndToEndTest {
 
@@ -15,6 +20,102 @@ public abstract class AbstractEndToEndTest {
     private static final String DEFAULT_DESCRIPTION = "description";
     // Represents null value deserialized from the redis in memory db
     private static final String DEFAULT_NULL_VALUE = "null";
+
+    @Test
+    public void testEphemeralWorkflowsWithStoredTasks() throws Exception {
+        createAndRegisterTaskDefinitions("storedTaskDef", 5);
+
+        WorkflowDef workflowDefinition = createWorkflowDefinition("testEphemeralWorkflow");
+
+        WorkflowTask workflowTask1 = createWorkflowTask("storedTaskDef1");
+        WorkflowTask workflowTask2 = createWorkflowTask("storedTaskDef2");
+
+        workflowDefinition.getTasks().add(workflowTask1);
+        workflowDefinition.getTasks().add(workflowTask2);
+
+        String workflowExecutionName = "ephemeralWorkflow";
+        String workflowId = startWorkflow(workflowExecutionName, workflowDefinition);
+        assertNotNull(workflowId);
+
+        Workflow workflow = getWorkflow(workflowId, true);
+        WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
+        assertNotNull(ephemeralWorkflow);
+        assertEquals(workflowDefinition, ephemeralWorkflow);
+    }
+
+    @Test
+    public void testEphemeralWorkflowsWithEphemeralTasks() throws Exception {
+        WorkflowDef workflowDefinition = createWorkflowDefinition("testEphemeralWorkflowWithEphemeralTasks");
+
+        WorkflowTask workflowTask1 = createWorkflowTask("ephemeralTask1");
+        TaskDef taskDefinition1 = createTaskDefinition("ephemeralTaskDef1");
+        workflowTask1.setTaskDefinition(taskDefinition1);
+
+        WorkflowTask workflowTask2 = createWorkflowTask("ephemeralTask2");
+        TaskDef taskDefinition2 = createTaskDefinition("ephemeralTaskDef2");
+        workflowTask2.setTaskDefinition(taskDefinition2);
+
+        workflowDefinition.getTasks().add(workflowTask1);
+        workflowDefinition.getTasks().add(workflowTask2);
+
+        String workflowExecutionName = "ephemeralWorkflowWithEphemeralTasks";
+
+        String workflowId = startWorkflow(workflowExecutionName, workflowDefinition);
+        assertNotNull(workflowId);
+
+        Workflow workflow = getWorkflow(workflowId, true);
+        WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
+        assertNotNull(ephemeralWorkflow);
+        assertEquals(workflowDefinition, ephemeralWorkflow);
+
+        List<WorkflowTask> ephemeralTasks = ephemeralWorkflow.getTasks();
+        assertEquals(2, ephemeralTasks.size());
+        for (WorkflowTask ephemeralTask : ephemeralTasks) {
+            assertNotNull(ephemeralTask.getTaskDefinition());
+        }
+    }
+
+    @Test
+    public void testEphemeralWorkflowsWithEphemeralAndStoredTasks() throws Exception {
+        createAndRegisterTaskDefinitions("storedTask", 1);
+
+        WorkflowDef workflowDefinition = createWorkflowDefinition("testEphemeralWorkflowsWithEphemeralAndStoredTasks");
+
+        WorkflowTask workflowTask1 = createWorkflowTask("ephemeralTask1");
+        TaskDef taskDefinition1 = createTaskDefinition("ephemeralTaskDef1");
+        workflowTask1.setTaskDefinition(taskDefinition1);
+
+        WorkflowTask workflowTask2 = createWorkflowTask("storedTask0");
+
+        workflowDefinition.getTasks().add(workflowTask1);
+        workflowDefinition.getTasks().add(workflowTask2);
+
+        String workflowExecutionName = "ephemeralWorkflowWithEphemeralAndStoredTasks";
+
+        String workflowId = startWorkflow(workflowExecutionName, workflowDefinition);
+        assertNotNull(workflowId);
+
+        Workflow workflow = getWorkflow(workflowId, true);
+        WorkflowDef ephemeralWorkflow = workflow.getWorkflowDefinition();
+        assertNotNull(ephemeralWorkflow);
+        assertEquals(workflowDefinition, ephemeralWorkflow);
+
+        TaskDef storedTaskDefinition = getTaskDefinition("storedTask0");
+        List<WorkflowTask> tasks = ephemeralWorkflow.getTasks();
+        assertEquals(2, tasks.size());
+        assertEquals(workflowTask1, tasks.get(0));
+        TaskDef currentStoredTaskDefinition = tasks.get(1).getTaskDefinition();
+        assertNotNull(currentStoredTaskDefinition);
+        assertEquals(storedTaskDefinition, currentStoredTaskDefinition);
+
+    }
+
+    protected abstract String startWorkflow(String workflowExecutionName, WorkflowDef workflowDefinition);
+
+    protected abstract Workflow getWorkflow(String workflowId, boolean includeTasks);
+
+    protected abstract TaskDef getTaskDefinition(String taskName);
+
 
     protected WorkflowTask createWorkflowTask(String name) {
         WorkflowTask workflowTask = new WorkflowTask();
