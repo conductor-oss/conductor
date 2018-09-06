@@ -110,13 +110,6 @@ public abstract class AbstractEndToEndTest {
 
     }
 
-    protected abstract String startWorkflow(String workflowExecutionName, WorkflowDef workflowDefinition);
-
-    protected abstract Workflow getWorkflow(String workflowId, boolean includeTasks);
-
-    protected abstract TaskDef getTaskDefinition(String taskName);
-
-
     protected WorkflowTask createWorkflowTask(String name) {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName(name);
@@ -161,6 +154,12 @@ public abstract class AbstractEndToEndTest {
     private String getDefaultDescription(String nameResource) {
         return nameResource + " " + DEFAULT_DESCRIPTION;
     }
+
+    protected abstract String startWorkflow(String workflowExecutionName, WorkflowDef workflowDefinition);
+
+    protected abstract Workflow getWorkflow(String workflowId, boolean includeTasks);
+
+    protected abstract TaskDef getTaskDefinition(String taskName);
 
     protected abstract void registerTaskDefinitions(List<TaskDef> taskDefinitionList);
 }
