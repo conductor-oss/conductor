@@ -19,20 +19,20 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type WorkflowSummary struct {
-	WorkflowType             string                  `protobuf:"bytes,1,opt,name=workflow_type,json=workflowType" json:"workflow_type,omitempty"`
-	Version                  int32                   `protobuf:"varint,2,opt,name=version" json:"version,omitempty"`
-	WorkflowId               string                  `protobuf:"bytes,3,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
-	CorrelationId            string                  `protobuf:"bytes,4,opt,name=correlation_id,json=correlationId" json:"correlation_id,omitempty"`
-	StartTime                string                  `protobuf:"bytes,5,opt,name=start_time,json=startTime" json:"start_time,omitempty"`
-	UpdateTime               string                  `protobuf:"bytes,6,opt,name=update_time,json=updateTime" json:"update_time,omitempty"`
-	EndTime                  string                  `protobuf:"bytes,7,opt,name=end_time,json=endTime" json:"end_time,omitempty"`
-	Status                   Workflow_WorkflowStatus `protobuf:"varint,8,opt,name=status,enum=conductor.proto.Workflow_WorkflowStatus" json:"status,omitempty"`
-	Input                    string                  `protobuf:"bytes,9,opt,name=input" json:"input,omitempty"`
-	Output                   string                  `protobuf:"bytes,10,opt,name=output" json:"output,omitempty"`
-	ReasonForIncompletion    string                  `protobuf:"bytes,11,opt,name=reason_for_incompletion,json=reasonForIncompletion" json:"reason_for_incompletion,omitempty"`
-	ExecutionTime            int64                   `protobuf:"varint,12,opt,name=execution_time,json=executionTime" json:"execution_time,omitempty"`
-	Event                    string                  `protobuf:"bytes,13,opt,name=event" json:"event,omitempty"`
-	FailedReferenceTaskNames string                  `protobuf:"bytes,14,opt,name=failed_reference_task_names,json=failedReferenceTaskNames" json:"failed_reference_task_names,omitempty"`
+	WorkflowType             string                  `protobuf:"bytes,1,opt,name=workflow_type,json=workflowType,proto3" json:"workflow_type,omitempty"`
+	Version                  int32                   `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	WorkflowId               string                  `protobuf:"bytes,3,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	CorrelationId            string                  `protobuf:"bytes,4,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
+	StartTime                string                  `protobuf:"bytes,5,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	UpdateTime               string                  `protobuf:"bytes,6,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
+	EndTime                  string                  `protobuf:"bytes,7,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	Status                   Workflow_WorkflowStatus `protobuf:"varint,8,opt,name=status,proto3,enum=conductor.proto.Workflow_WorkflowStatus" json:"status,omitempty"`
+	Input                    string                  `protobuf:"bytes,9,opt,name=input,proto3" json:"input,omitempty"`
+	Output                   string                  `protobuf:"bytes,10,opt,name=output,proto3" json:"output,omitempty"`
+	ReasonForIncompletion    string                  `protobuf:"bytes,11,opt,name=reason_for_incompletion,json=reasonForIncompletion,proto3" json:"reason_for_incompletion,omitempty"`
+	ExecutionTime            int64                   `protobuf:"varint,12,opt,name=execution_time,json=executionTime,proto3" json:"execution_time,omitempty"`
+	Event                    string                  `protobuf:"bytes,13,opt,name=event,proto3" json:"event,omitempty"`
+	FailedReferenceTaskNames string                  `protobuf:"bytes,14,opt,name=failed_reference_task_names,json=failedReferenceTaskNames,proto3" json:"failed_reference_task_names,omitempty"`
 	XXX_NoUnkeyedLiteral     struct{}                `json:"-"`
 	XXX_unrecognized         []byte                  `json:"-"`
 	XXX_sizecache            int32                   `json:"-"`
@@ -42,7 +42,7 @@ func (m *WorkflowSummary) Reset()         { *m = WorkflowSummary{} }
 func (m *WorkflowSummary) String() string { return proto.CompactTextString(m) }
 func (*WorkflowSummary) ProtoMessage()    {}
 func (*WorkflowSummary) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflowsummary_3f8ed40c0bd9261f, []int{0}
+	return fileDescriptor_workflowsummary_4b94875bbd67cbd7, []int{0}
 }
 func (m *WorkflowSummary) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowSummary.Unmarshal(m, b)
@@ -165,10 +165,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/workflowsummary.proto", fileDescriptor_workflowsummary_3f8ed40c0bd9261f)
+	proto.RegisterFile("model/workflowsummary.proto", fileDescriptor_workflowsummary_4b94875bbd67cbd7)
 }
 
-var fileDescriptor_workflowsummary_3f8ed40c0bd9261f = []byte{
+var fileDescriptor_workflowsummary_4b94875bbd67cbd7 = []byte{
 	// 428 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x92, 0x51, 0x8b, 0xd3, 0x40,
 	0x10, 0xc7, 0x89, 0x77, 0x6d, 0xaf, 0x7b, 0xd7, 0x1e, 0x2e, 0x55, 0x57, 0x8b, 0x58, 0x14, 0x21,

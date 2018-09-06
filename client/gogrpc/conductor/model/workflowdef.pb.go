@@ -20,15 +20,15 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type WorkflowDef struct {
-	Name                 string                    `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Description          string                    `protobuf:"bytes,2,opt,name=description" json:"description,omitempty"`
-	Version              int32                     `protobuf:"varint,3,opt,name=version" json:"version,omitempty"`
-	Tasks                []*WorkflowTask           `protobuf:"bytes,4,rep,name=tasks" json:"tasks,omitempty"`
-	InputParameters      []string                  `protobuf:"bytes,5,rep,name=input_parameters,json=inputParameters" json:"input_parameters,omitempty"`
-	OutputParameters     map[string]*_struct.Value `protobuf:"bytes,6,rep,name=output_parameters,json=outputParameters" json:"output_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	FailureWorkflow      string                    `protobuf:"bytes,7,opt,name=failure_workflow,json=failureWorkflow" json:"failure_workflow,omitempty"`
-	SchemaVersion        int32                     `protobuf:"varint,8,opt,name=schema_version,json=schemaVersion" json:"schema_version,omitempty"`
-	Restartable          bool                      `protobuf:"varint,9,opt,name=restartable" json:"restartable,omitempty"`
+	Name                 string                    `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description          string                    `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Version              int32                     `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	Tasks                []*WorkflowTask           `protobuf:"bytes,4,rep,name=tasks,proto3" json:"tasks,omitempty"`
+	InputParameters      []string                  `protobuf:"bytes,5,rep,name=input_parameters,json=inputParameters,proto3" json:"input_parameters,omitempty"`
+	OutputParameters     map[string]*_struct.Value `protobuf:"bytes,6,rep,name=output_parameters,json=outputParameters,proto3" json:"output_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	FailureWorkflow      string                    `protobuf:"bytes,7,opt,name=failure_workflow,json=failureWorkflow,proto3" json:"failure_workflow,omitempty"`
+	SchemaVersion        int32                     `protobuf:"varint,8,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	Restartable          bool                      `protobuf:"varint,9,opt,name=restartable,proto3" json:"restartable,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`
@@ -38,7 +38,7 @@ func (m *WorkflowDef) Reset()         { *m = WorkflowDef{} }
 func (m *WorkflowDef) String() string { return proto.CompactTextString(m) }
 func (*WorkflowDef) ProtoMessage()    {}
 func (*WorkflowDef) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflowdef_3a04d4bf8b36be23, []int{0}
+	return fileDescriptor_workflowdef_7fb3769e2566471c, []int{0}
 }
 func (m *WorkflowDef) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowDef.Unmarshal(m, b)
@@ -127,10 +127,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/workflowdef.proto", fileDescriptor_workflowdef_3a04d4bf8b36be23)
+	proto.RegisterFile("model/workflowdef.proto", fileDescriptor_workflowdef_7fb3769e2566471c)
 }
 
-var fileDescriptor_workflowdef_3a04d4bf8b36be23 = []byte{
+var fileDescriptor_workflowdef_7fb3769e2566471c = []byte{
 	// 404 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x74, 0x92, 0xdf, 0x6b, 0xd5, 0x30,
 	0x14, 0xc7, 0xe9, 0xba, 0x6e, 0xbb, 0x29, 0xf3, 0x5e, 0x03, 0x6a, 0x98, 0x0a, 0x45, 0x10, 0x2a,

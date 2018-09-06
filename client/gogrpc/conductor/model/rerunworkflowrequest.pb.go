@@ -20,11 +20,11 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type RerunWorkflowRequest struct {
-	ReRunFromWorkflowId  string                    `protobuf:"bytes,1,opt,name=re_run_from_workflow_id,json=reRunFromWorkflowId" json:"re_run_from_workflow_id,omitempty"`
-	WorkflowInput        map[string]*_struct.Value `protobuf:"bytes,2,rep,name=workflow_input,json=workflowInput" json:"workflow_input,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	ReRunFromTaskId      string                    `protobuf:"bytes,3,opt,name=re_run_from_task_id,json=reRunFromTaskId" json:"re_run_from_task_id,omitempty"`
-	TaskInput            map[string]*_struct.Value `protobuf:"bytes,4,rep,name=task_input,json=taskInput" json:"task_input,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	CorrelationId        string                    `protobuf:"bytes,5,opt,name=correlation_id,json=correlationId" json:"correlation_id,omitempty"`
+	ReRunFromWorkflowId  string                    `protobuf:"bytes,1,opt,name=re_run_from_workflow_id,json=reRunFromWorkflowId,proto3" json:"re_run_from_workflow_id,omitempty"`
+	WorkflowInput        map[string]*_struct.Value `protobuf:"bytes,2,rep,name=workflow_input,json=workflowInput,proto3" json:"workflow_input,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	ReRunFromTaskId      string                    `protobuf:"bytes,3,opt,name=re_run_from_task_id,json=reRunFromTaskId,proto3" json:"re_run_from_task_id,omitempty"`
+	TaskInput            map[string]*_struct.Value `protobuf:"bytes,4,rep,name=task_input,json=taskInput,proto3" json:"task_input,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	CorrelationId        string                    `protobuf:"bytes,5,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`
@@ -34,7 +34,7 @@ func (m *RerunWorkflowRequest) Reset()         { *m = RerunWorkflowRequest{} }
 func (m *RerunWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*RerunWorkflowRequest) ProtoMessage()    {}
 func (*RerunWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_rerunworkflowrequest_54d9ae665213e0b8, []int{0}
+	return fileDescriptor_rerunworkflowrequest_ec6d727a6700f219, []int{0}
 }
 func (m *RerunWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RerunWorkflowRequest.Unmarshal(m, b)
@@ -96,10 +96,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/rerunworkflowrequest.proto", fileDescriptor_rerunworkflowrequest_54d9ae665213e0b8)
+	proto.RegisterFile("model/rerunworkflowrequest.proto", fileDescriptor_rerunworkflowrequest_ec6d727a6700f219)
 }
 
-var fileDescriptor_rerunworkflowrequest_54d9ae665213e0b8 = []byte{
+var fileDescriptor_rerunworkflowrequest_ec6d727a6700f219 = []byte{
 	// 369 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x92, 0x4f, 0xef, 0xd2, 0x30,
 	0x18, 0xc7, 0x33, 0xf8, 0x61, 0x42, 0x09, 0x60, 0x8a, 0x41, 0x82, 0x1e, 0x16, 0x13, 0x13, 0x0e,

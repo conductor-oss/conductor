@@ -19,7 +19,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type DynamicForkJoinTaskList struct {
-	DynamicTasks         []*DynamicForkJoinTask `protobuf:"bytes,1,rep,name=dynamic_tasks,json=dynamicTasks" json:"dynamic_tasks,omitempty"`
+	DynamicTasks         []*DynamicForkJoinTask `protobuf:"bytes,1,rep,name=dynamic_tasks,json=dynamicTasks,proto3" json:"dynamic_tasks,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
 	XXX_unrecognized     []byte                 `json:"-"`
 	XXX_sizecache        int32                  `json:"-"`
@@ -29,7 +29,7 @@ func (m *DynamicForkJoinTaskList) Reset()         { *m = DynamicForkJoinTaskList
 func (m *DynamicForkJoinTaskList) String() string { return proto.CompactTextString(m) }
 func (*DynamicForkJoinTaskList) ProtoMessage()    {}
 func (*DynamicForkJoinTaskList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_dynamicforkjointasklist_5dc7aa3e0011d25e, []int{0}
+	return fileDescriptor_dynamicforkjointasklist_4634756916e85673, []int{0}
 }
 func (m *DynamicForkJoinTaskList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DynamicForkJoinTaskList.Unmarshal(m, b)
@@ -61,10 +61,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/dynamicforkjointasklist.proto", fileDescriptor_dynamicforkjointasklist_5dc7aa3e0011d25e)
+	proto.RegisterFile("model/dynamicforkjointasklist.proto", fileDescriptor_dynamicforkjointasklist_4634756916e85673)
 }
 
-var fileDescriptor_dynamicforkjointasklist_5dc7aa3e0011d25e = []byte{
+var fileDescriptor_dynamicforkjointasklist_4634756916e85673 = []byte{
 	// 200 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0xce, 0xcd, 0x4f, 0x49,
 	0xcd, 0xd1, 0x4f, 0xa9, 0xcc, 0x4b, 0xcc, 0xcd, 0x4c, 0x4e, 0xcb, 0x2f, 0xca, 0xce, 0xca, 0xcf,

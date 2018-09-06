@@ -49,18 +49,18 @@ func (x TaskResult_Status) String() string {
 	return proto.EnumName(TaskResult_Status_name, int32(x))
 }
 func (TaskResult_Status) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_taskresult_ccaec941f8ac2f31, []int{0, 0}
+	return fileDescriptor_taskresult_50ab9135b69785bc, []int{0, 0}
 }
 
 type TaskResult struct {
-	WorkflowInstanceId    string                    `protobuf:"bytes,1,opt,name=workflow_instance_id,json=workflowInstanceId" json:"workflow_instance_id,omitempty"`
-	TaskId                string                    `protobuf:"bytes,2,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
-	ReasonForIncompletion string                    `protobuf:"bytes,3,opt,name=reason_for_incompletion,json=reasonForIncompletion" json:"reason_for_incompletion,omitempty"`
-	CallbackAfterSeconds  int64                     `protobuf:"varint,4,opt,name=callback_after_seconds,json=callbackAfterSeconds" json:"callback_after_seconds,omitempty"`
-	WorkerId              string                    `protobuf:"bytes,5,opt,name=worker_id,json=workerId" json:"worker_id,omitempty"`
-	Status                TaskResult_Status         `protobuf:"varint,6,opt,name=status,enum=conductor.proto.TaskResult_Status" json:"status,omitempty"`
-	OutputData            map[string]*_struct.Value `protobuf:"bytes,7,rep,name=output_data,json=outputData" json:"output_data,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	OutputMessage         *any.Any                  `protobuf:"bytes,8,opt,name=output_message,json=outputMessage" json:"output_message,omitempty"`
+	WorkflowInstanceId    string                    `protobuf:"bytes,1,opt,name=workflow_instance_id,json=workflowInstanceId,proto3" json:"workflow_instance_id,omitempty"`
+	TaskId                string                    `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	ReasonForIncompletion string                    `protobuf:"bytes,3,opt,name=reason_for_incompletion,json=reasonForIncompletion,proto3" json:"reason_for_incompletion,omitempty"`
+	CallbackAfterSeconds  int64                     `protobuf:"varint,4,opt,name=callback_after_seconds,json=callbackAfterSeconds,proto3" json:"callback_after_seconds,omitempty"`
+	WorkerId              string                    `protobuf:"bytes,5,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	Status                TaskResult_Status         `protobuf:"varint,6,opt,name=status,proto3,enum=conductor.proto.TaskResult_Status" json:"status,omitempty"`
+	OutputData            map[string]*_struct.Value `protobuf:"bytes,7,rep,name=output_data,json=outputData,proto3" json:"output_data,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	OutputMessage         *any.Any                  `protobuf:"bytes,8,opt,name=output_message,json=outputMessage,proto3" json:"output_message,omitempty"`
 	XXX_NoUnkeyedLiteral  struct{}                  `json:"-"`
 	XXX_unrecognized      []byte                    `json:"-"`
 	XXX_sizecache         int32                     `json:"-"`
@@ -70,7 +70,7 @@ func (m *TaskResult) Reset()         { *m = TaskResult{} }
 func (m *TaskResult) String() string { return proto.CompactTextString(m) }
 func (*TaskResult) ProtoMessage()    {}
 func (*TaskResult) Descriptor() ([]byte, []int) {
-	return fileDescriptor_taskresult_ccaec941f8ac2f31, []int{0}
+	return fileDescriptor_taskresult_50ab9135b69785bc, []int{0}
 }
 func (m *TaskResult) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TaskResult.Unmarshal(m, b)
@@ -152,9 +152,9 @@ func init() {
 	proto.RegisterEnum("conductor.proto.TaskResult_Status", TaskResult_Status_name, TaskResult_Status_value)
 }
 
-func init() { proto.RegisterFile("model/taskresult.proto", fileDescriptor_taskresult_ccaec941f8ac2f31) }
+func init() { proto.RegisterFile("model/taskresult.proto", fileDescriptor_taskresult_50ab9135b69785bc) }
 
-var fileDescriptor_taskresult_ccaec941f8ac2f31 = []byte{
+var fileDescriptor_taskresult_50ab9135b69785bc = []byte{
 	// 517 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x93, 0xdf, 0x6e, 0xda, 0x30,
 	0x14, 0xc6, 0x17, 0xa0, 0x69, 0x39, 0xac, 0x05, 0x59, 0x8c, 0x66, 0x74, 0x9a, 0x10, 0x57, 0x48,

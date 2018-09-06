@@ -19,11 +19,11 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Request struct {
-	Start                int32    `protobuf:"varint,1,opt,name=start" json:"start,omitempty"`
-	Size                 int32    `protobuf:"varint,2,opt,name=size" json:"size,omitempty"`
-	Sort                 string   `protobuf:"bytes,3,opt,name=sort" json:"sort,omitempty"`
-	FreeText             string   `protobuf:"bytes,4,opt,name=free_text,json=freeText" json:"free_text,omitempty"`
-	Query                string   `protobuf:"bytes,5,opt,name=query" json:"query,omitempty"`
+	Start                int32    `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
+	Size                 int32    `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
+	Sort                 string   `protobuf:"bytes,3,opt,name=sort,proto3" json:"sort,omitempty"`
+	FreeText             string   `protobuf:"bytes,4,opt,name=free_text,json=freeText,proto3" json:"free_text,omitempty"`
+	Query                string   `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -33,7 +33,7 @@ func (m *Request) Reset()         { *m = Request{} }
 func (m *Request) String() string { return proto.CompactTextString(m) }
 func (*Request) ProtoMessage()    {}
 func (*Request) Descriptor() ([]byte, []int) {
-	return fileDescriptor_search_855a611014aa2143, []int{0}
+	return fileDescriptor_search_a50e745244da0fb1, []int{0}
 }
 func (m *Request) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Request.Unmarshal(m, b)
@@ -92,9 +92,9 @@ func init() {
 	proto.RegisterType((*Request)(nil), "conductor.grpc.search.Request")
 }
 
-func init() { proto.RegisterFile("grpc/search.proto", fileDescriptor_search_855a611014aa2143) }
+func init() { proto.RegisterFile("grpc/search.proto", fileDescriptor_search_a50e745244da0fb1) }
 
-var fileDescriptor_search_855a611014aa2143 = []byte{
+var fileDescriptor_search_a50e745244da0fb1 = []byte{
 	// 212 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x90, 0xc1, 0x4a, 0xc4, 0x30,
 	0x10, 0x86, 0xa9, 0x6e, 0x75, 0x37, 0x37, 0x83, 0x42, 0xd0, 0xcb, 0xe2, 0x69, 0x4f, 0xc9, 0xc1,
