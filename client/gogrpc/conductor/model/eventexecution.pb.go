@@ -45,18 +45,18 @@ func (x EventExecution_Status) String() string {
 	return proto.EnumName(EventExecution_Status_name, int32(x))
 }
 func (EventExecution_Status) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_eventexecution_680c67ac3fada8e2, []int{0, 0}
+	return fileDescriptor_eventexecution_461922c614048c4a, []int{0, 0}
 }
 
 type EventExecution struct {
-	Id                   string                    `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	MessageId            string                    `protobuf:"bytes,2,opt,name=message_id,json=messageId" json:"message_id,omitempty"`
-	Name                 string                    `protobuf:"bytes,3,opt,name=name" json:"name,omitempty"`
-	Event                string                    `protobuf:"bytes,4,opt,name=event" json:"event,omitempty"`
-	Created              int64                     `protobuf:"varint,5,opt,name=created" json:"created,omitempty"`
-	Status               EventExecution_Status     `protobuf:"varint,6,opt,name=status,enum=conductor.proto.EventExecution_Status" json:"status,omitempty"`
-	Action               EventHandler_Action_Type  `protobuf:"varint,7,opt,name=action,enum=conductor.proto.EventHandler_Action_Type" json:"action,omitempty"`
-	Output               map[string]*_struct.Value `protobuf:"bytes,8,rep,name=output" json:"output,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Id                   string                    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	MessageId            string                    `protobuf:"bytes,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Name                 string                    `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Event                string                    `protobuf:"bytes,4,opt,name=event,proto3" json:"event,omitempty"`
+	Created              int64                     `protobuf:"varint,5,opt,name=created,proto3" json:"created,omitempty"`
+	Status               EventExecution_Status     `protobuf:"varint,6,opt,name=status,proto3,enum=conductor.proto.EventExecution_Status" json:"status,omitempty"`
+	Action               EventHandler_Action_Type  `protobuf:"varint,7,opt,name=action,proto3,enum=conductor.proto.EventHandler_Action_Type" json:"action,omitempty"`
+	Output               map[string]*_struct.Value `protobuf:"bytes,8,rep,name=output,proto3" json:"output,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`
@@ -66,7 +66,7 @@ func (m *EventExecution) Reset()         { *m = EventExecution{} }
 func (m *EventExecution) String() string { return proto.CompactTextString(m) }
 func (*EventExecution) ProtoMessage()    {}
 func (*EventExecution) Descriptor() ([]byte, []int) {
-	return fileDescriptor_eventexecution_680c67ac3fada8e2, []int{0}
+	return fileDescriptor_eventexecution_461922c614048c4a, []int{0}
 }
 func (m *EventExecution) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EventExecution.Unmarshal(m, b)
@@ -149,10 +149,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/eventexecution.proto", fileDescriptor_eventexecution_680c67ac3fada8e2)
+	proto.RegisterFile("model/eventexecution.proto", fileDescriptor_eventexecution_461922c614048c4a)
 }
 
-var fileDescriptor_eventexecution_680c67ac3fada8e2 = []byte{
+var fileDescriptor_eventexecution_461922c614048c4a = []byte{
 	// 434 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0xc1, 0x8b, 0xd3, 0x40,
 	0x14, 0xc6, 0x4d, 0xb2, 0x4d, 0xed, 0x0b, 0x76, 0xc3, 0x20, 0x32, 0x54, 0x85, 0xb2, 0x07, 0xa9,

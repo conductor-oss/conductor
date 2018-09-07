@@ -25,9 +25,9 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type PollRequest struct {
-	TaskType             string   `protobuf:"bytes,1,opt,name=task_type,json=taskType" json:"task_type,omitempty"`
-	WorkerId             string   `protobuf:"bytes,2,opt,name=worker_id,json=workerId" json:"worker_id,omitempty"`
-	Domain               string   `protobuf:"bytes,3,opt,name=domain" json:"domain,omitempty"`
+	TaskType             string   `protobuf:"bytes,1,opt,name=task_type,json=taskType,proto3" json:"task_type,omitempty"`
+	WorkerId             string   `protobuf:"bytes,2,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	Domain               string   `protobuf:"bytes,3,opt,name=domain,proto3" json:"domain,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -37,7 +37,7 @@ func (m *PollRequest) Reset()         { *m = PollRequest{} }
 func (m *PollRequest) String() string { return proto.CompactTextString(m) }
 func (*PollRequest) ProtoMessage()    {}
 func (*PollRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{0}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{0}
 }
 func (m *PollRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PollRequest.Unmarshal(m, b)
@@ -79,7 +79,7 @@ func (m *PollRequest) GetDomain() string {
 }
 
 type PollResponse struct {
-	Task                 *model.Task `protobuf:"bytes,1,opt,name=task" json:"task,omitempty"`
+	Task                 *model.Task `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -89,7 +89,7 @@ func (m *PollResponse) Reset()         { *m = PollResponse{} }
 func (m *PollResponse) String() string { return proto.CompactTextString(m) }
 func (*PollResponse) ProtoMessage()    {}
 func (*PollResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{1}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{1}
 }
 func (m *PollResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PollResponse.Unmarshal(m, b)
@@ -117,11 +117,11 @@ func (m *PollResponse) GetTask() *model.Task {
 }
 
 type BatchPollRequest struct {
-	TaskType             string   `protobuf:"bytes,1,opt,name=task_type,json=taskType" json:"task_type,omitempty"`
-	WorkerId             string   `protobuf:"bytes,2,opt,name=worker_id,json=workerId" json:"worker_id,omitempty"`
-	Domain               string   `protobuf:"bytes,3,opt,name=domain" json:"domain,omitempty"`
-	Count                int32    `protobuf:"varint,4,opt,name=count" json:"count,omitempty"`
-	Timeout              int32    `protobuf:"varint,5,opt,name=timeout" json:"timeout,omitempty"`
+	TaskType             string   `protobuf:"bytes,1,opt,name=task_type,json=taskType,proto3" json:"task_type,omitempty"`
+	WorkerId             string   `protobuf:"bytes,2,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	Domain               string   `protobuf:"bytes,3,opt,name=domain,proto3" json:"domain,omitempty"`
+	Count                int32    `protobuf:"varint,4,opt,name=count,proto3" json:"count,omitempty"`
+	Timeout              int32    `protobuf:"varint,5,opt,name=timeout,proto3" json:"timeout,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -131,7 +131,7 @@ func (m *BatchPollRequest) Reset()         { *m = BatchPollRequest{} }
 func (m *BatchPollRequest) String() string { return proto.CompactTextString(m) }
 func (*BatchPollRequest) ProtoMessage()    {}
 func (*BatchPollRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{2}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{2}
 }
 func (m *BatchPollRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BatchPollRequest.Unmarshal(m, b)
@@ -187,9 +187,9 @@ func (m *BatchPollRequest) GetTimeout() int32 {
 }
 
 type TasksInProgressRequest struct {
-	TaskType             string   `protobuf:"bytes,1,opt,name=task_type,json=taskType" json:"task_type,omitempty"`
-	StartKey             string   `protobuf:"bytes,2,opt,name=start_key,json=startKey" json:"start_key,omitempty"`
-	Count                int32    `protobuf:"varint,3,opt,name=count" json:"count,omitempty"`
+	TaskType             string   `protobuf:"bytes,1,opt,name=task_type,json=taskType,proto3" json:"task_type,omitempty"`
+	StartKey             string   `protobuf:"bytes,2,opt,name=start_key,json=startKey,proto3" json:"start_key,omitempty"`
+	Count                int32    `protobuf:"varint,3,opt,name=count,proto3" json:"count,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -199,7 +199,7 @@ func (m *TasksInProgressRequest) Reset()         { *m = TasksInProgressRequest{}
 func (m *TasksInProgressRequest) String() string { return proto.CompactTextString(m) }
 func (*TasksInProgressRequest) ProtoMessage()    {}
 func (*TasksInProgressRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{3}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{3}
 }
 func (m *TasksInProgressRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TasksInProgressRequest.Unmarshal(m, b)
@@ -241,7 +241,7 @@ func (m *TasksInProgressRequest) GetCount() int32 {
 }
 
 type TasksInProgressResponse struct {
-	Tasks                []*model.Task `protobuf:"bytes,1,rep,name=tasks" json:"tasks,omitempty"`
+	Tasks                []*model.Task `protobuf:"bytes,1,rep,name=tasks,proto3" json:"tasks,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
 	XXX_unrecognized     []byte        `json:"-"`
 	XXX_sizecache        int32         `json:"-"`
@@ -251,7 +251,7 @@ func (m *TasksInProgressResponse) Reset()         { *m = TasksInProgressResponse
 func (m *TasksInProgressResponse) String() string { return proto.CompactTextString(m) }
 func (*TasksInProgressResponse) ProtoMessage()    {}
 func (*TasksInProgressResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{4}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{4}
 }
 func (m *TasksInProgressResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TasksInProgressResponse.Unmarshal(m, b)
@@ -279,8 +279,8 @@ func (m *TasksInProgressResponse) GetTasks() []*model.Task {
 }
 
 type PendingTaskRequest struct {
-	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
-	TaskRefName          string   `protobuf:"bytes,2,opt,name=task_ref_name,json=taskRefName" json:"task_ref_name,omitempty"`
+	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	TaskRefName          string   `protobuf:"bytes,2,opt,name=task_ref_name,json=taskRefName,proto3" json:"task_ref_name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -290,7 +290,7 @@ func (m *PendingTaskRequest) Reset()         { *m = PendingTaskRequest{} }
 func (m *PendingTaskRequest) String() string { return proto.CompactTextString(m) }
 func (*PendingTaskRequest) ProtoMessage()    {}
 func (*PendingTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{5}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{5}
 }
 func (m *PendingTaskRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PendingTaskRequest.Unmarshal(m, b)
@@ -325,7 +325,7 @@ func (m *PendingTaskRequest) GetTaskRefName() string {
 }
 
 type PendingTaskResponse struct {
-	Task                 *model.Task `protobuf:"bytes,1,opt,name=task" json:"task,omitempty"`
+	Task                 *model.Task `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -335,7 +335,7 @@ func (m *PendingTaskResponse) Reset()         { *m = PendingTaskResponse{} }
 func (m *PendingTaskResponse) String() string { return proto.CompactTextString(m) }
 func (*PendingTaskResponse) ProtoMessage()    {}
 func (*PendingTaskResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{6}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{6}
 }
 func (m *PendingTaskResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PendingTaskResponse.Unmarshal(m, b)
@@ -363,7 +363,7 @@ func (m *PendingTaskResponse) GetTask() *model.Task {
 }
 
 type UpdateTaskRequest struct {
-	Result               *model.TaskResult `protobuf:"bytes,1,opt,name=result" json:"result,omitempty"`
+	Result               *model.TaskResult `protobuf:"bytes,1,opt,name=result,proto3" json:"result,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -373,7 +373,7 @@ func (m *UpdateTaskRequest) Reset()         { *m = UpdateTaskRequest{} }
 func (m *UpdateTaskRequest) String() string { return proto.CompactTextString(m) }
 func (*UpdateTaskRequest) ProtoMessage()    {}
 func (*UpdateTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{7}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{7}
 }
 func (m *UpdateTaskRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpdateTaskRequest.Unmarshal(m, b)
@@ -401,7 +401,7 @@ func (m *UpdateTaskRequest) GetResult() *model.TaskResult {
 }
 
 type UpdateTaskResponse struct {
-	TaskId               string   `protobuf:"bytes,1,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
+	TaskId               string   `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -411,7 +411,7 @@ func (m *UpdateTaskResponse) Reset()         { *m = UpdateTaskResponse{} }
 func (m *UpdateTaskResponse) String() string { return proto.CompactTextString(m) }
 func (*UpdateTaskResponse) ProtoMessage()    {}
 func (*UpdateTaskResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{8}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{8}
 }
 func (m *UpdateTaskResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpdateTaskResponse.Unmarshal(m, b)
@@ -439,8 +439,8 @@ func (m *UpdateTaskResponse) GetTaskId() string {
 }
 
 type AckTaskRequest struct {
-	TaskId               string   `protobuf:"bytes,1,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
-	WorkerId             string   `protobuf:"bytes,2,opt,name=worker_id,json=workerId" json:"worker_id,omitempty"`
+	TaskId               string   `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	WorkerId             string   `protobuf:"bytes,2,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -450,7 +450,7 @@ func (m *AckTaskRequest) Reset()         { *m = AckTaskRequest{} }
 func (m *AckTaskRequest) String() string { return proto.CompactTextString(m) }
 func (*AckTaskRequest) ProtoMessage()    {}
 func (*AckTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{9}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{9}
 }
 func (m *AckTaskRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AckTaskRequest.Unmarshal(m, b)
@@ -485,7 +485,7 @@ func (m *AckTaskRequest) GetWorkerId() string {
 }
 
 type AckTaskResponse struct {
-	Ack                  bool     `protobuf:"varint,1,opt,name=ack" json:"ack,omitempty"`
+	Ack                  bool     `protobuf:"varint,1,opt,name=ack,proto3" json:"ack,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -495,7 +495,7 @@ func (m *AckTaskResponse) Reset()         { *m = AckTaskResponse{} }
 func (m *AckTaskResponse) String() string { return proto.CompactTextString(m) }
 func (*AckTaskResponse) ProtoMessage()    {}
 func (*AckTaskResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{10}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{10}
 }
 func (m *AckTaskResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AckTaskResponse.Unmarshal(m, b)
@@ -523,8 +523,8 @@ func (m *AckTaskResponse) GetAck() bool {
 }
 
 type AddLogRequest struct {
-	TaskId               string   `protobuf:"bytes,1,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
-	Log                  string   `protobuf:"bytes,2,opt,name=log" json:"log,omitempty"`
+	TaskId               string   `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	Log                  string   `protobuf:"bytes,2,opt,name=log,proto3" json:"log,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -534,7 +534,7 @@ func (m *AddLogRequest) Reset()         { *m = AddLogRequest{} }
 func (m *AddLogRequest) String() string { return proto.CompactTextString(m) }
 func (*AddLogRequest) ProtoMessage()    {}
 func (*AddLogRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{11}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{11}
 }
 func (m *AddLogRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddLogRequest.Unmarshal(m, b)
@@ -578,7 +578,7 @@ func (m *AddLogResponse) Reset()         { *m = AddLogResponse{} }
 func (m *AddLogResponse) String() string { return proto.CompactTextString(m) }
 func (*AddLogResponse) ProtoMessage()    {}
 func (*AddLogResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{12}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{12}
 }
 func (m *AddLogResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddLogResponse.Unmarshal(m, b)
@@ -599,7 +599,7 @@ func (m *AddLogResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_AddLogResponse proto.InternalMessageInfo
 
 type GetTaskLogsRequest struct {
-	TaskId               string   `protobuf:"bytes,1,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
+	TaskId               string   `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -609,7 +609,7 @@ func (m *GetTaskLogsRequest) Reset()         { *m = GetTaskLogsRequest{} }
 func (m *GetTaskLogsRequest) String() string { return proto.CompactTextString(m) }
 func (*GetTaskLogsRequest) ProtoMessage()    {}
 func (*GetTaskLogsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{13}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{13}
 }
 func (m *GetTaskLogsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetTaskLogsRequest.Unmarshal(m, b)
@@ -637,7 +637,7 @@ func (m *GetTaskLogsRequest) GetTaskId() string {
 }
 
 type GetTaskLogsResponse struct {
-	Logs                 []*model.TaskExecLog `protobuf:"bytes,1,rep,name=logs" json:"logs,omitempty"`
+	Logs                 []*model.TaskExecLog `protobuf:"bytes,1,rep,name=logs,proto3" json:"logs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`
@@ -647,7 +647,7 @@ func (m *GetTaskLogsResponse) Reset()         { *m = GetTaskLogsResponse{} }
 func (m *GetTaskLogsResponse) String() string { return proto.CompactTextString(m) }
 func (*GetTaskLogsResponse) ProtoMessage()    {}
 func (*GetTaskLogsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{14}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{14}
 }
 func (m *GetTaskLogsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetTaskLogsResponse.Unmarshal(m, b)
@@ -675,7 +675,7 @@ func (m *GetTaskLogsResponse) GetLogs() []*model.TaskExecLog {
 }
 
 type GetTaskRequest struct {
-	TaskId               string   `protobuf:"bytes,1,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
+	TaskId               string   `protobuf:"bytes,1,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -685,7 +685,7 @@ func (m *GetTaskRequest) Reset()         { *m = GetTaskRequest{} }
 func (m *GetTaskRequest) String() string { return proto.CompactTextString(m) }
 func (*GetTaskRequest) ProtoMessage()    {}
 func (*GetTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{15}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{15}
 }
 func (m *GetTaskRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetTaskRequest.Unmarshal(m, b)
@@ -713,7 +713,7 @@ func (m *GetTaskRequest) GetTaskId() string {
 }
 
 type GetTaskResponse struct {
-	Task                 *model.Task `protobuf:"bytes,1,opt,name=task" json:"task,omitempty"`
+	Task                 *model.Task `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}    `json:"-"`
 	XXX_unrecognized     []byte      `json:"-"`
 	XXX_sizecache        int32       `json:"-"`
@@ -723,7 +723,7 @@ func (m *GetTaskResponse) Reset()         { *m = GetTaskResponse{} }
 func (m *GetTaskResponse) String() string { return proto.CompactTextString(m) }
 func (*GetTaskResponse) ProtoMessage()    {}
 func (*GetTaskResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{16}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{16}
 }
 func (m *GetTaskResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetTaskResponse.Unmarshal(m, b)
@@ -751,8 +751,8 @@ func (m *GetTaskResponse) GetTask() *model.Task {
 }
 
 type RemoveTaskRequest struct {
-	TaskType             string   `protobuf:"bytes,1,opt,name=task_type,json=taskType" json:"task_type,omitempty"`
-	TaskId               string   `protobuf:"bytes,2,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
+	TaskType             string   `protobuf:"bytes,1,opt,name=task_type,json=taskType,proto3" json:"task_type,omitempty"`
+	TaskId               string   `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -762,7 +762,7 @@ func (m *RemoveTaskRequest) Reset()         { *m = RemoveTaskRequest{} }
 func (m *RemoveTaskRequest) String() string { return proto.CompactTextString(m) }
 func (*RemoveTaskRequest) ProtoMessage()    {}
 func (*RemoveTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{17}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{17}
 }
 func (m *RemoveTaskRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveTaskRequest.Unmarshal(m, b)
@@ -806,7 +806,7 @@ func (m *RemoveTaskResponse) Reset()         { *m = RemoveTaskResponse{} }
 func (m *RemoveTaskResponse) String() string { return proto.CompactTextString(m) }
 func (*RemoveTaskResponse) ProtoMessage()    {}
 func (*RemoveTaskResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{18}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{18}
 }
 func (m *RemoveTaskResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveTaskResponse.Unmarshal(m, b)
@@ -827,7 +827,7 @@ func (m *RemoveTaskResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_RemoveTaskResponse proto.InternalMessageInfo
 
 type QueueSizesRequest struct {
-	TaskTypes            []string `protobuf:"bytes,1,rep,name=task_types,json=taskTypes" json:"task_types,omitempty"`
+	TaskTypes            []string `protobuf:"bytes,1,rep,name=task_types,json=taskTypes,proto3" json:"task_types,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -837,7 +837,7 @@ func (m *QueueSizesRequest) Reset()         { *m = QueueSizesRequest{} }
 func (m *QueueSizesRequest) String() string { return proto.CompactTextString(m) }
 func (*QueueSizesRequest) ProtoMessage()    {}
 func (*QueueSizesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{19}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{19}
 }
 func (m *QueueSizesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_QueueSizesRequest.Unmarshal(m, b)
@@ -865,7 +865,7 @@ func (m *QueueSizesRequest) GetTaskTypes() []string {
 }
 
 type QueueSizesResponse struct {
-	QueueForTask         map[string]int32 `protobuf:"bytes,1,rep,name=queue_for_task,json=queueForTask" json:"queue_for_task,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	QueueForTask         map[string]int32 `protobuf:"bytes,1,rep,name=queue_for_task,json=queueForTask,proto3" json:"queue_for_task,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -875,7 +875,7 @@ func (m *QueueSizesResponse) Reset()         { *m = QueueSizesResponse{} }
 func (m *QueueSizesResponse) String() string { return proto.CompactTextString(m) }
 func (*QueueSizesResponse) ProtoMessage()    {}
 func (*QueueSizesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{20}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{20}
 }
 func (m *QueueSizesResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_QueueSizesResponse.Unmarshal(m, b)
@@ -912,7 +912,7 @@ func (m *QueueInfoRequest) Reset()         { *m = QueueInfoRequest{} }
 func (m *QueueInfoRequest) String() string { return proto.CompactTextString(m) }
 func (*QueueInfoRequest) ProtoMessage()    {}
 func (*QueueInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{21}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{21}
 }
 func (m *QueueInfoRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_QueueInfoRequest.Unmarshal(m, b)
@@ -933,7 +933,7 @@ func (m *QueueInfoRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_QueueInfoRequest proto.InternalMessageInfo
 
 type QueueInfoResponse struct {
-	Queues               map[string]int64 `protobuf:"bytes,1,rep,name=queues" json:"queues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	Queues               map[string]int64 `protobuf:"bytes,1,rep,name=queues,proto3" json:"queues,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -943,7 +943,7 @@ func (m *QueueInfoResponse) Reset()         { *m = QueueInfoResponse{} }
 func (m *QueueInfoResponse) String() string { return proto.CompactTextString(m) }
 func (*QueueInfoResponse) ProtoMessage()    {}
 func (*QueueInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{22}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{22}
 }
 func (m *QueueInfoResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_QueueInfoResponse.Unmarshal(m, b)
@@ -980,7 +980,7 @@ func (m *QueueAllInfoRequest) Reset()         { *m = QueueAllInfoRequest{} }
 func (m *QueueAllInfoRequest) String() string { return proto.CompactTextString(m) }
 func (*QueueAllInfoRequest) ProtoMessage()    {}
 func (*QueueAllInfoRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{23}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{23}
 }
 func (m *QueueAllInfoRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_QueueAllInfoRequest.Unmarshal(m, b)
@@ -1001,7 +1001,7 @@ func (m *QueueAllInfoRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_QueueAllInfoRequest proto.InternalMessageInfo
 
 type QueueAllInfoResponse struct {
-	Queues               map[string]*QueueAllInfoResponse_QueueInfo `protobuf:"bytes,1,rep,name=queues" json:"queues,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Queues               map[string]*QueueAllInfoResponse_QueueInfo `protobuf:"bytes,1,rep,name=queues,proto3" json:"queues,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                                   `json:"-"`
 	XXX_unrecognized     []byte                                     `json:"-"`
 	XXX_sizecache        int32                                      `json:"-"`
@@ -1011,7 +1011,7 @@ func (m *QueueAllInfoResponse) Reset()         { *m = QueueAllInfoResponse{} }
 func (m *QueueAllInfoResponse) String() string { return proto.CompactTextString(m) }
 func (*QueueAllInfoResponse) ProtoMessage()    {}
 func (*QueueAllInfoResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{24}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{24}
 }
 func (m *QueueAllInfoResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_QueueAllInfoResponse.Unmarshal(m, b)
@@ -1039,8 +1039,8 @@ func (m *QueueAllInfoResponse) GetQueues() map[string]*QueueAllInfoResponse_Queu
 }
 
 type QueueAllInfoResponse_ShardInfo struct {
-	Size                 int64    `protobuf:"varint,1,opt,name=size" json:"size,omitempty"`
-	Uacked               int64    `protobuf:"varint,2,opt,name=uacked" json:"uacked,omitempty"`
+	Size                 int64    `protobuf:"varint,1,opt,name=size,proto3" json:"size,omitempty"`
+	Uacked               int64    `protobuf:"varint,2,opt,name=uacked,proto3" json:"uacked,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1050,7 +1050,7 @@ func (m *QueueAllInfoResponse_ShardInfo) Reset()         { *m = QueueAllInfoResp
 func (m *QueueAllInfoResponse_ShardInfo) String() string { return proto.CompactTextString(m) }
 func (*QueueAllInfoResponse_ShardInfo) ProtoMessage()    {}
 func (*QueueAllInfoResponse_ShardInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{24, 0}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{24, 0}
 }
 func (m *QueueAllInfoResponse_ShardInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_QueueAllInfoResponse_ShardInfo.Unmarshal(m, b)
@@ -1085,7 +1085,7 @@ func (m *QueueAllInfoResponse_ShardInfo) GetUacked() int64 {
 }
 
 type QueueAllInfoResponse_QueueInfo struct {
-	Shards               map[string]*QueueAllInfoResponse_ShardInfo `protobuf:"bytes,1,rep,name=shards" json:"shards,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Shards               map[string]*QueueAllInfoResponse_ShardInfo `protobuf:"bytes,1,rep,name=shards,proto3" json:"shards,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                                   `json:"-"`
 	XXX_unrecognized     []byte                                     `json:"-"`
 	XXX_sizecache        int32                                      `json:"-"`
@@ -1095,7 +1095,7 @@ func (m *QueueAllInfoResponse_QueueInfo) Reset()         { *m = QueueAllInfoResp
 func (m *QueueAllInfoResponse_QueueInfo) String() string { return proto.CompactTextString(m) }
 func (*QueueAllInfoResponse_QueueInfo) ProtoMessage()    {}
 func (*QueueAllInfoResponse_QueueInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_service_2cd893b942ad08bb, []int{24, 1}
+	return fileDescriptor_task_service_1133a2fd800ff6c6, []int{24, 1}
 }
 func (m *QueueAllInfoResponse_QueueInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_QueueAllInfoResponse_QueueInfo.Unmarshal(m, b)
@@ -1679,10 +1679,10 @@ var _TaskService_serviceDesc = grpc.ServiceDesc{
 }
 
 func init() {
-	proto.RegisterFile("grpc/task_service.proto", fileDescriptor_task_service_2cd893b942ad08bb)
+	proto.RegisterFile("grpc/task_service.proto", fileDescriptor_task_service_1133a2fd800ff6c6)
 }
 
-var fileDescriptor_task_service_2cd893b942ad08bb = []byte{
+var fileDescriptor_task_service_1133a2fd800ff6c6 = []byte{
 	// 1114 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x57, 0xdd, 0x72, 0xdb, 0x54,
 	0x10, 0x1e, 0xc5, 0x89, 0x53, 0xaf, 0x93, 0xd4, 0x39, 0xf9, 0x33, 0x2a, 0x0c, 0x41, 0x2d, 0x6d,

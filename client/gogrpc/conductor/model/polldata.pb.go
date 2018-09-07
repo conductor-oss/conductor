@@ -19,10 +19,10 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type PollData struct {
-	QueueName            string   `protobuf:"bytes,1,opt,name=queue_name,json=queueName" json:"queue_name,omitempty"`
-	Domain               string   `protobuf:"bytes,2,opt,name=domain" json:"domain,omitempty"`
-	WorkerId             string   `protobuf:"bytes,3,opt,name=worker_id,json=workerId" json:"worker_id,omitempty"`
-	LastPollTime         int64    `protobuf:"varint,4,opt,name=last_poll_time,json=lastPollTime" json:"last_poll_time,omitempty"`
+	QueueName            string   `protobuf:"bytes,1,opt,name=queue_name,json=queueName,proto3" json:"queue_name,omitempty"`
+	Domain               string   `protobuf:"bytes,2,opt,name=domain,proto3" json:"domain,omitempty"`
+	WorkerId             string   `protobuf:"bytes,3,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	LastPollTime         int64    `protobuf:"varint,4,opt,name=last_poll_time,json=lastPollTime,proto3" json:"last_poll_time,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -32,7 +32,7 @@ func (m *PollData) Reset()         { *m = PollData{} }
 func (m *PollData) String() string { return proto.CompactTextString(m) }
 func (*PollData) ProtoMessage()    {}
 func (*PollData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_polldata_17cab9e308fb8d52, []int{0}
+	return fileDescriptor_polldata_c64f15389955536a, []int{0}
 }
 func (m *PollData) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PollData.Unmarshal(m, b)
@@ -84,9 +84,9 @@ func init() {
 	proto.RegisterType((*PollData)(nil), "conductor.proto.PollData")
 }
 
-func init() { proto.RegisterFile("model/polldata.proto", fileDescriptor_polldata_17cab9e308fb8d52) }
+func init() { proto.RegisterFile("model/polldata.proto", fileDescriptor_polldata_c64f15389955536a) }
 
-var fileDescriptor_polldata_17cab9e308fb8d52 = []byte{
+var fileDescriptor_polldata_c64f15389955536a = []byte{
 	// 229 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x90, 0xc1, 0x4a, 0x03, 0x31,
 	0x10, 0x86, 0x59, 0x2b, 0xa5, 0x3b, 0x88, 0x42, 0x10, 0x59, 0x28, 0x42, 0x11, 0x0f, 0x3d, 0x6d,
