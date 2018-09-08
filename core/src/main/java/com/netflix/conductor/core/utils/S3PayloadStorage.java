@@ -56,8 +56,8 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
     @Inject
     public S3PayloadStorage(Configuration config) {
         s3Client = AmazonS3ClientBuilder.standard().withRegion("us-east-1").build();
-        bucketName = config.getProperty("s3bucket", "");
-        expirationSec = config.getIntProperty("s3signedurlexpirationseconds", 5);
+        bucketName = config.getProperty("workflow.external.payload.storage.s3.bucket", "");
+        expirationSec = config.getIntProperty("workflow.external.payload.storage.s3.signedurlexpirationseconds", 5);
     }
 
     /**
@@ -104,6 +104,14 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
         }
     }
 
+    /**
+     * Uploads the payload to the given s3 object key.
+     * It is expected that the caller retrieves the object key using {@link #getLocation(Operation, PayloadType, String)} before making this call.
+     *
+     * @param path        the s3 key of the object to be uploaded
+     * @param payload     an {@link InputStream} containing the json payload which is to be uploaded
+     * @param payloadSize the size of the json payload in bytes
+     */
     @Override
     public void upload(String path, InputStream payload, long payloadSize) {
         try {
@@ -120,6 +128,8 @@ public class S3PayloadStorage implements ExternalPayloadStorage {
     }
 
     /**
+     * Downloads the payload stored in the s3 object.
+     *
      * @param path the S3 key of the object
      * @return an input stream containing the contents of the object
      * Caller is expected to close the input stream.

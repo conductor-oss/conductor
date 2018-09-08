@@ -242,6 +242,8 @@ public class TaskClient extends ClientBase {
 
     /**
      * Updates the result of a task execution.
+     * If the size of the task output payload is bigger than {@link ConductorClientConfiguration#getTaskOutputPayloadThresholdKB()},
+     * it is uploaded to {@link ExternalPayloadStorage}, if enabled, else the task is marked as FAILED_WITH_TERMINAL_ERROR.
      *
      * @param taskResult the {@link TaskResult} of the executed task to be updated.
      * @param taskType   the type of the task
@@ -259,7 +261,7 @@ public class TaskClient extends ClientBase {
             long payloadSizeThreshold = conductorClientConfiguration.getTaskOutputPayloadThresholdKB() * 1024;
             if (taskResultSize > payloadSizeThreshold) {
                 if (!conductorClientConfiguration.isExternalPayloadStorageEnabled()
-                        || taskResultSize > (conductorClientConfiguration.getTaskOutputMaxPayloadThresholdKB() * 1024)) {
+                        || taskResultSize > conductorClientConfiguration.getTaskOutputMaxPayloadThresholdKB() * 1024) {
                     taskResult.setReasonForIncompletion(String.format("The TaskResult payload size: %d is greater than the permissible %d MB", taskResultSize, payloadSizeThreshold));
                     taskResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
                     taskResult.setOutputData(null);

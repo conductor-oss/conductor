@@ -75,6 +75,8 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -93,6 +95,8 @@ public class TestDeciderService {
     private ParametersUtils parametersUtils;
 
     private static Registry registry;
+
+    private MetadataDAO metadataDAO;
 
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
 
@@ -114,7 +118,7 @@ public class TestDeciderService {
 
     @Before
     public void setup() {
-        MetadataDAO metadataDAO = mock(MetadataDAO.class);
+        metadataDAO = mock(MetadataDAO.class);
         QueueDAO queueDAO = mock(QueueDAO.class);
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
 
@@ -805,6 +809,30 @@ public class TestDeciderService {
         assertTrue(workflow.getTasks().get(0).getOutputData().isEmpty());
         assertNotNull(workflowInstance.getTasks().get(0).getOutputData());
         assertEquals(taskOutputParams, workflowInstance.getTasks().get(0).getOutputData());
+
+        assertNull(workflowInstance.getExternalInputPayloadStoragePath());
+        assertNull(workflowInstance.getTasks().get(0).getExternalInputPayloadStoragePath());
+        assertNull(workflowInstance.getTasks().get(0).getExternalOutputPayloadStoragePath());
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testUpdateWorkflowOutput() {
+        Workflow workflow = new Workflow();
+        deciderService.updateWorkflowOutput(workflow, null);
+        assertNotNull(workflow.getOutput());
+        assertTrue(workflow.getOutput().isEmpty());
+
+        Task task = new Task();
+        Map<String, Object> taskOutput = new HashMap<>();
+        taskOutput.put("taskKey", "taskValue");
+        task.setOutputData(taskOutput);
+        workflow.getTasks().add(task);
+        WorkflowDef workflowDef = new WorkflowDef();
+        when(metadataDAO.get(anyString(), anyInt())).thenReturn(workflowDef);
+        deciderService.updateWorkflowOutput(workflow, null);
+        assertNotNull(workflow.getOutput());
+        assertEquals("taskValue", workflow.getOutput().get("taskKey"));
     }
 
     private WorkflowDef createConditionalWF() {

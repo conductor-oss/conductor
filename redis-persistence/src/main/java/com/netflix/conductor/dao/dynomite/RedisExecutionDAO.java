@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -82,16 +82,9 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	private final static String EVENT_EXECUTION = "EVENT_EXECUTION";
 
-	private static final String WORKFLOW_DYNOMITE_TASK_PAYLOAD_THRESHOLD = "workflow.dynomite.task.payload.threshold";
-	private static final String WORKFLOW_DYNOMITE_WORKFLOW_INPUT_THRESHOLD = "workflow.dynomite.workflow.input.threshold";
-
 	private IndexDAO indexDAO;
 
 	private MetadataDAO metadataDA0;
-
-	private long taskPayloadThreshold;
-
-	private long workflowInputPayloadThreshold;
 
 	@Inject
 	public RedisExecutionDAO(DynoProxy dynoClient, ObjectMapper objectMapper,
@@ -99,8 +92,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		super(dynoClient, objectMapper, config);
 		this.indexDAO = indexDAO;
 		this.metadataDA0 = metadataDA0;
-		this.taskPayloadThreshold = config.getLongProperty(WORKFLOW_DYNOMITE_TASK_PAYLOAD_THRESHOLD,5 * FileUtils.ONE_MB);
-		this.workflowInputPayloadThreshold = config.getLongProperty(WORKFLOW_DYNOMITE_WORKFLOW_INPUT_THRESHOLD,5 * FileUtils.ONE_MB);
 	}
 
 	@Override
@@ -144,7 +135,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	@Override
 	public List<Task> createTasks(List<Task> tasks) {
 
-		List<Task> created = new LinkedList<Task>();
+		List<Task> created = new LinkedList<>();
 
 		for (Task task : tasks) {
 
@@ -219,14 +210,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		recordRedisDaoPayloadSize("updateTask", payload.length(), Optional.ofNullable(taskDef)
 				.map(TaskDef::getName)
 				.orElse("n/a"), task.getWorkflowType());
-		//The payload is verified and
-		if(payload.length() > taskPayloadThreshold) {
-			task.setReasonForIncompletion(String.format("Payload of the task: %s larger than the permissible %s bytes",
-					FileUtils.byteCountToDisplaySize(payload.length()), FileUtils.byteCountToDisplaySize(taskPayloadThreshold)));
-			task.setOutputData(null);
-			task.setStatus(Status.FAILED_WITH_TERMINAL_ERROR);
-			payload = toJson(task);
-		}
 		recordRedisDaoRequests("updateTask", task.getTaskType(), task.getWorkflowType());
 		dynoClient.set(nsKey(TASK, task.getTaskId()), payload);
 		logger.debug("Workflow task payload saved to TASK with taskKey: {}, workflowId: {}, taskId: {}, taskType: {} during updateTask",
@@ -577,9 +560,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		workflow.setTasks(new LinkedList<>());
 
 		String payload = toJson(workflow);
-		if(payload.length() > workflowInputPayloadThreshold) {
-			throw new ApplicationException(Code.INVALID_INPUT, String.format("Input payload larger than the allowed threshold of: %d", workflowInputPayloadThreshold));
-		}
 		// Store the workflow object
 		dynoClient.set(nsKey(WORKFLOW, workflow.getWorkflowId()), payload);
 		recordRedisDaoRequests("storeWorkflow", "n/a", workflow.getWorkflowType());

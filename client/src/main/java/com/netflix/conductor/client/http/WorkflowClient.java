@@ -157,10 +157,13 @@ public class WorkflowClient extends ClientBase {
     }
 
     /**
-     * Starts a workflow
+     * Starts a workflow.
+     * If the size of the workflow input payload is bigger than {@link ConductorClientConfiguration#getWorkflowInputPayloadThresholdKB()},
+     * it is uploaded to {@link ExternalPayloadStorage}, if enabled, else the workflow is rejected.
      *
      * @param startWorkflowRequest the {@link StartWorkflowRequest} object to start the workflow
      * @return the id of the workflow instance that can be used for tracking
+     * @throws ConductorClientException if {@link ExternalPayloadStorage} is disabled or if the payload size is greater than {@link ConductorClientConfiguration#getWorkflowInputMaxPayloadThresholdKB()}
      */
     public String startWorkflow(StartWorkflowRequest startWorkflowRequest) {
         Preconditions.checkNotNull(startWorkflowRequest, "StartWorkflowRequest cannot be null");
@@ -174,14 +177,15 @@ public class WorkflowClient extends ClientBase {
             long workflowInputSize = workflowInputBytes.length;
             WorkflowTaskMetrics.recordWorkflowInputPayloadSize(startWorkflowRequest.getName(), version, workflowInputSize);
             if (workflowInputSize > conductorClientConfiguration.getWorkflowInputPayloadThresholdKB() * 1024) {
-                if (conductorClientConfiguration.isExternalPayloadStorageEnabled()) {
+                if (!conductorClientConfiguration.isExternalPayloadStorageEnabled() ||
+                        (workflowInputSize > conductorClientConfiguration.getWorkflowInputMaxPayloadThresholdKB() * 1024)) {
+                    String errorMsg = String.format("Input payload larger than the allowed threshold of: %d KB", conductorClientConfiguration.getWorkflowInputPayloadThresholdKB());
+                    throw new ConductorClientException(errorMsg);
+                } else {
                     WorkflowTaskMetrics.incrementExternalPayloadUsedCount(startWorkflowRequest.getName(), ExternalPayloadStorage.Operation.WRITE.name(), ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT.name());
                     String externalStoragePath = uploadToExternalPayloadStorage(ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT, workflowInputBytes, workflowInputSize);
                     startWorkflowRequest.setExternalInputPayloadStoragePath(externalStoragePath);
                     startWorkflowRequest.setInput(null);
-                } else {
-                    String errorMsg = String.format("Input payload larger than the allowed threshold of: %d KB", conductorClientConfiguration.getWorkflowInputPayloadThresholdKB());
-                    throw new ConductorClientException(errorMsg);
                 }
             }
         } catch (IOException e) {

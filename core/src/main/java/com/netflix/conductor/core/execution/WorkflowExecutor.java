@@ -362,6 +362,7 @@ public class WorkflowExecutor {
             throw new ApplicationException(CONFLICT, msg);
         }
 
+        deciderService.updateWorkflowOutput(wf, null);
         workflow.setStatus(WorkflowStatus.COMPLETED);
         workflow.setOutput(wf.getOutput());
         workflow.setExternalOutputPayloadStoragePath(wf.getExternalOutputPayloadStoragePath());
@@ -401,6 +402,8 @@ public class WorkflowExecutor {
         if (!workflow.getStatus().isTerminal()) {
             workflow.setStatus(WorkflowStatus.TERMINATED);
         }
+
+        deciderService.updateWorkflowOutput(workflow, null);
 
         String workflowId = workflow.getWorkflowId();
         workflow.setReasonForIncompletion(reason);
@@ -522,8 +525,8 @@ public class WorkflowExecutor {
                 taskByRefName.setReasonForIncompletion(task.getReasonForIncompletion());
                 taskByRefName.setWorkerId(task.getWorkerId());
                 taskByRefName.setCallbackAfterSeconds(task.getCallbackAfterSeconds());
-                WorkflowDef workflowDef = metadataDAO.get(workflowInstance.getWorkflowType(), workflowInstance.getVersion());
-                deciderService.updateOutput(workflowDef, workflowInstance, task);
+                //WorkflowDef workflowDef = metadataDAO.get(workflowInstance.getWorkflowType(), workflowInstance.getVersion());
+                deciderService.updateWorkflowOutput(workflowInstance, task);
             }
             executionDAO.updateWorkflow(workflowInstance);
             logger.debug("Task: {} has a {} status and the Workflow has been updated with failed task reference", task, task.getStatus());

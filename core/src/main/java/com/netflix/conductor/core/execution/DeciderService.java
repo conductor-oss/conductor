@@ -206,7 +206,6 @@ public class DeciderService {
                     .collect(Collectors.toList()), workflow.getWorkflowId());
             outcome.tasksToBeScheduled.addAll(unScheduledTasks);
         }
-        updateOutput(workflowDef, workflow, null);
         if (outcome.tasksToBeScheduled.isEmpty() && checkForWorkflowCompletion(workflowDef, workflow)) {
             logger.debug("Marking workflow as complete.  workflow=" + workflow.getWorkflowId() + ", tasks=" + workflow.getTasks());
             outcome.isComplete = true;
@@ -256,25 +255,28 @@ public class DeciderService {
         return Collections.singletonList(rerunFromTask);
     }
 
-    void updateOutput(final WorkflowDef def, final Workflow workflow, @Nullable Task task) {
+    /**
+     * Updates the workflow output.
+     *
+     * @param workflow the workflow instance
+     * @param task     if not null, the output of this task will be copied to workflow output if no output parameters are specified in the workflow defintion
+     *                 if null, the output of the last task in the workflow will be copied to workflow output of no output parameters are specified in the workflow definition
+     */
+    void updateWorkflowOutput(final Workflow workflow, @Nullable Task task) {
         List<Task> allTasks = workflow.getTasks();
         if (allTasks.isEmpty()) {
             return;
         }
 
+        Task last = Optional.ofNullable(task).orElse(allTasks.get(allTasks.size() - 1));
+        WorkflowDef def = metadataDAO.get(workflow.getWorkflowType(), workflow.getVersion());
         Map<String, Object> output;
-        Task last;
-        if (task != null) {
-            last = task;
-        } else {
-            last = allTasks.get(allTasks.size() - 1);
-        }
-
         if (!def.getOutputParameters().isEmpty()) {
             Workflow workflowInstance = populateWorkflowAndTaskData(workflow);
             output = parametersUtils.getTaskInput(def.getOutputParameters(), workflowInstance, null, null);
         } else if (StringUtils.isNotBlank(last.getExternalOutputPayloadStoragePath())) {
             output = externalPayloadStorageUtils.downloadPayload(last.getExternalOutputPayloadStoragePath());
+            Monitors.recordExternalPayloadStorageUsage(last.getTaskDefName(), ExternalPayloadStorage.Operation.READ.toString(), ExternalPayloadStorage.PayloadType.TASK_OUTPUT.toString());
         } else {
             output = last.getOutputData();
         }
@@ -389,6 +391,13 @@ public class DeciderService {
         return rescheduled;
     }
 
+    /**
+     * Populates the workflow input data and the tasks input/output data if stored in external payload storage.
+     * This method creates a deep copy of the workflow instance where the payloads will be stored after downloading from external payload storage.
+     *
+     * @param workflow the workflow for which the data needs to be populated
+     * @return a copy of the workflow with the payload data populated
+     */
     @VisibleForTesting
     Workflow populateWorkflowAndTaskData(Workflow workflow) {
         Workflow workflowInstance = workflow.copy();
@@ -396,7 +405,9 @@ public class DeciderService {
         if (StringUtils.isNotBlank(workflow.getExternalInputPayloadStoragePath())) {
             // download the workflow input from external storage here and plug it into the workflow
             Map<String, Object> workflowInputParams = externalPayloadStorageUtils.downloadPayload(workflow.getExternalInputPayloadStoragePath());
+            Monitors.recordExternalPayloadStorageUsage(workflow.getWorkflowType(), ExternalPayloadStorage.Operation.READ.toString(), ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT.toString());
             workflowInstance.setInput(workflowInputParams);
+            workflowInstance.setExternalInputPayloadStoragePath(null);
         }
 
         workflowInstance.getTasks().stream()
@@ -404,10 +415,12 @@ public class DeciderService {
                 .forEach(task -> {
                     if (StringUtils.isNotBlank(task.getExternalOutputPayloadStoragePath())) {
                         task.setOutputData(externalPayloadStorageUtils.downloadPayload(task.getExternalOutputPayloadStoragePath()));
+                        Monitors.recordExternalPayloadStorageUsage(task.getTaskDefName(), ExternalPayloadStorage.Operation.READ.toString(), ExternalPayloadStorage.PayloadType.TASK_OUTPUT.toString());
                         task.setExternalOutputPayloadStoragePath(null);
                     }
                     if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
                         task.setInputData(externalPayloadStorageUtils.downloadPayload(task.getExternalInputPayloadStoragePath()));
+                        Monitors.recordExternalPayloadStorageUsage(task.getTaskDefName(), ExternalPayloadStorage.Operation.READ.toString(), ExternalPayloadStorage.PayloadType.TASK_INPUT.toString());
                         task.setExternalInputPayloadStoragePath(null);
                     }
                 });
@@ -554,10 +567,6 @@ public class DeciderService {
         } catch (Exception e) {
             throw new TerminateWorkflowException(e.getMessage());
         }
-    }
-
-    private void populateTaskData(Workflow workflow) {
-
     }
 
     static class DeciderOutcome {

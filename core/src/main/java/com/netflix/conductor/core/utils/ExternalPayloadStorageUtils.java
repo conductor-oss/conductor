@@ -26,6 +26,7 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
+import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -115,34 +116,37 @@ public class ExternalPayloadStorageUtils {
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
             objectMapper.writeValue(byteArrayOutputStream, payload);
             byte[] payloadBytes = byteArrayOutputStream.toByteArray();
-            long payloadSize = payloadBytes.length / 1024;
-            if (payloadSize > threshold) {
-                if (payloadSize > maxThreshold) {
-                    if (entity instanceof Task) {
-                        String errorMsg = String.format("The payload size: %dKB of task: %s in workflow: %s  is greater than the permissible limit: %dKB", payloadSize, ((Task) entity).getTaskId(), ((Task) entity).getWorkflowInstanceId(), maxThreshold);
-                        failTask(((Task) entity), payloadType, errorMsg);
-                    } else {
-                        String errorMsg = String.format("The output payload size: %dKB of workflow: %s is greater than the permissible limit: %dKB", payloadSize, ((Workflow) entity).getWorkflowId(), maxThreshold);
-                        failWorkflow(errorMsg);
-                    }
-                }
+            long payloadSize = payloadBytes.length;
 
+            if (payloadSize > maxThreshold * 1024) {
+                if (entity instanceof Task) {
+                    String errorMsg = String.format("The payload size: %dKB of task: %s in workflow: %s  is greater than the permissible limit: %dKB", payloadSize, ((Task) entity).getTaskId(), ((Task) entity).getWorkflowInstanceId(), maxThreshold);
+                    failTask(((Task) entity), payloadType, errorMsg);
+                } else {
+                    String errorMsg = String.format("The output payload size: %dKB of workflow: %s is greater than the permissible limit: %dKB", payloadSize, ((Workflow) entity).getWorkflowId(), maxThreshold);
+                    failWorkflow(errorMsg);
+                }
+            } else if (payloadSize > threshold * 1024) {
                 switch (payloadType) {
                     case TASK_INPUT:
                         ((Task) entity).setInputData(null);
                         ((Task) entity).setExternalInputPayloadStoragePath(uploadHelper(payloadBytes, payloadSize, PayloadType.TASK_INPUT));
+                        Monitors.recordExternalPayloadStorageUsage(((Task) entity).getTaskDefName(), ExternalPayloadStorage.Operation.WRITE.toString(), PayloadType.TASK_INPUT.toString());
                         break;
                     case TASK_OUTPUT:
                         ((Task) entity).setOutputData(null);
                         ((Task) entity).setExternalOutputPayloadStoragePath(uploadHelper(payloadBytes, payloadSize, PayloadType.TASK_OUTPUT));
+                        Monitors.recordExternalPayloadStorageUsage(((Task) entity).getTaskDefName(), ExternalPayloadStorage.Operation.WRITE.toString(), PayloadType.TASK_OUTPUT.toString());
                         break;
                     case WORKFLOW_INPUT:
                         ((Workflow) entity).setInput(null);
                         ((Workflow) entity).setExternalInputPayloadStoragePath(uploadHelper(payloadBytes, payloadSize, PayloadType.WORKFLOW_INPUT));
+                        Monitors.recordExternalPayloadStorageUsage(((Workflow) entity).getWorkflowType(), ExternalPayloadStorage.Operation.WRITE.toString(), PayloadType.WORKFLOW_INPUT.toString());
                         break;
                     case WORKFLOW_OUTPUT:
                         ((Workflow) entity).setOutput(null);
                         ((Workflow) entity).setExternalOutputPayloadStoragePath(uploadHelper(payloadBytes, payloadSize, PayloadType.WORKFLOW_OUTPUT));
+                        Monitors.recordExternalPayloadStorageUsage(((Workflow) entity).getWorkflowType(), ExternalPayloadStorage.Operation.WRITE.toString(), PayloadType.WORKFLOW_OUTPUT.toString());
                         break;
                 }
             }
