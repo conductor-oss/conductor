@@ -235,7 +235,7 @@ public class Query implements AutoCloseable {
     public boolean executeDelete() {
         int count = executeUpdate();
         if (count > 1) {
-            logger.debug("Removed {} row(s) for query {}", count, rawQuery);
+            logger.trace("Removed {} row(s) for query {}", count, rawQuery);
         }
 
         return count > 0;
