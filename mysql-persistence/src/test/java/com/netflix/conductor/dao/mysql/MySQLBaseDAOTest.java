@@ -6,20 +6,14 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
 import com.zaxxer.hikari.HikariDataSource;
-
-import org.flywaydb.core.Flyway;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import javax.sql.DataSource;
-
-import ch.vorburger.mariadb4j.DB;
+import org.flywaydb.core.Flyway;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 
 @SuppressWarnings("Duplicates")
@@ -28,9 +22,7 @@ public class MySQLBaseDAOTest {
     protected final DataSource dataSource;
     protected final TestConfiguration testConfiguration = new TestConfiguration();
     protected final ObjectMapper objectMapper = createObjectMapper();
-    protected final DB db = EmbeddedDatabase.INSTANCE.getDB();
-
-    static AtomicBoolean migrated = new AtomicBoolean(false);
+    protected final EmbeddedDatabase DB = EmbeddedDatabase.INSTANCE;
 
     MySQLBaseDAOTest() {
         testConfiguration.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/conductor");
@@ -50,15 +42,18 @@ public class MySQLBaseDAOTest {
         // Prevent DB from getting exhausted during rapid testing
         dataSource.setMaximumPoolSize(8);
 
-        if (!migrated.get()) {
-            flywayMigrate(dataSource);
+        if (!EmbeddedDatabase.hasBeenMigrated()) {
+            synchronized (EmbeddedDatabase.class) {
+                flywayMigrate(dataSource);
+                EmbeddedDatabase.setHasBeenMigrated();
+            }
         }
 
         return dataSource;
     }
 
     private synchronized static void flywayMigrate(DataSource dataSource) {
-        if(migrated.get()) {
+        if(EmbeddedDatabase.hasBeenMigrated()) {
             return;
         }
 
@@ -67,7 +62,6 @@ public class MySQLBaseDAOTest {
             flyway.setDataSource(dataSource);
             flyway.setPlaceholderReplacement(false);
             flyway.migrate();
-            migrated.getAndSet(true);
         }
     }
 
