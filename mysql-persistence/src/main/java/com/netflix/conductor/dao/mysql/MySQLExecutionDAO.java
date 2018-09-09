@@ -90,6 +90,10 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
         return tasks;
     }
 
+    private static String taskKey(Task task) {
+        return task.getReferenceTaskName() + "_" + task.getRetryCount();
+    }
+
     @Override
     public List<Task> createTasks(List<Task> tasks) {
         List<Task> created = Lists.newArrayListWithCapacity(tasks.size());
@@ -100,12 +104,12 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
                 task.setScheduledTime(System.currentTimeMillis());
 
-                String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
+                final String taskKey = taskKey(task);
 
                 boolean scheduledTaskAdded = addScheduledTask(connection, task, taskKey);
 
                 if (!scheduledTaskAdded) {
-                    logger.info("Task already scheduled, skipping the run " + task.getTaskId() + ", ref="
+                    logger.trace("Task already scheduled, skipping the run " + task.getTaskId() + ", ref="
                             + task.getReferenceTaskName() + ", key=" + taskKey);
                     continue;
                 }
@@ -193,7 +197,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
             return;
         }
 
-        String taskKey = task.getReferenceTaskName() + "_" + task.getRetryCount();
+        final String taskKey = taskKey(task);
 
         withTransaction(connection -> {
             removeScheduledTask(connection, task, taskKey);
