@@ -275,7 +275,7 @@ public class WorkflowExecutor {
         }
         List<Task> rescheduledTasks = new ArrayList<>();
         failedTasks.forEach(failedTask -> {
-            rescheduledTasks.add(rescheduleTask(failedTask));
+            rescheduledTasks.add(taskToBeRescheduled(failedTask));
         });
 
         // Reschedule the cancelled task but if the join is cancelled set that to in progress
@@ -284,7 +284,7 @@ public class WorkflowExecutor {
                 cancelledTask.setStatus(IN_PROGRESS);
                 executionDAO.updateTask(cancelledTask);
             } else {
-                rescheduledTasks.add(rescheduleTask(cancelledTask));
+                rescheduledTasks.add(taskToBeRescheduled(cancelledTask));
             }
         });
 
@@ -316,7 +316,7 @@ public class WorkflowExecutor {
      * @param task failed or cancelled task
      * @return new instance of a task with "SCHEDULED" status
      */
-    private Task rescheduleTask(Task task) {
+    private Task taskToBeRescheduled(Task task) {
         Task taskToBeRetried = task.copy();
         taskToBeRetried.setTaskId(IDGenerator.generate());
         taskToBeRetried.setRetriedTaskId(task.getTaskId());

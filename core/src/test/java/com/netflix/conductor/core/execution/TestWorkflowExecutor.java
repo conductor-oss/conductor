@@ -324,14 +324,13 @@ public class TestWorkflowExecutor {
         assertEquals(1, tasks.size());
         assertEquals(task_1_1.getTaskId(), tasks.get(0).getTaskId());
 
-        //2 tasks witih the same  definition but different reference numbers
+        //2 tasks with the same  definition but different reference numbers
         workflow.setTasks(Arrays.asList(task_1_3_1,task_1_3_2));
         tasks = workflowExecutor.getFailedTasksToRetry(workflow);
         assertEquals(1, tasks.size());
         assertEquals(task_1_3_2.getTaskId(), tasks.get(0).getTaskId());
 
-        //3 tasks witih definitions and referece numbers
-
+        //3 tasks with definitions and reference numbers
         workflow.setTasks(Arrays.asList(task_1_1,task_1_2, task_1_3_1, task_1_3_2, task_2_1, task_2_2, task_3_1));
         tasks = workflowExecutor.getFailedTasksToRetry(workflow);
         assertEquals(4, tasks.size());
@@ -339,8 +338,6 @@ public class TestWorkflowExecutor {
         assertTrue(tasks.contains(task_1_2));
         assertTrue(tasks.contains(task_2_2));
         assertTrue(tasks.contains(task_1_3_2));
-
-
     }
 
 
