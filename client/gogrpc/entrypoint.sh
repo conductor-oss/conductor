@@ -3,9 +3,9 @@
 set -e
 
 printUsage() {
-    echo "entrypoint generates grpc client"
+    echo "./entrypoint.sh generates grpc client"
     echo " "
-    echo "Usage: ./entrypoint --dir myProtoDir --output ."
+    echo "Usage: ./entrypoint.sh --dir myProtoDir --output ."
     echo " "
     echo "options:"
     echo " -h, --help          Show help"
@@ -13,6 +13,7 @@ printUsage() {
     echo " -o, --output DIR    The output directory for generated files. Will be automatically created."
 }
 
+PROTO_DIR="/conductor/grpc/src/main/proto"
 OUTPUT_DIR=""
 
 while test $# -gt 0; do

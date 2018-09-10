@@ -2,7 +2,9 @@ FROM golang:1.11-stretch
 
 RUN apt-get update && apt-get install unzip
 
-COPY . /conductor
+ADD ./client /conductor/client
+ADD ./grpc /conductor/grpc
+
 WORKDIR /conductor/client/gogrpc
 
 #Installs all dependencies, creates a build of the grpc client and tests it
