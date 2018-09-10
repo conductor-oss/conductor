@@ -3,14 +3,14 @@
 set -e
 
 printUsage() {
-    echo "gen-proto generates grpc and protobuf"
+    echo "entrypoint generates grpc client"
     echo " "
-    echo "Usage: gen-proto --protoDir myProtoDir --output ."
+    echo "Usage: ./entrypoint --dir myProtoDir --output ."
     echo " "
     echo "options:"
-    echo " -h, --help           Show help"
-    echo " --protoDir DIR       Scans the given directory for all proto files"
-    echo " --output DIR         The output directory for generated files. Will be automatically created."
+    echo " -h, --help          Show help"
+    echo " -d, --dir DIR       Scans the given directory for all proto files"
+    echo " -o, --output DIR    The output directory for generated files. Will be automatically created."
 }
 
 OUTPUT_DIR=""
@@ -21,7 +21,7 @@ while test $# -gt 0; do
             printUsage
             exit 0
             ;;
-        --protoDir)
+        -d|--dir)
             shift
             if test $# -gt 0; then
                 PROTO_DIR=$1
@@ -31,7 +31,7 @@ while test $# -gt 0; do
             fi
             shift
             ;;
-        --output)
+        -o|--output)
             shift
             OUTPUT_DIR=$1
             shift
@@ -53,14 +53,11 @@ OUTPUT_DIR="${OUTPUT_DIR}/generated"
 
 echo "Generating Go files for ${PROTO_DIR} in $OUTPUT_DIR"
 
-## TODO
-## Think about make and where the go_out should live
-
 if [[ ! -d $OUTPUT_DIR ]]; then
     mkdir -p $OUTPUT_DIR
 fi
 
 
-GEN_STRING="--go_out=${GO_SOURCE_RELATIVE}plugins=grpc:$OUT_DIR"
+make PROTO_SRC=$PROTO_DIR GO_OUTPUT=$OUTPUT_DIR proto
 
 

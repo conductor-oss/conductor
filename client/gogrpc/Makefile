@@ -1,5 +1,6 @@
 PROTO_SRC = ../../grpc/src/main/proto
 PROTO_VERSION = 3.5.1
+GO_OUTPUT=$(GOPATH)/src
 
 UNAME_S := $(shell uname -s)
 OSFLAG:=
@@ -34,10 +35,10 @@ test:
 
 # Helpers
 $(SERVICES): %.pb.go: %.proto
-	$(BIN_DIR)/protoc -I $(PROTO_SRC) $< --go_out=plugins=grpc:$(GOPATH)/src
+	$(BIN_DIR)/protoc -I $(PROTO_SRC) $< --go_out=plugins=grpc:$(GO_OUTPUT)
 
 models:
-	$(BIN_DIR)/protoc -I $(PROTO_SRC) $(PROTO_SRC)/model/*.proto --go_out=$(GOPATH)/src
+	$(BIN_DIR)/protoc -I $(PROTO_SRC) $(PROTO_SRC)/model/*.proto --go_out=$(GO_OUTPUT)
 
 install-protoc:
 	mkdir -p $(BIN_DIR)
