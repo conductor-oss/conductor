@@ -22,6 +22,7 @@ import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
@@ -79,7 +80,7 @@ public class WorkflowResource {
     public String startWorkflow(@PathParam("name") String name,
                                 @QueryParam("version") Integer version,
                                 @QueryParam("correlationId") String correlationId,
-                                Map<String, Object> input) throws Exception {
+                                Map<String, Object> input) {
         return workflowService.startWorkflow(name, version, correlationId, input);
     }
 
@@ -165,7 +166,7 @@ public class WorkflowResource {
     @Consumes(MediaType.WILDCARD)
     public void skipTaskFromWorkflow(@PathParam("workflowId") String workflowId,
                                      @PathParam("taskReferenceName") String taskReferenceName,
-                                     SkipTaskRequest skipTaskRequest) throws Exception {
+                                     SkipTaskRequest skipTaskRequest) {
         workflowService.skipTaskFromWorkflow(workflowId, taskReferenceName, skipTaskRequest);
     }
 
@@ -240,5 +241,13 @@ public class WorkflowResource {
                                                                 @QueryParam("freeText") @DefaultValue("*") String freeText,
                                                                 @QueryParam("query") String query) {
         return workflowService.searchWorkflowsByTasks(start, size, sort, freeText, query);
+    }
+
+    @GET
+    @ApiOperation("Get the uri and path of the external storage where the workflow input payload is to be stored")
+    @Consumes(MediaType.WILDCARD)
+    @Path("/externalstoragelocation")
+    public ExternalStorageLocation getExternalStorageLocation(@QueryParam("path") String path) {
+        return workflowService.getExternalStorageLocation(path);
     }
 }

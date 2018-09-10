@@ -28,7 +28,7 @@ import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -49,7 +49,6 @@ public class SimpleTaskMapper implements TaskMapper {
         this.parametersUtils = parametersUtils;
         this.metadataDAO = metadataDAO;
     }
-
 
     /**
      * This method maps a {@link WorkflowTask} of type {@link WorkflowTask.Type#SIMPLE}
@@ -93,6 +92,6 @@ public class SimpleTaskMapper implements TaskMapper {
         simpleTask.setResponseTimeoutSeconds(taskDefinition.getResponseTimeoutSeconds());
         simpleTask.setWorkflowTask(taskToSchedule);
         simpleTask.setRetriedTaskId(retriedTaskId);
-        return Arrays.asList(simpleTask);
+        return Collections.singletonList(simpleTask);
     }
 }

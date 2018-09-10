@@ -14,20 +14,13 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.tests.utils;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -39,21 +32,25 @@ import com.netflix.conductor.dao.dynomite.RedisExecutionDAO;
 import com.netflix.conductor.dao.dynomite.RedisMetadataDAO;
 import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
 import com.netflix.conductor.redis.utils.JedisMock;
-import com.netflix.conductor.server.ConductorConfig;
 import com.netflix.dyno.queues.ShardSupplier;
-
 import redis.clients.jedis.JedisCommands;
+
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * @author Viren
  *
  */
 public class TestModule extends AbstractModule {
-	
+
 	private int maxThreads = 50;
-	
+
 	private ExecutorService executorService;
-	
+
 	@Override
 	protected void configure() {
 
@@ -63,39 +60,40 @@ public class TestModule extends AbstractModule {
 
 		configureExecutorService();
 
-		ConductorConfig config = new ConductorConfig();
+		MockConfiguration config = new MockConfiguration();
 		bind(Configuration.class).toInstance(config);
 		JedisCommands jedisMock = new JedisMock();
 
 		DynoQueueDAO queueDao = new DynoQueueDAO(jedisMock, jedisMock, new ShardSupplier() {
-			
+
 			@Override
 			public Set<String> getQueueShards() {
 				return new HashSet<>(Collections.singletonList("a"));
 			}
-			
+
 			@Override
 			public String getCurrentShard() {
 				return "a";
 			}
 		}, config);
-		
+
 		bind(MetadataDAO.class).to(RedisMetadataDAO.class);
 		bind(ExecutionDAO.class).to(RedisExecutionDAO.class);
 		bind(DynoQueueDAO.class).toInstance(queueDao);
 		bind(QueueDAO.class).to(DynoQueueDAO.class);
-		bind(IndexDAO.class).to(MockIndexDAO.class);		
+		bind(IndexDAO.class).to(MockIndexDAO.class);
 		DynoProxy proxy = new DynoProxy(jedisMock);
 		bind(DynoProxy.class).toInstance(proxy);
 		install(new CoreModule());
 		bind(UserTask.class).asEagerSingleton();
+		bind(ExternalPayloadStorage.class).to(MockExternalPayloadStorage.class);
 	}
-	
+
 	@Provides
 	public ExecutorService getExecutorService(){
 		return this.executorService;
 	}
-	
+
 	private void configureExecutorService(){
 		AtomicInteger count = new AtomicInteger(0);
 		this.executorService = java.util.concurrent.Executors.newFixedThreadPool(maxThreads, runnable -> {

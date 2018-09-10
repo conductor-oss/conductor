@@ -1,12 +1,25 @@
+/*
+ * Copyright 2016 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.conductor.service;
 
-import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.events.EventProcessor;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.service.utils.ServiceUtils;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -21,13 +34,14 @@ import java.util.Map;
 public class EventService {
 
     private final MetadataService metadataService;
-
     private final EventProcessor eventProcessor;
+    private final EventQueues eventQueues;
 
     @Inject
-    public EventService(MetadataService metadataService, EventProcessor eventProcessor) {
+    public EventService(MetadataService metadataService, EventProcessor eventProcessor, EventQueues eventQueues) {
         this.metadataService = metadataService;
         this.eventProcessor = eventProcessor;
+        this.eventQueues = eventQueues;
     }
 
     /**
@@ -88,6 +102,6 @@ public class EventService {
      * @return list of registered queue providers.
      */
     public List<String> getEventQueueProviders() {
-        return EventQueues.providers();
+        return eventQueues.getProviders();
     }
 }

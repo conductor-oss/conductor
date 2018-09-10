@@ -19,7 +19,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
@@ -27,7 +28,6 @@ import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.isNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -40,8 +40,6 @@ public class WorkflowServiceTest {
 
     private MetadataService mockMetadata;
 
-    private Configuration mockConfig;
-
     private WorkflowService workflowService;
 
     @Before
@@ -49,15 +47,15 @@ public class WorkflowServiceTest {
         this.mockWorkflowExecutor = Mockito.mock(WorkflowExecutor.class);
         this.mockExecutionService = Mockito.mock(ExecutionService.class);
         this.mockMetadata = Mockito.mock(MetadataService.class);
-        this.mockConfig = Mockito.mock(Configuration.class);
+        Configuration mockConfig = Mockito.mock(Configuration.class);
 
         when(mockConfig.getIntProperty(anyString(), anyInt())).thenReturn(5_000);
         this.workflowService = new WorkflowService(this.mockWorkflowExecutor, this.mockExecutionService,
-                this.mockMetadata, this.mockConfig);
+                this.mockMetadata, mockConfig);
     }
 
     @Test
-    public void testStartWorkflow() throws Exception {
+    public void testStartWorkflow() {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("test");
         workflowDef.setVersion(1);
@@ -72,13 +70,13 @@ public class WorkflowServiceTest {
 
         when(mockMetadata.getWorkflowDef(anyString(), anyInt())).thenReturn(workflowDef);
         when(mockWorkflowExecutor.startWorkflow(anyString(), anyInt(), anyString(),
-                anyMapOf(String.class, Object.class), any(String.class),
+                anyMapOf(String.class, Object.class), any(String.class), any(String.class),
                 anyMapOf(String.class, String.class))).thenReturn(workflowID);
         assertEquals("w112", workflowService.startWorkflow(startWorkflowRequest));
     }
 
     @Test(expected = ApplicationException.class)
-    public void testApplicationExceptionStartWorkflowMessage() throws Exception {
+    public void testApplicationExceptionStartWorkflowMessage() {
         try {
             when(mockMetadata.getWorkflowDef(anyString(), anyInt())).thenReturn(null);
 
@@ -95,7 +93,7 @@ public class WorkflowServiceTest {
     }
 
     @Test
-    public void testStartWorkflowParam() throws Exception {
+    public void testStartWorkflowParam() {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("test");
         workflowDef.setVersion(1);
@@ -111,7 +109,7 @@ public class WorkflowServiceTest {
     }
 
     @Test(expected = ApplicationException.class)
-    public void testApplicationExceptionStartWorkflowMessageParam() throws Exception {
+    public void testApplicationExceptionStartWorkflowMessageParam() {
         try {
             when(mockMetadata.getWorkflowDef(anyString(), anyInt())).thenReturn(null);
 
@@ -143,7 +141,7 @@ public class WorkflowServiceTest {
     }
 
     @Test
-    public void testGetWorklfowsMultipleCorrelationId() throws Exception {
+    public void testGetWorklfowsMultipleCorrelationId() {
         Workflow workflow = new Workflow();
         workflow.setCorrelationId("c123");
 
@@ -165,7 +163,7 @@ public class WorkflowServiceTest {
     }
 
     @Test
-    public void testGetExecutionStatus() throws Exception {
+    public void testGetExecutionStatus() {
         Workflow workflow = new Workflow();
         workflow.setCorrelationId("c123");
 
@@ -174,7 +172,7 @@ public class WorkflowServiceTest {
     }
 
     @Test(expected = ApplicationException.class)
-    public void testApplicationExceptionGetExecutionStatus() throws Exception {
+    public void testApplicationExceptionGetExecutionStatus() {
         try {
             when(mockExecutionService.getExecutionStatus(anyString(), anyBoolean())).thenReturn(null);
             workflowService.getExecutionStatus("w123", true);
@@ -187,13 +185,13 @@ public class WorkflowServiceTest {
     }
 
     @Test
-    public void testDeleteWorkflow() throws Exception {
+    public void testDeleteWorkflow() {
         workflowService.deleteWorkflow("w123", true);
         verify(mockExecutionService, times(1)).removeWorkflow(anyString(), anyBoolean());
     }
 
     @Test(expected = ApplicationException.class)
-    public void testInvalidDeleteWorkflow() throws Exception {
+    public void testInvalidDeleteWorkflow() {
         try {
             workflowService.deleteWorkflow(null, true);
         } catch (ApplicationException ex) {
@@ -205,7 +203,7 @@ public class WorkflowServiceTest {
     }
 
     @Test(expected = ApplicationException.class)
-    public void testInvalidWorkflowNameGetRunningWorkflows() throws Exception {
+    public void testInvalidWorkflowNameGetRunningWorkflows() {
         try {
             workflowService.getRunningWorkflows(null, 123, null, null);
         } catch (ApplicationException ex) {
@@ -217,51 +215,51 @@ public class WorkflowServiceTest {
     }
 
     @Test
-    public void testGetRunningWorkflowsTime() throws Exception{
+    public void testGetRunningWorkflowsTime() {
         workflowService.getRunningWorkflows("test", 1, 100L, 120L);
         verify(mockWorkflowExecutor, times(1)).getWorkflows(anyString(), anyInt(), anyLong(), anyLong());
     }
 
     @Test
-    public void testGetRunningWorkflows() throws Exception{
+    public void testGetRunningWorkflows() {
         workflowService.getRunningWorkflows("test", 1, null, null);
         verify(mockWorkflowExecutor, times(1)).getRunningWorkflowIds(anyString());
     }
 
     @Test
-    public void testDecideWorkflow() throws Exception {
+    public void testDecideWorkflow() {
         workflowService.decideWorkflow("test");
         verify(mockWorkflowExecutor, times(1)).decide(anyString());
     }
 
     @Test
-    public void testPauseWorkflow() throws Exception{
+    public void testPauseWorkflow() {
         workflowService.pauseWorkflow("test");
         verify(mockWorkflowExecutor, times(1)).pauseWorkflow(anyString());
     }
 
     @Test
-    public void testResumeWorkflow() throws Exception {
+    public void testResumeWorkflow() {
         workflowService.resumeWorkflow("test");
         verify(mockWorkflowExecutor, times(1)).resumeWorkflow(anyString());
     }
 
     @Test
-    public void testSkipTaskFromWorkflow() throws Exception {
+    public void testSkipTaskFromWorkflow() {
         workflowService.skipTaskFromWorkflow("test", "testTask", null);
         verify(mockWorkflowExecutor, times(1)).skipTaskFromWorkflow(anyString(), anyString(),
                 any(SkipTaskRequest.class));
     }
 
     @Test
-    public void testRerunWorkflow() throws Exception {
+    public void testRerunWorkflow() {
         RerunWorkflowRequest request = new RerunWorkflowRequest();
         workflowService.rerunWorkflow("test", request);
         verify(mockWorkflowExecutor, times(1)).rerun(any(RerunWorkflowRequest.class));
     }
 
     @Test
-    public void testRerunWorkflowReturnWorkflowId() throws Exception {
+    public void testRerunWorkflowReturnWorkflowId() {
         RerunWorkflowRequest request = new RerunWorkflowRequest();
         String workflowId = "w123";
         when(mockWorkflowExecutor.rerun(any(RerunWorkflowRequest.class))).thenReturn(workflowId);
@@ -269,25 +267,25 @@ public class WorkflowServiceTest {
     }
 
     @Test
-    public void testRestartWorkflow() throws Exception {
+    public void testRestartWorkflow() {
         workflowService.restartWorkflow("w123");
         verify(mockWorkflowExecutor, times(1)).rewind(anyString());
     }
 
     @Test
-    public void testRetryWorkflow() throws Exception {
+    public void testRetryWorkflow() {
         workflowService.retryWorkflow("w123");
         verify(mockWorkflowExecutor, times(1)).retry(anyString());
     }
 
     @Test
-    public void testResetWorkflow() throws Exception{
+    public void testResetWorkflow() {
         workflowService.resetWorkflow("w123");
         verify(mockWorkflowExecutor, times(1)).resetCallbacksForInProgressTasks(anyString());
     }
 
     @Test
-    public void testTerminateWorkflow() throws Exception {
+    public void testTerminateWorkflow() {
         workflowService.terminateWorkflow("w123", "test");
         verify(mockWorkflowExecutor, times(1)).terminateWorkflow(anyString(), anyString());
     }
@@ -308,7 +306,7 @@ public class WorkflowServiceTest {
     }
 
     @Test(expected = ApplicationException.class)
-    public void testInvalidSizeSearchWorkflows() throws Exception {
+    public void testInvalidSizeSearchWorkflows() {
         try {
             workflowService.searchWorkflows(0,6000,"asc", "*", "*");
         } catch (ApplicationException ex) {

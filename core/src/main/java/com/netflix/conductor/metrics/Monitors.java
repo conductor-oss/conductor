@@ -247,4 +247,8 @@ public class Monitors {
 	public static void recordDaoPayloadSize(String dao, String action, String taskType, String workflowType, int size) {
 		gauge(classQualifier, "dao_payload_size", size, "dao", dao, "action", action, "taskType", taskType, "workflowType", workflowType);
 	}
+
+	public static void recordExternalPayloadStorageUsage(String name, String operation, String payloadType) {
+		counter(classQualifier, "external_payload_storage_usage", "name", name, "operation", operation, "payloadType", payloadType);
+	}
 }

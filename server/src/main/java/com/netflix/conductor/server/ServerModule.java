@@ -20,11 +20,14 @@ package com.netflix.conductor.server;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.contribs.http.HttpTask;
 import com.netflix.conductor.contribs.http.RestClientManager;
 import com.netflix.conductor.contribs.json.JsonJqTransform;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
+import com.netflix.conductor.core.utils.DummyPayloadStorage;
+import com.netflix.conductor.core.utils.S3PayloadStorage;
 import com.netflix.conductor.dao.RedisWorkflowModule;
 import com.netflix.conductor.dao.es.index.ElasticSearchModule;
 import com.netflix.conductor.dao.es5.index.ElasticSearchModuleV5;
@@ -35,6 +38,8 @@ import redis.clients.jedis.JedisCommands;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static com.netflix.conductor.server.ConductorServer.ExternalPayloadStorageType.S3;
 
 /**
  * @author Viren
@@ -58,14 +63,16 @@ public class ServerModule extends AbstractModule {
 	
 	private ConductorServer.DB db;
 
-	public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, ConductorConfig conductorConfig, ConductorServer.DB db) {
+	private ConductorServer.ExternalPayloadStorageType externalPayloadStorageType;
+
+	public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, ConductorConfig conductorConfig, ConductorServer.DB db, ConductorServer.ExternalPayloadStorageType externalPayloadStorageType) {
 		this.dynoConn = jedis;
 		this.hostSupplier = hostSupplier;
 		this.conductorConfig = conductorConfig;
 		this.region = conductorConfig.getRegion();
 		this.localRack = conductorConfig.getAvailabilityZone();
 		this.db = db;
-		
+		this.externalPayloadStorageType = externalPayloadStorageType;
 	}
 	
 	@Override
@@ -88,18 +95,24 @@ public class ServerModule extends AbstractModule {
 			// Use ES2 as default.
 			install(new ElasticSearchModule());
 		}
-		
+
 		install(new CoreModule());
 		install(new JerseyModule());
-		
+
 		new HttpTask(new RestClientManager(), conductorConfig);
 		new JsonJqTransform();
-		
+
 		List<AbstractModule> additionalModules = conductorConfig.getAdditionalModules();
 		if(additionalModules != null) {
 			for(AbstractModule additionalModule : additionalModules) {
 				install(additionalModule);
 			}
+		}
+
+		if (externalPayloadStorageType == S3) {
+			bind(ExternalPayloadStorage.class).to(S3PayloadStorage.class);
+		} else {
+			bind(ExternalPayloadStorage.class).to(DummyPayloadStorage.class);
 		}
 	}
 	

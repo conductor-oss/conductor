@@ -42,6 +42,7 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
+import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import org.eclipse.jetty.server.Request;
@@ -53,7 +54,6 @@ import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
@@ -89,7 +89,9 @@ public class TestHttpTask {
 	
 	private HttpTask httpTask;
 	
-	private WorkflowExecutor executor = mock(WorkflowExecutor.class);
+	private WorkflowExecutor workflowExecutor;
+
+	private Configuration config;
 	
 	private Workflow workflow = new Workflow();
 	
@@ -125,13 +127,14 @@ public class TestHttpTask {
 	@Before
 	public void setup() {
 		RestClientManager rcm = new RestClientManager();
-		Configuration config = mock(Configuration.class);
+		workflowExecutor = mock(WorkflowExecutor.class);
+		config = mock(Configuration.class);
 		when(config.getServerId()).thenReturn("test_server_id");
 		httpTask = new HttpTask(rcm, config);
 	}
 	
 	@Test
-	public void testPost() throws Exception {
+	public void testPost() {
 
 		Task task = new Task();
 		Input input = new Input();
@@ -143,7 +146,7 @@ public class TestHttpTask {
 		input.setMethod("POST");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		assertEquals(task.getReasonForIncompletion(), Task.Status.COMPLETED, task.getStatus());
 		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
 		Object response = hr.get("body");
@@ -158,7 +161,7 @@ public class TestHttpTask {
 	
 
 	@Test
-	public void testPostNoContent() throws Exception {
+	public void testPostNoContent() {
 
 		Task task = new Task();
 		Input input = new Input();
@@ -170,7 +173,7 @@ public class TestHttpTask {
 		input.setMethod("POST");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		assertEquals(task.getReasonForIncompletion(), Task.Status.COMPLETED, task.getStatus());
 		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
 		Object response = hr.get("body");
@@ -179,7 +182,7 @@ public class TestHttpTask {
 	}
 	
 	@Test
-	public void testFailure() throws Exception {
+	public void testFailure() {
 
 		Task task = new Task();
 		Input input = new Input();
@@ -187,19 +190,19 @@ public class TestHttpTask {
 		input.setMethod("GET");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		assertEquals("Task output: " + task.getOutputData(), Task.Status.FAILED, task.getStatus());
 		assertEquals(ERROR_RESPONSE, task.getReasonForIncompletion());
 		
 		task.setStatus(Status.SCHEDULED);
 		task.getInputData().remove(HttpTask.REQUEST_PARAMETER_NAME);
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		assertEquals(Task.Status.FAILED, task.getStatus());
 		assertEquals(HttpTask.MISSING_REQUEST, task.getReasonForIncompletion());
 	}
 	
 	@Test
-	public void testTextGET() throws Exception {
+	public void testTextGET() {
 
 		Task task = new Task();
 		Input input = new Input();
@@ -207,7 +210,7 @@ public class TestHttpTask {
 		input.setMethod("GET");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
 		Object response = hr.get("body");
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
@@ -215,7 +218,7 @@ public class TestHttpTask {
 	}
 	
 	@Test
-	public void testNumberGET() throws Exception {
+	public void testNumberGET() {
 
 		Task task = new Task();
 		Input input = new Input();
@@ -223,7 +226,7 @@ public class TestHttpTask {
 		input.setMethod("GET");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
 		Object response = hr.get("body");
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
@@ -240,7 +243,7 @@ public class TestHttpTask {
 		input.setMethod("GET");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 		Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
 		Object response = hr.get("body");
 		assertEquals(Task.Status.COMPLETED, task.getStatus());
@@ -250,7 +253,7 @@ public class TestHttpTask {
 	}
 
 	@Test
-	public void testExecute() throws Exception {
+	public void testExecute() {
 
 		Task task = new Task();
 		Input input = new Input();
@@ -259,20 +262,19 @@ public class TestHttpTask {
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 		task.setStatus(Status.SCHEDULED);
 		task.setScheduledTime(0);
-		boolean executed = httpTask.execute(workflow, task, executor);
+		boolean executed = httpTask.execute(workflow, task, workflowExecutor);
 		assertFalse(executed);
-
 	}
 	
 	@Test
-	public void testOptional() throws Exception {
+	public void testOptional() {
  		Task task = new Task();
  		Input input = new Input();
  		input.setUri("http://localhost:7009/failure");
  		input.setMethod("GET");
  		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
  		
- 		httpTask.start(workflow, task, executor);
+ 		httpTask.start(workflow, task, workflowExecutor);
  		assertEquals("Task output: " + task.getOutputData(), Task.Status.FAILED, task.getStatus());
  		assertEquals(ERROR_RESPONSE, task.getReasonForIncompletion());
  		assertTrue(!task.getStatus().isSuccessful());
@@ -280,7 +282,7 @@ public class TestHttpTask {
  		task.setStatus(Status.SCHEDULED);
  		task.getInputData().remove(HttpTask.REQUEST_PARAMETER_NAME);
  		task.setReferenceTaskName("t1");
- 		httpTask.start(workflow, task, executor);
+ 		httpTask.start(workflow, task, workflowExecutor);
  		assertEquals(Task.Status.FAILED, task.getStatus());
  		assertEquals(HttpTask.MISSING_REQUEST, task.getReasonForIncompletion());
  		assertTrue(!task.getStatus().isSuccessful());
@@ -297,7 +299,8 @@ public class TestHttpTask {
 		def.getTasks().add(wft);
  		MetadataDAO metadataDAO = mock(MetadataDAO.class);
 		QueueDAO queueDAO = mock(QueueDAO.class);
-		ParametersUtils parametersUtils = new ParametersUtils();
+		ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
+		ParametersUtils parametersUtils = mock(ParametersUtils.class);
 		Map<String, TaskMapper> taskMappers = new HashMap<>();
 		taskMappers.put("DECISION", new DecisionTaskMapper());
 		taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
@@ -309,14 +312,14 @@ public class TestHttpTask {
 		taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
 		taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
 		taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
- 		new DeciderService(metadataDAO, queueDAO, taskMappers).decide(workflow, def);
+ 		new DeciderService(metadataDAO, parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers).decide(workflow, def);
  		
  		System.out.println(workflow.getTasks());
  		System.out.println(workflow.getStatus());
  	}
 
  	@Test
-	public void testOAuth() throws Exception {
+	public void testOAuth() {
 		Task task = new Task();
 		Input input = new Input();
 		input.setUri("http://localhost:7009/oauth");
@@ -325,7 +328,7 @@ public class TestHttpTask {
 		input.setOauthConsumerSecret("someSecret");
 		task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
 
-		httpTask.start(workflow, task, executor);
+		httpTask.start(workflow, task, workflowExecutor);
 
 		Map<String, Object> response = (Map<String, Object>) task.getOutputData().get("response");
 		Map<String, String> body = (Map<String, String>) response.get("body");
@@ -346,7 +349,7 @@ public class TestHttpTask {
 		
 		@Override
 		public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
-				throws IOException, ServletException {
+				throws IOException {
 			if(request.getMethod().equals("GET") && request.getRequestURI().equals("/text")) {
 				PrintWriter writer = response.getWriter();
 				writer.print(TEXT_RESPONSE);

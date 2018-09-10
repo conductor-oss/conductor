@@ -40,15 +40,16 @@ public class SubWorkflowTaskMapperTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         parametersUtils = mock(ParametersUtils.class);
         metadataDAO = mock(MetadataDAO.class);
         subWorkflowTaskMapper = new SubWorkflowTaskMapper(parametersUtils, metadataDAO);
         deciderService = mock(DeciderService.class);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
-    public void getMappedTasks() throws Exception {
+    public void getMappedTasks() {
         //Given
         WorkflowDef workflowDef = new WorkflowDef();
         Workflow  workflowInstance = new Workflow();
@@ -90,7 +91,7 @@ public class SubWorkflowTaskMapperTest {
 
 
     @Test
-    public void getSubWorkflowParams() throws Exception {
+    public void getSubWorkflowParams() {
         WorkflowTask workflowTask = new WorkflowTask();
         SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         subWorkflowParams.setName("Foo");
@@ -101,7 +102,7 @@ public class SubWorkflowTaskMapperTest {
     }
 
     @Test
-    public void getExceptionWhenNoSubWorkflowParamsPassed() throws Exception {
+    public void getExceptionWhenNoSubWorkflowParamsPassed() {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("FooWorkFLow");
 
@@ -114,7 +115,7 @@ public class SubWorkflowTaskMapperTest {
 
 
     @Test
-    public void getSubWorkflowVersion() throws Exception {
+    public void getSubWorkflowVersion() {
         Map<String, Object> subWorkflowParamMap = new HashMap<>();
         subWorkflowParamMap.put("name","FooWorkFlow");
         subWorkflowParamMap.put("version","2");
@@ -125,7 +126,7 @@ public class SubWorkflowTaskMapperTest {
     }
 
     @Test
-    public void getSubworkflowVersionFromMeta() throws Exception {
+    public void getSubworkflowVersionFromMeta() {
         Map<String, Object> subWorkflowParamMap = new HashMap<>();
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("FooWorkFlow");
@@ -138,7 +139,7 @@ public class SubWorkflowTaskMapperTest {
     }
 
     @Test
-    public void getSubworkflowVersionFromMetaException() throws Exception {
+    public void getSubworkflowVersionFromMetaException() {
         Map<String, Object> subWorkflowParamMap = new HashMap<>();
         when(metadataDAO.getLatest(any())).thenReturn(null);
 

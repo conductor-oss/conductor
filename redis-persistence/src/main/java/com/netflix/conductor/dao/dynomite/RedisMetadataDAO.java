@@ -15,8 +15,24 @@
  */
 package com.netflix.conductor.dao.dynomite;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
+import com.google.inject.Singleton;
+import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.metadata.events.EventHandler;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.core.execution.ApplicationException.Code;
+import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.metrics.Monitors;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -26,25 +42,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import javax.inject.Inject;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.google.common.base.Preconditions;
-import com.google.inject.Singleton;
-import com.netflix.conductor.annotations.Trace;
-import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.core.execution.ApplicationException.Code;
-import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.metrics.Monitors;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Singleton
 @Trace

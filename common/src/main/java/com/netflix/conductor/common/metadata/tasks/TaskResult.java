@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- *
- */
+
 package com.netflix.conductor.common.metadata.tasks;
 
 import java.util.HashMap;
@@ -50,6 +48,8 @@ public class TaskResult {
 
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
 
+    private String externalOutputPayloadStoragePath;
+
     public TaskResult(Task task) {
         this.workflowInstanceId = task.getWorkflowInstanceId();
         this.taskId = task.getTaskId();
@@ -58,6 +58,7 @@ public class TaskResult {
         this.status = Status.valueOf(task.getStatus().name());
         this.workerId = task.getWorkerId();
         this.outputData = task.getOutputData();
+        this.externalOutputPayloadStoragePath = task.getExternalOutputPayloadStoragePath();
     }
 
     public TaskResult() {
@@ -191,6 +192,22 @@ public class TaskResult {
         return this;
     }
 
+    /**
+     *
+     * @return the path where the task output is stored in external storage
+     */
+    public String getExternalOutputPayloadStoragePath() {
+        return externalOutputPayloadStoragePath;
+    }
+
+    /**
+     *
+     * @param externalOutputPayloadStoragePath path in the external storage where the task output is stored
+     */
+    public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
+        this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
+    }
+
     @Override
     public String toString() {
         return "TaskResult{" +
@@ -202,6 +219,7 @@ public class TaskResult {
                 ", status=" + status +
                 ", outputData=" + outputData +
                 ", logs=" + logs +
+                ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
                 '}';
     }
 

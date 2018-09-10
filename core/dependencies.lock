@@ -1,5 +1,9 @@
 {
     "compile": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -57,6 +61,10 @@
         }
     },
     "compileClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -114,6 +122,10 @@
         }
     },
     "default": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -171,6 +183,10 @@
         }
     },
     "runtime": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -228,6 +244,10 @@
         }
     },
     "runtimeClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -285,6 +305,10 @@
         }
     },
     "testCompile": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -354,6 +378,10 @@
         }
     },
     "testCompileClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -423,6 +451,10 @@
         }
     },
     "testRuntime": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -492,6 +524,10 @@
         }
     },
     "testRuntimeClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "locked": "1.11.86",
+            "requested": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "locked": "2.7.5",
             "requested": "2.7.5"

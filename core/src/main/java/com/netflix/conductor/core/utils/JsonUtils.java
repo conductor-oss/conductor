@@ -91,7 +91,7 @@ public class JsonUtils {
         try {
             return objectMapper.readValue(jsonAsString, Object.class);
         } catch (Exception e) {
-            logger.error("Error parsing json string: {}", jsonAsString, e);
+            logger.info("Unable to parse (json?) string: {}", jsonAsString, e);
             return jsonAsString;
         }
     }

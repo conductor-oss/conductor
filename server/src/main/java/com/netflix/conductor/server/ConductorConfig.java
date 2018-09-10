@@ -18,6 +18,12 @@
  */
 package com.netflix.conductor.server;
 
+import com.google.inject.AbstractModule;
+import com.netflix.conductor.core.config.Configuration;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -26,13 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
-
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.inject.AbstractModule;
-import com.netflix.conductor.core.config.Configuration;
 
 /**
  * @author Viren
@@ -94,11 +93,53 @@ public class ConductorConfig implements Configuration {
 	}
 
 	@Override
+	public Long getWorkflowInputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.workflow.input.payload.threshold.kb", 5120L);
+	}
+
+	@Override
+	public Long getMaxWorkflowInputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.max.workflow.input.payload.threshold.kb", 10240L);
+	}
+
+	@Override
+	public Long getWorkflowOutputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.workflow.output.payload.threshold.kb", 5120L);
+	}
+
+	@Override
+	public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.max.workflow.output.payload.threshold.kb", 10240L);
+	}
+
+	@Override
+	public Long getTaskInputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.task.input.payload.threshold.kb", 3072L);
+	}
+
+	@Override
+	public Long getMaxTaskInputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.max.task.input.payload.threshold.kb", 10240L);
+	}
+
+	@Override
+	public Long getTaskOutputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.task.output.payload.threshold.kb", 3072L);
+	}
+
+	@Override
+	public Long getMaxTaskOutputPayloadSizeThresholdKB() {
+		return getLongProperty("conductor.max.task.output.payload.threshold.kb", 10240L);
+	}
+
+	@Override
 	public int getIntProperty(String key, int defaultValue) {
 		String val = getProperty(key, Integer.toString(defaultValue));
 		try{
 			defaultValue = Integer.parseInt(val);
-		}catch(NumberFormatException e){}
+		} catch(NumberFormatException e){
+			logger.error("Error parsing the Int value for Key:{} , returning a default value: {}", key, defaultValue);
+		}
 		return defaultValue;
 	}
 
@@ -123,7 +164,7 @@ public class ConductorConfig implements Configuration {
 				val = Optional.ofNullable(System.getProperty(key)).orElse(defaultValue);
 			}
 		}catch(Exception e){
-			logger.error(e.getMessage(), e);
+			logger.error("Error reading property: {}", key, e);
 		}
 		return val;
 	}
@@ -132,7 +173,7 @@ public class ConductorConfig implements Configuration {
 	public Map<String, Object> getAll() {
 		Map<String, Object> map = new HashMap<>();
 		Properties props = System.getProperties();
-		props.entrySet().forEach(entry -> map.put(entry.getKey().toString(), entry.getValue()));
+		props.forEach((key, value) -> map.put(key.toString(), value));
 		return map;
 	}
 
@@ -155,7 +196,7 @@ public class ConductorConfig implements Configuration {
 				}
 				return modules;
 			}catch(Exception e) {
-				logger.warn(e.getMessage(), e);
+				logger.warn("Error loading additional modules", e);
 			}
 		}
 		return null;
