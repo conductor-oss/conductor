@@ -3,10 +3,10 @@
 import React from 'react';
 import { Link } from 'react-router';
 import { connect } from 'react-redux';
+import { searchWorkflows, getWorkflowDefs, bulkRetryWorkflow, bulkPauseWorkflow, bulkResumeWorkflow, bulkRestartWorkflow, bulkTerminateWorkflow } from '../../../actions/WorkflowActions';
 import Typeahead from 'react-bootstrap-typeahead';
 import { BootstrapTable, TableHeaderColumn } from 'react-bootstrap-table';
 import { Input, Button, Panel, Popover, OverlayTrigger, ButtonGroup, Grid, Row, Col } from 'react-bootstrap';
-import { searchWorkflows, getWorkflowDefs } from '../../../actions/WorkflowActions';
 
 function linkMaker(cell) {
   return <Link to={`/workflow/id/${cell}`}>{cell}</Link>;
@@ -91,21 +91,29 @@ class Workflow extends React.Component {
       workflows: [],
       update: true,
       fullstr: true,
-      start: !isNaN(start, 10) ? parseInt(start, 10) : start
+      start: !isNaN(start, 10) ? parseInt(start, 10) : start,
+      selectedWFEs:[],
+      bulkProcessOperation: "",
+      bulkProcessInFlight: false,
+      bulkProcessSuccess: false,
+      error:false,
+      bulkError:false,
+      bulkValidationMessage:"",
+      bulkPanelOpen:false,
+      bulkErrorMessages: [],
+      bulkSuccessfulResults:[]
     };
   }
 
-  componentWillMount() {
+  componentWillMount(){
     this.props.dispatch(getWorkflowDefs());
     this.doDispatch();
   }
 
-  componentWillReceiveProps({
-    workflows = [],
-    location: {
-      query: { h, start, status = '', q }
-    }
-  }) {
+  componentWillReceiveProps(nextProps) {
+    let {workflows = [], location} = nextProps;
+    let {query} = location;
+    let {h,start, status = '', q} = query;
     const workflowDefs = workflows.map(workflowDef => workflowDef.name);
 
     let search = q;
@@ -113,20 +121,30 @@ class Workflow extends React.Component {
       search = '';
     }
 
+    if(!this.state.bulkProcessSuccess && nextProps.bulkProcessSuccess){
+      this.onBulkSuccess();
+    }
+
     let update = true;
     update = this.state.search !== search;
     update = update || this.state.h !== h;
     update = update || this.state.start !== start;
 
+    this.constructBulkErrorMessages(nextProps);
+    this.removeSuccessfulWorkFlows((nextProps && nextProps.bulkSuccessfulResults) || []);
     this.setState({
-      search,
+      search : search,
       h: isNaN(h, 10) ? '' : h,
-      update,
-      status: status !== '' ? status.split(',') : [],
-      workflows: workflowDefs,
-      start: isNaN(start, 10) ? 0 : start
+      update : update,
+      status : status !== '' ? status.split(',') : [],
+      workflows : workflowDefs,
+      bulkProcessInFlight : nextProps.bulkProcessInFlight,
+      bulkProcessSuccess : nextProps.bulkProcessSuccess,
+      bulkSuccessfulResults: nextProps.bulkSuccessfulResults,
+      start: isNaN(start, 10) ? 0 : start,
+      error: nextProps.error,
+      bulkError: ((!this.state.error && nextProps.error && this.state.bulkProcessInFlight) || nextProps.bulkServerErrors) ? true : this.state.bulkError
     });
-
     this.refreshResults();
   }
 
@@ -222,10 +240,106 @@ class Workflow extends React.Component {
     this.refreshResults();
   };
 
-  render() {
+  handleRowSelect = (row, isSelected, e) => {
+    let currWFEs = this.state.selectedWFEs;
+    this.setState({update:true});
+    if(isSelected){
+      currWFEs.push(row);
+      this.setState({selectedWFEs: currWFEs, bulkValidationMessage:""})
+    } else {
+      var index = this.state.selectedWFEs.filter((storedRow) => {
+        return row.workflowId === storedRow.workflowId
+      })[0] || -1;
+      if(index === -1){
+        return true;
+      }
+      currWFEs.splice(index, 1)
+      this.setState({selectedWFEs: currWFEs, bulkValidationMessage:""})
+    }
+
+    return true;
+  };
+
+  handleSelectAll = (isSelected, rows, e) =>  {
+    if(isSelected){
+      this.setState({selectedWFEs: rows,bulkValidationMessage:""})
+    } else {
+      this.setState({selectedWFEs: [],bulkValidationMessage:""})
+    }
+
+    return true;
+  };
+
+  onChangeBulkProcessSelection = (e) => {
+    this.setState({bulkProcessOperation:e.target.value, bulkValidationMessage:""})
+  };
+
+  onBulkSuccess = () => {
+    this.refs.bulkProcessSelect.refs.input.value = "";
+    this.setState({selectedWFEs:[], bulkProcessOperation:""});
+    this.refs.table.cleanSelected();
+  };
+
+  removeSuccessfulWorkFlows = (successfulWorkflows) => {
+    if(successfulWorkflows !== undefined && successfulWorkflows !== null){
+      this.refs.table.cleanSelected(),
+      this.setState({selectedWFEs: []});
+    }
+  }
+
+  bulkProcess = () => {
+
+    let wfes = this.state.selectedWFEs.map((wfe) => {return wfe.workflowId});
+    let operation = this.state.bulkProcessOperation;
+    this.setState({bulkProcessSuccess:false, bulkError:false, bulkValidationMessage: "", bulkErrorMessages:[], bulkSuccessfulResults:[]});
+
+    if(wfes.length === 0){
+      this.setState({bulkValidationMessage:"Error: No workflows selected"})
+      return;
+    }
+
+    switch(operation){
+      case "retry":
+        this.props.dispatch(bulkRetryWorkflow(wfes));
+        break;
+      case "restart":
+        this.props.dispatch(bulkRestartWorkflow(wfes))
+        break;
+      case "resume":
+        this.props.dispatch(bulkResumeWorkflow(wfes))
+        break;
+      case "terminate":
+        this.props.dispatch(bulkTerminateWorkflow(wfes))
+        break;
+      case "pause":
+        this.props.dispatch(bulkPauseWorkflow(wfes))
+        break;
+      default:
+        this.setState({bulkValidationMessage:"Error: No Workflow Operation selected"})
+      return;
+    }
+
+  }
+
+  constructBulkErrorMessages = (props) => {
+    var messages = [];
+
+    if(props.bulkServerErrorMessage){
+      messages.push(props.bulkServerErrorMessage);
+    }
+
+    if(props.bulkErrorResults){
+      for(var id in props.bulkErrorResults){
+        messages.push(id + " - " + props.bulkErrorResults[id] + "");
+      }
+    }
+    this.setState({bulkErrorMessages: messages});
+    return null;
+  }
+
+ render = () => {
     let wfs = [];
     let filteredWfs = [];
-
     let totalHits = 0;
     let found = 0;
     if (this.props.data.hits) {
@@ -241,13 +355,32 @@ class Workflow extends React.Component {
     const workflowNames = this.state.workflows ? this.state.workflows : [];
     const statusList = ['RUNNING', 'COMPLETED', 'FAILED', 'TIMED_OUT', 'TERMINATED', 'PAUSED'];
 
-    // secondary filter to match sure we only show workflows that match the the status
+
+    const selectRow = {
+      mode: 'checkbox',
+      onSelect: this.handleRowSelect,
+      onSelectAll: this.handleSelectAll
+    };
+    let bulkErrors = this.state.bulkErrorMessages.length === 0 ? [] :  this.state.bulkErrorMessages.map((mess) => {
+      return <p>{mess}</p>
+    });
+
+    let bulkSuccessMessage = this.state.bulkSuccessfulResults && this.state.bulkSuccessfulResults.length > 0 ?  this.state.bulkSuccessfulResults.map((mess) => {
+      return <p key={mess}>{mess}</p>
+    }) : <p key="NONE">None</p> ;
+
+    const bulkSpin = (this.state.bulkProcessInFlight ? (<i style={{"fontSize":"150%"}} className="fa fa-spinner fa-spin"></i>) : "");
+    const bulkSuccess = (this.state.bulkProcessSuccess ? (<span style={{"fontSize":"150%", "color":"green"}}>All Successful!</span>) : "");
+    const bulkValidation = (this.state.bulkValidationMessage !== "" ? (<span style={{"fontSize":"150%", "color":"red"}}>{this.state.bulkValidationMessage}</span>) : "");
+    const bulkError = (this.state.bulkError ? (<span><span style={{"fontSize":"125%", "color":"green"}}>Successful: {bulkSuccessMessage}</span><span style={{"fontSize":"125%", "color":"red"}}>Errors: {this.state.bulkErrorMessages.map((mess) => {return <p key={mess}>{mess}</p>})}</span></span>) : "");
+    //secondary filter to match sure we only show workflows that match the the status
     var currentStatusArray = this.state.status;
     if (currentStatusArray.length > 0 && wfs.length > 0) {
       filteredWfs = wfs.filter(wf => currentStatusArray.includes(wf.status));
     } else {
       filteredWfs = wfs;
     }
+
 
     return (
       <div className="ui-content">
@@ -330,6 +463,44 @@ class Workflow extends React.Component {
             <form />
           </Panel>
         </div>
+        <Panel header="Bulk Processing  (click to expand)" collapsible >
+        <label>Select workflows from table below</label>
+        <Grid fluid={true}>
+          <Row className="show-grid">
+              <Col md={3}>
+                <Input plaintext><span style={{"fontSize":"150%"}}>{this.state.selectedWFEs.length} </span></Input>
+                &nbsp;
+                <i className="fa fa-angle-up fa-1x"/>
+                &nbsp;&nbsp;&nbsp;
+                <label className="small nobold">Number of Workflows Selected</label>
+              </Col>
+            <Col md={2}>
+                <Input type="select" ref="bulkProcessSelect" onChange={this.onChangeBulkProcessSelection} >
+                  <option value=""></option>
+                  <option value="pause">Pause</option>
+                  <option value="resume">Resume</option>
+                  <option value="restart">Restart</option>
+                  <option value="retry">Retry</option>
+                  <option value="terminate">Terminate</option>
+                </Input>
+                <i className="fa fa-angle-up fa-1x"/>
+                &nbsp;&nbsp;&nbsp;
+                <label className="small nobold">Workflow Operation</label>
+            </Col>
+            <Col md={1}>
+              <Button bsStyle="success" onClick={this.bulkProcess} value="Process" className="btn" disabled={this.state.bulkProcessInFlight} >Process</Button>
+              &nbsp;
+
+            </Col>
+            <Col md={4}>
+              {bulkSpin}
+              {bulkSuccess}
+              {bulkError}
+              {bulkValidation}
+            </Col>
+          </Row>
+        </Grid>
+        </Panel>
         <span>
           Total Workflows Found: <b>{totalHits}</b>, Displaying {this.state.start} <b>to</b> {max}
         </span>
@@ -349,45 +520,37 @@ class Workflow extends React.Component {
             ''
           )}
         </span>
-        <BootstrapTable
-          data={filteredWfs}
-          striped
-          hover
-          search={false}
-          exportCSV={false}
-          pagination={false}
-          options={{ sizePerPage: 100 }}
-        >
-          <TableHeaderColumn dataField="workflowType" isKey dataAlign="left" dataSort>
-            Workflow
-          </TableHeaderColumn>
-          <TableHeaderColumn dataField="workflowId" dataSort dataFormat={linkMaker}>
-            Workflow ID
-          </TableHeaderColumn>
-          <TableHeaderColumn dataField="status" dataSort>
-            Status
-          </TableHeaderColumn>
-          <TableHeaderColumn dataField="startTime" dataSort dataFormat={formatDate}>
-            Start Time
-          </TableHeaderColumn>
-          <TableHeaderColumn dataField="updateTime" dataSort dataFormat={formatDate}>
-            Last Updated
-          </TableHeaderColumn>
-          <TableHeaderColumn dataField="endTime" hidden={false} dataFormat={formatDate}>
-            End Time
-          </TableHeaderColumn>
-          <TableHeaderColumn dataField="reasonForIncompletion" hidden={false}>
-            Failure Reason
-          </TableHeaderColumn>
-          <TableHeaderColumn dataField="failedReferenceTaskNames" hidden={false}>
-            Failed Tasks
-          </TableHeaderColumn>
-          <TableHeaderColumn dataField="input" width="300">
-            Input
-          </TableHeaderColumn>
-          <TableHeaderColumn dataField="workflowId" width="300" dataFormat={miniDetails}>
-            &nbsp;
-          </TableHeaderColumn>
+        <BootstrapTable ref="table" data={filteredWfs} striped={true} hover={true} search={false} exportCSV={false} pagination={false} selectRow={selectRow} options={{sizePerPage:100}}>
+        <TableHeaderColumn dataField="workflowType" dataAlign="left" dataSort>
+          Workflow
+        </TableHeaderColumn>
+        <TableHeaderColumn dataField="workflowId" isKey dataSort dataFormat={linkMaker}>
+          Workflow ID
+        </TableHeaderColumn>
+        <TableHeaderColumn dataField="status" dataSort>
+          Status
+        </TableHeaderColumn>
+        <TableHeaderColumn dataField="startTime" dataSort dataFormat={formatDate}>
+          Start Time
+        </TableHeaderColumn>
+        <TableHeaderColumn dataField="updateTime" dataSort dataFormat={formatDate}>
+          Last Updated
+        </TableHeaderColumn>
+        <TableHeaderColumn dataField="endTime" hidden={false} dataFormat={formatDate}>
+          End Time
+        </TableHeaderColumn>
+        <TableHeaderColumn dataField="reasonForIncompletion" hidden={false}>
+          Failure Reason
+        </TableHeaderColumn>
+        <TableHeaderColumn dataField="failedReferenceTaskNames" hidden={false}>
+          Failed Tasks
+        </TableHeaderColumn>
+        <TableHeaderColumn dataField="input" width="300">
+          Input
+        </TableHeaderColumn>
+        <TableHeaderColumn dataField="workflowId" width="300" dataFormat={miniDetails}>
+          &nbsp;
+        </TableHeaderColumn>
         </BootstrapTable>
 
         <br />

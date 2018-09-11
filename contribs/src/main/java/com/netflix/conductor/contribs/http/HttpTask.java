@@ -160,9 +160,7 @@ public class HttpTask extends WorkflowSystemTask {
 		if(input.body != null) {
 			builder.entity(input.body);
 		}
-		input.headers.entrySet().forEach(e -> {
-			builder.header(e.getKey(), e.getValue());
-		});
+		input.headers.forEach(builder::header);
 		
 		HttpResponse response = new HttpResponse();
 		try {

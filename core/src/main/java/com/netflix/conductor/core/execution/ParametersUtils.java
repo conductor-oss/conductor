@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,13 +36,11 @@ import java.util.Map.Entry;
 import java.util.Optional;
 
 /**
- *
- *
- *
+ * Used to parse and resolve the JSONPath bindings in the workflow and task definitions.
  */
 public class ParametersUtils {
 
-    private ObjectMapper om = new ObjectMapper();
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     private TypeReference<Map<String, Object>> map = new TypeReference<Map<String, Object>>() {
     };
@@ -54,7 +52,6 @@ public class ParametersUtils {
     }
 
     public ParametersUtils() {
-
     }
 
     public Map<String, Object> getTaskInput(Map<String, Object> inputParams, Workflow workflow,
@@ -80,69 +77,68 @@ public class ParametersUtils {
 
         Map<String, Map<String, Object>> inputMap = new HashMap<>();
 
-        Map<String, Object> wf = new HashMap<>();
-        wf.put("input", workflow.getInput());
-        wf.put("output", workflow.getOutput());
-        wf.put("status", workflow.getStatus());
-        wf.put("workflowId", workflow.getWorkflowId());
-        wf.put("parentWorkflowId", workflow.getParentWorkflowId());
-        wf.put("parentWorkflowTaskId", workflow.getParentWorkflowTaskId());
-        wf.put("workflowType", workflow.getWorkflowType());
-        wf.put("version", workflow.getVersion());
-        wf.put("correlationId", workflow.getCorrelationId());
-        wf.put("reasonForIncompletion", workflow.getReasonForIncompletion());
-        wf.put("schemaVersion", workflow.getSchemaVersion());
+        Map<String, Object> workflowParams = new HashMap<>();
+        workflowParams.put("input", workflow.getInput());
+        workflowParams.put("output", workflow.getOutput());
+        workflowParams.put("status", workflow.getStatus());
+        workflowParams.put("workflowId", workflow.getWorkflowId());
+        workflowParams.put("parentWorkflowId", workflow.getParentWorkflowId());
+        workflowParams.put("parentWorkflowTaskId", workflow.getParentWorkflowTaskId());
+        workflowParams.put("workflowType", workflow.getWorkflowType());
+        workflowParams.put("version", workflow.getVersion());
+        workflowParams.put("correlationId", workflow.getCorrelationId());
+        workflowParams.put("reasonForIncompletion", workflow.getReasonForIncompletion());
+        workflowParams.put("schemaVersion", workflow.getSchemaVersion());
 
-        inputMap.put("workflow", wf);
-        //For new work flow being started the list of tasks will be empty
+        inputMap.put("workflow", workflowParams);
+
+        //For new workflow being started the list of tasks will be empty
         workflow.getTasks().stream()
                 .map(Task::getReferenceTaskName)
-                .map(taskRefName -> workflow.getTaskByRefName(taskRefName))
+                .map(workflow::getTaskByRefName)
                 .forEach(task -> {
-                    Map<String, Object> taskIO = new HashMap<>();
-                    taskIO.put("input", task.getInputData());
-                    taskIO.put("output", task.getOutputData());
-                    taskIO.put("taskType", task.getTaskType());
+                    Map<String, Object> taskParams = new HashMap<>();
+                    taskParams.put("input", task.getInputData());
+                    taskParams.put("output", task.getOutputData());
+                    taskParams.put("taskType", task.getTaskType());
                     if (task.getStatus() != null) {
-                        taskIO.put("status", task.getStatus().toString());
+                        taskParams.put("status", task.getStatus().toString());
                     }
-                    taskIO.put("referenceTaskName", task.getReferenceTaskName());
-                    taskIO.put("retryCount", task.getRetryCount());
-                    taskIO.put("correlationId", task.getCorrelationId());
-                    taskIO.put("pollCount", task.getPollCount());
-                    taskIO.put("taskDefName", task.getTaskDefName());
-                    taskIO.put("scheduledTime", task.getScheduledTime());
-                    taskIO.put("startTime", task.getStartTime());
-                    taskIO.put("endTime", task.getEndTime());
-                    taskIO.put("workflowInstanceId", task.getWorkflowInstanceId());
-                    taskIO.put("taskId", task.getTaskId());
-                    taskIO.put("reasonForIncompletion", task.getReasonForIncompletion());
-                    taskIO.put("callbackAfterSeconds", task.getCallbackAfterSeconds());
-                    taskIO.put("workerId", task.getWorkerId());
-                    inputMap.put(task.getReferenceTaskName(), taskIO);
+                    taskParams.put("referenceTaskName", task.getReferenceTaskName());
+                    taskParams.put("retryCount", task.getRetryCount());
+                    taskParams.put("correlationId", task.getCorrelationId());
+                    taskParams.put("pollCount", task.getPollCount());
+                    taskParams.put("taskDefName", task.getTaskDefName());
+                    taskParams.put("scheduledTime", task.getScheduledTime());
+                    taskParams.put("startTime", task.getStartTime());
+                    taskParams.put("endTime", task.getEndTime());
+                    taskParams.put("workflowInstanceId", task.getWorkflowInstanceId());
+                    taskParams.put("taskId", task.getTaskId());
+                    taskParams.put("reasonForIncompletion", task.getReasonForIncompletion());
+                    taskParams.put("callbackAfterSeconds", task.getCallbackAfterSeconds());
+                    taskParams.put("workerId", task.getWorkerId());
+                    inputMap.put(task.getReferenceTaskName(), taskParams);
                 });
 
         Configuration option = Configuration.defaultConfiguration()
                 .addOptions(Option.SUPPRESS_EXCEPTIONS);
         DocumentContext documentContext = JsonPath.parse(inputMap, option);
-        Map<String, Object> replaced = replace(inputParams, documentContext, taskId);
-        return replaced;
+        return replace(inputParams, documentContext, taskId);
     }
 
     //deep clone using json - POJO
     private Map<String, Object> clone(Map<String, Object> inputTemplate) {
         try {
 
-            byte[] bytes = om.writeValueAsBytes(inputTemplate);
-            Map<String, Object> cloned = om.readValue(bytes, map);
-            return cloned;
+            byte[] bytes = objectMapper.writeValueAsBytes(inputTemplate);
+            return objectMapper.readValue(bytes, map);
         } catch (IOException e) {
-            throw new RuntimeException(e.getMessage(), e);
+            throw new RuntimeException("Unable to clone input params", e);
         }
     }
 
     public Map<String, Object> replace(Map<String, Object> input, Object json) {
-        Object doc = null;
+        Object doc;
         if (json instanceof String) {
             doc = JsonPath.parse(json.toString());
         } else {
@@ -293,6 +289,4 @@ public class ParametersUtils {
         });
         return input;
     }
-
-
 }

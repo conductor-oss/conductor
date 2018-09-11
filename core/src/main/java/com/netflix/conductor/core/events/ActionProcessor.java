@@ -50,13 +50,15 @@ public class ActionProcessor {
 
     private final WorkflowExecutor executor;
     private final MetadataService metadataService;
-    private final ParametersUtils parametersUtils = new ParametersUtils();
+    private final ParametersUtils parametersUtils;
+
     private final JsonUtils jsonUtils = new JsonUtils();
 
     @Inject
-    public ActionProcessor(WorkflowExecutor executor, MetadataService metadataService) {
+    public ActionProcessor(WorkflowExecutor executor, MetadataService metadataService, ParametersUtils parametersUtils) {
         this.executor = executor;
         this.metadataService = metadataService;
+        this.parametersUtils = parametersUtils;
     }
 
     public Map<String, Object> execute(Action action, Object payloadObject, String event, String messageId) {
