@@ -21,8 +21,8 @@ SERVICES = \
     $(PROTO_SRC)/grpc/workflow_service.pb.go
 
 bootstrap: install-protoc
-	go install github.com/golang/protobuf/protoc-gen-go
-	go install github.com/square/goprotowrap/cmd/protowrap
+	go get -u github.com/golang/protobuf/protoc-gen-go
+	go get -u github.com/square/goprotowrap/cmd/protowrap
 
 proto: models $(SERVICES)
 
@@ -44,3 +44,7 @@ install-protoc:
 	mkdir -p $(BIN_DIR)
 	curl -Lso $(BUILD_DIR)/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTO_VERSION)/protoc-$(PROTO_VERSION)-$(OS)-x86_64.zip
 	cd $(BUILD_DIR); unzip protoc.zip
+
+generateClient:
+	docker build -f docker/Dockerfile -t protocontainer $(PWD)/../../
+	docker run --rm -it -v $(PWD)/generated:'/generated' protocontainer:latest

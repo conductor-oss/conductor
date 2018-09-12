@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	tasks "github.com/netflix/conductor/client/gogrpc/conductor/grpc/tasks"
+	"github.com/netflix/conductor/client/gogrpc/conductor/grpc/tasks"
 
 	"github.com/netflix/conductor/client/gogrpc/conductor/model"
 	"google.golang.org/grpc"
