@@ -3,6 +3,9 @@ PROTO_VERSION = 3.5.1
 GO_OUTPUT=$(GOPATH)/src
 
 UNAME_S := $(shell uname -s)
+USER_ID := $(shell id -u)
+GROUP_ID := $(shell id -g)
+
 OSFLAG:=
 ifeq ($(UNAME_S),Linux)
 	OS = linux
@@ -47,4 +50,4 @@ install-protoc:
 
 generateClient:
 	docker build -f docker/Dockerfile -t protocontainer $(PWD)/../../
-	docker run --rm -it -v $(PWD)/generated:'/generated' protocontainer:latest
+	docker run --user $(USER_ID):$(GROUP_ID) --rm -it -v $(PWD)/generated:'/generated' protocontainer:latest
