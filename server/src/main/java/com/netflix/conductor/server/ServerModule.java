@@ -18,6 +18,12 @@
  */
 package com.netflix.conductor.server;
 
+import static com.netflix.conductor.server.ConductorServer.ExternalPayloadStorageType.S3;
+
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
@@ -26,6 +32,7 @@ import com.netflix.conductor.contribs.http.RestClientManager;
 import com.netflix.conductor.contribs.json.JsonJqTransform;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
+import com.netflix.conductor.core.execution.WorkflowSweeper;
 import com.netflix.conductor.core.utils.DummyPayloadStorage;
 import com.netflix.conductor.core.utils.S3PayloadStorage;
 import com.netflix.conductor.dao.RedisWorkflowModule;
@@ -33,13 +40,8 @@ import com.netflix.conductor.dao.es.index.ElasticSearchModule;
 import com.netflix.conductor.dao.es5.index.ElasticSearchModuleV5;
 import com.netflix.conductor.dao.mysql.MySQLWorkflowModule;
 import com.netflix.dyno.connectionpool.HostSupplier;
+
 import redis.clients.jedis.JedisCommands;
-
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static com.netflix.conductor.server.ConductorServer.ExternalPayloadStorageType.S3;
 
 /**
  * @author Viren
@@ -114,6 +116,8 @@ public class ServerModule extends AbstractModule {
 		} else {
 			bind(ExternalPayloadStorage.class).to(DummyPayloadStorage.class);
 		}
+		
+		bind(WorkflowSweeper.class).asEagerSingleton();
 	}
 	
 	@Provides

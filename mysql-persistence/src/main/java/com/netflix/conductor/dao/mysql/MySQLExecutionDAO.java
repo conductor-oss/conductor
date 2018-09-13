@@ -1,6 +1,19 @@
 package com.netflix.conductor.dao.mysql;
 
+import java.sql.Connection;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.inject.Inject;
+import javax.sql.DataSource;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import com.netflix.conductor.common.metadata.events.EventExecution;
@@ -15,17 +28,6 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
-
-import javax.inject.Inject;
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.Date;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.stream.Collectors;
 
 public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
@@ -90,6 +92,10 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
         return tasks;
     }
 
+    private static String taskKey(Task task) {
+        return task.getReferenceTaskName() + "_" + task.getRetryCount();
+    }
+
     @Override
     public List<Task> createTasks(List<Task> tasks) {
         List<Task> created = Lists.newArrayListWithCapacity(tasks.size());
@@ -100,12 +106,12 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
                 task.setScheduledTime(System.currentTimeMillis());
 
-                String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
+                final String taskKey = taskKey(task);
 
                 boolean scheduledTaskAdded = addScheduledTask(connection, task, taskKey);
 
                 if (!scheduledTaskAdded) {
-                    logger.info("Task already scheduled, skipping the run " + task.getTaskId() + ", ref="
+                    logger.trace("Task already scheduled, skipping the run " + task.getTaskId() + ", ref="
                             + task.getReferenceTaskName() + ", key=" + taskKey);
                     continue;
                 }
@@ -193,7 +199,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
             return;
         }
 
-        String taskKey = task.getReferenceTaskName() + "_" + task.getRetryCount();
+        final String taskKey = taskKey(task);
 
         withTransaction(connection -> {
             removeScheduledTask(connection, task, taskKey);
@@ -644,21 +650,16 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
                         .addParameter(workflow.getWorkflowId()).executeUpdate());
     }
 
-    private boolean addScheduledTask(Connection connection, Task task, String taskKey) {
-        String EXISTS_SCHEDULED_TASK = "SELECT EXISTS(SELECT 1 FROM task_scheduled WHERE workflow_id = ? AND task_key = ?)";
-        boolean exist = query(connection, EXISTS_SCHEDULED_TASK,
-                q -> q.addParameter(task.getWorkflowInstanceId()).addParameter(taskKey).exists());
+  
+    @VisibleForTesting
+    boolean addScheduledTask(Connection connection, Task task, String taskKey) {
 
-        if (!exist) {
-            String INSERT_SCHEDULED_TASK = "INSERT INTO task_scheduled (workflow_id, task_key, task_id) VALUES (?, ?, ?)";
+        final String INSERT_IGNORE_SCHEDULED_TASK = "INSERT IGNORE INTO task_scheduled (workflow_id, task_key, task_id) VALUES (?, ?, ?)";
 
-            execute(connection, INSERT_SCHEDULED_TASK, q -> q.addParameter(task.getWorkflowInstanceId())
-                    .addParameter(taskKey).addParameter(task.getTaskId()).executeUpdate());
+        int count = query(connection, INSERT_IGNORE_SCHEDULED_TASK, q -> q.addParameter(task.getWorkflowInstanceId())
+                .addParameter(taskKey).addParameter(task.getTaskId()).executeUpdate());
+        return count > 0;
 
-            return true;
-        }
-
-        return false;
     }
 
     private void removeScheduledTask(Connection connection, Task task, String taskKey) {

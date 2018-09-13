@@ -168,5 +168,5 @@ CREATE TABLE queue_message (
   payload mediumtext,
   PRIMARY KEY (id),
   UNIQUE KEY unique_queue_name_message_id (queue_name,message_id),
-  KEY queue_name_index (queue_name)
+  KEY queue_name_popped_deliver_onindex (queue_name,popped,deliver_on)
 );

@@ -15,127 +15,167 @@
  */
 package com.netflix.conductor.config;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.netflix.conductor.core.config.Configuration;
-
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.netflix.conductor.core.config.Configuration;
 
 /**
  * @author Viren
- *
  */
 public class TestConfiguration implements Configuration {
+    private static final Logger logger = LoggerFactory.getLogger(TestConfiguration.class);
+    private static final Map<String, String> testProperties = new HashMap<>();
 
-	private Map<String, String> testProperties = Maps.newHashMap(ImmutableMap.of("test", "dummy"));
+    @Override
+    public int getSweepFrequency() {
+        return getIntProperty("decider.sweep.frequency.seconds", 30);
+    }
 
-	@Override
-	public int getSweepFrequency() {
-		return 1;
-	}
+    @Override
+    public boolean disableSweep() {
+        String disable = getProperty("decider.sweep.disable", "false");
+        return Boolean.getBoolean(disable);
+    }
 
-	@Override
-	public boolean disableSweep() {
-		return false;
-	}
+    @Override
+    public boolean disableAsyncWorkers() {
+        String disable = getProperty("conductor.disable.async.workers", "false");
+        return Boolean.getBoolean(disable);
+    }
 
-	@Override
-	public boolean disableAsyncWorkers() {
-		return false;
-	}
+    @Override
+    public String getServerId() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        } catch (UnknownHostException e) {
+            return "unknown";
+        }
+    }
 
-	@Override
-	public String getServerId() {
-		return "server_id";
-	}
+    @Override
+    public String getEnvironment() {
+        return getProperty("environment", "test");
+    }
 
-	@Override
-	public String getEnvironment() {
-		return "test";
-	}
+    @Override
+    public String getStack() {
+        return getProperty("STACK", "test");
+    }
 
-	@Override
-	public String getStack() {
-		return "junit";
-	}
+    @Override
+    public String getAppId() {
+        return getProperty("APP_ID", "conductor");
+    }
 
-	@Override
-	public String getAppId() {
-		return "workflow";
-	}
+    @Override
+    public String getRegion() {
+        return getProperty("EC2_REGION", "us-east-1");
+    }
 
-	@Override
-	public Long getWorkflowInputPayloadSizeThresholdKB() {
-		return 5120L;
-	}
+    @Override
+    public String getAvailabilityZone() {
+        return getProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
+    }
 
-	@Override
-	public Long getMaxWorkflowInputPayloadSizeThresholdKB() {
-		return 10240L;
-	}
+    public void setProperty(String key, String value) {
+        testProperties.put(key, value);
+    }
 
-	@Override
-	public Long getWorkflowOutputPayloadSizeThresholdKB() {
-		return 5120L;
-	}
+    @Override
+    public int getIntProperty(String key, int defaultValue) {
+        String val = getProperty(key, Integer.toString(defaultValue));
+        try {
+            defaultValue = Integer.parseInt(val);
+        } catch (NumberFormatException e) {
+        }
+        return defaultValue;
+    }
 
-	@Override
-	public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
-		return 10240L;
-	}
+    @Override
+    public long getLongProperty(String key, long defaultValue) {
+        String val = getProperty(key, Long.toString(defaultValue));
+        try {
+            defaultValue = Long.parseLong(val);
+        } catch (NumberFormatException e) {
+            logger.error("Error parsing the Long value for Key:{} , returning a default value: {}", key, defaultValue);
+        }
+        return defaultValue;
+    }
 
-	@Override
-	public Long getTaskInputPayloadSizeThresholdKB() {
-		return 3072L;
-	}
+    @SuppressWarnings("Duplicates")
+    @Override
+    public String getProperty(String key, String defaultValue) {
+        String val = null;
+        if (testProperties.containsKey(key)) {
+            return testProperties.get(key);
+        }
 
-	@Override
-	public Long getMaxTaskInputPayloadSizeThresholdKB() {
-		return 10240L;
-	}
+        try {
+            val = System.getenv(key.replace('.', '_'));
+            if (val == null || val.isEmpty()) {
+                val = Optional.ofNullable(System.getProperty(key)).orElse(defaultValue);
+            }
+        } catch (Exception e) {
+            logger.error(e.getMessage(), e);
+        }
 
-	@Override
-	public Long getTaskOutputPayloadSizeThresholdKB() {
-		return 3072L;
-	}
+        return val;
+    }
 
-	@Override
-	public Long getMaxTaskOutputPayloadSizeThresholdKB() {
-		return 10240L;
-	}
+    @Override
+    public Map<String, Object> getAll() {
+        Map<String, Object> map = new HashMap<>();
+        Properties props = System.getProperties();
+        props.entrySet().forEach(entry -> map.put(entry.getKey().toString(), entry.getValue()));
+        map.putAll(testProperties);
+        return map;
+    }
 
-	@Override
-	public String getProperty(String string, String def) {
-		String val = testProperties.get(string);
-		return val != null ? val : def;
-	}
+    @Override
+    public Long getWorkflowInputPayloadSizeThresholdKB() {
+        return 5120L;
+    }
 
-	public void setProperty(String key, String value) {
-		testProperties.put(key, value);
-	}
+    @Override
+    public Long getMaxWorkflowInputPayloadSizeThresholdKB() {
+        return 10240L;
+    }
 
-	@Override
-	public String getAvailabilityZone() {
-		return "us-east-1a";
-	}
+    @Override
+    public Long getWorkflowOutputPayloadSizeThresholdKB() {
+        return 5120L;
+    }
 
-	@Override
-	public int getIntProperty(String string, int def) {
-		return 100;
-	}
+    @Override
+    public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
+        return 10240L;
+    }
 
-	@Override
-	public long getLongProperty(String name, long defaultValue) {
-		return 0;
-	}
+    @Override
+    public Long getTaskInputPayloadSizeThresholdKB() {
+        return 3072L;
+    }
 
-	@Override
-	public String getRegion() {
-		return "us-east-1";
-	}
+    @Override
+    public Long getMaxTaskInputPayloadSizeThresholdKB() {
+        return 10240L;
+    }
 
-	@Override
-	public Map<String, Object> getAll() {
-		return null;
-	}
+    @Override
+    public Long getTaskOutputPayloadSizeThresholdKB() {
+        return 3072L;
+    }
+
+    @Override
+    public Long getMaxTaskOutputPayloadSizeThresholdKB() {
+        return 10240L;
+    }
 }
