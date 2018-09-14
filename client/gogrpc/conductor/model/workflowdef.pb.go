@@ -20,15 +20,15 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type WorkflowDef struct {
-	Name                 string                    `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Description          string                    `protobuf:"bytes,2,opt,name=description" json:"description,omitempty"`
-	Version              int32                     `protobuf:"varint,3,opt,name=version" json:"version,omitempty"`
-	Tasks                []*WorkflowTask           `protobuf:"bytes,4,rep,name=tasks" json:"tasks,omitempty"`
-	InputParameters      []string                  `protobuf:"bytes,5,rep,name=input_parameters,json=inputParameters" json:"input_parameters,omitempty"`
-	OutputParameters     map[string]*_struct.Value `protobuf:"bytes,6,rep,name=output_parameters,json=outputParameters" json:"output_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	FailureWorkflow      string                    `protobuf:"bytes,7,opt,name=failure_workflow,json=failureWorkflow" json:"failure_workflow,omitempty"`
-	SchemaVersion        int32                     `protobuf:"varint,8,opt,name=schema_version,json=schemaVersion" json:"schema_version,omitempty"`
-	Restartable          bool                      `protobuf:"varint,9,opt,name=restartable" json:"restartable,omitempty"`
+	Name                 string                    `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description          string                    `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	Version              int32                     `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	Tasks                []*WorkflowTask           `protobuf:"bytes,4,rep,name=tasks,proto3" json:"tasks,omitempty"`
+	InputParameters      []string                  `protobuf:"bytes,5,rep,name=input_parameters,json=inputParameters,proto3" json:"input_parameters,omitempty"`
+	OutputParameters     map[string]*_struct.Value `protobuf:"bytes,6,rep,name=output_parameters,json=outputParameters,proto3" json:"output_parameters,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	FailureWorkflow      string                    `protobuf:"bytes,7,opt,name=failure_workflow,json=failureWorkflow,proto3" json:"failure_workflow,omitempty"`
+	SchemaVersion        int32                     `protobuf:"varint,8,opt,name=schema_version,json=schemaVersion,proto3" json:"schema_version,omitempty"`
+	Restartable          bool                      `protobuf:"varint,9,opt,name=restartable,proto3" json:"restartable,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`

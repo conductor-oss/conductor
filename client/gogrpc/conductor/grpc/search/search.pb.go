@@ -19,11 +19,11 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Request struct {
-	Start                int32    `protobuf:"varint,1,opt,name=start" json:"start,omitempty"`
-	Size                 int32    `protobuf:"varint,2,opt,name=size" json:"size,omitempty"`
-	Sort                 string   `protobuf:"bytes,3,opt,name=sort" json:"sort,omitempty"`
-	FreeText             string   `protobuf:"bytes,4,opt,name=free_text,json=freeText" json:"free_text,omitempty"`
-	Query                string   `protobuf:"bytes,5,opt,name=query" json:"query,omitempty"`
+	Start                int32    `protobuf:"varint,1,opt,name=start,proto3" json:"start,omitempty"`
+	Size                 int32    `protobuf:"varint,2,opt,name=size,proto3" json:"size,omitempty"`
+	Sort                 string   `protobuf:"bytes,3,opt,name=sort,proto3" json:"sort,omitempty"`
+	FreeText             string   `protobuf:"bytes,4,opt,name=free_text,json=freeText,proto3" json:"free_text,omitempty"`
+	Query                string   `protobuf:"bytes,5,opt,name=query,proto3" json:"query,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

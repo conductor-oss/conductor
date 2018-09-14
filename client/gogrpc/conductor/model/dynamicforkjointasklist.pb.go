@@ -19,7 +19,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type DynamicForkJoinTaskList struct {
-	DynamicTasks         []*DynamicForkJoinTask `protobuf:"bytes,1,rep,name=dynamic_tasks,json=dynamicTasks" json:"dynamic_tasks,omitempty"`
+	DynamicTasks         []*DynamicForkJoinTask `protobuf:"bytes,1,rep,name=dynamic_tasks,json=dynamicTasks,proto3" json:"dynamic_tasks,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
 	XXX_unrecognized     []byte                 `json:"-"`
 	XXX_sizecache        int32                  `json:"-"`

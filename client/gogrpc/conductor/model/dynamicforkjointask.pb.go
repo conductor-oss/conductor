@@ -20,11 +20,11 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type DynamicForkJoinTask struct {
-	TaskName             string                    `protobuf:"bytes,1,opt,name=task_name,json=taskName" json:"task_name,omitempty"`
-	WorkflowName         string                    `protobuf:"bytes,2,opt,name=workflow_name,json=workflowName" json:"workflow_name,omitempty"`
-	ReferenceName        string                    `protobuf:"bytes,3,opt,name=reference_name,json=referenceName" json:"reference_name,omitempty"`
-	Input                map[string]*_struct.Value `protobuf:"bytes,4,rep,name=input" json:"input,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	Type                 string                    `protobuf:"bytes,5,opt,name=type" json:"type,omitempty"`
+	TaskName             string                    `protobuf:"bytes,1,opt,name=task_name,json=taskName,proto3" json:"task_name,omitempty"`
+	WorkflowName         string                    `protobuf:"bytes,2,opt,name=workflow_name,json=workflowName,proto3" json:"workflow_name,omitempty"`
+	ReferenceName        string                    `protobuf:"bytes,3,opt,name=reference_name,json=referenceName,proto3" json:"reference_name,omitempty"`
+	Input                map[string]*_struct.Value `protobuf:"bytes,4,rep,name=input,proto3" json:"input,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Type                 string                    `protobuf:"bytes,5,opt,name=type,proto3" json:"type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`

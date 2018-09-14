@@ -49,14 +49,14 @@ func (EventExecution_Status) EnumDescriptor() ([]byte, []int) {
 }
 
 type EventExecution struct {
-	Id                   string                    `protobuf:"bytes,1,opt,name=id" json:"id,omitempty"`
-	MessageId            string                    `protobuf:"bytes,2,opt,name=message_id,json=messageId" json:"message_id,omitempty"`
-	Name                 string                    `protobuf:"bytes,3,opt,name=name" json:"name,omitempty"`
-	Event                string                    `protobuf:"bytes,4,opt,name=event" json:"event,omitempty"`
-	Created              int64                     `protobuf:"varint,5,opt,name=created" json:"created,omitempty"`
-	Status               EventExecution_Status     `protobuf:"varint,6,opt,name=status,enum=conductor.proto.EventExecution_Status" json:"status,omitempty"`
-	Action               EventHandler_Action_Type  `protobuf:"varint,7,opt,name=action,enum=conductor.proto.EventHandler_Action_Type" json:"action,omitempty"`
-	Output               map[string]*_struct.Value `protobuf:"bytes,8,rep,name=output" json:"output,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	Id                   string                    `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	MessageId            string                    `protobuf:"bytes,2,opt,name=message_id,json=messageId,proto3" json:"message_id,omitempty"`
+	Name                 string                    `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Event                string                    `protobuf:"bytes,4,opt,name=event,proto3" json:"event,omitempty"`
+	Created              int64                     `protobuf:"varint,5,opt,name=created,proto3" json:"created,omitempty"`
+	Status               EventExecution_Status     `protobuf:"varint,6,opt,name=status,proto3,enum=conductor.proto.EventExecution_Status" json:"status,omitempty"`
+	Action               EventHandler_Action_Type  `protobuf:"varint,7,opt,name=action,proto3,enum=conductor.proto.EventHandler_Action_Type" json:"action,omitempty"`
+	Output               map[string]*_struct.Value `protobuf:"bytes,8,rep,name=output,proto3" json:"output,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`

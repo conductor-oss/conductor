@@ -21,10 +21,10 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type SkipTaskRequest struct {
-	TaskInput            map[string]*_struct.Value `protobuf:"bytes,1,rep,name=task_input,json=taskInput" json:"task_input,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	TaskOutput           map[string]*_struct.Value `protobuf:"bytes,2,rep,name=task_output,json=taskOutput" json:"task_output,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	TaskInputMessage     *any.Any                  `protobuf:"bytes,3,opt,name=task_input_message,json=taskInputMessage" json:"task_input_message,omitempty"`
-	TaskOutputMessage    *any.Any                  `protobuf:"bytes,4,opt,name=task_output_message,json=taskOutputMessage" json:"task_output_message,omitempty"`
+	TaskInput            map[string]*_struct.Value `protobuf:"bytes,1,rep,name=task_input,json=taskInput,proto3" json:"task_input,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TaskOutput           map[string]*_struct.Value `protobuf:"bytes,2,rep,name=task_output,json=taskOutput,proto3" json:"task_output,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	TaskInputMessage     *any.Any                  `protobuf:"bytes,3,opt,name=task_input_message,json=taskInputMessage,proto3" json:"task_input_message,omitempty"`
+	TaskOutputMessage    *any.Any                  `protobuf:"bytes,4,opt,name=task_output_message,json=taskOutputMessage,proto3" json:"task_output_message,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`

@@ -19,9 +19,9 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type TaskExecLog struct {
-	Log                  string   `protobuf:"bytes,1,opt,name=log" json:"log,omitempty"`
-	TaskId               string   `protobuf:"bytes,2,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
-	CreatedTime          int64    `protobuf:"varint,3,opt,name=created_time,json=createdTime" json:"created_time,omitempty"`
+	Log                  string   `protobuf:"bytes,1,opt,name=log,proto3" json:"log,omitempty"`
+	TaskId               string   `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	CreatedTime          int64    `protobuf:"varint,3,opt,name=created_time,json=createdTime,proto3" json:"created_time,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

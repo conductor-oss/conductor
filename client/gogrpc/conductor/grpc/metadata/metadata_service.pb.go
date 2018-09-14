@@ -25,7 +25,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type CreateWorkflowRequest struct {
-	Workflow             *model.WorkflowDef `protobuf:"bytes,1,opt,name=workflow" json:"workflow,omitempty"`
+	Workflow             *model.WorkflowDef `protobuf:"bytes,1,opt,name=workflow,proto3" json:"workflow,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -93,7 +93,7 @@ func (m *CreateWorkflowResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_CreateWorkflowResponse proto.InternalMessageInfo
 
 type UpdateWorkflowsRequest struct {
-	Defs                 []*model.WorkflowDef `protobuf:"bytes,1,rep,name=defs" json:"defs,omitempty"`
+	Defs                 []*model.WorkflowDef `protobuf:"bytes,1,rep,name=defs,proto3" json:"defs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}             `json:"-"`
 	XXX_unrecognized     []byte               `json:"-"`
 	XXX_sizecache        int32                `json:"-"`
@@ -161,8 +161,8 @@ func (m *UpdateWorkflowsResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_UpdateWorkflowsResponse proto.InternalMessageInfo
 
 type GetWorkflowRequest struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Version              int32    `protobuf:"varint,2,opt,name=version" json:"version,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Version              int32    `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -207,7 +207,7 @@ func (m *GetWorkflowRequest) GetVersion() int32 {
 }
 
 type GetWorkflowResponse struct {
-	Workflow             *model.WorkflowDef `protobuf:"bytes,1,opt,name=workflow" json:"workflow,omitempty"`
+	Workflow             *model.WorkflowDef `protobuf:"bytes,1,opt,name=workflow,proto3" json:"workflow,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}           `json:"-"`
 	XXX_unrecognized     []byte             `json:"-"`
 	XXX_sizecache        int32              `json:"-"`
@@ -245,7 +245,7 @@ func (m *GetWorkflowResponse) GetWorkflow() *model.WorkflowDef {
 }
 
 type CreateTasksRequest struct {
-	Defs                 []*model.TaskDef `protobuf:"bytes,1,rep,name=defs" json:"defs,omitempty"`
+	Defs                 []*model.TaskDef `protobuf:"bytes,1,rep,name=defs,proto3" json:"defs,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -313,7 +313,7 @@ func (m *CreateTasksResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_CreateTasksResponse proto.InternalMessageInfo
 
 type UpdateTaskRequest struct {
-	Task                 *model.TaskDef `protobuf:"bytes,1,opt,name=task" json:"task,omitempty"`
+	Task                 *model.TaskDef `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -381,7 +381,7 @@ func (m *UpdateTaskResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_UpdateTaskResponse proto.InternalMessageInfo
 
 type GetTaskRequest struct {
-	TaskType             string   `protobuf:"bytes,1,opt,name=task_type,json=taskType" json:"task_type,omitempty"`
+	TaskType             string   `protobuf:"bytes,1,opt,name=task_type,json=taskType,proto3" json:"task_type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -419,7 +419,7 @@ func (m *GetTaskRequest) GetTaskType() string {
 }
 
 type GetTaskResponse struct {
-	Task                 *model.TaskDef `protobuf:"bytes,1,opt,name=task" json:"task,omitempty"`
+	Task                 *model.TaskDef `protobuf:"bytes,1,opt,name=task,proto3" json:"task,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}       `json:"-"`
 	XXX_unrecognized     []byte         `json:"-"`
 	XXX_sizecache        int32          `json:"-"`
@@ -457,7 +457,7 @@ func (m *GetTaskResponse) GetTask() *model.TaskDef {
 }
 
 type DeleteTaskRequest struct {
-	TaskType             string   `protobuf:"bytes,1,opt,name=task_type,json=taskType" json:"task_type,omitempty"`
+	TaskType             string   `protobuf:"bytes,1,opt,name=task_type,json=taskType,proto3" json:"task_type,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

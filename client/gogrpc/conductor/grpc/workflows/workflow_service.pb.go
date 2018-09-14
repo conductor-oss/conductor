@@ -26,7 +26,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type StartWorkflowResponse struct {
-	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
+	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -64,10 +64,10 @@ func (m *StartWorkflowResponse) GetWorkflowId() string {
 }
 
 type GetWorkflowsRequest struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	CorrelationId        []string `protobuf:"bytes,2,rep,name=correlation_id,json=correlationId" json:"correlation_id,omitempty"`
-	IncludeClosed        bool     `protobuf:"varint,3,opt,name=include_closed,json=includeClosed" json:"include_closed,omitempty"`
-	IncludeTasks         bool     `protobuf:"varint,4,opt,name=include_tasks,json=includeTasks" json:"include_tasks,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	CorrelationId        []string `protobuf:"bytes,2,rep,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
+	IncludeClosed        bool     `protobuf:"varint,3,opt,name=include_closed,json=includeClosed,proto3" json:"include_closed,omitempty"`
+	IncludeTasks         bool     `protobuf:"varint,4,opt,name=include_tasks,json=includeTasks,proto3" json:"include_tasks,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -126,7 +126,7 @@ func (m *GetWorkflowsRequest) GetIncludeTasks() bool {
 }
 
 type GetWorkflowsResponse struct {
-	WorkflowsById        map[string]*GetWorkflowsResponse_Workflows `protobuf:"bytes,1,rep,name=workflows_by_id,json=workflowsById" json:"workflows_by_id,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	WorkflowsById        map[string]*GetWorkflowsResponse_Workflows `protobuf:"bytes,1,rep,name=workflows_by_id,json=workflowsById,proto3" json:"workflows_by_id,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                                   `json:"-"`
 	XXX_unrecognized     []byte                                     `json:"-"`
 	XXX_sizecache        int32                                      `json:"-"`
@@ -164,7 +164,7 @@ func (m *GetWorkflowsResponse) GetWorkflowsById() map[string]*GetWorkflowsRespon
 }
 
 type GetWorkflowsResponse_Workflows struct {
-	Workflows            []*model.Workflow `protobuf:"bytes,1,rep,name=workflows" json:"workflows,omitempty"`
+	Workflows            []*model.Workflow `protobuf:"bytes,1,rep,name=workflows,proto3" json:"workflows,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -202,8 +202,8 @@ func (m *GetWorkflowsResponse_Workflows) GetWorkflows() []*model.Workflow {
 }
 
 type GetWorkflowStatusRequest struct {
-	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
-	IncludeTasks         bool     `protobuf:"varint,2,opt,name=include_tasks,json=includeTasks" json:"include_tasks,omitempty"`
+	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	IncludeTasks         bool     `protobuf:"varint,2,opt,name=include_tasks,json=includeTasks,proto3" json:"include_tasks,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -248,7 +248,7 @@ func (m *GetWorkflowStatusRequest) GetIncludeTasks() bool {
 }
 
 type GetWorkflowStatusResponse struct {
-	Workflow             *model.Workflow `protobuf:"bytes,1,opt,name=workflow" json:"workflow,omitempty"`
+	Workflow             *model.Workflow `protobuf:"bytes,1,opt,name=workflow,proto3" json:"workflow,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
 	XXX_unrecognized     []byte          `json:"-"`
 	XXX_sizecache        int32           `json:"-"`
@@ -286,8 +286,8 @@ func (m *GetWorkflowStatusResponse) GetWorkflow() *model.Workflow {
 }
 
 type RemoveWorkflowRequest struct {
-	WorkflodId           string   `protobuf:"bytes,1,opt,name=workflod_id,json=workflodId" json:"workflod_id,omitempty"`
-	ArchiveWorkflow      bool     `protobuf:"varint,2,opt,name=archive_workflow,json=archiveWorkflow" json:"archive_workflow,omitempty"`
+	WorkflodId           string   `protobuf:"bytes,1,opt,name=workflod_id,json=workflodId,proto3" json:"workflod_id,omitempty"`
+	ArchiveWorkflow      bool     `protobuf:"varint,2,opt,name=archive_workflow,json=archiveWorkflow,proto3" json:"archive_workflow,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -362,10 +362,10 @@ func (m *RemoveWorkflowResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_RemoveWorkflowResponse proto.InternalMessageInfo
 
 type GetRunningWorkflowsRequest struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Version              int32    `protobuf:"varint,2,opt,name=version" json:"version,omitempty"`
-	StartTime            int64    `protobuf:"varint,3,opt,name=start_time,json=startTime" json:"start_time,omitempty"`
-	EndTime              int64    `protobuf:"varint,4,opt,name=end_time,json=endTime" json:"end_time,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Version              int32    `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	StartTime            int64    `protobuf:"varint,3,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	EndTime              int64    `protobuf:"varint,4,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -424,7 +424,7 @@ func (m *GetRunningWorkflowsRequest) GetEndTime() int64 {
 }
 
 type GetRunningWorkflowsResponse struct {
-	WorkflowIds          []string `protobuf:"bytes,1,rep,name=workflow_ids,json=workflowIds" json:"workflow_ids,omitempty"`
+	WorkflowIds          []string `protobuf:"bytes,1,rep,name=workflow_ids,json=workflowIds,proto3" json:"workflow_ids,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -462,7 +462,7 @@ func (m *GetRunningWorkflowsResponse) GetWorkflowIds() []string {
 }
 
 type DecideWorkflowRequest struct {
-	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
+	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -530,7 +530,7 @@ func (m *DecideWorkflowResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_DecideWorkflowResponse proto.InternalMessageInfo
 
 type PauseWorkflowRequest struct {
-	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
+	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -598,7 +598,7 @@ func (m *PauseWorkflowResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_PauseWorkflowResponse proto.InternalMessageInfo
 
 type ResumeWorkflowRequest struct {
-	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
+	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -666,9 +666,9 @@ func (m *ResumeWorkflowResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_ResumeWorkflowResponse proto.InternalMessageInfo
 
 type SkipTaskRequest struct {
-	WorkflowId           string                 `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
-	TaskReferenceName    string                 `protobuf:"bytes,2,opt,name=task_reference_name,json=taskReferenceName" json:"task_reference_name,omitempty"`
-	Request              *model.SkipTaskRequest `protobuf:"bytes,3,opt,name=request" json:"request,omitempty"`
+	WorkflowId           string                 `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	TaskReferenceName    string                 `protobuf:"bytes,2,opt,name=task_reference_name,json=taskReferenceName,proto3" json:"task_reference_name,omitempty"`
+	Request              *model.SkipTaskRequest `protobuf:"bytes,3,opt,name=request,proto3" json:"request,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
 	XXX_unrecognized     []byte                 `json:"-"`
 	XXX_sizecache        int32                  `json:"-"`
@@ -750,7 +750,7 @@ func (m *SkipTaskResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_SkipTaskResponse proto.InternalMessageInfo
 
 type RerunWorkflowResponse struct {
-	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
+	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -788,7 +788,7 @@ func (m *RerunWorkflowResponse) GetWorkflowId() string {
 }
 
 type RestartWorkflowRequest struct {
-	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
+	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -856,7 +856,7 @@ func (m *RestartWorkflowResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_RestartWorkflowResponse proto.InternalMessageInfo
 
 type RetryWorkflowRequest struct {
-	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
+	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -924,7 +924,7 @@ func (m *RetryWorkflowResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_RetryWorkflowResponse proto.InternalMessageInfo
 
 type ResetWorkflowCallbacksRequest struct {
-	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
+	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -992,8 +992,8 @@ func (m *ResetWorkflowCallbacksResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_ResetWorkflowCallbacksResponse proto.InternalMessageInfo
 
 type TerminateWorkflowRequest struct {
-	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
-	Reason               string   `protobuf:"bytes,2,opt,name=reason" json:"reason,omitempty"`
+	WorkflowId           string   `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	Reason               string   `protobuf:"bytes,2,opt,name=reason,proto3" json:"reason,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -1068,8 +1068,8 @@ func (m *TerminateWorkflowResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_TerminateWorkflowResponse proto.InternalMessageInfo
 
 type WorkflowSummarySearchResult struct {
-	TotalHits            int64                    `protobuf:"varint,1,opt,name=total_hits,json=totalHits" json:"total_hits,omitempty"`
-	Results              []*model.WorkflowSummary `protobuf:"bytes,2,rep,name=results" json:"results,omitempty"`
+	TotalHits            int64                    `protobuf:"varint,1,opt,name=total_hits,json=totalHits,proto3" json:"total_hits,omitempty"`
+	Results              []*model.WorkflowSummary `protobuf:"bytes,2,rep,name=results,proto3" json:"results,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                 `json:"-"`
 	XXX_unrecognized     []byte                   `json:"-"`
 	XXX_sizecache        int32                    `json:"-"`

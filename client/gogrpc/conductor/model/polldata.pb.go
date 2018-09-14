@@ -19,10 +19,10 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type PollData struct {
-	QueueName            string   `protobuf:"bytes,1,opt,name=queue_name,json=queueName" json:"queue_name,omitempty"`
-	Domain               string   `protobuf:"bytes,2,opt,name=domain" json:"domain,omitempty"`
-	WorkerId             string   `protobuf:"bytes,3,opt,name=worker_id,json=workerId" json:"worker_id,omitempty"`
-	LastPollTime         int64    `protobuf:"varint,4,opt,name=last_poll_time,json=lastPollTime" json:"last_poll_time,omitempty"`
+	QueueName            string   `protobuf:"bytes,1,opt,name=queue_name,json=queueName,proto3" json:"queue_name,omitempty"`
+	Domain               string   `protobuf:"bytes,2,opt,name=domain,proto3" json:"domain,omitempty"`
+	WorkerId             string   `protobuf:"bytes,3,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	LastPollTime         int64    `protobuf:"varint,4,opt,name=last_poll_time,json=lastPollTime,proto3" json:"last_poll_time,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

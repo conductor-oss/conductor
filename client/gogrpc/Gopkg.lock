@@ -2,39 +2,115 @@
 
 
 [[projects]]
+  digest = "1:a2c1d0e43bd3baaa071d1b9ed72c27d78169b2b269f71c105ac4ba34b1be4a39"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
+  pruneopts = "NUT"
   revision = "346938d642f2ec3594ed81d874461961cd0faa76"
   version = "v1.1.0"
 
 [[projects]]
+  digest = "1:7a38683af7fc3662a7c85a0795c638c8598cbee808b2246b7f3f16e3f5b302c2"
   name = "github.com/golang/protobuf"
   packages = [
+    "jsonpb",
     "proto",
+    "protoc-gen-go",
+    "protoc-gen-go/descriptor",
+    "protoc-gen-go/generator",
+    "protoc-gen-go/generator/internal/remap",
+    "protoc-gen-go/grpc",
+    "protoc-gen-go/plugin",
     "ptypes",
     "ptypes/any",
     "ptypes/duration",
     "ptypes/empty",
     "ptypes/struct",
-    "ptypes/timestamp"
+    "ptypes/timestamp",
+    "ptypes/wrappers",
   ]
+  pruneopts = "NUT"
   revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
   version = "v1.1.0"
 
 [[projects]]
+  digest = "1:406338ad39ab2e37b7f4452906442a3dbf0eb3379dd1f06aafb5c07e769a5fbb"
+  name = "github.com/inconshreveable/mousetrap"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75"
+  version = "v1.0"
+
+[[projects]]
+  digest = "1:d0ede3366f0fca3c7c0eec74a2c5bfae7711a2fdecb2a3c63330840f333f7977"
+  name = "github.com/jhump/protoreflect"
+  packages = [
+    "desc",
+    "desc/internal",
+    "dynamic",
+    "dynamic/grpcdynamic",
+    "grpcreflect",
+    "internal",
+  ]
+  pruneopts = "NUT"
+  revision = "b28d968eb345542b430a717dc72a88abf10d0b95"
+  version = "v1.0.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:d6b6479233449ae6a3defd500360f810d55415f2a768a9ecf62c126b7667903f"
+  name = "github.com/kazegusuri/grpcurl"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "98e92bc156677950a3bedb128a7227b40f0ff125"
+
+[[projects]]
+  digest = "1:0028cb19b2e4c3112225cd871870f2d9cf49b9b4276531f03438a88e94be86fe"
   name = "github.com/pmezard/go-difflib"
   packages = ["difflib"]
+  pruneopts = "NUT"
   revision = "792786c7400a136282c1664665ae0a8db921c6c2"
   version = "v1.0.0"
 
 [[projects]]
+  digest = "1:343d44e06621142ab09ae0c76c1799104cdfddd3ffb445d78b1adf8dc3ffaf3d"
+  name = "github.com/spf13/cobra"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "ef82de70bb3f60c65fb8eebacbb2d122ef517385"
+  version = "v0.0.3"
+
+[[projects]]
+  digest = "1:e3707aeaccd2adc89eba6c062fec72116fe1fc1ba71097da85b4d8ae1668a675"
+  name = "github.com/spf13/pflag"
+  packages = ["."]
+  pruneopts = "NUT"
+  revision = "9a97c102cda95a86cec2345a6f09f55a939babf5"
+  version = "v1.0.2"
+
+[[projects]]
+  branch = "master"
+  digest = "1:ea222cd3bb494fb2b0f799e33f91691d2f60cb298d064233367cd692d07d6c39"
+  name = "github.com/square/goprotowrap"
+  packages = [
+    ".",
+    "cmd/protowrap",
+    "wrapper",
+  ]
+  pruneopts = "NUT"
+  revision = "6f414ea4a80cc23c26725b193215be2a0d85d6e1"
+
+[[projects]]
+  digest = "1:a852b1ad03ca063d2c57866d9f94dcb1cb2e111415c5902ce0586fc2d207221b"
   name = "github.com/stretchr/testify"
   packages = ["assert"]
+  pruneopts = "NUT"
   revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
   version = "v1.2.1"
 
 [[projects]]
   branch = "master"
+  digest = "1:d0f20c081d47c012952ec7c153e3f3c751aaaf16608fcc5de77dab7ce67470b5"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -43,11 +119,21 @@
     "http2/hpack",
     "idna",
     "internal/timeseries",
-    "trace"
+    "trace",
   ]
+  pruneopts = "NUT"
   revision = "dfa909b99c79129e1100513e5cd36307665e5723"
 
 [[projects]]
+  branch = "master"
+  digest = "1:5c2d57086d29bf60bf5fc8a1e6550650034f8b26177dced9b16d1f673311ab40"
+  name = "golang.org/x/sys"
+  packages = ["unix"]
+  pruneopts = "NUT"
+  revision = "d0be0721c37eeb5299f245a996a483160fc36940"
+
+[[projects]]
+  digest = "1:e7071ed636b5422cc51c0e3a6cebc229d6c9fffc528814b519a980641422d619"
   name = "golang.org/x/text"
   packages = [
     "collate",
@@ -63,51 +149,72 @@
     "unicode/bidi",
     "unicode/cldr",
     "unicode/norm",
-    "unicode/rangetable"
+    "unicode/rangetable",
   ]
+  pruneopts = "NUT"
   revision = "f21a4dfb5e38f5895301dc265a8def02365cc3d0"
   version = "v0.3.0"
 
 [[projects]]
   branch = "master"
+  digest = "1:3b771528df2dc447e06c130b3131e6c4d0e5093b8a2c44868b7f3d45af517efe"
   name = "google.golang.org/genproto"
-  packages = ["googleapis/rpc/status"]
+  packages = [
+    "googleapis/rpc/errdetails",
+    "googleapis/rpc/status",
+  ]
+  pruneopts = "NUT"
   revision = "694d95ba50e67b2e363f3483057db5d4910c18f9"
 
 [[projects]]
+  digest = "1:827de0295c937025afe1896edd20b56aa9be42840818c194cf0eee6ab7d27e43"
   name = "google.golang.org/grpc"
   packages = [
     ".",
     "balancer",
     "balancer/base",
     "balancer/roundrobin",
-    "channelz",
     "codes",
     "connectivity",
     "credentials",
     "encoding",
     "encoding/proto",
-    "grpclb/grpc_lb_v1/messages",
     "grpclog",
     "internal",
+    "internal/backoff",
+    "internal/channelz",
+    "internal/envconfig",
+    "internal/grpcrand",
+    "internal/transport",
     "keepalive",
     "metadata",
     "naming",
     "peer",
+    "reflection/grpc_reflection_v1alpha",
     "resolver",
     "resolver/dns",
     "resolver/passthrough",
     "stats",
     "status",
     "tap",
-    "transport"
   ]
-  revision = "41344da2231b913fa3d983840a57a6b1b7b631a1"
-  version = "v1.12.0"
+  pruneopts = "NUT"
+  revision = "8dea3dc473e90c8179e519d91302d0597c0ca1d1"
+  version = "v1.15.0"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "ca4602bc2319dbe8e34a88c36f06c428a40582ae6be51bb01af6953432d754c5"
+  input-imports = [
+    "github.com/golang/protobuf/proto",
+    "github.com/golang/protobuf/protoc-gen-go",
+    "github.com/golang/protobuf/ptypes/any",
+    "github.com/golang/protobuf/ptypes/struct",
+    "github.com/kazegusuri/grpcurl",
+    "github.com/square/goprotowrap/cmd/protowrap",
+    "github.com/stretchr/testify/assert",
+    "golang.org/x/net/context",
+    "google.golang.org/grpc",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1

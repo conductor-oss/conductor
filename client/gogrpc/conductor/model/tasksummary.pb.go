@@ -19,22 +19,22 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type TaskSummary struct {
-	WorkflowId            string      `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
-	WorkflowType          string      `protobuf:"bytes,2,opt,name=workflow_type,json=workflowType" json:"workflow_type,omitempty"`
-	CorrelationId         string      `protobuf:"bytes,3,opt,name=correlation_id,json=correlationId" json:"correlation_id,omitempty"`
-	ScheduledTime         string      `protobuf:"bytes,4,opt,name=scheduled_time,json=scheduledTime" json:"scheduled_time,omitempty"`
-	StartTime             string      `protobuf:"bytes,5,opt,name=start_time,json=startTime" json:"start_time,omitempty"`
-	UpdateTime            string      `protobuf:"bytes,6,opt,name=update_time,json=updateTime" json:"update_time,omitempty"`
-	EndTime               string      `protobuf:"bytes,7,opt,name=end_time,json=endTime" json:"end_time,omitempty"`
-	Status                Task_Status `protobuf:"varint,8,opt,name=status,enum=conductor.proto.Task_Status" json:"status,omitempty"`
-	ReasonForIncompletion string      `protobuf:"bytes,9,opt,name=reason_for_incompletion,json=reasonForIncompletion" json:"reason_for_incompletion,omitempty"`
-	ExecutionTime         int64       `protobuf:"varint,10,opt,name=execution_time,json=executionTime" json:"execution_time,omitempty"`
-	QueueWaitTime         int64       `protobuf:"varint,11,opt,name=queue_wait_time,json=queueWaitTime" json:"queue_wait_time,omitempty"`
-	TaskDefName           string      `protobuf:"bytes,12,opt,name=task_def_name,json=taskDefName" json:"task_def_name,omitempty"`
-	TaskType              string      `protobuf:"bytes,13,opt,name=task_type,json=taskType" json:"task_type,omitempty"`
-	Input                 string      `protobuf:"bytes,14,opt,name=input" json:"input,omitempty"`
-	Output                string      `protobuf:"bytes,15,opt,name=output" json:"output,omitempty"`
-	TaskId                string      `protobuf:"bytes,16,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
+	WorkflowId            string      `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	WorkflowType          string      `protobuf:"bytes,2,opt,name=workflow_type,json=workflowType,proto3" json:"workflow_type,omitempty"`
+	CorrelationId         string      `protobuf:"bytes,3,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
+	ScheduledTime         string      `protobuf:"bytes,4,opt,name=scheduled_time,json=scheduledTime,proto3" json:"scheduled_time,omitempty"`
+	StartTime             string      `protobuf:"bytes,5,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	UpdateTime            string      `protobuf:"bytes,6,opt,name=update_time,json=updateTime,proto3" json:"update_time,omitempty"`
+	EndTime               string      `protobuf:"bytes,7,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	Status                Task_Status `protobuf:"varint,8,opt,name=status,proto3,enum=conductor.proto.Task_Status" json:"status,omitempty"`
+	ReasonForIncompletion string      `protobuf:"bytes,9,opt,name=reason_for_incompletion,json=reasonForIncompletion,proto3" json:"reason_for_incompletion,omitempty"`
+	ExecutionTime         int64       `protobuf:"varint,10,opt,name=execution_time,json=executionTime,proto3" json:"execution_time,omitempty"`
+	QueueWaitTime         int64       `protobuf:"varint,11,opt,name=queue_wait_time,json=queueWaitTime,proto3" json:"queue_wait_time,omitempty"`
+	TaskDefName           string      `protobuf:"bytes,12,opt,name=task_def_name,json=taskDefName,proto3" json:"task_def_name,omitempty"`
+	TaskType              string      `protobuf:"bytes,13,opt,name=task_type,json=taskType,proto3" json:"task_type,omitempty"`
+	Input                 string      `protobuf:"bytes,14,opt,name=input,proto3" json:"input,omitempty"`
+	Output                string      `protobuf:"bytes,15,opt,name=output,proto3" json:"output,omitempty"`
+	TaskId                string      `protobuf:"bytes,16,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
 	XXX_NoUnkeyedLiteral  struct{}    `json:"-"`
 	XXX_unrecognized      []byte      `json:"-"`
 	XXX_sizecache         int32       `json:"-"`

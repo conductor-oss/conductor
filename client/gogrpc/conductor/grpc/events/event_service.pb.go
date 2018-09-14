@@ -25,7 +25,7 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type AddEventHandlerRequest struct {
-	Handler              *model.EventHandler `protobuf:"bytes,1,opt,name=handler" json:"handler,omitempty"`
+	Handler              *model.EventHandler `protobuf:"bytes,1,opt,name=handler,proto3" json:"handler,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -93,7 +93,7 @@ func (m *AddEventHandlerResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_AddEventHandlerResponse proto.InternalMessageInfo
 
 type UpdateEventHandlerRequest struct {
-	Handler              *model.EventHandler `protobuf:"bytes,1,opt,name=handler" json:"handler,omitempty"`
+	Handler              *model.EventHandler `protobuf:"bytes,1,opt,name=handler,proto3" json:"handler,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
 	XXX_unrecognized     []byte              `json:"-"`
 	XXX_sizecache        int32               `json:"-"`
@@ -161,7 +161,7 @@ func (m *UpdateEventHandlerResponse) XXX_DiscardUnknown() {
 var xxx_messageInfo_UpdateEventHandlerResponse proto.InternalMessageInfo
 
 type RemoveEventHandlerRequest struct {
-	Name                 string   `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	Name                 string   `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -259,8 +259,8 @@ func (m *GetEventHandlersRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_GetEventHandlersRequest proto.InternalMessageInfo
 
 type GetEventHandlersForEventRequest struct {
-	Event                string   `protobuf:"bytes,1,opt,name=event" json:"event,omitempty"`
-	ActiveOnly           bool     `protobuf:"varint,2,opt,name=active_only,json=activeOnly" json:"active_only,omitempty"`
+	Event                string   `protobuf:"bytes,1,opt,name=event,proto3" json:"event,omitempty"`
+	ActiveOnly           bool     `protobuf:"varint,2,opt,name=active_only,json=activeOnly,proto3" json:"active_only,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -335,7 +335,7 @@ func (m *GetQueuesRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_GetQueuesRequest proto.InternalMessageInfo
 
 type GetQueuesResponse struct {
-	EventToQueueUri      map[string]string `protobuf:"bytes,1,rep,name=event_to_queue_uri,json=eventToQueueUri" json:"event_to_queue_uri,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	EventToQueueUri      map[string]string `protobuf:"bytes,1,rep,name=event_to_queue_uri,json=eventToQueueUri,proto3" json:"event_to_queue_uri,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -403,7 +403,7 @@ func (m *GetQueueSizesRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_GetQueueSizesRequest proto.InternalMessageInfo
 
 type GetQueueSizesResponse struct {
-	EventToQueueInfo     map[string]*GetQueueSizesResponse_QueueInfo `protobuf:"bytes,2,rep,name=event_to_queue_info,json=eventToQueueInfo" json:"event_to_queue_info,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
+	EventToQueueInfo     map[string]*GetQueueSizesResponse_QueueInfo `protobuf:"bytes,2,rep,name=event_to_queue_info,json=eventToQueueInfo,proto3" json:"event_to_queue_info,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}                                    `json:"-"`
 	XXX_unrecognized     []byte                                      `json:"-"`
 	XXX_sizecache        int32                                       `json:"-"`
@@ -441,7 +441,7 @@ func (m *GetQueueSizesResponse) GetEventToQueueInfo() map[string]*GetQueueSizesR
 }
 
 type GetQueueSizesResponse_QueueInfo struct {
-	QueueSizes           map[string]int64 `protobuf:"bytes,1,rep,name=queue_sizes,json=queueSizes" json:"queue_sizes,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"varint,2,opt,name=value"`
+	QueueSizes           map[string]int64 `protobuf:"bytes,1,rep,name=queue_sizes,json=queueSizes,proto3" json:"queue_sizes,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"varint,2,opt,name=value,proto3"`
 	XXX_NoUnkeyedLiteral struct{}         `json:"-"`
 	XXX_unrecognized     []byte           `json:"-"`
 	XXX_sizecache        int32            `json:"-"`
@@ -509,7 +509,7 @@ func (m *GetQueueProvidersRequest) XXX_DiscardUnknown() {
 var xxx_messageInfo_GetQueueProvidersRequest proto.InternalMessageInfo
 
 type GetQueueProvidersResponse struct {
-	Providers            []string `protobuf:"bytes,1,rep,name=providers" json:"providers,omitempty"`
+	Providers            []string `protobuf:"bytes,1,rep,name=providers,proto3" json:"providers,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`

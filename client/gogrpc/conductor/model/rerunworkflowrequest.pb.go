@@ -20,11 +20,11 @@ var _ = math.Inf
 const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type RerunWorkflowRequest struct {
-	ReRunFromWorkflowId  string                    `protobuf:"bytes,1,opt,name=re_run_from_workflow_id,json=reRunFromWorkflowId" json:"re_run_from_workflow_id,omitempty"`
-	WorkflowInput        map[string]*_struct.Value `protobuf:"bytes,2,rep,name=workflow_input,json=workflowInput" json:"workflow_input,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	ReRunFromTaskId      string                    `protobuf:"bytes,3,opt,name=re_run_from_task_id,json=reRunFromTaskId" json:"re_run_from_task_id,omitempty"`
-	TaskInput            map[string]*_struct.Value `protobuf:"bytes,4,rep,name=task_input,json=taskInput" json:"task_input,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	CorrelationId        string                    `protobuf:"bytes,5,opt,name=correlation_id,json=correlationId" json:"correlation_id,omitempty"`
+	ReRunFromWorkflowId  string                    `protobuf:"bytes,1,opt,name=re_run_from_workflow_id,json=reRunFromWorkflowId,proto3" json:"re_run_from_workflow_id,omitempty"`
+	WorkflowInput        map[string]*_struct.Value `protobuf:"bytes,2,rep,name=workflow_input,json=workflowInput,proto3" json:"workflow_input,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	ReRunFromTaskId      string                    `protobuf:"bytes,3,opt,name=re_run_from_task_id,json=reRunFromTaskId,proto3" json:"re_run_from_task_id,omitempty"`
+	TaskInput            map[string]*_struct.Value `protobuf:"bytes,4,rep,name=task_input,json=taskInput,proto3" json:"task_input,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	CorrelationId        string                    `protobuf:"bytes,5,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`

@@ -47,11 +47,11 @@ func (EventHandler_Action_Type) EnumDescriptor() ([]byte, []int) {
 }
 
 type EventHandler struct {
-	Name                 string                 `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Event                string                 `protobuf:"bytes,2,opt,name=event" json:"event,omitempty"`
-	Condition            string                 `protobuf:"bytes,3,opt,name=condition" json:"condition,omitempty"`
-	Actions              []*EventHandler_Action `protobuf:"bytes,4,rep,name=actions" json:"actions,omitempty"`
-	Active               bool                   `protobuf:"varint,5,opt,name=active" json:"active,omitempty"`
+	Name                 string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Event                string                 `protobuf:"bytes,2,opt,name=event,proto3" json:"event,omitempty"`
+	Condition            string                 `protobuf:"bytes,3,opt,name=condition,proto3" json:"condition,omitempty"`
+	Actions              []*EventHandler_Action `protobuf:"bytes,4,rep,name=actions,proto3" json:"actions,omitempty"`
+	Active               bool                   `protobuf:"varint,5,opt,name=active,proto3" json:"active,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}               `json:"-"`
 	XXX_unrecognized     []byte                 `json:"-"`
 	XXX_sizecache        int32                  `json:"-"`
@@ -117,11 +117,11 @@ func (m *EventHandler) GetActive() bool {
 }
 
 type EventHandler_StartWorkflow struct {
-	Name                 string                    `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
-	Version              int32                     `protobuf:"varint,2,opt,name=version" json:"version,omitempty"`
-	CorrelationId        string                    `protobuf:"bytes,3,opt,name=correlation_id,json=correlationId" json:"correlation_id,omitempty"`
-	Input                map[string]*_struct.Value `protobuf:"bytes,4,rep,name=input" json:"input,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	InputMessage         *any.Any                  `protobuf:"bytes,5,opt,name=input_message,json=inputMessage" json:"input_message,omitempty"`
+	Name                 string                    `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Version              int32                     `protobuf:"varint,2,opt,name=version,proto3" json:"version,omitempty"`
+	CorrelationId        string                    `protobuf:"bytes,3,opt,name=correlation_id,json=correlationId,proto3" json:"correlation_id,omitempty"`
+	Input                map[string]*_struct.Value `protobuf:"bytes,4,rep,name=input,proto3" json:"input,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	InputMessage         *any.Any                  `protobuf:"bytes,5,opt,name=input_message,json=inputMessage,proto3" json:"input_message,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`
@@ -187,10 +187,10 @@ func (m *EventHandler_StartWorkflow) GetInputMessage() *any.Any {
 }
 
 type EventHandler_TaskDetails struct {
-	WorkflowId           string                    `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId" json:"workflow_id,omitempty"`
-	TaskRefName          string                    `protobuf:"bytes,2,opt,name=task_ref_name,json=taskRefName" json:"task_ref_name,omitempty"`
-	Output               map[string]*_struct.Value `protobuf:"bytes,3,rep,name=output" json:"output,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	OutputMessage        *any.Any                  `protobuf:"bytes,4,opt,name=output_message,json=outputMessage" json:"output_message,omitempty"`
+	WorkflowId           string                    `protobuf:"bytes,1,opt,name=workflow_id,json=workflowId,proto3" json:"workflow_id,omitempty"`
+	TaskRefName          string                    `protobuf:"bytes,2,opt,name=task_ref_name,json=taskRefName,proto3" json:"task_ref_name,omitempty"`
+	Output               map[string]*_struct.Value `protobuf:"bytes,3,rep,name=output,proto3" json:"output,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	OutputMessage        *any.Any                  `protobuf:"bytes,4,opt,name=output_message,json=outputMessage,proto3" json:"output_message,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                  `json:"-"`
 	XXX_unrecognized     []byte                    `json:"-"`
 	XXX_sizecache        int32                     `json:"-"`
@@ -249,11 +249,11 @@ func (m *EventHandler_TaskDetails) GetOutputMessage() *any.Any {
 }
 
 type EventHandler_Action struct {
-	Action               EventHandler_Action_Type    `protobuf:"varint,1,opt,name=action,enum=conductor.proto.EventHandler_Action_Type" json:"action,omitempty"`
-	StartWorkflow        *EventHandler_StartWorkflow `protobuf:"bytes,2,opt,name=start_workflow,json=startWorkflow" json:"start_workflow,omitempty"`
-	CompleteTask         *EventHandler_TaskDetails   `protobuf:"bytes,3,opt,name=complete_task,json=completeTask" json:"complete_task,omitempty"`
-	FailTask             *EventHandler_TaskDetails   `protobuf:"bytes,4,opt,name=fail_task,json=failTask" json:"fail_task,omitempty"`
-	ExpandInlineJson     bool                        `protobuf:"varint,5,opt,name=expand_inline_json,json=expandInlineJson" json:"expand_inline_json,omitempty"`
+	Action               EventHandler_Action_Type    `protobuf:"varint,1,opt,name=action,proto3,enum=conductor.proto.EventHandler_Action_Type" json:"action,omitempty"`
+	StartWorkflow        *EventHandler_StartWorkflow `protobuf:"bytes,2,opt,name=start_workflow,json=startWorkflow,proto3" json:"start_workflow,omitempty"`
+	CompleteTask         *EventHandler_TaskDetails   `protobuf:"bytes,3,opt,name=complete_task,json=completeTask,proto3" json:"complete_task,omitempty"`
+	FailTask             *EventHandler_TaskDetails   `protobuf:"bytes,4,opt,name=fail_task,json=failTask,proto3" json:"fail_task,omitempty"`
+	ExpandInlineJson     bool                        `protobuf:"varint,5,opt,name=expand_inline_json,json=expandInlineJson,proto3" json:"expand_inline_json,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                    `json:"-"`
 	XXX_unrecognized     []byte                      `json:"-"`
 	XXX_sizecache        int32                       `json:"-"`

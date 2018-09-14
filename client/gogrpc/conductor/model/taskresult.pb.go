@@ -53,14 +53,14 @@ func (TaskResult_Status) EnumDescriptor() ([]byte, []int) {
 }
 
 type TaskResult struct {
-	WorkflowInstanceId    string                    `protobuf:"bytes,1,opt,name=workflow_instance_id,json=workflowInstanceId" json:"workflow_instance_id,omitempty"`
-	TaskId                string                    `protobuf:"bytes,2,opt,name=task_id,json=taskId" json:"task_id,omitempty"`
-	ReasonForIncompletion string                    `protobuf:"bytes,3,opt,name=reason_for_incompletion,json=reasonForIncompletion" json:"reason_for_incompletion,omitempty"`
-	CallbackAfterSeconds  int64                     `protobuf:"varint,4,opt,name=callback_after_seconds,json=callbackAfterSeconds" json:"callback_after_seconds,omitempty"`
-	WorkerId              string                    `protobuf:"bytes,5,opt,name=worker_id,json=workerId" json:"worker_id,omitempty"`
-	Status                TaskResult_Status         `protobuf:"varint,6,opt,name=status,enum=conductor.proto.TaskResult_Status" json:"status,omitempty"`
-	OutputData            map[string]*_struct.Value `protobuf:"bytes,7,rep,name=output_data,json=outputData" json:"output_data,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	OutputMessage         *any.Any                  `protobuf:"bytes,8,opt,name=output_message,json=outputMessage" json:"output_message,omitempty"`
+	WorkflowInstanceId    string                    `protobuf:"bytes,1,opt,name=workflow_instance_id,json=workflowInstanceId,proto3" json:"workflow_instance_id,omitempty"`
+	TaskId                string                    `protobuf:"bytes,2,opt,name=task_id,json=taskId,proto3" json:"task_id,omitempty"`
+	ReasonForIncompletion string                    `protobuf:"bytes,3,opt,name=reason_for_incompletion,json=reasonForIncompletion,proto3" json:"reason_for_incompletion,omitempty"`
+	CallbackAfterSeconds  int64                     `protobuf:"varint,4,opt,name=callback_after_seconds,json=callbackAfterSeconds,proto3" json:"callback_after_seconds,omitempty"`
+	WorkerId              string                    `protobuf:"bytes,5,opt,name=worker_id,json=workerId,proto3" json:"worker_id,omitempty"`
+	Status                TaskResult_Status         `protobuf:"varint,6,opt,name=status,proto3,enum=conductor.proto.TaskResult_Status" json:"status,omitempty"`
+	OutputData            map[string]*_struct.Value `protobuf:"bytes,7,rep,name=output_data,json=outputData,proto3" json:"output_data,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	OutputMessage         *any.Any                  `protobuf:"bytes,8,opt,name=output_message,json=outputMessage,proto3" json:"output_message,omitempty"`
 	XXX_NoUnkeyedLiteral  struct{}                  `json:"-"`
 	XXX_unrecognized      []byte                    `json:"-"`
 	XXX_sizecache         int32                     `json:"-"`

@@ -1,18 +1,5 @@
 PROTO_SRC = ../../grpc/src/main/proto
 PROTO_VERSION = 3.5.1
-GO_OUTPUT=$(GOPATH)/src
-
-UNAME_S := $(shell uname -s)
-USER_ID := $(shell id -u)
-GROUP_ID := $(shell id -g)
-
-OSFLAG:=
-ifeq ($(UNAME_S),Linux)
-	OS = linux
-endif
-ifeq ($(UNAME_S),Darwin)
-	OS = osx
-endif
 
 BUILD_DIR = build
 BIN_DIR = $(BUILD_DIR)/bin
@@ -23,9 +10,14 @@ SERVICES = \
     $(PROTO_SRC)/grpc/task_service.pb.go \
     $(PROTO_SRC)/grpc/workflow_service.pb.go
 
-bootstrap: install-protoc
-	go get -u github.com/golang/protobuf/protoc-gen-go
-	go get -u github.com/square/goprotowrap/cmd/protowrap
+USER_ID := $(shell id -u)
+GROUP_ID := $(shell id -g)
+CONDUCTOR_ROOT = /go/src/github.com/netflix/conductor
+PROTOC = docker run --rm -it \
+	--user $(USER_ID):$(GROUP_ID) \
+	-v '$(PWD)/../..':'$(CONDUCTOR_ROOT)' \
+	-w $(CONDUCTOR_ROOT)/client/gogrpc \
+	znly/protoc:0.3.0 
 
 proto: models $(SERVICES)
 
@@ -38,16 +30,7 @@ test:
 
 # Helpers
 $(SERVICES): %.pb.go: %.proto
-	$(BIN_DIR)/protoc -I $(PROTO_SRC) $< --go_out=plugins=grpc:$(GO_OUTPUT)
+	$(PROTOC) -I $(PROTO_SRC) $< --go_out=plugins=grpc:/go/src
 
 models:
-	$(BIN_DIR)/protoc -I $(PROTO_SRC) $(PROTO_SRC)/model/*.proto --go_out=$(GO_OUTPUT)
-
-install-protoc:
-	mkdir -p $(BIN_DIR)
-	curl -Lso $(BUILD_DIR)/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v$(PROTO_VERSION)/protoc-$(PROTO_VERSION)-$(OS)-x86_64.zip
-	cd $(BUILD_DIR); unzip protoc.zip
-
-generateClient:
-	docker build -f docker/Dockerfile -t protocontainer $(PWD)/../../
-	docker run --user $(USER_ID):$(GROUP_ID) --rm -it -v $(PWD)/generated:'/generated' protocontainer:latest
+	$(PROTOC) -I $(PROTO_SRC) $(PROTO_SRC)/model/*.proto --go_out=/go/src
