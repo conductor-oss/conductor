@@ -249,7 +249,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	public boolean exceedsRateLimitPerFrequency(Task task) {
 		int rateLimitPerFrequency = task.getRateLimitPerFrequency();
 		int rateLimitFrequencyInSeconds = task.getRateLimitFrequencyInSeconds();
-		if (rateLimitPerFrequency <= 0 && rateLimitFrequencyInSeconds <=0) {
+		if (rateLimitPerFrequency <= 0 || rateLimitFrequencyInSeconds <=0) {
 			logger.debug("Rate limit not applied to the Task: {}  either rateLimitPerFrequency: {} or rateLimitFrequencyInSeconds: {} is 0 or less",
 			task, rateLimitPerFrequency, rateLimitFrequencyInSeconds);
 			return false;
