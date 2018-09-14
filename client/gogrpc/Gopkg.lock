@@ -2,15 +2,15 @@
 
 
 [[projects]]
-  digest = "1:a2c1d0e43bd3baaa071d1b9ed72c27d78169b2b269f71c105ac4ba34b1be4a39"
+  digest = "1:ffe9824d294da03b391f44e1ae8281281b4afc1bdaa9588c9097785e3af10cec"
   name = "github.com/davecgh/go-spew"
   packages = ["spew"]
   pruneopts = "NUT"
-  revision = "346938d642f2ec3594ed81d874461961cd0faa76"
-  version = "v1.1.0"
+  revision = "8991bc29aa16c548c550c7ff78260e27b9ab7c73"
+  version = "v1.1.1"
 
 [[projects]]
-  digest = "1:7a38683af7fc3662a7c85a0795c638c8598cbee808b2246b7f3f16e3f5b302c2"
+  digest = "1:68496943b027f697647279f48129c75a65cd816a6a95fc6bb7b8b039ea050f1d"
   name = "github.com/golang/protobuf"
   packages = [
     "jsonpb",
@@ -30,8 +30,8 @@
     "ptypes/wrappers",
   ]
   pruneopts = "NUT"
-  revision = "b4deda0973fb4c70b50d226b1af49f3da59f5265"
-  version = "v1.1.0"
+  revision = "aa810b61a9c79d51363740d207bb46cf8e620ed5"
+  version = "v1.2.0"
 
 [[projects]]
   digest = "1:406338ad39ab2e37b7f4452906442a3dbf0eb3379dd1f06aafb5c07e769a5fbb"
@@ -101,16 +101,16 @@
   revision = "6f414ea4a80cc23c26725b193215be2a0d85d6e1"
 
 [[projects]]
-  digest = "1:a852b1ad03ca063d2c57866d9f94dcb1cb2e111415c5902ce0586fc2d207221b"
+  digest = "1:bacb8b590716ab7c33f2277240972c9582d389593ee8d66fc10074e0508b8126"
   name = "github.com/stretchr/testify"
   packages = ["assert"]
   pruneopts = "NUT"
-  revision = "12b6f73e6084dad08a7c6e575284b177ecafbc71"
-  version = "v1.2.1"
+  revision = "f35b8ab0b5a2cef36673838d662e249dd9c94686"
+  version = "v1.2.2"
 
 [[projects]]
   branch = "master"
-  digest = "1:d0f20c081d47c012952ec7c153e3f3c751aaaf16608fcc5de77dab7ce67470b5"
+  digest = "1:a2707daa031e6db5fcaae8a9b30eaa503a0d7d8aa72cd50b27fa394ef6c3f7fe"
   name = "golang.org/x/net"
   packages = [
     "context",
@@ -122,7 +122,7 @@
     "trace",
   ]
   pruneopts = "NUT"
-  revision = "dfa909b99c79129e1100513e5cd36307665e5723"
+  revision = "26e67e76b6c3f6ce91f7c52def5af501b4e0f3a2"
 
 [[projects]]
   branch = "master"
@@ -157,14 +157,14 @@
 
 [[projects]]
   branch = "master"
-  digest = "1:3b771528df2dc447e06c130b3131e6c4d0e5093b8a2c44868b7f3d45af517efe"
+  digest = "1:9b295ec121babd2b209d9d52115f839f2ea4f8165977f4e446326b875434ab7b"
   name = "google.golang.org/genproto"
   packages = [
     "googleapis/rpc/errdetails",
     "googleapis/rpc/status",
   ]
   pruneopts = "NUT"
-  revision = "694d95ba50e67b2e363f3483057db5d4910c18f9"
+  revision = "5a2fd4cab2d6d4a18e70c34937662526cd0c4bd1"
 
 [[projects]]
   digest = "1:827de0295c937025afe1896edd20b56aa9be42840818c194cf0eee6ab7d27e43"
