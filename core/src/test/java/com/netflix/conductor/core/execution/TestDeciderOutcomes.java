@@ -46,7 +46,6 @@ import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.io.InputStream;
@@ -97,7 +96,7 @@ public class TestDeciderOutcomes {
 		TaskDef taskDef = new TaskDef();
 		taskDef.setRetryCount(1);
 		taskDef.setName("mockTaskDef");
-		taskDef.setResponseTimeoutSeconds(0);
+		taskDef.setResponseTimeoutSeconds(60*60);
 		when(metadataDAO.getTaskDef(any())).thenReturn(taskDef);
 		ParametersUtils parametersUtils = new ParametersUtils();
 		Map<String, TaskMapper> taskMappers = new HashMap<>();
@@ -237,6 +236,10 @@ public class TestDeciderOutcomes {
 
 		task1Id = outcome.tasksToBeScheduled.get(1).getTaskId();
 		outcome.tasksToBeScheduled.get(1).setStatus(Status.FAILED);
+
+		for(Task taskToBeScheduled : outcome.tasksToBeScheduled) {
+			taskToBeScheduled.setUpdateTime(System.currentTimeMillis());
+		}
 		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
 
 		outcome = deciderService.decide(workflow, def);
@@ -361,7 +364,10 @@ public class TestDeciderOutcomes {
 		assertEquals(Task.Status.IN_PROGRESS, outcome.tasksToBeScheduled.get(4).getStatus());
 		workflow.getTasks().clear();
 		workflow.getTasks().addAll(outcome.tasksToBeScheduled);
-
+		
+		for(Task taskToBeScheduled : outcome.tasksToBeScheduled) {
+			taskToBeScheduled.setUpdateTime(System.currentTimeMillis());
+		}
 		outcome = deciderService.decide(workflow, workflowDef);
 		assertNotNull(outcome);
 		assertEquals(SystemTaskType.JOIN.name(), outcome.tasksToBeScheduled.get(0).getTaskType());

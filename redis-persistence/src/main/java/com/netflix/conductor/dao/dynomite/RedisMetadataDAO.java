@@ -83,6 +83,7 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
         Preconditions.checkNotNull(taskDef, "TaskDef object cannot be null");
         Preconditions.checkNotNull(taskDef.getName(), "TaskDef name cannot be null");
+        Preconditions.checkNotNull(taskDef.getResponseTimeoutSeconds(), "ResponseTimeoutSeconds cannot be null");
 
         // Store all task def in under one key
         String payload = toJson(taskDef);

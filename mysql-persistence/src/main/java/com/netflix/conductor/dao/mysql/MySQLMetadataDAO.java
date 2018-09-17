@@ -263,6 +263,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     private void validate(TaskDef taskDef) {
         Preconditions.checkNotNull(taskDef, "TaskDef object cannot be null");
         Preconditions.checkNotNull(taskDef.getName(), "TaskDef name cannot be null");
+        Preconditions.checkNotNull(taskDef.getResponseTimeoutSeconds(), "ResponseTimeoutSeconds cannot be null");
     }
 
     /**
