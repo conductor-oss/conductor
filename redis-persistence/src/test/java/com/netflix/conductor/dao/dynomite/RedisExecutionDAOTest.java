@@ -85,7 +85,7 @@ public class RedisExecutionDAOTest {
 
 	@SuppressWarnings("unchecked")
 	@Before
-	public void init() throws Exception {
+	public void init() {
 		Configuration config = new TestConfiguration();
 		JedisCommands jedisMock = new JedisMock();
 		DynoProxy dynoClient = new DynoProxy(jedisMock);
@@ -101,7 +101,7 @@ public class RedisExecutionDAOTest {
 	public ExpectedException expected = ExpectedException.none();
 
 	@Test
-	public void testTaskExceedsLimit() throws Exception {
+	public void testTaskExceedsLimit() {
 
 		TaskDef def = new TaskDef();
 		def.setName("task1");
@@ -132,7 +132,7 @@ public class RedisExecutionDAOTest {
 
 	}
 	@Test
-	public void testCreateTaskException() throws Exception {
+	public void testCreateTaskException() {
 		Task task = new Task();
 		task.setScheduledTime(1L);
 		task.setSeq(1);
@@ -150,7 +150,7 @@ public class RedisExecutionDAOTest {
 	}
 
 	@Test
-	public void testCreateTaskException2() throws Exception {
+	public void testCreateTaskException2() {
 		Task task = new Task();
 		task.setScheduledTime(1L);
 		task.setSeq(1);
@@ -163,7 +163,7 @@ public class RedisExecutionDAOTest {
 	}
 
 	@Test
-	public void testPollData() throws Exception {
+	public void testPollData() {
 		executionDAO.updateLastPoll("taskDef", null, "workerId1");
 		PollData pd = executionDAO.getPollData("taskDef", null);
 		assertNotNull(pd);
@@ -188,7 +188,7 @@ public class RedisExecutionDAOTest {
 	}
 
 	@Test
-	public void testTaskCreateDups() throws Exception {
+	public void testTaskCreateDups() {
 		List<Task> tasks = new LinkedList<>();
 		String workflowId = UUID.randomUUID().toString();
 
@@ -249,7 +249,7 @@ public class RedisExecutionDAOTest {
 	}
 
 	@Test
-	public void testTaskOps() throws Exception {
+	public void testTaskOps() {
 		List<Task> tasks = new LinkedList<>();
 		String workflowId = UUID.randomUUID().toString();
 
@@ -314,7 +314,7 @@ public class RedisExecutionDAOTest {
 	}
 
 	@Test
-	public void test() throws Exception {
+	public void test() {
 		Workflow workflow = new Workflow();
 		workflow.setCorrelationId("correlationX");
 		workflow.setCreatedBy("junit_tester");
@@ -460,7 +460,7 @@ public class RedisExecutionDAOTest {
 
 	@Test
 	@SuppressWarnings("unchecked")
-	public void testCorrelateTaskToWorkflowInDS() throws Exception {
+	public void testCorrelateTaskToWorkflowInDS() {
 		String workflowId = "workflowId";
 		String taskId = "taskId1";
 		String taskDefName = "task1";
