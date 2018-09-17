@@ -34,6 +34,23 @@ public class MySQLTestRunner extends BlockJUnit4ClassRunner {
 	static {
 		System.setProperty("EC2_REGION", "us-east-1");
 		System.setProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
+		
+		System.setProperty("conductor.workflow.input.payload.threshold.kb", "10");
+		System.setProperty("conductor.max.workflow.input.payload.threshold.kb", "10240");
+		System.setProperty("conductor.workflow.output.payload.threshold.kb", "10");
+		System.setProperty("conductor.max.workflow.output.payload.threshold.kb", "10240");
+		System.setProperty("conductor.task.input.payload.threshold.kb", "1");
+		System.setProperty("conductor.max.task.input.payload.threshold.kb", "10240");
+		System.setProperty("conductor.task.output.payload.threshold.kb", "10");
+		System.setProperty("conductor.max.task.output.payload.threshold.kb", "10240");
+		
+		//jdbc properties
+		
+		System.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/conductor?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
+        System.setProperty("jdbc.username", "root");
+        System.setProperty("jdbc.password", "");
+        
+        
 	}
 
 	

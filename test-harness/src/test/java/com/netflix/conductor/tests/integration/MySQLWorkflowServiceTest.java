@@ -2231,13 +2231,13 @@ public class MySQLWorkflowServiceTest {
         }
         assertTrue(foundId);
 
-		/*
-		 * @correlationId
-		List<Workflow> byCorrelationId = ess.getWorkflowInstances(LINEAR_WORKFLOW_T1_T2, correlationId, false, false);
-		assertNotNull(byCorrelationId);
-		assertTrue(!byCorrelationId.isEmpty());
-		assertEquals(1, byCorrelationId.size());
-		*/
+        /*
+         * @correlationId
+        List<Workflow> byCorrelationId = ess.getWorkflowInstances(LINEAR_WORKFLOW_T1_T2, correlationId, false, false);
+        assertNotNull(byCorrelationId);
+        assertTrue(!byCorrelationId.isEmpty());
+        assertEquals(1, byCorrelationId.size());
+        */
 
         Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
         assertNotNull(es);

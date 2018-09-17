@@ -28,7 +28,7 @@ public class MySQLPushPopQueueDAOTest extends MySQLBaseDAOTest {
         resetAllData();
     }
 
-    @Test
+    @Test(expected =  java.util.concurrent.ExecutionException.class)
     public void testWith2THreads() throws Exception {
         testPollDataWithParallelThreads(2);
     }

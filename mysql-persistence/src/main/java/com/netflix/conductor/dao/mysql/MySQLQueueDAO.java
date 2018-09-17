@@ -89,7 +89,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
     public boolean setUnackTimeout(String queueName, String messageId, long unackTimeout) {
         long updatedOffsetTimeInSecond = unackTimeout / 1000;
 
-        final String UPDATE_UNACK_TIMEOUT = "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = TIMESTAMPADD(SECOND, ?, created_on) WHERE queue_name = ? AND message_id = ?";
+        final String UPDATE_UNACK_TIMEOUT = "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = TIMESTAMPADD(SECOND, ?, CURRENT_TIMESTAMP) WHERE queue_name = ? AND message_id = ?";
 
         return queryWithTransaction(UPDATE_UNACK_TIMEOUT,
                 q -> q.addParameter(updatedOffsetTimeInSecond).addParameter(updatedOffsetTimeInSecond)
@@ -104,9 +104,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
 
     @Override
     public Map<String, Long> queuesDetail() {
-
         final String GET_QUEUES_DETAIL = "SELECT queue_name, (SELECT count(*) FROM queue_message WHERE popped = false AND queue_name = q.queue_name) AS size FROM queue q";
-
         return queryWithTransaction(GET_QUEUES_DETAIL, q -> q.executeAndFetch(rs -> {
             Map<String, Long> detail = Maps.newHashMap();
             while (rs.next()) {
@@ -147,6 +145,10 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
      * @since 1.11.6
      */
     public void processAllUnacks() {
+        
+        logger.info("processAllUnacks started");
+        
+        
         final String PROCESS_ALL_UNACKS = "UPDATE queue_message SET popped = false WHERE popped = true AND TIMESTAMPADD(SECOND,60,CURRENT_TIMESTAMP) > deliver_on";
         executeWithTransaction(PROCESS_ALL_UNACKS, Query::executeUpdate);
     }
@@ -199,7 +201,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
         if (count < 1)
             return Collections.emptyList();
 
-        final String PEEK_MESSAGES = "SELECT message_id, payload FROM queue_message WHERE queue_name = ? AND popped = false AND deliver_on <= TIMESTAMPADD(MICROSECOND,1000,CURRENT_TIMESTAMP) ORDER BY deliver_on, created_on LIMIT ?";
+        final String PEEK_MESSAGES = "SELECT message_id, payload FROM queue_message WHERE queue_name = ? AND popped = false AND deliver_on <= TIMESTAMPADD(MICROSECOND, 1000, CURRENT_TIMESTAMP) ORDER BY deliver_on, created_on LIMIT ?";
 
         List<Message> messages = query(connection, PEEK_MESSAGES, p -> p.addParameter(queueName)
                 .addParameter(count).executeAndFetch(rs -> {
@@ -235,6 +237,8 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
         final String query = String.format(POP_MESSAGES, Query.generateInBindings(messages.size()));
 
         int result = query(connection, query, q -> q.addParameter(queueName).addParameters(Ids).executeUpdate());
+        
+        
 
         if (result != messages.size()) {
             String message = String.format("Could not pop all messages for given ids: %s (%d messages were popped)",
@@ -244,9 +248,10 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
         return messages;
     }
 
+    
     private void createQueueIfNotExists(Connection connection, String queueName) {
         logger.trace("Creating new queue '{}'", queueName);
-        final String CREATE_QUEUE = "INSERT INTO queue (queue_name) VALUES (?) ON DUPLICATE KEY UPDATE queue_name=VALUES(queue_name)";
+        final String CREATE_QUEUE = "INSERT IGNORE INTO queue (queue_name) VALUES (?)";
         execute(connection, CREATE_QUEUE, q -> q.addParameter(queueName).executeUpdate());
     }
 

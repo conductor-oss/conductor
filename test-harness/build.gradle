@@ -8,6 +8,7 @@ dependencies {
 	testCompile project(':conductor-core')
 	testCompile project(':conductor-jersey')
 	testCompile project(':conductor-redis-persistence').sourceSets.test.output
+	testCompile project(':conductor-mysql-persistence').sourceSets.test.output
 	testCompile project(':conductor-client')
 	testCompile project(':conductor-server')
 	testCompile "org.elasticsearch:elasticsearch:${revElasticSearch5}"
@@ -18,9 +19,18 @@ dependencies {
 
 	testCompile "com.google.inject.extensions:guice-servlet:${revGuiceServlet}"
 	testCompile "io.swagger:swagger-jersey-jaxrs:${revSwaggerJersey}"
+	
+	
+	
+	testCompile "ch.vorburger.mariaDB4j:mariaDB4j:${revMariaDB4j}"
+	//TODO Change the below deps to use the same version as one in versionsOfDependencies.gradle
+	testCompile 'ch.qos.logback:logback-core:1.2.3'
+	testCompile 'ch.qos.logback:logback-classic:1.2.3'
+	
 }
 
 task server(type: JavaExec) {
   main = 'com.netflix.conductor.demo.Main'
   classpath = sourceSets.test.runtimeClasspath  
 }
+
