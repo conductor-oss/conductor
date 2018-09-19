@@ -44,7 +44,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ *
  * @author visingh
  *
  */
@@ -107,6 +107,7 @@ public class TaskResource {
 
 	@POST
 	@ApiOperation("Update a task")
+    @Produces({MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON})
 	public String updateTask(TaskResult taskResult) {
 		return taskService.updateTask(taskResult);
 	}
@@ -119,14 +120,14 @@ public class TaskResource {
                       @QueryParam("workerid") String workerId) {
 		return taskService.ackTaskReceived(taskId, workerId);
 	}
-	
+
 	@POST
 	@Path("/{taskId}/log")
 	@ApiOperation("Log Task Execution Details")
 	public void log(@PathParam("taskId") String taskId, String log) {
         taskService.log(taskId, log);
 	}
-	
+
 	@GET
 	@Path("/{taskId}/log")
 	@ApiOperation("Get Task Execution Logs")
@@ -197,7 +198,7 @@ public class TaskResource {
 	public String requeue() {
 		return taskService.requeue();
 	}
-	
+
 	@POST
 	@Path("/queue/requeue/{taskType}")
 	@ApiOperation("Requeue pending tasks")
@@ -206,7 +207,7 @@ public class TaskResource {
 	public String requeuePendingTask(@PathParam("taskType") String taskType) {
 		return taskService.requeuePendingTask(taskType);
 	}
-	
+
 	@ApiOperation(value="Search for tasks based in payload and other parameters",
             notes="use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
                     " If order is not specified, defaults to ASC")
