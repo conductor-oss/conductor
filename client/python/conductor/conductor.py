@@ -171,7 +171,8 @@ class TaskClient(BaseClient):
 
     def updateTask(self, taskObj):
         url = self.makeUrl('')
-        self.post(url, None, taskObj)
+        headers = {'Accept': 'text/plain'}
+        self.post(url, None, taskObj, headers)
 
     def pollForTask(self, taskType, workerid, domain=None):
         url = self.makeUrl('poll/{}', taskType)
