@@ -652,7 +652,7 @@ public class WorkflowExecutor {
     public void resumeWorkflow(String workflowId) {
         Workflow workflow = executionDAO.getWorkflow(workflowId, false);
         if (!workflow.getStatus().equals(WorkflowStatus.PAUSED)) {
-            throw new IllegalStateException("The workflow " + workflowId + " is PAUSED so cannot resume");
+            throw new IllegalStateException("The workflow " + workflowId + " is not PAUSED so cannot resume");
         }
         workflow.setStatus(WorkflowStatus.RUNNING);
         executionDAO.updateWorkflow(workflow);
