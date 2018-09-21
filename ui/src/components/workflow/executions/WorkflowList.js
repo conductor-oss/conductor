@@ -352,7 +352,13 @@ class Workflow extends React.Component {
     if (found < 100) {
       max = start + found;
     }
-    const workflowNames = this.state.workflows ? this.state.workflows : [];
+    let allWorkflowNames = this.state.workflows ? this.state.workflows : [];
+
+    const workflowNames = Object.keys(allWorkflowNames.reduce((red, val) => {
+      red[val] = true;
+      return red;
+    }, {}));
+    
     const statusList = ['RUNNING', 'COMPLETED', 'FAILED', 'TIMED_OUT', 'TERMINATED', 'PAUSED'];
 
 
