@@ -19,27 +19,13 @@ dependencies {
 
 	testCompile "com.google.inject.extensions:guice-servlet:${revGuiceServlet}"
 	testCompile "io.swagger:swagger-jersey-jaxrs:${revSwaggerJersey}"
-<<<<<<< HEAD
-	
-	
-	
-	testCompile "ch.vorburger.mariaDB4j:mariaDB4j:${revMariaDB4j}"
-	//TODO Change the below deps to use the same version as one in versionsOfDependencies.gradle
-	testCompile 'ch.qos.logback:logback-core:1.2.3'
-	testCompile 'ch.qos.logback:logback-classic:1.2.3'
-	
-=======
+
 	testCompile "ch.vorburger.mariaDB4j:mariaDB4j:${revMariaDB4j}"
 	testCompile "ch.qos.logback:logback-core:${revLogbackCore}"
 //	testCompile "ch.qos.logback:logback-classic:${revLogbackClassic}"
->>>>>>> mashurex/fix/754_mysql_timeout
 }
 
 task server(type: JavaExec) {
   main = 'com.netflix.conductor.demo.Main'
   classpath = sourceSets.test.runtimeClasspath  
 }
-<<<<<<< HEAD
-
-=======
->>>>>>> mashurex/fix/754_mysql_timeout
