@@ -29,12 +29,12 @@ public class MySQLWorkflowModule extends AbstractModule {
         dataSource.setUsername(config.getProperty("jdbc.username", "conductor"));
         dataSource.setPassword(config.getProperty("jdbc.password", "password"));
         dataSource.setAutoCommit(false);
-        
+
         dataSource.setMaximumPoolSize(config.getIntProperty("jdbc.maxPoolSize", 20));
         dataSource.setMinimumIdle(config.getIntProperty("jdbc.minIdleSize", 5));
         dataSource.setIdleTimeout(config.getIntProperty("jdbc.idleTimeout", 300_000));
         dataSource.setTransactionIsolation(config.getProperty("jdbc.isolationLevel", "TRANSACTION_REPEATABLE_READ"));
-        
+
         flywayMigrate(config, dataSource);
 
         return dataSource;
@@ -42,9 +42,10 @@ public class MySQLWorkflowModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(MetadataDAO.class).to(MySQLMetadataDAO.class);
-        bind(ExecutionDAO.class).to(MySQLExecutionDAO.class);
-        bind(QueueDAO.class).to(MySQLQueueDAO.class);
+
+        bind(MetadataDAO.class).to(MySQLMetadataDAO.class).asEagerSingleton();
+        bind(ExecutionDAO.class).to(MySQLExecutionDAO.class).asEagerSingleton();
+        bind(QueueDAO.class).to(MySQLQueueDAO.class).asEagerSingleton();
     }
 
     private void flywayMigrate(Configuration config, DataSource dataSource) {
