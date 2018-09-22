@@ -31,151 +31,153 @@ import com.netflix.conductor.core.config.Configuration;
  * @author Viren
  */
 public class TestConfiguration implements Configuration {
-    private static final Logger logger = LoggerFactory.getLogger(TestConfiguration.class);
-    private static final Map<String, String> testProperties = new HashMap<>();
 
-    @Override
-    public int getSweepFrequency() {
-        return getIntProperty("decider.sweep.frequency.seconds", 30);
-    }
+	private static final Logger logger = LoggerFactory.getLogger(TestConfiguration.class);
+	private static final Map<String, String> testProperties = new HashMap<>();
 
-    @Override
-    public boolean disableSweep() {
-        String disable = getProperty("decider.sweep.disable", "false");
-        return Boolean.getBoolean(disable);
-    }
+	@Override
+	public int getSweepFrequency() {
+		return getIntProperty("decider.sweep.frequency.seconds", 30);
+	}
 
-    @Override
-    public boolean disableAsyncWorkers() {
-        String disable = getProperty("conductor.disable.async.workers", "false");
-        return Boolean.getBoolean(disable);
-    }
+	@Override
+	public boolean disableSweep() {
+		String disable = getProperty("decider.sweep.disable", "false");
+		return Boolean.getBoolean(disable);
+	}
 
-    @Override
-    public String getServerId() {
-        try {
-            return InetAddress.getLocalHost().getHostName();
-        } catch (UnknownHostException e) {
-            return "unknown";
-        }
-    }
+	@Override
+	public boolean disableAsyncWorkers() {
+		String disable = getProperty("conductor.disable.async.workers", "false");
+		return Boolean.getBoolean(disable);
+	}
 
-    @Override
-    public String getEnvironment() {
-        return getProperty("environment", "test");
-    }
+	@Override
+	public String getServerId() {
+		try {
+			return InetAddress.getLocalHost().getHostName();
+		} catch (UnknownHostException e) {
+			return "unknown";
+		}
+	}
 
-    @Override
-    public String getStack() {
-        return getProperty("STACK", "test");
-    }
+	@Override
+	public String getEnvironment() {
+		return getProperty("environment", "test");
+	}
 
-    @Override
-    public String getAppId() {
-        return getProperty("APP_ID", "conductor");
-    }
+	@Override
+	public String getStack() {
+		return getProperty("STACK", "test");
+	}
 
-    @Override
-    public String getRegion() {
-        return getProperty("EC2_REGION", "us-east-1");
-    }
+	@Override
+	public String getAppId() {
+		return getProperty("APP_ID", "conductor");
+	}
 
-    @Override
-    public String getAvailabilityZone() {
-        return getProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
-    }
+	@Override
+	public String getRegion() {
+		return getProperty("EC2_REGION", "us-east-1");
+	}
 
-    public void setProperty(String key, String value) {
-        testProperties.put(key, value);
-    }
+	@Override
+	public String getAvailabilityZone() {
+		return getProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
+	}
 
-    @Override
-    public int getIntProperty(String key, int defaultValue) {
-        String val = getProperty(key, Integer.toString(defaultValue));
-        try {
-            defaultValue = Integer.parseInt(val);
-        } catch (NumberFormatException e) {
-        }
-        return defaultValue;
-    }
+	public void setProperty(String key, String value) {
+		testProperties.put(key, value);
+	}
 
-    @Override
-    public long getLongProperty(String key, long defaultValue) {
-        String val = getProperty(key, Long.toString(defaultValue));
-        try {
-            defaultValue = Long.parseLong(val);
-        } catch (NumberFormatException e) {
-            logger.error("Error parsing the Long value for Key:{} , returning a default value: {}", key, defaultValue);
-        }
-        return defaultValue;
-    }
+	@Override
+	public int getIntProperty(String key, int defaultValue) {
+		String val = getProperty(key, Integer.toString(defaultValue));
+		try {
+			defaultValue = Integer.parseInt(val);
+		} catch (NumberFormatException e) {
+		}
+		return defaultValue;
+	}
 
-    @SuppressWarnings("Duplicates")
-    @Override
-    public String getProperty(String key, String defaultValue) {
-        String val = null;
-        if (testProperties.containsKey(key)) {
-            return testProperties.get(key);
-        }
+	@Override
+	public long getLongProperty(String key, long defaultValue) {
+		String val = getProperty(key, Long.toString(defaultValue));
+		try {
+			defaultValue = Long.parseLong(val);
+		} catch (NumberFormatException e) {
+			logger.error("Error parsing the Long value for Key:{} , returning a default value: {}", key, defaultValue);
+		}
+		return defaultValue;
+	}
 
-        try {
-            val = System.getenv(key.replace('.', '_'));
-            if (val == null || val.isEmpty()) {
-                val = Optional.ofNullable(System.getProperty(key)).orElse(defaultValue);
-            }
-        } catch (Exception e) {
-            logger.error(e.getMessage(), e);
-        }
+	@SuppressWarnings("Duplicates")
+	@Override
+	public String getProperty(String key, String defaultValue) {
+		String val = null;
+		if (testProperties.containsKey(key)) {
+			return testProperties.get(key);
+		}
 
-        return val;
-    }
+		try {
+			val = System.getenv(key.replace('.', '_'));
+			if (val == null || val.isEmpty()) {
+				val = Optional.ofNullable(System.getProperty(key)).orElse(defaultValue);
+			}
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+		}
 
-    @Override
-    public Map<String, Object> getAll() {
-        Map<String, Object> map = new HashMap<>();
-        Properties props = System.getProperties();
-        props.entrySet().forEach(entry -> map.put(entry.getKey().toString(), entry.getValue()));
-        map.putAll(testProperties);
-        return map;
-    }
+		return val;
+	}
 
-    @Override
-    public Long getWorkflowInputPayloadSizeThresholdKB() {
-        return 5120L;
-    }
+	@Override
+	public Map<String, Object> getAll() {
+		Map<String, Object> map = new HashMap<>();
+		Properties props = System.getProperties();
+		props.entrySet().forEach(entry -> map.put(entry.getKey().toString(), entry.getValue()));
+		map.putAll(testProperties);
+		return map;
+	}
 
-    @Override
-    public Long getMaxWorkflowInputPayloadSizeThresholdKB() {
-        return 10240L;
-    }
+	@Override
+	public Long getWorkflowInputPayloadSizeThresholdKB() {
+		return 5120L;
+	}
 
-    @Override
-    public Long getWorkflowOutputPayloadSizeThresholdKB() {
-        return 5120L;
-    }
+	@Override
+	public Long getMaxWorkflowInputPayloadSizeThresholdKB() {
+		return 10240L;
+	}
 
-    @Override
-    public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
-        return 10240L;
-    }
+	@Override
+	public Long getWorkflowOutputPayloadSizeThresholdKB() {
+		return 5120L;
+	}
 
-    @Override
-    public Long getTaskInputPayloadSizeThresholdKB() {
-        return 3072L;
-    }
+	@Override
+	public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
+		return 10240L;
+	}
 
-    @Override
-    public Long getMaxTaskInputPayloadSizeThresholdKB() {
-        return 10240L;
-    }
+	@Override
+	public Long getTaskInputPayloadSizeThresholdKB() {
+		return 3072L;
+	}
 
-    @Override
-    public Long getTaskOutputPayloadSizeThresholdKB() {
-        return 3072L;
-    }
+	@Override
+	public Long getMaxTaskInputPayloadSizeThresholdKB() {
+		return 10240L;
+	}
 
-    @Override
-    public Long getMaxTaskOutputPayloadSizeThresholdKB() {
-        return 10240L;
-    }
+	@Override
+	public Long getTaskOutputPayloadSizeThresholdKB() {
+		return 3072L;
+	}
+
+	@Override
+	public Long getMaxTaskOutputPayloadSizeThresholdKB() {
+		return 10240L;
+	}
 }
+

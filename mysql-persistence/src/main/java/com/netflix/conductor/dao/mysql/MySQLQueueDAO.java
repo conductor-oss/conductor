@@ -132,7 +132,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
                 Long size = rs.getLong("size");
                 Long queueUnacked = rs.getLong("uacked");
                 result.put(queueName, ImmutableMap.of("a", ImmutableMap.of( // sharding not implemented, returning only
-                                                                            // one shard with all the info
+                        // one shard with all the info
                         "size", size, "uacked", queueUnacked)));
             }
             return result;
@@ -141,14 +141,14 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
 
     /**
      * Un-pop all un-acknowledged messages for all queues.
-     * 
+
      * @since 1.11.6
      */
     public void processAllUnacks() {
-        
+
         logger.info("processAllUnacks started");
-        
-        
+
+
         final String PROCESS_ALL_UNACKS = "UPDATE queue_message SET popped = false WHERE popped = true AND TIMESTAMPADD(SECOND,60,CURRENT_TIMESTAMP) > deliver_on";
         executeWithTransaction(PROCESS_ALL_UNACKS, Query::executeUpdate);
     }
@@ -178,7 +178,6 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
         return query(connection, EXISTS_MESSAGE, q -> q.addParameter(queueName).addParameter(messageId).exists());
     }
 
-   
     private void pushMessage(Connection connection, String queueName, String messageId, String payload,
             long offsetTimeInSecond) {
 
@@ -240,6 +239,8 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
         
         
 
+
+
         if (result != messages.size()) {
             String message = String.format("Could not pop all messages for given ids: %s (%d messages were popped)",
                     Ids, result);
@@ -248,7 +249,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
         return messages;
     }
 
-    
+
     private void createQueueIfNotExists(Connection connection, String queueName) {
         logger.trace("Creating new queue '{}'", queueName);
         final String CREATE_QUEUE = "INSERT IGNORE INTO queue (queue_name) VALUES (?)";

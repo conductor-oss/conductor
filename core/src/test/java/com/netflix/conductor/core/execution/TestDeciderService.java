@@ -52,7 +52,9 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -76,7 +78,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -109,6 +110,9 @@ public class TestDeciderService {
         objectMapper.setSerializationInclusion(Include.NON_NULL);
         objectMapper.setSerializationInclusion(Include.NON_EMPTY);
     }
+
+    @Rule
+    public ExpectedException exception = ExpectedException.none();
 
     @BeforeClass
     public static void init() {
@@ -592,20 +596,20 @@ public class TestDeciderService {
 
         workflow.setSchemaVersion(2);
 
-        Map<String, Object> ip = new HashMap<>();
-        ip.put("workflowInputParam", "${workflow.input.requestId}");
-        ip.put("taskOutputParam", "${task2.output.location}");
-        ip.put("constParam", "Some String value");
-        ip.put("nullValue", null);
-        ip.put("task2Status", "${task2.status}");
-        ip.put("null", null);
-        ip.put("task_id", "${CPEWF_TASK_ID}");
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("workflowInputParam", "${workflow.input.requestId}");
+        inputParams.put("taskOutputParam", "${task2.output.location}");
+        inputParams.put("constParam", "Some String value");
+        inputParams.put("nullValue", null);
+        inputParams.put("task2Status", "${task2.status}");
+        inputParams.put("null", null);
+        inputParams.put("task_id", "${CPEWF_TASK_ID}");
 
         Map<String, Object> env = new HashMap<>();
         env.put("env_task_id", "${CPEWF_TASK_ID}");
-        ip.put("env", env);
+        inputParams.put("env", env);
 
-        Map<String, Object> taskInput = parametersUtils.getTaskInput(ip, workflow, null, "t1");
+        Map<String, Object> taskInput = parametersUtils.getTaskInput(inputParams, workflow, null, "t1");
         Task task = new Task();
         task.getInputData().putAll(taskInput);
         task.setStatus(Status.FAILED);
@@ -617,15 +621,20 @@ public class TestDeciderService {
         workflowTask.getInputParameters().put("env", env);
 
         Task task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
-//        System.out.println(task.getTaskId() + ":\n" + task.getInputData());
-//        System.out.println(task2.getTaskId() + ":\n" + task2.getInputData());
-
         assertEquals("t1", task.getInputData().get("task_id"));
         assertEquals("t1", ((Map<String, Object>) task.getInputData().get("env")).get("env_task_id"));
-
         assertNotSame(task.getTaskId(), task2.getTaskId());
         assertEquals(task2.getTaskId(), task2.getInputData().get("task_id"));
         assertEquals(task2.getTaskId(), ((Map<String, Object>) task2.getInputData().get("env")).get("env_task_id"));
+
+        Task task3 = new Task();
+        task3.getInputData().putAll(taskInput);
+        task3.setStatus(Status.FAILED_WITH_TERMINAL_ERROR);
+        task3.setTaskId("t1");
+
+        when(metadataDAO.get(anyString(), anyInt())).thenReturn(new WorkflowDef());
+        exception.expect(TerminateWorkflowException.class);
+        deciderService.retry(taskDef, workflowTask, task3, workflow);
 
     }
 

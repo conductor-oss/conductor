@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 /**
+<<<<<<< HEAD
  * 
+=======
+ *
+>>>>>>> mashurex/fix/754_mysql_timeout
  */
 package com.netflix.conductor.tests.utils;
 
@@ -29,43 +33,40 @@ import com.google.inject.Injector;
  */
 public class MySQLTestRunner extends BlockJUnit4ClassRunner {
 
-	private Injector injector;
-	
-	static {
-		System.setProperty("EC2_REGION", "us-east-1");
-		System.setProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
-		
-		System.setProperty("conductor.workflow.input.payload.threshold.kb", "10");
-		System.setProperty("conductor.max.workflow.input.payload.threshold.kb", "10240");
-		System.setProperty("conductor.workflow.output.payload.threshold.kb", "10");
-		System.setProperty("conductor.max.workflow.output.payload.threshold.kb", "10240");
-		System.setProperty("conductor.task.input.payload.threshold.kb", "1");
-		System.setProperty("conductor.max.task.input.payload.threshold.kb", "10240");
-		System.setProperty("conductor.task.output.payload.threshold.kb", "10");
-		System.setProperty("conductor.max.task.output.payload.threshold.kb", "10240");
-		
-		//jdbc properties
-		
-		System.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/conductor?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
+    private Injector injector;
+
+    static {
+        System.setProperty("EC2_REGION", "us-east-1");
+        System.setProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
+
+        System.setProperty("conductor.workflow.input.payload.threshold.kb", "10");
+        System.setProperty("conductor.max.workflow.input.payload.threshold.kb", "10240");
+        System.setProperty("conductor.workflow.output.payload.threshold.kb", "10");
+        System.setProperty("conductor.max.workflow.output.payload.threshold.kb", "10240");
+        System.setProperty("conductor.task.input.payload.threshold.kb", "1");
+        System.setProperty("conductor.max.task.input.payload.threshold.kb", "10240");
+        System.setProperty("conductor.task.output.payload.threshold.kb", "10");
+        System.setProperty("conductor.max.task.output.payload.threshold.kb", "10240");
+
+        // jdbc properties
+
+        System.setProperty("jdbc.url",
+                "jdbc:mysql://localhost:33307/conductor?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
         System.setProperty("jdbc.username", "root");
         System.setProperty("jdbc.password", "");
-        
-        
-	}
 
-	
-	public MySQLTestRunner(Class<?> klass) throws Exception {
-		super(klass);
-		System.setProperty("workflow.namespace.prefix", "conductor" + System.getProperty("user.name"));
-		injector = Guice.createInjector(new MySQLTestModule());
-	}
+    }
 
-	@Override
-	protected Object createTest() throws Exception {
-		Object test = super.createTest();
-		injector.injectMembers(test);
-		return test;
-	}
-	
-	
+    public MySQLTestRunner(Class<?> klass) throws Exception {
+        super(klass);
+        System.setProperty("workflow.namespace.prefix", "conductor" + System.getProperty("user.name"));
+        injector = Guice.createInjector(new MySQLTestModule());
+    }
+
+    @Override
+    protected Object createTest() throws Exception {
+        Object test = super.createTest();
+        injector.injectMembers(test);
+        return test;
+    }
 }

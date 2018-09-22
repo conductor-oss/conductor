@@ -44,36 +44,29 @@ public class MySQLTestModule extends AbstractModule {
     @Singleton
     public DataSource getDataSource(Configuration config) {
 
-        
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl(config.getProperty("jdbc.url", "jdbc:mysql://localhost:33307/conductor"));
         hikariConfig.setUsername(config.getProperty("jdbc.username", "conductor"));
         hikariConfig.setPassword(config.getProperty("jdbc.password", "password"));
-        
+
         hikariConfig.addDataSourceProperty("cachePrepStmts", "true");
         hikariConfig.addDataSourceProperty("prepStmtCacheSize", "250");
         hikariConfig.addDataSourceProperty("prepStmtCacheSqlLimit", "2048");
-        
-        
+
         hikariConfig.addDataSourceProperty("useServerPrepStmts", "true");
         hikariConfig.addDataSourceProperty("useLocalSessionState", "true");
         hikariConfig.addDataSourceProperty("rewriteBatchedStatements", "true");
         hikariConfig.addDataSourceProperty("cacheResultSetMetadata", "true");
-        
+
         hikariConfig.addDataSourceProperty("cacheServerConfiguration", "true");
         hikariConfig.addDataSourceProperty("elideSetAutoCommits", "true");
         hikariConfig.addDataSourceProperty("maintainTimeStats", "false");
-        
+
         hikariConfig.setMaximumPoolSize(20);
         hikariConfig.setMinimumIdle(20);
-        
-        
-      
+
         HikariDataSource dataSource = new HikariDataSource(hikariConfig);
-        
-         
-      
-        
+
         if (!EmbeddedDatabase.hasBeenMigrated()) {
             synchronized (EmbeddedDatabase.class) {
                 flywayMigrate(dataSource);
@@ -115,8 +108,7 @@ public class MySQLTestModule extends AbstractModule {
         }
     }
 
-   
-
+ 
     @Provides
     public ExecutorService getExecutorService() {
         return this.executorService;

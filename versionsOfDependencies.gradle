@@ -32,6 +32,8 @@ ext {
     revJq = '0.0.8'
     revLog4jApi = '2.9.1'
     revLog4jCore = '2.9.1'
+    revLogbackCore = '1.2.3'
+    revLogbackClassic = '1.2.3'
     revMariaDB4j = '2.2.3'
     revRxJava = '1.2.2'
     revMockito = '1.10.0'

@@ -350,6 +350,7 @@ public class DeciderService {
         int retryCount = task.getRetryCount();
         if (!task.getStatus().isRetriable() || SystemTaskType.isBuiltIn(task.getTaskType()) || taskDefinition == null || taskDefinition.getRetryCount() <= retryCount) {
             WorkflowStatus status = task.getStatus().equals(TIMED_OUT) ? WorkflowStatus.TIMED_OUT : WorkflowStatus.FAILED;
+            updateWorkflowOutput(workflow, task);
             throw new TerminateWorkflowException(task.getReasonForIncompletion(), status, task);
         }
 

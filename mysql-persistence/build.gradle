@@ -6,11 +6,9 @@ dependencies {
 	compile "mysql:mysql-connector-java:${revMySqlConnector}"
 	compile "com.zaxxer:HikariCP:${revHikariCP}"
 	compile "org.flywaydb:flyway-core:${revFlywayCore}"
-
 	testCompile "ch.vorburger.mariaDB4j:mariaDB4j:${revMariaDB4j}"
-	//TODO Change the below deps to use the same version as one in versionsOfDependencies.gradle
-	testCompile 'ch.qos.logback:logback-core:1.2.3'
-	testCompile 'ch.qos.logback:logback-classic:1.2.3'
+	testCompile "ch.qos.logback:logback-core:${revLogbackCore}"
+	testCompile "ch.qos.logback:logback-classic:${revLogbackClassic}"
 }
 
 test {

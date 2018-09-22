@@ -81,23 +81,23 @@ public class MySQLBaseDAOTest {
     protected void resetAllData() {
         logger.info("Resetting data for test");
         try (Connection connection = dataSource.getConnection()) {
-        	try(ResultSet rs = connection.prepareStatement("SHOW TABLES").executeQuery();
-				PreparedStatement keysOn = connection.prepareStatement("SET FOREIGN_KEY_CHECKS=1")) {
-        		try(PreparedStatement keysOff = connection.prepareStatement("SET FOREIGN_KEY_CHECKS=0")){
-        			keysOff.execute();
-					while(rs.next()) {
-						String table = rs.getString(1);
-						try(PreparedStatement ps = connection.prepareStatement("TRUNCATE TABLE " + table)) {
-							ps.execute();
-						}
-					}
-				} finally {
-        			keysOn.execute();
-				}
-			}
-		} catch (SQLException ex) {
-        	logger.error(ex.getMessage(), ex);
-        	throw new RuntimeException(ex);
-		}
+            try(ResultSet rs = connection.prepareStatement("SHOW TABLES").executeQuery();
+                    PreparedStatement keysOn = connection.prepareStatement("SET FOREIGN_KEY_CHECKS=1")) {
+                try(PreparedStatement keysOff = connection.prepareStatement("SET FOREIGN_KEY_CHECKS=0")){
+                    keysOff.execute();
+                    while(rs.next()) {
+                        String table = rs.getString(1);
+                        try(PreparedStatement ps = connection.prepareStatement("TRUNCATE TABLE " + table)) {
+                            ps.execute();
+                        }
+                    }
+                } finally {
+                    keysOn.execute();
+                }
+            }
+        } catch (SQLException ex) {
+            logger.error(ex.getMessage(), ex);
+            throw new RuntimeException(ex);
+        }
     }
 }

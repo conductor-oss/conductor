@@ -17,10 +17,6 @@ import javax.sql.DataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
-/**
- * @author mustafa
- */
 public abstract class MySQLBaseDAO {
     private static final List<String> EXCLUDED_STACKTRACE_CLASS = ImmutableList.of(
             MySQLBaseDAO.class.getName(),

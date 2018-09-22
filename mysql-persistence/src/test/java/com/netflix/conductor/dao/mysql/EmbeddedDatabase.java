@@ -42,4 +42,5 @@ public enum EmbeddedDatabase {
 	public static void setHasBeenMigrated() {
 		hasBeenMigrated.getAndSet(true);
 	}
+
 }
