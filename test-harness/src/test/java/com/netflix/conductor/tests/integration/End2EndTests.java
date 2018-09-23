@@ -18,6 +18,19 @@
  */
 package com.netflix.conductor.tests.integration;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+
+import org.junit.BeforeClass;
+import org.junit.Test;
+
 import com.netflix.conductor.client.exceptions.ConductorClientException;
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
@@ -37,18 +50,6 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.server.ConductorConfig;
 import com.netflix.conductor.server.ConductorServer;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -57,7 +58,7 @@ import static org.junit.Assert.assertTrue;
  */
 public class End2EndTests {
 
-	static {
+   static {
 		System.setProperty("EC2_REGION", "us-east-1");
 		System.setProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
 		System.setProperty("workflow.elasticsearch.url", "localhost:9300");
