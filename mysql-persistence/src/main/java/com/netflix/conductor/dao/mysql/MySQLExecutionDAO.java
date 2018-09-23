@@ -136,11 +136,6 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     /**
      * This is a dummy implementation and this feature is not for Mysql backed
      * Conductor
-<<<<<<< HEAD
-     * 
-=======
-     *
->>>>>>> mashurex/fix/754_mysql_timeout
      * @param task:
      *            which needs to be evaluated whether it is rateLimited or not
      * @return
