@@ -1,20 +1,5 @@
 package com.netflix.conductor.dao.mysql;
 
-import java.io.Closeable;
-import java.io.IOException;
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-import javax.sql.DataSource;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -22,17 +7,29 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.QueueDAO;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.sql.DataSource;
 
-public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
+@Singleton
+public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
     private static final Long UNACK_SCHEDULE_MS = 60_000L;
-    private final ScheduledExecutorService unackScheduler;
 
     @Inject
     public MySQLQueueDAO(ObjectMapper om, DataSource ds) {
         super(om, ds);
-        unackScheduler = Executors.newScheduledThreadPool(1);
-        unackScheduler.scheduleAtFixedRate(this::processAllUnacks, UNACK_SCHEDULE_MS, UNACK_SCHEDULE_MS,
-                TimeUnit.MILLISECONDS);
+
+        Executors.newSingleThreadScheduledExecutor()
+                .scheduleAtFixedRate(this::processAllUnacks,
+                        UNACK_SCHEDULE_MS, UNACK_SCHEDULE_MS, TimeUnit.MILLISECONDS);
         logger.debug(MySQLQueueDAO.class.getName() + " is ready to serve");
     }
 
@@ -146,7 +143,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
      */
     public void processAllUnacks() {
 
-        logger.info("processAllUnacks started");
+        logger.trace("processAllUnacks started");
 
 
         final String PROCESS_ALL_UNACKS = "UPDATE queue_message SET popped = false WHERE popped = true AND TIMESTAMPADD(SECOND,60,CURRENT_TIMESTAMP) > deliver_on";
@@ -253,10 +250,5 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO, Closeable {
         logger.trace("Creating new queue '{}'", queueName);
         final String CREATE_QUEUE = "INSERT IGNORE INTO queue (queue_name) VALUES (?)";
         execute(connection, CREATE_QUEUE, q -> q.addParameter(queueName).executeUpdate());
-    }
-
-    @Override
-    public void close() throws IOException {
-        unackScheduler.shutdown();
     }
 }
