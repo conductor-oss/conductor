@@ -14,11 +14,7 @@
  * limitations under the License.
  */
 /**
-<<<<<<< HEAD
- * 
-=======
  *
->>>>>>> mashurex/fix/754_mysql_timeout
  */
 package com.netflix.conductor.tests.utils;
 
