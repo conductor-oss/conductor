@@ -1,11 +1,5 @@
 package com.netflix.conductor.dao.mysql;
 
-import javax.sql.DataSource;
-
-import org.flywaydb.core.Flyway;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -14,6 +8,12 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.zaxxer.hikari.HikariDataSource;
+
+import org.flywaydb.core.Flyway;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
 
 /**
  * @author mustafa
@@ -29,12 +29,12 @@ public class MySQLWorkflowModule extends AbstractModule {
         dataSource.setUsername(config.getProperty("jdbc.username", "conductor"));
         dataSource.setPassword(config.getProperty("jdbc.password", "password"));
         dataSource.setAutoCommit(false);
-
+        
         dataSource.setMaximumPoolSize(config.getIntProperty("jdbc.maxPoolSize", 20));
         dataSource.setMinimumIdle(config.getIntProperty("jdbc.minIdleSize", 5));
-        dataSource.setIdleTimeout(config.getIntProperty("jdbc.idleTimeout", 300_000));
+        dataSource.setIdleTimeout(config.getIntProperty("jdbc.idleTimeout", 1000*300));
         dataSource.setTransactionIsolation(config.getProperty("jdbc.isolationLevel", "TRANSACTION_REPEATABLE_READ"));
-
+        
         flywayMigrate(config, dataSource);
 
         return dataSource;
@@ -42,9 +42,9 @@ public class MySQLWorkflowModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(MetadataDAO.class).to(MySQLMetadataDAO.class).asEagerSingleton();
-        bind(ExecutionDAO.class).to(MySQLExecutionDAO.class).asEagerSingleton();
-        bind(QueueDAO.class).to(MySQLQueueDAO.class).asEagerSingleton();
+        bind(MetadataDAO.class).to(MySQLMetadataDAO.class);
+        bind(ExecutionDAO.class).to(MySQLExecutionDAO.class);
+        bind(QueueDAO.class).to(MySQLQueueDAO.class);
     }
 
     private void flywayMigrate(Configuration config, DataSource dataSource) {

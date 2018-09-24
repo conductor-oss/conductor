@@ -22,7 +22,6 @@ dependencies {
 
 	testCompile "ch.vorburger.mariaDB4j:mariaDB4j:${revMariaDB4j}"
 	testCompile "ch.qos.logback:logback-core:${revLogbackCore}"
-//	testCompile "ch.qos.logback:logback-classic:${revLogbackClassic}"
 }
 
 task server(type: JavaExec) {
