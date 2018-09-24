@@ -18,22 +18,6 @@
  */
 package com.netflix.conductor.dao.dynomite;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
-import java.util.stream.Collectors;
-
-import com.netflix.conductor.common.run.Workflow;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.junit.Before;
-import org.junit.Test;
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -49,8 +33,21 @@ import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.redis.JedisMock;
-
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.junit.Before;
+import org.junit.Test;
 import redis.clients.jedis.JedisCommands;
+
+import java.util.Arrays;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Viren
@@ -77,12 +74,6 @@ public class RedisMetadataDAOTest {
         DynoProxy dynoClient = new DynoProxy(jedisMock);
 
         dao = new RedisMetadataDAO(dynoClient, om, config);
-    }
-
-    @Test(expected=NullPointerException.class)
-    public void testMissingName() throws Exception {
-        WorkflowDef def = new WorkflowDef();
-        dao.create(def);
     }
 
     @Test(expected=ApplicationException.class)

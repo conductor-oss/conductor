@@ -80,10 +80,6 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
     }
 
     private String insertOrUpdateTaskDef(TaskDef taskDef) {
-
-        Preconditions.checkNotNull(taskDef, "TaskDef object cannot be null");
-        Preconditions.checkNotNull(taskDef.getName(), "TaskDef name cannot be null");
-
         // Store all task def in under one key
         String payload = toJson(taskDef);
         dynoClient.hset(nsKey(ALL_TASK_DEFS), taskDef.getName(), payload);
@@ -376,9 +372,6 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
     }
 
     private void _createOrUpdate(WorkflowDef workflowDef) {
-        Preconditions.checkNotNull(workflowDef, "WorkflowDef object cannot be null");
-        Preconditions.checkNotNull(workflowDef.getName(), "WorkflowDef name cannot be null");
-
         // First set the workflow def
         dynoClient.hset(nsKey(WORKFLOW_DEF, workflowDef.getName()), String.valueOf(workflowDef.getVersion()),
                 toJson(workflowDef));
