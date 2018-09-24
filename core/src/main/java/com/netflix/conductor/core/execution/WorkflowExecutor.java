@@ -614,7 +614,7 @@ public class WorkflowExecutor {
             }
 
             stateChanged = scheduleTask(workflow, tasksToBeScheduled) || stateChanged;
-            
+
             if (!outcome.tasksToBeUpdated.isEmpty()) {
                 for (Task task : tasksToBeUpdated) {
                     if (task.getStatus() != null && (!task.getStatus().equals(Task.Status.IN_PROGRESS)
