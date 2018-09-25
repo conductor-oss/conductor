@@ -88,6 +88,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 		if (subWorkflowStatus.isSuccessful()) {
 			task.setStatus(Status.COMPLETED);
 		} else {
+			task.setReasonForIncompletion(subWorkflow.getReasonForIncompletion());
 			task.setStatus(Status.FAILED);
 		}
 		return true;
