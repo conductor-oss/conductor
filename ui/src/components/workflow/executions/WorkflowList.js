@@ -150,6 +150,9 @@ class Workflow extends React.Component {
 
   searchBtnClick = () => {
     this.state.update = true;
+    this.state.start = "0";
+    this.refs.table.handlePaginationData(0, 100);
+    this.refs.table.handleSearch('');
     this.refreshResults();
   };
 
@@ -226,6 +229,9 @@ class Workflow extends React.Component {
   keyPress = e => {
     if (e.key == 'Enter') {
       this.state.update = true;
+      this.state.start = "0";
+      this.refs.table.handlePaginationData(0, 100);
+      this.refs.table.handleSearch('');
       var q = e.target.value;
       this.setState({ search: q });
       this.refreshResults();
