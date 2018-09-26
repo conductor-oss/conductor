@@ -33,7 +33,7 @@ func (m *Request) Reset()         { *m = Request{} }
 func (m *Request) String() string { return proto.CompactTextString(m) }
 func (*Request) ProtoMessage()    {}
 func (*Request) Descriptor() ([]byte, []int) {
-	return fileDescriptor_search_a50e745244da0fb1, []int{0}
+	return fileDescriptor_search_855a611014aa2143, []int{0}
 }
 func (m *Request) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Request.Unmarshal(m, b)
@@ -92,9 +92,9 @@ func init() {
 	proto.RegisterType((*Request)(nil), "conductor.grpc.search.Request")
 }
 
-func init() { proto.RegisterFile("grpc/search.proto", fileDescriptor_search_a50e745244da0fb1) }
+func init() { proto.RegisterFile("grpc/search.proto", fileDescriptor_search_855a611014aa2143) }
 
-var fileDescriptor_search_a50e745244da0fb1 = []byte{
+var fileDescriptor_search_855a611014aa2143 = []byte{
 	// 212 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x90, 0xc1, 0x4a, 0xc4, 0x30,
 	0x10, 0x86, 0xa9, 0x6e, 0x75, 0x37, 0x37, 0x83, 0x42, 0xd0, 0xcb, 0xe2, 0x69, 0x4f, 0xc9, 0xc1,

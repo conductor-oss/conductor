@@ -32,7 +32,7 @@ func (m *PollData) Reset()         { *m = PollData{} }
 func (m *PollData) String() string { return proto.CompactTextString(m) }
 func (*PollData) ProtoMessage()    {}
 func (*PollData) Descriptor() ([]byte, []int) {
-	return fileDescriptor_polldata_c64f15389955536a, []int{0}
+	return fileDescriptor_polldata_17cab9e308fb8d52, []int{0}
 }
 func (m *PollData) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PollData.Unmarshal(m, b)
@@ -84,9 +84,9 @@ func init() {
 	proto.RegisterType((*PollData)(nil), "conductor.proto.PollData")
 }
 
-func init() { proto.RegisterFile("model/polldata.proto", fileDescriptor_polldata_c64f15389955536a) }
+func init() { proto.RegisterFile("model/polldata.proto", fileDescriptor_polldata_17cab9e308fb8d52) }
 
-var fileDescriptor_polldata_c64f15389955536a = []byte{
+var fileDescriptor_polldata_17cab9e308fb8d52 = []byte{
 	// 229 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x90, 0xc1, 0x4a, 0x03, 0x31,
 	0x10, 0x86, 0x59, 0x2b, 0xa5, 0x3b, 0x88, 0x42, 0x10, 0x59, 0x28, 0x42, 0x11, 0x0f, 0x3d, 0x6d,
