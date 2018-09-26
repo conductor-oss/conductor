@@ -35,7 +35,7 @@ func (m *AddEventHandlerRequest) Reset()         { *m = AddEventHandlerRequest{}
 func (m *AddEventHandlerRequest) String() string { return proto.CompactTextString(m) }
 func (*AddEventHandlerRequest) ProtoMessage()    {}
 func (*AddEventHandlerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{0}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{0}
 }
 func (m *AddEventHandlerRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddEventHandlerRequest.Unmarshal(m, b)
@@ -72,7 +72,7 @@ func (m *AddEventHandlerResponse) Reset()         { *m = AddEventHandlerResponse
 func (m *AddEventHandlerResponse) String() string { return proto.CompactTextString(m) }
 func (*AddEventHandlerResponse) ProtoMessage()    {}
 func (*AddEventHandlerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{1}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{1}
 }
 func (m *AddEventHandlerResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_AddEventHandlerResponse.Unmarshal(m, b)
@@ -103,7 +103,7 @@ func (m *UpdateEventHandlerRequest) Reset()         { *m = UpdateEventHandlerReq
 func (m *UpdateEventHandlerRequest) String() string { return proto.CompactTextString(m) }
 func (*UpdateEventHandlerRequest) ProtoMessage()    {}
 func (*UpdateEventHandlerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{2}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{2}
 }
 func (m *UpdateEventHandlerRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpdateEventHandlerRequest.Unmarshal(m, b)
@@ -140,7 +140,7 @@ func (m *UpdateEventHandlerResponse) Reset()         { *m = UpdateEventHandlerRe
 func (m *UpdateEventHandlerResponse) String() string { return proto.CompactTextString(m) }
 func (*UpdateEventHandlerResponse) ProtoMessage()    {}
 func (*UpdateEventHandlerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{3}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{3}
 }
 func (m *UpdateEventHandlerResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_UpdateEventHandlerResponse.Unmarshal(m, b)
@@ -171,7 +171,7 @@ func (m *RemoveEventHandlerRequest) Reset()         { *m = RemoveEventHandlerReq
 func (m *RemoveEventHandlerRequest) String() string { return proto.CompactTextString(m) }
 func (*RemoveEventHandlerRequest) ProtoMessage()    {}
 func (*RemoveEventHandlerRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{4}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{4}
 }
 func (m *RemoveEventHandlerRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveEventHandlerRequest.Unmarshal(m, b)
@@ -208,7 +208,7 @@ func (m *RemoveEventHandlerResponse) Reset()         { *m = RemoveEventHandlerRe
 func (m *RemoveEventHandlerResponse) String() string { return proto.CompactTextString(m) }
 func (*RemoveEventHandlerResponse) ProtoMessage()    {}
 func (*RemoveEventHandlerResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{5}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{5}
 }
 func (m *RemoveEventHandlerResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveEventHandlerResponse.Unmarshal(m, b)
@@ -238,7 +238,7 @@ func (m *GetEventHandlersRequest) Reset()         { *m = GetEventHandlersRequest
 func (m *GetEventHandlersRequest) String() string { return proto.CompactTextString(m) }
 func (*GetEventHandlersRequest) ProtoMessage()    {}
 func (*GetEventHandlersRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{6}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{6}
 }
 func (m *GetEventHandlersRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetEventHandlersRequest.Unmarshal(m, b)
@@ -270,7 +270,7 @@ func (m *GetEventHandlersForEventRequest) Reset()         { *m = GetEventHandler
 func (m *GetEventHandlersForEventRequest) String() string { return proto.CompactTextString(m) }
 func (*GetEventHandlersForEventRequest) ProtoMessage()    {}
 func (*GetEventHandlersForEventRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{7}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{7}
 }
 func (m *GetEventHandlersForEventRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetEventHandlersForEventRequest.Unmarshal(m, b)
@@ -314,7 +314,7 @@ func (m *GetQueuesRequest) Reset()         { *m = GetQueuesRequest{} }
 func (m *GetQueuesRequest) String() string { return proto.CompactTextString(m) }
 func (*GetQueuesRequest) ProtoMessage()    {}
 func (*GetQueuesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{8}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{8}
 }
 func (m *GetQueuesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetQueuesRequest.Unmarshal(m, b)
@@ -345,7 +345,7 @@ func (m *GetQueuesResponse) Reset()         { *m = GetQueuesResponse{} }
 func (m *GetQueuesResponse) String() string { return proto.CompactTextString(m) }
 func (*GetQueuesResponse) ProtoMessage()    {}
 func (*GetQueuesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{9}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{9}
 }
 func (m *GetQueuesResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetQueuesResponse.Unmarshal(m, b)
@@ -382,7 +382,7 @@ func (m *GetQueueSizesRequest) Reset()         { *m = GetQueueSizesRequest{} }
 func (m *GetQueueSizesRequest) String() string { return proto.CompactTextString(m) }
 func (*GetQueueSizesRequest) ProtoMessage()    {}
 func (*GetQueueSizesRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{10}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{10}
 }
 func (m *GetQueueSizesRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetQueueSizesRequest.Unmarshal(m, b)
@@ -413,7 +413,7 @@ func (m *GetQueueSizesResponse) Reset()         { *m = GetQueueSizesResponse{} }
 func (m *GetQueueSizesResponse) String() string { return proto.CompactTextString(m) }
 func (*GetQueueSizesResponse) ProtoMessage()    {}
 func (*GetQueueSizesResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{11}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{11}
 }
 func (m *GetQueueSizesResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetQueueSizesResponse.Unmarshal(m, b)
@@ -451,7 +451,7 @@ func (m *GetQueueSizesResponse_QueueInfo) Reset()         { *m = GetQueueSizesRe
 func (m *GetQueueSizesResponse_QueueInfo) String() string { return proto.CompactTextString(m) }
 func (*GetQueueSizesResponse_QueueInfo) ProtoMessage()    {}
 func (*GetQueueSizesResponse_QueueInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{11, 0}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{11, 0}
 }
 func (m *GetQueueSizesResponse_QueueInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetQueueSizesResponse_QueueInfo.Unmarshal(m, b)
@@ -488,7 +488,7 @@ func (m *GetQueueProvidersRequest) Reset()         { *m = GetQueueProvidersReque
 func (m *GetQueueProvidersRequest) String() string { return proto.CompactTextString(m) }
 func (*GetQueueProvidersRequest) ProtoMessage()    {}
 func (*GetQueueProvidersRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{12}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{12}
 }
 func (m *GetQueueProvidersRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetQueueProvidersRequest.Unmarshal(m, b)
@@ -519,7 +519,7 @@ func (m *GetQueueProvidersResponse) Reset()         { *m = GetQueueProvidersResp
 func (m *GetQueueProvidersResponse) String() string { return proto.CompactTextString(m) }
 func (*GetQueueProvidersResponse) ProtoMessage()    {}
 func (*GetQueueProvidersResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_event_service_913a1fde08d4f277, []int{13}
+	return fileDescriptor_event_service_30d3c8d74d6840aa, []int{13}
 }
 func (m *GetQueueProvidersResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetQueueProvidersResponse.Unmarshal(m, b)
@@ -940,10 +940,10 @@ var _EventService_serviceDesc = grpc.ServiceDesc{
 }
 
 func init() {
-	proto.RegisterFile("grpc/event_service.proto", fileDescriptor_event_service_913a1fde08d4f277)
+	proto.RegisterFile("grpc/event_service.proto", fileDescriptor_event_service_30d3c8d74d6840aa)
 }
 
-var fileDescriptor_event_service_913a1fde08d4f277 = []byte{
+var fileDescriptor_event_service_30d3c8d74d6840aa = []byte{
 	// 687 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x56, 0x5d, 0x6f, 0xd3, 0x3c,
 	0x18, 0x55, 0xd6, 0xf7, 0x65, 0xf4, 0x29, 0xb0, 0x61, 0xf6, 0x91, 0x5a, 0x43, 0x9b, 0x7a, 0x43,

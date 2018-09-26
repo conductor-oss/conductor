@@ -62,10 +62,17 @@ public class Main {
                  */
                 Thread.sleep(EMBEDDED_ES_INIT_TIME);
             } catch (Exception ioe) {
+                ioe.printStackTrace(System.err);
                 System.exit(3);
             }
         }
-        serverInjector.getInstance(IndexDAO.class).setup();
+
+        try {
+            serverInjector.getInstance(IndexDAO.class).setup();
+        } catch (Exception e){
+            e.printStackTrace(System.err);
+            System.exit(3);
+        }
 
 
         System.out.println("\n\n\n");
@@ -80,6 +87,7 @@ public class Main {
             try {
                 server.start();
             } catch (IOException ioe) {
+                ioe.printStackTrace(System.err);
                 System.exit(3);
             }
         });
@@ -88,6 +96,7 @@ public class Main {
             try {
                 server.start();
             } catch (Exception ioe) {
+                ioe.printStackTrace(System.err);
                 System.exit(3);
             }
         });

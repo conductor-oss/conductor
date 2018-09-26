@@ -36,7 +36,7 @@ func (m *StartWorkflowResponse) Reset()         { *m = StartWorkflowResponse{} }
 func (m *StartWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*StartWorkflowResponse) ProtoMessage()    {}
 func (*StartWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{0}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{0}
 }
 func (m *StartWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StartWorkflowResponse.Unmarshal(m, b)
@@ -77,7 +77,7 @@ func (m *GetWorkflowsRequest) Reset()         { *m = GetWorkflowsRequest{} }
 func (m *GetWorkflowsRequest) String() string { return proto.CompactTextString(m) }
 func (*GetWorkflowsRequest) ProtoMessage()    {}
 func (*GetWorkflowsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{1}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{1}
 }
 func (m *GetWorkflowsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetWorkflowsRequest.Unmarshal(m, b)
@@ -136,7 +136,7 @@ func (m *GetWorkflowsResponse) Reset()         { *m = GetWorkflowsResponse{} }
 func (m *GetWorkflowsResponse) String() string { return proto.CompactTextString(m) }
 func (*GetWorkflowsResponse) ProtoMessage()    {}
 func (*GetWorkflowsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{2}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{2}
 }
 func (m *GetWorkflowsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetWorkflowsResponse.Unmarshal(m, b)
@@ -174,7 +174,7 @@ func (m *GetWorkflowsResponse_Workflows) Reset()         { *m = GetWorkflowsResp
 func (m *GetWorkflowsResponse_Workflows) String() string { return proto.CompactTextString(m) }
 func (*GetWorkflowsResponse_Workflows) ProtoMessage()    {}
 func (*GetWorkflowsResponse_Workflows) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{2, 0}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{2, 0}
 }
 func (m *GetWorkflowsResponse_Workflows) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetWorkflowsResponse_Workflows.Unmarshal(m, b)
@@ -213,7 +213,7 @@ func (m *GetWorkflowStatusRequest) Reset()         { *m = GetWorkflowStatusReque
 func (m *GetWorkflowStatusRequest) String() string { return proto.CompactTextString(m) }
 func (*GetWorkflowStatusRequest) ProtoMessage()    {}
 func (*GetWorkflowStatusRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{3}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{3}
 }
 func (m *GetWorkflowStatusRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetWorkflowStatusRequest.Unmarshal(m, b)
@@ -258,7 +258,7 @@ func (m *GetWorkflowStatusResponse) Reset()         { *m = GetWorkflowStatusResp
 func (m *GetWorkflowStatusResponse) String() string { return proto.CompactTextString(m) }
 func (*GetWorkflowStatusResponse) ProtoMessage()    {}
 func (*GetWorkflowStatusResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{4}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{4}
 }
 func (m *GetWorkflowStatusResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetWorkflowStatusResponse.Unmarshal(m, b)
@@ -297,7 +297,7 @@ func (m *RemoveWorkflowRequest) Reset()         { *m = RemoveWorkflowRequest{} }
 func (m *RemoveWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*RemoveWorkflowRequest) ProtoMessage()    {}
 func (*RemoveWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{5}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{5}
 }
 func (m *RemoveWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveWorkflowRequest.Unmarshal(m, b)
@@ -341,7 +341,7 @@ func (m *RemoveWorkflowResponse) Reset()         { *m = RemoveWorkflowResponse{}
 func (m *RemoveWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*RemoveWorkflowResponse) ProtoMessage()    {}
 func (*RemoveWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{6}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{6}
 }
 func (m *RemoveWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RemoveWorkflowResponse.Unmarshal(m, b)
@@ -375,7 +375,7 @@ func (m *GetRunningWorkflowsRequest) Reset()         { *m = GetRunningWorkflowsR
 func (m *GetRunningWorkflowsRequest) String() string { return proto.CompactTextString(m) }
 func (*GetRunningWorkflowsRequest) ProtoMessage()    {}
 func (*GetRunningWorkflowsRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{7}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{7}
 }
 func (m *GetRunningWorkflowsRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetRunningWorkflowsRequest.Unmarshal(m, b)
@@ -434,7 +434,7 @@ func (m *GetRunningWorkflowsResponse) Reset()         { *m = GetRunningWorkflows
 func (m *GetRunningWorkflowsResponse) String() string { return proto.CompactTextString(m) }
 func (*GetRunningWorkflowsResponse) ProtoMessage()    {}
 func (*GetRunningWorkflowsResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{8}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{8}
 }
 func (m *GetRunningWorkflowsResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_GetRunningWorkflowsResponse.Unmarshal(m, b)
@@ -472,7 +472,7 @@ func (m *DecideWorkflowRequest) Reset()         { *m = DecideWorkflowRequest{} }
 func (m *DecideWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*DecideWorkflowRequest) ProtoMessage()    {}
 func (*DecideWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{9}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{9}
 }
 func (m *DecideWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DecideWorkflowRequest.Unmarshal(m, b)
@@ -509,7 +509,7 @@ func (m *DecideWorkflowResponse) Reset()         { *m = DecideWorkflowResponse{}
 func (m *DecideWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*DecideWorkflowResponse) ProtoMessage()    {}
 func (*DecideWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{10}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{10}
 }
 func (m *DecideWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DecideWorkflowResponse.Unmarshal(m, b)
@@ -540,7 +540,7 @@ func (m *PauseWorkflowRequest) Reset()         { *m = PauseWorkflowRequest{} }
 func (m *PauseWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*PauseWorkflowRequest) ProtoMessage()    {}
 func (*PauseWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{11}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{11}
 }
 func (m *PauseWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PauseWorkflowRequest.Unmarshal(m, b)
@@ -577,7 +577,7 @@ func (m *PauseWorkflowResponse) Reset()         { *m = PauseWorkflowResponse{} }
 func (m *PauseWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*PauseWorkflowResponse) ProtoMessage()    {}
 func (*PauseWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{12}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{12}
 }
 func (m *PauseWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PauseWorkflowResponse.Unmarshal(m, b)
@@ -608,7 +608,7 @@ func (m *ResumeWorkflowRequest) Reset()         { *m = ResumeWorkflowRequest{} }
 func (m *ResumeWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*ResumeWorkflowRequest) ProtoMessage()    {}
 func (*ResumeWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{13}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{13}
 }
 func (m *ResumeWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResumeWorkflowRequest.Unmarshal(m, b)
@@ -645,7 +645,7 @@ func (m *ResumeWorkflowResponse) Reset()         { *m = ResumeWorkflowResponse{}
 func (m *ResumeWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*ResumeWorkflowResponse) ProtoMessage()    {}
 func (*ResumeWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{14}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{14}
 }
 func (m *ResumeWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResumeWorkflowResponse.Unmarshal(m, b)
@@ -678,7 +678,7 @@ func (m *SkipTaskRequest) Reset()         { *m = SkipTaskRequest{} }
 func (m *SkipTaskRequest) String() string { return proto.CompactTextString(m) }
 func (*SkipTaskRequest) ProtoMessage()    {}
 func (*SkipTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{15}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{15}
 }
 func (m *SkipTaskRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SkipTaskRequest.Unmarshal(m, b)
@@ -729,7 +729,7 @@ func (m *SkipTaskResponse) Reset()         { *m = SkipTaskResponse{} }
 func (m *SkipTaskResponse) String() string { return proto.CompactTextString(m) }
 func (*SkipTaskResponse) ProtoMessage()    {}
 func (*SkipTaskResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{16}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{16}
 }
 func (m *SkipTaskResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SkipTaskResponse.Unmarshal(m, b)
@@ -760,7 +760,7 @@ func (m *RerunWorkflowResponse) Reset()         { *m = RerunWorkflowResponse{} }
 func (m *RerunWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*RerunWorkflowResponse) ProtoMessage()    {}
 func (*RerunWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{17}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{17}
 }
 func (m *RerunWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RerunWorkflowResponse.Unmarshal(m, b)
@@ -798,7 +798,7 @@ func (m *RestartWorkflowRequest) Reset()         { *m = RestartWorkflowRequest{}
 func (m *RestartWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*RestartWorkflowRequest) ProtoMessage()    {}
 func (*RestartWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{18}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{18}
 }
 func (m *RestartWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RestartWorkflowRequest.Unmarshal(m, b)
@@ -835,7 +835,7 @@ func (m *RestartWorkflowResponse) Reset()         { *m = RestartWorkflowResponse
 func (m *RestartWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*RestartWorkflowResponse) ProtoMessage()    {}
 func (*RestartWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{19}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{19}
 }
 func (m *RestartWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RestartWorkflowResponse.Unmarshal(m, b)
@@ -866,7 +866,7 @@ func (m *RetryWorkflowRequest) Reset()         { *m = RetryWorkflowRequest{} }
 func (m *RetryWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*RetryWorkflowRequest) ProtoMessage()    {}
 func (*RetryWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{20}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{20}
 }
 func (m *RetryWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RetryWorkflowRequest.Unmarshal(m, b)
@@ -903,7 +903,7 @@ func (m *RetryWorkflowResponse) Reset()         { *m = RetryWorkflowResponse{} }
 func (m *RetryWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*RetryWorkflowResponse) ProtoMessage()    {}
 func (*RetryWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{21}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{21}
 }
 func (m *RetryWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RetryWorkflowResponse.Unmarshal(m, b)
@@ -934,7 +934,7 @@ func (m *ResetWorkflowCallbacksRequest) Reset()         { *m = ResetWorkflowCall
 func (m *ResetWorkflowCallbacksRequest) String() string { return proto.CompactTextString(m) }
 func (*ResetWorkflowCallbacksRequest) ProtoMessage()    {}
 func (*ResetWorkflowCallbacksRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{22}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{22}
 }
 func (m *ResetWorkflowCallbacksRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResetWorkflowCallbacksRequest.Unmarshal(m, b)
@@ -971,7 +971,7 @@ func (m *ResetWorkflowCallbacksResponse) Reset()         { *m = ResetWorkflowCal
 func (m *ResetWorkflowCallbacksResponse) String() string { return proto.CompactTextString(m) }
 func (*ResetWorkflowCallbacksResponse) ProtoMessage()    {}
 func (*ResetWorkflowCallbacksResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{23}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{23}
 }
 func (m *ResetWorkflowCallbacksResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ResetWorkflowCallbacksResponse.Unmarshal(m, b)
@@ -1003,7 +1003,7 @@ func (m *TerminateWorkflowRequest) Reset()         { *m = TerminateWorkflowReque
 func (m *TerminateWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*TerminateWorkflowRequest) ProtoMessage()    {}
 func (*TerminateWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{24}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{24}
 }
 func (m *TerminateWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TerminateWorkflowRequest.Unmarshal(m, b)
@@ -1047,7 +1047,7 @@ func (m *TerminateWorkflowResponse) Reset()         { *m = TerminateWorkflowResp
 func (m *TerminateWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*TerminateWorkflowResponse) ProtoMessage()    {}
 func (*TerminateWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{25}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{25}
 }
 func (m *TerminateWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TerminateWorkflowResponse.Unmarshal(m, b)
@@ -1079,7 +1079,7 @@ func (m *WorkflowSummarySearchResult) Reset()         { *m = WorkflowSummarySear
 func (m *WorkflowSummarySearchResult) String() string { return proto.CompactTextString(m) }
 func (*WorkflowSummarySearchResult) ProtoMessage()    {}
 func (*WorkflowSummarySearchResult) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_service_fc7b0bf1a282d9fc, []int{26}
+	return fileDescriptor_workflow_service_ad4bde2e77de2037, []int{26}
 }
 func (m *WorkflowSummarySearchResult) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowSummarySearchResult.Unmarshal(m, b)
@@ -1743,10 +1743,10 @@ var _WorkflowService_serviceDesc = grpc.ServiceDesc{
 }
 
 func init() {
-	proto.RegisterFile("grpc/workflow_service.proto", fileDescriptor_workflow_service_fc7b0bf1a282d9fc)
+	proto.RegisterFile("grpc/workflow_service.proto", fileDescriptor_workflow_service_ad4bde2e77de2037)
 }
 
-var fileDescriptor_workflow_service_fc7b0bf1a282d9fc = []byte{
+var fileDescriptor_workflow_service_ad4bde2e77de2037 = []byte{
 	// 1121 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x58, 0xcd, 0x6e, 0xdb, 0x46,
 	0x10, 0x86, 0xa4, 0xc4, 0xb6, 0xc6, 0x96, 0x7f, 0x36, 0xb6, 0x43, 0xd3, 0x48, 0xaa, 0xb2, 0x08,

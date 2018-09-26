@@ -43,7 +43,7 @@ func (x EventHandler_Action_Type) String() string {
 	return proto.EnumName(EventHandler_Action_Type_name, int32(x))
 }
 func (EventHandler_Action_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_eventhandler_d75293086a3c9db8, []int{0, 2, 0}
+	return fileDescriptor_eventhandler_9283dbc454fc79ea, []int{0, 2, 0}
 }
 
 type EventHandler struct {
@@ -61,7 +61,7 @@ func (m *EventHandler) Reset()         { *m = EventHandler{} }
 func (m *EventHandler) String() string { return proto.CompactTextString(m) }
 func (*EventHandler) ProtoMessage()    {}
 func (*EventHandler) Descriptor() ([]byte, []int) {
-	return fileDescriptor_eventhandler_d75293086a3c9db8, []int{0}
+	return fileDescriptor_eventhandler_9283dbc454fc79ea, []int{0}
 }
 func (m *EventHandler) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EventHandler.Unmarshal(m, b)
@@ -131,7 +131,7 @@ func (m *EventHandler_StartWorkflow) Reset()         { *m = EventHandler_StartWo
 func (m *EventHandler_StartWorkflow) String() string { return proto.CompactTextString(m) }
 func (*EventHandler_StartWorkflow) ProtoMessage()    {}
 func (*EventHandler_StartWorkflow) Descriptor() ([]byte, []int) {
-	return fileDescriptor_eventhandler_d75293086a3c9db8, []int{0, 0}
+	return fileDescriptor_eventhandler_9283dbc454fc79ea, []int{0, 0}
 }
 func (m *EventHandler_StartWorkflow) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EventHandler_StartWorkflow.Unmarshal(m, b)
@@ -200,7 +200,7 @@ func (m *EventHandler_TaskDetails) Reset()         { *m = EventHandler_TaskDetai
 func (m *EventHandler_TaskDetails) String() string { return proto.CompactTextString(m) }
 func (*EventHandler_TaskDetails) ProtoMessage()    {}
 func (*EventHandler_TaskDetails) Descriptor() ([]byte, []int) {
-	return fileDescriptor_eventhandler_d75293086a3c9db8, []int{0, 1}
+	return fileDescriptor_eventhandler_9283dbc454fc79ea, []int{0, 1}
 }
 func (m *EventHandler_TaskDetails) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EventHandler_TaskDetails.Unmarshal(m, b)
@@ -263,7 +263,7 @@ func (m *EventHandler_Action) Reset()         { *m = EventHandler_Action{} }
 func (m *EventHandler_Action) String() string { return proto.CompactTextString(m) }
 func (*EventHandler_Action) ProtoMessage()    {}
 func (*EventHandler_Action) Descriptor() ([]byte, []int) {
-	return fileDescriptor_eventhandler_d75293086a3c9db8, []int{0, 2}
+	return fileDescriptor_eventhandler_9283dbc454fc79ea, []int{0, 2}
 }
 func (m *EventHandler_Action) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_EventHandler_Action.Unmarshal(m, b)
@@ -329,10 +329,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/eventhandler.proto", fileDescriptor_eventhandler_d75293086a3c9db8)
+	proto.RegisterFile("model/eventhandler.proto", fileDescriptor_eventhandler_9283dbc454fc79ea)
 }
 
-var fileDescriptor_eventhandler_d75293086a3c9db8 = []byte{
+var fileDescriptor_eventhandler_9283dbc454fc79ea = []byte{
 	// 665 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x54, 0x6f, 0x4f, 0xd3, 0x40,
 	0x18, 0x77, 0x7f, 0x61, 0x4f, 0xe9, 0x9c, 0x17, 0x42, 0xea, 0x24, 0x91, 0x10, 0x4d, 0x30, 0x92,

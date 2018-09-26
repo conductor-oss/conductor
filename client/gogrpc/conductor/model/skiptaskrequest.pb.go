@@ -34,7 +34,7 @@ func (m *SkipTaskRequest) Reset()         { *m = SkipTaskRequest{} }
 func (m *SkipTaskRequest) String() string { return proto.CompactTextString(m) }
 func (*SkipTaskRequest) ProtoMessage()    {}
 func (*SkipTaskRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_skiptaskrequest_fb745ec89a45d156, []int{0}
+	return fileDescriptor_skiptaskrequest_3fbc52032537d94c, []int{0}
 }
 func (m *SkipTaskRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SkipTaskRequest.Unmarshal(m, b)
@@ -89,10 +89,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/skiptaskrequest.proto", fileDescriptor_skiptaskrequest_fb745ec89a45d156)
+	proto.RegisterFile("model/skiptaskrequest.proto", fileDescriptor_skiptaskrequest_3fbc52032537d94c)
 }
 
-var fileDescriptor_skiptaskrequest_fb745ec89a45d156 = []byte{
+var fileDescriptor_skiptaskrequest_3fbc52032537d94c = []byte{
 	// 348 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x92, 0xbd, 0x4e, 0xc3, 0x30,
 	0x14, 0x85, 0x95, 0x06, 0x90, 0xea, 0x4a, 0xb4, 0x35, 0x08, 0x85, 0x94, 0xa1, 0x62, 0xea, 0x80,

@@ -28,6 +28,7 @@ import java.util.Optional;
 
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.google.common.base.MoreObjects;
 import com.netflix.conductor.common.metadata.Auditable;
 
 /**
@@ -272,5 +273,20 @@ public class WorkflowDef extends Auditable {
 				getFailureWorkflow(),
 				getSchemaVersion()
 		);
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(getClass())
+				.add("name", name)
+				.add("description", description)
+				.add("version", version)
+				.add("tasks", tasks)
+				.add("inputParameters", inputParameters)
+				.add("outputParameters", outputParameters)
+				.add("failureWorkflow", failureWorkflow)
+				.add("schemaVersion", schemaVersion)
+				.add("restartable", restartable)
+				.toString();
 	}
 }

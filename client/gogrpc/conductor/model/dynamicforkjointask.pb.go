@@ -34,7 +34,7 @@ func (m *DynamicForkJoinTask) Reset()         { *m = DynamicForkJoinTask{} }
 func (m *DynamicForkJoinTask) String() string { return proto.CompactTextString(m) }
 func (*DynamicForkJoinTask) ProtoMessage()    {}
 func (*DynamicForkJoinTask) Descriptor() ([]byte, []int) {
-	return fileDescriptor_dynamicforkjointask_60f4ea3626679478, []int{0}
+	return fileDescriptor_dynamicforkjointask_300c110eb897c85e, []int{0}
 }
 func (m *DynamicForkJoinTask) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DynamicForkJoinTask.Unmarshal(m, b)
@@ -95,10 +95,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/dynamicforkjointask.proto", fileDescriptor_dynamicforkjointask_60f4ea3626679478)
+	proto.RegisterFile("model/dynamicforkjointask.proto", fileDescriptor_dynamicforkjointask_300c110eb897c85e)
 }
 
-var fileDescriptor_dynamicforkjointask_60f4ea3626679478 = []byte{
+var fileDescriptor_dynamicforkjointask_300c110eb897c85e = []byte{
 	// 325 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x6c, 0x91, 0x4f, 0x4b, 0x03, 0x31,
 	0x10, 0xc5, 0xe9, 0x3f, 0xb1, 0xa9, 0x55, 0x89, 0x28, 0xa5, 0x15, 0x2c, 0x8a, 0xd0, 0x83, 0x24,

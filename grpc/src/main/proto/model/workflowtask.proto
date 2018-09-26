@@ -32,4 +32,5 @@ message WorkflowTask {
     string sink = 17;
     bool optional = 18;
     TaskDef task_definition = 19;
+    bool rate_limited = 20;
 }

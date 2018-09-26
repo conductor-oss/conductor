@@ -1,18 +1,15 @@
 package com.netflix.conductor.grpc.server;
 
 import com.netflix.conductor.service.Lifecycle;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Arrays;
-
-import javax.inject.Singleton;
-
 import io.grpc.BindableService;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Singleton;
+import java.io.IOException;
+import java.util.Arrays;
 
 @Singleton
 public class GRPCServer implements Lifecycle {
