@@ -58,11 +58,11 @@
         },
         "com.netflix.dyno:dyno-core": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -102,7 +102,7 @@
         },
         "redis.clients:jedis": {
             "locked": "2.9.0",
-            "requested": "2.8.1"
+            "requested": "2.9.0"
         }
     },
     "compileClasspath": {
@@ -164,11 +164,11 @@
         },
         "com.netflix.dyno:dyno-core": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -208,7 +208,7 @@
         },
         "redis.clients:jedis": {
             "locked": "2.9.0",
-            "requested": "2.8.1"
+            "requested": "2.9.0"
         }
     },
     "default": {
@@ -270,11 +270,11 @@
         },
         "com.netflix.dyno:dyno-core": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -314,7 +314,7 @@
         },
         "redis.clients:jedis": {
             "locked": "2.9.0",
-            "requested": "2.8.1"
+            "requested": "2.9.0"
         }
     },
     "runtime": {
@@ -376,11 +376,11 @@
         },
         "com.netflix.dyno:dyno-core": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -420,7 +420,7 @@
         },
         "redis.clients:jedis": {
             "locked": "2.9.0",
-            "requested": "2.8.1"
+            "requested": "2.9.0"
         }
     },
     "runtimeClasspath": {
@@ -482,11 +482,11 @@
         },
         "com.netflix.dyno:dyno-core": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -526,7 +526,7 @@
         },
         "redis.clients:jedis": {
             "locked": "2.9.0",
-            "requested": "2.8.1"
+            "requested": "2.9.0"
         }
     },
     "testCompile": {
@@ -588,11 +588,11 @@
         },
         "com.netflix.dyno:dyno-core": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -644,7 +644,7 @@
         },
         "redis.clients:jedis": {
             "locked": "2.9.0",
-            "requested": "2.8.1"
+            "requested": "2.9.0"
         }
     },
     "testCompileClasspath": {
@@ -706,11 +706,11 @@
         },
         "com.netflix.dyno:dyno-core": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -762,7 +762,7 @@
         },
         "redis.clients:jedis": {
             "locked": "2.9.0",
-            "requested": "2.8.1"
+            "requested": "2.9.0"
         }
     },
     "testRuntime": {
@@ -824,11 +824,11 @@
         },
         "com.netflix.dyno:dyno-core": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -880,7 +880,7 @@
         },
         "redis.clients:jedis": {
             "locked": "2.9.0",
-            "requested": "2.8.1"
+            "requested": "2.9.0"
         }
     },
     "testRuntimeClasspath": {
@@ -942,11 +942,11 @@
         },
         "com.netflix.dyno:dyno-core": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "locked": "1.6.4",
-            "requested": "1.5.9"
+            "requested": "1.6.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -998,7 +998,7 @@
         },
         "redis.clients:jedis": {
             "locked": "2.9.0",
-            "requested": "2.8.1"
+            "requested": "2.9.0"
         }
     }
 }
