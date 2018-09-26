@@ -8,7 +8,7 @@ ext {
     revCommonsIo = '2.4'
     revDynoCore = '1.5.9'
     revDynoJedis = '1.5.9'
-    revDynoQueues = '1.0.8'
+    revDynoQueues = '2.0.0-rc3'
     revElasticSearch2 = '2.4.6'
     revElasticSearch5 = '5.6.8'
     revElasticSearch5Client = '5.6.8'

@@ -16,18 +16,16 @@ package com.netflix.conductor.dao;
  */
 
 import com.google.inject.AbstractModule;
-
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.dynomite.DynoProxy;
 import com.netflix.conductor.dao.dynomite.RedisExecutionDAO;
 import com.netflix.conductor.dao.dynomite.RedisMetadataDAO;
 import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
 import com.netflix.dyno.connectionpool.HostSupplier;
-import com.netflix.dyno.queues.redis.DynoShardSupplier;
+import com.netflix.dyno.queues.shard.DynoShardSupplier;
+import redis.clients.jedis.JedisCommands;
 
 import javax.inject.Inject;
-
-import redis.clients.jedis.JedisCommands;
 
 /**
  * @author Viren

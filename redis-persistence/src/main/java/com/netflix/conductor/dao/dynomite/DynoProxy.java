@@ -15,6 +15,20 @@
  */
 package com.netflix.conductor.dao.dynomite;
 
+import com.google.inject.Singleton;
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.discovery.DiscoveryClient;
+import com.netflix.dyno.connectionpool.exception.DynoException;
+import com.netflix.dyno.jedis.DynoJedisClient;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import redis.clients.jedis.JedisCommands;
+import redis.clients.jedis.ScanParams;
+import redis.clients.jedis.ScanResult;
+import redis.clients.jedis.Tuple;
+import redis.clients.jedis.params.sortedset.ZAddParams;
+
+import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -23,23 +37,6 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-
-import javax.inject.Inject;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.inject.Singleton;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.discovery.DiscoveryClient;
-import com.netflix.dyno.connectionpool.exception.DynoException;
-import com.netflix.dyno.jedis.DynoJedisClient;
-
-import redis.clients.jedis.JedisCommands;
-import redis.clients.jedis.ScanParams;
-import redis.clients.jedis.ScanResult;
-import redis.clients.jedis.Tuple;
-import redis.clients.jedis.params.sortedset.ZAddParams;
 
 /**
  * 
