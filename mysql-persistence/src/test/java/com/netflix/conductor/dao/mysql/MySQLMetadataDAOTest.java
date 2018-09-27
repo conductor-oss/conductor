@@ -1,25 +1,25 @@
 package com.netflix.conductor.dao.mysql;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.execution.ApplicationException;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("Duplicates")
 @RunWith(JUnit4.class)
@@ -31,12 +31,6 @@ public class MySQLMetadataDAOTest extends MySQLBaseDAOTest {
     public void setup() throws Exception {
         dao = new MySQLMetadataDAO(objectMapper, dataSource, testConfiguration);
         resetAllData();
-    }
-
-    @Test(expected=NullPointerException.class)
-    public void testMissingName() throws Exception {
-        WorkflowDef def = new WorkflowDef();
-        dao.create(def);
     }
 
     @Test(expected=ApplicationException.class)
