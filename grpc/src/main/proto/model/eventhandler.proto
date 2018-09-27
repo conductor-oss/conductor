@@ -21,6 +21,7 @@ message EventHandler {
         string task_ref_name = 2;
         map<string, google.protobuf.Value> output = 3;
         google.protobuf.Any output_message = 4;
+        string task_id = 5;
     }
     message Action {
         enum Type {

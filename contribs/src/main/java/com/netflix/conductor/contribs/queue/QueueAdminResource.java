@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.contribs.queue;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.inject.Inject;
@@ -73,7 +74,14 @@ public class QueueAdminResource {
 	@Path("/update/{workflowId}/{taskRefName}/{status}")
 	@ApiOperation("Publish a message in queue to mark a wait task as completed.")
 	public void update(@PathParam("workflowId") String workflowId, @PathParam("taskRefName") String taskRefName, @PathParam("status") Status status, Map<String, Object> output) throws Exception {
-		qm.update(workflowId, taskRefName, output, status);
+		qm.updateByTaskRefName(workflowId, taskRefName, output, status);
+	}
+
+	@POST
+	@Path("/update/{workflowId}/task/{taskId}/{status}")
+	@ApiOperation("Publish a message in queue to mark a wait task (by taskId) as completed.")
+	public void updateByTaskId(@PathParam("workflowId") String workflowId, @PathParam("taskId") String taskId, @PathParam("status") Status status, Map<String, Object> output) throws Exception {
+		qm.updateByTaskId(workflowId, taskId, output, status);
 	}
 	
 }
