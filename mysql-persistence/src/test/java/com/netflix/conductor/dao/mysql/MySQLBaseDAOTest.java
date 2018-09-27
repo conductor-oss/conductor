@@ -1,22 +1,20 @@
 package com.netflix.conductor.dao.mysql;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-
-import javax.sql.DataSource;
-
-import org.flywaydb.core.Flyway;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
 import com.zaxxer.hikari.HikariDataSource;
+import org.flywaydb.core.Flyway;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 
 
 @SuppressWarnings("Duplicates")
@@ -28,7 +26,7 @@ public class MySQLBaseDAOTest {
     protected final EmbeddedDatabase DB = EmbeddedDatabase.INSTANCE;
 
     MySQLBaseDAOTest() {
-        testConfiguration.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/conductor");
+        testConfiguration.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/conductor?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
         testConfiguration.setProperty("jdbc.username", "root");
         testConfiguration.setProperty("jdbc.password", "");
         this.dataSource = getDataSource(testConfiguration);

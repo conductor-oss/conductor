@@ -1,10 +1,18 @@
 {
     "testCompile": {
+        "ch.qos.logback:logback-core": {
+            "locked": "1.2.3",
+            "requested": "1.2.3"
+        },
+        "ch.vorburger.mariaDB4j:mariaDB4j": {
+            "locked": "2.2.3",
+            "requested": "2.2.3"
+        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.389"
+            "locked": "1.11.417"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -16,7 +24,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.389"
+            "locked": "1.11.417"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -226,7 +234,7 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.4"
+            "locked": "2.5"
         },
         "io.nats:java-nats-streaming": {
             "firstLevelTransitive": [
@@ -288,7 +296,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.2.1"
+            "locked": "3.4"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
@@ -362,11 +370,19 @@
         }
     },
     "testCompileClasspath": {
+        "ch.qos.logback:logback-core": {
+            "locked": "1.2.3",
+            "requested": "1.2.3"
+        },
+        "ch.vorburger.mariaDB4j:mariaDB4j": {
+            "locked": "2.2.3",
+            "requested": "2.2.3"
+        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.389"
+            "locked": "1.11.417"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -378,7 +394,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.389"
+            "locked": "1.11.417"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -588,7 +604,7 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.4"
+            "locked": "2.5"
         },
         "io.nats:java-nats-streaming": {
             "firstLevelTransitive": [
@@ -650,7 +666,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.2.1"
+            "locked": "3.4"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
@@ -724,11 +740,19 @@
         }
     },
     "testRuntime": {
+        "ch.qos.logback:logback-core": {
+            "locked": "1.2.3",
+            "requested": "1.2.3"
+        },
+        "ch.vorburger.mariaDB4j:mariaDB4j": {
+            "locked": "2.2.3",
+            "requested": "2.2.3"
+        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.389"
+            "locked": "1.11.417"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -740,7 +764,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.389"
+            "locked": "1.11.417"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -950,7 +974,7 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.4"
+            "locked": "2.5"
         },
         "io.nats:java-nats-streaming": {
             "firstLevelTransitive": [
@@ -1012,7 +1036,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.2.1"
+            "locked": "3.4"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
@@ -1086,11 +1110,19 @@
         }
     },
     "testRuntimeClasspath": {
+        "ch.qos.logback:logback-core": {
+            "locked": "1.2.3",
+            "requested": "1.2.3"
+        },
+        "ch.vorburger.mariaDB4j:mariaDB4j": {
+            "locked": "2.2.3",
+            "requested": "2.2.3"
+        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.389"
+            "locked": "1.11.417"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -1102,7 +1134,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.389"
+            "locked": "1.11.417"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -1312,7 +1344,7 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.4"
+            "locked": "2.5"
         },
         "io.nats:java-nats-streaming": {
             "firstLevelTransitive": [
@@ -1374,7 +1406,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.2.1"
+            "locked": "3.4"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
