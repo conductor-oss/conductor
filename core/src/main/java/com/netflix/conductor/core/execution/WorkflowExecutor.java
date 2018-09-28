@@ -615,6 +615,16 @@ public class WorkflowExecutor {
 
             stateChanged = scheduleTask(workflow, tasksToBeScheduled) || stateChanged;
 
+            if (!outcome.tasksToBeUpdated.isEmpty()) {
+                for (Task task : tasksToBeUpdated) {
+                    if (task.getStatus() != null && (!task.getStatus().equals(Task.Status.IN_PROGRESS)
+                            || !task.getStatus().equals(Task.Status.SCHEDULED))) {
+                        queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId());
+                    }
+                }
+            }
+
+
             if (!outcome.tasksToBeUpdated.isEmpty() || !outcome.tasksToBeScheduled.isEmpty()) {
                 executionDAO.updateTasks(tasksToBeUpdated);
                 executionDAO.updateWorkflow(workflow);

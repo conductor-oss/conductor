@@ -1,12 +1,12 @@
 /**
  * Copyright 2016 Netflix, Inc.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.server;
 
@@ -48,89 +48,91 @@ import redis.clients.jedis.JedisCommands;
  *
  */
 public class ServerModule extends AbstractModule {
-	
-	private int maxThreads = 50;
-	
-	private ExecutorService es;
-	
-	private JedisCommands dynoConn;
-	
-	private HostSupplier hostSupplier;
-	
-	private String region;
-	
-	private String localRack;
-	
-	private ConductorConfig conductorConfig;
-	
-	private ConductorServer.DB db;
 
-	private ConductorServer.ExternalPayloadStorageType externalPayloadStorageType;
 
-	public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, ConductorConfig conductorConfig, ConductorServer.DB db, ConductorServer.ExternalPayloadStorageType externalPayloadStorageType) {
-		this.dynoConn = jedis;
-		this.hostSupplier = hostSupplier;
-		this.conductorConfig = conductorConfig;
-		this.region = conductorConfig.getRegion();
-		this.localRack = conductorConfig.getAvailabilityZone();
-		this.db = db;
-		this.externalPayloadStorageType = externalPayloadStorageType;
-	}
-	
-	@Override
-	protected void configure() {
+    private int maxThreads = 50;
 
-		configureExecutorService();
+    private ExecutorService es;
 
-		bind(Configuration.class).toInstance(conductorConfig);
+    private JedisCommands dynoConn;
 
-		if (db == ConductorServer.DB.mysql) {
-			install(new MySQLWorkflowModule());
-		} else {
-			install(new RedisWorkflowModule(conductorConfig, dynoConn, hostSupplier));
-		}
+    private HostSupplier hostSupplier;
 
-		if (conductorConfig.getProperty("workflow.elasticsearch.version", "2").equals("5")){
-			install(new ElasticSearchModuleV5());
-		}
-		else {
-			// Use ES2 as default.
-			install(new ElasticSearchModule());
-		}
+    private String region;
 
-		install(new CoreModule());
-		install(new JerseyModule());
+    private String localRack;
 
-		new HttpTask(new RestClientManager(), conductorConfig);
-		new JsonJqTransform();
+    private ConductorConfig conductorConfig;
 
-		List<AbstractModule> additionalModules = conductorConfig.getAdditionalModules();
-		if(additionalModules != null) {
-			for(AbstractModule additionalModule : additionalModules) {
-				install(additionalModule);
-			}
-		}
+    private ConductorServer.DB db;
 
-		if (externalPayloadStorageType == S3) {
-			bind(ExternalPayloadStorage.class).to(S3PayloadStorage.class);
-		} else {
-			bind(ExternalPayloadStorage.class).to(DummyPayloadStorage.class);
-		}
-		
-		bind(WorkflowSweeper.class).asEagerSingleton();
-	}
-	
-	@Provides
-	public ExecutorService getExecutorService(){
-		return this.es;
-	}
-	
-	private void configureExecutorService(){
-		AtomicInteger count = new AtomicInteger(0);
-		this.es = java.util.concurrent.Executors.newFixedThreadPool(maxThreads, runnable -> {
+    private ConductorServer.ExternalPayloadStorageType externalPayloadStorageType;
+
+    public ServerModule(JedisCommands jedis, HostSupplier hostSupplier, ConductorConfig conductorConfig, ConductorServer.DB db, ConductorServer.ExternalPayloadStorageType externalPayloadStorageType) {
+        this.dynoConn = jedis;
+        this.hostSupplier = hostSupplier;
+        this.conductorConfig = conductorConfig;
+        this.region = conductorConfig.getRegion();
+        this.localRack = conductorConfig.getAvailabilityZone();
+        this.db = db;
+        this.externalPayloadStorageType = externalPayloadStorageType;
+    }
+
+    @Override
+    protected void configure() {
+
+        configureExecutorService();
+
+        bind(Configuration.class).toInstance(conductorConfig);
+
+        if (db == ConductorServer.DB.mysql) {
+            install(new MySQLWorkflowModule());
+        } else {
+            install(new RedisWorkflowModule(conductorConfig, dynoConn, hostSupplier));
+        }
+
+        if (conductorConfig.getProperty("workflow.elasticsearch.version", "2").equals("5")) {
+            install(new ElasticSearchModuleV5());
+        } else {
+            // Use ES2 as default.
+            install(new ElasticSearchModule());
+        }
+
+        install(new CoreModule());
+        install(new JerseyModule());
+
+        new HttpTask(new RestClientManager(), conductorConfig);
+        new JsonJqTransform();
+
+        List<AbstractModule> additionalModules = conductorConfig.getAdditionalModules();
+        if (additionalModules != null) {
+            for (AbstractModule additionalModule : additionalModules) {
+                install(additionalModule);
+            }
+        }
+
+        if (externalPayloadStorageType == S3) {
+            bind(ExternalPayloadStorage.class).to(S3PayloadStorage.class);
+        } else {
+            bind(ExternalPayloadStorage.class).to(DummyPayloadStorage.class);
+        }
+        bind(WorkflowSweeper.class).asEagerSingleton();
+
+
+    }
+
+    @Provides
+    public ExecutorService getExecutorService() {
+        return this.es;
+    }
+
+    private void configureExecutorService() {
+        AtomicInteger count = new AtomicInteger(0);
+        this.es = java.util.concurrent.Executors.newFixedThreadPool(maxThreads, runnable -> {
+
             Thread conductorWorkerThread = new Thread(runnable);
             conductorWorkerThread.setName("conductor-worker-" + count.getAndIncrement());
             return conductorWorkerThread;
         });
-	}
+    }
 }

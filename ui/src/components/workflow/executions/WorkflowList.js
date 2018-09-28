@@ -8,6 +8,8 @@ import Typeahead from 'react-bootstrap-typeahead';
 import { BootstrapTable, TableHeaderColumn } from 'react-bootstrap-table';
 import { Input, Button, Panel, Popover, OverlayTrigger, ButtonGroup, Grid, Row, Col } from 'react-bootstrap';
 
+let versionSuffix = /\/[0-9]+$/;
+
 function linkMaker(cell) {
   return <Link to={`/workflow/id/${cell}`}>{cell}</Link>;
 }
@@ -114,7 +116,10 @@ class Workflow extends React.Component {
     let {workflows = [], location} = nextProps;
     let {query} = location;
     let {h,start, status = '', q} = query;
-    const workflowDefs = workflows.map(workflowDef => workflowDef.name);
+
+    const workflowDefs = workflows.map((workflowDef) => {
+      return workflowDef.name + "/" + workflowDef.version;
+    });
 
     let search = q;
     if (search == null || search === 'undefined' || search === '') {
@@ -150,6 +155,9 @@ class Workflow extends React.Component {
 
   searchBtnClick = () => {
     this.state.update = true;
+    this.state.start = "0";
+    this.refs.table.handlePaginationData(0, 100);
+    this.refs.table.handleSearch('');
     this.refreshResults();
   };
 
@@ -163,10 +171,9 @@ class Workflow extends React.Component {
 
   urlUpdate = () => {
     const { workflowTypes, status, start, h, search: q } = this.state;
-
     this.props.history.pushState(
       null,
-      `/workflow?q=${q}&h=${h}&workflowTypes=${workflowTypes}&status=${status}&start=${start}`
+      `/workflow?q=${q}&h=${h}&workflowTypes=${encodeURIComponent(workflowTypes)}&status=${status}&start=${start}`
     );
   };
 
@@ -175,11 +182,15 @@ class Workflow extends React.Component {
     const query = [];
 
     if (this.state.workflowTypes.length > 0) {
-      query.push(`workflowType IN (${this.state.workflowTypes.join(',')}) `);
+      query.push(`workflowType IN (${this.state.workflowTypes.map((workFlowString) => {
+        return workFlowString.replace(versionSuffix, "");
+      }).join(',')}) `);
     }
+
     if (this.state.status.length > 0) {
       query.push(`status IN (${this.state.status.join(',')}) `);
     }
+
     this.props.dispatch(
       searchWorkflows(query.join(' AND '), search, this.state.h, this.state.fullstr, this.state.start)
     );
@@ -226,6 +237,9 @@ class Workflow extends React.Component {
   keyPress = e => {
     if (e.key == 'Enter') {
       this.state.update = true;
+      this.state.start = "0";
+      this.refs.table.handlePaginationData(0, 100);
+      this.refs.table.handleSearch('');
       var q = e.target.value;
       this.setState({ search: q });
       this.refreshResults();
@@ -352,7 +366,13 @@ class Workflow extends React.Component {
     if (found < 100) {
       max = start + found;
     }
-    const workflowNames = this.state.workflows ? this.state.workflows : [];
+    let allWorkflowNames = this.state.workflows ? this.state.workflows : [];
+
+    const workflowNames = Object.keys(allWorkflowNames.reduce((red, val) => {
+      red[val] = true;
+      return red;
+    }, {}));
+
     const statusList = ['RUNNING', 'COMPLETED', 'FAILED', 'TIMED_OUT', 'TERMINATED', 'PAUSED'];
 
 

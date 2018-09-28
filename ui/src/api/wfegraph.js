@@ -42,7 +42,7 @@ class Workflow2Graph {
 
     this.executedTasks['final'] = {status: '', input: '', output: wfe.output, taskType: 'final', reasonForIncompletion: wfe.reasonForIncompletion, task: {}};
     this.executedTasks['start'] = {status: 'STARTED', input: wfe.input, output: '', taskType: 'final', reasonForIncompletion: '', task: {}};
-    this.getTaskNodes(vertices, nodes, metaTasks, forks, subworkflows);
+    this.getTaskNodes(vertices, nodes, metaTasks, forks, subworkflows, true);
 
     this.edges = nodes;
     this.vertices = vertices;
@@ -104,20 +104,21 @@ class Workflow2Graph {
 
   }
 
-  getTaskNodes(vertices, nodes, tasks, forks, subworkflows){
+  getTaskNodes(vertices, nodes, tasks, forks, subworkflows, isExecutingCase){
     if(tasks == null || tasks.length == null){
       return nodes;
     }
     for(let i = 1; i < tasks.length; i++){
-      this.getNodes(vertices, nodes, tasks[i-1], tasks[i], forks, subworkflows);
+      this.getNodes(vertices, nodes, tasks[i-1], tasks[i], forks, subworkflows, isExecutingCase);
     }
     return nodes;
   }
 
-  getNodes(vertices, nodes, t1, t2, forks, subworkflows){
+  getNodes(vertices, nodes, t1, t2, forks, subworkflows, isExecutingCase){
 
     let executed = 'stroke: #000000; fill: transparent';
     let defstyle = 'stroke: #ccc; fill: transparent; stroke-dasharray: 5, 5';
+    let isExecuting = isExecutingCase;
     if(t1.type == 'final' && t1.type == t2.type){
       vertices[t1.taskReferenceName] = {name: t1.name, ref: t1.taskReferenceName, type: 'simple', style: '', shape: 'circle', system: true};
       return nodes;
@@ -138,6 +139,8 @@ class Workflow2Graph {
         let style = defstyle;
         if(this.executedTasks[tasks[0].taskReferenceName] != null && this.executedTasks[t1.taskReferenceName] != null){
           style = executed;
+        } else {
+          isExecuting = false;
         }
 
         nodes.push({type: 'FORK', from: t1.taskReferenceName, to: tasks[0].taskReferenceName, label: '', style: style});
@@ -153,6 +156,8 @@ class Workflow2Graph {
         let style = defstyle;
         if(this.executedTasks[t2.taskReferenceName] != null && this.executedTasks[t1.taskReferenceName] != null){
           style = executed;
+        } else {
+          isExecuting = false;
         }
         let fts = forks[t1.taskReferenceName] || [];
         fts.forEach(ft=>{
@@ -166,7 +171,7 @@ class Workflow2Graph {
 
 
     } else if(t1.type == 'DECISION'){
-
+      let caseExecuted = false;
       for (let k in t1.decisionCases){
           let tasks = t1.decisionCases[k];
 
@@ -176,13 +181,15 @@ class Workflow2Graph {
           let style = defstyle;
           if(this.executedTasks[tasks[0].taskReferenceName] != null && this.executedTasks[t1.taskReferenceName] != null){
             style = executed;
+            caseExecuted = true;
           }
 
           nodes.push({type: 'decision', from: t1.taskReferenceName, to: tasks[0].taskReferenceName, label: k, style: style});
-          this.getTaskNodes(vertices, nodes, tasks, forks, subworkflows);
-          this.getNodes(vertices, nodes, tasks[tasks.length-1], t2, forks, subworkflows);
+          this.getTaskNodes(vertices, nodes, tasks, forks, subworkflows, isExecuting);
+          this.getNodes(vertices, nodes, tasks[tasks.length-1], t2, forks, subworkflows, isExecuting);
 
       }
+
       let tasks = t1.defaultCase;
       if(tasks == null) tasks = [];
       if(tasks.length > 0) {
@@ -195,8 +202,10 @@ class Workflow2Graph {
           }
 
           nodes.push({type: 'decision', from: t1.taskReferenceName, to: tasks[0].taskReferenceName, label: 'default', style: style});
-          this.getTaskNodes(vertices, nodes, tasks, forks, subworkflows);
-          this.getNodes(vertices, nodes, tasks[tasks.length - 1], t2, forks, subworkflows);
+          this.getTaskNodes(vertices, nodes, tasks, forks, subworkflows, isExecuting);
+          this.getNodes(vertices, nodes, tasks[tasks.length - 1], t2, forks, subworkflows, isExecuting);
+      } else {
+        nodes.push({type: 'decision', from: t1.taskReferenceName, to: t2.taskReferenceName, label: "", style: !caseExecuted && isExecuting ? executed : defstyle});
       }
 
     } else if(t1.type == 'JOIN') {
@@ -206,6 +215,8 @@ class Workflow2Graph {
       let style = defstyle;
       if(this.executedTasks[t2.taskReferenceName] != null && this.executedTasks[t1.taskReferenceName] != null){
         style = executed;
+      } else {
+        isExecuting = false;
       }
       nodes.push({type: 'simple', from: t1.taskReferenceName, to: t2.taskReferenceName, label: '', style: style});
 
@@ -216,6 +227,8 @@ class Workflow2Graph {
       let style = defstyle;
       if(this.executedTasks[t2.taskReferenceName] != null && this.executedTasks[t1.taskReferenceName] != null){
         style = executed;
+      } else {
+        isExecuting = false;
       }
       nodes.push({type: 'simple', from: t1.taskReferenceName, to: t2.taskReferenceName, label: '', style: style});
 
@@ -225,6 +238,8 @@ class Workflow2Graph {
         let style = defstyle;
         if(this.executedTasks[t2.taskReferenceName] != null && this.executedTasks[t1.taskReferenceName] != null){
           style = executed;
+        } else {
+          isExecuting = false;
         }
         nodes.push({type: 'simple', from: t1.taskReferenceName, to: t2.taskReferenceName, label: '', style: style});
 
@@ -234,6 +249,8 @@ class Workflow2Graph {
       let style = defstyle;
       if(this.executedTasks[t2.taskReferenceName] != null && this.executedTasks[t1.taskReferenceName] != null){
         style = executed;
+      } else {
+        isExecuting = false;
       }
       nodes.push({type: 'simple', from: t1.taskReferenceName, to: t2.taskReferenceName, label: '', style: style});
     }

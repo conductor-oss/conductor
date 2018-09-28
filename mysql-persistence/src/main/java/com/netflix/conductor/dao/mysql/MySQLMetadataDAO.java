@@ -36,7 +36,6 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
 
     @Override
     public String createTaskDef(TaskDef taskDef) {
-        validate(taskDef);
         if (null == taskDef.getCreateTime() || taskDef.getCreateTime() < 1) {
             taskDef.setCreateTime(System.currentTimeMillis());
         }
@@ -46,7 +45,6 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
 
     @Override
     public String updateTaskDef(TaskDef taskDef) {
-        validate(taskDef);
         taskDef.setUpdateTime(System.currentTimeMillis());
         return insertOrUpdateTaskDef(taskDef);
     }
@@ -85,7 +83,6 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
 
     @Override
     public void create(WorkflowDef def) {
-        validate(def);
         if (null == def.getCreateTime() || def.getCreateTime() == 0) {
             def.setCreateTime(System.currentTimeMillis());
         }
@@ -102,7 +99,6 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
 
     @Override
     public void update(WorkflowDef def) {
-        validate(def);
         def.setUpdateTime(System.currentTimeMillis());
         withTransaction(tx -> insertOrUpdateWorkflowDef(tx, def));
     }
@@ -250,28 +246,6 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
                 return handlers;
             });
         });
-    }
-
-    /**
-     * Use {@link Preconditions} to check for required {@link TaskDef} fields, throwing a Runtime exception
-     * if validations fail.
-     *
-     * @param taskDef The {@code TaskDef} to check.
-     */
-    private void validate(TaskDef taskDef) {
-        Preconditions.checkNotNull(taskDef, "TaskDef object cannot be null");
-        Preconditions.checkNotNull(taskDef.getName(), "TaskDef name cannot be null");
-    }
-
-    /**
-     * Use {@link Preconditions} to check for required {@link WorkflowDef} fields, throwing a Runtime exception
-     * if validations fail.
-     *
-     * @param def The {@code WorkflowDef} to check.
-     */
-    private void validate(WorkflowDef def) {
-        Preconditions.checkNotNull(def, "WorkflowDef object cannot be null");
-        Preconditions.checkNotNull(def.getName(), "WorkflowDef name cannot be null");
     }
 
     /**

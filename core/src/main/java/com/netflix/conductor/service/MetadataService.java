@@ -18,6 +18,8 @@
  */
 package com.netflix.conductor.service;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -61,6 +63,11 @@ public class MetadataService {
             taskDefinition.setCreateTime(System.currentTimeMillis());
             taskDefinition.setUpdatedBy(null);
             taskDefinition.setUpdateTime(null);
+
+            ServiceUtils.checkNotNull(taskDefinition,"TaskDef object cannot be null");
+            ServiceUtils.checkNotNull(taskDefinition.getName(),"TaskDef name cannot be null");
+            ServiceUtils.checkArgument(taskDefinition.getResponseTimeoutSeconds()>0, "ResponseTimeoutSeconds must be positive");
+
             metadataDAO.createTaskDef(taskDefinition);
         }
     }
@@ -114,6 +121,8 @@ public class MetadataService {
      * @param def Workflow definition to be updated
      */
     public void updateWorkflowDef(WorkflowDef def) {
+        Preconditions.checkNotNull(def, "WorkflowDef object cannot be null");
+        Preconditions.checkNotNull(def.getName(), "WorkflowDef name cannot be null");
         metadataDAO.update(def);
     }
 
@@ -233,7 +242,8 @@ public class MetadataService {
         return metadataDAO.getEventHandlersForEvent(event, activeOnly);
     }
 
-    private void validateEvent(EventHandler eh) {
+    @VisibleForTesting
+    public void validateEvent(EventHandler eh) {
         ServiceUtils.checkNotNullOrEmpty(eh.getName(), "Missing event handler name");
         ServiceUtils.checkNotNullOrEmpty(eh.getEvent(), "Missing event location");
         ServiceUtils.checkNotNullOrEmpty(eh.getActions(), "No actions specified. Please specify at-least one action");
