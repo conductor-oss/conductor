@@ -1,18 +1,10 @@
 {
     "testCompile": {
-        "ch.qos.logback:logback-core": {
-            "locked": "1.2.3",
-            "requested": "1.2.3"
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j": {
-            "locked": "2.2.3",
-            "requested": "2.2.3"
-        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.417"
+            "locked": "1.11.415"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -24,7 +16,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.417"
+            "locked": "1.11.415"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -84,7 +76,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "0.7.5"
+            "locked": "0.7.6"
         },
         "com.netflix.conductor:conductor-client": {
             "project": true
@@ -153,19 +145,19 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.0.8"
+            "locked": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.5.9"
+            "locked": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.5.9"
+            "locked": "1.6.4"
         },
         "com.netflix.eureka:eureka-client": {
             "firstLevelTransitive": [
@@ -234,7 +226,7 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.5"
+            "locked": "2.4"
         },
         "io.nats:java-nats-streaming": {
             "firstLevelTransitive": [
@@ -296,7 +288,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.4"
+            "locked": "3.6"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
@@ -366,23 +358,15 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "2.8.1"
+            "locked": "2.9.0"
         }
     },
     "testCompileClasspath": {
-        "ch.qos.logback:logback-core": {
-            "locked": "1.2.3",
-            "requested": "1.2.3"
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j": {
-            "locked": "2.2.3",
-            "requested": "2.2.3"
-        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.417"
+            "locked": "1.11.415"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -394,7 +378,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.417"
+            "locked": "1.11.415"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -454,7 +438,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "0.7.5"
+            "locked": "0.7.6"
         },
         "com.netflix.conductor:conductor-client": {
             "project": true
@@ -523,19 +507,19 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.0.8"
+            "locked": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.5.9"
+            "locked": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.5.9"
+            "locked": "1.6.4"
         },
         "com.netflix.eureka:eureka-client": {
             "firstLevelTransitive": [
@@ -604,7 +588,7 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.5"
+            "locked": "2.4"
         },
         "io.nats:java-nats-streaming": {
             "firstLevelTransitive": [
@@ -666,7 +650,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.4"
+            "locked": "3.6"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
@@ -736,23 +720,15 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "2.8.1"
+            "locked": "2.9.0"
         }
     },
     "testRuntime": {
-        "ch.qos.logback:logback-core": {
-            "locked": "1.2.3",
-            "requested": "1.2.3"
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j": {
-            "locked": "2.2.3",
-            "requested": "2.2.3"
-        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.417"
+            "locked": "1.11.415"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -764,7 +740,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.417"
+            "locked": "1.11.415"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -824,7 +800,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "0.7.5"
+            "locked": "0.7.6"
         },
         "com.netflix.conductor:conductor-client": {
             "project": true
@@ -893,19 +869,19 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.0.8"
+            "locked": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.5.9"
+            "locked": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.5.9"
+            "locked": "1.6.4"
         },
         "com.netflix.eureka:eureka-client": {
             "firstLevelTransitive": [
@@ -974,7 +950,7 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.5"
+            "locked": "2.4"
         },
         "io.nats:java-nats-streaming": {
             "firstLevelTransitive": [
@@ -1036,7 +1012,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.4"
+            "locked": "3.6"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
@@ -1106,23 +1082,15 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "2.8.1"
+            "locked": "2.9.0"
         }
     },
     "testRuntimeClasspath": {
-        "ch.qos.logback:logback-core": {
-            "locked": "1.2.3",
-            "requested": "1.2.3"
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j": {
-            "locked": "2.2.3",
-            "requested": "2.2.3"
-        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.417"
+            "locked": "1.11.415"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -1134,7 +1102,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.417"
+            "locked": "1.11.415"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -1194,7 +1162,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "0.7.5"
+            "locked": "0.7.6"
         },
         "com.netflix.conductor:conductor-client": {
             "project": true
@@ -1263,19 +1231,19 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.0.8"
+            "locked": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.5.9"
+            "locked": "1.6.4"
         },
         "com.netflix.dyno:dyno-jedis": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "1.5.9"
+            "locked": "1.6.4"
         },
         "com.netflix.eureka:eureka-client": {
             "firstLevelTransitive": [
@@ -1344,7 +1312,7 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.5"
+            "locked": "2.4"
         },
         "io.nats:java-nats-streaming": {
             "firstLevelTransitive": [
@@ -1406,7 +1374,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.4"
+            "locked": "3.6"
         },
         "org.apache.logging.log4j:log4j-api": {
             "firstLevelTransitive": [
@@ -1476,7 +1444,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ],
-            "locked": "2.8.1"
+            "locked": "2.9.0"
         }
     }
 }
