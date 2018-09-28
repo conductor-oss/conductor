@@ -530,14 +530,6 @@
         }
     },
     "testCompile": {
-        "ch.qos.logback:logback-classic": {
-            "locked": "1.2.3",
-            "requested": "1.2.3"
-        },
-        "ch.qos.logback:logback-core": {
-            "locked": "1.2.3",
-            "requested": "1.2.3"
-        },
         "ch.vorburger.mariaDB4j:mariaDB4j": {
             "locked": "2.2.3",
             "requested": "2.2.3"
@@ -656,14 +648,6 @@
         }
     },
     "testCompileClasspath": {
-        "ch.qos.logback:logback-classic": {
-            "locked": "1.2.3",
-            "requested": "1.2.3"
-        },
-        "ch.qos.logback:logback-core": {
-            "locked": "1.2.3",
-            "requested": "1.2.3"
-        },
         "ch.vorburger.mariaDB4j:mariaDB4j": {
             "locked": "2.2.3",
             "requested": "2.2.3"
@@ -782,14 +766,6 @@
         }
     },
     "testRuntime": {
-        "ch.qos.logback:logback-classic": {
-            "locked": "1.2.3",
-            "requested": "1.2.3"
-        },
-        "ch.qos.logback:logback-core": {
-            "locked": "1.2.3",
-            "requested": "1.2.3"
-        },
         "ch.vorburger.mariaDB4j:mariaDB4j": {
             "locked": "2.2.3",
             "requested": "2.2.3"
@@ -908,14 +884,6 @@
         }
     },
     "testRuntimeClasspath": {
-        "ch.qos.logback:logback-classic": {
-            "locked": "1.2.3",
-            "requested": "1.2.3"
-        },
-        "ch.qos.logback:logback-core": {
-            "locked": "1.2.3",
-            "requested": "1.2.3"
-        },
         "ch.vorburger.mariaDB4j:mariaDB4j": {
             "locked": "2.2.3",
             "requested": "2.2.3"
