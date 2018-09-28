@@ -51,7 +51,7 @@
     "react-toastr": "2.9.3",
     "redux": "^3.3.1",
     "redux-thunk": "^1.0.3",
-    "superagent": "^1.7.2",
+    "superagent": "^3.8.3",
     "underscore": "^1.8.3",
     "webpack": "^1.12.10"
   },
