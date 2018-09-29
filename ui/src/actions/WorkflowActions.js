@@ -308,12 +308,10 @@ export function resumeWorfklow(workflowId) {
 
 //metadata
 export function getWorkflowDefs() {
-
   return function (dispatch) {
     dispatch({
       type: 'LIST_WORKFLOWS'
     });
-
 
     return http.get('/api/wfe/metadata/workflow').then((data) => {
       dispatch({
