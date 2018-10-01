@@ -3,8 +3,7 @@ jdk:
 - oraclejdk8
 
 after_success:
-- ./gradlew cobertura coveralls
-
+  - bash <(curl -s https://codecov.io/bash)
 install: true
 script: "./buildViaTravis.sh"
 git:
