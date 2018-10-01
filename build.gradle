@@ -11,6 +11,7 @@ buildscript {
 }
 plugins {
     id 'nebula.netflixoss' version '5.1.1'
+    id 'com.github.kt3k.coveralls' version '2.8.2'
 }
 
 // Establish version and status

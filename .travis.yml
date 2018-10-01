@@ -3,7 +3,7 @@ jdk:
 - oraclejdk8
 
 after_success:
-    - mvn jacoco:report coveralls:report
+- ./gradlew cobertura coveralls
 
 install: true
 script: "./buildViaTravis.sh"

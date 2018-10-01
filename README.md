@@ -42,8 +42,8 @@ To build the server, use the following dependencies in your classpath:
 * conductor-contribs (_optional_)
 
 ##Test coverage
-To measure test coverage use the following command: `gradle test jacocoTestReport`
-Results will be published to [Coveralls](https://coveralls.io/github/Netflix/conductor)
+To measure test coverage locally use the following command: `gradle test jacocoTestReport`
+For Travis builds results will be published to [Coveralls](https://coveralls.io/github/Netflix/conductor)
 
 
 ### Deploying Jersey JAX-RS resources
