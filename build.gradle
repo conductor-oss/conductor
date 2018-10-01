@@ -59,10 +59,17 @@ subprojects {
 	licenseFormat.dependsOn licenseFormatTests
 
 
+
+    tasks.withType(Test) {
+        task ->
+            // set heap size for the test JVM(s)
+            minHeapSize = "256m"
+            maxHeapSize = "2g"
+
+            jacocoTestReport.executionData += files("$buildDir/jacoco/${task.name}.exec")
+    }
+
     jacocoTestReport {
-        additionalSourceDirs = files(sourceSets.main.allSource.srcDirs)
-        sourceDirectories = files(sourceSets.main.allSource.srcDirs)
-        classDirectories =  files(sourceSets.main.output)
         reports {
             html.enabled = true
             xml.enabled = true
