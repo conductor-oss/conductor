@@ -3,7 +3,7 @@ buildscript {
 	repositories {
         jcenter()
     }
-    
+
     dependencies {
         classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:3.0.3'
         classpath 'org.apache.ant:ant:1.9.7'
@@ -24,8 +24,9 @@ subprojects {
 
     apply plugin: 'nebula.netflixoss'
     apply plugin: 'nebula.provided-base'
-    apply plugin: 'java'
     apply plugin: 'idea'
+    apply plugin: 'jacoco'
+    apply plugin: 'java'
     apply plugin: 'eclipse'
     apply plugin: 'project-report'
 
@@ -42,18 +43,29 @@ subprojects {
     }
 
     group = "com.netflix.${githubProjectName}"
-    
+
     tasks.withType(Test)  {
         maxParallelForks = 100
     }
-    
+
     license {
 		excludes(['**/*.txt', '**/*.conf', '**/*.properties', '**/*.json', '**/swagger-ui/*'])
 	}
-	
+
 	task licenseFormatTests (type:nl.javadude.gradle.plugins.license.License) {
     	source = fileTree(dir: "src/test").include("**/*")
 	}
 	licenseFormat.dependsOn licenseFormatTests
 
+
+    jacocoTestReport {
+        additionalSourceDirs = files(sourceSets.main.allSource.srcDirs)
+        sourceDirectories = files(sourceSets.main.allSource.srcDirs)
+        classDirectories =  files(sourceSets.main.output)
+        reports {
+            html.enabled = true
+            xml.enabled = true
+            csv.enabled = false
+        }
+    }
 }

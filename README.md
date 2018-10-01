@@ -41,6 +41,11 @@ To build the server, use the following dependencies in your classpath:
 * conductor-es2-persistence _or_ conductor-es5-persistence (_unless using your own index module_)
 * conductor-contribs (_optional_)
 
+##Test coverage
+To measure test coverage use the following command: `gradle test jacocoTestReport`
+Results will be published to [Coveralls](https://coveralls.io/github/Netflix/conductor)
+
+
 ### Deploying Jersey JAX-RS resources
 Add the following packages to classpath scan:
 
