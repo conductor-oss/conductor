@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 
 const Introduction = () => (
   <div className="ui-content">
@@ -22,4 +23,4 @@ const Introduction = () => (
   </div>
 );
 
-export default Introduction;
+export default connect(state => state)(Introduction);
