@@ -40,7 +40,6 @@ html {
 }
 
 body {
-  xfont-family: 'Open Sans',sans-serif;
   font-family: 'Source Sans Pro', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   color: #333;
   background-color: #ffff;
@@ -186,7 +185,7 @@ body {
   padding: 0.8em;
 }
 
-.bm-item-list a:link, a:visited  {
+.bm-item-list a:link, .bm-item-list a:visited  {
   color: #b8b7ad;
   padding: 0.8em;
   text-decoration: none;
@@ -383,7 +382,6 @@ iframe {
 }
 a:hover {
   text-decoration: none;
-  cursor: default;
 }
 
 
@@ -497,7 +495,7 @@ a:hover {
 }
 
 .menuList {
-  margin-top: 100px;
+  margin-top: 70px;
 }
 
 .menuHeader {

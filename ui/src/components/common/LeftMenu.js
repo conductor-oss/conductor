@@ -1,6 +1,10 @@
-import React from 'react';
+import React, {Component} from 'react';
+import PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import { connect } from 'react-redux';
+import shallowCompare from 'react-addons-shallow-compare';
+import { updateSearchAndFetch } from '../../actions/search';
+
 
 const menuPaths = {
   Workflow: [
@@ -13,32 +17,38 @@ const menuPaths = {
     {
       label: 'All',
       href: '/workflow',
-      icon: 'fa-circle-thin'
+      icon: 'fa-circle-thin',
+      search: {states: []}
     },
     {
       label: 'Running',
       href: '/workflow?status=RUNNING',
-      icon: 'fa-play-circle'
+      icon: 'fa-play-circle',
+      search: {states: ['RUNNING']}
     },
     {
       label: 'Failed',
       href: '/workflow?status=FAILED&h=48',
-      icon: 'fa-warning'
+      icon: 'fa-warning',
+      search: {states: ['FAILED'], cutoff: '48'}
     },
     {
       label: 'Timed Out',
       href: '/workflow?status=TIMED_OUT&h=48',
-      icon: 'fa-clock-o'
+      icon: 'fa-clock-o',
+      search: {states: ['TIMED_OUT'], cutoff: '48'}
     },
     {
       label: 'Terminated',
       href: '/workflow?status=TERMINATED&h=48',
-      icon: 'fa-ban'
+      icon: 'fa-ban',
+      search: {states: ['TERMINATED'], cutoff: '48'}
     },
     {
       label: 'Completed',
       href: '/workflow?status=COMPLETED&h=48',
-      icon: 'fa-bullseye'
+      icon: 'fa-bullseye',
+      search: {states: ['COMPLETED'], cutoff: '48'}
     },
     {
       header: true,
@@ -81,31 +91,22 @@ const menuPaths = {
   ]
 };
 
-class LeftMenu extends React.Component {
-  state = {
-    minimize: false,
-    loading: false
-  };
+class LeftMenu extends Component {
+  constructor(props) {
+    super(props);
 
-  componentDidMount() {
-    window.addEventListener('resize', this.handleResize);
+    this.state = {
+      loading: false
+    };
   }
 
-  componentWillReceiveProps({ fetching: loading, minimize }) {
-    this.setState({ loading, minimize });
+  shouldComponentUpdate(nextProps, nextState) {
+    return shallowCompare(this, nextProps, nextState);
   }
-
-  componentWillUnmount() {
-    window.removeEventListener('resize', this.handleResize);
-  }
-
-  handleResize = () => {
-    this.setState({ minimize: window.innerWidth < 600 });
-  };
 
   render() {
-    const { minimize } = this.state;
-    const { appName = 'Workflow' } = this.props;
+    const { loading, minimize, updateSearchAndFetch } = this.props;
+    const appName = 'Workflow';
 
     const width = minimize ? '50px' : '176px';
 
@@ -114,22 +115,32 @@ class LeftMenu extends React.Component {
     let keyVal = 0;
 
     // eslint-disable-next-line array-callback-return
-    menuPaths[appName].map(cv => {
-      const iconClass = `fa ${cv.icon}`;
-      if (cv.header === true) {
+    menuPaths[appName].map(({icon, header, label, search, href}) => {
+      const iconClass = `fa ${icon}`;
+
+      if (header === true) {
         menuItems.push(
           <div className="" key={`key-${(keyVal += 1)}`}>
             <div className="menuHeader">
-              <i className="fa fa-angle-down" />&nbsp;{cv.label}
+              <i className="fa fa-angle-down" />&nbsp;{label}
             </div>
           </div>
         );
+      } else if (search) {
+        menuItems.push(
+            <Link to={href} key={`key-${(keyVal += 1)}`} onClick={() => updateSearchAndFetch(search)}>
+              <div className="menuItem">
+                <i className={iconClass} style={{ width: '20px' }} />
+                <span style={{ marginLeft: '10px', display }}>{label}</span>
+              </div>
+            </Link>
+        );
       } else {
         menuItems.push(
-          <Link to={cv.href} key={`key-${(keyVal += 1)}`}>
+          <Link to={href} key={`key-${(keyVal += 1)}`}>
             <div className="menuItem">
               <i className={iconClass} style={{ width: '20px' }} />
-              <span style={{ marginLeft: '10px', display }}>{cv.label}</span>
+              <span style={{ marginLeft: '10px', display }}>{label}</span>
             </div>
           </Link>
         );
@@ -141,8 +152,8 @@ class LeftMenu extends React.Component {
         <div className="logo textual pull-left">
           <a href="/" title="Conductor">
             <h4>
-              <i className={this.state.loading ? 'fa fa-bars fa-spin fa-1x' : 'fa fa-bars'} />{' '}
-              {this.state.loading || minimize ? '' : 'Conductor'}
+              <i className={loading ? 'fa fa-bars fa-spin fa-1x' : 'fa fa-bars'} />{' '}
+              {loading || minimize ? '' : 'Conductor'}
             </h4>
           </a>
         </div>
@@ -152,4 +163,17 @@ class LeftMenu extends React.Component {
   }
 }
 
-export default connect(state => state.workflow)(LeftMenu);
+LeftMenu.propTypes = {
+  updateSearchAndFetch: PropTypes.func.isRequired,
+  version: PropTypes.string,
+  minimize: PropTypes.bool,
+  loading: PropTypes.bool.isRequired
+};
+
+function mapStateToProps(state) {
+  return {loading: state.workflow.fetching}
+}
+
+const mapDispatchToProps = {updateSearchAndFetch};
+
+export default connect(mapStateToProps, mapDispatchToProps)(LeftMenu);
