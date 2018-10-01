@@ -18,12 +18,6 @@
  */
 package com.netflix.conductor.metrics;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
@@ -35,6 +29,12 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.Timer;
 import com.netflix.spectator.api.histogram.PercentileTimer;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Viren
@@ -171,6 +171,10 @@ public class Monitors {
 		counter(classQualifier, "task_poll", "taskType", taskType);
 	}
 
+	public static void recordTaskPollCount(String taskType, String domain, int count) {
+		getCounter(classQualifier, "task_poll_count", "taskType", taskType, "domain", domain).increment(count);
+	}
+
 	public static void recordQueueDepth(String taskType, long size, String ownerApp) {
 		gauge(classQualifier, "task_queue_depth", size, "taskType", taskType, "ownerApp", ""+ownerApp);
 	}
@@ -216,6 +220,10 @@ public class Monitors {
 		gauge(classQualifier, "task_rate_limited", limit, "taskType", taskDefName);
 	}
 
+	public static void recordTaskConcurrentExecutionLimited(String taskDefName, int limit) {
+		gauge(classQualifier, "task_concurrent_execution_limited", limit, "taskType", taskDefName);
+	}
+
 	public static void recordEventQueueMessagesProcessed(String queueType, String queueName, int count) {
 		getCounter(classQualifier, "event_queue_messages_processed", "queueType", queueType, "queueName", queueName).increment(count);
 	}
@@ -238,5 +246,9 @@ public class Monitors {
 
 	public static void recordDaoPayloadSize(String dao, String action, String taskType, String workflowType, int size) {
 		gauge(classQualifier, "dao_payload_size", size, "dao", dao, "action", action, "taskType", taskType, "workflowType", workflowType);
+	}
+
+	public static void recordExternalPayloadStorageUsage(String name, String operation, String payloadType) {
+		counter(classQualifier, "external_payload_storage_usage", "name", name, "operation", operation, "payloadType", payloadType);
 	}
 }

@@ -18,10 +18,11 @@ package com.netflix.conductor.tests.utils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
 import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
-import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -84,6 +85,7 @@ public class TestModule extends AbstractModule {
         install(new CoreModule());
         bind(UserTask.class).asEagerSingleton();
         bind(ObjectMapper.class).toProvider(JsonMapperProvider.class);
+        bind(ExternalPayloadStorage.class).to(MockExternalPayloadStorage.class);
     }
 
     @Provides

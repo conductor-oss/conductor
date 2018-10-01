@@ -167,11 +167,57 @@ router.get('/id/:workflowId', async (req, res, next) => {
   }
 });
 
+router.put('/bulk/pause', async (req, res, next) => {
+  try {
+    const result = await http.put(baseURL2 + "bulk/pause", req.body, req.token);
+    res.status(200).send(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.put('/bulk/resume', async (req, res, next) => {
+  try {
+    const result = await http.put(baseURL2 + "bulk/resume", req.body, req.token);
+    res.status(200).send(result);
+  } catch (err) {
+    next(err);
+  }
+})
+
+router.post('/bulk/retry', async (req, res, next) => {
+  try {
+    const result = await http.post(baseURL2 + "bulk/retry", req.body, req.token);
+    res.status(200).send(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+router.post('/bulk/restart', async (req, res, next) => {
+  try {
+    const result = await http.post(baseURL2 + "bulk/restart", req.body, req.token);
+    res.status(200).send(result);
+  } catch (err) {
+    next(err);
+  }
+})
+
+router.delete('/bulk/terminate', async (req, res, next) => {
+  try {
+    const result = await http.delete(baseURL2 + "bulk", req.body, req.token);
+    res.status(200).send(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
 router.delete('/terminate/:workflowId', async (req, res, next) => {
   try {
-    const result = await http.delete(baseURL2 + req.params.workflowId);
+    const result = await http.delete(baseURL2 + req.params.workflowId, {}, req.token);
     res.status(200).send({ result: req.params.workflowId });
   } catch (err) {
+
     next(err);
   }
 });

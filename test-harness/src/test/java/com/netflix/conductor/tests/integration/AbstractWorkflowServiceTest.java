@@ -64,7 +64,6 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
@@ -150,7 +149,7 @@ public abstract class AbstractWorkflowServiceTest {
         for (int i = 0; i < 21; i++) {
 
             String name = "junit_task_" + i;
-            if (metadataService.getTaskDef(name) != null) {
+            if (notFoundSafeGetTaskDef(name) != null) {
                 continue;
             }
 
@@ -164,7 +163,7 @@ public abstract class AbstractWorkflowServiceTest {
         for (int i = 0; i < 5; i++) {
 
             String name = "junit_task_0_RT_" + i;
-            if (metadataService.getTaskDef(name) != null) {
+            if (notFoundSafeGetTaskDef(name) != null) {
                 continue;
             }
 
@@ -251,6 +250,18 @@ public abstract class AbstractWorkflowServiceTest {
         taskDefs = metadataService.getTaskDefs();
 
         registered = true;
+    }
+
+    private TaskDef notFoundSafeGetTaskDef(String name) {
+        try {
+            return metadataService.getTaskDef(name);
+        } catch (ApplicationException e) {
+            if (e.getCode() == ApplicationException.Code.NOT_FOUND) {
+                return null;
+            } else {
+                throw e;
+            }
+        }
     }
 
     @Test
@@ -342,10 +353,10 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.updateWorkflowDef(ver1);
         metadataService.updateWorkflowDef(ver2);
 
-        WorkflowDef found = metadataService.getWorkflowDef(ver2.getName(), 1).get();
+        WorkflowDef found = metadataService.getWorkflowDef(ver2.getName(), 1);
         assertEquals(2, found.getSchemaVersion());
 
-        WorkflowDef found1 = metadataService.getWorkflowDef(ver1.getName(), 1).get();
+        WorkflowDef found1 = metadataService.getWorkflowDef(ver1.getName(), 1);
         assertEquals(1, found1.getSchemaVersion());
 
     }
@@ -357,25 +368,25 @@ public abstract class AbstractWorkflowServiceTest {
         } catch (Exception e) {
         }
         String taskName = "junit_task_1";
-        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(0);
         taskDef.setTimeoutSeconds(0);
         metadataService.updateTaskDef(taskDef);
 
         taskName = "junit_task_2";
-        taskDef = metadataService.getTaskDef(taskName);
+        taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(0);
         taskDef.setTimeoutSeconds(0);
         metadataService.updateTaskDef(taskDef);
 
         taskName = "junit_task_3";
-        taskDef = metadataService.getTaskDef(taskName);
+        taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(0);
         taskDef.setTimeoutSeconds(0);
         metadataService.updateTaskDef(taskDef);
 
         taskName = "junit_task_4";
-        taskDef = metadataService.getTaskDef(taskName);
+        taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(0);
         taskDef.setTimeoutSeconds(0);
         metadataService.updateTaskDef(taskDef);
@@ -659,7 +670,7 @@ public abstract class AbstractWorkflowServiceTest {
         }
 
         String taskName = "junit_task_2";
-        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
         int retryCount = taskDef.getRetryCount();
         taskDef.setRetryCount(0);
         metadataService.updateTaskDef(taskDef);
@@ -699,7 +710,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals("Found " + wf.getTasks(), WorkflowStatus.FAILED, wf.getStatus());
 
 
-        taskDef = metadataService.getTaskDef(taskName);
+        taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(retryCount);
         metadataService.updateTaskDef(taskDef);
     }
@@ -780,7 +791,7 @@ public abstract class AbstractWorkflowServiceTest {
         createDynamicForkJoinWorkflowDefs();
 
         String taskName = "junit_task_2";
-        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
         int retryCount = taskDef.getRetryCount();
         taskDef.setRetryCount(2);
         taskDef.setRetryDelaySeconds(0);
@@ -893,7 +904,7 @@ public abstract class AbstractWorkflowServiceTest {
         }
 
         // reset the task def
-        taskDef = metadataService.getTaskDef(taskName);
+        taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(retryCount);
         taskDef.setRetryDelaySeconds(1);
         metadataService.updateTaskDef(taskDef);
@@ -1312,11 +1323,11 @@ public abstract class AbstractWorkflowServiceTest {
 
         clearWorkflows();
 
-        TaskDef taskDef = metadataService.getTaskDef("junit_task_1");
+        TaskDef taskDef = notFoundSafeGetTaskDef("junit_task_1");
         taskDef.setRetryCount(1);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
         assertNotNull(found);
         Map<String, Object> outputParameters = found.getOutputParameters();
         outputParameters.put("validationErrors", "${t1.output.ErrorMessage}");
@@ -1365,7 +1376,7 @@ public abstract class AbstractWorkflowServiceTest {
         workflowExecutor.decide(workflowInstanceId);
 
         es = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
-        TaskDef junit_task_1 = metadataService.getTaskDef("junit_task_1");
+        TaskDef junit_task_1 = notFoundSafeGetTaskDef("junit_task_1");
         Task t1 = es.getTaskByRefName("t1");
         assertNotNull(es);
         assertEquals(WorkflowStatus.FAILED, es.getStatus());
@@ -1387,7 +1398,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         clearWorkflows();
 
-        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
 
         String correlationId = "unit_test_1";
         Map<String, Object> input = new HashMap<>();
@@ -1646,7 +1657,7 @@ public abstract class AbstractWorkflowServiceTest {
         clearWorkflows();
         createWorkflowDefForDomain();
 
-        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1).get();
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
 
         String correlationId = "unit_test_sw";
         Map<String, Object> input = new HashMap<String, Object>();
@@ -1781,7 +1792,7 @@ public abstract class AbstractWorkflowServiceTest {
         clearWorkflows();
         createWorkflowDefForDomain();
 
-        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1).get();
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
 
         String correlationId = "unit_test_sw";
         Map<String, Object> input = new HashMap<String, Object>();
@@ -1906,7 +1917,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         clearWorkflows();
 
-        metadataService.getWorkflowDef(LONG_RUNNING, 1).get();
+        metadataService.getWorkflowDef(LONG_RUNNING, 1);
 
         String correlationId = "unit_test_1";
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2014,7 +2025,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         clearWorkflows();
 
-        metadataService.getWorkflowDef(LONG_RUNNING, 1).get();
+        metadataService.getWorkflowDef(LONG_RUNNING, 1);
 
         String correlationId = "unit_test_1";
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2127,7 +2138,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         int count = 3;
 
-        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
 
         String correlationId = "unit_test_concurrrent";
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2326,12 +2337,12 @@ public abstract class AbstractWorkflowServiceTest {
     public void testRetries() throws Exception {
 
         String taskName = "junit_task_2";
-        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(2);
         taskDef.setRetryDelaySeconds(1);
         metadataService.updateTaskDef(taskDef);
 
-        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
 
         String correlationId = "unit_test_1";
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2398,7 +2409,7 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testSuccess() throws Exception {
 
-        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2507,7 +2518,7 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testDeciderUpdate() throws Exception {
 
-        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2538,7 +2549,7 @@ public abstract class AbstractWorkflowServiceTest {
     //Ignore for now, will improve this in the future
     public void testFailurePoints() throws Exception {
 
-        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2612,7 +2623,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         ExecutorService executors = Executors.newFixedThreadPool(3);
 
-        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -2751,14 +2762,14 @@ public abstract class AbstractWorkflowServiceTest {
 
     @Test
     public void testFailures() throws Exception {
-        metadataService.getWorkflowDef(FORK_JOIN_WF, 1).get();
+        metadataService.getWorkflowDef(FORK_JOIN_WF, 1);
 
         String taskName = "junit_task_1";
-        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(0);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
         assertNotNull(found.getFailureWorkflow());
         assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
 
@@ -2846,14 +2857,14 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testRetry() throws Exception {
         String taskName = "junit_task_1";
-        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
         int retryCount = taskDef.getRetryCount();
         taskDef.setRetryCount(1);
         int retryDelay = taskDef.getRetryDelaySeconds();
         taskDef.setRetryDelaySeconds(0);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
         assertNotNull(workflowDef.getFailureWorkflow());
         assertFalse(StringUtils.isBlank(workflowDef.getFailureWorkflow()));
 
@@ -2925,11 +2936,11 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testNonRestartartableWorkflows() throws Exception {
         String taskName = "junit_task_1";
-        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(0);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
         found.setName(JUNIT_TEST_WF_NON_RESTARTABLE);
         found.setRestartable(false);
         metadataService.updateWorkflowDef(found);
@@ -3025,11 +3036,11 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testRestart() throws Exception {
         String taskName = "junit_task_1";
-        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(0);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
         assertNotNull(found.getFailureWorkflow());
         assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
 
@@ -3083,14 +3094,14 @@ public abstract class AbstractWorkflowServiceTest {
     public void testTimeout() throws Exception {
 
         String taskName = "junit_task_1";
-        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(1);
         taskDef.setTimeoutSeconds(1);
         taskDef.setRetryDelaySeconds(0);
         taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
         metadataService.updateTaskDef(taskDef);
 
-        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        WorkflowDef found = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
         assertNotNull(found.getFailureWorkflow());
         assertFalse(StringUtils.isBlank(found.getFailureWorkflow()));
 
@@ -3162,7 +3173,7 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testReruns() throws Exception {
 
-        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -3303,13 +3314,13 @@ public abstract class AbstractWorkflowServiceTest {
     public void testTaskSkipping() throws Exception {
 
         String taskName = "junit_task_1";
-        TaskDef taskDef = metadataService.getTaskDef(taskName);
+        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(0);
         taskDef.setTimeoutSeconds(0);
         metadataService.updateTaskDef(taskDef);
 
 
-        metadataService.getWorkflowDef(TEST_WORKFLOW_NAME_3, 1).get();
+        metadataService.getWorkflowDef(TEST_WORKFLOW_NAME_3, 1);
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -3379,7 +3390,7 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testPauseResume() throws Exception {
 
-        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
 
         String correlationId = "unit_test_1" + System.nanoTime();
         Map<String, Object> input = new HashMap<String, Object>();
@@ -3489,7 +3500,7 @@ public abstract class AbstractWorkflowServiceTest {
     public void testSubWorkflow() throws Exception {
 
         createSubWorkflow();
-        metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1).get();
+        metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1);
         Map<String, Object> input = new HashMap<>();
         input.put("param1", "param 1 value");
         input.put("param3", "param 2 value");
@@ -3555,7 +3566,7 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testSubWorkflowFailure() throws Exception {
 
-        TaskDef taskDef = metadataService.getTaskDef("junit_task_1");
+        TaskDef taskDef = notFoundSafeGetTaskDef("junit_task_1");
         assertNotNull(taskDef);
         taskDef.setRetryCount(0);
         taskDef.setTimeoutSeconds(2);
@@ -3563,7 +3574,7 @@ public abstract class AbstractWorkflowServiceTest {
 
 
         createSubWorkflow();
-        metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1).get();
+        metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1);
 
         Map<String, Object> input = new HashMap<>();
         input.put("param1", "param 1 value");
@@ -3618,7 +3629,7 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testSubWorkflowFailureInverse() throws Exception {
 
-        TaskDef taskDef = metadataService.getTaskDef("junit_task_1");
+        TaskDef taskDef = notFoundSafeGetTaskDef("junit_task_1");
         assertNotNull(taskDef);
         taskDef.setRetryCount(0);
         taskDef.setTimeoutSeconds(2);
@@ -3627,7 +3638,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         createSubWorkflow();
 
-        WorkflowDef found = metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1).get();
+        WorkflowDef found = metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1);
         assertNotNull(found);
         Map<String, Object> input = new HashMap<>();
         input.put("param1", "param 1 value");
@@ -3672,15 +3683,14 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testSubWorkflowRetry() throws Exception {
         String taskName = "junit_task_1";
-        TaskDef taskDef = metadataService.getTaskDef(taskName);
-        int retryCount = metadataService.getTaskDef(taskName).getRetryCount();
+        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
+        int retryCount = notFoundSafeGetTaskDef(taskName).getRetryCount();
         taskDef.setRetryCount(0);
         metadataService.updateTaskDef(taskDef);
 
         // create a workflow with sub-workflow
         createSubWorkflow();
-        Optional<WorkflowDef> found = metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1);
-        assertTrue(found.isPresent());
+        WorkflowDef found = metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1);
 
         // start the workflow
         Map<String, Object> workflowInputParams = new HashMap<>();
@@ -3769,7 +3779,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
 
         // reset retry count
-        taskDef = metadataService.getTaskDef(taskName);
+        taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(retryCount);
         metadataService.updateTaskDef(taskDef);
     }
@@ -3866,7 +3876,7 @@ public abstract class AbstractWorkflowServiceTest {
 
     @Test
     public void testTaskWithCallbackAfterSecondsInWorkflow() throws Exception {
-        WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1).get();
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
         assertNotNull(workflowDef);
 
         String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", new HashMap<>(), null, null);
@@ -4168,7 +4178,7 @@ public abstract class AbstractWorkflowServiceTest {
         clearWorkflows();
         createWorkflowDefForDomain();
 
-        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1).get();
+        metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2_SW, 1);
 
         String correlationId = "unit_test_sw";
         Map<String, Object> input = new HashMap<>();

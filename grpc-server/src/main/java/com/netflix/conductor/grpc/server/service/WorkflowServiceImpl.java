@@ -59,12 +59,14 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
                         GRPC_HELPER.optional(request.getVersion()),
                         request.getCorrelationId(),
                         request.getInput(),
+                        request.getExternalInputPayloadStoragePath(),
                         null,
                         request.getTaskToDomain());
             } else {
                 id = executor.startWorkflow(
                         request.getWorkflowDef(),
                         request.getInput(),
+                        request.getExternalInputPayloadStoragePath(),
                         request.getCorrelationId(),
                         null,
                         request.getTaskToDomain());

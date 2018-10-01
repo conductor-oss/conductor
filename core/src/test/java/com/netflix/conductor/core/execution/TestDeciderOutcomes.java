@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
@@ -38,7 +39,9 @@ import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Join;
+import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -57,6 +60,7 @@ import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
@@ -79,9 +83,19 @@ public class TestDeciderOutcomes {
     }
 
     @Before
-    public void init() throws Exception {
-        metadataDAO = Mockito.mock(MetadataDAO.class);
-        when(metadataDAO.getTaskDef(anyString())).thenReturn(new TaskDef());
+    public void init() {
+        metadataDAO = mock(MetadataDAO.class);
+        QueueDAO queueDAO = mock(QueueDAO.class);
+        ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
+        Configuration configuration = mock(Configuration.class);
+        when(configuration.getTaskInputPayloadSizeThresholdKB()).thenReturn(10L);
+        when(configuration.getMaxTaskInputPayloadSizeThresholdKB()).thenReturn(10240L);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(1);
+        taskDef.setName("mockTaskDef");
+        taskDef.setResponseTimeoutSeconds(60 * 60);
+        when(metadataDAO.getTaskDef(anyString())).thenReturn(taskDef);
         ParametersUtils parametersUtils = new ParametersUtils();
         Map<String, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put("DECISION", new DecisionTaskMapper());
@@ -95,7 +109,7 @@ public class TestDeciderOutcomes {
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 
-        this.deciderService = new DeciderService(taskMappers);
+        this.deciderService = new DeciderService(parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers);
     }
 
     @Test
@@ -228,10 +242,15 @@ public class TestDeciderOutcomes {
         task1Id = outcome.tasksToBeScheduled.get(1).getTaskId();
 
         outcome.tasksToBeScheduled.get(1).setStatus(Status.FAILED);
+        for(Task taskToBeScheduled : outcome.tasksToBeScheduled) {
+            taskToBeScheduled.setUpdateTime(System.currentTimeMillis());
+        }
         workflow.getTasks().addAll(outcome.tasksToBeScheduled);
 
         outcome = deciderService.decide(workflow);
         assertTrue(outcome.tasksToBeScheduled.stream().anyMatch(task1 -> task1.getReferenceTaskName().equals("f0")));
+
+        //noinspection ConstantConditions
         Task task1 = outcome.tasksToBeScheduled.stream().filter(t -> t.getReferenceTaskName().equals("f0")).findFirst().get();
         assertEquals("v", task1.getInputData().get("k"));
         assertEquals(1, task1.getInputData().get("k1"));
@@ -298,7 +317,7 @@ public class TestDeciderOutcomes {
     }
 
     @Test
-    public void testOptionalWithDynamicFork() throws Exception {
+    public void testOptionalWithDynamicFork() {
         WorkflowDef def = new WorkflowDef();
         def.setName("test");
 
@@ -357,6 +376,10 @@ public class TestDeciderOutcomes {
         assertEquals(Task.Status.IN_PROGRESS, outcome.tasksToBeScheduled.get(4).getStatus());
         workflow.getTasks().clear();
         workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+
+        for(Task taskToBeScheduled : outcome.tasksToBeScheduled) {
+            taskToBeScheduled.setUpdateTime(System.currentTimeMillis());
+        }
 
         outcome = deciderService.decide(workflow);
         assertNotNull(outcome);

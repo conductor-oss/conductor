@@ -124,6 +124,16 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
         withTransaction(connection -> updateTask(connection, task));
     }
 
+    /**
+     * This is a dummy implementation and this feature is not for Mysql backed Conductor
+     * @param task: which needs to be evaluated whether it is rateLimited or not
+     * @return
+     */
+    @Override
+    public boolean exceedsRateLimitPerFrequency(Task task) {
+        return false;
+    }
+
     @Override
     public boolean exceedsInProgressLimit(Task task) {
 
@@ -142,7 +152,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
         long current = getInProgressTaskCount(task.getTaskDefName());
 
         if (current >= limit) {
-            Monitors.recordTaskRateLimited(task.getTaskDefName(), limit);
+            Monitors.recordTaskConcurrentExecutionLimited(task.getTaskDefName(), limit);
             return true;
         }
 
@@ -158,7 +168,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
         if (rateLimited) {
             logger.info("Task execution count limited. {}, limit {}, current {}", task.getTaskDefName(), limit,
                     getInProgressTaskCount(task.getTaskDefName()));
-            Monitors.recordTaskRateLimited(task.getTaskDefName(), limit);
+            Monitors.recordTaskConcurrentExecutionLimited(task.getTaskDefName(), limit);
         }
 
         return rateLimited;
@@ -257,7 +267,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
             withTransaction(connection -> {
                 removeWorkflowDefToWorkflowMapping(connection, wf);
                 removeWorkflow(connection, workflowId);
-                removePendingWorkflow(connection, wf.getWorkflowType(), workflowId);
+                removePendingWorkflow(connection, wf.getWorkflowName(), workflowId);
             });
 
             for (Task task : wf.getTasks()) {
@@ -494,9 +504,9 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
             }
 
             if (terminal) {
-                removePendingWorkflow(tx, workflow.getWorkflowType(), workflow.getWorkflowId());
+                removePendingWorkflow(tx, workflow.getWorkflowName(), workflow.getWorkflowId());
             } else {
-                addPendingWorkflow(tx, workflow.getWorkflowType(), workflow.getWorkflowId());
+                addPendingWorkflow(tx, workflow.getWorkflowName(), workflow.getWorkflowId());
             }
         });
 
@@ -622,7 +632,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
         String INSERT_WORKFLOW_DEF_TO_WORKFLOW = "INSERT INTO workflow_def_to_workflow (workflow_def, date_str, workflow_id) VALUES (?, ?, ?)";
 
         execute(connection, INSERT_WORKFLOW_DEF_TO_WORKFLOW,
-                q -> q.addParameter(workflow.getWorkflowType()).addParameter(dateStr(workflow.getCreateTime()))
+                q -> q.addParameter(workflow.getWorkflowName()).addParameter(dateStr(workflow.getCreateTime()))
                         .addParameter(workflow.getWorkflowId()).executeUpdate());
     }
 
@@ -630,7 +640,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
         String REMOVE_WORKFLOW_DEF_TO_WORKFLOW = "DELETE FROM workflow_def_to_workflow WHERE workflow_def = ? AND date_str = ? AND workflow_id = ?";
 
         execute(connection, REMOVE_WORKFLOW_DEF_TO_WORKFLOW,
-                q -> q.addParameter(workflow.getWorkflowType()).addParameter(dateStr(workflow.getCreateTime()))
+                q -> q.addParameter(workflow.getWorkflowName()).addParameter(dateStr(workflow.getCreateTime()))
                         .addParameter(workflow.getWorkflowId()).executeUpdate());
     }
 

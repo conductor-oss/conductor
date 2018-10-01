@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,18 +18,6 @@
  */
 package com.netflix.conductor.core.config;
 
-import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_DECISION;
-import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_DYNAMIC;
-import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_EVENT;
-import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_FORK_JOIN;
-import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC;
-import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_JOIN;
-import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_SIMPLE;
-import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_SUB_WORKFLOW;
-import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_USER_DEFINED;
-import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_WAIT;
-import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
@@ -41,7 +29,6 @@ import com.google.inject.name.Named;
 import com.netflix.conductor.core.events.ActionProcessor;
 import com.netflix.conductor.core.events.EventProcessor;
 import com.netflix.conductor.core.events.EventQueueProvider;
-import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.queue.dyno.DynoEventQueueProvider;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
@@ -61,8 +48,18 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.service.DummyRateLimitingService;
-import com.netflix.conductor.service.RateLimitingService;
+
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_DECISION;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_DYNAMIC;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_EVENT;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_FORK_JOIN;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_JOIN;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_SIMPLE;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_USER_DEFINED;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_WAIT;
+import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
 
 /**
  * @author Viren
@@ -75,14 +72,12 @@ public class CoreModule extends AbstractModule {
     @Override
     protected void configure() {
         install(MultibindingsScanner.asModule());
-        requestStaticInjection(EventQueues.class);
         bind(ActionProcessor.class).asEagerSingleton();
         bind(EventProcessor.class).asEagerSingleton();
         bind(SystemTaskWorkerCoordinator.class).asEagerSingleton();
         bind(SubWorkflow.class).asEagerSingleton();
         bind(Wait.class).asEagerSingleton();
         bind(Event.class).asEagerSingleton();
-        bind(RateLimitingService.class).to(DummyRateLimitingService.class);
     }
 
     @Provides
@@ -90,7 +85,6 @@ public class CoreModule extends AbstractModule {
     public ParametersUtils getParameterUtils() {
         return new ParametersUtils();
     }
-
 
     @ProvidesIntoMap
     @StringMapKey(CONDUCTOR_QUALIFIER)
@@ -180,6 +174,4 @@ public class CoreModule extends AbstractModule {
     public TaskMapper getSimpleTaskMapper(ParametersUtils parametersUtils) {
         return new SimpleTaskMapper(parametersUtils);
     }
-
-
 }

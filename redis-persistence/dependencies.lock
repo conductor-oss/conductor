@@ -1,5 +1,11 @@
 {
     "compile": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -47,15 +53,15 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "1.0.8",
-            "requested": "1.0.8"
+            "locked": "2.0.0-rc3",
+            "requested": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.servo:servo-core": {
@@ -86,7 +92,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.0"
+            "locked": "3.6"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -95,11 +101,17 @@
             "locked": "1.7.25"
         },
         "redis.clients:jedis": {
-            "locked": "2.8.1",
+            "locked": "2.9.0",
             "requested": "2.8.1"
         }
     },
     "compileClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -147,15 +159,15 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "1.0.8",
-            "requested": "1.0.8"
+            "locked": "2.0.0-rc3",
+            "requested": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.servo:servo-core": {
@@ -186,7 +198,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.0"
+            "locked": "3.6"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -195,11 +207,17 @@
             "locked": "1.7.25"
         },
         "redis.clients:jedis": {
-            "locked": "2.8.1",
+            "locked": "2.9.0",
             "requested": "2.8.1"
         }
     },
     "default": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -247,15 +265,15 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "1.0.8",
-            "requested": "1.0.8"
+            "locked": "2.0.0-rc3",
+            "requested": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.servo:servo-core": {
@@ -286,7 +304,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.0"
+            "locked": "3.6"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -295,11 +313,17 @@
             "locked": "1.7.25"
         },
         "redis.clients:jedis": {
-            "locked": "2.8.1",
+            "locked": "2.9.0",
             "requested": "2.8.1"
         }
     },
     "runtime": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -347,15 +371,15 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "1.0.8",
-            "requested": "1.0.8"
+            "locked": "2.0.0-rc3",
+            "requested": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.servo:servo-core": {
@@ -386,7 +410,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.0"
+            "locked": "3.6"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -395,11 +419,17 @@
             "locked": "1.7.25"
         },
         "redis.clients:jedis": {
-            "locked": "2.8.1",
+            "locked": "2.9.0",
             "requested": "2.8.1"
         }
     },
     "runtimeClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -447,15 +477,15 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "1.0.8",
-            "requested": "1.0.8"
+            "locked": "2.0.0-rc3",
+            "requested": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.servo:servo-core": {
@@ -486,7 +516,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.0"
+            "locked": "3.6"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -495,11 +525,17 @@
             "locked": "1.7.25"
         },
         "redis.clients:jedis": {
-            "locked": "2.8.1",
+            "locked": "2.9.0",
             "requested": "2.8.1"
         }
     },
     "testCompile": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -547,15 +583,15 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "1.0.8",
-            "requested": "1.0.8"
+            "locked": "2.0.0-rc3",
+            "requested": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.servo:servo-core": {
@@ -590,7 +626,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.0"
+            "locked": "3.6"
         },
         "org.mockito:mockito-all": {
             "locked": "1.10.0",
@@ -607,11 +643,17 @@
             "locked": "1.7.25"
         },
         "redis.clients:jedis": {
-            "locked": "2.8.1",
+            "locked": "2.9.0",
             "requested": "2.8.1"
         }
     },
     "testCompileClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -659,15 +701,15 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "1.0.8",
-            "requested": "1.0.8"
+            "locked": "2.0.0-rc3",
+            "requested": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.servo:servo-core": {
@@ -702,7 +744,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.0"
+            "locked": "3.6"
         },
         "org.mockito:mockito-all": {
             "locked": "1.10.0",
@@ -719,11 +761,17 @@
             "locked": "1.7.25"
         },
         "redis.clients:jedis": {
-            "locked": "2.8.1",
+            "locked": "2.9.0",
             "requested": "2.8.1"
         }
     },
     "testRuntime": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -771,15 +819,15 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "1.0.8",
-            "requested": "1.0.8"
+            "locked": "2.0.0-rc3",
+            "requested": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.servo:servo-core": {
@@ -814,7 +862,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.0"
+            "locked": "3.6"
         },
         "org.mockito:mockito-all": {
             "locked": "1.10.0",
@@ -831,11 +879,17 @@
             "locked": "1.7.25"
         },
         "redis.clients:jedis": {
-            "locked": "2.8.1",
+            "locked": "2.9.0",
             "requested": "2.8.1"
         }
     },
     "testRuntimeClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -883,15 +937,15 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "1.0.8",
-            "requested": "1.0.8"
+            "locked": "2.0.0-rc3",
+            "requested": "2.0.0-rc3"
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.5.9",
+            "locked": "1.6.4",
             "requested": "1.5.9"
         },
         "com.netflix.servo:servo-core": {
@@ -926,7 +980,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.0"
+            "locked": "3.6"
         },
         "org.mockito:mockito-all": {
             "locked": "1.10.0",
@@ -943,7 +997,7 @@
             "locked": "1.7.25"
         },
         "redis.clients:jedis": {
-            "locked": "2.8.1",
+            "locked": "2.9.0",
             "requested": "2.8.1"
         }
     }

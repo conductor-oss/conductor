@@ -47,12 +47,6 @@ public class MySQLMetadataDAOTest {
         testUtil.getDataSource().close();
     }
 
-    @Test(expected=NullPointerException.class)
-    public void testMissingName() throws Exception {
-        WorkflowDef def = new WorkflowDef();
-        dao.create(def);
-    }
-
     @Test(expected=ApplicationException.class)
     public void testDuplicate() throws Exception {
         WorkflowDef def = new WorkflowDef();

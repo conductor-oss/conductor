@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 package com.netflix.conductor.core.execution;
-/**
- * 
- */
-
 
 import com.netflix.conductor.core.config.Configuration;
 
@@ -88,6 +84,46 @@ public class TestConfiguration implements Configuration {
 	public String getRegion() {
 		return "us-east-1";
 	}
+
+	@Override
+	public Long getWorkflowInputPayloadSizeThresholdKB() {
+		return 10L;
+	}
+
+	@Override
+	public Long getMaxWorkflowInputPayloadSizeThresholdKB() {
+		return 10240L;
+	}
+
+	@Override
+	public Long getWorkflowOutputPayloadSizeThresholdKB() {
+		return 10L;
+	}
+
+	@Override
+	public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
+		return 10240L;
+	}
+
+	@Override
+	public Long getTaskInputPayloadSizeThresholdKB() {
+		return 10L;
+	}
+
+	@Override
+	public Long getMaxTaskInputPayloadSizeThresholdKB() {
+		return 10240L;
+	}
+
+	@Override
+	public Long getTaskOutputPayloadSizeThresholdKB() {
+		return 10L;
+	}
+
+	@Override
+	public Long getMaxTaskOutputPayloadSizeThresholdKB() {
+		return 10240L;
+	}
 	
 	@Override
 	public Map<String, Object> getAll() {
@@ -96,6 +132,6 @@ public class TestConfiguration implements Configuration {
 
 	@Override
 	public long getLongProperty(String name, long defaultValue) {
-		return 1000000l;
+		return 1000000L;
 	}
 }

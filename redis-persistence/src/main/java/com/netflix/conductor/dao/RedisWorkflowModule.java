@@ -13,14 +13,12 @@
 package com.netflix.conductor.dao;
 
 import com.google.inject.AbstractModule;
-
 import com.netflix.conductor.dao.dynomite.RedisExecutionDAO;
 import com.netflix.conductor.dao.dynomite.RedisMetadataDAO;
 import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
 import com.netflix.conductor.dyno.DynoProxy;
 import com.netflix.conductor.dyno.RedisQueuesProvider;
 import com.netflix.dyno.queues.redis.RedisQueues;
-
 /**
  * @author Viren
  */

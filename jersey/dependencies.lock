@@ -1,5 +1,11 @@
 {
     "compile": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -99,6 +105,12 @@
         }
     },
     "compileClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -198,6 +210,12 @@
         }
     },
     "default": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -303,6 +321,12 @@
         }
     },
     "runtime": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -402,6 +426,12 @@
         }
     },
     "runtimeClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -501,6 +531,12 @@
         }
     },
     "testCompile": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -608,6 +644,12 @@
         }
     },
     "testCompileClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -715,6 +757,12 @@
         }
     },
     "testRuntime": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -822,6 +870,12 @@
         }
     },
     "testRuntimeClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"

@@ -16,7 +16,6 @@
 package com.netflix.conductor.core.config;
 
 import com.google.inject.AbstractModule;
-
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -107,6 +106,46 @@ public class SystemPropertiesConfiguration implements Configuration {
         } catch (NumberFormatException e) {
         }
         return defaultValue;
+    }
+
+
+    @Override
+    public Long getWorkflowInputPayloadSizeThresholdKB() {
+        return getLongProperty("conductor.workflow.input.payload.threshold.kb", 5120L);
+    }
+
+    @Override
+    public Long getMaxWorkflowInputPayloadSizeThresholdKB() {
+        return getLongProperty("conductor.max.workflow.input.payload.threshold.kb", 10240L);
+    }
+
+    @Override
+    public Long getWorkflowOutputPayloadSizeThresholdKB() {
+        return getLongProperty("conductor.workflow.output.payload.threshold.kb", 5120L);
+    }
+
+    @Override
+    public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
+        return getLongProperty("conductor.max.workflow.output.payload.threshold.kb", 10240L);
+    }
+
+    @Override
+    public Long getTaskInputPayloadSizeThresholdKB() {
+        return getLongProperty("conductor.task.input.payload.threshold.kb", 3072L);
+    }
+
+    @Override
+    public Long getMaxTaskInputPayloadSizeThresholdKB() {
+        return getLongProperty("conductor.max.task.input.payload.threshold.kb", 10240L);
+    }
+
+    @Override
+    public Long getTaskOutputPayloadSizeThresholdKB() {
+        return getLongProperty("conductor.task.output.payload.threshold.kb", 3072L);
+    }
+
+    public Long getMaxTaskOutputPayloadSizeThresholdKB() {
+        return getLongProperty("conductor.max.task.output.payload.threshold.kb", 10240L);
     }
 
     @Override

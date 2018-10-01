@@ -1,11 +1,8 @@
 package com.netflix.conductor.dao.mysql;
 
 import com.google.common.collect.ImmutableList;
-
 import com.netflix.conductor.core.events.queue.Message;
-
 import org.junit.After;
-import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;

@@ -18,6 +18,16 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.metrics.Monitors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -30,18 +40,6 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.metrics.Monitors;
-
 /**
  * @author Viren
  *
@@ -51,11 +49,11 @@ public class SystemTaskWorkerCoordinator {
 
 	private static Logger logger = LoggerFactory.getLogger(SystemTaskWorkerCoordinator.class);
 
-	private QueueDAO taskQueues;
+	private QueueDAO queueDAO;
 
-	private WorkflowExecutor executor;
+	private WorkflowExecutor workflowExecutor;
 
-	private ExecutorService es;
+	private ExecutorService executorService;
 
 	private int workerQueueSize;
 
@@ -78,85 +76,83 @@ public class SystemTaskWorkerCoordinator {
 	private static final String className = SystemTaskWorkerCoordinator.class.getName();
 
 	@Inject
-	public SystemTaskWorkerCoordinator(QueueDAO taskQueues, WorkflowExecutor executor, Configuration config) {
-		this.taskQueues = taskQueues;
-		this.executor = executor;
+	public SystemTaskWorkerCoordinator(QueueDAO queueDAO, WorkflowExecutor workflowExecutor, Configuration config) {
+		this.queueDAO = queueDAO;
+		this.workflowExecutor = workflowExecutor;
 		this.config = config;
 		this.unackTimeout = config.getIntProperty("workflow.system.task.worker.callback.seconds", 30);
 		int threadCount = config.getIntProperty("workflow.system.task.worker.thread.count", 10);
 		this.pollCount = config.getIntProperty("workflow.system.task.worker.poll.count", 10);
 		this.pollInterval = config.getIntProperty("workflow.system.task.worker.poll.interval", 50);
 		this.workerQueueSize = config.getIntProperty("workflow.system.task.worker.queue.size", 100);
-		this.workerQueue = new LinkedBlockingQueue<Runnable>(workerQueueSize);
+		this.workerQueue = new LinkedBlockingQueue<>(workerQueueSize);
 		if(threadCount > 0) {
-			ThreadFactory tf = new ThreadFactoryBuilder().setNameFormat("system-task-worker-%d").build();
-			this.es = new ThreadPoolExecutor(threadCount, threadCount,
+			ThreadFactory threadFactory = new ThreadFactoryBuilder().setNameFormat("system-task-worker-%d").build();
+			this.executorService = new ThreadPoolExecutor(threadCount, threadCount,
 	                0L, TimeUnit.MILLISECONDS,
 	                workerQueue,
-	                tf);
-
-			new Thread(()->listen()).start();
-			logger.info("System Task Worker Initialized with {} threads and a callback time of {} second and queue size {} with pollCount {}", threadCount, unackTimeout, workerQueueSize, pollCount);
+	                threadFactory);
+			new Thread(this::listen).start();
+			logger.info("System Task Worker initialized with {} threads and a callback time of {} seconds and queue size: {} with pollCount: {} and poll interval: {}", threadCount, unackTimeout, workerQueueSize, pollCount, pollInterval);
 		} else {
 			logger.info("System Task Worker DISABLED");
 		}
 	}
 
 	static synchronized void add(WorkflowSystemTask systemTask) {
-		logger.info("Adding system task {}", systemTask.getName());
+		logger.info("Adding the queue for system task: {}", systemTask.getName());
 		queue.add(systemTask);
 	}
 
 	private void listen() {
 		try {
+			//noinspection InfiniteLoopStatement
 			for(;;) {
-				WorkflowSystemTask st = queue.poll(60, TimeUnit.SECONDS);
-				if(st != null && st.isAsync() && !listeningTasks.contains(st)) {
-					listen(st);
-					listeningTasks.add(st);
+				WorkflowSystemTask workflowSystemTask = queue.poll(60, TimeUnit.SECONDS);
+				if(workflowSystemTask != null && workflowSystemTask.isAsync() && !listeningTasks.contains(workflowSystemTask)) {
+					listen(workflowSystemTask);
+					listeningTasks.add(workflowSystemTask);
 				}
 			}
 		}catch(InterruptedException ie) {
-			logger.warn(ie.getMessage(), ie);
+			Monitors.error(className, "listen");
+			logger.warn("Error listening for workflow system tasks", ie);
 		}
 	}
 
 	private void listen(WorkflowSystemTask systemTask) {
-		Executors.newScheduledThreadPool(1).scheduleWithFixedDelay(() -> pollAndExecute(systemTask), 1000, pollInterval, TimeUnit.MILLISECONDS);
-		logger.info("Started listening {}", systemTask.getName());
+		Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> pollAndExecute(systemTask), 1000, pollInterval, TimeUnit.MILLISECONDS);
+		logger.info("Started listening for system task: {}", systemTask.getName());
 	}
 
 	private void pollAndExecute(WorkflowSystemTask systemTask) {
+		String taskName = systemTask.getName();
 		try {
 			if(config.disableAsyncWorkers()) {
-				logger.warn("System Task Worker is DISABLED.  Not polling for system task: {}", systemTask.getName());
+				logger.warn("System Task Worker is DISABLED.  Not polling for system task: {}", taskName);
 				return;
 			}
 			// get the remaining capacity of worker queue to prevent queue full exception
 			int realPollCount = Math.min(workerQueue.remainingCapacity(), pollCount);
 			if (realPollCount <= 0) {
-                logger.warn("All workers are busy, not polling.  queue size {}, max {}", workerQueue.size(), workerQueueSize);
+                logger.warn("All workers are busy, not polling. queue size: {}, max: {}, task:{}", workerQueue.size(), workerQueueSize, taskName);
                 return;
 			}
 
-			String name = systemTask.getName();
-			List<String> polled = taskQueues.pop(name, realPollCount, 200);
-			Monitors.recordTaskPoll(name);
-			Monitors.recordTaskPoll(className);
-			logger.debug("Polling for {}, got {}", name, polled.size());
-			for(String task : polled) {
-				logger.debug("Task: {} being sent to the workflow executor", task);
+			List<String> polledTaskIds = queueDAO.pop(taskName, realPollCount, 200);
+			Monitors.recordTaskPoll(taskName);
+			logger.debug("Polling for {}, got {} tasks", taskName, polledTaskIds.size());
+			for(String taskId : polledTaskIds) {
+				logger.debug("Task: {} of type: {} being sent to the workflow executor", taskId, taskName);
 				try {
-					es.submit(()->executor.executeSystemTask(systemTask, task, unackTimeout));
-				}catch(RejectedExecutionException ree) {
-					logger.warn("Queue full for workers {}", workerQueue.size());
+					executorService.submit(()-> workflowExecutor.executeSystemTask(systemTask, taskId, unackTimeout));
+				} catch(RejectedExecutionException ree) {
+					logger.warn("Queue full for workers. Size: {}, task:{}", workerQueue.size(), taskName);
 				}
 			}
-
 		} catch (Exception e) {
 			Monitors.error(className, "pollAndExecute");
-			logger.error(e.getMessage(), e);
+			logger.error("Error executing system task:{}", taskName, e);
 		}
 	}
-
 }	

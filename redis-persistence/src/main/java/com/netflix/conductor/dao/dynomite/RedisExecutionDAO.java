@@ -36,7 +36,6 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dyno.DynoProxy;
 import com.netflix.conductor.metrics.Monitors;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +66,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	private static final String RAW_JSON_FIELD = "rawJSON";
 	// Keys Families
 	private static final String TASK_LIMIT_BUCKET = "TASK_LIMIT_BUCKET";
+	private static final String TASK_RATE_LIMIT_BUCKET = "TASK_RATE_LIMIT_BUCKET";
 	private final static String IN_PROGRESS_TASKS = "IN_PROGRESS_TASKS";
 	private final static String TASKS_IN_PROGRESS_STATUS = "TASKS_IN_PROGRESS_STATUS";	//Tasks which are in IN_PROGRESS status.
 	private final static String WORKFLOW_TO_TASKS = "WORKFLOW_TO_TASKS";
@@ -81,22 +81,13 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	private final static String EVENT_EXECUTION = "EVENT_EXECUTION";
 
-	private static final String WORKFLOW_DYNOMITE_TASK_PAYLOAD_THRESHOLD = "workflow.dynomite.task.payload.threshold";
-	private static final String WORKFLOW_DYNOMITE_WORKFLOW_INPUT_THRESHOLD = "workflow.dynomite.workflow.input.threshold";
-
 	private IndexDAO indexDAO;
-
-	private long taskPayloadThreshold;
-
-	private long workflowInputPayloadThreshold;
 
 	@Inject
 	public RedisExecutionDAO(DynoProxy dynoClient, ObjectMapper objectMapper,
 							 IndexDAO indexDAO, Configuration config) {
 		super(dynoClient, objectMapper, config);
 		this.indexDAO = indexDAO;
-		this.taskPayloadThreshold = config.getLongProperty(WORKFLOW_DYNOMITE_TASK_PAYLOAD_THRESHOLD,5 * FileUtils.ONE_MB);
-		this.workflowInputPayloadThreshold = config.getLongProperty(WORKFLOW_DYNOMITE_WORKFLOW_INPUT_THRESHOLD,5 * FileUtils.ONE_MB);
 	}
 
 	@Override
@@ -211,15 +202,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		recordRedisDaoPayloadSize("updateTask", payload.length(), taskDefinition
 				.map(TaskDef::getName)
 				.orElse("n/a"), task.getWorkflowType());
-		//The payload is verified and
-		if(payload.length() > taskPayloadThreshold) {
-			task.setReasonForIncompletion(String.format("Payload of the task: %s larger than the permissible %s bytes",
-					FileUtils.byteCountToDisplaySize(payload.length()), FileUtils.byteCountToDisplaySize(taskPayloadThreshold)));
-			task.setOutputData(null);
-			task.setOutputMessage(null);
-			task.setStatus(Status.FAILED_WITH_TERMINAL_ERROR);
-			payload = toJson(task);
-		}
+
 		recordRedisDaoRequests("updateTask", task.getTaskType(), task.getWorkflowType());
 		dynoClient.set(nsKey(TASK, task.getTaskId()), payload);
 		logger.debug("Workflow task payload saved to TASK with taskKey: {}, workflowId: {}, taskId: {}, taskType: {} during updateTask",
@@ -238,6 +221,58 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		indexDAO.indexTask(task);
 	}
 
+	/**
+	 * This method evaluates if the {@link Task} is rate limited or not based on {@link Task#getRateLimitPerFrequency()}
+	 * and {@link Task#getRateLimitFrequencyInSeconds()}
+	 *
+	 * The rate limiting is implemented using the Redis constructs of sorted set and TTL of each element in the rate limited bucket.
+	 * <ul>
+	 *     <li>All the entries that are in the not in the frequency bucket are cleaned up by leveraging {@link DynoProxy#zremrangeByScore(String, String, String)},
+	 *     this is done to make the next step of evaluation efficient</li>
+	 *     <li>A current count(tasks executed within the frequency) is calculated based on the current time and the beginning of the rate limit frequency time(which is current time - {@link Task#getRateLimitFrequencyInSeconds()} in millis),
+	 *     this is achieved by using {@link DynoProxy#zcount(String, double, double)} </li>
+	 *     <li>Once the count is calculated then a evaluation is made to determine if it is within the bounds of {@link Task#getRateLimitPerFrequency()}, if so the count is increased and an expiry TTL is added to the entry</li>
+	 * </ul>
+	 *
+	 * @param task: which needs to be evaluated whether it is rateLimited or not
+	 * @return true: If the {@link Task} is rateLimited
+	 * 		false: If the {@link Task} is not rateLimited
+	 */
+	@Override
+	public boolean exceedsRateLimitPerFrequency(Task task) {
+		int rateLimitPerFrequency = task.getRateLimitPerFrequency();
+		int rateLimitFrequencyInSeconds = task.getRateLimitFrequencyInSeconds();
+		if (rateLimitPerFrequency <= 0 || rateLimitFrequencyInSeconds <=0) {
+			logger.debug("Rate limit not applied to the Task: {}  either rateLimitPerFrequency: {} or rateLimitFrequencyInSeconds: {} is 0 or less",
+					task, rateLimitPerFrequency, rateLimitFrequencyInSeconds);
+			return false;
+		} else {
+			logger.debug("Evaluating rate limiting for Task: {} with rateLimitPerFrequency: {} and rateLimitFrequencyInSeconds: {}",
+					task, rateLimitPerFrequency, rateLimitFrequencyInSeconds);
+			long currentTimeEpochMillis = System.currentTimeMillis();
+			long currentTimeEpochMinusRateLimitBucket = currentTimeEpochMillis - (rateLimitFrequencyInSeconds * 1000);
+			String key = nsKey(TASK_RATE_LIMIT_BUCKET, task.getTaskDefName());
+			dynoClient.zremrangeByScore(key, "-inf", String.valueOf(currentTimeEpochMinusRateLimitBucket));
+			int currentBucketCount = Math.toIntExact(
+					dynoClient.zcount(key,
+							currentTimeEpochMinusRateLimitBucket,
+							currentTimeEpochMillis));
+			if (currentBucketCount < rateLimitPerFrequency) {
+				dynoClient.zadd(key, currentTimeEpochMillis, String.valueOf(currentTimeEpochMillis));
+				dynoClient.expire(key, rateLimitFrequencyInSeconds);
+				logger.info("Task: {} with rateLimitPerFrequency: {} and rateLimitFrequencyInSeconds: {} within the rate limit with current count {}",
+						task, rateLimitPerFrequency, rateLimitFrequencyInSeconds, ++currentBucketCount);
+				Monitors.recordTaskRateLimited(task.getTaskDefName(), rateLimitPerFrequency);
+				return false;
+			} else {
+				logger.info("Task: {} with rateLimitPerFrequency: {} and rateLimitFrequencyInSeconds: {} is out of bounds of rate limit with current count {}",
+						task, rateLimitPerFrequency, rateLimitFrequencyInSeconds, currentBucketCount);
+				return true;
+			}
+		}
+	}
+
+
 	@Override
 	public boolean exceedsInProgressLimit(Task task) {
 		Optional<TaskDef> taskDefinition = task.getTaskDefinition();
@@ -251,7 +286,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 		long current = getInProgressTaskCount(task.getTaskDefName());
 		if(current >= limit) {
-			Monitors.recordTaskRateLimited(task.getTaskDefName(), limit);
+			logger.info("Task execution count limited. task - {}:{}, limit: {}, current: {}", task.getTaskId(), task.getTaskDefName(), limit, current);
+			Monitors.recordTaskConcurrentExecutionLimited(task.getTaskDefName(), limit);
 			return true;
 		}
 
@@ -264,7 +300,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		Set<String> ids = dynoClient.zrangeByScore(rateLimitKey, 0, score + 1, limit);
 		boolean rateLimited = !ids.contains(taskId);
 		if(rateLimited) {
-			logger.info("Tak execution count limited.  {}, limit {}, current {}", task.getTaskDefName(), limit, getInProgressTaskCount(task.getTaskDefName()));
+			logger.info("Task execution count limited. task - {}:{}, limit: {}, current: {}", task.getTaskId(), task.getTaskDefName(), limit, current);
 			String inProgressKey = nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName());
 			//Cleanup any items that are still present in the rate limit bucket but not in progress anymore!
 			ids.stream().filter(id -> !dynoClient.sismember(inProgressKey, id)).forEach(id2 -> dynoClient.zrem(rateLimitKey, id2));
@@ -373,10 +409,10 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			recordRedisDaoRequests("removeWorkflow");
 
 			// Remove from lists
-			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, wf.getWorkflowType(), dateStr(wf.getCreateTime()));
+			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, wf.getWorkflowName(), dateStr(wf.getCreateTime()));
 			dynoClient.srem(key, workflowId);
 			dynoClient.srem(nsKey(CORR_ID_TO_WORKFLOWS, wf.getCorrelationId()), workflowId);
-			dynoClient.srem(nsKey(PENDING_WORKFLOWS, wf.getWorkflowType()), workflowId);
+			dynoClient.srem(nsKey(PENDING_WORKFLOWS, wf.getWorkflowName()), workflowId);
 
 			// Remove the object
 			dynoClient.del(nsKey(WORKFLOW, workflowId));
@@ -406,8 +442,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 		if(json != null) {
 			workflow = readValue(json, Workflow.class);
-			recordRedisDaoRequests("getWorkflow", "n/a", workflow.getWorkflowType());
-			recordRedisDaoPayloadSize("getWorkflow", json.length(),"n/a", workflow.getWorkflowType());
+			recordRedisDaoRequests("getWorkflow", "n/a", workflow.getWorkflowName());
+			recordRedisDaoPayloadSize("getWorkflow", json.length(),"n/a", workflow.getWorkflowName());
 			if (includeTasks) {
 				List<Task> tasks = getTasksForWorkflow(workflowId);
 				tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
@@ -500,12 +536,12 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 
 	/**
-	 * This is not just an insert or update, the terminal state workflow is removed from the
-	 * QQ there can be partial updates if the node goes down
-	 * TODO add logger statements for different if conditions
-	 * @param workflow
-	 * @param update
-	 * @return
+	 * Inserts a new workflow/ updates an existing workflow in the datastore.
+	 * Additionally, if a workflow is in terminal state, it is removed from the set of pending workflows.
+	 *
+	 * @param workflow the workflow instance
+	 * @param update flag to identify if update or create operation
+	 * @return the workflowId
 	 */
 	private String insertOrUpdateWorkflow(Workflow workflow, boolean update) {
 		Preconditions.checkNotNull(workflow, "workflow object cannot be null");
@@ -517,16 +553,13 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		workflow.setTasks(new LinkedList<>());
 
 		String payload = toJson(workflow);
-		if(payload.length() > workflowInputPayloadThreshold) {
-			throw new ApplicationException(Code.INVALID_INPUT, String.format("Input payload larger than the allowed threshold of: %d", workflowInputPayloadThreshold));
-		}
 		// Store the workflow object
 		dynoClient.set(nsKey(WORKFLOW, workflow.getWorkflowId()), payload);
-		recordRedisDaoRequests("storeWorkflow", "n/a", workflow.getWorkflowType());
-		recordRedisDaoPayloadSize("storeWorkflow", payload.length(), "n/a", workflow.getWorkflowType());
+		recordRedisDaoRequests("storeWorkflow", "n/a", workflow.getWorkflowName());
+		recordRedisDaoPayloadSize("storeWorkflow", payload.length(), "n/a", workflow.getWorkflowName());
 		if (!update) {
 			// Add to list of workflows for a workflowdef
-			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, workflow.getWorkflowType(), dateStr(workflow.getCreateTime()));
+			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, workflow.getWorkflowName(), dateStr(workflow.getCreateTime()));
 			dynoClient.sadd(key, workflow.getWorkflowId());
 			if (workflow.getCorrelationId() != null) {
 				// Add to list of workflows for a correlationId
@@ -535,9 +568,9 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		}
 		// Add or remove from the pending workflows
 		if (workflow.getStatus().isTerminal()) {
-			dynoClient.srem(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowType()), workflow.getWorkflowId());
+			dynoClient.srem(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflow.getWorkflowId());
 		} else {
-			dynoClient.sadd(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowType()), workflow.getWorkflowId());
+			dynoClient.sadd(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflow.getWorkflowId());
 		}
 
 		workflow.setTasks(tasks);

@@ -15,4 +15,5 @@ message StartWorkflowRequest {
     map<string, google.protobuf.Value> input = 4;
     map<string, string> task_to_domain = 5;
     WorkflowDef workflow_def = 6;
+    string external_input_payload_storage_path = 7;
 }

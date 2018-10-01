@@ -40,15 +40,16 @@ public class SubWorkflowTaskMapperTest {
     public ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         parametersUtils = mock(ParametersUtils.class);
         metadataDAO = mock(MetadataDAO.class);
         subWorkflowTaskMapper = new SubWorkflowTaskMapper(parametersUtils);
         deciderService = mock(DeciderService.class);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
-    public void getMappedTasks() throws Exception {
+    public void getMappedTasks() {
         //Given
         WorkflowDef workflowDef = new WorkflowDef();
         Workflow  workflowInstance = new Workflow();
@@ -90,7 +91,7 @@ public class SubWorkflowTaskMapperTest {
 
 
     @Test
-    public void getSubWorkflowParams() throws Exception {
+    public void getSubWorkflowParams() {
         WorkflowTask workflowTask = new WorkflowTask();
         SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         subWorkflowParams.setName("Foo");
@@ -101,7 +102,7 @@ public class SubWorkflowTaskMapperTest {
     }
 
     @Test
-    public void getExceptionWhenNoSubWorkflowParamsPassed() throws Exception {
+    public void getExceptionWhenNoSubWorkflowParamsPassed() {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("FooWorkFLow");
 
@@ -111,5 +112,4 @@ public class SubWorkflowTaskMapperTest {
 
         subWorkflowTaskMapper.getSubWorkflowParams(workflowTask);
     }
-
 }

@@ -19,6 +19,7 @@ import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.netflix.conductor.bootstrap.BootstrapModule;
 import com.netflix.conductor.bootstrap.ModulesProvider;
+import com.netflix.conductor.client.exceptions.ConductorClientException;
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
@@ -39,17 +40,17 @@ import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
 import com.netflix.conductor.jetty.server.JettyServer;
 import com.netflix.conductor.tests.utils.TestEnvironment;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.UniformInterfaceException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -146,20 +147,28 @@ public class End2EndTests extends AbstractEndToEndTest {
         def.getTasks().add(t0);
         def.getTasks().add(t1);
 
-        workflowClient.registerWorkflow(def);
-        WorkflowDef workflowDefinitionFromSystem = workflowClient.getWorkflowDef(def.getName(), null);
+        metadataClient.registerWorkflowDef(def);
+        WorkflowDef workflowDefinitionFromSystem = metadataClient.getWorkflowDef(def.getName(), null);
         assertNotNull(workflowDefinitionFromSystem);
         assertEquals(def, workflowDefinitionFromSystem);
 
         String correlationId = "test_corr_id";
-        String workflowId = workflowClient.startWorkflow(def.getName(), null, correlationId, new HashMap<>());
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest()
+                .withName(def.getName())
+                .withCorrelationId(correlationId)
+                .withInput(new HashMap<>());
+        String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         assertNotNull(workflowId);
 
         Workflow wf = workflowClient.getWorkflow(workflowId, false);
         assertEquals(0, wf.getTasks().size());
         assertEquals(workflowId, wf.getWorkflowId());
 
+        List<Workflow> workflowList = workflowClient.getWorkflows(def.getName(), correlationId, false, false);
+        assertEquals(1, workflowList.size());
+        assertEquals(workflowId, workflowList.get(0).getWorkflowId());
         wf = workflowClient.getWorkflow(workflowId, true);
+
         assertNotNull(wf);
         assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
         assertEquals(1, wf.getTasks().size());
@@ -183,7 +192,7 @@ public class End2EndTests extends AbstractEndToEndTest {
 
         Boolean acked = taskClient.ack(task.getTaskId(), "test");
         assertNotNull(acked);
-        assertTrue(acked.booleanValue());
+        assertTrue(acked);
 
         task.getOutputData().put("key1", "value1");
         task.setStatus(Status.COMPLETED);
@@ -257,12 +266,135 @@ public class End2EndTests extends AbstractEndToEndTest {
         metadataClient.registerWorkflowDef(def);
         metadataClient.unregisterWorkflowDef("testWorkflowDel", 1);
         try {
-            WorkflowDef workflowDefinition = metadataClient.getWorkflowDef("testWorkflowDel", 1);
-        } catch (UniformInterfaceException ue) {
-            ClientResponse response = ue.getResponse();
-            // TODO: fix this to NOT_FOUND once error handling is fixed
-            assertEquals(404, response.getStatus());
+            metadataClient.getWorkflowDef("testWorkflowDel", 1);
+        } catch (ConductorClientException e) {
+            int statusCode = e.getStatus();
+            String errorMessage = e.getMessage();
+            boolean retryable = e.isRetryable();
+            assertEquals(404, statusCode);
+            assertEquals("No such workflow found by name: testWorkflowDel, version: 1", errorMessage);
+            assertFalse(retryable);
         }
     }
 
+    @Test
+    public void testInvalidResource() {
+        MetadataClient metadataClient = new MetadataClient();
+        metadataClient.setRootURI("http://localhost:8080/api/invalid");
+        WorkflowDef def = new WorkflowDef();
+        def.setName("testWorkflowDel");
+        def.setVersion(1);
+        try {
+            metadataClient.registerWorkflowDef(def);
+        } catch (ConductorClientException e) {
+            int statusCode = e.getStatus();
+            boolean retryable = e.isRetryable();
+            assertEquals(404, statusCode);
+            assertFalse(retryable);
+        }
+    }
+
+    @Test
+    public void testUpdateWorkflow() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("testWorkflowDel");
+        def.setVersion(1);
+        metadataClient.registerWorkflowDef(def);
+        def.setVersion(2);
+        List<WorkflowDef> workflowList = new ArrayList<>();
+        workflowList.add(def);
+        metadataClient.updateWorkflowDefs(workflowList);
+        WorkflowDef def1 = metadataClient.getWorkflowDef(def.getName(), 2);
+        assertNotNull(def1);
+        try {
+            metadataClient.getTaskDef("test");
+        } catch (ConductorClientException e) {
+            int statuCode = e.getStatus();
+            assertEquals(404, statuCode);
+            assertEquals("No such taskType found by name: test", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
+
+
+    @Test
+    public void testStartWorkflow() {
+        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
+        try{
+            workflowClient.startWorkflow(startWorkflowRequest);
+        } catch (IllegalArgumentException e) {
+            assertEquals("Workflow name cannot be null or empty", e.getMessage());
+        }
+    }
+    @Test
+    public void testUpdateTask() {
+        TaskResult taskResult = new TaskResult();
+        try{
+            taskClient.updateTask(taskResult, "taskTest");
+        } catch (ConductorClientException e){
+            int statuCode = e.getStatus();
+            assertEquals(400, statuCode);
+            assertEquals("Workflow Id cannot be null or empty", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
+    @Test
+    public void testGetWorfklowNotFound() {
+        try{
+            workflowClient.getWorkflow("w123", true);
+        } catch (ConductorClientException e) {
+            assertEquals(404, e.getStatus());
+            assertEquals("No such workflow found by id: w123", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
+    @Test
+    public void testEmptyCreateWorkflowDef() {
+        try{
+            WorkflowDef workflowDef = new WorkflowDef();
+            metadataClient.registerWorkflowDef(workflowDef);
+        } catch (ConductorClientException e){
+            assertEquals(400, e.getStatus());
+            assertEquals("Workflow name cannot be null or empty", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
+    @Test
+    public void testUpdateWorkflowDef() {
+        try{
+            WorkflowDef workflowDef = new WorkflowDef();
+            List<WorkflowDef> workflowDefList = new ArrayList<>();
+            workflowDefList.add(workflowDef);
+            metadataClient.updateWorkflowDefs(workflowDefList);
+        } catch (ConductorClientException e){
+            assertEquals(400, e.getStatus());
+            assertEquals("WorkflowDef name cannot be null", e.getMessage());
+            assertFalse(e.isRetryable());
+        }
+    }
+    @Test(expected = Test.None.class /* no exception expected */)
+    public void testGetTaskInProgress() {
+        taskClient.getPendingTaskForWorkflow("test", "t1");
+    }
+    @Test
+    public void testRemoveTaskFromTaskQueue() {
+        try {
+            taskClient.removeTaskFromQueue("test", "fakeQueue");
+        } catch (ConductorClientException e) {
+            assertEquals(404, e.getStatus());
+        }
+    }
+    @Test
+    public void testTaskByTaskId() {
+        try {
+            taskClient.getTaskDetails("test123");
+        } catch (ConductorClientException e) {
+            assertEquals(404, e.getStatus());
+            assertEquals("No such task found by taskId: test123", e.getMessage());
+        }
+    }
+    @Test(expected = Test.None.class /* no exception expected */)
+    public void testListworkflowsByCorrelationId() {
+        workflowClient.getWorkflows("test", "test12", false, false);
+    }
 }

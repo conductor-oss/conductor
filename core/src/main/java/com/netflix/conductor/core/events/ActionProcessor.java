@@ -29,7 +29,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.JsonUtils;
-import com.netflix.conductor.service.MetadataService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,14 +47,13 @@ public class ActionProcessor {
 	private static final Logger logger = LoggerFactory.getLogger(ActionProcessor.class);
 
 	private final WorkflowExecutor executor;
-	private final MetadataService metadataService;
-	private final ParametersUtils parametersUtils = new ParametersUtils();
+	private final ParametersUtils parametersUtils;
 	private final JsonUtils jsonUtils = new JsonUtils();
 
 	@Inject
-	public ActionProcessor(WorkflowExecutor executor, MetadataService metadataService) {
+	public ActionProcessor(WorkflowExecutor executor, ParametersUtils parametersUtils) {
 		this.executor = executor;
-		this.metadataService = metadataService;
+		this.parametersUtils = parametersUtils;
 	}
 
 	public Map<String, Object> execute(Action action, Object payloadObject, String event, String messageId) {

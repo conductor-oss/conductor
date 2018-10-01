@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -9,9 +9,6 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
- */
-/**
- *
  */
 package com.netflix.conductor.core.config;
 
@@ -57,6 +54,8 @@ public interface Configuration {
     boolean JERSEY_ENABLED_DEFAULT_VALUE = true;
 
     String ADDITIONAL_MODULES_PROPERTY_NAME = "conductor.additional.modules";
+
+    //TODO add constants for input/output external payload related properties.
 
     default DB getDB() {
         return DB.valueOf(getDBString());
@@ -162,6 +161,55 @@ public interface Configuration {
      * @return User defined Long property.
      */
     long getLongProperty(String name, long defaultValue);
+
+	/**
+	 *
+	 * @return The threshold of the workflow input payload size in KB beyond which the payload will be stored in {@link com.netflix.conductor.common.utils.ExternalPayloadStorage}
+	 */
+	Long getWorkflowInputPayloadSizeThresholdKB();
+
+	/**
+	 *
+	 * @return The maximum threshold of the workflow input payload size in KB beyond which input will be rejected and the workflow will be marked as FAILED
+	 */
+	Long getMaxWorkflowInputPayloadSizeThresholdKB();
+
+	/**
+	 *
+	 * @return The threshold of the workflow output payload size in KB beyond which the payload will be stored in {@link com.netflix.conductor.common.utils.ExternalPayloadStorage}
+	 */
+	Long getWorkflowOutputPayloadSizeThresholdKB();
+
+	/**
+	 *
+	 * @return The maximum threshold of the workflow output payload size in KB beyond which output will be rejected and the workflow will be marked as FAILED
+	 */
+	Long getMaxWorkflowOutputPayloadSizeThresholdKB();
+
+	/**
+	 *
+	 * @return The threshold of the task input payload size in KB beyond which the payload will be stored in {@link com.netflix.conductor.common.utils.ExternalPayloadStorage}
+	 */
+	Long getTaskInputPayloadSizeThresholdKB();
+
+	/**
+	 *
+	 * @return The maximum threshold of the task input payload size in KB beyond which the task input will be rejected and the task will be marked as FAILED_WITH_TERMINAL_ERROR
+	 */
+	Long getMaxTaskInputPayloadSizeThresholdKB();
+
+	/**
+	 *
+	 * @return The threshold of the task output payload size in KB beyond which the payload will be stored in {@link com.netflix.conductor.common.utils.ExternalPayloadStorage}
+	 */
+	Long getTaskOutputPayloadSizeThresholdKB();
+
+	/**
+	 *
+	 * @return The maximum threshold of the task output payload size in KB beyond which the task input will be rejected and the task will be marked as FAILED_WITH_TERMINAL_ERROR
+	 */
+	Long getMaxTaskOutputPayloadSizeThresholdKB();
+
 
     enum DB {
         REDIS, DYNOMITE, MEMORY, REDIS_CLUSTER, MYSQL

@@ -18,7 +18,6 @@ package com.netflix.conductor.server;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-
 import com.netflix.archaius.guice.ArchaiusModule;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.config.Configuration;

@@ -69,12 +69,6 @@ public class RedisMetadataDAOTest {
 		dao = new RedisMetadataDAO(dynoClient, om, config);
 	}
 
-    @Test(expected = NullPointerException.class)
-	public void testMissingName() throws Exception {
-		WorkflowDef def = new WorkflowDef();
-		dao.create(def);
-	}
-
     @Test(expected = ApplicationException.class)
 	public void testDup() throws Exception {
 		WorkflowDef def = new WorkflowDef();
@@ -189,8 +183,9 @@ public class RedisMetadataDAOTest {
 		def.setTimeoutPolicy(TimeoutPolicy.ALERT_ONLY);
 		def.setUpdatedBy("unit_test2");
 		def.setUpdateTime(2L);
-		def.setRateLimitPerSecond(50);
-		
+		def.setRateLimitPerFrequency(50);
+		def.setRateLimitFrequencyInSeconds(1);
+
 		dao.createTaskDef(def);
 		
 		TaskDef found = dao.getTaskDef(def.getName());
