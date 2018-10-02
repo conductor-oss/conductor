@@ -104,11 +104,7 @@ task codeCoverageReport(type: JacocoReport, group: "Coverage reports") {
         classDirectories = files(
                 classDirectories.files.collect {
                     fileTree(
-                            dir: it,
-                            exclude: [
-                                    "**/com/netflix/genie/proto/**",
-                                    "**/com/netflix/genie/web/jpa/entities/*_*",
-                            ]
+                            dir: it
                     )
                 }
         )
@@ -125,8 +121,5 @@ tasks.coveralls {
     description = "Uploads the aggregated coverage report to Coveralls"
 
     dependsOn codeCoverageReport
-    onlyIf {
-        System.env."CI"
-    }
 }
 
