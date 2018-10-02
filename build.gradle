@@ -20,23 +20,28 @@ ext.githubProjectName = rootProject.name // Change if github project name is not
 apply plugin: 'project-report'
 apply from: "$rootDir/versionsOfDependencies.gradle"
 
-
-subprojects {
-
-    apply plugin: 'nebula.netflixoss'
-    apply plugin: 'nebula.provided-base'
+allprojects {
     apply plugin: 'idea'
     apply plugin: 'jacoco'
-    apply plugin: 'java'
     apply plugin: 'eclipse'
-    apply plugin: 'project-report'
-
-    sourceCompatibility = 1.8
-    targetCompatibility = 1.8
 
     repositories {
         jcenter()
     }
+}
+
+def javaProjects = subprojects.findAll {
+    it.name != "ui"
+}
+
+configure(javaProjects) {
+    apply plugin: 'nebula.netflixoss'
+    apply plugin: 'nebula.provided-base'
+    apply plugin: 'java'
+    apply plugin: 'project-report'
+
+    sourceCompatibility = 1.8
+    targetCompatibility = 1.8
 
     dependencies {
     	testCompile "junit:junit-dep:${revJUnit}"
@@ -85,8 +90,7 @@ subprojects {
  **********************************/
 task codeCoverageReport(type: JacocoReport, group: "Coverage reports") {
     executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
-
-    dependsOn subprojects*.test
+    //dependsOn subprojects*.test
 
     subprojects.each {
         sourceSets it.sourceSets.main
@@ -119,7 +123,6 @@ coveralls {
 tasks.coveralls {
     group = "Coverage reports"
     description = "Uploads the aggregated coverage report to Coveralls"
-
     dependsOn codeCoverageReport
 }
 
