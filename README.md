@@ -6,7 +6,7 @@ Conductor is an _orchestration_ engine that runs in the cloud.
 
 
 
-[![Download](https://api.bintray.com/packages/netflixoss/maven/conductor/images/download.svg)](https://bintray.com/netflixoss/maven/genie/_latestVersion)
+[![Download](https://api.bintray.com/packages/netflixoss/maven/conductor/images/download.svg)](https://bintray.com/netflixoss/maven/conductor/_latestVersion)
 [![License](https://img.shields.io/github/license/Netflix/conductor.svg)](http://www.apache.org/licenses/LICENSE-2.0)
 [![Issues](https://img.shields.io/github/issues/Netflix/conductor.svg)](https://github.com/Netflix/conductor/issues)
 [![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/conductor.svg)]()
