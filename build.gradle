@@ -90,7 +90,7 @@ configure(javaProjects) {
  **********************************/
 task codeCoverageReport(type: JacocoReport, group: "Coverage reports") {
     executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
-    //dependsOn subprojects*.test
+    dependsOn subprojects*.test
 
     subprojects.each {
         sourceSets it.sourceSets.main
