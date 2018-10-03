@@ -49,7 +49,7 @@ func (m *WorkflowTask) Reset()         { *m = WorkflowTask{} }
 func (m *WorkflowTask) String() string { return proto.CompactTextString(m) }
 func (*WorkflowTask) ProtoMessage()    {}
 func (*WorkflowTask) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflowtask_5d520fab7400c6cf, []int{0}
+	return fileDescriptor_workflowtask_9ea0dc5eed4f592b, []int{0}
 }
 func (m *WorkflowTask) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowTask.Unmarshal(m, b)
@@ -220,7 +220,7 @@ func (m *WorkflowTask_WorkflowTaskList) Reset()         { *m = WorkflowTask_Work
 func (m *WorkflowTask_WorkflowTaskList) String() string { return proto.CompactTextString(m) }
 func (*WorkflowTask_WorkflowTaskList) ProtoMessage()    {}
 func (*WorkflowTask_WorkflowTaskList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflowtask_5d520fab7400c6cf, []int{0, 0}
+	return fileDescriptor_workflowtask_9ea0dc5eed4f592b, []int{0, 0}
 }
 func (m *WorkflowTask_WorkflowTaskList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowTask_WorkflowTaskList.Unmarshal(m, b)
@@ -255,10 +255,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/workflowtask.proto", fileDescriptor_workflowtask_5d520fab7400c6cf)
+	proto.RegisterFile("model/workflowtask.proto", fileDescriptor_workflowtask_9ea0dc5eed4f592b)
 }
 
-var fileDescriptor_workflowtask_5d520fab7400c6cf = []byte{
+var fileDescriptor_workflowtask_9ea0dc5eed4f592b = []byte{
 	// 708 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x94, 0x54, 0x51, 0x6f, 0xd3, 0x3a,
 	0x14, 0x56, 0xd7, 0x75, 0x5b, 0x4f, 0xbb, 0xb6, 0xf3, 0x76, 0xef, 0xac, 0xde, 0xbb, 0x7b, 0xcb,

@@ -64,7 +64,7 @@ func (x Task_Status) String() string {
 	return proto.EnumName(Task_Status_name, int32(x))
 }
 func (Task_Status) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_task_755b02a04c3b7e73, []int{0, 0}
+	return fileDescriptor_task_0f54bf88f0e3aec0, []int{0, 0}
 }
 
 type Task struct {
@@ -108,7 +108,7 @@ func (m *Task) Reset()         { *m = Task{} }
 func (m *Task) String() string { return proto.CompactTextString(m) }
 func (*Task) ProtoMessage()    {}
 func (*Task) Descriptor() ([]byte, []int) {
-	return fileDescriptor_task_755b02a04c3b7e73, []int{0}
+	return fileDescriptor_task_0f54bf88f0e3aec0, []int{0}
 }
 func (m *Task) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Task.Unmarshal(m, b)
@@ -352,9 +352,9 @@ func init() {
 	proto.RegisterEnum("conductor.proto.Task_Status", Task_Status_name, Task_Status_value)
 }
 
-func init() { proto.RegisterFile("model/task.proto", fileDescriptor_task_755b02a04c3b7e73) }
+func init() { proto.RegisterFile("model/task.proto", fileDescriptor_task_0f54bf88f0e3aec0) }
 
-var fileDescriptor_task_755b02a04c3b7e73 = []byte{
+var fileDescriptor_task_0f54bf88f0e3aec0 = []byte{
 	// 1004 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x55, 0x5d, 0x73, 0xda, 0x46,
 	0x14, 0x2d, 0xb1, 0xcd, 0xc7, 0xc5, 0x80, 0xb2, 0xb6, 0xf1, 0x1a, 0xdb, 0x31, 0xe3, 0xd6, 0x1d,
