@@ -30,5 +30,4 @@ public class WorkflowServiceTest extends AbstractWorkflowServiceTest {
     String startOrLoadWorkflowExecution(String snapshotResourceName, String workflowName, int version, String correlationId, Map<String, Object> input, String event, Map<String, String> taskToDomain) {
         return workflowExecutor.startWorkflow(workflowName, version, correlationId, input, null, event, taskToDomain);
     }
-
 }

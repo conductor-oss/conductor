@@ -211,9 +211,9 @@ public class ExecutionService {
 	}
 
 	public Task getTask(String taskId) {
-		Task task = executionDAO.getTask(taskId);
-		task = metadataMapperService.populateTaskWithDefinition(task);
-		return task;
+		return Optional.ofNullable(executionDAO.getTask(taskId))
+                .map(t -> metadataMapperService.populateTaskWithDefinition(t))
+				.orElse(null);
 	}
 
 	public Task getPendingTaskForWorkflow(String taskReferenceName, String workflowId) {
@@ -333,7 +333,7 @@ public class ExecutionService {
 		List<Workflow> workflows = executionDAO.getWorkflowsByCorrelationId(correlationId, includeTasks);
 		List<Workflow> result = new LinkedList<>();
 		for (Workflow wf : workflows) {
-			if (wf.getWorkflowType().equals(workflowName) && (includeClosed || wf.getStatus().equals(Workflow.WorkflowStatus.RUNNING))) {
+			if (wf.getWorkflowName().equals(workflowName) && (includeClosed || wf.getStatus().equals(Workflow.WorkflowStatus.RUNNING))) {
 				result.add(wf);
 			}
 		}

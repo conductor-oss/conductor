@@ -251,20 +251,23 @@ public class Workflow extends Auditable{
 	 *
 	 * @param workflowType Workflow type
 	 */
+	@Deprecated
 	public void setWorkflowType(String workflowType) {
 		this.workflowType = workflowType;
 	}
 
-
 	/**
 	 * @return the version
 	 */
+	@Deprecated
 	public int getVersion() {
 		return version;
 	}
+
 	/**
 	 * @param version the version to set
 	 */
+	@Deprecated
 	public void setVersion(int version) {
 		this.version = version;
 	}
@@ -291,6 +294,7 @@ public class Workflow extends Auditable{
 	public String getParentWorkflowId() {
 		return parentWorkflowId;
 	}
+
 	/**
 	 * @param parentWorkflowId the parentWorkflowId to set
 	 */
@@ -304,12 +308,14 @@ public class Workflow extends Auditable{
 	public String getParentWorkflowTaskId() {
 		return parentWorkflowTaskId;
 	}
+
 	/**
 	 * @param parentWorkflowTaskId the parentWorkflowTaskId to set
 	 */
 	public void setParentWorkflowTaskId(String parentWorkflowTaskId) {
 		this.parentWorkflowTaskId = parentWorkflowTaskId;
 	}
+
 	/**
 	 * @return the schemaVersion Version of the schema for the workflow definition
 	 */
@@ -318,6 +324,7 @@ public class Workflow extends Auditable{
                 getWorkflowDefinition().getSchemaVersion() :
                 schemaVersion;
     }
+
 	/**
 	 * @param schemaVersion the schemaVersion to set
 	 */
@@ -446,12 +453,9 @@ public class Workflow extends Auditable{
 		copy.setParentWorkflowId(parentWorkflowId);
 		copy.setParentWorkflowTaskId(parentWorkflowTaskId);
 		copy.setReRunFromWorkflowId(reRunFromWorkflowId);
-		copy.setWorkflowType(workflowType);
-		copy.setVersion(version);
 		copy.setCorrelationId(correlationId);
 		copy.setEvent(event);
 		copy.setReasonForIncompletion(reasonForIncompletion);
-		copy.setSchemaVersion(schemaVersion);
 		copy.setWorkflowDefinition(workflowDefinition);
 
 		copy.setTasks(tasks.stream()
@@ -462,7 +466,7 @@ public class Workflow extends Auditable{
 
 	@Override
 	public String toString() {
-        return workflowDefinition.getName() + "." + workflowDefinition.getVersion() + "/" + workflowId + "." + status;
+        return getWorkflowName() + "." + getWorkflowVersion() + "/" + workflowId + "." + status;
 	}
 
     @Override
@@ -471,7 +475,7 @@ public class Workflow extends Auditable{
         if (o == null || getClass() != o.getClass()) return false;
         Workflow workflow = (Workflow) o;
         return getEndTime() == workflow.getEndTime() &&
-                getVersion() == workflow.getVersion() &&
+                getWorkflowVersion() == workflow.getWorkflowVersion() &&
                 getSchemaVersion() == workflow.getSchemaVersion() &&
                 getStatus() == workflow.getStatus() &&
                 Objects.equals(getWorkflowId(), workflow.getWorkflowId()) &&
@@ -480,7 +484,7 @@ public class Workflow extends Auditable{
                 Objects.equals(getTasks(), workflow.getTasks()) &&
                 Objects.equals(getInput(), workflow.getInput()) &&
                 Objects.equals(getOutput(), workflow.getOutput()) &&
-                Objects.equals(getWorkflowType(), workflow.getWorkflowType()) &&
+                Objects.equals(getWorkflowName(), workflow.getWorkflowName()) &&
                 Objects.equals(getCorrelationId(), workflow.getCorrelationId()) &&
                 Objects.equals(getReRunFromWorkflowId(), workflow.getReRunFromWorkflowId()) &&
                 Objects.equals(getReasonForIncompletion(), workflow.getReasonForIncompletion()) &&
@@ -503,8 +507,8 @@ public class Workflow extends Auditable{
                 getTasks(),
                 getInput(),
                 getOutput(),
-                getWorkflowType(),
-                getVersion(),
+                getWorkflowName(),
+                getWorkflowVersion(),
                 getCorrelationId(),
                 getReRunFromWorkflowId(),
                 getReasonForIncompletion(),

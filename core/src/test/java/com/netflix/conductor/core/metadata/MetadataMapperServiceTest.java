@@ -1,4 +1,4 @@
-package com.netflix.conductor.metadata;
+package com.netflix.conductor.core.metadata;
 
 import com.google.common.collect.ImmutableList;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -8,7 +8,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
-import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -21,6 +20,7 @@ import java.util.Optional;
 
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
@@ -200,6 +200,25 @@ public class MetadataMapperServiceTest {
         verify(metadataDAO).getLatest(workflowDefinitionName);
     }
 
+    @Test(expected = ApplicationException.class)
+    public void testLookupWorkflowDefinition() {
+        String workflowName = "test";
+        when(metadataDAO.get(workflowName, 0)).thenReturn(Optional.of(new WorkflowDef()));
+        Optional<WorkflowDef> optionalWorkflowDef = metadataMapperService.lookupWorkflowDefinition(workflowName, 0);
+        assertTrue(optionalWorkflowDef.isPresent());
+
+        metadataMapperService.lookupWorkflowDefinition(null, 0);
+    }
+
+    @Test(expected = ApplicationException.class)
+    public void testLookupLatestWorkflowDefinition() {
+        String workflowName = "test";
+        when(metadataDAO.getLatest(workflowName)).thenReturn(Optional.of(new WorkflowDef()));
+        Optional<WorkflowDef> optionalWorkflowDef = metadataMapperService.lookupLatestWorkflowDefinition(workflowName);
+        assertTrue(optionalWorkflowDef.isPresent());
+
+        metadataMapperService.lookupLatestWorkflowDefinition(null);
+    }
 
     private WorkflowDef createWorkflowDefinition(String name) {
         WorkflowDef workflowDefinition = new WorkflowDef();

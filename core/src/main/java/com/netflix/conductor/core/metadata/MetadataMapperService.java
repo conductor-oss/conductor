@@ -13,6 +13,7 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.service.utils.ServiceUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,20 +63,13 @@ public class MetadataMapperService {
 
     @VisibleForTesting
     Optional<WorkflowDef> lookupWorkflowDefinition(String workflowName, int workflowVersion) {
-        // TODO: Update to use ServiceUtils once this is merged with dev
-        // FIXME: Add messages.
-        checkNotNull(workflowName);
-        checkArgument(StringUtils.isNotBlank(workflowName));
-        checkArgument(workflowVersion > 0);
-
+        ServiceUtils.checkNotNullOrEmpty(workflowName, "Workflow name must be specified when searching for a definition");
         return metadataDAO.get(workflowName, workflowVersion);
     }
 
     @VisibleForTesting
     Optional<WorkflowDef> lookupLatestWorkflowDefinition(String workflowName) {
-        checkNotNull(workflowName, "Workflow name cannot be null when searching for a definition");
-        checkArgument(StringUtils.isNotBlank(workflowName), "Workflow name cannot be blank when searching for a definition");
-
+        ServiceUtils.checkNotNullOrEmpty(workflowName, "Workflow name must be specified when searching for a definition");
         return metadataDAO.getLatest(workflowName);
     }
 
@@ -88,7 +82,7 @@ public class MetadataMapperService {
                     return wd;
                 });
 
-        workflowDefinition.collectTasks().stream().forEach(
+        workflowDefinition.collectTasks().forEach(
                 workflowTask -> {
                     if (shouldPopulateDefinition(workflowTask)) {
                         workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
@@ -104,8 +98,8 @@ public class MetadataMapperService {
     }
 
     public WorkflowDef populateTaskDefinitions(WorkflowDef workflowDefinition) {
-        workflowDefinition.collectTasks().stream().forEach(
-                workflowTask -> populateWorkflowTaskWithDefinition(workflowTask)
+        workflowDefinition.collectTasks().forEach(
+                this::populateWorkflowTaskWithDefinition
         );
         checkNotEmptyDefinitions(workflowDefinition);
         return workflowDefinition;
@@ -142,8 +136,8 @@ public class MetadataMapperService {
 
         // Obtain the names of the tasks with missing definitions
         Set<String> missingTaskDefinitionNames = workflowDefinition.collectTasks().stream()
-                .filter(workflowTask -> shouldPopulateDefinition(workflowTask))
-                .map(workflowTask -> workflowTask.getName())
+                .filter(MetadataMapperService::shouldPopulateDefinition)
+                .map(WorkflowTask::getName)
                 .collect(Collectors.toSet());
 
         if (!missingTaskDefinitionNames.isEmpty()) {

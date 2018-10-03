@@ -22,7 +22,6 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
-import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -59,7 +58,7 @@ public class TestModule extends AbstractModule {
 
         configureExecutorService();
 
-        SystemPropertiesConfiguration config = new SystemPropertiesConfiguration();
+        MockConfiguration config = new MockConfiguration();
         bind(Configuration.class).toInstance(config);
         JedisCommands jedisMock = new JedisMock();
 
