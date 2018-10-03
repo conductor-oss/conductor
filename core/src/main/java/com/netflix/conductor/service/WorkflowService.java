@@ -70,6 +70,13 @@ public class WorkflowService {
         WorkflowDef workflowDef = startWorkflowRequest.getWorkflowDef();
 
         if (workflowDef == null) {
+            workflowDef = metadataService.getWorkflowDef(startWorkflowRequest.getName(), startWorkflowRequest.getVersion());
+            if (workflowDef == null) {
+                throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
+                        String.format("No such workflow found by name: %s, version: %d", startWorkflowRequest.getName(),
+                                startWorkflowRequest.getVersion()));
+            }
+
             return workflowExecutor.startWorkflow(
                     startWorkflowRequest.getName(),
                     startWorkflowRequest.getVersion(),
@@ -80,12 +87,6 @@ public class WorkflowService {
                     startWorkflowRequest.getTaskToDomain()
             );
         } else {
-            workflowDef = metadataService.getWorkflowDef(startWorkflowRequest.getName(), startWorkflowRequest.getVersion());
-            if (workflowDef == null) {
-                throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                        String.format("No such workflow found by name: %s, version: %d", startWorkflowRequest.getName(),
-                                startWorkflowRequest.getVersion()));
-            }
             return workflowExecutor.startWorkflow(
                     startWorkflowRequest.getWorkflowDef(),
                     startWorkflowRequest.getInput(),

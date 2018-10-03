@@ -9,5 +9,5 @@ dependencies {
     compile "io.swagger:swagger-jaxrs:${revSwagger}"
     compile "com.sun.jersey:jersey-bundle:${revJerseyBundle}"
 
-    provided "javax.servlet:javax.servlet-api:${revServletApi}"
+    compileOnly "javax.servlet:javax.servlet-api:${revServletApi}"
 }

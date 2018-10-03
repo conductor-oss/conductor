@@ -4,12 +4,12 @@ buildscript {
     }
     
     dependencies {
-        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:3.0.3'
+        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:4.0.1'
         classpath 'org.apache.ant:ant:1.9.7'
     }
 }
 plugins {
-    id 'nebula.netflixoss' version '5.1.1'
+    id 'nebula.netflixoss' version '6.0.3'
 }
 
 // Establish version and status
@@ -22,7 +22,6 @@ apply from: "$rootDir/versionsOfDependencies.gradle"
 subprojects {
 
     apply plugin: 'nebula.netflixoss'
-    apply plugin: 'nebula.provided-base'
     apply plugin: 'java'
     apply plugin: 'idea'
     apply plugin: 'eclipse'

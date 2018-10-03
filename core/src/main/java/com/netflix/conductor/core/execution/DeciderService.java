@@ -415,7 +415,7 @@ public class DeciderService {
         if (StringUtils.isNotBlank(workflow.getExternalInputPayloadStoragePath())) {
             // download the workflow input from external storage here and plug it into the workflow
             Map<String, Object> workflowInputParams = externalPayloadStorageUtils.downloadPayload(workflow.getExternalInputPayloadStoragePath());
-            Monitors.recordExternalPayloadStorageUsage(workflow.getWorkflowType(), ExternalPayloadStorage.Operation.READ.toString(), ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT.toString());
+            Monitors.recordExternalPayloadStorageUsage(workflow.getWorkflowName(), ExternalPayloadStorage.Operation.READ.toString(), ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT.toString());
             workflowInstance.setInput(workflowInputParams);
             workflowInstance.setExternalInputPayloadStoragePath(null);
         }

@@ -250,8 +250,9 @@ public class End2EndTests extends AbstractEndToEndTest {
 
     @Test
     public void testMetadataWorkflowDefinition() {
+        String workflowDefName = "testWorkflowDefMetadata";
         WorkflowDef def = new WorkflowDef();
-        def.setName("testWorkflowDel");
+        def.setName(workflowDefName);
         def.setVersion(1);
         WorkflowTask t0 = new WorkflowTask();
         t0.setName("t0");
@@ -264,17 +265,17 @@ public class End2EndTests extends AbstractEndToEndTest {
         def.getTasks().add(t0);
         def.getTasks().add(t1);
         metadataClient.registerWorkflowDef(def);
-        metadataClient.unregisterWorkflowDef("testWorkflowDel", 1);
         try {
-            metadataClient.getWorkflowDef("testWorkflowDel", 1);
+            metadataClient.getWorkflowDef(workflowDefName, 1);
         } catch (ConductorClientException e) {
             int statusCode = e.getStatus();
             String errorMessage = e.getMessage();
             boolean retryable = e.isRetryable();
             assertEquals(404, statusCode);
-            assertEquals("No such workflow found by name: testWorkflowDel, version: 1", errorMessage);
+            assertEquals("No such workflow found by name: testWorkflowDefMetadata, version: 1", errorMessage);
             assertFalse(retryable);
         }
+        metadataClient.unregisterWorkflowDef(workflowDefName, 1);
     }
 
     @Test
@@ -372,10 +373,11 @@ public class End2EndTests extends AbstractEndToEndTest {
             assertFalse(e.isRetryable());
         }
     }
-    @Test(expected = Test.None.class /* no exception expected */)
+    @Test
     public void testGetTaskInProgress() {
         taskClient.getPendingTaskForWorkflow("test", "t1");
     }
+
     @Test
     public void testRemoveTaskFromTaskQueue() {
         try {
@@ -384,6 +386,7 @@ public class End2EndTests extends AbstractEndToEndTest {
             assertEquals(404, e.getStatus());
         }
     }
+
     @Test
     public void testTaskByTaskId() {
         try {
@@ -393,7 +396,8 @@ public class End2EndTests extends AbstractEndToEndTest {
             assertEquals("No such task found by taskId: test123", e.getMessage());
         }
     }
-    @Test(expected = Test.None.class /* no exception expected */)
+
+    @Test
     public void testListworkflowsByCorrelationId() {
         workflowClient.getWorkflows("test", "test12", false, false);
     }
