@@ -1,0 +1,39 @@
+version: '3.4'
+
+services:
+
+  mysql:
+    image: mysql:5.6
+    environment:
+      MYSQL_ROOT_PASSWORD: 12345
+      MYSQL_DATABASE: conductor
+      MYSQL_USER: conductor
+      MYSQL_PASSWORD: password
+    volumes:
+      - type: volume
+        source: conductor_mysql
+        target: /var/lib/mysql
+    networks:
+      - internal
+    ports:
+      - 3306:3306
+
+  # https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docker.html
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:5.6.8
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+      - transport.host=0.0.0.0
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    networks:
+      - internal
+    ports:
+      - 9200:9200
+      - 9300:9300
+
+volumes:
+  conductor_mysql:
+
+networks:
+  internal:

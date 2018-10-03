@@ -16,8 +16,10 @@
 
 package com.netflix.conductor.server.resources;
 
-import java.util.List;
-import java.util.Map;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.service.AdminService;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.ApiOperation;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -30,15 +32,8 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
-
-import com.google.common.base.Preconditions;
-import com.netflix.conductor.service.AdminService;
-import org.apache.commons.lang3.StringUtils;
-
-import com.netflix.conductor.common.metadata.tasks.Task;
-
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Viren
@@ -50,7 +45,6 @@ import io.swagger.annotations.ApiOperation;
 @Consumes({ MediaType.APPLICATION_JSON })
 @Singleton
 public class AdminResource {
-
 	private final AdminService adminService;
 
     @Inject

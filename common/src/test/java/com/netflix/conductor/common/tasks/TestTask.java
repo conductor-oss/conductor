@@ -19,11 +19,16 @@
 package com.netflix.conductor.common.tasks;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -58,5 +63,23 @@ public class TestTask {
 
             }
         }
+    }
+
+    @Test
+    public void testTaskDefinitionIfAvailable() {
+        Task task = new Task();
+        task.setStatus(Status.FAILED);
+        assertEquals(Status.FAILED, task.getStatus());
+
+        assertNull(task.getWorkflowTask());
+        assertFalse(task.getTaskDefinition().isPresent());
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        TaskDef taskDefinition = new TaskDef();
+        workflowTask.setTaskDefinition(taskDefinition);
+        task.setWorkflowTask(workflowTask);
+
+        assertTrue(task.getTaskDefinition().isPresent());
+        assertEquals(taskDefinition, task.getTaskDefinition().get());
     }
 }

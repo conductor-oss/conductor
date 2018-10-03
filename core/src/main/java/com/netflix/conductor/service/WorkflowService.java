@@ -66,16 +66,36 @@ public class WorkflowService {
     public String startWorkflow(StartWorkflowRequest startWorkflowRequest) {
         ServiceUtils.checkNotNull(startWorkflowRequest, "StartWorkflowRequest cannot be null");
         ServiceUtils.checkNotNullOrEmpty(startWorkflowRequest.getName(), "Workflow name cannot be null or empty");
-        WorkflowDef workflowDef = metadataService.getWorkflowDef(startWorkflowRequest.getName(), startWorkflowRequest.getVersion());
-        if (workflowDef == null) {
-            throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                    String.format("No such workflow found by name: %s, version: %d", startWorkflowRequest.getName(),
-                            startWorkflowRequest.getVersion()));
-        }
-        return workflowExecutor.startWorkflow(workflowDef.getName(), workflowDef.getVersion(),
-                startWorkflowRequest.getCorrelationId(), startWorkflowRequest.getInput(), startWorkflowRequest.getExternalInputPayloadStoragePath(), null,
-                startWorkflowRequest.getTaskToDomain());
 
+        WorkflowDef workflowDef = startWorkflowRequest.getWorkflowDef();
+
+        if (workflowDef == null) {
+            workflowDef = metadataService.getWorkflowDef(startWorkflowRequest.getName(), startWorkflowRequest.getVersion());
+            if (workflowDef == null) {
+                throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
+                        String.format("No such workflow found by name: %s, version: %d", startWorkflowRequest.getName(),
+                                startWorkflowRequest.getVersion()));
+            }
+
+            return workflowExecutor.startWorkflow(
+                    startWorkflowRequest.getName(),
+                    startWorkflowRequest.getVersion(),
+                    startWorkflowRequest.getCorrelationId(),
+                    startWorkflowRequest.getInput(),
+                    startWorkflowRequest.getExternalInputPayloadStoragePath(),
+                    null,
+                    startWorkflowRequest.getTaskToDomain()
+            );
+        } else {
+            return workflowExecutor.startWorkflow(
+                    startWorkflowRequest.getWorkflowDef(),
+                    startWorkflowRequest.getInput(),
+                    startWorkflowRequest.getExternalInputPayloadStoragePath(),
+                    startWorkflowRequest.getCorrelationId(),
+                    null,
+                    startWorkflowRequest.getTaskToDomain()
+            );
+        }
     }
 
     /**

@@ -1,17 +1,36 @@
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
+
 import java.util.HashMap;
 import java.util.Map;
 
+@ProtoMessage
 public class StartWorkflowRequest {
+    @ProtoField(id = 1)
 	private String name;
+
+    @ProtoField(id = 2)
 	private Integer version;
+
+    @ProtoField(id = 3)
 	private String correlationId;
-	private String externalInputPayloadStoragePath;
+
+    @ProtoField(id = 4)
 	private Map<String, Object> input = new HashMap<>();
+
+    @ProtoField(id = 5)
 	private Map<String, String> taskToDomain = new HashMap<>();
-	
-	public String getName() {
+
+    @ProtoField(id = 6)
+    private WorkflowDef workflowDef;
+
+    @ProtoField(id = 7)
+    private String externalInputPayloadStoragePath;
+
+
+    public String getName() {
 		return name;
 	}
 	public void setName(String name) {
@@ -73,6 +92,17 @@ public class StartWorkflowRequest {
 		this.taskToDomain = taskToDomain;
 		return this;
 	}
-	
-	
+
+    public WorkflowDef getWorkflowDef() {
+        return workflowDef;
+    }
+
+    public void setWorkflowDef(WorkflowDef workflowDef) {
+        this.workflowDef = workflowDef;
+    }
+
+    public StartWorkflowRequest withWorkflowDef(WorkflowDef workflowDef) {
+        this.workflowDef = workflowDef;
+        return this;
+    }
 }

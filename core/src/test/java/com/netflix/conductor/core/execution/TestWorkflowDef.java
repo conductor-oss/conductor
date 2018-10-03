@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 
 /**
  * @author Viren
@@ -50,7 +50,7 @@ public class TestWorkflowDef {
 		
 		WorkflowTask task3 = create("decision_task_1");
 		def.getTasks().add(task3);
-		task3.setType(Type.DECISION.name());
+		task3.setType(TaskType.DECISION.name());
 		task3.getDecisionCases().put("Case1", Arrays.asList(create("case_1_task_1"), create("case_1_task_2")));
 		task3.getDecisionCases().put("Case2", Arrays.asList(create("case_2_task_1"), create("case_2_task_2")));
 		task3.getDecisionCases().put("Case3", Arrays.asList(deciderTask("decision_task_2", toMap("Case31", "case31_task_1", "case_31_task_2"), Arrays.asList("case3_def_task"))));
@@ -98,7 +98,7 @@ public class TestWorkflowDef {
 	
 	private WorkflowTask deciderTask(String name, Map<String, List<String>> decisions, List<String> defaultTasks){
 		WorkflowTask task = create(name);
-		task.setType(Type.DECISION.name());
+		task.setType(TaskType.DECISION.name());
 		decisions.entrySet().forEach(e -> {
 			List<WorkflowTask> tasks = new LinkedList<>();			
 			e.getValue().forEach(taskName -> tasks.add(create(taskName)));

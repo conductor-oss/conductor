@@ -16,10 +16,13 @@
 
 package com.netflix.conductor.tests.utils;
 
+import com.google.inject.AbstractModule;
 import com.netflix.conductor.core.config.Configuration;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 public class MockConfiguration implements Configuration {
@@ -131,5 +134,20 @@ public class MockConfiguration implements Configuration {
     @Override
     public long getLongProperty(String name, long defaultValue) {
         return 1000000L;
+    }
+
+    @Override
+    public boolean getBooleanProperty(String name, boolean defaultValue) {
+        return defaultValue;
+    }
+
+    @Override
+    public boolean getBoolProperty(String name, boolean defaultValue) {
+        return defaultValue;
+    }
+
+    @Override
+    public List<AbstractModule> getAdditionalModules() {
+        return Collections.emptyList();
     }
 }

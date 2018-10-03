@@ -1,0 +1,101 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1534988786979,
+  "updateTime": 1534988787169,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "EVENT",
+      "status": "COMPLETED",
+      "inputData": {
+        "sink": "conductor"
+      },
+      "referenceTaskName": "wait0",
+      "retryCount": 0,
+      "seq": 1,
+      "pollCount": 0,
+      "taskDefName": "eventX",
+      "scheduledTime": 1534988787043,
+      "startTime": 1534988787051,
+      "endTime": 1534988787169,
+      "updateTime": 1534988787169,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "test_event",
+      "taskId": "4f39b091-03c5-469c-970f-1c2addec1571",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "event_produced": "conductor:test_event:wait0",
+        "sink": "conductor",
+        "workflowType": "test_event",
+        "correlationId": null,
+        "workflowVersion": 1,
+        "workflowInstanceId": "WORKFLOW_INSTANCE_ID"
+      },
+      "workflowTask": {
+        "name": "eventX",
+        "taskReferenceName": "wait0",
+        "inputParameters": {
+          "sink": "conductor"
+        },
+        "type": "EVENT",
+        "startDelay": 0,
+        "sink": "conductor",
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "COMPLETED",
+      "queueWaitTime": 8
+    },
+    {
+      "taskType": "junit_task_1",
+      "status": "SCHEDULED",
+      "referenceTaskName": "t1",
+      "retryCount": 0,
+      "seq": 2,
+      "pollCount": 0,
+      "taskDefName": "junit_task_1",
+      "scheduledTime": 1534988787163,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1534988787163,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "test_event",
+      "taskId": "2d482701-9cae-4576-ab2c-91e096b5ed1c",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "junit_task_1",
+        "taskReferenceName": "t1",
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    }
+  ],
+  "output": {
+    "event_produced": "conductor:test_event:wait0",
+    "sink": "conductor",
+    "workflowType": "test_event",
+    "correlationId": null,
+    "workflowVersion": 1,
+    "workflowInstanceId": "WORKFLOW_INSTANCE_ID"
+  },
+  "workflowType": "test_event",
+  "version": 1,
+  "schemaVersion": 2,
+  "startTime": 1534988786979
+}

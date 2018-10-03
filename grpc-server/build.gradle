@@ -1,0 +1,18 @@
+plugins {
+    // FIXME This is temporary until the server module refactoring is completed.
+    id 'com.github.johnrengelman.shadow' version '1.2.3'
+}
+
+dependencies {
+    compile project(':conductor-common')
+    compile project(':conductor-core')
+    compile project(':conductor-grpc')
+
+    compile "io.grpc:grpc-netty:${revGrpc}"
+    compile "io.grpc:grpc-services:${revGrpc}"
+    compile "log4j:log4j:1.2.17"
+
+    testCompile "io.grpc:grpc-testing:${revGrpc}"
+    testCompile "org.mockito:mockito-all:${revMockito}"
+    testCompile 'org.testinfected.hamcrest-matchers:all-matchers:1.8'
+}

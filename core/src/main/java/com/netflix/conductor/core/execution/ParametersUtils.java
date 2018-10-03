@@ -84,8 +84,8 @@ public class ParametersUtils {
         workflowParams.put("workflowId", workflow.getWorkflowId());
         workflowParams.put("parentWorkflowId", workflow.getParentWorkflowId());
         workflowParams.put("parentWorkflowTaskId", workflow.getParentWorkflowTaskId());
-        workflowParams.put("workflowType", workflow.getWorkflowType());
-        workflowParams.put("version", workflow.getVersion());
+        workflowParams.put("workflowType", workflow.getWorkflowName());
+        workflowParams.put("version", workflow.getWorkflowVersion());
         workflowParams.put("correlationId", workflow.getCorrelationId());
         workflowParams.put("reasonForIncompletion", workflow.getReasonForIncompletion());
         workflowParams.put("schemaVersion", workflow.getSchemaVersion());

@@ -19,12 +19,12 @@ package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
-import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +35,7 @@ import java.util.Optional;
 
 
 /**
- * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link WorkflowTask.Type#SIMPLE}
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#SIMPLE}
  * to a {@link Task} with status {@link Task.Status#SCHEDULED}. <b>NOTE:</b> There is not type defined for simples task.
  */
 public class SimpleTaskMapper implements TaskMapper {
@@ -43,19 +43,17 @@ public class SimpleTaskMapper implements TaskMapper {
     public static final Logger logger = LoggerFactory.getLogger(SimpleTaskMapper.class);
 
     private ParametersUtils parametersUtils;
-    private MetadataDAO metadataDAO;
 
-    public SimpleTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+    public SimpleTaskMapper(ParametersUtils parametersUtils) {
         this.parametersUtils = parametersUtils;
-        this.metadataDAO = metadataDAO;
     }
 
     /**
-     * This method maps a {@link WorkflowTask} of type {@link WorkflowTask.Type#SIMPLE}
+     * This method maps a {@link WorkflowTask} of type {@link TaskType#SIMPLE}
      * to a {@link Task}
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId
-     * @throws TerminateWorkflowException In case if the task definition does not exist in the {@link MetadataDAO}
+     * @throws TerminateWorkflowException In case if the task definition does not exist
      * @return: a List with just one simple task
      */
     @Override
@@ -68,9 +66,9 @@ public class SimpleTaskMapper implements TaskMapper {
         int retryCount = taskMapperContext.getRetryCount();
         String retriedTaskId = taskMapperContext.getRetryTaskId();
 
-        TaskDef taskDefinition = Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
+        TaskDef taskDefinition = Optional.ofNullable(taskToSchedule.getTaskDefinition())
                 .orElseThrow(() -> {
-                    String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
+                    String reason = String.format("Invalid task. Task %s does not have a definition", taskToSchedule.getName());
                     return new TerminateWorkflowException(reason);
                 });
 
@@ -81,7 +79,7 @@ public class SimpleTaskMapper implements TaskMapper {
         simpleTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         simpleTask.setInputData(input);
         simpleTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        simpleTask.setWorkflowType(workflowInstance.getWorkflowType());
+        simpleTask.setWorkflowType(workflowInstance.getWorkflowName());
         simpleTask.setStatus(Task.Status.SCHEDULED);
         simpleTask.setTaskType(taskToSchedule.getName());
         simpleTask.setTaskDefName(taskToSchedule.getName());

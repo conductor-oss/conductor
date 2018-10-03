@@ -18,8 +18,13 @@
  */
 package com.netflix.conductor.server.resources;
 
-import java.util.List;
-import java.util.Map;
+import com.google.common.annotations.VisibleForTesting;
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.metrics.Monitors;
+import com.sun.jersey.api.core.HttpContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -28,18 +33,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-
-import com.google.common.annotations.VisibleForTesting;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.metrics.Monitors;
-import com.sun.jersey.api.core.HttpContext;
+import java.util.Map;
 
 /**
  * @author Viren
@@ -48,11 +44,7 @@ import com.sun.jersey.api.core.HttpContext;
 @Provider
 @Singleton
 public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationException> {
-
-	private static Logger logger = LoggerFactory.getLogger(ApplicationExceptionMapper.class);
-
-	private static List<Variant> supportedMediaTypes = Variant.mediaTypes(MediaType.APPLICATION_JSON_TYPE,
-			MediaType.TEXT_HTML_TYPE, MediaType.TEXT_PLAIN_TYPE).add().build();
+	private static Logger LOGGER = LoggerFactory.getLogger(ApplicationExceptionMapper.class);
 
 	@Context
 	private HttpContext context;
@@ -62,7 +54,6 @@ public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationEx
 
 	@Context
 	private javax.inject.Provider<Request> request;
-
 	private String host;
 
 	@Inject
@@ -100,7 +91,7 @@ public class ApplicationExceptionMapper implements ExceptionMapper<ApplicationEx
 	}
 
 	private void logException(ApplicationException exception) {
-		logger.error(String.format("Error %s url: '%s'", exception.getClass().getSimpleName(),
+		LOGGER.error(String.format("Error %s url: '%s'", exception.getClass().getSimpleName(),
 				getUriInfo().getPath()), exception);
 	}
 	

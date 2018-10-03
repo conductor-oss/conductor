@@ -18,16 +18,20 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.github.vmg.protogen.annotations.*;
+
 /**
  * @author Viren
  *
  */
+@ProtoMessage
 public class SubWorkflowParams {
 
+    @ProtoField(id = 1)
     private String name;
 
-    //QQ why is this an object ??
-    private Object version;
+    @ProtoField(id = 2)
+    private Integer version;
 
     /**
      * @return the name
@@ -46,14 +50,14 @@ public class SubWorkflowParams {
     /**
      * @return the version
      */
-    public Object getVersion() {
+    public Integer getVersion() {
         return version;
     }
 
     /**
      * @param version the version to set
      */
-    public void setVersion(Object version) {
+    public void setVersion(Integer version) {
         this.version = version;
     }
 

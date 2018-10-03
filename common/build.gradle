@@ -1,4 +1,33 @@
+buildscript {
+    repositories {
+        jcenter()
+    }
+    dependencies {
+        classpath "com.github.vmg.protogen:protogen-codegen:${revProtogenCodegen}"
+    }
+}
+
 dependencies {
     compile "com.github.rholder:guava-retrying:${revGuavaRetrying}"
     compile "org.slf4j:slf4j-api:${revSlf4j}"
+    compile "com.google.protobuf:protobuf-java:${revProtoBuf}"
+    compile "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
+    compile "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
+    compile "javax.inject:javax.inject:${revJavaxInject}"
+    compile "com.github.vmg.protogen:protogen-annotations:${revProtogenAnnotations}"
+}
+
+import com.github.vmg.protogen.ProtoGenTask;
+
+task protogen(dependsOn: jar, type: ProtoGenTask) {
+    protoPackage = "conductor.proto"
+    javaPackage = "com.netflix.conductor.proto"
+    goPackage = "github.com/netflix/conductor/client/gogrpc/conductor/model"
+
+    protosDir = new File("${rootDir}/grpc/src/main/proto")
+    mapperDir = new File("${rootDir}/grpc/src/main/java/com/netflix/conductor/grpc")
+    mapperPackage = "com.netflix.conductor.grpc";
+
+    sourceJar = jar.archivePath
+    sourcePackage = "com.netflix.conductor.common"
 }

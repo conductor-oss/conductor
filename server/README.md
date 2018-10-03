@@ -9,7 +9,6 @@ At the minimum, provide these options through VM or Config file:
 
 `workflow.elasticsearch.url`
 `workflow.elasticsearch.index.name`
-`workflow.elasticsearch.version` (Defaults to 2.X; Provided implementations for major versions 2.X and 5.X)
 
 ### Database persistence model  
 Possible values are memory, redis, redis_cluster and dynomite.

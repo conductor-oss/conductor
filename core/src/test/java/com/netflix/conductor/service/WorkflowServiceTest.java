@@ -75,23 +75,6 @@ public class WorkflowServiceTest {
         assertEquals("w112", workflowService.startWorkflow(startWorkflowRequest));
     }
 
-    @Test(expected = ApplicationException.class)
-    public void testApplicationExceptionStartWorkflowMessage() {
-        try {
-            when(mockMetadata.getWorkflowDef(anyString(), anyInt())).thenReturn(null);
-
-            StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
-            startWorkflowRequest.setName("w123");
-            startWorkflowRequest.setVersion(1);
-            workflowService.startWorkflow(startWorkflowRequest);
-        } catch (ApplicationException ex) {
-            String message = "No such workflow found by name: w123, version: 1";
-            assertEquals(message, ex.getMessage());
-            throw ex;
-        }
-        fail("ApplicationException did not throw!");
-    }
-
     @Test
     public void testStartWorkflowParam() {
         WorkflowDef workflowDef = new WorkflowDef();

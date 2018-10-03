@@ -1,0 +1,27 @@
+syntax = "proto3";
+package conductor.proto;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/any.proto";
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "TaskResultPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message TaskResult {
+    enum Status {
+        IN_PROGRESS = 0;
+        FAILED = 1;
+        FAILED_WITH_TERMINAL_ERROR = 2;
+        COMPLETED = 3;
+        SCHEDULED = 4;
+    }
+    string workflow_instance_id = 1;
+    string task_id = 2;
+    string reason_for_incompletion = 3;
+    int64 callback_after_seconds = 4;
+    string worker_id = 5;
+    TaskResult.Status status = 6;
+    map<string, google.protobuf.Value> output_data = 7;
+    google.protobuf.Any output_message = 8;
+}
