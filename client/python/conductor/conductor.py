@@ -118,7 +118,7 @@ class MetadataClient(BaseClient):
     def __init__(self, baseURL):
         BaseClient.__init__(self, baseURL, self.BASE_RESOURCE)
 
-    def getWorkflowDef(self, wfname, version=1):
+    def getWorkflowDef(self, wfname, version=None):
         url = self.makeUrl('workflow/{}', wfname)
         return self.get(url, self.makeParams(version=version))
 
@@ -237,7 +237,7 @@ class WorkflowClient(BaseClient):
         params['includeTasks'] = includeTasks
         return self.get(url, params)
 
-    def getRunningWorkflows(self, wfName, version=1, startTime=None, endTime=None):
+    def getRunningWorkflows(self, wfName, version=None, startTime=None, endTime=None):
         url = self.makeUrl('running/{}', wfName)
         params = {}
         params['version'] = version
@@ -245,7 +245,7 @@ class WorkflowClient(BaseClient):
         params['endTime'] = endTime
         return self.get(url, params)
 
-    def startWorkflow(self, wfName, inputjson, version=1, correlationId=None):
+    def startWorkflow(self, wfName, inputjson, version=None, correlationId=None):
         url = self.makeUrl('{}', wfName)
         params = {}
         params['version'] = version
@@ -360,10 +360,11 @@ def main():
             print('python conductor server_url terminate workflow_id')
             return None
         wfId = sys.argv[3]
-        wfjson = wfc.terminateWorkflow(wfId)
+        wfc.terminateWorkflow(wfId)
         print('OK')
         return wfId
 
 
 if __name__ == '__main__':
     main()
+
