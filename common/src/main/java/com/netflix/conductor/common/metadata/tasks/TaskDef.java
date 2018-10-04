@@ -18,58 +18,79 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import com.github.vmg.protogen.annotations.ProtoEnum;
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.netflix.conductor.common.metadata.Auditable;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.netflix.conductor.common.metadata.Auditable;
-
 /**
  * @author Viren
  * Defines a workflow task definition 
  */
+@ProtoMessage
 public class TaskDef extends Auditable {
+	@ProtoEnum
+	public static enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY}
 
+	@ProtoEnum
+	public static enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF}
 
-
-	public enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY;}
-
-
-	public enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF;}
 	private static final int ONE_HOUR = 60 * 60;
 
 	/**
 	 * Unique name identifying the task.  The name is unique across
 	 */
+	@ProtoField(id = 1)
 	private String name;
 
+	@ProtoField(id = 2)
 	private String description;
 
+	@ProtoField(id = 3)
 	private int retryCount = 3; // Default
 
+	@ProtoField(id = 4)
 	private long timeoutSeconds;
 
+	@ProtoField(id = 5)
 	private List<String> inputKeys = new ArrayList<String>();
 
+	@ProtoField(id = 6)
 	private List<String> outputKeys = new ArrayList<String>();
 
+	@ProtoField(id = 7)
 	private TimeoutPolicy timeoutPolicy = TimeoutPolicy.TIME_OUT_WF;
 
+	@ProtoField(id = 8)
 	private RetryLogic retryLogic = RetryLogic.FIXED;
 
+	@ProtoField(id = 9)
 	private int retryDelaySeconds = 60;
 
+	@ProtoField(id = 10)
 	private int responseTimeoutSeconds = ONE_HOUR;
 
+	@ProtoField(id = 11)
 	private Integer concurrentExecLimit;
 
+	@ProtoField(id = 12)
+	private Map<String, Object> inputTemplate = new HashMap<>();
+
+	// This field is deprecated, do not use id 13.
+//	@ProtoField(id = 13)
+//	private Integer rateLimitPerSecond;
+
+	@ProtoField(id = 14)
 	private Integer rateLimitPerFrequency;
 
+	@ProtoField(id = 15)
 	private Integer rateLimitFrequencyInSeconds;
-
-	private Map<String, Object> inputTemplate = new HashMap<>();
 
 	public TaskDef() {
 	}

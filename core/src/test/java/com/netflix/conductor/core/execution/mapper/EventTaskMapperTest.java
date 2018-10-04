@@ -22,8 +22,6 @@ import static org.mockito.Mockito.when;
 
 public class EventTaskMapperTest {
 
-
-
     @Test
     public void getMappedTasks() throws Exception {
         ParametersUtils parametersUtils = Mockito.mock(ParametersUtils.class);
@@ -38,9 +36,13 @@ public class EventTaskMapperTest {
 
         when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(TaskDef.class), anyString())).thenReturn(eventTaskInput);
 
+        WorkflowDef  wd = new WorkflowDef();
+        Workflow w = new Workflow();
+        w.setWorkflowDefinition(wd);
+
         TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-                .withWorkflowDefinition(new WorkflowDef())
-                .withWorkflowInstance(new Workflow())
+                .withWorkflowDefinition(wd)
+                .withWorkflowInstance(w)
                 .withTaskDefinition(new TaskDef())
                 .withTaskToSchedule(taskToBeScheduled)
                 .withRetryCount(0)

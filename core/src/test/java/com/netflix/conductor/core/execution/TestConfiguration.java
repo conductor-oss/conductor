@@ -64,8 +64,13 @@ public class TestConfiguration implements Configuration {
 	public String getProperty(String string, String def) {
 		return "dummy";
 	}
-	
-	@Override
+
+    @Override
+    public boolean getBooleanProperty(String name, boolean defaultValue) {
+        return false;
+    }
+
+    @Override
 	public String getAvailabilityZone() {
 		return "us-east-1a";
 	}

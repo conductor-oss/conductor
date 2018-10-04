@@ -21,9 +21,9 @@ package com.netflix.conductor.core.execution;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
@@ -38,6 +38,7 @@ import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -53,6 +54,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -89,17 +91,19 @@ public class TestWorkflowExecutor {
         ParametersUtils parametersUtils = new ParametersUtils();
         Map<String, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put("DECISION", new DecisionTaskMapper());
-        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils));
         taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
         taskMappers.put("JOIN", new JoinTaskMapper());
-        taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper));
-        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO));
+        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils));
+        taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
+        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils));
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
-        DeciderService deciderService = new DeciderService(metadataDAO, parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers);
-        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, executionDAO, queueDAO, parametersUtils, config);
+
+        DeciderService deciderService = new DeciderService(parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers);
+        MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
+        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, executionDAO, queueDAO, metadataMapperService, parametersUtils, config);
     }
 
     @Test
@@ -139,15 +143,15 @@ public class TestWorkflowExecutor {
         List<Task> tasks = new LinkedList<>();
 
         WorkflowTask taskToSchedule = new WorkflowTask();
-        taskToSchedule.setWorkflowTaskType(Type.USER_DEFINED);
+        taskToSchedule.setWorkflowTaskType(TaskType.USER_DEFINED);
         taskToSchedule.setType("HTTP");
 
         WorkflowTask taskToSchedule2 = new WorkflowTask();
-        taskToSchedule2.setWorkflowTaskType(Type.USER_DEFINED);
+        taskToSchedule2.setWorkflowTaskType(TaskType.USER_DEFINED);
         taskToSchedule2.setType("HTTP2");
 
         WorkflowTask wait = new WorkflowTask();
-        wait.setWorkflowTaskType(Type.WAIT);
+        wait.setWorkflowTaskType(TaskType.WAIT);
         wait.setType("WAIT");
         wait.setTaskReferenceName("wait");
 
@@ -226,9 +230,12 @@ public class TestWorkflowExecutor {
     @Test
     @SuppressWarnings("unchecked")
     public void testCompleteWorkflow() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test");
+
         Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(def);
         workflow.setWorkflowId("1");
-        workflow.setWorkflowType("test");
         workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
         workflow.setOwnerApp("junit_test");
         workflow.setStartTime(10L);
@@ -369,6 +376,7 @@ public class TestWorkflowExecutor {
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("testRetryWorkflowId");
         workflow.setWorkflowType("testRetryWorkflowId");
+        workflow.setVersion(1);
         workflow.setOwnerApp("junit_testRetryWorkflowId");
         workflow.setStartTime(10L);
         workflow.setEndTime(100L);
@@ -403,7 +411,7 @@ public class TestWorkflowExecutor {
         Task task_1_1 = new Task();
         task_1_1.setTaskId(UUID.randomUUID().toString());
         task_1_1.setSeq(20);
-        task_1_1.setTaskType(Type.SIMPLE.toString());
+        task_1_1.setTaskType(TaskType.SIMPLE.toString());
         task_1_1.setStatus(Status.CANCELED);
         task_1_1.setTaskDefName("task1");
         task_1_1.setReferenceTaskName("task1_ref1");
@@ -411,7 +419,7 @@ public class TestWorkflowExecutor {
         Task task_1_2 = new Task();
         task_1_2.setTaskId(UUID.randomUUID().toString());
         task_1_2.setSeq(21);
-        task_1_2.setTaskType(Type.SIMPLE.toString());
+        task_1_2.setTaskType(TaskType.SIMPLE.toString());
         task_1_2.setStatus(Status.FAILED);
         task_1_2.setTaskDefName("task1");
         task_1_2.setReferenceTaskName("task1_ref1");
@@ -420,7 +428,7 @@ public class TestWorkflowExecutor {
         task_2_1.setTaskId(UUID.randomUUID().toString());
         task_2_1.setSeq(22);
         task_2_1.setStatus(Status.FAILED);
-        task_2_1.setTaskType(Type.SIMPLE.toString());
+        task_2_1.setTaskType(TaskType.SIMPLE.toString());
         task_2_1.setTaskDefName("task2");
         task_2_1.setReferenceTaskName("task2_ref1");
 
@@ -429,7 +437,7 @@ public class TestWorkflowExecutor {
         task_3_1.setTaskId(UUID.randomUUID().toString());
         task_3_1.setSeq(23);
         task_3_1.setStatus(Status.CANCELED);
-        task_3_1.setTaskType(Type.SIMPLE.toString());
+        task_3_1.setTaskType(TaskType.SIMPLE.toString());
         task_3_1.setTaskDefName("task3");
         task_3_1.setReferenceTaskName("task3_ref1");
 
@@ -437,7 +445,7 @@ public class TestWorkflowExecutor {
         task_4_1.setTaskId(UUID.randomUUID().toString());
         task_4_1.setSeq(122);
         task_4_1.setStatus(Status.FAILED);
-        task_4_1.setTaskType(Type.SIMPLE.toString());
+        task_4_1.setTaskType(TaskType.SIMPLE.toString());
         task_4_1.setTaskDefName("task1");
         task_4_1.setReferenceTaskName("task4_refABC");
 
@@ -447,7 +455,7 @@ public class TestWorkflowExecutor {
         //when:
         when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
         WorkflowDef workflowDef = new WorkflowDef();
-        when(metadataDAO.get(anyString(), anyInt())).thenReturn(workflowDef);
+        when(metadataDAO.get(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
 
         workflowExecutor.retry(workflow.getWorkflowId());
 

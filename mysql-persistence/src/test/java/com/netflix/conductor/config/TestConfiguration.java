@@ -17,7 +17,10 @@ package com.netflix.conductor.config;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
-import com.netflix.conductor.core.config.Configuration;
+
+import com.netflix.conductor.mysql.MySQLConfiguration;
+
+import java.util.Map;
 
 import java.util.Map;
 
@@ -25,7 +28,7 @@ import java.util.Map;
  * @author Viren
  *
  */
-public class TestConfiguration implements Configuration {
+public class TestConfiguration implements MySQLConfiguration {
 
 	private Map<String, String> testProperties = Maps.newHashMap(ImmutableMap.of("test", "dummy"));
 
@@ -110,7 +113,12 @@ public class TestConfiguration implements Configuration {
 		return val != null ? val : def;
 	}
 
-	public void setProperty(String key, String value) {
+    @Override
+    public boolean getBooleanProperty(String name, boolean defaultValue) {
+        return false;
+    }
+
+    public void setProperty(String key, String value) {
 		testProperties.put(key, value);
 	}
 

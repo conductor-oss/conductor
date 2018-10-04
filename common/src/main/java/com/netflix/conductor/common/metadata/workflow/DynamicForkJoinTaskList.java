@@ -15,12 +15,16 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.github.vmg.protogen.annotations.*;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@ProtoMessage
 public class DynamicForkJoinTaskList {
-	
+
+    @ProtoField(id = 1)
 	private List<DynamicForkJoinTask> dynamicTasks = new ArrayList<DynamicForkJoinTask>();
 	
 	public void add(String taskName, String workflowName, String referenceName, Map<String, Object> input){

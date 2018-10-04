@@ -36,6 +36,7 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
@@ -90,15 +91,25 @@ public class ExecutionService {
 
     private static final int POLL_COUNT_ONE = 1;
 
+	private MetadataMapperService metadataMapperService;
+
     private static final int POLLING_TIMEOUT_IN_MS = 100;
 
 	@Inject
-	public ExecutionService(WorkflowExecutor wfProvider, ExecutionDAO executionDAO, QueueDAO queueDAO, MetadataDAO metadataDAO, IndexDAO indexDAO, Configuration config, ExternalPayloadStorage externalPayloadStorage) {
-		this.workflowExecutor = wfProvider;
+	public ExecutionService(WorkflowExecutor workflowExecutor,
+				ExecutionDAO executionDAO,
+				QueueDAO queueDAO,
+				MetadataDAO metadataDAO,
+				MetadataMapperService metadataMapperService,
+				IndexDAO indexDAO,
+				Configuration config,
+				ExternalPayloadStorage externalPayloadStorage) {
+		this.workflowExecutor = workflowExecutor;
 		this.executionDAO = executionDAO;
 		this.queueDAO = queueDAO;
 		this.metadataDAO = metadataDAO;
 		this.indexDAO = indexDAO;
+		this.metadataMapperService = metadataMapperService;
 		this.externalPayloadStorage = externalPayloadStorage;
 		this.taskRequeueTimeout = config.getIntProperty("task.requeue.timeout", 60_000);
         this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
@@ -200,7 +211,9 @@ public class ExecutionService {
 	}
 
 	public Task getTask(String taskId) {
-		return executionDAO.getTask(taskId);
+		return Optional.ofNullable(executionDAO.getTask(taskId))
+                .map(t -> metadataMapperService.populateTaskWithDefinition(t))
+				.orElse(null);
 	}
 
 	public Task getPendingTaskForWorkflow(String taskReferenceName, String workflowId) {
@@ -320,7 +333,7 @@ public class ExecutionService {
 		List<Workflow> workflows = executionDAO.getWorkflowsByCorrelationId(correlationId, includeTasks);
 		List<Workflow> result = new LinkedList<>();
 		for (Workflow wf : workflows) {
-			if (wf.getWorkflowType().equals(workflowName) && (includeClosed || wf.getStatus().equals(Workflow.WorkflowStatus.RUNNING))) {
+			if (wf.getWorkflowName().equals(workflowName) && (includeClosed || wf.getStatus().equals(Workflow.WorkflowStatus.RUNNING))) {
 				result.add(wf);
 			}
 		}

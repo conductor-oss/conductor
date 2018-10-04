@@ -1,0 +1,15 @@
+syntax = "proto3";
+package conductor.grpc.search;
+
+option java_package = "com.netflix.conductor.grpc";
+option java_outer_classname = "SearchPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/grpc/search";
+
+message Request {
+    int32 start = 1;
+    int32 size = 2;
+    string sort = 3;
+    string free_text = 4;
+    string query = 5;
+}
+

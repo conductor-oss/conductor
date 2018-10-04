@@ -1,11 +1,10 @@
 buildscript {
-	
 	repositories {
         jcenter()
     }
 
     dependencies {
-        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:3.0.3'
+        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:4.0.1'
         classpath 'org.apache.ant:ant:1.9.7'
     }
 }
@@ -36,7 +35,6 @@ def javaProjects = subprojects.findAll {
 
 configure(javaProjects) {
     apply plugin: 'nebula.netflixoss'
-    apply plugin: 'nebula.provided-base'
     apply plugin: 'java'
     apply plugin: 'project-report'
 
@@ -44,8 +42,10 @@ configure(javaProjects) {
     targetCompatibility = 1.8
 
     dependencies {
-    	testCompile "junit:junit-dep:${revJUnit}"
-    	testCompile "org.mockito:mockito-all:${revMockito}"
+        testCompile "junit:junit:${revJUnit}"
+        testCompile("org.mockito:mockito-core:${revMockito}") {
+            exclude group: 'org.hamcrest', module: 'hamcrest-core'
+        }
     }
 
     group = "com.netflix.${githubProjectName}"

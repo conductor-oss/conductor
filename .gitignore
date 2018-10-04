@@ -4,7 +4,6 @@ ui/dist
 ui/package-lock.json
 .gradle
 .project
-bin
 build
 client/python/conductor.egg-info
 *.pyc
