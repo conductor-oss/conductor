@@ -19,12 +19,12 @@ package com.netflix.conductor.core.execution.mapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
-import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,19 +35,16 @@ import java.util.Optional;
 
 
 /**
- * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link WorkflowTask.Type#DYNAMIC}
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DYNAMIC}
  * to a {@link Task} based on definition derived from the dynamic task name defined in {@link WorkflowTask#getInputParameters()}
  */
 public class DynamicTaskMapper implements TaskMapper {
 
     public static final Logger logger = LoggerFactory.getLogger(DynamicTaskMapper.class);
 
-    private MetadataDAO metadataDAO;
-
     private ParametersUtils parametersUtils;
 
-    public DynamicTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
-        this.metadataDAO = metadataDAO;
+    public DynamicTaskMapper(ParametersUtils parametersUtils) {
         this.parametersUtils = parametersUtils;
     }
 
@@ -80,7 +77,7 @@ public class DynamicTaskMapper implements TaskMapper {
         dynamicTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         dynamicTask.setInputData(input);
         dynamicTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        dynamicTask.setWorkflowType(workflowInstance.getWorkflowType());
+        dynamicTask.setWorkflowType(workflowInstance.getWorkflowName());
         dynamicTask.setStatus(Task.Status.SCHEDULED);
         dynamicTask.setTaskType(taskToSchedule.getType());
         dynamicTask.setTaskDefName(taskToSchedule.getName());
@@ -116,15 +113,15 @@ public class DynamicTaskMapper implements TaskMapper {
     }
 
     /**
-     * This method gets the TaskDefinition from the MetadataDao based on the {@link WorkflowTask#getName()}
+     * This method gets the TaskDefinition for a specific {@link WorkflowTask}
      *
      * @param taskToSchedule: An instance of {@link WorkflowTask} which has the name of the using which the {@link TaskDef} can be retrieved.
-     * @throws TerminateWorkflowException : in case of no work flow definition available in the {@link MetadataDAO}
+     * @throws TerminateWorkflowException : in case of no work flow definition available
      * @return: An instance of TaskDefinition
      */
     @VisibleForTesting
     TaskDef getDynamicTaskDefinition(WorkflowTask taskToSchedule) throws TerminateWorkflowException { //TODO this is a common pattern in code base can be moved to DAO
-        return Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
+        return Optional.ofNullable(taskToSchedule.getTaskDefinition())
                 .orElseThrow(() -> {
                     String reason = String.format("Invalid task specified.  Cannot find task by name %s in the task definitions",
                             taskToSchedule.getName());

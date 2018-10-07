@@ -39,7 +39,7 @@ import java.util.Properties;
 @Trace
 public class AdminService {
 
-    private static Logger logger = LoggerFactory.getLogger(AdminService.class);
+    private static Logger LOGGER = LoggerFactory.getLogger(AdminService.class);
 
     private final Configuration config;
 
@@ -66,7 +66,7 @@ public class AdminService {
             this.version = prop.getProperty("Implementation-Version");
             this.buildDate = prop.getProperty("Build-Date");
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            LOGGER.error(e.getMessage(), e);
         }
     }
 
@@ -106,7 +106,7 @@ public class AdminService {
      */
     public String requeueSweep(String workflowId) {
         ServiceUtils.checkNotNullOrEmpty(workflowId, "WorkflowId cannot be null or empty.");
-        boolean pushed = queueDAO.pushIfNotExists(WorkflowExecutor.deciderQueue, workflowId, config.getSweepFrequency());
+        boolean pushed = queueDAO.pushIfNotExists(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency());
         return pushed + "." + workflowId;
     }
 }

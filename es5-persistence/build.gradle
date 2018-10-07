@@ -1,13 +1,13 @@
 dependencies {
+    compile project(':conductor-core')
 
-	compile project(':conductor-core')
-	compile "com.google.inject:guice:${revGuice}"
-
-	//ES5 Dependency
-	compile "org.apache.logging.log4j:log4j-api:${revLog4jApi}"
-	compile "org.apache.logging.log4j:log4j-core:${revLog4jCore}"
+    compile "commons-io:commons-io:${revCommonsIo}"
 
 	compile "org.elasticsearch:elasticsearch:${revElasticSearch5}"
 	compile "org.elasticsearch.client:transport:${revElasticSearch5}"
-	compile "commons-io:commons-io:${revCommonsIo}"
+    compile "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch5}"
+
+    //ES5 Dependency
+    compile "org.apache.logging.log4j:log4j-api:${revLog4jApi}"
+    compile "org.apache.logging.log4j:log4j-core:${revLog4jCore}"
 }

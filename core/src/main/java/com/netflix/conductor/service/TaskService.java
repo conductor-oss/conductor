@@ -48,7 +48,7 @@ import java.util.stream.Collectors;
 @Trace
 public class TaskService {
 
-    private static final Logger logger = LoggerFactory.getLogger(TaskService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(TaskService.class);
 
     private final ExecutionService executionService;
 
@@ -70,10 +70,10 @@ public class TaskService {
      */
     public Task poll(String taskType, String workerId, String domain) {
         ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
-        logger.debug("Task being polled: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
+        LOGGER.debug("Task being polled: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
         Task task = executionService.getLastPollTask(taskType, workerId, domain);
         if (task != null) {
-            logger.debug("The Task {} being returned for /tasks/poll/{}?{}&{}", task, taskType, workerId, domain);
+            LOGGER.debug("The Task {} being returned for /tasks/poll/{}?{}&{}", task, taskType, workerId, domain);
         }
         Monitors.recordTaskPollCount(taskType, domain, 1);
         return task;
@@ -92,7 +92,7 @@ public class TaskService {
     public List<Task> batchPoll(String taskType, String workerId, String domain, Integer count, Integer timeout) {
         ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
         List<Task> polledTasks = executionService.poll(taskType, workerId, domain, count, timeout);
-        logger.debug("The Tasks {} being returned for /tasks/poll/{}?{}&{}",
+        LOGGER.debug("The Tasks {} being returned for /tasks/poll/{}?{}&{}",
                 polledTasks.stream()
                         .map(Task::getTaskId)
                         .collect(Collectors.toList()), taskType, workerId, domain);
@@ -136,9 +136,9 @@ public class TaskService {
         ServiceUtils.checkNotNull(taskResult, "TaskResult cannot be null or empty.");
         ServiceUtils.checkNotNullOrEmpty(taskResult.getWorkflowInstanceId(), "Workflow Id cannot be null or empty");
         ServiceUtils.checkNotNullOrEmpty(taskResult.getTaskId(), "Task ID cannot be null or empty");
-        logger.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
+        LOGGER.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
         executionService.updateTask(taskResult);
-        logger.debug("Task: {} updated successfully with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
+        LOGGER.debug("Task: {} updated successfully with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
         return taskResult.getTaskId();
     }
 
@@ -151,7 +151,7 @@ public class TaskService {
      */
     public String ackTaskReceived(String taskId, String workerId) {
         ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
-        logger.debug("Ack received for task: {} from worker: {}", taskId, workerId);
+        LOGGER.debug("Ack received for task: {} from worker: {}", taskId, workerId);
         return String.valueOf(executionService.ackTaskReceived(taskId));
     }
 

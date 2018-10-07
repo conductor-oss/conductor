@@ -13,8 +13,8 @@ dependencies {
 
 	compile "io.nats:java-nats-streaming:${revNatsStreaming}"
 
-	provided "javax.ws.rs:jsr311-api:${revJsr311Api}"
-	provided "io.swagger:swagger-jaxrs:${revSwagger}"
+	compileOnly "javax.ws.rs:jsr311-api:${revJsr311Api}"
+	compile "io.swagger:swagger-jaxrs:${revSwagger}"
 
 	testCompile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
 	testCompile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"

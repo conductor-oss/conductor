@@ -18,12 +18,12 @@ package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
-import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,27 +33,25 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link WorkflowTask.Type#USER_DEFINED}
- * to a {@link Task} of type {@link WorkflowTask.Type#USER_DEFINED} with {@link Task.Status#SCHEDULED}
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#USER_DEFINED}
+ * to a {@link Task} of type {@link TaskType#USER_DEFINED} with {@link Task.Status#SCHEDULED}
  */
 public class UserDefinedTaskMapper implements TaskMapper {
 
     public static final Logger logger = LoggerFactory.getLogger(UserDefinedTaskMapper.class);
 
     private ParametersUtils parametersUtils;
-    private MetadataDAO metadataDAO;
 
-    public UserDefinedTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+    public UserDefinedTaskMapper(ParametersUtils parametersUtils) {
         this.parametersUtils = parametersUtils;
-        this.metadataDAO = metadataDAO;
     }
 
     /**
-     * This method maps a {@link WorkflowTask} of type {@link WorkflowTask.Type#USER_DEFINED}
+     * This method maps a {@link WorkflowTask} of type {@link TaskType#USER_DEFINED}
      * to a {@link Task} in a {@link Task.Status#SCHEDULED} state
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId
-     * @throws TerminateWorkflowException In case if the task definition does not exist in the {@link MetadataDAO}
+     * @throws TerminateWorkflowException In case if the task definition does not exist
      * @return: a List with just one User defined task
      */
     @Override
@@ -79,7 +77,7 @@ public class UserDefinedTaskMapper implements TaskMapper {
         userDefinedTask.setTaskDefName(taskToSchedule.getName());
         userDefinedTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         userDefinedTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
-        userDefinedTask.setWorkflowType(workflowInstance.getWorkflowType());
+        userDefinedTask.setWorkflowType(workflowInstance.getWorkflowName());
         userDefinedTask.setCorrelationId(workflowInstance.getCorrelationId());
         userDefinedTask.setScheduledTime(System.currentTimeMillis());
         userDefinedTask.setTaskId(taskId);

@@ -15,13 +15,21 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import com.github.vmg.protogen.annotations.ProtoEnum;
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.google.protobuf.Any;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
+@ProtoMessage
 public class Task {
 
+    @ProtoEnum
     public enum Status {
 
         IN_PROGRESS(false, true, true),
@@ -60,80 +68,122 @@ public class Task {
         }
     }
 
+    @ProtoField(id = 1)
     private String taskType;
 
+    @ProtoField(id = 2)
     private Status status;
 
+    @ProtoField(id = 3)
     private Map<String, Object> inputData = new HashMap<>();
 
+    @ProtoField(id = 4)
     private String referenceTaskName;
 
+    @ProtoField(id = 5)
     private int retryCount;
 
+    @ProtoField(id = 6)
     private int seq;
 
+    @ProtoField(id = 7)
     private String correlationId;
 
+    @ProtoField(id = 8)
     private int pollCount;
 
+    @ProtoField(id = 9)
     private String taskDefName;
 
     /**
      * Time when the task was scheduled
      */
+    @ProtoField(id = 10)
     private long scheduledTime;
 
     /**
      * Time when the task was first polled
      */
+    @ProtoField(id = 11)
     private long startTime;
 
     /**
      * Time when the task completed executing
      */
+    @ProtoField(id = 12)
     private long endTime;
 
     /**
      * Time when the task was last updated
      */
+    @ProtoField(id = 13)
     private long updateTime;
 
+    @ProtoField(id = 14)
     private int startDelayInSeconds;
 
+    @ProtoField(id = 15)
     private String retriedTaskId;
 
+    @ProtoField(id = 16)
     private boolean retried;
 
+    @ProtoField(id = 17)
     private boolean executed;
 
+    @ProtoField(id = 18)
     private boolean callbackFromWorker = true;
 
+    @ProtoField(id = 19)
     private int responseTimeoutSeconds;
 
+    @ProtoField(id = 20)
     private String workflowInstanceId;
 
+    @ProtoField(id = 21)
     private String workflowType;
 
+    @ProtoField(id = 22)
     private String taskId;
 
+    @ProtoField(id = 23)
     private String reasonForIncompletion;
 
+    @ProtoField(id = 24)
     private long callbackAfterSeconds;
 
+    @ProtoField(id = 25)
     private String workerId;
 
+    @ProtoField(id = 26)
     private Map<String, Object> outputData = new HashMap<>();
 
+    @ProtoField(id = 27)
     private WorkflowTask workflowTask;
 
+    @ProtoField(id = 28)
     private String domain;
 
+    @ProtoField(id = 29)
+    private Any inputMessage;
+
+    @ProtoField(id = 30)
+    private Any outputMessage;
+
+    // This field is deprecated, do not reuse id 31.
+    //@ProtoField(id = 31)
+    //private int rateLimitPerSecond;
+
+    @ProtoField(id = 32)
     private int rateLimitPerFrequency;
 
+    @ProtoField(id = 33)
     private int rateLimitFrequencyInSeconds;
 
+    @ProtoField(id = 34)
     private String externalInputPayloadStoragePath;
 
+    @ProtoField(id = 35)
     private String externalOutputPayloadStoragePath;
 
     public Task() {
@@ -141,7 +191,7 @@ public class Task {
 
     /**
      * @return Type of the task
-     * @see WorkflowTask.Type
+     * @see TaskType
      */
     public String getTaskType() {
         return taskType;
@@ -547,12 +597,36 @@ public class Task {
         this.domain = domain;
     }
 
-    public int getRateLimitPerFrequency() {
-        return rateLimitPerFrequency;
+    public Any getInputMessage() {
+        return inputMessage;
+    }
+
+    public void setInputMessage(Any inputMessage) {
+        this.inputMessage = inputMessage;
     }
 
     public void setRateLimitPerFrequency(int rateLimitPerFrequency) {
         this.rateLimitPerFrequency = rateLimitPerFrequency;
+    }
+
+    public Any getOutputMessage() {
+        return outputMessage;
+    }
+
+    public void setOutputMessage(Any outputMessage) {
+        this.outputMessage = outputMessage;
+    }
+
+    /**
+     * @return {@link Optional} containing the task definition if available
+     */
+    public Optional<TaskDef> getTaskDefinition() {
+        return Optional.ofNullable(this.getWorkflowTask())
+                .map(workflowTask -> workflowTask.getTaskDefinition());
+    }
+
+    public int getRateLimitPerFrequency() {
+        return rateLimitPerFrequency;
     }
 
     public int getRateLimitFrequencyInSeconds() {
@@ -612,10 +686,13 @@ public class Task {
         copy.setWorkerId(workerId);
         copy.setWorkflowTask(workflowTask);
         copy.setDomain(domain);
+        copy.setInputMessage(inputMessage);
+        copy.setOutputMessage(outputMessage);
         copy.setRateLimitPerFrequency(rateLimitPerFrequency);
         copy.setRateLimitFrequencyInSeconds(rateLimitFrequencyInSeconds);
         copy.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
         copy.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
+
         return copy;
     }
 
@@ -651,6 +728,8 @@ public class Task {
                 ", outputData=" + outputData +
                 ", workflowTask=" + workflowTask +
                 ", domain='" + domain + '\'' +
+                ", inputMessage='" + inputMessage + '\'' +
+                ", outputMessage='" + outputMessage + '\'' +
                 ", rateLimitPerFrequency=" + rateLimitPerFrequency +
                 ", rateLimitFrequencyInSeconds=" + rateLimitFrequencyInSeconds +
                 ", externalInputPayloadStoragePath='" + externalInputPayloadStoragePath + '\'' +

@@ -2,13 +2,13 @@ package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
-import com.netflix.conductor.dao.MetadataDAO;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -17,17 +17,13 @@ import org.junit.rules.ExpectedException;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class UserDefinedTaskMapperTest {
 
-    ParametersUtils parametersUtils;
-    MetadataDAO metadataDAO;
-
-    //subject
-    UserDefinedTaskMapper userDefinedTaskMapper;
+    private ParametersUtils parametersUtils;
+    private UserDefinedTaskMapper userDefinedTaskMapper;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -35,8 +31,7 @@ public class UserDefinedTaskMapperTest {
     @Before
     public void setUp() throws Exception {
         parametersUtils = mock(ParametersUtils.class);
-        metadataDAO = mock(MetadataDAO.class);
-        userDefinedTaskMapper = new UserDefinedTaskMapper(parametersUtils, metadataDAO);
+        userDefinedTaskMapper = new UserDefinedTaskMapper(parametersUtils);
     }
 
     @Test
@@ -44,14 +39,18 @@ public class UserDefinedTaskMapperTest {
         //Given
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setName("user_task");
-        taskToSchedule.setType(WorkflowTask.Type.USER_DEFINED.name());
+        taskToSchedule.setType(TaskType.USER_DEFINED.name());
+        taskToSchedule.setTaskDefinition(new TaskDef("user_task"));
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
-        when(metadataDAO.getTaskDef("user_task")).thenReturn(new TaskDef());
+
+        Workflow workflow = new Workflow();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflow.setWorkflowDefinition(workflowDef);
 
         TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-                .withWorkflowDefinition(new WorkflowDef())
-                .withWorkflowInstance(new Workflow())
+                .withWorkflowDefinition(workflowDef)
+                .withWorkflowInstance(workflow)
                 .withTaskDefinition(new TaskDef())
                 .withTaskToSchedule(taskToSchedule)
                 .withTaskInput(new HashMap<>())
@@ -65,7 +64,7 @@ public class UserDefinedTaskMapperTest {
 
         //Then
         assertEquals(1, mappedTasks.size());
-        assertEquals(WorkflowTask.Type.USER_DEFINED.name(), mappedTasks.get(0).getTaskType());
+        assertEquals(TaskType.USER_DEFINED.name(), mappedTasks.get(0).getTaskType());
     }
 
     @Test
@@ -73,14 +72,17 @@ public class UserDefinedTaskMapperTest {
         //Given
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setName("user_task");
-        taskToSchedule.setType(WorkflowTask.Type.USER_DEFINED.name());
+        taskToSchedule.setType(TaskType.USER_DEFINED.name());
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
-        when(metadataDAO.getTaskDef("user_task")).thenReturn(null);
+
+        Workflow workflow = new Workflow();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflow.setWorkflowDefinition(workflowDef);
 
         TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-                .withWorkflowDefinition(new WorkflowDef())
-                .withWorkflowInstance(new Workflow())
+                .withWorkflowDefinition(workflowDef)
+                .withWorkflowInstance(workflow)
                 .withTaskToSchedule(taskToSchedule)
                 .withTaskInput(new HashMap<>())
                 .withRetryCount(0)

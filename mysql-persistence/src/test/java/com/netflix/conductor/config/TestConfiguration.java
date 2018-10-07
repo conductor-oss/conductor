@@ -15,6 +15,10 @@
  */
 package com.netflix.conductor.config;
 
+import com.netflix.conductor.mysql.MySQLConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.HashMap;
@@ -22,15 +26,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.conductor.core.config.Configuration;
-
 /**
  * @author Viren
  */
-public class TestConfiguration implements Configuration {
+public class TestConfiguration implements MySQLConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(TestConfiguration.class);
 	private static final Map<String, String> testProperties = new HashMap<>();
@@ -154,6 +153,10 @@ public class TestConfiguration implements Configuration {
 	public Long getWorkflowOutputPayloadSizeThresholdKB() {
 		return 5120L;
 	}
+    @Override
+    public boolean getBooleanProperty(String name, boolean defaultValue) {
+        return false;
+    }
 
 	@Override
 	public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {

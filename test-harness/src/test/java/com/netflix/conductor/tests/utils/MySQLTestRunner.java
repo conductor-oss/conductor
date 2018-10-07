@@ -18,10 +18,9 @@
  */
 package com.netflix.conductor.tests.utils;
 
-import org.junit.runners.BlockJUnit4ClassRunner;
-
 import com.google.inject.Guice;
 import com.google.inject.Injector;
+import org.junit.runners.BlockJUnit4ClassRunner;
 
 /**
  * @author Viren
@@ -46,10 +45,12 @@ public class MySQLTestRunner extends BlockJUnit4ClassRunner {
 
         // jdbc properties
 
-        System.setProperty("jdbc.url",
-                "jdbc:mysql://localhost:33307/conductor?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
+        System.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/conductor?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
         System.setProperty("jdbc.username", "root");
         System.setProperty("jdbc.password", "");
+        System.setProperty("conductor.mysql.connection.pool.size.min", "8");
+        System.setProperty("conductor.mysql.connection.pool.size.max", "8");
+        System.setProperty("conductor.mysql.connection.pool.idle.min", "300000");
 
     }
 

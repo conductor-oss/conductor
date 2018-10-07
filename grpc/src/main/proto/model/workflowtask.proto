@@ -1,0 +1,36 @@
+syntax = "proto3";
+package conductor.proto;
+
+import "model/taskdef.proto";
+import "model/subworkflowparams.proto";
+import "google/protobuf/struct.proto";
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "WorkflowTaskPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message WorkflowTask {
+    message WorkflowTaskList {
+        repeated WorkflowTask tasks = 1;
+    }
+    string name = 1;
+    string task_reference_name = 2;
+    string description = 3;
+    map<string, google.protobuf.Value> input_parameters = 4;
+    string type = 5;
+    string dynamic_task_name_param = 6;
+    string case_value_param = 7;
+    string case_expression = 8;
+    map<string, WorkflowTask.WorkflowTaskList> decision_cases = 9;
+    string dynamic_fork_tasks_param = 10;
+    string dynamic_fork_tasks_input_param_name = 11;
+    repeated WorkflowTask default_case = 12;
+    repeated WorkflowTask.WorkflowTaskList fork_tasks = 13;
+    int32 start_delay = 14;
+    SubWorkflowParams sub_workflow_param = 15;
+    repeated string join_on = 16;
+    string sink = 17;
+    bool optional = 18;
+    TaskDef task_definition = 19;
+    bool rate_limited = 20;
+}

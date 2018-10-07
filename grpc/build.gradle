@@ -1,0 +1,52 @@
+buildscript {
+    dependencies {
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.5'
+    }
+}
+
+plugins {
+    id 'java'
+    id 'idea'
+    id "com.google.protobuf" version "0.8.5"
+}
+
+repositories{
+    maven { url "https://dl.bintray.com/chaos-systems/mvn" }
+}
+
+dependencies {
+    compile project(':conductor-common')
+    compile project(':conductor-core')
+
+    protobuf 'io.chaossystems.grpc:grpc-healthcheck:1.0.+:protos'
+    compile "com.google.api.grpc:proto-google-common-protos:1.0.0"
+    compile "io.grpc:grpc-protobuf:${revGrpc}"
+    compile "io.grpc:grpc-stub:${revGrpc}"
+
+    compile "com.netflix.runtime:health-api:${revHealth}"
+}
+
+protobuf {
+    protoc {
+        artifact = "com.google.protobuf:protoc:${revProtoBuf}"
+    }
+    plugins {
+        grpc {
+            artifact = "io.grpc:protoc-gen-grpc-java:${revGrpc}"
+        }
+    }
+    generateProtoTasks {
+        all()*.plugins {
+            grpc {}
+        }
+    }
+}
+
+idea {
+    module {
+        sourceDirs += file("${projectDir}/build/generated/source/proto/main/java");
+        sourceDirs += file("${projectDir}/build/generated/source/proto/main/grpc");
+    }
+}
+
+compileJava.dependsOn(tasks.getByPath(":conductor-common:protogen"))

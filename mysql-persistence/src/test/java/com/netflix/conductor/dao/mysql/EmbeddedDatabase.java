@@ -2,6 +2,8 @@ package com.netflix.conductor.dao.mysql;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import ch.vorburger.mariadb4j.DBConfiguration;
+import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,7 +23,11 @@ public enum EmbeddedDatabase {
 
 	private DB startEmbeddedDatabase() {
 		try {
-			DB db = DB.newEmbeddedDB(33307);
+			DBConfiguration dbConfiguration = DBConfigurationBuilder.newBuilder()
+					.setPort(33307)
+					.addArg("--user=root")
+					.build();
+			DB db = DB.newEmbeddedDB(dbConfiguration);
 			db.start();
 			db.createDB("conductor");
 			return db;

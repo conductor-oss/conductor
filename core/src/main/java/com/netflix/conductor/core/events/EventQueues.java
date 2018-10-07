@@ -36,6 +36,7 @@ import java.util.stream.Collectors;
  */
 @Singleton
 public class EventQueues {
+	public static final String EVENT_QUEUE_PROVIDERS_QUALIFIER = "EventQueueProviders";
 
 	private static final Logger logger = LoggerFactory.getLogger(EventQueues.class);
 
@@ -44,7 +45,7 @@ public class EventQueues {
 	private final Map<String, EventQueueProvider> providers;
 
 	@Inject
-	public EventQueues(@Named("EventQueueProviders") Map<String, EventQueueProvider> providers, ParametersUtils parametersUtils) {
+	public EventQueues(@Named(EVENT_QUEUE_PROVIDERS_QUALIFIER) Map<String, EventQueueProvider> providers, ParametersUtils parametersUtils) {
 	    this.providers = providers;
 	    this.parametersUtils = parametersUtils;
 	}

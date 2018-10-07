@@ -8,7 +8,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
-import com.netflix.conductor.dao.MetadataDAO;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -18,7 +17,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
@@ -27,18 +26,16 @@ import static org.mockito.Mockito.when;
 
 public class DynamicTaskMapperTest {
 
-    MetadataDAO metadataDAO;
-    ParametersUtils parametersUtils;
-    DynamicTaskMapper dynamicTaskMapper;
+    private ParametersUtils parametersUtils;
+    private DynamicTaskMapper dynamicTaskMapper;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     @Before
     public void setUp() throws Exception {
-        metadataDAO = mock(MetadataDAO.class);
         parametersUtils = mock(ParametersUtils.class);
-        dynamicTaskMapper = new DynamicTaskMapper(parametersUtils, metadataDAO);
+        dynamicTaskMapper = new DynamicTaskMapper(parametersUtils);
     }
 
     @Test
@@ -49,18 +46,23 @@ public class DynamicTaskMapperTest {
         workflowTask.setDynamicTaskNameParam("dynamicTaskName");
         TaskDef taskDef = new TaskDef();
         taskDef.setName("DynoTask");
+        workflowTask.setTaskDefinition(taskDef);
 
         Map<String, Object> taskInput = new HashMap<>();
         taskInput.put("dynamicTaskName", "DynoTask");
 
-        when(metadataDAO.getTaskDef("DynoTask")).thenReturn(taskDef);
         when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(TaskDef.class), anyString())).thenReturn(taskInput);
 
         String taskId = IDGenerator.generate();
+
+        Workflow workflow = new Workflow();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflow.setWorkflowDefinition(workflowDef);
+
         TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-                .withWorkflowDefinition(new WorkflowDef())
-                .withWorkflowInstance(new Workflow())
-                .withTaskDefinition(new TaskDef())
+                .withWorkflowInstance(workflow)
+                .withWorkflowDefinition(workflowDef)
+                .withTaskDefinition(workflowTask.getTaskDefinition())
                 .withTaskToSchedule(workflowTask)
                 .withTaskInput(taskInput)
                 .withRetryCount(0)
@@ -104,7 +106,7 @@ public class DynamicTaskMapperTest {
         workflowTask.setName("Foo");
         TaskDef taskDef = new TaskDef();
         taskDef.setName("Foo");
-        when(metadataDAO.getTaskDef("Foo")).thenReturn(taskDef);
+        workflowTask.setTaskDefinition(taskDef);
 
         //when
         TaskDef dynamicTaskDefinition = dynamicTaskMapper.getDynamicTaskDefinition(workflowTask);
@@ -118,8 +120,6 @@ public class DynamicTaskMapperTest {
         //Given
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("Foo");
-
-        when(metadataDAO.getTaskDef("Foo")).thenReturn(null);
 
         expectedException.expect(TerminateWorkflowException.class);
         expectedException.expectMessage(String.format("Invalid task specified.  Cannot find task by name %s in the task definitions",

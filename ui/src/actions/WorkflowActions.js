@@ -1,43 +1,5 @@
 import http from '../core/HttpClient';
 
-export function searchWorkflows(query, search, hours, fullstr, start) {
-
-  return function (dispatch) {
-    dispatch({
-      type: 'GET_WORKFLOWS',
-      search: search
-    });
-
-    if(fullstr && search != null && search.length > 0) {
-      search = '"' + search + '"';
-    }
-
-    return http.get('/api/wfe/' + status + '?q=' + query + '&h=' + hours + '&freeText=' + search + '&start=' + start).then((data) => {
-      if(data && data.result && data.result.totalHits > 0){
-        dispatch({
-          type: 'RECEIVED_WORKFLOWS',
-          data
-        });
-      } else if(search !== "") {
-        return searchWorkflowsByTaskId(dispatch, search, hours, start);
-      }
-    }).catch((e) => {
-      dispatch({
-        type: 'REQUEST_ERROR',
-        e
-      });
-    });
-  }
-}
-
-function searchWorkflowsByTaskId(dispatch, search, hours, start){
-  return http.get("/api/wfe/search-by-task/" + search + "?h=" + hours + "&start=" + start).then((data) => {
-    dispatch({
-      type: 'RECEIVED_WORKFLOWS',
-      data
-    });
-  });
-}
 
 export function getWorkflowDetails(workflowId){
   return function (dispatch) {
@@ -51,141 +13,6 @@ export function getWorkflowDetails(workflowId){
       dispatch({
         type: 'RECEIVED_WORKFLOW_DETAILS',
         data
-      });
-    }).catch((e) => {
-      dispatch({
-        type: 'REQUEST_ERROR',
-        e
-      });
-    });
-  }
-}
-
-export function bulkTerminateWorkflow(workflows){
-  return function (dispatch) {
-    dispatch({
-      type: 'REQUESTED_BULK_TERMINATE_WORKFLOW',
-      workflows
-    });
-
-
-    return http.delete('/api/wfe/bulk/terminate', workflows).then((data) => {
-      var {code, message, bulkErrorResults, bulkSuccessResults} = data;
-      dispatch({
-        type: 'RECEIVED_BULK_TERMINATE_WORKFLOW',
-        workflows,
-        data:{bulkServerError:code,
-        bulkServerErrorMessage:message,
-        bulkErrorResults,
-        bulkSuccessResults}
-      });
-    }).catch((e) => {
-      dispatch({
-        type: 'REQUEST_ERROR',
-        e
-      });
-    });
-  }
-}
-
-export function bulkRestartWorkflow(workflows){
-  return function (dispatch) {
-    dispatch({
-      type: 'REQUESTED_BULK_RESTART_WORKFLOW',
-      workflows
-    });
-
-
-    return http.post('/api/wfe/bulk/restart', workflows).then((data) => {
-      var {code, message, bulkErrorResults, bulkSuccessfulResults} = data;
-      dispatch({
-        type: 'RECEIVED_BULK_RESTART_WORKFLOW',
-        workflows,
-        data:{bulkServerError:code,
-        bulkServerErrorMessage:message,
-        bulkErrorResults,
-        bulkSuccessfulResults}
-      });
-    }).catch((e) => {
-      dispatch({
-        type: 'REQUEST_ERROR',
-        e
-      });
-    });
-  }
-}
-
-export function bulkRetryWorkflow(workflows){
-  return function (dispatch) {
-    dispatch({
-      type: 'REQUESTED_BULK_RETRY_WORKFLOW',
-      workflows
-    });
-
-
-    return http.post('/api/wfe/bulk/retry', workflows).then((data) => {
-      var {code, message, bulkErrorResults, bulkSuccessfulResults} = data;
-      dispatch({
-        type: 'RECEIVED_BULK_RETRY_WORKFLOW',
-        workflows,
-        data:{bulkServerError:code,
-        bulkServerErrorMessage:message,
-        bulkErrorResults,
-        bulkSuccessfulResults}
-      });
-    }).catch((e) => {
-      dispatch({
-        type: 'REQUEST_ERROR',
-        e
-      });
-    });
-  }
-}
-
-export function bulkPauseWorkflow(workflows) {
-  return function (dispatch) {
-    dispatch({
-      type: 'REQUESTED_BULK_PAUSE_WORKFLOW',
-      workflows
-    });
-
-
-    return http.put('/api/wfe/bulk/pause', workflows).then((data) => {
-      var {code, message, bulkErrorResults, bulkSuccessfulResults} = data;
-      dispatch({
-        type: 'RECEIVED_BULK_PAUSE_WORKFLOW',
-        workflows,
-        data:{bulkServerError:code,
-        bulkServerErrorMessage:message,
-        bulkErrorResults,
-        bulkSuccessfulResults}
-      });
-    }).catch((e) => {
-      dispatch({
-        type: 'REQUEST_ERROR',
-        e
-      });
-    });
-  }
-}
-
-export function bulkResumeWorkflow(workflows) {
-  return function (dispatch) {
-    dispatch({
-      type: 'REQUESTED_BULK_RESUME_WORKFLOW',
-      workflows
-    });
-
-
-    return http.put('/api/wfe/bulk/resume', workflows).then((data) => {
-      var {code, message, bulkErrorResults, bulkSuccessfulResults} = data;
-      dispatch({
-        type: 'RECEIVED_BULK_RESUME_WORKFLOW',
-        workflows,
-        data:{bulkServerError:code,
-        bulkServerErrorMessage:message,
-        bulkErrorResults,
-        bulkSuccessfulResults}
       });
     }).catch((e) => {
       dispatch({
@@ -308,12 +135,10 @@ export function resumeWorfklow(workflowId) {
 
 //metadata
 export function getWorkflowDefs() {
-
   return function (dispatch) {
     dispatch({
       type: 'LIST_WORKFLOWS'
     });
-
 
     return http.get('/api/wfe/metadata/workflow').then((data) => {
       dispatch({
@@ -398,26 +223,6 @@ export function getQueueData() {
   }
 }
 
-export function updateWorkflow(workflow){
-  return function (dispatch) {
-    dispatch({
-      type: 'REQUESTED_UPDATE_WORKFLOW_DEF',
-      workflow
-    });
-
-
-    return http.put('/api/wfe/metadata/', workflow).then((data) => {
-      dispatch({
-        type: 'RECEIVED_UPDATE_WORKFLOW_DEF'
-      });
-    }).catch((e) => {
-      dispatch({
-        type: 'REQUEST_ERROR',
-        e
-      });
-    });
-  }
-}
 
 export function getEventHandlers() {
 
@@ -431,50 +236,6 @@ export function getEventHandlers() {
       dispatch({
         type: 'RECEIVED_LIST_EVENT_HANDLERS',
         events : data
-      });
-    }).catch((e) => {
-      dispatch({
-        type: 'REQUEST_ERROR',
-        e
-      });
-    });
-  }
-}
-
-export function getEvents(event, time, query) {
-
-  return function (dispatch) {
-    dispatch({
-      type: 'LIST_EVENT'
-    });
-
-
-    return http.get('/api/events/executions').then((data) => {
-      dispatch({
-        type: 'RECEIVED_LIST_EVENT',
-        events : data
-      });
-    }).catch((e) => {
-      dispatch({
-        type: 'REQUEST_ERROR',
-        e
-      });
-    });
-  }
-}
-
-export function getTaskLogs(taskId) {
-
-  return function (dispatch) {
-    dispatch({
-      type: 'GET_TASK_LOGS'
-    });
-
-
-    return http.get('/api/wfe/task/log' + taskId).then((data) => {
-      dispatch({
-        type: 'RECEIVED_GET_TASK_LOGS',
-        logs : data
       });
     }).catch((e) => {
       dispatch({

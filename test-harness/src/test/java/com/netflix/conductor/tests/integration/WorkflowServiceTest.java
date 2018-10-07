@@ -20,14 +20,13 @@ package com.netflix.conductor.tests.integration;
 
 import com.netflix.conductor.tests.utils.TestRunner;
 import org.junit.runner.RunWith;
-import org.slf4j.LoggerFactory;
+import java.util.Map;
 
-/**
- * @author Viren
- */
 @RunWith(TestRunner.class)
-public class WorkflowServiceTest extends BaseWorkflowServiceTest {
-    public WorkflowServiceTest() {
-        super(LoggerFactory.getLogger(WorkflowServiceTest.class));
+public class WorkflowServiceTest extends AbstractWorkflowServiceTest {
+
+    @Override
+    String startOrLoadWorkflowExecution(String snapshotResourceName, String workflowName, int version, String correlationId, Map<String, Object> input, String event, Map<String, String> taskToDomain) {
+        return workflowExecutor.startWorkflow(workflowName, version, correlationId, input, null, event, taskToDomain);
     }
 }

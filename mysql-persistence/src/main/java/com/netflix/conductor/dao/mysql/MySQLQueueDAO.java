@@ -7,6 +7,10 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.QueueDAO;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -15,9 +19,6 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.sql.DataSource;
 
 @Singleton
 public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
@@ -57,13 +58,16 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 
     @Override
     public List<String> pop(String queueName, int count, int timeout) {
-        List<Message> messages = getWithTransaction(tx -> popMessages(tx, queueName, count, timeout));
+        List<Message> messages = getWithTransactionWithOutErrorPropagation(tx -> popMessages(tx, queueName, count, timeout));
+        if(messages == null) return new ArrayList<>();
         return messages.stream().map(Message::getId).collect(Collectors.toList());
     }
 
     @Override
     public List<Message> pollMessages(String queueName, int count, int timeout) {
-        return getWithTransaction(tx -> popMessages(tx, queueName, count, timeout));
+        List<Message> messages = getWithTransactionWithOutErrorPropagation(tx -> popMessages(tx, queueName, count, timeout));
+        if(messages == null) return new ArrayList<>();
+        return messages;
     }
 
     @Override
@@ -176,7 +180,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
     }
 
     private void pushMessage(Connection connection, String queueName, String messageId, String payload,
-            long offsetTimeInSecond) {
+                             long offsetTimeInSecond) {
 
         String PUSH_MESSAGE = "INSERT INTO queue_message (deliver_on, queue_name, message_id, offset_time_seconds, payload) VALUES (TIMESTAMPADD(SECOND,?,CURRENT_TIMESTAMP), ?, ?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload), deliver_on=VALUES(deliver_on)";
 
@@ -197,7 +201,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
         if (count < 1)
             return Collections.emptyList();
 
-        final String PEEK_MESSAGES = "SELECT message_id, payload FROM queue_message WHERE queue_name = ? AND popped = false AND deliver_on <= TIMESTAMPADD(MICROSECOND, 1000, CURRENT_TIMESTAMP) ORDER BY deliver_on, created_on LIMIT ?";
+        final String PEEK_MESSAGES = "SELECT message_id, payload FROM queue_message use index(combo_queue_message) WHERE queue_name = ? AND popped = false AND deliver_on <= TIMESTAMPADD(MICROSECOND, 1000, CURRENT_TIMESTAMP) ORDER BY deliver_on, created_on LIMIT ?";
 
         List<Message> messages = query(connection, PEEK_MESSAGES, p -> p.addParameter(queueName)
                 .addParameter(count).executeAndFetch(rs -> {
@@ -233,10 +237,6 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
         final String query = String.format(POP_MESSAGES, Query.generateInBindings(messages.size()));
 
         int result = query(connection, query, q -> q.addParameter(queueName).addParameters(Ids).executeUpdate());
-        
-        
-
-
 
         if (result != messages.size()) {
             String message = String.format("Could not pop all messages for given ids: %s (%d messages were popped)",

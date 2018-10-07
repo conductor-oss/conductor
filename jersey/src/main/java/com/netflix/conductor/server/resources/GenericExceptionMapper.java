@@ -15,8 +15,14 @@
  */
 package com.netflix.conductor.server.resources;
 
-import java.util.List;
-import java.util.Map;
+import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.core.execution.ApplicationException.Code;
+import com.netflix.conductor.metrics.Monitors;
+import com.sun.jersey.api.core.HttpContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -24,19 +30,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-import javax.ws.rs.core.Variant;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.core.execution.ApplicationException.Code;
-import com.netflix.conductor.metrics.Monitors;
-import com.sun.jersey.api.core.HttpContext;
-import com.fasterxml.jackson.databind.exc.InvalidFormatException;
+import java.util.Map;
 
 /**
  * @author Viren
@@ -46,10 +42,8 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 @Singleton
 public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 
-	private static Logger logger = LoggerFactory.getLogger(GenericExceptionMapper.class);
-	
-	private static List<Variant> supportedMediaTypes = Variant.mediaTypes(MediaType.APPLICATION_JSON_TYPE, MediaType.TEXT_HTML_TYPE, MediaType.TEXT_PLAIN_TYPE).add().build();
-	
+	private static final Logger LOGGER = LoggerFactory.getLogger(GenericExceptionMapper.class);
+
 	@Context 
     private HttpContext context;
 
@@ -65,7 +59,8 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
 	
 	@Override
 	public Response toResponse(Throwable exception) {
-		logger.error(String.format("Error %s url: '%s'", exception.getClass().getSimpleName(), uriInfo.getPath()), exception);
+		LOGGER.error(String.format("Error %s url: '%s'", exception.getClass().getSimpleName(), uriInfo.getPath()), exception);
+
 		Monitors.error("error", "error");
 
 		ApplicationException applicationException = null;

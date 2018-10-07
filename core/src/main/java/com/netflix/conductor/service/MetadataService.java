@@ -34,6 +34,7 @@ import com.netflix.conductor.service.utils.ServiceUtils;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * @author Viren
@@ -42,10 +43,8 @@ import java.util.List;
 @Singleton
 @Trace
 public class MetadataService {
-
     private final MetadataDAO metadataDAO;
     private final EventQueues eventQueues;
-
 
     @Inject
     public MetadataService(MetadataDAO metadataDAO, EventQueues eventQueues) {
@@ -54,7 +53,6 @@ public class MetadataService {
     }
 
     /**
-     *
      * @param taskDefinitions Task Definitions to register
      */
     public void registerTaskDef(List<TaskDef> taskDefinitions) {
@@ -73,7 +71,6 @@ public class MetadataService {
     }
 
     /**
-     *
      * @param taskDefinition Task Definition to be updated
      */
     public void updateTaskDef(TaskDef taskDefinition) {
@@ -87,7 +84,6 @@ public class MetadataService {
     }
 
     /**
-     *
      * @param taskType Remove task definition
      */
     public void unregisterTaskDef(String taskType) {
@@ -95,7 +91,6 @@ public class MetadataService {
     }
 
     /**
-     *
      * @return List of all the registered tasks
      */
     public List<TaskDef> getTaskDefs() {
@@ -103,7 +98,6 @@ public class MetadataService {
     }
 
     /**
-     *
      * @param taskType Task to retrieve
      * @return Task Definition
      */
@@ -117,7 +111,6 @@ public class MetadataService {
     }
 
     /**
-     *
      * @param def Workflow definition to be updated
      */
     public void updateWorkflowDef(WorkflowDef def) {
@@ -141,32 +134,27 @@ public class MetadataService {
     }
 
     /**
-     *
-     * @param name Name of the workflow to retrieve
+     * @param name    Name of the workflow to retrieve
      * @param version Optional.  Version.  If null, then retrieves the latest
      * @return Workflow definition
      */
     public WorkflowDef getWorkflowDef(String name, Integer version) {
-        WorkflowDef workflowDef = null;
+        Optional<WorkflowDef> workflowDef;
         if (version == null) {
             workflowDef = metadataDAO.getLatest(name);
         } else {
             workflowDef =  metadataDAO.get(name, version);
         }
 
-        if(workflowDef == null){
-            throw new ApplicationException(Code.NOT_FOUND,
-                    String.format("No such workflow found by name: %s, version: %d", name, version));
-        }
-        return workflowDef;
+        return workflowDef.orElseThrow(() -> new ApplicationException(Code.NOT_FOUND,
+                String.format("No such workflow found by name: %s, version: %d", name, version)));
     }
 
     /**
-     *
      * @param name Name of the workflow to retrieve
      * @return Latest version of the workflow definition
      */
-    public WorkflowDef getLatestWorkflow(String name) {
+    public Optional<WorkflowDef> getLatestWorkflow(String name) {
         return metadataDAO.getLatest(name);
     }
 
@@ -198,9 +186,8 @@ public class MetadataService {
     }
 
     /**
-     *
      * @param eventHandler Event handler to be added.
-     * Will throw an exception if an event handler already exists with the name
+     *                     Will throw an exception if an event handler already exists with the name
      */
     public void addEventHandler(EventHandler eventHandler) {
         validateEvent(eventHandler);
@@ -208,7 +195,6 @@ public class MetadataService {
     }
 
     /**
-     *
      * @param eventHandler Event handler to be updated.
      */
     public void updateEventHandler(EventHandler eventHandler) {
@@ -217,7 +203,6 @@ public class MetadataService {
     }
 
     /**
-     *
      * @param name Removes the event handler from the system
      */
     public void removeEventHandlerStatus(String name) {
@@ -225,7 +210,6 @@ public class MetadataService {
     }
 
     /**
-     *
      * @return All the event handlers registered in the system
      */
     public List<EventHandler> getEventHandlers() {
@@ -233,8 +217,7 @@ public class MetadataService {
     }
 
     /**
-     *
-     * @param event name of the event
+     * @param event      name of the event
      * @param activeOnly if true, returns only the active handlers
      * @return Returns the list of all the event handlers for a given event
      */
@@ -250,4 +233,5 @@ public class MetadataService {
         String event = eh.getEvent();
         eventQueues.getQueue(event);
     }
+
 }

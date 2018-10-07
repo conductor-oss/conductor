@@ -39,6 +39,7 @@ public class MySQLBaseDAOTest {
         dataSource.setUsername(config.getProperty("jdbc.username", "conductor"));
         dataSource.setPassword(config.getProperty("jdbc.password", "password"));
         dataSource.setAutoCommit(false);
+        dataSource.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
 
         // Prevent DB from getting exhausted during rapid testing
         dataSource.setMaximumPoolSize(8);
