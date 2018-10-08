@@ -80,6 +80,6 @@ task server(type: JavaExec) {
     // Switch between Elasticsearch versions 2 & 5 with major version number.
     systemProperty 'loadSample', 'true'
     systemProperties System.properties
-    main = 'com.netflix.conductor.server.Main'
+    main = 'com.netflix.conductor.bootstrap.Main'
     classpath = sourceSets.test.runtimeClasspath
 }
