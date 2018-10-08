@@ -822,6 +822,13 @@ public class WorkflowExecutor {
                 queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), config.getSweepFrequency());
             }
 
+
+            if (!outcome.tasksToBeUpdated.isEmpty() || !outcome.tasksToBeScheduled.isEmpty()) {
+                executionDAO.updateTasks(tasksToBeUpdated);
+                executionDAO.updateWorkflow(workflow);
+                queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), config.getSweepFrequency());
+            }
+
             if (stateChanged) {
                 decide(workflowId);
             }
