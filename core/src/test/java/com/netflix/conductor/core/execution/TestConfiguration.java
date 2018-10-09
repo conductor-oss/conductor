@@ -17,6 +17,7 @@ package com.netflix.conductor.core.execution;
 
 import com.netflix.conductor.core.config.Configuration;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**

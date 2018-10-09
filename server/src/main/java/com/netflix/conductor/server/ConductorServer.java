@@ -158,15 +158,22 @@ public class ConductorServer {
 		case memory:
 			jedis = new JedisMock();
 			try {
-				if (conductorConfig.getProperty("workflow.elasticsearch.version", "2").equals("5")){
+
+				String elasticSearchVersion = conductorConfig.getProperty("workflow.elasticsearch.version", "2");
+
+				if ("5".equals(elasticSearchVersion) || "5-rest".equals(elasticSearchVersion)) {
 					EmbeddedElasticSearchV5.start();
-				}
-				else {
-					// Use ES2 as default.
+				} else {
 					EmbeddedElasticSearch.start();
 				}
+
 				if(System.getProperty("workflow.elasticsearch.url") == null) {
-					System.setProperty("workflow.elasticsearch.url", "localhost:9300");
+
+					String esUrl = "localhost:9300";
+					if ("5-rest".equals(elasticSearchVersion)) {
+						esUrl = "http://localhost:9200";
+					}
+					System.setProperty("workflow.elasticsearch.url", esUrl);
 				}
 				if(System.getProperty("workflow.elasticsearch.index.name") == null) {
 					System.setProperty("workflow.elasticsearch.index.name", "conductor");

@@ -1,0 +1,35 @@
+dependencies {
+
+    compile (project(':conductor-core')) {
+        transitive = false
+    }
+
+    compile (project(':conductor-common')) {
+        transitive = false
+    }
+
+    compile (project(':conductor-es5-persistence')) {
+        transitive = false
+    }
+
+    // Specific 3rd parties we rely on
+    compile "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
+    compile "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
+    compile "com.google.inject:guice:${revGuice}"
+    compile "commons-io:commons-io:${revCommonsIo}"
+    compile "org.apache.commons:commons-lang3:${revCommonsLang3}"
+    compile "org.slf4j:slf4j-api:${revSlf4j}"
+    compile "joda-time:joda-time:${revJodaTime}"
+
+    // ES5 Dependencies
+    compile "org.apache.logging.log4j:log4j-api:${revLog4jApi}"
+    compile "org.apache.logging.log4j:log4j-core:${revLog4jCore}"
+
+    compile "org.elasticsearch:elasticsearch:${revElasticSearch5}"
+    compile "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch5}"
+    compile "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch5}"
+
+    testRuntimeOnly "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
+    testRuntimeOnly project(':conductor-core')
+    testRuntimeOnly project(':conductor-es5-persistence')
+}
