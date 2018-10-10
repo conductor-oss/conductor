@@ -86,6 +86,9 @@ public class TaskSummary {
 	@ProtoField(id = 16)
 	private String taskId;
 
+    public TaskSummary() {
+    }
+
 	public TaskSummary(Task task) {
 		
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
