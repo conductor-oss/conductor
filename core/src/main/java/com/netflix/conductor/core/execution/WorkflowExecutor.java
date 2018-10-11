@@ -741,6 +741,12 @@ public class WorkflowExecutor {
         }
     }
 
+    public Task getTask(String taskId) {
+        return Optional.ofNullable(executionDAO.getTask(taskId))
+            .map(metadataMapperService::populateTaskWithDefinition)
+            .orElse(null);
+    }
+
     public List<Task> getTasks(String taskType, String startKey, int count) {
         return executionDAO.getTasks(taskType, startKey, count);
     }

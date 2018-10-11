@@ -18,11 +18,13 @@
  */
 package com.netflix.conductor.contribs.queue.sqs;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -81,6 +83,23 @@ public class TestQueueManager {
 		when(queue.getOnSubscribe()).thenCallRealMethod();
 		when(queue.observe()).thenCallRealMethod();
 		when(queue.getName()).thenReturn(Status.COMPLETED.name());
+
+		Task task0 = new Task();
+		task0.setStatus(Status.IN_PROGRESS);
+		task0.setTaskId("t0");
+		task0.setReferenceTaskName("t0");
+		task0.setTaskType(Wait.NAME);
+		Workflow workflow0 = new Workflow();
+		workflow0.setWorkflowId("v_0");
+		workflow0.getTasks().add(task0);
+
+		Task task2 = new Task();
+		task2.setStatus(Status.IN_PROGRESS);
+		task2.setTaskId("t2");
+		task2.setTaskType(Wait.NAME);
+		Workflow workflow2 = new Workflow();
+		workflow2.setWorkflowId("v_2");
+		workflow2.getTasks().add(task2);
 		
 		doAnswer(new Answer<Void>() {
 
@@ -96,26 +115,10 @@ public class TestQueueManager {
 		
 		es = mock(ExecutionService.class);
 		assertNotNull(es);
-		doAnswer(new Answer<Workflow>() {
 
-			@Override
-			public Workflow answer(InvocationOnMock invocation) throws Throwable {
-				try {
-					String workflowId = invocation.getArgumentAt(0, String.class);
-					Workflow workflow = new Workflow();
-					workflow.setWorkflowId(workflowId);
-					Task task = new Task();
-					task.setStatus(Status.IN_PROGRESS);
-					task.setReferenceTaskName("t0");
-					task.setTaskType(Wait.NAME);
-					workflow.getTasks().add(task);
-					return workflow;
-				} catch(Throwable t) {
-					t.printStackTrace();
-					throw t;
-				}
-			}
-		}).when(es).getExecutionStatus(any(), anyBoolean());
+		doReturn(workflow0).when(es).getExecutionStatus(eq("v_0"), anyBoolean());
+
+		doReturn(workflow2).when(es).getExecutionStatus(eq("v_2"), anyBoolean());
 		
 		doAnswer(new Answer<Void>() {
 
@@ -129,16 +132,16 @@ public class TestQueueManager {
 
 	}
 	
-	
-	
+
 	@Test
 	public void test() throws Exception {
 		Map<Status, ObservableQueue> queues = new HashMap<>();
 		queues.put(Status.COMPLETED, queue);
 		QueueManager qm = new QueueManager(queues, es);
-		qm.update("v_0", "t0", new HashMap<>(), Status.COMPLETED);
+		qm.updateByTaskRefName("v_0", "t0", new HashMap<>(), Status.COMPLETED);
 		Uninterruptibles.sleepUninterruptibly(1_000, TimeUnit.MILLISECONDS);
-		assertEquals("updatedTasks are: " + updatedTasks.toString(), 1, updatedTasks.size());
+
+		assertTrue(updatedTasks.stream().anyMatch(task -> task.getTaskId().equals("t0")));
 	}
 	
 	@Test(expected=IllegalArgumentException.class)
@@ -146,8 +149,18 @@ public class TestQueueManager {
 		Map<Status, ObservableQueue> queues = new HashMap<>();
 		queues.put(Status.COMPLETED, queue);
 		QueueManager qm = new QueueManager(queues, es);
-		qm.update("v_1", "t1", new HashMap<>(), Status.CANCELED);
+		qm.updateByTaskRefName("v_1", "t1", new HashMap<>(), Status.CANCELED);
 		Uninterruptibles.sleepUninterruptibly(1_000, TimeUnit.MILLISECONDS);
-		assertEquals(1, updatedTasks.size());
+	}
+
+	@Test
+	public void testWithTaskId() throws Exception {
+		Map<Status, ObservableQueue> queues = new HashMap<>();
+		queues.put(Status.COMPLETED, queue);
+		QueueManager qm = new QueueManager(queues, es);
+		qm.updateByTaskId("v_2", "t2", new HashMap<>(), Status.COMPLETED);
+		Uninterruptibles.sleepUninterruptibly(1_000, TimeUnit.MILLISECONDS);
+
+		assertTrue(updatedTasks.stream().anyMatch(task -> task.getTaskId().equals("t2")));
 	}
 }

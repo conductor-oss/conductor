@@ -211,9 +211,7 @@ public class ExecutionService {
 	}
 
 	public Task getTask(String taskId) {
-		return Optional.ofNullable(executionDAO.getTask(taskId))
-                .map(t -> metadataMapperService.populateTaskWithDefinition(t))
-				.orElse(null);
+		return workflowExecutor.getTask(taskId);
 	}
 
 	public Task getPendingTaskForWorkflow(String taskReferenceName, String workflowId) {
