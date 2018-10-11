@@ -179,7 +179,7 @@ public class WorkflowBulkResource {
      * @throws NullPointerException workflowIds list is null
      */
     @DELETE
-    @Path("/")
+    @Path("/terminate")
     @ApiOperation("Terminate workflows execution")
     public BulkResponse terminate(List<String> workflowIds, @QueryParam("reason") String reason) throws IllegalArgumentException, NullPointerException {
         Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");

@@ -1,6 +1,0 @@
-dependencies {
-    compile project(':conductor-core')
-
-    compile "com.google.inject:guice:${revGuice}"
-
-}

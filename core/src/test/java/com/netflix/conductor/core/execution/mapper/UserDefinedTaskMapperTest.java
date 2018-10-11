@@ -9,6 +9,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
+import com.netflix.conductor.dao.MetadataDAO;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,19 +24,21 @@ import static org.mockito.Mockito.mock;
 public class UserDefinedTaskMapperTest {
 
     private ParametersUtils parametersUtils;
+    private MetadataDAO metadataDAO;
     private UserDefinedTaskMapper userDefinedTaskMapper;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         parametersUtils = mock(ParametersUtils.class);
-        userDefinedTaskMapper = new UserDefinedTaskMapper(parametersUtils);
+        metadataDAO = mock(MetadataDAO.class);
+        userDefinedTaskMapper = new UserDefinedTaskMapper(parametersUtils, metadataDAO);
     }
 
     @Test
-    public void getMappedTasks() throws Exception {
+    public void getMappedTasks() {
         //Given
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setName("user_task");
@@ -68,7 +71,7 @@ public class UserDefinedTaskMapperTest {
     }
 
     @Test
-    public void getMappedTasksException() throws Exception {
+    public void getMappedTasksException() {
         //Given
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setName("user_task");
@@ -97,5 +100,4 @@ public class UserDefinedTaskMapperTest {
         userDefinedTaskMapper.getMappedTasks(taskMapperContext);
 
     }
-
 }
