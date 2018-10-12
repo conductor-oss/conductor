@@ -147,7 +147,7 @@ class WorkflowDetails extends React.Component {
         return (
             <div className="ui-content">
                 <h4>
-                    {wf.workflowType}/{wf.version}
+                    {wf.workflowName}/{wf.version}
                     <span
                         className={(wf.status === 'FAILED' || wf.status === 'TERMINATED' || wf.status === 'TIMED_OUT') ? "red" : "green"}>
           {wf.status}

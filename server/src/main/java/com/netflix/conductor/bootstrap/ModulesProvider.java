@@ -3,7 +3,11 @@ package com.netflix.conductor.bootstrap;
 import com.google.inject.AbstractModule;
 import com.google.inject.ProvisionException;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.contribs.http.HttpTask;
+import com.netflix.conductor.contribs.http.RestClientManager;
+import com.netflix.conductor.contribs.json.JsonJqTransform;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
 import com.netflix.conductor.core.utils.DummyPayloadStorage;
 import com.netflix.conductor.core.utils.S3PayloadStorage;
 import com.netflix.conductor.dao.RedisWorkflowModule;
@@ -117,6 +121,8 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
             });
         }
 
+        new HttpTask(new RestClientManager(), configuration);
+        new JsonJqTransform();
         modules.add(new ServerModule());
 
         return modules;
