@@ -1,90 +1,34 @@
 {
     "compile": {
-        "com.amazonaws:aws-java-sdk-s3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.11.86"
-        },
         "com.fasterxml.jackson.core:jackson-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.8.6"
+            "locked": "2.8.6",
+            "requested": "2.7.5"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.7.5"
-        },
-        "com.github.rholder:guava-retrying": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.0.0"
-        },
-        "com.google.inject.extensions:guice-multibindings": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "4.1.0"
+            "locked": "2.7.5",
+            "requested": "2.7.5"
         },
         "com.google.inject:guice": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "locked": "4.1.0",
             "requested": "4.1.0"
         },
-        "com.jayway.jsonpath:json-path": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.2.0"
-        },
         "com.netflix.conductor:conductor-common": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "project": true
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
         },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.12.17"
-        },
-        "com.netflix.spectator:spectator-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.68.0"
-        },
-        "com.spotify:completable-futures": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.3.1"
-        },
         "commons-io:commons-io": {
             "locked": "2.4",
             "requested": "2.4"
         },
-        "io.reactivex:rxjava": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.2.2"
+        "joda-time:joda-time": {
+            "locked": "2.9.5",
+            "requested": "2.9.5"
         },
         "org.apache.commons:commons-lang3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "3.0"
+            "locked": "3.0",
+            "requested": "3.0"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.11.1",
@@ -93,6 +37,14 @@
         "org.apache.logging.log4j:log4j-core": {
             "locked": "2.11.1",
             "requested": "2.11.1"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
         },
         "org.elasticsearch.client:transport": {
             "locked": "5.6.12",
@@ -103,98 +55,40 @@
             "requested": "5.6.12"
         },
         "org.slf4j:slf4j-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "1.7.25"
+            "locked": "1.7.25",
+            "requested": "1.7.25"
         }
     },
     "compileClasspath": {
-        "com.amazonaws:aws-java-sdk-s3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.11.86"
-        },
         "com.fasterxml.jackson.core:jackson-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.8.6"
+            "locked": "2.8.6",
+            "requested": "2.7.5"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.7.5"
-        },
-        "com.github.rholder:guava-retrying": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.0.0"
-        },
-        "com.google.inject.extensions:guice-multibindings": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "4.1.0"
+            "locked": "2.7.5",
+            "requested": "2.7.5"
         },
         "com.google.inject:guice": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "locked": "4.1.0",
             "requested": "4.1.0"
         },
-        "com.jayway.jsonpath:json-path": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.2.0"
-        },
         "com.netflix.conductor:conductor-common": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "project": true
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
         },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.12.17"
-        },
-        "com.netflix.spectator:spectator-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.68.0"
-        },
-        "com.spotify:completable-futures": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.3.1"
-        },
         "commons-io:commons-io": {
             "locked": "2.4",
             "requested": "2.4"
         },
-        "io.reactivex:rxjava": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.2.2"
+        "joda-time:joda-time": {
+            "locked": "2.9.5",
+            "requested": "2.9.5"
         },
         "org.apache.commons:commons-lang3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "3.0"
+            "locked": "3.0",
+            "requested": "3.0"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.11.1",
@@ -203,6 +97,14 @@
         "org.apache.logging.log4j:log4j-core": {
             "locked": "2.11.1",
             "requested": "2.11.1"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
         },
         "org.elasticsearch.client:transport": {
             "locked": "5.6.12",
@@ -213,98 +115,40 @@
             "requested": "5.6.12"
         },
         "org.slf4j:slf4j-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "1.7.25"
+            "locked": "1.7.25",
+            "requested": "1.7.25"
         }
     },
     "default": {
-        "com.amazonaws:aws-java-sdk-s3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.11.86"
-        },
         "com.fasterxml.jackson.core:jackson-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.8.6"
+            "locked": "2.8.6",
+            "requested": "2.7.5"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.7.5"
-        },
-        "com.github.rholder:guava-retrying": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.0.0"
-        },
-        "com.google.inject.extensions:guice-multibindings": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "4.1.0"
+            "locked": "2.7.5",
+            "requested": "2.7.5"
         },
         "com.google.inject:guice": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "locked": "4.1.0",
             "requested": "4.1.0"
         },
-        "com.jayway.jsonpath:json-path": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.2.0"
-        },
         "com.netflix.conductor:conductor-common": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "project": true
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
         },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.12.17"
-        },
-        "com.netflix.spectator:spectator-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.68.0"
-        },
-        "com.spotify:completable-futures": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.3.1"
-        },
         "commons-io:commons-io": {
             "locked": "2.4",
             "requested": "2.4"
         },
-        "io.reactivex:rxjava": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.2.2"
+        "joda-time:joda-time": {
+            "locked": "2.9.5",
+            "requested": "2.9.5"
         },
         "org.apache.commons:commons-lang3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "3.0"
+            "locked": "3.0",
+            "requested": "3.0"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.11.1",
@@ -313,6 +157,14 @@
         "org.apache.logging.log4j:log4j-core": {
             "locked": "2.11.1",
             "requested": "2.11.1"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
         },
         "org.elasticsearch.client:transport": {
             "locked": "5.6.12",
@@ -323,98 +175,40 @@
             "requested": "5.6.12"
         },
         "org.slf4j:slf4j-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "1.7.25"
+            "locked": "1.7.25",
+            "requested": "1.7.25"
         }
     },
     "runtime": {
-        "com.amazonaws:aws-java-sdk-s3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.11.86"
-        },
         "com.fasterxml.jackson.core:jackson-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.8.6"
+            "locked": "2.8.6",
+            "requested": "2.7.5"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.7.5"
-        },
-        "com.github.rholder:guava-retrying": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.0.0"
-        },
-        "com.google.inject.extensions:guice-multibindings": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "4.1.0"
+            "locked": "2.7.5",
+            "requested": "2.7.5"
         },
         "com.google.inject:guice": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "locked": "4.1.0",
             "requested": "4.1.0"
         },
-        "com.jayway.jsonpath:json-path": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.2.0"
-        },
         "com.netflix.conductor:conductor-common": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "project": true
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
         },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.12.17"
-        },
-        "com.netflix.spectator:spectator-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.68.0"
-        },
-        "com.spotify:completable-futures": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.3.1"
-        },
         "commons-io:commons-io": {
             "locked": "2.4",
             "requested": "2.4"
         },
-        "io.reactivex:rxjava": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.2.2"
+        "joda-time:joda-time": {
+            "locked": "2.9.5",
+            "requested": "2.9.5"
         },
         "org.apache.commons:commons-lang3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "3.0"
+            "locked": "3.0",
+            "requested": "3.0"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.11.1",
@@ -423,6 +217,14 @@
         "org.apache.logging.log4j:log4j-core": {
             "locked": "2.11.1",
             "requested": "2.11.1"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
         },
         "org.elasticsearch.client:transport": {
             "locked": "5.6.12",
@@ -433,98 +235,40 @@
             "requested": "5.6.12"
         },
         "org.slf4j:slf4j-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "1.7.25"
+            "locked": "1.7.25",
+            "requested": "1.7.25"
         }
     },
     "runtimeClasspath": {
-        "com.amazonaws:aws-java-sdk-s3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.11.86"
-        },
         "com.fasterxml.jackson.core:jackson-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.8.6"
+            "locked": "2.8.6",
+            "requested": "2.7.5"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.7.5"
-        },
-        "com.github.rholder:guava-retrying": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.0.0"
-        },
-        "com.google.inject.extensions:guice-multibindings": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "4.1.0"
+            "locked": "2.7.5",
+            "requested": "2.7.5"
         },
         "com.google.inject:guice": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "locked": "4.1.0",
             "requested": "4.1.0"
         },
-        "com.jayway.jsonpath:json-path": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.2.0"
-        },
         "com.netflix.conductor:conductor-common": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "project": true
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
         },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.12.17"
-        },
-        "com.netflix.spectator:spectator-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.68.0"
-        },
-        "com.spotify:completable-futures": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.3.1"
-        },
         "commons-io:commons-io": {
             "locked": "2.4",
             "requested": "2.4"
         },
-        "io.reactivex:rxjava": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.2.2"
+        "joda-time:joda-time": {
+            "locked": "2.9.5",
+            "requested": "2.9.5"
         },
         "org.apache.commons:commons-lang3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "3.0"
+            "locked": "3.0",
+            "requested": "3.0"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.11.1",
@@ -533,6 +277,14 @@
         "org.apache.logging.log4j:log4j-core": {
             "locked": "2.11.1",
             "requested": "2.11.1"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
         },
         "org.elasticsearch.client:transport": {
             "locked": "5.6.12",
@@ -543,102 +295,44 @@
             "requested": "5.6.12"
         },
         "org.slf4j:slf4j-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "1.7.25"
+            "locked": "1.7.25",
+            "requested": "1.7.25"
         }
     },
     "testCompile": {
-        "com.amazonaws:aws-java-sdk-s3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.11.86"
-        },
         "com.fasterxml.jackson.core:jackson-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.8.6"
+            "locked": "2.8.6",
+            "requested": "2.7.5"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.7.5"
-        },
-        "com.github.rholder:guava-retrying": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.0.0"
-        },
-        "com.google.inject.extensions:guice-multibindings": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "4.1.0"
+            "locked": "2.7.5",
+            "requested": "2.7.5"
         },
         "com.google.inject:guice": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "locked": "4.1.0",
             "requested": "4.1.0"
         },
-        "com.jayway.jsonpath:json-path": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.2.0"
-        },
         "com.netflix.conductor:conductor-common": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "project": true
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
         },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.12.17"
-        },
-        "com.netflix.spectator:spectator-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.68.0"
-        },
-        "com.spotify:completable-futures": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.3.1"
-        },
         "commons-io:commons-io": {
             "locked": "2.4",
             "requested": "2.4"
         },
-        "io.reactivex:rxjava": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.2.2"
+        "joda-time:joda-time": {
+            "locked": "2.9.5",
+            "requested": "2.9.5"
         },
         "junit:junit-dep": {
             "locked": "4.10",
             "requested": "4.10"
         },
         "org.apache.commons:commons-lang3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "3.0"
+            "locked": "3.0",
+            "requested": "3.0"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.11.1",
@@ -647,6 +341,14 @@
         "org.apache.logging.log4j:log4j-core": {
             "locked": "2.11.1",
             "requested": "2.11.1"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
         },
         "org.elasticsearch.client:transport": {
             "locked": "5.6.12",
@@ -661,102 +363,44 @@
             "requested": "1.10.0"
         },
         "org.slf4j:slf4j-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "1.7.25"
+            "locked": "1.7.25",
+            "requested": "1.7.25"
         }
     },
     "testCompileClasspath": {
-        "com.amazonaws:aws-java-sdk-s3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.11.86"
-        },
         "com.fasterxml.jackson.core:jackson-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.8.6"
+            "locked": "2.8.6",
+            "requested": "2.7.5"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.7.5"
-        },
-        "com.github.rholder:guava-retrying": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.0.0"
-        },
-        "com.google.inject.extensions:guice-multibindings": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "4.1.0"
+            "locked": "2.7.5",
+            "requested": "2.7.5"
         },
         "com.google.inject:guice": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "locked": "4.1.0",
             "requested": "4.1.0"
         },
-        "com.jayway.jsonpath:json-path": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.2.0"
-        },
         "com.netflix.conductor:conductor-common": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "project": true
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
         },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.12.17"
-        },
-        "com.netflix.spectator:spectator-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.68.0"
-        },
-        "com.spotify:completable-futures": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.3.1"
-        },
         "commons-io:commons-io": {
             "locked": "2.4",
             "requested": "2.4"
         },
-        "io.reactivex:rxjava": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.2.2"
+        "joda-time:joda-time": {
+            "locked": "2.9.5",
+            "requested": "2.9.5"
         },
         "junit:junit-dep": {
             "locked": "4.10",
             "requested": "4.10"
         },
         "org.apache.commons:commons-lang3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "3.0"
+            "locked": "3.0",
+            "requested": "3.0"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.11.1",
@@ -765,6 +409,14 @@
         "org.apache.logging.log4j:log4j-core": {
             "locked": "2.11.1",
             "requested": "2.11.1"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
         },
         "org.elasticsearch.client:transport": {
             "locked": "5.6.12",
@@ -779,102 +431,44 @@
             "requested": "1.10.0"
         },
         "org.slf4j:slf4j-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "1.7.25"
+            "locked": "1.7.25",
+            "requested": "1.7.25"
         }
     },
     "testRuntime": {
-        "com.amazonaws:aws-java-sdk-s3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.11.86"
-        },
         "com.fasterxml.jackson.core:jackson-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.8.6"
+            "locked": "2.8.6",
+            "requested": "2.7.5"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.7.5"
-        },
-        "com.github.rholder:guava-retrying": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "2.0.0"
-        },
-        "com.google.inject.extensions:guice-multibindings": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "4.1.0"
+            "locked": "2.7.5",
+            "requested": "2.7.5"
         },
         "com.google.inject:guice": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "locked": "4.1.0",
             "requested": "4.1.0"
         },
-        "com.jayway.jsonpath:json-path": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "2.2.0"
-        },
         "com.netflix.conductor:conductor-common": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
             "project": true
         },
         "com.netflix.conductor:conductor-core": {
             "project": true
         },
-        "com.netflix.servo:servo-core": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.12.17"
-        },
-        "com.netflix.spectator:spectator-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.68.0"
-        },
-        "com.spotify:completable-futures": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "0.3.1"
-        },
         "commons-io:commons-io": {
             "locked": "2.4",
             "requested": "2.4"
         },
-        "io.reactivex:rxjava": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "1.2.2"
+        "joda-time:joda-time": {
+            "locked": "2.9.5",
+            "requested": "2.9.5"
         },
         "junit:junit-dep": {
             "locked": "4.10",
             "requested": "4.10"
         },
         "org.apache.commons:commons-lang3": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
-            ],
-            "locked": "3.0"
+            "locked": "3.0",
+            "requested": "3.0"
         },
         "org.apache.logging.log4j:log4j-api": {
             "locked": "2.11.1",
@@ -883,6 +477,14 @@
         "org.apache.logging.log4j:log4j-core": {
             "locked": "2.11.1",
             "requested": "2.11.1"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
+            "locked": "5.6.12",
+            "requested": "5.6.12"
         },
         "org.elasticsearch.client:transport": {
             "locked": "5.6.12",
@@ -897,10 +499,8 @@
             "requested": "1.10.0"
         },
         "org.slf4j:slf4j-api": {
-            "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
-            ],
-            "locked": "1.7.25"
+            "locked": "1.7.25",
+            "requested": "1.7.25"
         }
     },
     "testRuntimeClasspath": {
@@ -912,15 +512,19 @@
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-es5-persistence"
             ],
-            "locked": "2.8.6"
+            "locked": "2.8.6",
+            "requested": "2.7.5"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-es5-persistence"
             ],
-            "locked": "2.7.5"
+            "locked": "2.7.5",
+            "requested": "2.7.5"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -936,7 +540,8 @@
         },
         "com.google.inject:guice": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-es5-persistence"
             ],
             "locked": "4.1.0",
             "requested": "4.1.0"
@@ -949,11 +554,18 @@
         },
         "com.netflix.conductor:conductor-common": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-es5-persistence"
             ],
             "project": true
         },
         "com.netflix.conductor:conductor-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-es5-persistence"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-es5-persistence": {
             "project": true
         },
         "com.netflix.servo:servo-core": {
@@ -975,6 +587,9 @@
             "locked": "0.3.1"
         },
         "commons-io:commons-io": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-es5-persistence"
+            ],
             "locked": "2.4",
             "requested": "2.4"
         },
@@ -984,29 +599,64 @@
             ],
             "locked": "1.2.2"
         },
+        "joda-time:joda-time": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-es5-persistence"
+            ],
+            "locked": "2.9.5",
+            "requested": "2.9.5"
+        },
         "junit:junit-dep": {
             "locked": "4.10",
             "requested": "4.10"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.conductor:conductor-es5-persistence"
             ],
-            "locked": "3.0"
+            "locked": "3.0",
+            "requested": "3.0"
         },
         "org.apache.logging.log4j:log4j-api": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-es5-persistence"
+            ],
             "locked": "2.11.1",
             "requested": "2.11.1"
         },
         "org.apache.logging.log4j:log4j-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-es5-persistence"
+            ],
             "locked": "2.11.1",
             "requested": "2.11.1"
         },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-es5-persistence"
+            ],
+            "locked": "5.6.12",
+            "requested": "5.6.12"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-es5-persistence"
+            ],
+            "locked": "5.6.12",
+            "requested": "5.6.12"
+        },
         "org.elasticsearch.client:transport": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-es5-persistence"
+            ],
             "locked": "5.6.12",
             "requested": "5.6.12"
         },
         "org.elasticsearch:elasticsearch": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-es5-persistence"
+            ],
             "locked": "5.6.12",
             "requested": "5.6.12"
         },
@@ -1016,9 +666,15 @@
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-common"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-es5-persistence"
             ],
-            "locked": "1.7.25"
+            "locked": "1.8.0-alpha1",
+            "requested": "1.7.25"
+        },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
         }
     }
 }

@@ -1,4 +1,4 @@
-package com.netflix.conductor.dao.es5rest;
+package com.netflix.conductor.dao.es5;
 
 import com.netflix.conductor.core.config.Configuration;
 

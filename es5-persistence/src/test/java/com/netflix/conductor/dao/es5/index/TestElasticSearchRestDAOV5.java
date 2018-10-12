@@ -1,4 +1,4 @@
-package com.netflix.conductor.dao.es5rest.index;
+package com.netflix.conductor.dao.es5.index;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -6,7 +6,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.es5.EmbeddedElasticSearchV5;
-import com.netflix.conductor.dao.es5rest.TestConfiguration;
+import com.netflix.conductor.dao.es5.TestConfiguration;
 import org.elasticsearch.client.RestClient;
 import org.junit.*;
 import org.slf4j.Logger;
@@ -19,12 +19,12 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 
-public class TestElasticSearchDAOV5Rest {
+public class TestElasticSearchRestDAOV5 {
 
-    private static Logger logger = LoggerFactory.getLogger(TestElasticSearchDAOV5Rest.class);
+    private static Logger logger = LoggerFactory.getLogger(TestElasticSearchRestDAOV5.class);
 
     private static RestClient restClient;
-    private static ElasticSearchDAOV5Rest indexDAO;
+    private static ElasticSearchRestDAOV5 indexDAO;
 
     private Workflow workflow;
 
@@ -34,9 +34,9 @@ public class TestElasticSearchDAOV5Rest {
         EmbeddedElasticSearchV5.start();
 
         Configuration configuration = new TestConfiguration();
-        ElasticSearchModuleV5Rest esRestModule = new ElasticSearchModuleV5Rest();
+        ElasticSearchModuleV5 esRestModule = new ElasticSearchModuleV5(true);
 
-        restClient = esRestModule.getClient(configuration);
+        restClient = esRestModule.getRestClient(configuration);
 
         long startTime = System.currentTimeMillis();
 
@@ -60,7 +60,7 @@ public class TestElasticSearchDAOV5Rest {
         }
 
         ObjectMapper objectMapper = new ObjectMapper();
-        indexDAO = new ElasticSearchDAOV5Rest(restClient, configuration, objectMapper);
+        indexDAO = new ElasticSearchRestDAOV5(restClient, configuration, objectMapper);
 
     }
 

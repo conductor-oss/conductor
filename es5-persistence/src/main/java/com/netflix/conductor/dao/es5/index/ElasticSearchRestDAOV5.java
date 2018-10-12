@@ -1,4 +1,4 @@
-package com.netflix.conductor.dao.es5rest.index;
+package com.netflix.conductor.dao.es5.index;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -16,7 +16,6 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.dao.es5.index.ElasticSearchDAOV5;
 import com.netflix.conductor.dao.es5.index.query.parser.Expression;
 import com.netflix.conductor.dao.es5.index.query.parser.ParserException;
 import com.netflix.conductor.metrics.Monitors;
@@ -71,9 +70,9 @@ import java.util.stream.IntStream;
 
 @Trace
 @Singleton
-public class ElasticSearchDAOV5Rest implements IndexDAO {
+public class ElasticSearchRestDAOV5 implements IndexDAO {
 
-    private static Logger logger = LoggerFactory.getLogger(ElasticSearchDAOV5Rest.class);
+    private static Logger logger = LoggerFactory.getLogger(ElasticSearchRestDAOV5.class);
 
     private static final int RETRY_COUNT = 3;
 
@@ -94,7 +93,7 @@ public class ElasticSearchDAOV5Rest implements IndexDAO {
         String HEAD = "HEAD";
     }
 
-    private static final String className = ElasticSearchDAOV5Rest.class.getSimpleName();
+    private static final String className = ElasticSearchRestDAOV5.class.getSimpleName();
 
     private String indexName;
     private String logIndexPrefix;
@@ -113,7 +112,7 @@ public class ElasticSearchDAOV5Rest implements IndexDAO {
     }
 
     @Inject
-    public ElasticSearchDAOV5Rest(RestClient lowLevelRestClient, Configuration config, ObjectMapper objectMapper) {
+    public ElasticSearchRestDAOV5(RestClient lowLevelRestClient, Configuration config, ObjectMapper objectMapper) {
 
         this.objectMapper = objectMapper;
         this.elasticSearchAdminClient = lowLevelRestClient;
