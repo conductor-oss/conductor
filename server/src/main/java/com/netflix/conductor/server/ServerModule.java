@@ -31,6 +31,7 @@ import com.netflix.conductor.core.utils.S3PayloadStorage;
 import com.netflix.conductor.dao.RedisWorkflowModule;
 import com.netflix.conductor.dao.es.index.ElasticSearchModule;
 import com.netflix.conductor.dao.es5.index.ElasticSearchModuleV5;
+import com.netflix.conductor.dao.es5rest.index.ElasticSearchModuleV5Rest;
 import com.netflix.conductor.dao.mysql.MySQLWorkflowModule;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import redis.clients.jedis.JedisCommands;
@@ -88,10 +89,12 @@ public class ServerModule extends AbstractModule {
 			install(new RedisWorkflowModule(conductorConfig, dynoConn, hostSupplier));
 		}
 
-		if (conductorConfig.getProperty("workflow.elasticsearch.version", "2").equals("5")){
+		String elasticSearchVersion = conductorConfig.getProperty("workflow.elasticsearch.version", "2");
+		if ("5".equals(elasticSearchVersion)) {
 			install(new ElasticSearchModuleV5());
-		}
-		else {
+		} else if ("5-rest".equals(elasticSearchVersion)) {
+			install(new ElasticSearchModuleV5Rest());
+		} else {
 			// Use ES2 as default.
 			install(new ElasticSearchModule());
 		}

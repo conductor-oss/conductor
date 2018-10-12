@@ -160,11 +160,15 @@ public class ConductorServer {
 			try {
 
 				String elasticSearchVersion = conductorConfig.getProperty("workflow.elasticsearch.version", "2");
+				String elasticSearchType = conductorConfig.getProperty("workflow.elasticsearch.type", "embedded");
 
-				if ("5".equals(elasticSearchVersion) || "5-rest".equals(elasticSearchVersion)) {
-					EmbeddedElasticSearchV5.start();
-				} else {
-					EmbeddedElasticSearch.start();
+				// Start embedded ES when 'workflow.elasticsearch.type' is not specified or set as 'embedded'.
+				if ("embedded".equals(elasticSearchType)) {
+					if ("5".equals(elasticSearchVersion) || "5-rest".equals(elasticSearchVersion)) {
+						EmbeddedElasticSearchV5.start();
+					} else {
+						EmbeddedElasticSearch.start();
+					}
 				}
 
 				if(System.getProperty("workflow.elasticsearch.url") == null) {
