@@ -622,7 +622,7 @@ public class Task {
      */
     public Optional<TaskDef> getTaskDefinition() {
         return Optional.ofNullable(this.getWorkflowTask())
-                .map(workflowTask -> workflowTask.getTaskDefinition());
+                .map(WorkflowTask::getTaskDefinition);
     }
 
     public int getRateLimitPerFrequency() {

@@ -1,11 +1,11 @@
 /**
  * Copyright 2017 Netflix, Inc.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
@@ -15,28 +15,25 @@
  */
 package com.netflix.conductor.jetty.server;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.google.inject.servlet.GuiceFilter;
-
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.bootstrap.Main;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.service.Lifecycle;
 import com.sun.jersey.api.client.Client;
-
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.DispatcherType;
+import javax.ws.rs.core.MediaType;
 import java.io.InputStream;
 import java.util.EnumSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import javax.servlet.DispatcherType;
-import javax.ws.rs.core.MediaType;
 
 /**
  * @author Viren
@@ -121,8 +118,7 @@ public class JettyServer implements Lifecycle {
         stream = Main.class.getResourceAsStream("/sub_flow_1.json");
         client.resource("http://localhost:" + port + "/api/metadata/workflow").type(MediaType.APPLICATION_JSON).post(stream);
 
-        Map<String, Object> payload = ImmutableMap.of("input",
-                                                      ImmutableMap.of("task2Name", "task_5"));
+        Map<String, Object> payload = ImmutableMap.of("task2Name", "task_5");
         String payloadStr = objectMapper.writeValueAsString(payload);
         client.resource("http://localhost:" + port + "/api/workflow/kitchensink").type(MediaType.APPLICATION_JSON).post(payloadStr);
 

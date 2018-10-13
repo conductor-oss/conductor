@@ -29,6 +29,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.JsonUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,24 +82,33 @@ public class ActionProcessor {
 	@VisibleForTesting
 	Map<String, Object> completeTask(Action action, Object payload, TaskDetails taskDetails, Status status, String event, String messageId) {
 
-		Map<String, Object> input = new HashMap<>();
-		input.put("workflowId", taskDetails.getWorkflowId());
-		input.put("taskRefName", taskDetails.getTaskRefName());
-		input.putAll(taskDetails.getOutput());
+        Map<String, Object> input = new HashMap<>();
+        input.put("workflowId", taskDetails.getWorkflowId());
+        input.put("taskId", taskDetails.getTaskId());
+        input.put("taskRefName", taskDetails.getTaskRefName());
+        input.putAll(taskDetails.getOutput());
 
-		Map<String, Object> replaced = parametersUtils.replace(input, payload);
-		String workflowId = "" + replaced.get("workflowId");
-		String taskRefName = "" + replaced.get("taskRefName");
-		Workflow found = executor.getWorkflow(workflowId, true);
-		if (found == null) {
-			replaced.put("error", "No workflow found with ID: " + workflowId);
-			return replaced;
-		}
-		Task task = found.getTaskByRefName(taskRefName);
-		if (task == null) {
-			replaced.put("error", "No task found with reference name: " + taskRefName + ", workflowId: " + workflowId);
-			return replaced;
-		}
+        Map<String, Object> replaced = parametersUtils.replace(input, payload);
+        String workflowId = (String) replaced.get("workflowId");
+        String taskId = (String) replaced.get("taskId");
+        String taskRefName = (String) replaced.get("taskRefName");
+
+        Task task = null;
+        if (StringUtils.isNotEmpty(taskId)) {
+        	task = executor.getTask(taskId);
+        } else if (StringUtils.isNotEmpty(workflowId) && StringUtils.isNotEmpty(taskRefName)) {
+        	Workflow workflow = executor.getWorkflow(workflowId, true);
+			if (workflow == null) {
+				replaced.put("error", "No workflow found with ID: " + workflowId);
+				return replaced;
+			}
+            task = workflow.getTaskByRefName(taskRefName);
+        }
+
+        if (task == null) {
+            replaced.put("error", "No task found with taskId: " + taskId + ", reference name: " + taskRefName + ", workflowId: " + workflowId);
+            return replaced;
+        }
 
 		task.setStatus(status);
 		task.setOutputData(replaced);
@@ -124,7 +134,7 @@ public class ActionProcessor {
 			Map<String, Object> workflowInput = parametersUtils.replace(inputParams, payload);
 			workflowInput.put("conductor.event.messageId", messageId);
 			workflowInput.put("conductor.event.name", event);
-			
+
 			String id = executor.startWorkflow(params.getName(), params.getVersion(), params.getCorrelationId(), workflowInput, event);
 			output.put("workflowId", id);
 

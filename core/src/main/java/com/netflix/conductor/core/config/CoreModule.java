@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- *
- */
 package com.netflix.conductor.core.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,8 +63,8 @@ import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDER
  */
 public class CoreModule extends AbstractModule {
 
-    public static final String CONDUCTOR_QUALIFIER = "conductor";
-    public static final String TASK_MAPPERS_QUALIFIER = "TaskMappers";
+    private static final String CONDUCTOR_QUALIFIER = "conductor";
+    private static final String TASK_MAPPERS_QUALIFIER = "TaskMappers";
 
     @Override
     protected void configure() {
@@ -106,8 +103,8 @@ public class CoreModule extends AbstractModule {
     @StringMapKey(TASK_TYPE_DYNAMIC)
     @Singleton
     @Named(TASK_MAPPERS_QUALIFIER)
-    public TaskMapper getDynamicTaskMapper(ParametersUtils parametersUtils) {
-        return new DynamicTaskMapper(parametersUtils);
+    public TaskMapper getDynamicTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+        return new DynamicTaskMapper(parametersUtils, metadataDAO);
     }
 
     @ProvidesIntoMap
@@ -163,8 +160,8 @@ public class CoreModule extends AbstractModule {
     @StringMapKey(TASK_TYPE_USER_DEFINED)
     @Singleton
     @Named(TASK_MAPPERS_QUALIFIER)
-    public TaskMapper getUserDefinedTaskMapper(ParametersUtils parametersUtils) {
-        return new UserDefinedTaskMapper(parametersUtils);
+    public TaskMapper getUserDefinedTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+        return new UserDefinedTaskMapper(parametersUtils, metadataDAO);
     }
 
     @ProvidesIntoMap

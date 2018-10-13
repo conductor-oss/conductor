@@ -26,6 +26,11 @@ allprojects {
 
     repositories {
         jcenter()
+
+        // oss-candidate for -rc.* verions:
+        maven {
+            url "https://dl.bintray.com/netflixoss/oss-candidate"
+        }
     }
 }
 

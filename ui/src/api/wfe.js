@@ -205,7 +205,7 @@ router.post('/bulk/restart', async (req, res, next) => {
 
 router.delete('/bulk/terminate', async (req, res, next) => {
   try {
-    const result = await http.delete(baseURL2 + "bulk", req.body, req.token);
+    const result = await http.delete(baseURL2 + "bulk/terminate", req.body, req.token);
     res.status(200).send(result);
   } catch (err) {
     next(err);

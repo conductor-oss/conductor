@@ -362,7 +362,7 @@ public class WorkflowExecutor {
         }
 
         WorkflowDef workflowDef = Optional.ofNullable(workflow.getWorkflowDefinition())
-                .orElse(metadataDAO.get(workflow.getWorkflowName(), workflow.getWorkflowVersion())
+                .orElseGet(() -> metadataDAO.get(workflow.getWorkflowName(), workflow.getWorkflowVersion())
                         .orElseThrow(() -> new ApplicationException(NOT_FOUND, String.format("Unable to find definition for %s", workflowId)))
                 );
 
@@ -517,7 +517,7 @@ public class WorkflowExecutor {
         if (workflow.getParentWorkflowId() != null) {
             Workflow parent = executionDAO.getWorkflow(workflow.getParentWorkflowId(), false);
             WorkflowDef parentDef = Optional.ofNullable(parent.getWorkflowDefinition())
-                    .orElse(metadataDAO.get(parent.getWorkflowName(), parent.getWorkflowVersion())
+                    .orElseGet(() -> metadataDAO.get(parent.getWorkflowName(), parent.getWorkflowVersion())
                             .orElseThrow(() -> new ApplicationException(NOT_FOUND, String.format("Unable to find parent workflow definition for %s", wf.getWorkflowId())))
                     );
             logger.debug("Completed sub-workflow {}, deciding parent workflow {}", wf.getWorkflowId(), wf.getParentWorkflowId());
@@ -741,6 +741,12 @@ public class WorkflowExecutor {
         }
     }
 
+    public Task getTask(String taskId) {
+        return Optional.ofNullable(executionDAO.getTask(taskId))
+            .map(metadataMapperService::populateTaskWithDefinition)
+            .orElse(null);
+    }
+
     public List<Task> getTasks(String taskType, String startKey, int count) {
         return executionDAO.getTasks(taskType, startKey, count);
     }
@@ -815,6 +821,15 @@ public class WorkflowExecutor {
             }
 
             stateChanged = scheduleTask(workflow, tasksToBeScheduled) || stateChanged;
+
+            if (!outcome.tasksToBeUpdated.isEmpty()) {
+                for (Task task : tasksToBeUpdated) {
+                    if (task.getStatus() != null && (!task.getStatus().equals(Task.Status.IN_PROGRESS)
+                            || !task.getStatus().equals(Task.Status.SCHEDULED))) {
+                        queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId());
+                    }
+                }
+            }
 
             if (!outcome.tasksToBeUpdated.isEmpty() || !outcome.tasksToBeScheduled.isEmpty()) {
                 executionDAO.updateTasks(tasksToBeUpdated);
