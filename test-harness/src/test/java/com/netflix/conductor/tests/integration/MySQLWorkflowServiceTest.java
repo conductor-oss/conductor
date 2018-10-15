@@ -2,12 +2,14 @@
 package com.netflix.conductor.tests.integration;
 
 import com.netflix.conductor.tests.utils.MySQLTestRunner;
+import org.junit.Ignore;
 import org.junit.runner.RunWith;
 
 import java.util.Map;
 
 @RunWith(MySQLTestRunner.class)
 
+@Ignore
 public class MySQLWorkflowServiceTest extends AbstractWorkflowServiceTest {
 
     @Override
