@@ -124,11 +124,11 @@ public class TestDeciderService {
         parametersUtils = new ParametersUtils();
         Map<String, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put("DECISION", new DecisionTaskMapper());
-        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils));
+        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
         taskMappers.put("JOIN", new JoinTaskMapper());
         taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO));
-        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils));
+        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
         taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils));
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));

@@ -91,11 +91,11 @@ public class TestWorkflowExecutor {
         ParametersUtils parametersUtils = new ParametersUtils();
         Map<String, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put("DECISION", new DecisionTaskMapper());
-        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils));
+        taskMappers.put("DYNAMIC", new DynamicTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put("FORK_JOIN", new ForkJoinTaskMapper());
         taskMappers.put("JOIN", new JoinTaskMapper());
         taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO));
-        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils));
+        taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
         taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils));
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
@@ -326,19 +326,19 @@ public class TestWorkflowExecutor {
         Workflow workflow = new Workflow();
 
         //2 different task definitions
-        workflow.setTasks(Arrays.asList(task_1_1,task_2_1));
+        workflow.setTasks(Arrays.asList(task_1_1, task_2_1));
         List<Task> tasks = workflowExecutor.getFailedTasksToRetry(workflow);
         assertEquals(1, tasks.size());
         assertEquals(task_1_1.getTaskId(), tasks.get(0).getTaskId());
 
         //2 tasks with the same  definition but different reference numbers
-        workflow.setTasks(Arrays.asList(task_1_3_1,task_1_3_2));
+        workflow.setTasks(Arrays.asList(task_1_3_1, task_1_3_2));
         tasks = workflowExecutor.getFailedTasksToRetry(workflow);
         assertEquals(1, tasks.size());
         assertEquals(task_1_3_2.getTaskId(), tasks.get(0).getTaskId());
 
         //3 tasks with definitions and reference numbers
-        workflow.setTasks(Arrays.asList(task_1_1,task_1_2, task_1_3_1, task_1_3_2, task_2_1, task_2_2, task_3_1));
+        workflow.setTasks(Arrays.asList(task_1_1, task_1_2, task_1_3_1, task_1_3_2, task_2_1, task_2_2, task_3_1));
         tasks = workflowExecutor.getFailedTasksToRetry(workflow);
         assertEquals(4, tasks.size());
         assertTrue(tasks.contains(task_1_1));
@@ -449,7 +449,7 @@ public class TestWorkflowExecutor {
         task_4_1.setTaskDefName("task1");
         task_4_1.setReferenceTaskName("task4_refABC");
 
-        workflow.setTasks(Arrays.asList(task_1_1,task_1_2, task_2_1, task_3_1, task_4_1));
+        workflow.setTasks(Arrays.asList(task_1_1, task_1_2, task_2_1, task_3_1, task_4_1));
         //end of setup
 
         //when:

@@ -2,9 +2,6 @@ package com.netflix.conductor.common.metadata.workflow;
 
 import com.github.vmg.protogen.annotations.ProtoEnum;
 
-import java.util.HashSet;
-import java.util.Set;
-
 @ProtoEnum
 public enum TaskType {
 

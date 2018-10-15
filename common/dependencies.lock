@@ -1,8 +1,28 @@
 {
     "compile": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "requested": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0",
+            "requested": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.5.1",
+            "requested": "3.5.1"
+        },
+        "javax.inject:javax.inject": {
+            "locked": "1",
+            "requested": "1"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.25",
@@ -10,9 +30,29 @@
         }
     },
     "compileClasspath": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "requested": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0",
+            "requested": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.5.1",
+            "requested": "3.5.1"
+        },
+        "javax.inject:javax.inject": {
+            "locked": "1",
+            "requested": "1"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.25",
@@ -20,19 +60,69 @@
         }
     },
     "default": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "requested": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0",
+            "requested": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.5.1",
+            "requested": "3.5.1"
+        },
+        "javax.inject:javax.inject": {
+            "locked": "1",
+            "requested": "1"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.25",
             "requested": "1.7.25"
         }
     },
+    "jacocoAgent": {
+        "org.jacoco:org.jacoco.agent": {
+            "locked": "0.8.1"
+        }
+    },
+    "jacocoAnt": {
+        "org.jacoco:org.jacoco.ant": {
+            "locked": "0.8.1"
+        }
+    },
     "runtime": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "requested": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0",
+            "requested": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.5.1",
+            "requested": "3.5.1"
+        },
+        "javax.inject:javax.inject": {
+            "locked": "1",
+            "requested": "1"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.25",
@@ -40,9 +130,29 @@
         }
     },
     "runtimeClasspath": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "requested": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0",
+            "requested": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.5.1",
+            "requested": "3.5.1"
+        },
+        "javax.inject:javax.inject": {
+            "locked": "1",
+            "requested": "1"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.25",
@@ -50,17 +160,37 @@
         }
     },
     "testCompile": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "requested": "2.0.0"
         },
-        "junit:junit-dep": {
-            "locked": "4.10",
-            "requested": "4.10"
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0",
+            "requested": "1.0.0"
         },
-        "org.mockito:mockito-all": {
-            "locked": "1.10.0",
-            "requested": "1.10.0"
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.5.1",
+            "requested": "3.5.1"
+        },
+        "javax.inject:javax.inject": {
+            "locked": "1",
+            "requested": "1"
+        },
+        "junit:junit": {
+            "locked": "4.12",
+            "requested": "4.12"
+        },
+        "org.mockito:mockito-core": {
+            "locked": "1.10.19",
+            "requested": "1.10.19"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.25",
@@ -68,17 +198,37 @@
         }
     },
     "testCompileClasspath": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "requested": "2.0.0"
         },
-        "junit:junit-dep": {
-            "locked": "4.10",
-            "requested": "4.10"
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0",
+            "requested": "1.0.0"
         },
-        "org.mockito:mockito-all": {
-            "locked": "1.10.0",
-            "requested": "1.10.0"
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.5.1",
+            "requested": "3.5.1"
+        },
+        "javax.inject:javax.inject": {
+            "locked": "1",
+            "requested": "1"
+        },
+        "junit:junit": {
+            "locked": "4.12",
+            "requested": "4.12"
+        },
+        "org.mockito:mockito-core": {
+            "locked": "1.10.19",
+            "requested": "1.10.19"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.25",
@@ -86,17 +236,37 @@
         }
     },
     "testRuntime": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "requested": "2.0.0"
         },
-        "junit:junit-dep": {
-            "locked": "4.10",
-            "requested": "4.10"
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0",
+            "requested": "1.0.0"
         },
-        "org.mockito:mockito-all": {
-            "locked": "1.10.0",
-            "requested": "1.10.0"
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.5.1",
+            "requested": "3.5.1"
+        },
+        "javax.inject:javax.inject": {
+            "locked": "1",
+            "requested": "1"
+        },
+        "junit:junit": {
+            "locked": "4.12",
+            "requested": "4.12"
+        },
+        "org.mockito:mockito-core": {
+            "locked": "1.10.19",
+            "requested": "1.10.19"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.25",
@@ -104,17 +274,37 @@
         }
     },
     "testRuntimeClasspath": {
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.7.5",
+            "requested": "2.7.5"
+        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "requested": "2.0.0"
         },
-        "junit:junit-dep": {
-            "locked": "4.10",
-            "requested": "4.10"
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0",
+            "requested": "1.0.0"
         },
-        "org.mockito:mockito-all": {
-            "locked": "1.10.0",
-            "requested": "1.10.0"
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.5.1",
+            "requested": "3.5.1"
+        },
+        "javax.inject:javax.inject": {
+            "locked": "1",
+            "requested": "1"
+        },
+        "junit:junit": {
+            "locked": "4.12",
+            "requested": "4.12"
+        },
+        "org.mockito:mockito-core": {
+            "locked": "1.10.19",
+            "requested": "1.10.19"
         },
         "org.slf4j:slf4j-api": {
             "locked": "1.7.25",

@@ -132,7 +132,7 @@ public abstract class AbstractWorkflowServiceTest {
 
     private static List<TaskDef> taskDefs;
 
-    protected static final String LINEAR_WORKFLOW_T1_T2 = "junit_test_wf";
+    private static final String LINEAR_WORKFLOW_T1_T2 = "junit_test_wf";
 
     private static final String LINEAR_WORKFLOW_T1_T2_SW = "junit_test_wf_sw";
 
