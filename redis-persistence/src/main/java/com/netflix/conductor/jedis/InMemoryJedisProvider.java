@@ -1,9 +1,9 @@
 package com.netflix.conductor.jedis;
 
+import redis.clients.jedis.JedisCommands;
+
 import javax.inject.Provider;
 import javax.inject.Singleton;
-
-import redis.clients.jedis.JedisCommands;
 
 @Singleton
 public class InMemoryJedisProvider implements Provider<JedisCommands> {

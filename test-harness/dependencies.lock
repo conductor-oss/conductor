@@ -10,11 +10,15 @@
         }
     },
     "testCompile": {
+        "ch.vorburger.mariaDB4j:mariaDB4j": {
+            "locked": "2.2.3",
+            "requested": "2.2.3"
+        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.426"
+            "locked": "1.11.428"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -26,7 +30,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.426"
+            "locked": "1.11.428"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -271,7 +275,7 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.4"
+            "locked": "2.5"
         },
         "io.grpc:grpc-netty": {
             "firstLevelTransitive": [
@@ -447,11 +451,15 @@
         }
     },
     "testCompileClasspath": {
+        "ch.vorburger.mariaDB4j:mariaDB4j": {
+            "locked": "2.2.3",
+            "requested": "2.2.3"
+        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.426"
+            "locked": "1.11.428"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -463,7 +471,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.426"
+            "locked": "1.11.428"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -708,7 +716,7 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.4"
+            "locked": "2.5"
         },
         "io.grpc:grpc-netty": {
             "firstLevelTransitive": [
@@ -884,11 +892,15 @@
         }
     },
     "testRuntime": {
+        "ch.vorburger.mariaDB4j:mariaDB4j": {
+            "locked": "2.2.3",
+            "requested": "2.2.3"
+        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.426"
+            "locked": "1.11.428"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -900,7 +912,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.426"
+            "locked": "1.11.428"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -1145,7 +1157,7 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.4"
+            "locked": "2.5"
         },
         "io.grpc:grpc-netty": {
             "firstLevelTransitive": [
@@ -1321,11 +1333,15 @@
         }
     },
     "testRuntimeClasspath": {
+        "ch.vorburger.mariaDB4j:mariaDB4j": {
+            "locked": "2.2.3",
+            "requested": "2.2.3"
+        },
         "com.amazonaws:aws-java-sdk-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.426"
+            "locked": "1.11.428"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -1337,7 +1353,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.426"
+            "locked": "1.11.428"
         },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
@@ -1582,7 +1598,7 @@
                 "com.netflix.conductor:conductor-es5-persistence",
                 "com.netflix.conductor:conductor-mysql-persistence"
             ],
-            "locked": "2.4"
+            "locked": "2.5"
         },
         "io.grpc:grpc-netty": {
             "firstLevelTransitive": [

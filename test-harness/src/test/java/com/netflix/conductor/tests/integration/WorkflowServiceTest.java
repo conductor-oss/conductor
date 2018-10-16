@@ -17,7 +17,6 @@ package com.netflix.conductor.tests.integration;
 
 import com.netflix.conductor.tests.utils.TestRunner;
 import org.junit.runner.RunWith;
-
 import java.util.Map;
 
 @RunWith(TestRunner.class)

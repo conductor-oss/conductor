@@ -4,6 +4,7 @@ ui/dist
 ui/package-lock.json
 .gradle
 .project
+bin
 build
 client/python/conductor.egg-info
 *.pyc
@@ -19,3 +20,4 @@ out/
 bin/
 target/
 .DS_Store
+target/

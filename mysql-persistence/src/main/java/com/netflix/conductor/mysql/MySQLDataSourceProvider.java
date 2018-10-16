@@ -1,19 +1,16 @@
 package com.netflix.conductor.mysql;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-
 import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ThreadFactory;
-
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.sql.DataSource;
+import java.util.concurrent.ThreadFactory;
 
 public class MySQLDataSourceProvider implements Provider<DataSource> {
     private static final Logger logger = LoggerFactory.getLogger(MySQLDataSourceProvider.class);
@@ -28,10 +25,6 @@ public class MySQLDataSourceProvider implements Provider<DataSource> {
     @Override
     public DataSource get() {
         HikariDataSource dataSource = new HikariDataSource(createConfiguration());
-        dataSource.setJdbcUrl(configuration.getJdbcUrl());
-        dataSource.setUsername(configuration.getJdbcUserName());
-        dataSource.setPassword(configuration.getJdbcPassword());
-        dataSource.setAutoCommit(false);
         flywayMigrate(dataSource);
 
         return dataSource;
@@ -39,6 +32,10 @@ public class MySQLDataSourceProvider implements Provider<DataSource> {
 
     private HikariConfig createConfiguration(){
         HikariConfig cfg = new HikariConfig();
+        cfg.setJdbcUrl(configuration.getJdbcUrl());
+        cfg.setUsername(configuration.getJdbcUserName());
+        cfg.setPassword(configuration.getJdbcPassword());
+        cfg.setAutoCommit(false);
         cfg.setMaximumPoolSize(configuration.getConnectionPoolMaxSize());
         cfg.setMinimumIdle(configuration.getConnectionPoolMinIdle());
         cfg.setMaxLifetime(configuration.getConnectionMaxLifetime());

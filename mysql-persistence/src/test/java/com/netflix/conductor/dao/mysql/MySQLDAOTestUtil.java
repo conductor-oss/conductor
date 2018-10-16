@@ -5,17 +5,15 @@ import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
 import com.zaxxer.hikari.HikariDataSource;
-
 import org.flywaydb.core.Flyway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-
-import javax.sql.DataSource;
 
 
 @SuppressWarnings("Duplicates")
@@ -26,7 +24,7 @@ public class MySQLDAOTestUtil {
     private final ObjectMapper objectMapper = new JsonMapperProvider().get();
 
     MySQLDAOTestUtil(String dbName) throws Exception {
-        testConfiguration.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/" + dbName);
+        testConfiguration.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/" + dbName +"?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
         testConfiguration.setProperty("jdbc.username", "root");
         testConfiguration.setProperty("jdbc.password", "");
         // Ensure the DB starts
