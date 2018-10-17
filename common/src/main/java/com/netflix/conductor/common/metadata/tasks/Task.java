@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -135,7 +135,7 @@ public class Task {
     private boolean callbackFromWorker = true;
 
     @ProtoField(id = 19)
-    private int responseTimeoutSeconds;
+    private long responseTimeoutSeconds;
 
     @ProtoField(id = 20)
     private String workflowInstanceId;
@@ -459,14 +459,14 @@ public class Task {
     /**
      * @return the timeout for task to send response.  After this timeout, the task will be re-queued
      */
-    public int getResponseTimeoutSeconds() {
+    public long getResponseTimeoutSeconds() {
         return responseTimeoutSeconds;
     }
 
     /**
      * @param responseTimeoutSeconds - timeout for task to send response.  After this timeout, the task will be re-queued
      */
-    public void setResponseTimeoutSeconds(int responseTimeoutSeconds) {
+    public void setResponseTimeoutSeconds(long responseTimeoutSeconds) {
         this.responseTimeoutSeconds = responseTimeoutSeconds;
     }
 

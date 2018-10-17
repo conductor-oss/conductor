@@ -97,7 +97,7 @@ public class TestWorkflowExecutor {
         taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO));
         taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
-        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils));
+        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 
@@ -177,7 +177,6 @@ public class TestWorkflowExecutor {
         task2.setWorkflowInstanceId(workflow.getWorkflowId());
         task2.setCorrelationId(workflow.getCorrelationId());
         task2.setScheduledTime(System.currentTimeMillis());
-        task2.setEndTime(System.currentTimeMillis());
         task2.setInputData(new HashMap<>());
         task2.setTaskId(IDGenerator.generate());
         task2.setStatus(Status.IN_PROGRESS);

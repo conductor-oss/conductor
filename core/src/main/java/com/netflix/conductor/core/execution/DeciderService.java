@@ -448,9 +448,9 @@ public class DeciderService {
             return;
         }
 
-        long timeout = 1000 * taskDef.getTimeoutSeconds();
+        long timeout = 1000L * taskDef.getTimeoutSeconds();
         long now = System.currentTimeMillis();
-        long elapsedTime = now - (task.getStartTime() + (task.getStartDelayInSeconds() * 1000));
+        long elapsedTime = now - (task.getStartTime() + ((long)task.getStartDelayInSeconds() * 1000L));
 
         if (elapsedTime < timeout) {
             return;
@@ -494,7 +494,7 @@ public class DeciderService {
 
         logger.debug("Evaluating responseTimeOut for Task: {}, with Task Definition: {} ", task, taskDefinition);
 
-        long responseTimeout = 1000 * taskDefinition.getResponseTimeoutSeconds();
+        long responseTimeout = 1000L * taskDefinition.getResponseTimeoutSeconds();
         long now = System.currentTimeMillis();
         long noResponseTime = now - task.getUpdateTime();
 
