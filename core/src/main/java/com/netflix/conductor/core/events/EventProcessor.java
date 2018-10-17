@@ -90,6 +90,7 @@ public class EventProcessor {
             executorService = Executors.newFixedThreadPool(executorThreadCount);
             refresh();
             Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::refresh, 60, 60, TimeUnit.SECONDS);
+            logger.info("Event Processing is ENABLED. executorThreadCount set to {}", executorThreadCount);
         } else {
             logger.warn("Event processing is DISABLED. executorThreadCount set to {}", executorThreadCount);
         }
@@ -161,6 +162,8 @@ public class EventProcessor {
             }
         } catch (Exception e) {
             logger.error("Error handling message: {} on queue:{}", msg, queue.getName(), e);
+        } finally {
+            Monitors.recordEventQueueMessagesHandled(queue.getType(), queue.getName());
         }
     }
 

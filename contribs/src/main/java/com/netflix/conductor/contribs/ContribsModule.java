@@ -58,8 +58,8 @@ public class ContribsModule extends AbstractModule {
 	@StringMapKey("sqs")
 	@Singleton
 	@Named(EVENT_QUEUE_PROVIDERS_QUALIFIER)
-	public EventQueueProvider getSQSEventQueueProvider(AmazonSQSClient amazonSQSClient) {
-		return new SQSEventQueueProvider(amazonSQSClient);
+	public EventQueueProvider getSQSEventQueueProvider(AmazonSQSClient amazonSQSClient, Configuration config) {
+		return new SQSEventQueueProvider(amazonSQSClient, config);
 	}
 
 

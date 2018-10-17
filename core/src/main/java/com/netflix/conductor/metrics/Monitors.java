@@ -232,6 +232,10 @@ public class Monitors {
 		counter(classQualifier, "observable_queue_error", "queueType", queueType);
 	}
 
+	public static void recordEventQueueMessagesHandled(String queueType, String queueName) {
+		counter(classQualifier, "event_queue_messages_handled", "queueType", queueType, "queueName", queueName);
+	}
+
 	public static void recordDaoRequests(String dao, String action, String taskType, String workflowType) {
 		counter(classQualifier, "dao_requests", "dao", dao, "action", action, "taskType", taskType, "workflowType", workflowType);
 	}
