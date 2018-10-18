@@ -1,7 +1,6 @@
 package com.netflix.conductor.mysql;
 
 import com.netflix.conductor.core.config.Configuration;
-import com.zaxxer.hikari.HikariConfig;
 
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;

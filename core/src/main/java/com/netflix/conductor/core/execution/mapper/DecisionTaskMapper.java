@@ -84,7 +84,6 @@ public class DecisionTaskMapper implements TaskMapper {
         decisionTask.setWorkflowType(workflowInstance.getWorkflowName());
         decisionTask.setCorrelationId(workflowInstance.getCorrelationId());
         decisionTask.setScheduledTime(System.currentTimeMillis());
-        decisionTask.setEndTime(System.currentTimeMillis());
         decisionTask.getInputData().put("case", caseValue);
         decisionTask.getOutputData().put("caseOutput", Collections.singletonList(caseValue));
         decisionTask.setTaskId(taskId);

@@ -175,7 +175,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	public void updateTask(Task task) {
 
 		task.setUpdateTime(System.currentTimeMillis());
-		if (task.getStatus() != null && task.getStatus().isTerminal()) {
+		if (task.getStatus() != null && task.getStatus().isTerminal() && task.getEndTime() == 0) {
 			task.setEndTime(System.currentTimeMillis());
 		}
 
