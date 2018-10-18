@@ -3488,6 +3488,9 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull(task);
         assertNotNull(task.getOutputData());
         assertNotNull("Output: " + task.getOutputData().toString() + ", status: " + task.getStatus(), task.getOutputData().get("subWorkflowId"));
+        assertNotNull(task.getInputData());
+        assertTrue(task.getInputData().containsKey("workflowInput"));
+        assertEquals(42, ((Map<String, Object>)task.getInputData().get("workflowInput")).get("param2"));
         String subWorkflowId = task.getOutputData().get("subWorkflowId").toString();
 
         es = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
@@ -4153,6 +4156,7 @@ public abstract class AbstractWorkflowServiceTest {
         Map<String, Object> ip2 = new HashMap<>();
         ip2.put("test", "test value");
         ip2.put("param1", "sub workflow input param1");
+        ip2.put("param2", 42);
         wft2.setInputParameters(ip2);
         wft2.setTaskReferenceName("a2");
 
