@@ -144,8 +144,8 @@ public class CoreModule extends AbstractModule {
     @StringMapKey(TASK_TYPE_SUB_WORKFLOW)
     @Singleton
     @Named(TASK_MAPPERS_QUALIFIER)
-    public TaskMapper getSubWorkflowTaskMapper(ParametersUtils parametersUtils) {
-        return new SubWorkflowTaskMapper(parametersUtils);
+    public TaskMapper getSubWorkflowTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+        return new SubWorkflowTaskMapper(parametersUtils, metadataDAO);
     }
 
     @ProvidesIntoMap

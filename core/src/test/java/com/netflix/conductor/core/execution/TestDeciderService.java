@@ -130,7 +130,7 @@ public class TestDeciderService {
         taskMappers.put("FORK_JOIN_DYNAMIC", new ForkJoinDynamicTaskMapper(parametersUtils, objectMapper, metadataDAO));
         taskMappers.put("USER_DEFINED", new UserDefinedTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put("SIMPLE", new SimpleTaskMapper(parametersUtils));
-        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils));
+        taskMappers.put("SUB_WORKFLOW", new SubWorkflowTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 

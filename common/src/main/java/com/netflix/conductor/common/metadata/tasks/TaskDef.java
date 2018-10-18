@@ -74,7 +74,7 @@ public class TaskDef extends Auditable {
 	private int retryDelaySeconds = 60;
 
 	@ProtoField(id = 10)
-	private int responseTimeoutSeconds = ONE_HOUR;
+	private long responseTimeoutSeconds = ONE_HOUR;
 
 	@ProtoField(id = 11)
 	private Integer concurrentExecLimit;
@@ -236,7 +236,7 @@ public class TaskDef extends Auditable {
 	 *
 	 * @return the timeout for task to send response.  After this timeout, the task will be re-queued
 	 */
-	public int getResponseTimeoutSeconds() {
+	public long getResponseTimeoutSeconds() {
 		return responseTimeoutSeconds;
 	}
 
@@ -244,7 +244,7 @@ public class TaskDef extends Auditable {
 	 *
 	 * @param responseTimeoutSeconds - timeout for task to send response.  After this timeout, the task will be re-queued
 	 */
-	public void setResponseTimeoutSeconds(int responseTimeoutSeconds) {
+	public void setResponseTimeoutSeconds(long responseTimeoutSeconds) {
 		this.responseTimeoutSeconds = responseTimeoutSeconds;
 	}
 

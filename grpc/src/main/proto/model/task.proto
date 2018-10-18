@@ -40,7 +40,7 @@ message Task {
     bool retried = 16;
     bool executed = 17;
     bool callback_from_worker = 18;
-    int32 response_timeout_seconds = 19;
+    int64 response_timeout_seconds = 19;
     string workflow_instance_id = 20;
     string workflow_type = 21;
     string task_id = 22;
