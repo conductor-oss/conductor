@@ -159,7 +159,7 @@ public class ParametersUtils {
     private Map<String, Object> replace(Map<String, Object> input, DocumentContext documentContext, String taskId) {
         for (Entry<String, Object> e : input.entrySet()) {
             Object value = e.getValue();
-            if (value instanceof String || value instanceof Number) {
+            if (value instanceof String) {
                 Object replaced = replaceVariables(value.toString(), documentContext, taskId);
                 e.setValue(replaced);
             } else if (value instanceof Map) {
