@@ -43,6 +43,7 @@ import com.netflix.conductor.core.execution.tasks.Event;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator;
 import com.netflix.conductor.core.execution.tasks.Wait;
+import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 
@@ -81,6 +82,12 @@ public class CoreModule extends AbstractModule {
     @Singleton
     public ParametersUtils getParameterUtils() {
         return new ParametersUtils();
+    }
+
+    @Provides
+    @Singleton
+    public JsonUtils getJsonUtils() {
+        return new JsonUtils();
     }
 
     @ProvidesIntoMap

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2017 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,12 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- *
- */
 package com.netflix.conductor.core.events;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
 import com.netflix.conductor.common.metadata.events.EventHandler.TaskDetails;
@@ -41,7 +37,6 @@ import java.util.Map;
 /**
  * @author Viren
  * Action Processor subscribes to the Event Actions queue and processes the actions (e.g. start workflow etc)
- * <p><b>Warning:</b> This is a work in progress and may be changed in future.  Not ready for production yet.
  */
 @Singleton
 public class ActionProcessor {
@@ -49,12 +44,13 @@ public class ActionProcessor {
 
 	private final WorkflowExecutor executor;
 	private final ParametersUtils parametersUtils;
-	private final JsonUtils jsonUtils = new JsonUtils();
+	private final JsonUtils jsonUtils;
 
 	@Inject
-	public ActionProcessor(WorkflowExecutor executor, ParametersUtils parametersUtils) {
+	public ActionProcessor(WorkflowExecutor executor, ParametersUtils parametersUtils, JsonUtils jsonUtils) {
 		this.executor = executor;
 		this.parametersUtils = parametersUtils;
+        this.jsonUtils = jsonUtils;
 	}
 
 	public Map<String, Object> execute(Action action, Object payloadObject, String event, String messageId) {
@@ -79,8 +75,7 @@ public class ActionProcessor {
 		throw new UnsupportedOperationException("Action not supported " + action.getAction() + " for event " + event);
 	}
 
-	@VisibleForTesting
-	Map<String, Object> completeTask(Action action, Object payload, TaskDetails taskDetails, Status status, String event, String messageId) {
+	private Map<String, Object> completeTask(Action action, Object payload, TaskDetails taskDetails, Status status, String event, String messageId) {
 
         Map<String, Object> input = new HashMap<>();
         input.put("workflowId", taskDetails.getWorkflowId());
@@ -135,7 +130,7 @@ public class ActionProcessor {
 			workflowInput.put("conductor.event.messageId", messageId);
 			workflowInput.put("conductor.event.name", event);
 
-			String id = executor.startWorkflow(params.getName(), params.getVersion(), params.getCorrelationId(), workflowInput, event);
+			String id = executor.startWorkflow(params.getName(), params.getVersion(), params.getCorrelationId(), workflowInput, null, event);
 			output.put("workflowId", id);
 
 		} catch (RuntimeException e) {
