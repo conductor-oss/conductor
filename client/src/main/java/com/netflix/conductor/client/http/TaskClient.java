@@ -22,7 +22,6 @@ import com.netflix.conductor.client.exceptions.ConductorClientException;
 import com.netflix.conductor.client.task.WorkflowTaskMetrics;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.SearchResult;
@@ -53,9 +52,6 @@ public class TaskClient extends ClientBase {
     private static GenericType<List<Task>> taskList = new GenericType<List<Task>>() {
     };
 
-    private static GenericType<List<TaskDef>> taskDefList = new GenericType<List<TaskDef>>() {
-    };
-
     private static GenericType<List<TaskExecLog>> taskExecLogList = new GenericType<List<TaskExecLog>>() {
     };
 
@@ -63,6 +59,9 @@ public class TaskClient extends ClientBase {
     };
 
     private static GenericType<SearchResult<TaskSummary>> searchResultTaskSummary = new GenericType<SearchResult<TaskSummary>>() {
+    };
+
+    private static GenericType<Map<String, Integer>> queueSizeMap = new GenericType<Map<String, Integer>>() {
     };
 
     private static final Logger logger = LoggerFactory.getLogger(TaskClient.class);
@@ -131,15 +130,6 @@ public class TaskClient extends ClientBase {
     }
 
     /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link #batchPollTasksByTaskType(String, String, int, int)} instead
-     */
-    @Deprecated
-    public List<Task> poll(String taskType, String workerId, int count, int timeoutInMillisecond) {
-        return batchPollTasksByTaskType(taskType, workerId, count, timeoutInMillisecond);
-    }
-
-    /**
      * Perform a batch poll for tasks by task type. Batch size is configurable by count.
      *
      * @param taskType             Type of task to poll for
@@ -157,15 +147,6 @@ public class TaskClient extends ClientBase {
         List<Task> tasks = getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
         tasks.forEach(this::populateTaskInput);
         return tasks;
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link #batchPollTasksInDomain(String, String, String, int, int)} instead
-     */
-    @Deprecated
-    public List<Task> poll(String taskType, String domain, String workerId, int count, int timeoutInMillisecond) {
-        return batchPollTasksInDomain(taskType, domain, workerId, count, timeoutInMillisecond);
     }
 
     /**
@@ -200,15 +181,6 @@ public class TaskClient extends ClientBase {
             task.setInputData(downloadFromExternalStorage(ExternalPayloadStorage.PayloadType.TASK_INPUT, task.getExternalInputPayloadStoragePath()));
             task.setExternalInputPayloadStoragePath(null);
         }
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link #getPendingTasksByType(String, String, Integer)} instead
-     */
-    @Deprecated
-    public List<Task> getTasks(String taskType, String startKey, Integer count) {
-        return getPendingTasksByType(taskType, startKey, count);
     }
 
     /**
@@ -295,15 +267,6 @@ public class TaskClient extends ClientBase {
     }
 
     /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link #logMessageForTask(String, String)} instead
-     */
-    @Deprecated
-    public void log(String taskId, String logMessage) {
-        logMessageForTask(taskId, logMessage);
-    }
-
-    /**
      * Log execution messages for a task.
      *
      * @param taskId     id of the task
@@ -322,15 +285,6 @@ public class TaskClient extends ClientBase {
     public List<TaskExecLog> getTaskLogs(String taskId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskId), "Task id cannot be blank");
         return getForEntity("tasks/{taskId}/log", null, taskExecLogList, taskId);
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link #getTaskDetails(String)} instead
-     */
-    @Deprecated
-    public Task get(String taskId) {
-        return getTaskDetails(taskId);
     }
 
     /**
@@ -360,9 +314,9 @@ public class TaskClient extends ClientBase {
     public int getQueueSizeForTask(String taskType) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
 
-        Map<String, Integer> queueSizeMap = getForEntity("tasks/queue/sizes", new Object[]{"taskType", taskType}, Map.class);
-        if (queueSizeMap.keySet().contains(taskType)) {
-            return queueSizeMap.get(taskType);
+        Map<String, Integer> taskTypeToQueueSizeMap = getForEntity("tasks/queue/sizes", new Object[]{"taskType", taskType}, queueSizeMap);
+        if (taskTypeToQueueSizeMap.containsKey(taskType)) {
+            return taskTypeToQueueSizeMap.get(taskType);
         }
         return 0;
     }
@@ -431,44 +385,5 @@ public class TaskClient extends ClientBase {
     public SearchResult<TaskSummary> search(Integer start, Integer size, String sort, String freeText, String query) {
         Object[] params = new Object[]{"start", start, "size", size, "sort", sort, "freeText", freeText, "query", query};
         return getForEntity("tasks/search", params, searchResultTaskSummary);
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link MetadataClient#getAllTaskDefs()} instead
-     */
-    @Deprecated
-    public List<TaskDef> getTaskDef() {
-        return getForEntity("metadata/taskdefs", null, taskDefList);
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link MetadataClient#getTaskDef(String)} instead
-     */
-    @Deprecated
-    public TaskDef getTaskDef(String taskType) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-        return getForEntity("metadata/taskdefs/{tasktype}", null, TaskDef.class, taskType);
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link MetadataClient#unregisterTaskDef(String)} instead
-     */
-    @Deprecated
-    public void unregisterTaskDef(String taskType) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-        delete("metadata/taskdefs/{tasktype}", taskType);
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link MetadataClient#registerTaskDefs(List)} instead
-     */
-    @Deprecated
-    public void registerTaskDefs(List<TaskDef> taskDefs) {
-        Preconditions.checkNotNull(taskDefs, "Task defs cannot be null");
-        postForEntityWithRequestOnly("metadata/taskdefs", taskDefs);
     }
 }
