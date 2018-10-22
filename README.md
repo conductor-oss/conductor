@@ -78,5 +78,26 @@ com.netflix.conductor.dao.RedisWorkflowModule
 * Servlet Container
 
 ## Get Support
-Conductor is maintained by Media Workflow Infrastructure team at Netflix.  Use github issue tracking for any support request.  
+Conductor is maintained by Media Workflow Infrastructure team at Netflix.  Use github issue tracking for any support request. 
 
+## Contributions
+Whether it is a small doc correction, bug fix or adding new module to support some crazy feature, contributions are highly appreciated. We just ask to follow standard oss guidelines. And to reiterate, please check with us before spending too much time, only to find later that someone else is already working on similar feature. 
+
+`dev` branch is the current working branch, while `master` branch is current stable branch. Please send your PR's to `dev` branch, making sure that it builds on your local system successfully. Also, please make sure all the conflicts are resolved.
+
+Feel free to create an issue with a label: question, with any questions or requests for help.
+
+## License
+Copyright 2018 Netflix, Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
