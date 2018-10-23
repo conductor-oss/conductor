@@ -68,11 +68,11 @@ public class ActionProcessor {
 		}
 
 		switch (action.getAction()) {
-			case START_WORKFLOW:
+			case start_workflow:
 				return startWorkflow(action, jsonObject, event, messageId);
-			case COMPLETE_TASK:
+			case complete_task:
 				return completeTask(action, jsonObject, action.getCompleteTask(), Status.COMPLETED, event, messageId);
-			case FAIL_TASK:
+			case fail_task:
 				return completeTask(action, jsonObject, action.getFailTask(), Status.FAILED, event, messageId);
 			default:
 				break;

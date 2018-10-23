@@ -132,7 +132,9 @@ public class EventHandler {
 	public static class Action {
 
 		@ProtoEnum
-		public enum Type { START_WORKFLOW, COMPLETE_TASK, FAIL_TASK }
+		public enum Type {
+			start_workflow, complete_task, fail_task
+		}
 
 		@ProtoField(id = 1)
 		private Type action;

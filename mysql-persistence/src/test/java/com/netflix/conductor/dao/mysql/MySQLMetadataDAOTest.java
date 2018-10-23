@@ -196,7 +196,7 @@ public class MySQLMetadataDAOTest {
         eh.setName(UUID.randomUUID().toString());
         eh.setActive(false);
         EventHandler.Action action = new EventHandler.Action();
-        action.setAction(EventHandler.Action.Type.START_WORKFLOW);
+        action.setAction(EventHandler.Action.Type.start_workflow);
         action.setStartWorkflow(new EventHandler.StartWorkflow());
         action.getStartWorkflow().setName("workflow_x");
         eh.getActions().add(action);
