@@ -425,6 +425,9 @@ public abstract class AbstractProtoMapper {
         if (from.getWorkflowDef() != null) {
             to.setWorkflowDef( toProto( from.getWorkflowDef() ) );
         }
+        if (from.getExternalInputPayloadStoragePath() != null) {
+            to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
+        }
         return to.build();
     }
 
@@ -442,6 +445,7 @@ public abstract class AbstractProtoMapper {
         if (from.hasWorkflowDef()) {
             to.setWorkflowDef( fromProto( from.getWorkflowDef() ) );
         }
+        to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
         return to;
     }
 

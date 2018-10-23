@@ -54,6 +54,7 @@ public class TestActionProcessor {
         actionProcessor = new ActionProcessor(workflowExecutor, new ParametersUtils(), new JsonUtils());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void testStartWorkflow() throws Exception {
         StartWorkflow startWorkflow = new StartWorkflow();
@@ -61,8 +62,8 @@ public class TestActionProcessor {
         startWorkflow.getInput().put("testInput", "${testId}");
 
         Action action = new Action();
-        action.setAction(Type.START_WORKFLOW);
-        action.setStartWorkflow(startWorkflow);
+        action.setAction(Type.start_workflow);
+        action.setStart_workflow(startWorkflow);
 
         Object payload = new ObjectMapper().readValue("{\"testId\":\"test_1\"}", Object.class);
 
@@ -92,8 +93,8 @@ public class TestActionProcessor {
         taskDetails.setTaskRefName("testTask");
 
         Action action = new Action();
-        action.setAction(Type.COMPLETE_TASK);
-        action.setCompleteTask(taskDetails);
+        action.setAction(Type.complete_task);
+        action.setComplete_task(taskDetails);
 
         Object payload = new ObjectMapper().readValue("{\"workflowId\":\"workflow_1\"}", Object.class);
 
@@ -122,8 +123,8 @@ public class TestActionProcessor {
         taskDetails.setTaskId("${taskId}");
 
         Action action = new Action();
-        action.setAction(Type.COMPLETE_TASK);
-        action.setCompleteTask(taskDetails);
+        action.setAction(Type.complete_task);
+        action.setComplete_task(taskDetails);
 
         Object payload = new ObjectMapper().readValue("{\"workflowId\":\"workflow_1\", \"taskId\":\"task_1\"}", Object.class);
 
