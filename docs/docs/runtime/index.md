@@ -45,7 +45,7 @@ JSON for start workflow request
 {
   "name": "myWorkflow", // Name of the workflow
   "version": 1, // Version
-  “correlatond”: “corr1” // correlation Id
+  “correlationId”: “corr1”, // correlation Id
   "input": {
 	// Input map. 
   },

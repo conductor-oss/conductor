@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2017 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-/**
- *
  */
 package com.netflix.conductor.core.events;
 
@@ -34,6 +31,7 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TestConfiguration;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 import org.junit.Before;
@@ -50,9 +48,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.atMost;
@@ -77,6 +75,7 @@ public class TestEventProcessor {
     private ActionProcessor actionProcessor;
     private EventQueues eventQueues;
     private ParametersUtils parametersUtils;
+    private JsonUtils jsonUtils;
 
     @Before
     public void setup() {
@@ -88,6 +87,7 @@ public class TestEventProcessor {
         workflowExecutor = mock(WorkflowExecutor.class);
         actionProcessor = mock(ActionProcessor.class);
         parametersUtils = new ParametersUtils();
+        jsonUtils = new JsonUtils();
 
         EventQueueProvider provider = mock(EventQueueProvider.class);
         queue = mock(ObservableQueue.class);
@@ -114,18 +114,18 @@ public class TestEventProcessor {
         eventHandler.setActive(true);
 
         Action startWorkflowAction = new Action();
-        startWorkflowAction.setAction(Type.START_WORKFLOW);
-        startWorkflowAction.setStartWorkflow(new StartWorkflow());
-        startWorkflowAction.getStartWorkflow().setName("workflow_x");
-        startWorkflowAction.getStartWorkflow().setVersion(1);
+        startWorkflowAction.setAction(Type.start_workflow);
+        startWorkflowAction.setStart_workflow(new StartWorkflow());
+        startWorkflowAction.getStart_workflow().setName("workflow_x");
+        startWorkflowAction.getStart_workflow().setVersion(1);
         eventHandler.getActions().add(startWorkflowAction);
 
         Action completeTaskAction = new Action();
-        completeTaskAction.setAction(Type.COMPLETE_TASK);
-        completeTaskAction.setCompleteTask(new TaskDetails());
-        completeTaskAction.getCompleteTask().setTaskRefName("task_x");
-        completeTaskAction.getCompleteTask().setWorkflowId(UUID.randomUUID().toString());
-        completeTaskAction.getCompleteTask().setOutput(new HashMap<>());
+        completeTaskAction.setAction(Type.complete_task);
+        completeTaskAction.setComplete_task(new TaskDetails());
+        completeTaskAction.getComplete_task().setTaskRefName("task_x");
+        completeTaskAction.getComplete_task().setWorkflowId(UUID.randomUUID().toString());
+        completeTaskAction.getComplete_task().setOutput(new HashMap<>());
         eventHandler.getActions().add(completeTaskAction);
 
         eventHandler.setEvent(event);
@@ -140,7 +140,7 @@ public class TestEventProcessor {
         doAnswer((Answer<String>) invocation -> {
             started.set(true);
             return id;
-        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStartWorkflow().getName(), startWorkflowAction.getStartWorkflow().getVersion(), startWorkflowAction.getStartWorkflow().getCorrelationId(), startWorkflowAction.getStartWorkflow().getInput(), event);
+        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStart_workflow().getName(), startWorkflowAction.getStart_workflow().getVersion(), startWorkflowAction.getStart_workflow().getCorrelationId(), startWorkflowAction.getStart_workflow().getInput(), null, event);
 
         AtomicBoolean completed = new AtomicBoolean(false);
         doAnswer((Answer<String>) invocation -> {
@@ -149,19 +149,19 @@ public class TestEventProcessor {
         }).when(workflowExecutor).updateTask(any());
 
         Task task = new Task();
-        task.setReferenceTaskName(completeTaskAction.getCompleteTask().getTaskRefName());
+        task.setReferenceTaskName(completeTaskAction.getComplete_task().getTaskRefName());
         Workflow workflow = new Workflow();
         workflow.setTasks(Collections.singletonList(task));
-        when(workflowExecutor.getWorkflow(completeTaskAction.getCompleteTask().getWorkflowId(), true)).thenReturn(workflow);
+        when(workflowExecutor.getWorkflow(completeTaskAction.getComplete_task().getWorkflowId(), true)).thenReturn(workflow);
 
         WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setVersion(startWorkflowAction.getStartWorkflow().getVersion());
-        workflowDef.setName(startWorkflowAction.getStartWorkflow().getName());
+        workflowDef.setVersion(startWorkflowAction.getStart_workflow().getVersion());
+        workflowDef.setName(startWorkflowAction.getStart_workflow().getName());
         when(metadataService.getWorkflowDef(any(), any())).thenReturn(workflowDef);
 
-        ActionProcessor actionProcessor = new ActionProcessor(workflowExecutor, parametersUtils);
+        ActionProcessor actionProcessor = new ActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
 
-        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, new TestConfiguration());
+        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         assertNotNull(eventProcessor.getQueues());
         assertEquals(1, eventProcessor.getQueues().size());
 
@@ -192,12 +192,12 @@ public class TestEventProcessor {
         startWorkflowInput.put("param2", "SQS-${MessageId}");
 
         Action startWorkflowAction = new Action();
-        startWorkflowAction.setAction(Type.START_WORKFLOW);
-        startWorkflowAction.setStartWorkflow(new StartWorkflow());
-        startWorkflowAction.getStartWorkflow().setName("cms_artwork_automation");
-        startWorkflowAction.getStartWorkflow().setVersion(1);
-        startWorkflowAction.getStartWorkflow().setInput(startWorkflowInput);
-        startWorkflowAction.setExpandInlineJson(true);
+        startWorkflowAction.setAction(Type.start_workflow);
+        startWorkflowAction.setStart_workflow(new StartWorkflow());
+        startWorkflowAction.getStart_workflow().setName("cms_artwork_automation");
+        startWorkflowAction.getStart_workflow().setVersion(1);
+        startWorkflowAction.getStart_workflow().setInput(startWorkflowInput);
+        startWorkflowAction.setExpandInlineJSON(true);
         eventHandler.getActions().add(startWorkflowAction);
 
         eventHandler.setEvent(event);
@@ -212,15 +212,15 @@ public class TestEventProcessor {
         doAnswer((Answer<String>) invocation -> {
             started.set(true);
             return id;
-        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStartWorkflow().getName(), startWorkflowAction.getStartWorkflow().getVersion(), startWorkflowAction.getStartWorkflow().getCorrelationId(), startWorkflowAction.getStartWorkflow().getInput(), event);
+        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStart_workflow().getName(), startWorkflowAction.getStart_workflow().getVersion(), startWorkflowAction.getStart_workflow().getCorrelationId(), startWorkflowAction.getStart_workflow().getInput(), null, event);
 
         WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setName(startWorkflowAction.getStartWorkflow().getName());
+        workflowDef.setName(startWorkflowAction.getStart_workflow().getName());
         when(metadataService.getWorkflowDef(any(), any())).thenReturn(workflowDef);
 
-        ActionProcessor actionProcessor = new ActionProcessor(workflowExecutor, parametersUtils);
+        ActionProcessor actionProcessor = new ActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
 
-        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, new TestConfiguration());
+        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         assertNotNull(eventProcessor.getQueues());
         assertEquals(1, eventProcessor.getQueues().size());
 
@@ -236,11 +236,11 @@ public class TestEventProcessor {
         eventHandler.setEvent(event);
 
         Action completeTaskAction = new Action();
-        completeTaskAction.setAction(Type.COMPLETE_TASK);
-        completeTaskAction.setCompleteTask(new TaskDetails());
-        completeTaskAction.getCompleteTask().setTaskRefName("task_x");
-        completeTaskAction.getCompleteTask().setWorkflowId(UUID.randomUUID().toString());
-        completeTaskAction.getCompleteTask().setOutput(new HashMap<>());
+        completeTaskAction.setAction(Type.complete_task);
+        completeTaskAction.setComplete_task(new TaskDetails());
+        completeTaskAction.getComplete_task().setTaskRefName("task_x");
+        completeTaskAction.getComplete_task().setWorkflowId(UUID.randomUUID().toString());
+        completeTaskAction.getComplete_task().setOutput(new HashMap<>());
         eventHandler.getActions().add(completeTaskAction);
 
         when(queue.rePublishIfNoAck()).thenReturn(false);
@@ -249,7 +249,7 @@ public class TestEventProcessor {
         when(executionService.addEventExecution(any())).thenReturn(true);
         when(actionProcessor.execute(any(), any(), any(), any())).thenThrow(new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "some retriable error"));
 
-        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, new TestConfiguration());
+        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         assertNotNull(eventProcessor.getQueues());
         assertEquals(1, eventProcessor.getQueues().size());
 
@@ -267,11 +267,11 @@ public class TestEventProcessor {
         eventHandler.setEvent(event);
 
         Action completeTaskAction = new Action();
-        completeTaskAction.setAction(Type.COMPLETE_TASK);
-        completeTaskAction.setCompleteTask(new TaskDetails());
-        completeTaskAction.getCompleteTask().setTaskRefName("task_x");
-        completeTaskAction.getCompleteTask().setWorkflowId(UUID.randomUUID().toString());
-        completeTaskAction.getCompleteTask().setOutput(new HashMap<>());
+        completeTaskAction.setAction(Type.complete_task);
+        completeTaskAction.setComplete_task(new TaskDetails());
+        completeTaskAction.getComplete_task().setTaskRefName("task_x");
+        completeTaskAction.getComplete_task().setWorkflowId(UUID.randomUUID().toString());
+        completeTaskAction.getComplete_task().setOutput(new HashMap<>());
         eventHandler.getActions().add(completeTaskAction);
 
         when(metadataService.getEventHandlers()).thenReturn(Collections.singletonList(eventHandler));
@@ -280,7 +280,7 @@ public class TestEventProcessor {
 
         when(actionProcessor.execute(any(), any(), any(), any())).thenThrow(new ApplicationException(ApplicationException.Code.INVALID_INPUT, "some non-retriable error"));
 
-        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, new TestConfiguration());
+        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         assertNotNull(eventProcessor.getQueues());
         assertEquals(1, eventProcessor.getQueues().size());
 
@@ -299,7 +299,7 @@ public class TestEventProcessor {
             throw new UnsupportedOperationException("error");
         }).when(actionProcessor).execute(any(), any(), any(), any());
 
-        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, new TestConfiguration());
+        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         EventExecution eventExecution = new EventExecution("id", "messageId");
         eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
         eventExecution.setEvent("event");
@@ -319,12 +319,12 @@ public class TestEventProcessor {
             throw new ApplicationException(ApplicationException.Code.INVALID_INPUT, "some non-retriable error");
         }).when(actionProcessor).execute(any(), any(), any(), any());
 
-        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, new TestConfiguration());
+        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         EventExecution eventExecution = new EventExecution("id", "messageId");
         eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
         eventExecution.setEvent("event");
         Action action = new Action();
-        action.setAction(Type.START_WORKFLOW);
+        action.setAction(Type.start_workflow);
 
         eventProcessor.execute(eventExecution, action, "payload");
         assertEquals(1, executeInvoked.get());
@@ -340,12 +340,12 @@ public class TestEventProcessor {
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "some retriable error");
         }).when(actionProcessor).execute(any(), any(), any(), any());
 
-        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, new TestConfiguration());
+        EventProcessor eventProcessor = new EventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         EventExecution eventExecution = new EventExecution("id", "messageId");
         eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
         eventExecution.setEvent("event");
         Action action = new Action();
-        action.setAction(Type.START_WORKFLOW);
+        action.setAction(Type.start_workflow);
 
         eventProcessor.execute(eventExecution, action, "payload");
         assertEquals(3, executeInvoked.get());
