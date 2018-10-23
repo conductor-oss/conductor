@@ -66,8 +66,8 @@ Given the following payload in the message:
 
 ```json
 {
-    "action": "startWorkflow",
-    "startWorkflow": {
+    "action": "start_workflow",
+    "start_workflow": {
         "name": "WORKFLOW_NAME",
         "version": <optional>
         "input": {
@@ -81,8 +81,8 @@ Given the following payload in the message:
 
 ```json
 {
-    "action": "completeTask",
-    "completeTask": {
+    "action": "complete_task",
+    "complete_task": {
       "workflowId": "${source.externalId.workflowId}",
       "taskRefName": "task_1",
       "output": {
@@ -97,8 +97,8 @@ Given the following payload in the message:
 
 ```json
 {
-    "action": "failTask",
-    "failTask": {
+    "action": "fail_task",
+    "fail_task": {
       "workflowId": "${source.externalId.workflowId}",
       "taskRefName": "task_1",
       "output": {

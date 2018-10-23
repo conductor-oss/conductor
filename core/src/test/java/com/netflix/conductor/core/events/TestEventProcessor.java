@@ -112,17 +112,17 @@ public class TestEventProcessor {
 
         Action startWorkflowAction = new Action();
         startWorkflowAction.setAction(Type.start_workflow);
-        startWorkflowAction.setStartWorkflow(new StartWorkflow());
-        startWorkflowAction.getStartWorkflow().setName("workflow_x");
-        startWorkflowAction.getStartWorkflow().setVersion(1);
+        startWorkflowAction.setStart_workflow(new StartWorkflow());
+        startWorkflowAction.getStart_workflow().setName("workflow_x");
+        startWorkflowAction.getStart_workflow().setVersion(1);
         eventHandler.getActions().add(startWorkflowAction);
 
         Action completeTaskAction = new Action();
         completeTaskAction.setAction(Type.complete_task);
-        completeTaskAction.setCompleteTask(new TaskDetails());
-        completeTaskAction.getCompleteTask().setTaskRefName("task_x");
-        completeTaskAction.getCompleteTask().setWorkflowId(UUID.randomUUID().toString());
-        completeTaskAction.getCompleteTask().setOutput(new HashMap<>());
+        completeTaskAction.setComplete_task(new TaskDetails());
+        completeTaskAction.getComplete_task().setTaskRefName("task_x");
+        completeTaskAction.getComplete_task().setWorkflowId(UUID.randomUUID().toString());
+        completeTaskAction.getComplete_task().setOutput(new HashMap<>());
         eventHandler.getActions().add(completeTaskAction);
 
         eventHandler.setEvent(event);
@@ -137,7 +137,7 @@ public class TestEventProcessor {
         doAnswer((Answer<String>) invocation -> {
             started.set(true);
             return id;
-        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStartWorkflow().getName(), startWorkflowAction.getStartWorkflow().getVersion(), startWorkflowAction.getStartWorkflow().getCorrelationId(), startWorkflowAction.getStartWorkflow().getInput(), event);
+        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStart_workflow().getName(), startWorkflowAction.getStart_workflow().getVersion(), startWorkflowAction.getStart_workflow().getCorrelationId(), startWorkflowAction.getStart_workflow().getInput(), event);
 
         AtomicBoolean completed = new AtomicBoolean(false);
         doAnswer((Answer<String>) invocation -> {
@@ -146,14 +146,14 @@ public class TestEventProcessor {
         }).when(workflowExecutor).updateTask(any());
 
         Task task = new Task();
-        task.setReferenceTaskName(completeTaskAction.getCompleteTask().getTaskRefName());
+        task.setReferenceTaskName(completeTaskAction.getComplete_task().getTaskRefName());
         Workflow workflow = new Workflow();
         workflow.setTasks(Collections.singletonList(task));
-        when(workflowExecutor.getWorkflow(completeTaskAction.getCompleteTask().getWorkflowId(), true)).thenReturn(workflow);
+        when(workflowExecutor.getWorkflow(completeTaskAction.getComplete_task().getWorkflowId(), true)).thenReturn(workflow);
 
         WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setVersion(startWorkflowAction.getStartWorkflow().getVersion());
-        workflowDef.setName(startWorkflowAction.getStartWorkflow().getName());
+        workflowDef.setVersion(startWorkflowAction.getStart_workflow().getVersion());
+        workflowDef.setName(startWorkflowAction.getStart_workflow().getName());
         when(metadataService.getWorkflowDef(any(), any())).thenReturn(Optional.of(workflowDef));
 
         ActionProcessor actionProcessor = new ActionProcessor(workflowExecutor, metadataService);
@@ -190,10 +190,10 @@ public class TestEventProcessor {
 
         Action startWorkflowAction = new Action();
         startWorkflowAction.setAction(Type.start_workflow);
-        startWorkflowAction.setStartWorkflow(new StartWorkflow());
-        startWorkflowAction.getStartWorkflow().setName("cms_artwork_automation");
-        startWorkflowAction.getStartWorkflow().setVersion(1);
-        startWorkflowAction.getStartWorkflow().setInput(startWorkflowInput);
+        startWorkflowAction.setStart_workflow(new StartWorkflow());
+        startWorkflowAction.getStart_workflow().setName("cms_artwork_automation");
+        startWorkflowAction.getStart_workflow().setVersion(1);
+        startWorkflowAction.getStart_workflow().setInput(startWorkflowInput);
         startWorkflowAction.setExpandInlineJson(true);
         eventHandler.getActions().add(startWorkflowAction);
 
@@ -209,10 +209,10 @@ public class TestEventProcessor {
         doAnswer((Answer<String>) invocation -> {
             started.set(true);
             return id;
-        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStartWorkflow().getName(), startWorkflowAction.getStartWorkflow().getVersion(), startWorkflowAction.getStartWorkflow().getCorrelationId(), startWorkflowAction.getStartWorkflow().getInput(), event);
+        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStart_workflow().getName(), startWorkflowAction.getStart_workflow().getVersion(), startWorkflowAction.getStart_workflow().getCorrelationId(), startWorkflowAction.getStart_workflow().getInput(), event);
 
         WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setName(startWorkflowAction.getStartWorkflow().getName());
+        workflowDef.setName(startWorkflowAction.getStart_workflow().getName());
         when(metadataService.getWorkflowDef(any(), any())).thenReturn(Optional.of(workflowDef));
 
         ActionProcessor actionProcessor = new ActionProcessor(workflowExecutor, metadataService);
@@ -234,10 +234,10 @@ public class TestEventProcessor {
 
         Action completeTaskAction = new Action();
         completeTaskAction.setAction(Type.complete_task);
-        completeTaskAction.setCompleteTask(new TaskDetails());
-        completeTaskAction.getCompleteTask().setTaskRefName("task_x");
-        completeTaskAction.getCompleteTask().setWorkflowId(UUID.randomUUID().toString());
-        completeTaskAction.getCompleteTask().setOutput(new HashMap<>());
+        completeTaskAction.setComplete_task(new TaskDetails());
+        completeTaskAction.getComplete_task().setTaskRefName("task_x");
+        completeTaskAction.getComplete_task().setWorkflowId(UUID.randomUUID().toString());
+        completeTaskAction.getComplete_task().setOutput(new HashMap<>());
         eventHandler.getActions().add(completeTaskAction);
 
         when(queue.rePublishIfNoAck()).thenReturn(false);
@@ -265,10 +265,10 @@ public class TestEventProcessor {
 
         Action completeTaskAction = new Action();
         completeTaskAction.setAction(Type.complete_task);
-        completeTaskAction.setCompleteTask(new TaskDetails());
-        completeTaskAction.getCompleteTask().setTaskRefName("task_x");
-        completeTaskAction.getCompleteTask().setWorkflowId(UUID.randomUUID().toString());
-        completeTaskAction.getCompleteTask().setOutput(new HashMap<>());
+        completeTaskAction.setComplete_task(new TaskDetails());
+        completeTaskAction.getComplete_task().setTaskRefName("task_x");
+        completeTaskAction.getComplete_task().setWorkflowId(UUID.randomUUID().toString());
+        completeTaskAction.getComplete_task().setOutput(new HashMap<>());
         eventHandler.getActions().add(completeTaskAction);
 
         when(metadataService.getEventHandlers()).thenReturn(Collections.singletonList(eventHandler));

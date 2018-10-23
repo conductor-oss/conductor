@@ -243,8 +243,8 @@ public class RedisMetadataDAOTest {
 		eh.setActive(false);
 		Action action = new Action();
 		action.setAction(Type.start_workflow);
-		action.setStartWorkflow(new StartWorkflow());
-		action.getStartWorkflow().setName("workflow_x");
+		action.setStart_workflow(new StartWorkflow());
+		action.getStart_workflow().setName("workflow_x");
 		eh.getActions().add(action);
 		eh.setEvent(event1);
 		

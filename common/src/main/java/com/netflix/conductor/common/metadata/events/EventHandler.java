@@ -140,13 +140,13 @@ public class EventHandler {
 		private Type action;
 
 		@ProtoField(id = 2)
-		private StartWorkflow startWorkflow;
+		private StartWorkflow start_workflow;
 
 		@ProtoField(id = 3)
-		private TaskDetails completeTask;
+		private TaskDetails complete_task;
 
 		@ProtoField(id = 4)
-		private TaskDetails failTask;
+		private TaskDetails fail_task;
 
 		@ProtoField(id = 5)
 		private boolean expandInlineJson;
@@ -167,48 +167,48 @@ public class EventHandler {
 		}
 
 		/**
-		 * @return the startWorkflow
+		 * @return the start_workflow
 		 */
-		public StartWorkflow getStartWorkflow() {
-			return startWorkflow;
+		public StartWorkflow getStart_workflow() {
+			return start_workflow;
 		}
 
 		/**
-		 * @param startWorkflow the startWorkflow to set
+		 * @param start_workflow the start_workflow to set
 		 * 
 		 */
-		public void setStartWorkflow(StartWorkflow startWorkflow) {
-			this.startWorkflow = startWorkflow;
+		public void setStart_workflow(StartWorkflow start_workflow) {
+			this.start_workflow = start_workflow;
 		}
 
 		/**
-		 * @return the completeTask
+		 * @return the complete_task
 		 */
-		public TaskDetails getCompleteTask() {
-			return completeTask;
+		public TaskDetails getComplete_task() {
+			return complete_task;
 		}
 
 		/**
-		 * @param completeTask the completeTask to set
+		 * @param complete_task the complete_task to set
 		 * 
 		 */
-		public void setCompleteTask(TaskDetails completeTask) {
-			this.completeTask = completeTask;
+		public void setComplete_task(TaskDetails complete_task) {
+			this.complete_task = complete_task;
 		}
 
 		/**
-		 * @return the failTask
+		 * @return the fail_task
 		 */
-		public TaskDetails getFailTask() {
-			return failTask;
+		public TaskDetails getFail_task() {
+			return fail_task;
 		}
 
 		/**
-		 * @param failTask the failTask to set
+		 * @param fail_task the fail_task to set
 		 * 
 		 */
-		public void setFailTask(TaskDetails failTask) {
-			this.failTask = failTask;
+		public void setFail_task(TaskDetails fail_task) {
+			this.fail_task = fail_task;
 		}
 		
 		/**

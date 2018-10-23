@@ -71,9 +71,9 @@ public class ActionProcessor {
 			case start_workflow:
 				return startWorkflow(action, jsonObject, event, messageId);
 			case complete_task:
-				return completeTask(action, jsonObject, action.getCompleteTask(), Status.COMPLETED, event, messageId);
+				return completeTask(action, jsonObject, action.getComplete_task(), Status.COMPLETED, event, messageId);
 			case fail_task:
-				return completeTask(action, jsonObject, action.getFailTask(), Status.FAILED, event, messageId);
+				return completeTask(action, jsonObject, action.getFail_task(), Status.FAILED, event, messageId);
 			default:
 				break;
 		}
@@ -119,7 +119,7 @@ public class ActionProcessor {
 	}
 
 	private Map<String, Object> startWorkflow(Action action, Object payload, String event, String messageId) {
-		StartWorkflow params = action.getStartWorkflow();
+		StartWorkflow params = action.getStart_workflow();
 		Map<String, Object> output = new HashMap<>();
 		try {
 			Map<String, Object> inputParams = params.getInput();
