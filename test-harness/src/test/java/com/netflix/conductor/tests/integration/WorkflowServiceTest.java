@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,14 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- *
- */
 package com.netflix.conductor.tests.integration;
 
 import com.netflix.conductor.tests.utils.TestRunner;
 import org.junit.runner.RunWith;
-
 import java.util.Map;
 
 @RunWith(TestRunner.class)
@@ -28,7 +24,6 @@ public class WorkflowServiceTest extends AbstractWorkflowServiceTest {
 
     @Override
     String startOrLoadWorkflowExecution(String snapshotResourceName, String workflowName, int version, String correlationId, Map<String, Object> input, String event, Map<String, String> taskToDomain) {
-        return workflowExecutor.startWorkflow(workflowName, version, correlationId, input, event, taskToDomain);
+        return workflowExecutor.startWorkflow(workflowName, version, correlationId, input, null, event, taskToDomain);
     }
-
 }

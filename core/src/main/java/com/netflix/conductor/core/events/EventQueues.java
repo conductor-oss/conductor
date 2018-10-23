@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.core.events;
 
@@ -25,36 +25,38 @@ import com.netflix.conductor.core.execution.ParametersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Singleton;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
  * @author Viren
- * Static holders for internal event queues
+ * Holders for internal event queues
  */
+@Singleton
 public class EventQueues {
-
 	public static final String EVENT_QUEUE_PROVIDERS_QUALIFIER = "EventQueueProviders";
 
-	private static Logger logger = LoggerFactory.getLogger(EventQueues.class);
+	private static final Logger logger = LoggerFactory.getLogger(EventQueues.class);
 
-	private static ParametersUtils parametersUtils = new ParametersUtils();
+	private final ParametersUtils parametersUtils;
+
+	private final Map<String, EventQueueProvider> providers;
 
 	@Inject
-	@Named(EVENT_QUEUE_PROVIDERS_QUALIFIER)
-	public static Map<String, EventQueueProvider> providers; //TODO this is a leaky abstraction, when the static injection is moved to singleton this will be fixed
-
-	private EventQueues() {
+	public EventQueues(@Named(EVENT_QUEUE_PROVIDERS_QUALIFIER) Map<String, EventQueueProvider> providers, ParametersUtils parametersUtils) {
+	    this.providers = providers;
+	    this.parametersUtils = parametersUtils;
 	}
 
-	public static List<String> providers() {
+	public List<String> getProviders() {
 		return providers.values().stream()
 				.map(p -> p.getClass().getName())
 				.collect(Collectors.toList());
 	}
 
-	public static ObservableQueue getQueue(String eventType) {
+	public ObservableQueue getQueue(String eventType) {
 		String event = parametersUtils.replace(eventType).toString();
 		int index = event.indexOf(':');
 		if (index == -1) {

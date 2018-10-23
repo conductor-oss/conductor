@@ -21,24 +21,22 @@ import com.netflix.dyno.jedis.DynoJedisClient;
 import com.netflix.dyno.queues.DynoQueue;
 import com.netflix.dyno.queues.Message;
 import com.netflix.dyno.queues.ShardSupplier;
-import com.netflix.dyno.queues.redis.DynoShardSupplier;
 import com.netflix.dyno.queues.redis.RedisDynoQueue;
 import com.netflix.dyno.queues.redis.RedisQueues;
-
+import com.netflix.dyno.queues.shard.DynoShardSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+import redis.clients.jedis.JedisCommands;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import redis.clients.jedis.JedisCommands;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Singleton
 public class DynoQueueDAO implements QueueDAO {
@@ -127,12 +125,14 @@ public class DynoQueueDAO implements QueueDAO {
     public void push(String queueName, String id, long offsetTimeInSecond) {
         Message msg = new Message(id, null);
         msg.setTimeout(offsetTimeInSecond, TimeUnit.SECONDS);
-        queues.get(queueName).push(Arrays.asList(msg));
+        queues.get(queueName).push(Collections.singletonList(msg));
     }
 
     @Override
     public void push(String queueName, List<com.netflix.conductor.core.events.queue.Message> messages) {
-        List<Message> msgs = messages.stream().map(msg -> new Message(msg.getId(), msg.getPayload())).collect(Collectors.toList());
+        List<Message> msgs = messages.stream()
+				.map(msg -> new Message(msg.getId(), msg.getPayload()))
+				.collect(Collectors.toList());
         queues.get(queueName).push(msgs);
     }
 
@@ -144,20 +144,24 @@ public class DynoQueueDAO implements QueueDAO {
         }
         Message msg = new Message(id, null);
         msg.setTimeout(offsetTimeInSecond, TimeUnit.SECONDS);
-        queue.push(Arrays.asList(msg));
+        queue.push(Collections.singletonList(msg));
         return true;
     }
 
     @Override
     public List<String> pop(String queueName, int count, int timeout) {
         List<Message> msg = queues.get(queueName).pop(count, timeout, TimeUnit.MILLISECONDS);
-        return msg.stream().map(Message::getId).collect(Collectors.toList());
+        return msg.stream()
+				.map(Message::getId)
+				.collect(Collectors.toList());
     }
 
     @Override
     public List<com.netflix.conductor.core.events.queue.Message> pollMessages(String queueName, int count, int timeout) {
         List<Message> msgs = queues.get(queueName).pop(count, timeout, TimeUnit.MILLISECONDS);
-        return msgs.stream().map(msg -> new com.netflix.conductor.core.events.queue.Message(msg.getId(), msg.getPayload(), null)).collect(Collectors.toList());
+        return msgs.stream()
+				.map(msg -> new com.netflix.conductor.core.events.queue.Message(msg.getId(), msg.getPayload(), null))
+				.collect(Collectors.toList());
     }
 
     @Override
@@ -197,9 +201,8 @@ public class DynoQueueDAO implements QueueDAO {
 
     @Override
     public Map<String, Map<String, Map<String, Long>>> queuesDetailVerbose() {
-        Map<String, Map<String, Map<String, Long>>> map = queues.queues().stream()
-                .collect(Collectors.toMap(queue -> queue.getName(), q -> q.shardSizes()));
-        return map;
+        return queues.queues().stream()
+                .collect(Collectors.toMap(DynoQueue::getName, DynoQueue::shardSizes));
     }
 
     public void processUnacks(String queueName) {
@@ -212,4 +215,10 @@ public class DynoQueueDAO implements QueueDAO {
         return queue.setTimeout(id, offsetTimeInSecond);
 
     }
+
+	@Override
+	public boolean exists(String queueName, String id) {
+		DynoQueue queue = queues.get(queueName);
+		return Optional.ofNullable(queue.get(id)).isPresent();
+	}
 }

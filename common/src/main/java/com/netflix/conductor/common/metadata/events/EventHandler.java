@@ -243,6 +243,9 @@ public class EventHandler {
 		@ProtoField(id = 4)
 		private Any outputMessage;
 
+		@ProtoField(id = 5)
+		private String taskId;
+
 		/**
 		 * @return the workflowId
 		 */
@@ -295,6 +298,20 @@ public class EventHandler {
 		public void setOutputMessage(Any outputMessage) {
 			this.outputMessage = outputMessage;
 		}
+
+        /**
+         * @return the taskId
+         */
+        public String getTaskId() {
+            return taskId;
+        }
+
+        /**
+         * @param taskId the taskId to set
+         */
+        public void setTaskId(String taskId) {
+            this.taskId = taskId;
+        }
 	}
 
 	@ProtoMessage

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2017 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-/**
- *
  */
 package com.netflix.conductor.core.events;
 
@@ -70,24 +67,28 @@ public class EventProcessor {
     private final MetadataService metadataService;
     private final ExecutionService executionService;
     private final ActionProcessor actionProcessor;
+    private final EventQueues eventQueues;
 
     private ExecutorService executorService;
     private final Map<String, ObservableQueue> eventToQueueMap = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final JsonUtils jsonUtils = new JsonUtils();
+    private final JsonUtils jsonUtils;
 
     @Inject
     public EventProcessor(ExecutionService executionService, MetadataService metadataService,
-                          ActionProcessor actionProcessor, Configuration config) {
+                          ActionProcessor actionProcessor, EventQueues eventQueues, JsonUtils jsonUtils, Configuration config) {
         this.executionService = executionService;
         this.metadataService = metadataService;
         this.actionProcessor = actionProcessor;
+        this.eventQueues = eventQueues;
+        this.jsonUtils = jsonUtils;
 
         int executorThreadCount = config.getIntProperty("workflow.event.processor.thread.count", 2);
         if (executorThreadCount > 0) {
             executorService = Executors.newFixedThreadPool(executorThreadCount);
             refresh();
             Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::refresh, 60, 60, TimeUnit.SECONDS);
+            logger.info("Event Processing is ENABLED. executorThreadCount set to {}", executorThreadCount);
         } else {
             logger.warn("Event processing is DISABLED. executorThreadCount set to {}", executorThreadCount);
         }
@@ -120,7 +121,7 @@ public class EventProcessor {
 
             List<ObservableQueue> createdQueues = new LinkedList<>();
             events.forEach(event -> eventToQueueMap.computeIfAbsent(event, s -> {
-                        ObservableQueue q = EventQueues.getQueue(event);
+                        ObservableQueue q = eventQueues.getQueue(event);
                         createdQueues.add(q);
                         return q;
                     }
@@ -141,7 +142,7 @@ public class EventProcessor {
         queue.observe().subscribe((Message msg) -> handle(queue, msg));
     }
 
-    @SuppressWarnings({"unchecked", "ToArrayCallWithZeroLengthArrayArgument"})
+    @SuppressWarnings({"unchecked"})
     private void handle(ObservableQueue queue, Message msg) {
         try {
             executionService.addMessage(queue.getName(), msg);
@@ -159,6 +160,8 @@ public class EventProcessor {
             }
         } catch (Exception e) {
             logger.error("Error handling message: {} on queue:{}", msg, queue.getName(), e);
+        } finally {
+            Monitors.recordEventQueueMessagesHandled(queue.getType(), queue.getName());
         }
     }
 

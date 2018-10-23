@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -64,11 +65,10 @@ public class WaitTaskMapper implements TaskMapper {
         waitTask.setWorkflowType(workflowInstance.getWorkflowName());
         waitTask.setCorrelationId(workflowInstance.getCorrelationId());
         waitTask.setScheduledTime(System.currentTimeMillis());
-        waitTask.setEndTime(System.currentTimeMillis());
         waitTask.setInputData(waitTaskInput);
         waitTask.setTaskId(taskId);
         waitTask.setStatus(Task.Status.IN_PROGRESS);
         waitTask.setWorkflowTask(taskToSchedule);
-        return Arrays.asList(waitTask);
+        return Collections.singletonList(waitTask);
     }
 }

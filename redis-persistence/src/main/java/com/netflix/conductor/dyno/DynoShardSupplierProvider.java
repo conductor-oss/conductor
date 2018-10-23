@@ -1,10 +1,9 @@
 package com.netflix.conductor.dyno;
 
 import com.google.inject.ProvisionException;
-
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.queues.ShardSupplier;
-import com.netflix.dyno.queues.redis.DynoShardSupplier;
+import com.netflix.dyno.queues.shard.DynoShardSupplier;
 
 import javax.inject.Inject;
 import javax.inject.Provider;

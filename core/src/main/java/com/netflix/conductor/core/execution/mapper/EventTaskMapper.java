@@ -61,7 +61,6 @@ public class EventTaskMapper implements TaskMapper {
         eventTask.setWorkflowType(workflowInstance.getWorkflowName());
         eventTask.setCorrelationId(workflowInstance.getCorrelationId());
         eventTask.setScheduledTime(System.currentTimeMillis());
-        eventTask.setEndTime(System.currentTimeMillis());
         eventTask.setInputData(eventTaskInput);
         eventTask.getInputData().put("sink", sink);
         eventTask.setTaskId(taskId);

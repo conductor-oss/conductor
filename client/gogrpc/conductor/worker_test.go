@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
-	pb "github.com/netflix/conductor/client/gogrpc/conductor/grpc"
+	"github.com/netflix/conductor/client/gogrpc/conductor/grpc/tasks"
+
 	"github.com/netflix/conductor/client/gogrpc/conductor/model"
 	"google.golang.org/grpc"
 
@@ -40,7 +40,7 @@ func randomTaskID() string {
 
 var ErrNotImplemented = fmt.Errorf("API call not implemented")
 
-func (s *fakeTaskService) newTask(req *pb.PollRequest) (*model.Task, error) {
+func (s *fakeTaskService) newTask(req *tasks.PollRequest) (*model.Task, error) {
 	id := randomTaskID()
 
 	s.mu.Lock()
@@ -54,7 +54,7 @@ func (s *fakeTaskService) newTask(req *pb.PollRequest) (*model.Task, error) {
 	}, nil
 }
 
-func (s *fakeTaskService) updateTask(res *model.TaskResult) (*pb.TaskUpdateResponse, error) {
+func (s *fakeTaskService) updateTask(res *model.TaskResult) (*tasks.UpdateTaskResponse, error) {
 	id := res.GetTaskId()
 
 	s.mu.Lock()
@@ -64,51 +64,69 @@ func (s *fakeTaskService) updateTask(res *model.TaskResult) (*pb.TaskUpdateRespo
 	s.completed[id] = true
 	s.mu.Unlock()
 
-	return &pb.TaskUpdateResponse{
+	return &tasks.UpdateTaskResponse{
 		TaskId: id,
 	}, nil
 }
 
-func (s *fakeTaskService) Poll(ctx context.Context, in *pb.PollRequest, opts ...grpc.CallOption) (*model.Task, error) {
-	select {
-	case <-time.After(s.latency):
-		return s.newTask(in)
-	case <-s.shutdown:
-		return nil, s.result
-	}
-}
-func (s *fakeTaskService) PollStream(ctx context.Context, opts ...grpc.CallOption) (pb.TaskService_PollStreamClient, error) {
+func (s *fakeTaskService) Poll(ctx context.Context, in *tasks.PollRequest, opts ...grpc.CallOption) (*tasks.PollResponse, error) {
 	return nil, ErrNotImplemented
 }
-func (s *fakeTaskService) GetTasksInProgress(ctx context.Context, in *pb.TasksInProgressRequest, opts ...grpc.CallOption) (*pb.TasksInProgressResponse, error) {
+
+func (s *fakeTaskService) BatchPoll(context.Context, *tasks.BatchPollRequest, ...grpc.CallOption) (tasks.TaskService_BatchPollClient, error) {
 	return nil, ErrNotImplemented
 }
-func (s *fakeTaskService) GetPendingTaskForWorkflow(ctx context.Context, in *pb.PendingTaskRequest, opts ...grpc.CallOption) (*model.Task, error) {
+
+func (s *fakeTaskService) GetPendingTaskForWorkflow(context.Context, *tasks.PendingTaskRequest, ...grpc.CallOption) (*tasks.PendingTaskResponse, error) {
+    return nil, ErrNotImplemented
+}
+
+func (s *fakeTaskService) GetTasksInProgress(ctx context.Context, in *tasks.TasksInProgressRequest, opts ...grpc.CallOption) (*tasks.TasksInProgressResponse, error) {
 	return nil, ErrNotImplemented
 }
-func (s *fakeTaskService) UpdateTask(ctx context.Context, in *model.TaskResult, opts ...grpc.CallOption) (*pb.TaskUpdateResponse, error) {
-	select {
-	case <-time.After(s.latency):
-		return s.updateTask(in)
-	case <-s.shutdown:
-		return nil, s.result
-	}
-}
-func (s *fakeTaskService) AckTask(ctx context.Context, in *pb.AckTaskRequest, opts ...grpc.CallOption) (*pb.AckTaskResponse, error) {
+
+func (s *fakeTaskService) UpdateTask(ctx context.Context, in *tasks.UpdateTaskRequest, opts ...grpc.CallOption) (*tasks.UpdateTaskResponse, error) {
 	return nil, ErrNotImplemented
 }
-func (s *fakeTaskService) AddLog(ctx context.Context, in *pb.AddLogRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+
+func (s *fakeTaskService) AckTask(ctx context.Context, in *tasks.AckTaskRequest, opts ...grpc.CallOption) (*tasks.AckTaskResponse, error) {
 	return nil, ErrNotImplemented
 }
-func (s *fakeTaskService) GetLogs(ctx context.Context, in *pb.TaskId, opts ...grpc.CallOption) (*pb.GetLogsResponse, error) {
+
+func (s *fakeTaskService) AddLog(ctx context.Context, in *tasks.AddLogRequest, opts ...grpc.CallOption) (*tasks.AddLogResponse, error) {
 	return nil, ErrNotImplemented
 }
+
+func (s *fakeTaskService) GetQueueAllInfo(ctx context.Context, in *tasks.QueueAllInfoRequest, opts ...grpc.CallOption) (*tasks.QueueAllInfoResponse, error) {
+    return nil, ErrNotImplemented
+}
+
+func (s *fakeTaskService) GetQueueInfo(ctx context.Context, in *tasks.QueueInfoRequest, opts ...grpc.CallOption) (*tasks.QueueInfoResponse, error) {
+    return nil, ErrNotImplemented
+}
+
+func (s *fakeTaskService) GetTaskLogs(ctx context.Context, in *tasks.GetTaskLogsRequest, opts ...grpc.CallOption) (*tasks.GetTaskLogsResponse, error) {
+    return nil, ErrNotImplemented
+}
+
+func (s *fakeTaskService) GetTask(ctx context.Context, in *tasks.GetTaskRequest, opts ...grpc.CallOption) (*tasks.GetTaskResponse, error) {
+    return nil, ErrNotImplemented
+}
+
+func (s *fakeTaskService) RemoveTaskFromQueue(ctx context.Context, in *tasks.RemoveTaskRequest, opts ...grpc.CallOption) (*tasks.RemoveTaskResponse, error) {
+    return nil, ErrNotImplemented
+}
+
+func (s *fakeTaskService) GetQueueSizesForTasks(ctx context.Context, in *tasks.QueueSizesRequest, opts ...grpc.CallOption) (*tasks.QueueSizesResponse, error) {
+    return nil, ErrNotImplemented
+}
+
 
 type fakeTaskClient struct {
 	tasks *fakeTaskService
 }
 
-func (c *fakeTaskClient) Tasks() pb.TaskServiceClient {
+func (c *fakeTaskClient) Tasks() tasks.TaskServiceClient {
 	return c.tasks
 }
 

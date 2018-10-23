@@ -23,11 +23,13 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
 
     private final MetadataService service;
     private final EventProcessor ep;
+    private final EventQueues eventQueues;
 
     @Inject
-    public EventServiceImpl(MetadataService service, EventProcessor ep) {
+    public EventServiceImpl(MetadataService service, EventProcessor ep, EventQueues eventQueues) {
         this.service = service;
         this.ep = ep;
+        this.eventQueues = eventQueues;
     }
 
     @Override
@@ -91,7 +93,7 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
     public void getQueueProviders(EventServicePb.GetQueueProvidersRequest req, StreamObserver<EventServicePb.GetQueueProvidersResponse> response) {
         response.onNext(
                 EventServicePb.GetQueueProvidersResponse.newBuilder()
-                        .addAllProviders(EventQueues.providers())
+                        .addAllProviders(eventQueues.getProviders())
                         .build()
         );
         response.onCompleted();

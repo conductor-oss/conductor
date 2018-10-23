@@ -1,22 +1,16 @@
 package com.netflix.conductor.client.http;
 
-import com.sun.jersey.api.client.Client;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import com.netflix.conductor.client.http.MetadataClient;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mockito;
-import org.mockito.MockitoAnnotations;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 
 /**
@@ -25,8 +19,7 @@ import org.mockito.MockitoAnnotations;
  *
  */
 public class MetadataClientTest {
-
-    //private Client jerseyClient;
+    
     private MetadataClient metadataClient;
 
     @Rule
@@ -34,7 +27,6 @@ public class MetadataClientTest {
 
     @Before
     public void before() {
-        //this.jerseyClient = Mockito.mock(Client.class);
         this.metadataClient = new MetadataClient();
     }
 

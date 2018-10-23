@@ -51,7 +51,7 @@ func (x Workflow_WorkflowStatus) String() string {
 	return proto.EnumName(Workflow_WorkflowStatus_name, int32(x))
 }
 func (Workflow_WorkflowStatus) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_b47c95a464502efa, []int{0, 0}
+	return fileDescriptor_workflow_d126dd6e3df866dc, []int{0, 0}
 }
 
 type Workflow struct {
@@ -82,7 +82,7 @@ func (m *Workflow) Reset()         { *m = Workflow{} }
 func (m *Workflow) String() string { return proto.CompactTextString(m) }
 func (*Workflow) ProtoMessage()    {}
 func (*Workflow) Descriptor() ([]byte, []int) {
-	return fileDescriptor_workflow_b47c95a464502efa, []int{0}
+	return fileDescriptor_workflow_d126dd6e3df866dc, []int{0}
 }
 func (m *Workflow) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Workflow.Unmarshal(m, b)
@@ -236,9 +236,9 @@ func init() {
 	proto.RegisterEnum("conductor.proto.Workflow_WorkflowStatus", Workflow_WorkflowStatus_name, Workflow_WorkflowStatus_value)
 }
 
-func init() { proto.RegisterFile("model/workflow.proto", fileDescriptor_workflow_b47c95a464502efa) }
+func init() { proto.RegisterFile("model/workflow.proto", fileDescriptor_workflow_d126dd6e3df866dc) }
 
-var fileDescriptor_workflow_b47c95a464502efa = []byte{
+var fileDescriptor_workflow_d126dd6e3df866dc = []byte{
 	// 727 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xac, 0x94, 0x5f, 0x4f, 0xe3, 0x46,
 	0x14, 0xc5, 0x6b, 0xb2, 0x09, 0xe4, 0x86, 0x64, 0xbd, 0x43, 0xb6, 0xb8, 0xec, 0x4a, 0x8d, 0xb6,

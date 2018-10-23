@@ -35,7 +35,7 @@ public abstract class ExecutionDAOTest {
     public ExpectedException expected = ExpectedException.none();
 
     @Test
-    public void testTaskExceedsLimit() throws Exception {
+    public void testTaskExceedsLimit() {
         TaskDef taskDefinition = new TaskDef();
         taskDefinition.setName("task1");
         taskDefinition.setConcurrentExecLimit(1);
@@ -70,7 +70,7 @@ public abstract class ExecutionDAOTest {
     }
 
     @Test
-    public void testCreateTaskException() throws Exception {
+    public void testCreateTaskException() {
         Task task = new Task();
         task.setScheduledTime(1L);
         task.setSeq(1);
@@ -88,7 +88,7 @@ public abstract class ExecutionDAOTest {
     }
 
     @Test
-    public void testCreateTaskException2() throws Exception {
+    public void testCreateTaskException2() {
         Task task = new Task();
         task.setScheduledTime(1L);
         task.setSeq(1);
@@ -102,7 +102,7 @@ public abstract class ExecutionDAOTest {
     }
 
     @Test
-    public void testPollData() throws Exception {
+    public void testPollData() {
         getExecutionDAO().updateLastPoll("taskDef", null, "workerId1");
         PollData pd = getExecutionDAO().getPollData("taskDef", null);
         assertNotNull(pd);
@@ -127,7 +127,7 @@ public abstract class ExecutionDAOTest {
     }
 
     @Test
-    public void testTaskCreateDups() throws Exception {
+    public void testTaskCreateDups() {
         List<Task> tasks = new LinkedList<>();
         String workflowId = UUID.randomUUID().toString();
 
@@ -188,7 +188,7 @@ public abstract class ExecutionDAOTest {
     }
 
     @Test
-    public void testTaskOps() throws Exception {
+    public void testTaskOps() {
         List<Task> tasks = new LinkedList<>();
         String workflowId = UUID.randomUUID().toString();
 
@@ -253,7 +253,7 @@ public abstract class ExecutionDAOTest {
     }
 
     @Test
-    public void testPending() throws Exception {
+    public void testPending() {
         WorkflowDef def = new WorkflowDef();
         def.setName("pending_count_test");
 
@@ -274,7 +274,7 @@ public abstract class ExecutionDAOTest {
     }
 
     @Test
-    public void complexExecutionTest() throws Exception {
+    public void complexExecutionTest() {
         Workflow workflow = createTestWorkflow();
 
         String workflowId = getExecutionDAO().createWorkflow(workflow);

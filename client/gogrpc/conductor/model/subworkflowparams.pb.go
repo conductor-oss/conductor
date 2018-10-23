@@ -30,7 +30,7 @@ func (m *SubWorkflowParams) Reset()         { *m = SubWorkflowParams{} }
 func (m *SubWorkflowParams) String() string { return proto.CompactTextString(m) }
 func (*SubWorkflowParams) ProtoMessage()    {}
 func (*SubWorkflowParams) Descriptor() ([]byte, []int) {
-	return fileDescriptor_subworkflowparams_957362175bba13c8, []int{0}
+	return fileDescriptor_subworkflowparams_247aeccdfb62062e, []int{0}
 }
 func (m *SubWorkflowParams) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SubWorkflowParams.Unmarshal(m, b)
@@ -69,10 +69,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/subworkflowparams.proto", fileDescriptor_subworkflowparams_957362175bba13c8)
+	proto.RegisterFile("model/subworkflowparams.proto", fileDescriptor_subworkflowparams_247aeccdfb62062e)
 }
 
-var fileDescriptor_subworkflowparams_957362175bba13c8 = []byte{
+var fileDescriptor_subworkflowparams_247aeccdfb62062e = []byte{
 	// 183 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0xcd, 0xcd, 0x4f, 0x49,
 	0xcd, 0xd1, 0x2f, 0x2e, 0x4d, 0x2a, 0xcf, 0x2f, 0xca, 0x4e, 0xcb, 0xc9, 0x2f, 0x2f, 0x48, 0x2c,

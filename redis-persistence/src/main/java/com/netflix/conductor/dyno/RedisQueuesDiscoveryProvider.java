@@ -5,17 +5,15 @@ import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.contrib.EurekaHostsSupplier;
 import com.netflix.dyno.jedis.DynoJedisClient;
 import com.netflix.dyno.queues.ShardSupplier;
-import com.netflix.dyno.queues.redis.DynoShardSupplier;
 import com.netflix.dyno.queues.redis.RedisQueues;
-
+import com.netflix.dyno.queues.shard.DynoShardSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import javax.inject.Inject;
 import javax.inject.Provider;
+import java.util.ArrayList;
+import java.util.List;
 
 public class RedisQueuesDiscoveryProvider implements Provider<RedisQueues> {
 

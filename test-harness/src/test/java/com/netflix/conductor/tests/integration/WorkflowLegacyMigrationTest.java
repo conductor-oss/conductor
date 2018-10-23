@@ -71,7 +71,7 @@ public class WorkflowLegacyMigrationTest extends AbstractWorkflowServiceTest {
         workflow.setTaskToDomain(taskToDomain);
         workflow.setVersion(version);
 
-        workflow.getTasks().stream().forEach(task -> {
+        workflow.getTasks().forEach(task -> {
             task.setTaskId(IDGenerator.generate());
             task.setWorkflowInstanceId(workflowId);
             task.setCorrelationId(correlationId);
@@ -85,7 +85,7 @@ public class WorkflowLegacyMigrationTest extends AbstractWorkflowServiceTest {
          * in order to represent a workflow on the system, we need to populate the
          * respective queues related to tasks in progress or decisions.
          */
-        workflow.getTasks().stream().forEach(task -> {
+        workflow.getTasks().forEach(task -> {
             workflowExecutor.addTaskToQueue(task);
             queueDAO.push(WorkflowExecutor.DECIDER_QUEUE, workflowId, configuration.getSweepFrequency());
         });

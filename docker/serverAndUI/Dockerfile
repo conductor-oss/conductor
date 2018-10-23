@@ -1,7 +1,7 @@
 #
 # conductor:serverAndUI - Netflix conductor server and UI
 #
-FROM java:8-jdk
+FROM openjdk:8-jdk
 
 MAINTAINER Netflix OSS <conductor@netflix.com>
 

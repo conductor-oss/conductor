@@ -36,4 +36,6 @@ message Workflow {
     map<string, string> task_to_domain = 17;
     repeated string failed_reference_task_names = 18;
     WorkflowDef workflow_definition = 19;
+    string external_input_payload_storage_path = 20;
+    string external_output_payload_storage_path = 21;
 }

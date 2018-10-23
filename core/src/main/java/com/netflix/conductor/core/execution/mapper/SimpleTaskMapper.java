@@ -28,7 +28,7 @@ import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -90,6 +90,6 @@ public class SimpleTaskMapper implements TaskMapper {
         simpleTask.setResponseTimeoutSeconds(taskDefinition.getResponseTimeoutSeconds());
         simpleTask.setWorkflowTask(taskToSchedule);
         simpleTask.setRetriedTaskId(retriedTaskId);
-        return Arrays.asList(simpleTask);
+        return Collections.singletonList(simpleTask);
     }
 }

@@ -246,6 +246,9 @@ public abstract class AbstractProtoMapper {
         if (from.getOutputMessage() != null) {
             to.setOutputMessage( toProto( from.getOutputMessage() ) );
         }
+        if (from.getTaskId() != null) {
+            to.setTaskId( from.getTaskId() );
+        }
         return to.build();
     }
 
@@ -261,6 +264,7 @@ public abstract class AbstractProtoMapper {
         if (from.hasOutputMessage()) {
             to.setOutputMessage( fromProto( from.getOutputMessage() ) );
         }
+        to.setTaskId( from.getTaskId() );
         return to;
     }
 
@@ -525,7 +529,14 @@ public abstract class AbstractProtoMapper {
         if (from.getOutputMessage() != null) {
             to.setOutputMessage( toProto( from.getOutputMessage() ) );
         }
-        to.setRateLimitPerSecond( from.getRateLimitPerSecond() );
+        to.setRateLimitPerFrequency( from.getRateLimitPerFrequency() );
+        to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
+        if (from.getExternalInputPayloadStoragePath() != null) {
+            to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
+        }
+        if (from.getExternalOutputPayloadStoragePath() != null) {
+            to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
+        }
         return to.build();
     }
 
@@ -575,7 +586,10 @@ public abstract class AbstractProtoMapper {
         if (from.hasOutputMessage()) {
             to.setOutputMessage( fromProto( from.getOutputMessage() ) );
         }
-        to.setRateLimitPerSecond( from.getRateLimitPerSecond() );
+        to.setRateLimitPerFrequency( from.getRateLimitPerFrequency() );
+        to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
+        to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
+        to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
         return to;
     }
 
@@ -641,8 +655,11 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getInputTemplate().entrySet()) {
             to.putInputTemplate( pair.getKey(), toProto( pair.getValue() ) );
         }
-        if (from.getRateLimitPerSecond() != null) {
-            to.setRateLimitPerSecond( from.getRateLimitPerSecond() );
+        if (from.getRateLimitPerFrequency() != null) {
+            to.setRateLimitPerFrequency( from.getRateLimitPerFrequency() );
+        }
+        if (from.getRateLimitFrequencyInSeconds() != null) {
+            to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
         }
         return to.build();
     }
@@ -665,7 +682,8 @@ public abstract class AbstractProtoMapper {
             inputTemplateMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setInputTemplate(inputTemplateMap);
-        to.setRateLimitPerSecond( from.getRateLimitPerSecond() );
+        to.setRateLimitPerFrequency( from.getRateLimitPerFrequency() );
+        to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
         return to;
     }
 
@@ -898,6 +916,12 @@ public abstract class AbstractProtoMapper {
         if (from.getWorkflowDefinition() != null) {
             to.setWorkflowDefinition( toProto( from.getWorkflowDefinition() ) );
         }
+        if (from.getExternalInputPayloadStoragePath() != null) {
+            to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
+        }
+        if (from.getExternalOutputPayloadStoragePath() != null) {
+            to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
+        }
         return to.build();
     }
 
@@ -931,6 +955,8 @@ public abstract class AbstractProtoMapper {
         if (from.hasWorkflowDefinition()) {
             to.setWorkflowDefinition( fromProto( from.getWorkflowDefinition() ) );
         }
+        to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
+        to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
         return to;
     }
 

@@ -4,6 +4,18 @@
             "locked": "1.11.86",
             "requested": "1.11.86"
         },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -13,6 +25,18 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.5.1"
         },
         "com.netflix.archaius:archaius-core": {
             "locked": "0.7.5",
@@ -32,6 +56,12 @@
         "com.sun.jersey:jersey-client": {
             "locked": "1.19.4",
             "requested": "1.19.4"
+        },
+        "javax.inject:javax.inject": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -45,6 +75,18 @@
             "locked": "1.11.86",
             "requested": "1.11.86"
         },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -54,6 +96,18 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.5.1"
         },
         "com.netflix.archaius:archaius-core": {
             "locked": "0.7.5",
@@ -73,6 +127,12 @@
         "com.sun.jersey:jersey-client": {
             "locked": "1.19.4",
             "requested": "1.19.4"
+        },
+        "javax.inject:javax.inject": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -86,6 +146,18 @@
             "locked": "1.11.86",
             "requested": "1.11.86"
         },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -95,6 +167,18 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.5.1"
         },
         "com.netflix.archaius:archaius-core": {
             "locked": "0.7.5",
@@ -114,6 +198,12 @@
         "com.sun.jersey:jersey-client": {
             "locked": "1.19.4",
             "requested": "1.19.4"
+        },
+        "javax.inject:javax.inject": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -127,6 +217,16 @@
             "locked": "3.0.1"
         }
     },
+    "jacocoAgent": {
+        "org.jacoco:org.jacoco.agent": {
+            "locked": "0.8.1"
+        }
+    },
+    "jacocoAnt": {
+        "org.jacoco:org.jacoco.ant": {
+            "locked": "0.8.1"
+        }
+    },
     "pmd": {
         "net.sourceforge.pmd:pmd-java": {
             "locked": "5.6.1"
@@ -137,6 +237,18 @@
             "locked": "1.11.86",
             "requested": "1.11.86"
         },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -146,6 +258,18 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.5.1"
         },
         "com.netflix.archaius:archaius-core": {
             "locked": "0.7.5",
@@ -165,6 +289,12 @@
         "com.sun.jersey:jersey-client": {
             "locked": "1.19.4",
             "requested": "1.19.4"
+        },
+        "javax.inject:javax.inject": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -178,6 +308,18 @@
             "locked": "1.11.86",
             "requested": "1.11.86"
         },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -187,6 +329,18 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.5.1"
         },
         "com.netflix.archaius:archaius-core": {
             "locked": "0.7.5",
@@ -206,6 +360,12 @@
         "com.sun.jersey:jersey-client": {
             "locked": "1.19.4",
             "requested": "1.19.4"
+        },
+        "javax.inject:javax.inject": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -219,6 +379,18 @@
             "locked": "1.11.86",
             "requested": "1.11.86"
         },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -228,6 +400,18 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.5.1"
         },
         "com.netflix.archaius:archaius-core": {
             "locked": "0.7.5",
@@ -248,13 +432,19 @@
             "locked": "1.19.4",
             "requested": "1.19.4"
         },
-        "junit:junit-dep": {
-            "locked": "4.10",
-            "requested": "4.10"
+        "javax.inject:javax.inject": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1"
         },
-        "org.mockito:mockito-all": {
-            "locked": "1.10.0",
-            "requested": "1.10.0"
+        "junit:junit": {
+            "locked": "4.12",
+            "requested": "4.12"
+        },
+        "org.mockito:mockito-core": {
+            "locked": "1.10.19",
+            "requested": "1.10.19"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -272,6 +462,18 @@
             "locked": "1.11.86",
             "requested": "1.11.86"
         },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -281,6 +483,18 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.5.1"
         },
         "com.netflix.archaius:archaius-core": {
             "locked": "0.7.5",
@@ -301,13 +515,19 @@
             "locked": "1.19.4",
             "requested": "1.19.4"
         },
-        "junit:junit-dep": {
-            "locked": "4.10",
-            "requested": "4.10"
+        "javax.inject:javax.inject": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1"
         },
-        "org.mockito:mockito-all": {
-            "locked": "1.10.0",
-            "requested": "1.10.0"
+        "junit:junit": {
+            "locked": "4.12",
+            "requested": "4.12"
+        },
+        "org.mockito:mockito-core": {
+            "locked": "1.10.19",
+            "requested": "1.10.19"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -325,6 +545,18 @@
             "locked": "1.11.86",
             "requested": "1.11.86"
         },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -334,6 +566,18 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.5.1"
         },
         "com.netflix.archaius:archaius-core": {
             "locked": "0.7.5",
@@ -354,13 +598,19 @@
             "locked": "1.19.4",
             "requested": "1.19.4"
         },
-        "junit:junit-dep": {
-            "locked": "4.10",
-            "requested": "4.10"
+        "javax.inject:javax.inject": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1"
         },
-        "org.mockito:mockito-all": {
-            "locked": "1.10.0",
-            "requested": "1.10.0"
+        "junit:junit": {
+            "locked": "4.12",
+            "requested": "4.12"
+        },
+        "org.mockito:mockito-core": {
+            "locked": "1.10.19",
+            "requested": "1.10.19"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -378,6 +628,18 @@
             "locked": "1.11.86",
             "requested": "1.11.86"
         },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "2.8.7"
+        },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "locked": "2.7.5",
             "requested": "2.7.5"
@@ -387,6 +649,18 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "2.0.0"
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1.0.0"
+        },
+        "com.google.protobuf:protobuf-java": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "3.5.1"
         },
         "com.netflix.archaius:archaius-core": {
             "locked": "0.7.5",
@@ -407,13 +681,19 @@
             "locked": "1.19.4",
             "requested": "1.19.4"
         },
-        "junit:junit-dep": {
-            "locked": "4.10",
-            "requested": "4.10"
+        "javax.inject:javax.inject": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-common"
+            ],
+            "locked": "1"
         },
-        "org.mockito:mockito-all": {
-            "locked": "1.10.0",
-            "requested": "1.10.0"
+        "junit:junit": {
+            "locked": "4.12",
+            "requested": "4.12"
+        },
+        "org.mockito:mockito-core": {
+            "locked": "1.10.19",
+            "requested": "1.10.19"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [

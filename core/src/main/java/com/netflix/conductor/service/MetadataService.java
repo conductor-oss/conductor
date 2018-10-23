@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.service;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -28,6 +29,7 @@ import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.service.utils.ServiceUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -41,14 +43,13 @@ import java.util.Optional;
 @Singleton
 @Trace
 public class MetadataService {
-
-    private MetadataDAO metadataDAO;
-    private RateLimitingService rateLimitingService;
+    private final MetadataDAO metadataDAO;
+    private final EventQueues eventQueues;
 
     @Inject
-    public MetadataService(MetadataDAO metadataDAO, RateLimitingService rateLimitingService) {
+    public MetadataService(MetadataDAO metadataDAO, EventQueues eventQueues) {
         this.metadataDAO = metadataDAO;
-        this.rateLimitingService = rateLimitingService;
+        this.eventQueues = eventQueues;
     }
 
     /**
@@ -60,10 +61,12 @@ public class MetadataService {
             taskDefinition.setCreateTime(System.currentTimeMillis());
             taskDefinition.setUpdatedBy(null);
             taskDefinition.setUpdateTime(null);
+
+            ServiceUtils.checkNotNull(taskDefinition,"TaskDef object cannot be null");
+            ServiceUtils.checkNotNull(taskDefinition.getName(),"TaskDef name cannot be null");
+            ServiceUtils.checkArgument(taskDefinition.getResponseTimeoutSeconds()>0, "ResponseTimeoutSeconds must be positive");
+
             metadataDAO.createTaskDef(taskDefinition);
-            if (taskDefinition.getRateLimitPerSecond() != 0) {
-                rateLimitingService.updateRateLimitRules(taskDefinition);
-            }
         }
     }
 
@@ -78,9 +81,6 @@ public class MetadataService {
         taskDefinition.setUpdatedBy(WorkflowContext.get().getClientApp());
         taskDefinition.setUpdateTime(System.currentTimeMillis());
         metadataDAO.updateTaskDef(taskDefinition);
-        if (taskDefinition.getRateLimitPerSecond() != 0) {
-            rateLimitingService.updateRateLimitRules(taskDefinition);
-        }
     }
 
     /**
@@ -102,22 +102,34 @@ public class MetadataService {
      * @return Task Definition
      */
     public TaskDef getTaskDef(String taskType) {
-        return metadataDAO.getTaskDef(taskType);
+        TaskDef taskDef = metadataDAO.getTaskDef(taskType);
+        if (taskDef == null){
+            throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
+                    String.format("No such taskType found by name: %s", taskType));
+        }
+        return taskDef;
     }
 
     /**
      * @param def Workflow definition to be updated
      */
     public void updateWorkflowDef(WorkflowDef def) {
+        Preconditions.checkNotNull(def, "WorkflowDef object cannot be null");
+        Preconditions.checkNotNull(def.getName(), "WorkflowDef name cannot be null");
         metadataDAO.update(def);
     }
 
     /**
-     * @param wfs Workflow definitions to be updated.
+     *
+     * @param workflowDefList Workflow definitions to be updated.
      */
-    public void updateWorkflowDef(List<WorkflowDef> wfs) {
-        for (WorkflowDef wf : wfs) {
-            metadataDAO.update(wf);
+    public void updateWorkflowDef(List<WorkflowDef> workflowDefList) {
+        ServiceUtils.checkNotNullOrEmpty(workflowDefList, "WorkflowDef list name cannot be null or empty");
+        for (WorkflowDef workflowDef : workflowDefList) {
+            //TODO: revisit this error handling
+            ServiceUtils.checkNotNull(workflowDef, "WorkflowDef cannot be null");
+            ServiceUtils.checkNotNullOrEmpty(workflowDef.getName(), "WorkflowDef name cannot be null");
+            metadataDAO.update(workflowDef);
         }
     }
 
@@ -126,11 +138,16 @@ public class MetadataService {
      * @param version Optional.  Version.  If null, then retrieves the latest
      * @return Workflow definition
      */
-    public Optional<WorkflowDef> getWorkflowDef(String name, Integer version) {
+    public WorkflowDef getWorkflowDef(String name, Integer version) {
+        Optional<WorkflowDef> workflowDef;
         if (version == null) {
-            return getLatestWorkflow(name);
+            workflowDef = metadataDAO.getLatest(name);
+        } else {
+            workflowDef =  metadataDAO.get(name, version);
         }
-        return metadataDAO.get(name, version);
+
+        return workflowDef.orElseThrow(() -> new ApplicationException(Code.NOT_FOUND,
+                String.format("No such workflow found by name: %s, version: %d", name, version)));
     }
 
     /**
@@ -145,14 +162,16 @@ public class MetadataService {
         return metadataDAO.getAll();
     }
 
-    public void registerWorkflowDef(WorkflowDef def) {
-        if (def.getName().contains(":")) {
+    public void registerWorkflowDef(WorkflowDef workflowDef) {
+        ServiceUtils.checkNotNull(workflowDef, "WorkflowDef cannot be null");
+        ServiceUtils.checkNotNullOrEmpty(workflowDef.getName(), "Workflow name cannot be null or empty");
+        if (workflowDef.getName().contains(":")) {
             throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
         }
-        if (def.getSchemaVersion() < 1 || def.getSchemaVersion() > 2) {
-            def.setSchemaVersion(2);
+        if (workflowDef.getSchemaVersion() < 1 || workflowDef.getSchemaVersion() > 2) {
+            workflowDef.setSchemaVersion(2);
         }
-        metadataDAO.create(def);
+        metadataDAO.create(workflowDef);
     }
 
     /**
@@ -161,14 +180,8 @@ public class MetadataService {
      * @param version Version of the workflow definition to be removed
      */
     public void unregisterWorkflowDef(String name, Integer version) {
-        if (name == null) {
-            throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot be null");
-        }
-
-        if (version == null) {
-            throw new ApplicationException(Code.INVALID_INPUT, "Version is not valid");
-        }
-
+        ServiceUtils.checkNotNullOrEmpty(name, "Workflow name cannot be null");
+        ServiceUtils.checkNotNull(version, "Version is not valid");
         metadataDAO.removeWorkflowDef(name, version);
     }
 
@@ -212,12 +225,13 @@ public class MetadataService {
         return metadataDAO.getEventHandlersForEvent(event, activeOnly);
     }
 
-    private void validateEvent(EventHandler eh) {
-        Preconditions.checkNotNull(eh.getName(), "Missing event handler name");
-        Preconditions.checkNotNull(eh.getEvent(), "Missing event location");
-        Preconditions.checkNotNull(eh.getActions().isEmpty(), "No actions specified.  Please specify at-least one action");
+    @VisibleForTesting
+    public void validateEvent(EventHandler eh) {
+        ServiceUtils.checkNotNullOrEmpty(eh.getName(), "Missing event handler name");
+        ServiceUtils.checkNotNullOrEmpty(eh.getEvent(), "Missing event location");
+        ServiceUtils.checkNotNullOrEmpty(eh.getActions(), "No actions specified. Please specify at-least one action");
         String event = eh.getEvent();
-        EventQueues.getQueue(event);
+        eventQueues.getQueue(event);
     }
 
 }

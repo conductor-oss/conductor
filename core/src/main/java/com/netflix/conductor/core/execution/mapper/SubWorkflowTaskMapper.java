@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2018 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -10,38 +10,39 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-
-
 package com.netflix.conductor.core.execution.mapper;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
+import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
+import javax.inject.Inject;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-import javax.inject.Inject;
-
 public class SubWorkflowTaskMapper implements TaskMapper {
 
     public static final Logger logger = LoggerFactory.getLogger(SubWorkflowTaskMapper.class);
 
-    private ParametersUtils parametersUtils;
+    private final ParametersUtils parametersUtils;
+    private final MetadataDAO metadataDAO;
 
     @Inject
-    public SubWorkflowTaskMapper(ParametersUtils parametersUtils) {
+    public SubWorkflowTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
         this.parametersUtils = parametersUtils;
+        this.metadataDAO = metadataDAO;
     }
 
     @Override
@@ -56,6 +57,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         Map<String, Object> resolvedParams = getSubWorkflowInputParameters(workflowInstance, subWorkflowParams);
 
         String subWorkflowName = resolvedParams.get("name").toString();
+        Integer subWorkflowVersion = getSubWorkflowVersion(resolvedParams, subWorkflowName);
 
         Task subWorkflowTask = new Task();
         subWorkflowTask.setTaskType(SubWorkflow.NAME);
@@ -65,15 +67,14 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         subWorkflowTask.setWorkflowType(workflowInstance.getWorkflowName());
         subWorkflowTask.setCorrelationId(workflowInstance.getCorrelationId());
         subWorkflowTask.setScheduledTime(System.currentTimeMillis());
-        subWorkflowTask.setEndTime(System.currentTimeMillis());
         subWorkflowTask.getInputData().put("subWorkflowName", subWorkflowName);
-        subWorkflowTask.getInputData().put("subWorkflowVersion", subWorkflowParams.getVersion());
+        subWorkflowTask.getInputData().put("subWorkflowVersion", subWorkflowVersion);
         subWorkflowTask.getInputData().put("workflowInput", taskMapperContext.getTaskInput());
         subWorkflowTask.setTaskId(taskId);
         subWorkflowTask.setStatus(Task.Status.SCHEDULED);
         subWorkflowTask.setWorkflowTask(taskToSchedule);
         logger.debug("SubWorkflowTask {} created to be Scheduled", subWorkflowTask);
-        return Arrays.asList(subWorkflowTask);
+        return Collections.singletonList(subWorkflowTask);
     }
 
     @VisibleForTesting
@@ -87,8 +88,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
                 });
     }
 
-    @VisibleForTesting
-    Map<String, Object> getSubWorkflowInputParameters(Workflow workflowInstance, SubWorkflowParams subWorkflowParams) {
+    private Map<String, Object> getSubWorkflowInputParameters(Workflow workflowInstance, SubWorkflowParams subWorkflowParams) {
         Map<String, Object> params = new HashMap<>();
         params.put("name", subWorkflowParams.getName());
 
@@ -99,4 +99,17 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         return parametersUtils.getTaskInputV2(params, workflowInstance, null, null);
     }
 
+    private Integer getSubWorkflowVersion(Map<String, Object> resolvedParams, String subWorkflowName) {
+        return Optional.ofNullable(resolvedParams.get("version"))
+                .map(Object::toString)
+                .map(Integer::parseInt)
+                .orElseGet(
+                        () -> metadataDAO.getLatest(subWorkflowName)
+                                .map(WorkflowDef::getVersion)
+                                .orElseThrow(() -> {
+                                    String reason = String.format("The Task %s defined as a sub-workflow has no workflow definition available ", subWorkflowName);
+                                    logger.error(reason);
+                                    return new TerminateWorkflowException(reason);
+                                }));
+    }
 }

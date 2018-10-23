@@ -4,6 +4,7 @@ ui/dist
 ui/package-lock.json
 .gradle
 .project
+bin
 build
 client/python/conductor.egg-info
 *.pyc
@@ -16,4 +17,7 @@ dump.rdb
 .idea
 *.iml
 out/
+bin/
+target/
 .DS_Store
+target/

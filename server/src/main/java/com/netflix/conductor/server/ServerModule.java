@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -10,15 +10,11 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-/**
- *
- */
 package com.netflix.conductor.server;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.inject.AbstractModule;
 import com.google.inject.Scopes;
-
 import com.netflix.archaius.guice.ArchaiusModule;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.config.Configuration;
@@ -32,7 +28,6 @@ import java.util.concurrent.ExecutorService;
 
 /**
  * @author Viren
- *
  */
 public class ServerModule extends AbstractModule {
 

@@ -19,7 +19,7 @@ import static org.junit.Assert.assertEquals;
 public class WaitTaskMapperTest {
 
     @Test
-    public void getMappedTasks() throws Exception {
+    public void getMappedTasks() {
 
         //Given
         WorkflowTask taskToSchedule = new WorkflowTask();
@@ -49,7 +49,5 @@ public class WaitTaskMapperTest {
         //Then
         assertEquals(1, mappedTasks.size());
         assertEquals(Wait.NAME, mappedTasks.get(0).getTaskType());
-
     }
-
 }

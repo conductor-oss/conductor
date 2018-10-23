@@ -2,6 +2,7 @@ package com.netflix.conductor.grpc.server.service;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.grpc.MetadataServiceGrpc;
 import com.netflix.conductor.grpc.MetadataServicePb;
 import com.netflix.conductor.grpc.ProtoMapper;
@@ -53,23 +54,21 @@ public class MetadataServiceImpl extends MetadataServiceGrpc.MetadataServiceImpl
 
     @Override
     public void getWorkflow(MetadataServicePb.GetWorkflowRequest req, StreamObserver<MetadataServicePb.GetWorkflowResponse > response) {
-        service.getWorkflowDef(req.getName(), GRPC_HELPER.optional(req.getVersion())).map(def -> {
-                    WorkflowDefPb.WorkflowDef workflow = PROTO_MAPPER.toProto(def);
-                    response.onNext(MetadataServicePb.GetWorkflowResponse.newBuilder()
-                            .setWorkflow(workflow)
-                            .build()
-                    );
-                    response.onCompleted();
-                    return def; // Throw away.
-                }
-        ).orElseGet(() -> {
-                    response.onError(Status.NOT_FOUND
-                            .withDescription("No such workflow found by name=" + req.getName())
-                            .asRuntimeException()
-                    );
-                    return null; // Throw away.
-                }
-        );
+        try {
+            WorkflowDef workflowDef = service.getWorkflowDef(req.getName(), GRPC_HELPER.optional(req.getVersion()));
+            WorkflowDefPb.WorkflowDef workflow = PROTO_MAPPER.toProto(workflowDef);
+            response.onNext(MetadataServicePb.GetWorkflowResponse.newBuilder()
+                    .setWorkflow(workflow)
+                    .build()
+            );
+            response.onCompleted();
+        } catch (ApplicationException e) {
+            // TODO replace this with gRPC exception interceptor.
+            response.onError(Status.NOT_FOUND
+                    .withDescription("No such workflow found by name=" + req.getName())
+                    .asRuntimeException()
+            );
+        }
     }
 
     @Override

@@ -37,6 +37,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 
 	private static final Logger logger = LoggerFactory.getLogger(SubWorkflow.class);
 	public static final String NAME = "SUB_WORKFLOW";
+	public static final String SUB_WORKFLOW_ID = "subWorkflowId";
 
 	public SubWorkflow() {
 		super(NAME);
@@ -56,9 +57,9 @@ public class SubWorkflow extends WorkflowSystemTask {
 		String correlationId = workflow.getCorrelationId();
 		
 		try {
-			String subWorkflowId = provider.startWorkflow(name, version, wfInput, correlationId, workflow.getWorkflowId(), task.getTaskId(), null, workflow.getTaskToDomain());
-			task.getOutputData().put("subWorkflowId", subWorkflowId);
-			task.getInputData().put("subWorkflowId", subWorkflowId);
+			String subWorkflowId = provider.startWorkflow(name, version, wfInput, null, correlationId, workflow.getWorkflowId(), task.getTaskId(), null, workflow.getTaskToDomain());
+			task.getOutputData().put(SUB_WORKFLOW_ID, subWorkflowId);
+			task.getInputData().put(SUB_WORKFLOW_ID, subWorkflowId);
 			task.setStatus(Status.IN_PROGRESS);
 		} catch (Exception e) {
 			task.setStatus(Status.FAILED);
@@ -69,9 +70,9 @@ public class SubWorkflow extends WorkflowSystemTask {
 	
 	@Override
 	public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) {
-		String workflowId = (String) task.getOutputData().get("subWorkflowId");
+		String workflowId = (String) task.getOutputData().get(SUB_WORKFLOW_ID);
 		if (workflowId == null) {
-			workflowId = (String) task.getInputData().get("subWorkflowId");	//Backward compatibility
+			workflowId = (String) task.getInputData().get(SUB_WORKFLOW_ID);	//Backward compatibility
 		}
 		
 		if(StringUtils.isEmpty(workflowId)) {
@@ -87,6 +88,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 		if (subWorkflowStatus.isSuccessful()) {
 			task.setStatus(Status.COMPLETED);
 		} else {
+			task.setReasonForIncompletion(subWorkflow.getReasonForIncompletion());
 			task.setStatus(Status.FAILED);
 		}
 		return true;
@@ -94,9 +96,9 @@ public class SubWorkflow extends WorkflowSystemTask {
 	
 	@Override
 	public void cancel(Workflow workflow, Task task, WorkflowExecutor provider) {
-		String workflowId = (String) task.getOutputData().get("subWorkflowId");
+		String workflowId = (String) task.getOutputData().get(SUB_WORKFLOW_ID);
 		if(workflowId == null) {
-			workflowId = (String) task.getInputData().get("subWorkflowId");	//Backward compatibility
+			workflowId = (String) task.getInputData().get(SUB_WORKFLOW_ID);	//Backward compatibility
 		}
 		
 		if(StringUtils.isEmpty(workflowId)) {

@@ -20,6 +20,7 @@ import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.MockQueueProvider;
 import com.netflix.conductor.core.events.queue.Message;
@@ -28,16 +29,15 @@ import com.netflix.conductor.core.events.queue.dyno.DynoEventQueueProvider;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TestConfiguration;
 import com.netflix.conductor.dao.QueueDAO;
-
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -55,11 +55,17 @@ public class TestEvent {
 
     WorkflowDef testWorkflowDefinition;
 
+    private EventQueues eventQueues;
+    private ParametersUtils parametersUtils;
+
     @Before
     public void setup() {
-        EventQueues.providers = new HashMap<>();
-        EventQueues.providers.put("sqs", new MockQueueProvider("sqs"));
-        EventQueues.providers.put("conductor", new MockQueueProvider("conductor"));
+        Map<String, EventQueueProvider> providers = new HashMap<>();
+        providers.put("sqs", new MockQueueProvider("sqs"));
+        providers.put("conductor", new MockQueueProvider("conductor"));
+
+        parametersUtils = new ParametersUtils();
+        eventQueues = new EventQueues(providers, parametersUtils);
 
         testWorkflowDefinition = new WorkflowDef();
         testWorkflowDefinition.setName("testWorkflow");
@@ -69,14 +75,13 @@ public class TestEvent {
     @Test
     public void testEvent() {
         System.setProperty("QUEUE_NAME", "queue_name_001");
-        ParametersUtils pu = new ParametersUtils();
         String eventt = "queue_${QUEUE_NAME}";
-        String event = pu.replace(eventt).toString();
+        String event = parametersUtils.replace(eventt).toString();
         assertNotNull(event);
         assertEquals("queue_queue_name_001", event);
 
         eventt = "queue_9";
-        event = pu.replace(eventt).toString();
+        event = parametersUtils.replace(eventt).toString();
         assertNotNull(event);
         assertEquals(eventt, event);
     }
@@ -107,7 +112,7 @@ public class TestEvent {
         task.setTaskType(TaskType.EVENT.name());
         workflow.getTasks().add(task);
 
-        Event event = new Event();
+        Event event = new Event(eventQueues, parametersUtils);
         ObservableQueue queue = event.getQueue(workflow, task);
         assertNotNull(task.getReasonForIncompletion(), queue);
         assertEquals("queue_name", queue.getName());
@@ -133,7 +138,7 @@ public class TestEvent {
         task.getInputData().put("sink", sink);
         queue = event.getQueue(workflow, task);
         assertNotNull(queue);
-        assertEquals(workflow.getWorkflowType() + ":" + task.getReferenceTaskName(), queue.getName());
+        assertEquals(workflow.getWorkflowName() + ":" + task.getReferenceTaskName(), queue.getName());
         assertEquals("conductor", queue.getType());
         System.out.println(task.getOutputData().get("event_produced"));
 
@@ -153,9 +158,9 @@ public class TestEvent {
         assertEquals(Task.Status.FAILED, task.getStatus());
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     public void test() throws Exception {
-        Event event = new Event();
         Workflow workflow = new Workflow();
         workflow.setWorkflowDefinition(testWorkflowDefinition);
 
@@ -168,39 +173,33 @@ public class TestEvent {
         String[] publishedQueue = new String[1];
         List<Message> publishedMessages = new LinkedList<>();
 
-        doAnswer(new Answer<Void>() {
-
-            @SuppressWarnings("unchecked")
-            @Override
-            public Void answer(InvocationOnMock invocation) throws Throwable {
-                String queueName = invocation.getArgumentAt(0, String.class);
-                System.out.println(queueName);
-                publishedQueue[0] = queueName;
-                List<Message> messages = invocation.getArgumentAt(1, List.class);
-                publishedMessages.addAll(messages);
-                return null;
-            }
+        doAnswer((Answer<Void>) invocation -> {
+            String queueName = invocation.getArgumentAt(0, String.class);
+            System.out.println(queueName);
+            publishedQueue[0] = queueName;
+            List<Message> messages = invocation.getArgumentAt(1, List.class);
+            publishedMessages.addAll(messages);
+            return null;
         }).when(dao).push(any(), any());
 
-        doAnswer(new Answer<List<String>>() {
-
-            @Override
-            public List<String> answer(InvocationOnMock invocation) throws Throwable {
-                String messageId = invocation.getArgumentAt(1, String.class);
-                if (publishedMessages.get(0).getId().equals(messageId)) {
-                    publishedMessages.remove(0);
-                    return Arrays.asList(messageId);
-                }
-                return null;
+        doAnswer((Answer<List<String>>) invocation -> {
+            String messageId = invocation.getArgumentAt(1, String.class);
+            if(publishedMessages.get(0).getId().equals(messageId)) {
+                publishedMessages.remove(0);
+                return Collections.singletonList(messageId);
             }
+            return null;
         }).when(dao).remove(any(), any());
 
-        EventQueues.providers.put("conductor", new DynoEventQueueProvider(dao, new TestConfiguration()));
+        Map<String, EventQueueProvider> providers = new HashMap<>();
+        providers.put("conductor", new DynoEventQueueProvider(dao, new TestConfiguration()));
+        eventQueues = new EventQueues(providers, parametersUtils);
+        Event event = new Event(eventQueues, parametersUtils);
         event.start(workflow, task, null);
 
         assertEquals(Task.Status.COMPLETED, task.getStatus());
         assertNotNull(task.getOutputData());
-        assertEquals("conductor:" + workflow.getWorkflowType() + ":" + task.getReferenceTaskName(), task.getOutputData().get("event_produced"));
+        assertEquals("conductor:" + workflow.getWorkflowName() + ":" + task.getReferenceTaskName(), task.getOutputData().get("event_produced"));
         assertEquals(task.getOutputData().get("event_produced"), "conductor:" + publishedQueue[0]);
         assertEquals(1, publishedMessages.size());
         assertEquals(task.getTaskId(), publishedMessages.get(0).getId());
@@ -212,8 +211,8 @@ public class TestEvent {
 
 
     @Test
-    public void testFailures() throws Exception {
-        Event event = new Event();
+    public void testFailures() {
+        Event event = new Event(eventQueues, parametersUtils);
         Workflow workflow = new Workflow();
         workflow.setWorkflowDefinition(testWorkflowDefinition);
 
@@ -246,8 +245,7 @@ public class TestEvent {
 
     @Test
     public void testDynamicSinks() {
-
-        Event event = new Event();
+        Event event = new Event(eventQueues, parametersUtils);
         Workflow workflow = new Workflow();
         workflow.setWorkflowDefinition(testWorkflowDefinition);
 

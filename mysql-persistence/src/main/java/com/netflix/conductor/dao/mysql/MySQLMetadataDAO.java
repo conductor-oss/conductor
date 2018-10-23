@@ -11,17 +11,19 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-
-/**
- * @author mustafa
- */
+@Singleton
 public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     public static final String PROP_TASKDEF_CACHE_REFRESH = "conductor.taskdef.cache.refresh.time.seconds";
     public static final int DEFAULT_TASKDEF_CACHE_REFRESH_SECONDS = 60;

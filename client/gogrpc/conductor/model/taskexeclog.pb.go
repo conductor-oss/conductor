@@ -31,7 +31,7 @@ func (m *TaskExecLog) Reset()         { *m = TaskExecLog{} }
 func (m *TaskExecLog) String() string { return proto.CompactTextString(m) }
 func (*TaskExecLog) ProtoMessage()    {}
 func (*TaskExecLog) Descriptor() ([]byte, []int) {
-	return fileDescriptor_taskexeclog_31ce5708c84ca255, []int{0}
+	return fileDescriptor_taskexeclog_e9c8274b44d54689, []int{0}
 }
 func (m *TaskExecLog) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TaskExecLog.Unmarshal(m, b)
@@ -77,10 +77,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/taskexeclog.proto", fileDescriptor_taskexeclog_31ce5708c84ca255)
+	proto.RegisterFile("model/taskexeclog.proto", fileDescriptor_taskexeclog_e9c8274b44d54689)
 }
 
-var fileDescriptor_taskexeclog_31ce5708c84ca255 = []byte{
+var fileDescriptor_taskexeclog_e9c8274b44d54689 = []byte{
 	// 205 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x5c, 0x8f, 0x31, 0x4b, 0xc4, 0x40,
 	0x10, 0x85, 0x89, 0x81, 0x13, 0xf7, 0x14, 0x65, 0x9b, 0x0b, 0xd8, 0x9c, 0x56, 0x57, 0xed, 0x16,

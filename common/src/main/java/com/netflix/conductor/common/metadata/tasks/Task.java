@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -135,7 +135,7 @@ public class Task {
     private boolean callbackFromWorker = true;
 
     @ProtoField(id = 19)
-    private int responseTimeoutSeconds;
+    private long responseTimeoutSeconds;
 
     @ProtoField(id = 20)
     private String workflowInstanceId;
@@ -170,11 +170,23 @@ public class Task {
     @ProtoField(id = 30)
     private Any outputMessage;
 
-    @ProtoField(id = 31)
-    private int rateLimitPerSecond;
+    // This field is deprecated, do not reuse id 31.
+    //@ProtoField(id = 31)
+    //private int rateLimitPerSecond;
+
+    @ProtoField(id = 32)
+    private int rateLimitPerFrequency;
+
+    @ProtoField(id = 33)
+    private int rateLimitFrequencyInSeconds;
+
+    @ProtoField(id = 34)
+    private String externalInputPayloadStoragePath;
+
+    @ProtoField(id = 35)
+    private String externalOutputPayloadStoragePath;
 
     public Task() {
-
     }
 
     /**
@@ -447,14 +459,14 @@ public class Task {
     /**
      * @return the timeout for task to send response.  After this timeout, the task will be re-queued
      */
-    public int getResponseTimeoutSeconds() {
+    public long getResponseTimeoutSeconds() {
         return responseTimeoutSeconds;
     }
 
     /**
      * @param responseTimeoutSeconds - timeout for task to send response.  After this timeout, the task will be re-queued
      */
-    public void setResponseTimeoutSeconds(int responseTimeoutSeconds) {
+    public void setResponseTimeoutSeconds(long responseTimeoutSeconds) {
         this.responseTimeoutSeconds = responseTimeoutSeconds;
     }
 
@@ -479,7 +491,8 @@ public class Task {
 
 
     /**
-     * @param workflowType workflow type
+     * @param workflowType the name of the workflow
+     * @return the task object with the workflow type set
      */
     public Task setWorkflowType(String workflowType) {
         this.workflowType = workflowType;
@@ -592,12 +605,8 @@ public class Task {
         this.inputMessage = inputMessage;
     }
 
-    public int getRateLimitPerSecond() {
-        return rateLimitPerSecond;
-    }
-
-    public void setRateLimitPerSecond(int rateLimitPerSecond) {
-        this.rateLimitPerSecond = rateLimitPerSecond;
+    public void setRateLimitPerFrequency(int rateLimitPerFrequency) {
+        this.rateLimitPerFrequency = rateLimitPerFrequency;
     }
 
     public Any getOutputMessage() {
@@ -613,7 +622,47 @@ public class Task {
      */
     public Optional<TaskDef> getTaskDefinition() {
         return Optional.ofNullable(this.getWorkflowTask())
-                .map(workflowTask -> workflowTask.getTaskDefinition());
+                .map(WorkflowTask::getTaskDefinition);
+    }
+
+    public int getRateLimitPerFrequency() {
+        return rateLimitPerFrequency;
+    }
+
+    public int getRateLimitFrequencyInSeconds() {
+        return rateLimitFrequencyInSeconds;
+    }
+
+    public void setRateLimitFrequencyInSeconds(int rateLimitFrequencyInSeconds) {
+        this.rateLimitFrequencyInSeconds = rateLimitFrequencyInSeconds;
+    }
+
+    /**
+     * @return the external storage path for the task input payload
+     */
+    public String getExternalInputPayloadStoragePath() {
+        return externalInputPayloadStoragePath;
+    }
+
+    /**
+     * @param externalInputPayloadStoragePath the external storage path where the task input payload is stored
+     */
+    public void setExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
+        this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
+    }
+
+    /**
+     * @return the external storage path for the task output payload
+     */
+    public String getExternalOutputPayloadStoragePath() {
+        return externalOutputPayloadStoragePath;
+    }
+
+    /**
+     * @param externalOutputPayloadStoragePath the external storage path where the task output payload is stored
+     */
+    public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
+        this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
     }
 
     public Task copy() {
@@ -639,7 +688,11 @@ public class Task {
         copy.setDomain(domain);
         copy.setInputMessage(inputMessage);
         copy.setOutputMessage(outputMessage);
-        copy.setRateLimitPerSecond(rateLimitPerSecond);
+        copy.setRateLimitPerFrequency(rateLimitPerFrequency);
+        copy.setRateLimitFrequencyInSeconds(rateLimitFrequencyInSeconds);
+        copy.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
+        copy.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
+
         return copy;
     }
 
@@ -663,9 +716,11 @@ public class Task {
                 ", startDelayInSeconds=" + startDelayInSeconds +
                 ", retriedTaskId='" + retriedTaskId + '\'' +
                 ", retried=" + retried +
+                ", executed=" + executed +
                 ", callbackFromWorker=" + callbackFromWorker +
                 ", responseTimeoutSeconds=" + responseTimeoutSeconds +
                 ", workflowInstanceId='" + workflowInstanceId + '\'' +
+                ", workflowType='" + workflowType + '\'' +
                 ", taskId='" + taskId + '\'' +
                 ", reasonForIncompletion='" + reasonForIncompletion + '\'' +
                 ", callbackAfterSeconds=" + callbackAfterSeconds +
@@ -675,6 +730,10 @@ public class Task {
                 ", domain='" + domain + '\'' +
                 ", inputMessage='" + inputMessage + '\'' +
                 ", outputMessage='" + outputMessage + '\'' +
+                ", rateLimitPerFrequency=" + rateLimitPerFrequency +
+                ", rateLimitFrequencyInSeconds=" + rateLimitFrequencyInSeconds +
+                ", externalInputPayloadStoragePath='" + externalInputPayloadStoragePath + '\'' +
+                ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
                 '}';
     }
 }

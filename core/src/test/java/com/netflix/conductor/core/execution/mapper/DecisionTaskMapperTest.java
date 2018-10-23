@@ -9,7 +9,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -27,7 +26,7 @@ import static org.mockito.Mockito.when;
 
 public class DecisionTaskMapperTest {
 
-    private ParametersUtils parametersUtils = new ParametersUtils();
+    private ParametersUtils parametersUtils;
     private DeciderService deciderService;
     //Subject
     private DecisionTaskMapper decisionTaskMapper;
@@ -35,14 +34,14 @@ public class DecisionTaskMapperTest {
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
-
     Map<String, Object> ip1;
     WorkflowTask task1;
     WorkflowTask task2;
     WorkflowTask task3;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
+        parametersUtils = new ParametersUtils();
 
         ip1 = new HashMap<>();
         ip1.put("p1", "workflow.input.param1");
@@ -68,7 +67,7 @@ public class DecisionTaskMapperTest {
     }
 
     @Test
-    public void getMappedTasks() throws Exception {
+    public void getMappedTasks() {
 
         //Given
         //Task Definition
@@ -137,7 +136,7 @@ public class DecisionTaskMapperTest {
     }
 
     @Test
-    public void getEvaluatedCaseValue() throws Exception {
+    public void getEvaluatedCaseValue() {
 
         WorkflowTask decisionTask = new WorkflowTask();
         decisionTask.setType(TaskType.DECISION.name());
@@ -167,7 +166,7 @@ public class DecisionTaskMapperTest {
     }
 
     @Test
-    public void getEvaluatedCaseValueUsingExpression() throws Exception {
+    public void getEvaluatedCaseValueUsingExpression() {
         //Given
         //Task Definition
         TaskDef taskDef = new TaskDef();
@@ -258,10 +257,5 @@ public class DecisionTaskMapperTest {
         expectedException.expectMessage("Error while evaluating the script " + decisionTask.getCaseExpression());
 
         decisionTaskMapper.getEvaluatedCaseValue(decisionTask, evaluatorInput);
-
     }
-
-
-
-
 }

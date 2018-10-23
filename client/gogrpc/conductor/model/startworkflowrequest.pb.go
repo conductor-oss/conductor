@@ -35,7 +35,7 @@ func (m *StartWorkflowRequest) Reset()         { *m = StartWorkflowRequest{} }
 func (m *StartWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*StartWorkflowRequest) ProtoMessage()    {}
 func (*StartWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_startworkflowrequest_57b778443ff5f3ba, []int{0}
+	return fileDescriptor_startworkflowrequest_3ab5c2434a152277, []int{0}
 }
 func (m *StartWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_StartWorkflowRequest.Unmarshal(m, b)
@@ -104,10 +104,10 @@ func init() {
 }
 
 func init() {
-	proto.RegisterFile("model/startworkflowrequest.proto", fileDescriptor_startworkflowrequest_57b778443ff5f3ba)
+	proto.RegisterFile("model/startworkflowrequest.proto", fileDescriptor_startworkflowrequest_3ab5c2434a152277)
 }
 
-var fileDescriptor_startworkflowrequest_57b778443ff5f3ba = []byte{
+var fileDescriptor_startworkflowrequest_3ab5c2434a152277 = []byte{
 	// 396 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0x51, 0xab, 0xd3, 0x30,
 	0x14, 0x80, 0xe9, 0xed, 0xed, 0x95, 0x9b, 0x5e, 0xaf, 0x1a, 0x2e, 0xd7, 0x32, 0xf7, 0x50, 0x04,
