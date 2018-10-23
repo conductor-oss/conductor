@@ -149,7 +149,7 @@ public class EventHandler {
 		private TaskDetails fail_task;
 
 		@ProtoField(id = 5)
-		private boolean expandInlineJson;
+		private boolean expandInlineJSON;
 
 		/**
 		 * @return the action
@@ -213,18 +213,18 @@ public class EventHandler {
 		
 		/**
 		 * 
-		 * @param expandInlineJson when set to true, the in-lined JSON strings are expanded to a full json document
+		 * @param expandInlineJSON when set to true, the in-lined JSON strings are expanded to a full json document
 		 */
-		public void setExpandInlineJson(boolean expandInlineJson) {
-			this.expandInlineJson = expandInlineJson;
+		public void setExpandInlineJSON(boolean expandInlineJSON) {
+			this.expandInlineJSON = expandInlineJSON;
 		}
 		
 		/**
 		 * 
 		 * @return true if the json strings within the payload should be expanded.
 		 */
-		public boolean isExpandInlineJson() {
-			return expandInlineJson;
+		public boolean isExpandInlineJSON() {
+			return expandInlineJSON;
 		}
 	}
 

@@ -194,7 +194,7 @@ public class TestEventProcessor {
         startWorkflowAction.getStart_workflow().setName("cms_artwork_automation");
         startWorkflowAction.getStart_workflow().setVersion(1);
         startWorkflowAction.getStart_workflow().setInput(startWorkflowInput);
-        startWorkflowAction.setExpandInlineJson(true);
+        startWorkflowAction.setExpandInlineJSON(true);
         eventHandler.getActions().add(startWorkflowAction);
 
         eventHandler.setEvent(event);

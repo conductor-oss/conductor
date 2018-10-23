@@ -63,7 +63,7 @@ public class ActionProcessor {
 		logger.debug("Executing action: {} for event: {} with messageId:{}", action.getAction(), event, messageId);
 
 		Object jsonObject = payloadObject;
-		if (action.isExpandInlineJson()) {
+		if (action.isExpandInlineJSON()) {
 			jsonObject = jsonUtils.expand(payloadObject);
 		}
 

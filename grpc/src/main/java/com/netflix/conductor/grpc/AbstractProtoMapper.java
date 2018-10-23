@@ -278,7 +278,7 @@ public abstract class AbstractProtoMapper {
         if (from.getFail_task() != null) {
             to.setFailTask( toProto( from.getFail_task() ) );
         }
-        to.setExpandInlineJson( from.isExpandInlineJson() );
+        to.setExpandInlineJson( from.isExpandInlineJSON() );
         return to.build();
     }
 
@@ -294,7 +294,7 @@ public abstract class AbstractProtoMapper {
         if (from.hasFailTask()) {
             to.setFail_task( fromProto( from.getFailTask() ) );
         }
-        to.setExpandInlineJson( from.getExpandInlineJson() );
+        to.setExpandInlineJSON( from.getExpandInlineJson() );
         return to;
     }
 

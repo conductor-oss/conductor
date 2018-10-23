@@ -89,7 +89,7 @@ Given the following payload in the message:
         "response": "${source.result}"
       }
     },
-    "expandInlineJson": true
+    "expandInlineJSON": true
 }
 ```
 
@@ -105,13 +105,13 @@ Given the following payload in the message:
         "response": "${source.result}"
       }
     },
-    "expandInlineJson": true
+    "expandInlineJSON": true
 }
 ```
 Input for starting a workflow and output when completing / failing task follows the same [expressions](/metadata/#wiring-inputs-and-outputs) used for wiring workflow inputs.
 
 !!!info "Expanding stringified JSON elements in payload"
-	`expandInlineJson` property, when set to true will expand the inlined stringified JSON elements in the payload to JSON documents and replace the string value with JSON document.  
+	`expandInlineJSON` property, when set to true will expand the inlined stringified JSON elements in the payload to JSON documents and replace the string value with JSON document.  
 	This feature allows such elements to be used with JSON path expressions. 
 
 ## Extending
