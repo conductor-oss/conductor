@@ -3,18 +3,16 @@ clean-db:
 	docker volume rm grpc_conductor_mysql
 
 compose-build:
-	docker-compose -f docker-compose.dependencies.yaml -f docker-compose.apps.yaml  build
+	docker-compose build
 
 dependencies-up:
-	docker-compose -f docker-compose.dependencies.yaml up -d
+	docker-compose up -d mysql elasticsearch
 
 dependencies-down:
-	docker-compose -f docker-compose.dependencies.yaml down
+	docker-compose down
 
 stack-up:
-	docker-compose -f docker-compose.dependencies.yaml up -d
-	sleep 30
-	docker-compose -f docker-compose.dependencies.yaml -f docker-compose.apps.yaml  up
+	docker-compose up
 
 stack-down:
-	docker-compose -f docker-compose.dependencies.yaml -f docker-compose.apps.yaml  down
+	docker-compose down
