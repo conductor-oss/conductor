@@ -244,7 +244,7 @@ public class Workflow extends Auditable{
 	 */
 	@Deprecated
 	public String getWorkflowType() {
-		return workflowType;
+		return getWorkflowName();
 	}
 
 	/**
@@ -261,7 +261,7 @@ public class Workflow extends Auditable{
 	 */
 	@Deprecated
 	public int getVersion() {
-		return version;
+		return getWorkflowVersion();
 	}
 
 	/**
