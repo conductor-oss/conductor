@@ -2,8 +2,8 @@
   "workflow": {
     "properties": {
       "correlationId": {
-        "type": "string",
-        "index": "not_analyzed",
+        "type": "keyword",
+        "index": true,
         "doc_values": true
       },
       "endTime": {
@@ -16,21 +16,20 @@
         "doc_values": true
       },
       "failedReferenceTaskNames": {
-        "type": "string",
-        "index": "no",
-        "include_in_all": false
+        "type": "text",
+        "index": false
       },
       "input": {
-        "type": "string",
-        "index": "analyzed"
+        "type": "text",
+        "index": true
       },
       "output": {
-        "type": "string",
-        "index": "analyzed"
+        "type": "text",
+        "index": true
       },
       "reasonForIncompletion": {
-        "type": "string",
-        "index": "not_analyzed",
+        "type": "keyword",
+        "index": true,
         "doc_values": true
       },
       "startTime": {
@@ -39,8 +38,8 @@
         "doc_values": true
       },
       "status": {
-        "type": "string",
-        "index": "not_analyzed",
+        "type": "keyword",
+        "index": true,
         "doc_values": true
       },
       "updateTime": {
@@ -53,23 +52,22 @@
         "doc_values": true
       },
       "workflowId": {
-        "type": "string",
-        "index": "not_analyzed",
+        "type": "keyword",
+        "index": true,
         "doc_values": true
       },
       "workflowType": {
-        "type": "string",
-        "index": "not_analyzed",
+        "type": "keyword",
+        "index": true,
         "doc_values": true
       },
       "rawJSON": {
-        "type": "string",
-        "index": "no",
-        "include_in_all": false
+        "type": "text",
+        "index": false
       },
       "event": {
-        "index": "not_analyzed",
-        "type": "string"
+        "type": "keyword",
+        "index": true
       }
     }
   }

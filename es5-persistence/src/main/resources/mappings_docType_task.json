@@ -2,8 +2,8 @@
   "task": {
     "properties": {
       "correlationId": {
-        "type": "string",
-        "index": "not_analyzed"
+        "type": "keyword",
+        "index": true
       },
       "endTime": {
         "type": "date",
@@ -13,19 +13,19 @@
         "type": "long"
       },
       "input": {
-        "type": "string",
-        "index": "analyzed"
+        "type": "text",
+        "index": true
       },
       "output": {
-        "type": "string",
-        "index": "analyzed"
+        "type": "text",
+        "index": true
       },
       "queueWaitTime": {
         "type": "long"
       },
       "reasonForIncompletion": {
-        "type": "string",
-        "index": "not_analyzed"
+        "type": "keyword",
+        "index": true
       },
       "scheduledTime": {
         "type": "date",
@@ -36,32 +36,32 @@
         "format": "strict_date_optional_time||epoch_millis"
       },
       "status": {
-        "type": "string",
-        "index": "not_analyzed"
+        "type": "keyword",
+        "index": true
       },
       "taskDefName": {
-        "type": "string",
-        "index": "not_analyzed"
+        "type": "keyword",
+        "index": true
       },
       "taskId": {
-        "type": "string",
-        "index": "not_analyzed"
+        "type": "keyword",
+        "index": true
       },
       "taskType": {
-        "type": "string",
-        "index": "not_analyzed"
+        "type": "keyword",
+        "index": true
       },
       "updateTime": {
         "type": "date",
         "format": "strict_date_optional_time||epoch_millis"
       },
       "workflowId": {
-        "type": "string",
-        "index": "not_analyzed"
+        "type": "keyword",
+        "index": true
       },
       "workflowType": {
-        "type": "string",
-        "index": "not_analyzed"
+        "type": "keyword",
+        "index": true
       }
     }
   }
