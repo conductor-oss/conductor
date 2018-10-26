@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,6 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+/**
+ * 
+ */
 package com.netflix.conductor.common.metadata.workflow;
 
 import com.github.vmg.protogen.annotations.ProtoField;
@@ -21,50 +24,21 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * @author Viren
  *
- * This is the task definition defined as part of the {@link WorkflowDef}. The tasks definied in the Workflow definition are saved
+ * This is the task definition definied as part of the {@link WorkflowDef}. The tasks definied in the Workflow definition are saved
  * as part of {@link WorkflowDef#tasks}
  */
 @ProtoMessage
 public class WorkflowTask {
-
-	/**
-	 * This field is deprecated and will be removed in the next version.
-	 * Please use {@link TaskType} instead.
-	 */
-	@Deprecated
-    public enum Type {
-        SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, EVENT, WAIT, USER_DEFINED;
-
-        private static Set<String> systemTasks = new HashSet<>();
-        static {
-            systemTasks.add(Type.SIMPLE.name());
-            systemTasks.add(Type.DYNAMIC.name());
-            systemTasks.add(Type.FORK_JOIN.name());
-            systemTasks.add(Type.FORK_JOIN_DYNAMIC.name());
-            systemTasks.add(Type.DECISION.name());
-            systemTasks.add(Type.JOIN.name());
-            systemTasks.add(Type.SUB_WORKFLOW.name());
-            systemTasks.add(Type.EVENT.name());
-            systemTasks.add(Type.WAIT.name());
-            //Do NOT add USER_DEFINED here...
-        }
-
-        public static boolean isSystemTask(String name) {
-            return systemTasks.contains(name);
-        }
-    }
 
 	@ProtoField(id = 1)
 	private String name;
@@ -78,7 +52,7 @@ public class WorkflowTask {
 	//Key: Name of the input parameter.  MUST be one of the keys defined in TaskDef (e.g. fileName)
 	//Value: mapping of the parameter from another task (e.g. task1.someOutputParameterAsFileName)
 	@ProtoField(id = 4)
-	private Map<String, Object> inputParameters = new HashMap<>();
+	private Map<String, Object> inputParameters = new HashMap<String, Object>();
 
 	@ProtoField(id = 5)
 	private String type = TaskType.SIMPLE.name();
@@ -201,7 +175,7 @@ public class WorkflowTask {
 	public void setInputParameters(Map<String, Object> inputParameters) {
 		this.inputParameters = inputParameters;
 	}
-
+	
 	/**
 	 * @return the type
 	 */
@@ -212,7 +186,7 @@ public class WorkflowTask {
 	public void setWorkflowTaskType(TaskType type) {
 		this.type = type.name();
 	}
-
+	
 	/**
 	 * @param type the type to set
 	 */
@@ -234,7 +208,7 @@ public class WorkflowTask {
 		this.decisionCases = decisionCases;
 	}
 
-
+	
 	/**
 	 * @return the defaultCase
 	 */
@@ -263,7 +237,7 @@ public class WorkflowTask {
 		this.forkTasks = forkTasks;
 	}
 
-
+	
 	/**
 	 * @return the startDelay in seconds
 	 */
@@ -278,7 +252,7 @@ public class WorkflowTask {
 		this.startDelay = startDelay;
 	}
 
-
+	
 	/**
 	 * @return the dynamicTaskNameParam
 	 */
@@ -288,13 +262,13 @@ public class WorkflowTask {
 
 	/**
 	 * @param dynamicTaskNameParam the dynamicTaskNameParam to set to be used by DYNAMIC tasks
-	 *
+	 * 
 	 */
 	public void setDynamicTaskNameParam(String dynamicTaskNameParam) {
 		this.dynamicTaskNameParam = dynamicTaskNameParam;
 	}
 
-
+	
 	/**
 	 * @return the caseValueParam
 	 */
@@ -311,11 +285,11 @@ public class WorkflowTask {
 	public void setDynamicForkJoinTasksParam(String dynamicForkJoinTasksParam) {
 		this.dynamicForkJoinTasksParam = dynamicForkJoinTasksParam;
 	}
-
+	
 	public String getDynamicForkTasksParam() {
 		return dynamicForkTasksParam;
 	}
-
+	
 	public void setDynamicForkTasksParam(String dynamicForkTasksParam) {
 		this.dynamicForkTasksParam = dynamicForkTasksParam;
 	}
@@ -323,7 +297,7 @@ public class WorkflowTask {
 	public String getDynamicForkTasksInputParamName() {
 		return dynamicForkTasksInputParamName;
 	}
-
+	
 	public void setDynamicForkTasksInputParamName(String dynamicForkTasksInputParamName) {
 		this.dynamicForkTasksInputParamName = dynamicForkTasksInputParamName;
 	}
@@ -334,25 +308,25 @@ public class WorkflowTask {
 	public void setCaseValueParam(String caseValueParam) {
 		this.caseValueParam = caseValueParam;
 	}
-
+	
 	/**
-	 *
+	 * 
 	 * @return A javascript expression for decision cases.  The result should be a scalar value that is used to decide the case branches.
 	 * @see #getDecisionCases()
 	 */
 	public String getCaseExpression() {
 		return caseExpression;
 	}
-
+	
 	/**
-	 *
+	 * 
 	 * @param caseExpression A javascript expression for decision cases.  The result should be a scalar value that is used to decide the case branches.
 	 */
 	public void setCaseExpression(String caseExpression) {
 		this.caseExpression = caseExpression;
 	}
 
-
+	
 	/**
 	 * @return the subWorkflow
 	 */
@@ -382,21 +356,21 @@ public class WorkflowTask {
 	}
 
 	/**
-	 *
+	 * 
 	 * @return Sink value for the EVENT type of task
 	 */
 	public String getSink() {
 		return sink;
 	}
-
+	
 	/**
-	 *
+	 * 
 	 * @param sink Name of the sink
 	 */
 	public void setSink(String sink) {
 		this.sink = sink;
 	}
-
+	
 	/**
 	 *
 	 * @return If the task is optional.  When set to true, the workflow execution continues even when the task is in failed status.
@@ -421,7 +395,7 @@ public class WorkflowTask {
 	}
 
 	/**
-	 *
+	 * 
 	 * @param optional when set to true, the task is marked as optional
 	 */
 	public void setOptional(boolean optional) {
@@ -532,38 +506,38 @@ public class WorkflowTask {
 		}
 		return null;
 	}
-
+	
 	public boolean has(String taskReferenceName){
 
 		if(this.getTaskReferenceName().equals(taskReferenceName)){
 			return true;
 		}
-
+		
 		TaskType tt = TaskType.USER_DEFINED;
 		if(TaskType.isSystemTask(type)) {
 			tt = TaskType.valueOf(type);
 		}
-
+		
 		switch(tt){
-
+			
 			case DECISION:
-			case FORK_JOIN:
+			case FORK_JOIN:	
 				for(List<WorkflowTask> childx : children()){
 					for(WorkflowTask child : childx){
 						if(child.has(taskReferenceName)){
 							return true;
-						}
+						}	
 					}
 				}
 				break;
 			default:
 				break;
 		}
-
+		
 		return false;
-
+		
 	}
-
+	
 	public WorkflowTask get(String taskReferenceName){
 
 		if(this.getTaskReferenceName().equals(taskReferenceName)){
@@ -578,9 +552,9 @@ public class WorkflowTask {
 			}
 		}
 		return null;
-
+		
 	}
-
+	
 	@Override
 	public String toString() {
 		return name + "/" + taskReferenceName;
