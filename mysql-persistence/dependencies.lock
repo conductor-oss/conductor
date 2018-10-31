@@ -1,5 +1,11 @@
 {
     "compile": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -58,9 +64,15 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.zaxxer:HikariCP": {
-            "locked": "2.6.3",
-            "requested": "2.6.3"
+            "locked": "3.2.0",
+            "requested": "3.2.0"
         },
         "commons-io:commons-io": {
             "locked": "2.4",
@@ -73,8 +85,8 @@
             "locked": "1.2.2"
         },
         "mysql:mysql-connector-java": {
-            "locked": "5.1.43",
-            "requested": "5.1.43"
+            "locked": "8.0.11",
+            "requested": "8.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -94,6 +106,12 @@
         }
     },
     "compileClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -152,9 +170,15 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.zaxxer:HikariCP": {
-            "locked": "2.6.3",
-            "requested": "2.6.3"
+            "locked": "3.2.0",
+            "requested": "3.2.0"
         },
         "commons-io:commons-io": {
             "locked": "2.4",
@@ -167,8 +191,8 @@
             "locked": "1.2.2"
         },
         "mysql:mysql-connector-java": {
-            "locked": "5.1.43",
-            "requested": "5.1.43"
+            "locked": "8.0.11",
+            "requested": "8.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -188,6 +212,12 @@
         }
     },
     "default": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -246,9 +276,15 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.zaxxer:HikariCP": {
-            "locked": "2.6.3",
-            "requested": "2.6.3"
+            "locked": "3.2.0",
+            "requested": "3.2.0"
         },
         "commons-io:commons-io": {
             "locked": "2.4",
@@ -261,8 +297,8 @@
             "locked": "1.2.2"
         },
         "mysql:mysql-connector-java": {
-            "locked": "5.1.43",
-            "requested": "5.1.43"
+            "locked": "8.0.11",
+            "requested": "8.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -282,6 +318,12 @@
         }
     },
     "runtime": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -340,9 +382,15 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.zaxxer:HikariCP": {
-            "locked": "2.6.3",
-            "requested": "2.6.3"
+            "locked": "3.2.0",
+            "requested": "3.2.0"
         },
         "commons-io:commons-io": {
             "locked": "2.4",
@@ -355,8 +403,8 @@
             "locked": "1.2.2"
         },
         "mysql:mysql-connector-java": {
-            "locked": "5.1.43",
-            "requested": "5.1.43"
+            "locked": "8.0.11",
+            "requested": "8.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -376,6 +424,12 @@
         }
     },
     "runtimeClasspath": {
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -434,9 +488,15 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.zaxxer:HikariCP": {
-            "locked": "2.6.3",
-            "requested": "2.6.3"
+            "locked": "3.2.0",
+            "requested": "3.2.0"
         },
         "commons-io:commons-io": {
             "locked": "2.4",
@@ -449,8 +509,8 @@
             "locked": "1.2.2"
         },
         "mysql:mysql-connector-java": {
-            "locked": "5.1.43",
-            "requested": "5.1.43"
+            "locked": "8.0.11",
+            "requested": "8.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -482,6 +542,12 @@
             "locked": "2.2.3",
             "requested": "2.2.3"
         },
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -540,9 +606,15 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.zaxxer:HikariCP": {
-            "locked": "2.6.3",
-            "requested": "2.6.3"
+            "locked": "3.2.0",
+            "requested": "3.2.0"
         },
         "commons-io:commons-io": {
             "locked": "2.5",
@@ -559,8 +631,8 @@
             "requested": "4.10"
         },
         "mysql:mysql-connector-java": {
-            "locked": "5.1.43",
-            "requested": "5.1.43"
+            "locked": "8.0.11",
+            "requested": "8.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -596,6 +668,12 @@
             "locked": "2.2.3",
             "requested": "2.2.3"
         },
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -654,9 +732,15 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.zaxxer:HikariCP": {
-            "locked": "2.6.3",
-            "requested": "2.6.3"
+            "locked": "3.2.0",
+            "requested": "3.2.0"
         },
         "commons-io:commons-io": {
             "locked": "2.5",
@@ -673,8 +757,8 @@
             "requested": "4.10"
         },
         "mysql:mysql-connector-java": {
-            "locked": "5.1.43",
-            "requested": "5.1.43"
+            "locked": "8.0.11",
+            "requested": "8.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -710,6 +794,12 @@
             "locked": "2.2.3",
             "requested": "2.2.3"
         },
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -768,9 +858,15 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.zaxxer:HikariCP": {
-            "locked": "2.6.3",
-            "requested": "2.6.3"
+            "locked": "3.2.0",
+            "requested": "3.2.0"
         },
         "commons-io:commons-io": {
             "locked": "2.5",
@@ -787,8 +883,8 @@
             "requested": "4.10"
         },
         "mysql:mysql-connector-java": {
-            "locked": "5.1.43",
-            "requested": "5.1.43"
+            "locked": "8.0.11",
+            "requested": "8.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -824,6 +920,12 @@
             "locked": "2.2.3",
             "requested": "2.2.3"
         },
+        "com.amazonaws:aws-java-sdk-s3": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "1.11.86"
+        },
         "com.fasterxml.jackson.core:jackson-core": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -882,9 +984,15 @@
             ],
             "locked": "0.68.0"
         },
+        "com.spotify:completable-futures": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-core"
+            ],
+            "locked": "0.3.1"
+        },
         "com.zaxxer:HikariCP": {
-            "locked": "2.6.3",
-            "requested": "2.6.3"
+            "locked": "3.2.0",
+            "requested": "3.2.0"
         },
         "commons-io:commons-io": {
             "locked": "2.5",
@@ -901,8 +1009,8 @@
             "requested": "4.10"
         },
         "mysql:mysql-connector-java": {
-            "locked": "5.1.43",
-            "requested": "5.1.43"
+            "locked": "8.0.11",
+            "requested": "8.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [

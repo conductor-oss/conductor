@@ -88,10 +88,13 @@ public class ServerModule extends AbstractModule {
 			install(new RedisWorkflowModule(conductorConfig, dynoConn, hostSupplier));
 		}
 
-		if (conductorConfig.getProperty("workflow.elasticsearch.version", "2").equals("5")){
-			install(new ElasticSearchModuleV5());
-		}
-		else {
+		String elasticSearchVersion = conductorConfig.getProperty("workflow.elasticsearch.version", "2");
+		if ("5".equals(elasticSearchVersion)) {
+
+			String elasticSearchTransport = conductorConfig.getProperty("workflow.elasticsearch.transport", "tcp");
+			install(new ElasticSearchModuleV5("rest".equalsIgnoreCase(elasticSearchTransport)));
+
+		} else {
 			// Use ES2 as default.
 			install(new ElasticSearchModule());
 		}
