@@ -18,6 +18,11 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.google.common.base.MoreObjects;
+import com.netflix.conductor.common.metadata.Auditable;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -25,11 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-
-import com.github.vmg.protogen.annotations.ProtoField;
-import com.github.vmg.protogen.annotations.ProtoMessage;
-import com.google.common.base.MoreObjects;
-import com.netflix.conductor.common.metadata.Auditable;
 
 /**
  * @author Viren
@@ -65,6 +65,9 @@ public class WorkflowDef extends Auditable {
 	//By default a workflow is restartable
 	@ProtoField(id = 9)
 	private boolean restartable = true;
+
+	@ProtoField(id = 10)
+	private boolean terminalWorkflowListenerEnabled = false;
 
 	/**
 	 * @return the name
@@ -201,6 +204,22 @@ public class WorkflowDef extends Auditable {
 		this.schemaVersion = schemaVersion;
 	}
 
+	/**
+	 *
+	 * @return true is workflow listener will be invoked when workflow gets into a terminal state
+	 */
+	public boolean isTerminalWorkflowListenerEnabled() {
+		return terminalWorkflowListenerEnabled;
+	}
+
+	/**
+	 * Specify if workflow listener is enabled to invoke a callback for completed or terminated workflows
+	 * @param terminalWorkflowListenerEnabled
+	 */
+	public void setTerminalWorkflowListenerEnabled(boolean terminalWorkflowListenerEnabled) {
+		this.terminalWorkflowListenerEnabled = terminalWorkflowListenerEnabled;
+	}
+
 	public String key(){
 		return getKey(name, version);
 	}
@@ -287,6 +306,7 @@ public class WorkflowDef extends Auditable {
 				.add("failureWorkflow", failureWorkflow)
 				.add("schemaVersion", schemaVersion)
 				.add("restartable", restartable)
+				.add("terminalWorkflowListenerEnabled", terminalWorkflowListenerEnabled)
 				.toString();
 	}
 }

@@ -18,4 +18,5 @@ message WorkflowDef {
     string failure_workflow = 7;
     int32 schema_version = 8;
     bool restartable = 9;
+    bool terminal_workflow_listener_enabled = 10;
 }
