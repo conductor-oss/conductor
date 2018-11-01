@@ -1013,7 +1013,7 @@ public abstract class AbstractProtoMapper {
         }
         to.setSchemaVersion( from.getSchemaVersion() );
         to.setRestartable( from.isRestartable() );
-        to.setTerminalWorkflowListenerEnabled( from.isTerminalWorkflowListenerEnabled() );
+        to.setWorkflowStatusListenerEnabled( from.isWorkflowStatusListenerEnabled() );
         return to.build();
     }
 
@@ -1032,7 +1032,7 @@ public abstract class AbstractProtoMapper {
         to.setFailureWorkflow( from.getFailureWorkflow() );
         to.setSchemaVersion( from.getSchemaVersion() );
         to.setRestartable( from.getRestartable() );
-        to.setTerminalWorkflowListenerEnabled( from.getTerminalWorkflowListenerEnabled() );
+        to.setWorkflowStatusListenerEnabled( from.getWorkflowStatusListenerEnabled() );
         return to;
     }
 

@@ -540,7 +540,7 @@ public class WorkflowExecutor {
         queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
         logger.debug("Removed workflow {} from decider queue", wf.getWorkflowId());
 
-        if(wf.getWorkflowDefinition().isTerminalWorkflowListenerEnabled()) {
+        if(wf.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
             workflowStatusListener.onWorkflowCompleted(wf);
         }
     }
@@ -638,7 +638,7 @@ public class WorkflowExecutor {
         // Send to atlas
         Monitors.recordWorkflowTermination(workflow.getWorkflowName(), workflow.getStatus(), workflow.getOwnerApp());
 
-        if(workflow.getWorkflowDefinition().isTerminalWorkflowListenerEnabled()) {
+        if(workflow.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
             workflowStatusListener.onWorkflowTerminated(workflow);
         }
     }

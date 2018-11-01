@@ -274,7 +274,7 @@ public class TestWorkflowExecutor {
 
         verify(workflowStatusListener, times(0)).onWorkflowCompleted(any(Workflow.class));
 
-        def.setTerminalWorkflowListenerEnabled(true);
+        def.setWorkflowStatusListenerEnabled(true);
         workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
         workflowExecutor.completeWorkflow(workflow);
         verify(workflowStatusListener, times(1)).onWorkflowCompleted(any(Workflow.class));
@@ -322,7 +322,7 @@ public class TestWorkflowExecutor {
 
         verify(workflowStatusListener, times(0)).onWorkflowTerminated(any(Workflow.class));
 
-        def.setTerminalWorkflowListenerEnabled(true);
+        def.setWorkflowStatusListenerEnabled(true);
         workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
         workflowExecutor.completeWorkflow(workflow);
         verify(workflowStatusListener, times(1)).onWorkflowCompleted(any(Workflow.class));

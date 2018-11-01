@@ -67,7 +67,7 @@ public class WorkflowDef extends Auditable {
 	private boolean restartable = true;
 
 	@ProtoField(id = 10)
-	private boolean terminalWorkflowListenerEnabled = false;
+	private boolean workflowStatusListenerEnabled = false;
 
 	/**
 	 * @return the name
@@ -208,16 +208,16 @@ public class WorkflowDef extends Auditable {
 	 *
 	 * @return true is workflow listener will be invoked when workflow gets into a terminal state
 	 */
-	public boolean isTerminalWorkflowListenerEnabled() {
-		return terminalWorkflowListenerEnabled;
+	public boolean isWorkflowStatusListenerEnabled() {
+		return workflowStatusListenerEnabled;
 	}
 
 	/**
 	 * Specify if workflow listener is enabled to invoke a callback for completed or terminated workflows
-	 * @param terminalWorkflowListenerEnabled
+	 * @param workflowStatusListenerEnabled
 	 */
-	public void setTerminalWorkflowListenerEnabled(boolean terminalWorkflowListenerEnabled) {
-		this.terminalWorkflowListenerEnabled = terminalWorkflowListenerEnabled;
+	public void setWorkflowStatusListenerEnabled(boolean workflowStatusListenerEnabled) {
+		this.workflowStatusListenerEnabled = workflowStatusListenerEnabled;
 	}
 
 	public String key(){
@@ -306,7 +306,7 @@ public class WorkflowDef extends Auditable {
 				.add("failureWorkflow", failureWorkflow)
 				.add("schemaVersion", schemaVersion)
 				.add("restartable", restartable)
-				.add("terminalWorkflowListenerEnabled", terminalWorkflowListenerEnabled)
+				.add("workflowStatusListenerEnabled", workflowStatusListenerEnabled)
 				.toString();
 	}
 }

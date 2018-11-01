@@ -13,12 +13,12 @@ public class WorkflowStatusListenerStub implements WorkflowStatusListener {
 
     @Override
     public void onWorkflowCompleted(Workflow workflow) {
-        LOG.debug("Workflow {} is completed", workflow.toString());
+        LOG.debug("Workflow {} is completed", workflow.getWorkflowId());
     }
 
     @Override
     public void onWorkflowTerminated(Workflow workflow) {
-        LOG.debug("Workflow {} is terminated", workflow.toString());
+        LOG.debug("Workflow {} is terminated", workflow.getWorkflowId());
     }
 
 }
