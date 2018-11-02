@@ -54,7 +54,7 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
     }
 
     private List<AbstractModule> selectModulesToLoad() {
-        Configuration.DB database = null;
+        Configuration.DB database;
         List<AbstractModule> modules = new ArrayList<>();
 
         try {
