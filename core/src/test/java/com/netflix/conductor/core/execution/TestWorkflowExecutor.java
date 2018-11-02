@@ -68,6 +68,8 @@ import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -79,6 +81,7 @@ public class TestWorkflowExecutor {
     private ExecutionDAO executionDAO;
     private MetadataDAO metadataDAO;
     private QueueDAO queueDAO;
+    private WorkflowStatusListener workflowStatusListener;
 
     @Before
     public void init() {
@@ -86,6 +89,7 @@ public class TestWorkflowExecutor {
         executionDAO = mock(ExecutionDAO.class);
         metadataDAO = mock(MetadataDAO.class);
         queueDAO = mock(QueueDAO.class);
+        workflowStatusListener = mock(WorkflowStatusListener.class);
         ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         ObjectMapper objectMapper = new ObjectMapper();
         ParametersUtils parametersUtils = new ParametersUtils();
@@ -103,7 +107,8 @@ public class TestWorkflowExecutor {
 
         DeciderService deciderService = new DeciderService(parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers);
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
-        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, executionDAO, queueDAO, metadataMapperService, parametersUtils, config);
+        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, executionDAO, queueDAO, metadataMapperService,
+                parametersUtils, workflowStatusListener, config);
     }
 
     @Test
@@ -266,8 +271,63 @@ public class TestWorkflowExecutor {
         assertEquals(1, updateWorkflowCalledCounter.get());
         assertEquals(1, updateTasksCalledCounter.get());
         assertEquals(1, removeQueueEntryCalledCounter.get());
+
+        verify(workflowStatusListener, times(0)).onWorkflowCompleted(any(Workflow.class));
+
+        def.setWorkflowStatusListenerEnabled(true);
+        workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        workflowExecutor.completeWorkflow(workflow);
+        verify(workflowStatusListener, times(1)).onWorkflowCompleted(any(Workflow.class));
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    public void testTerminatedWorkflow() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test");
+
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(def);
+        workflow.setWorkflowId("1");
+        workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        workflow.setOwnerApp("junit_test");
+        workflow.setStartTime(10L);
+        workflow.setEndTime(100L);
+        workflow.setOutput(Collections.EMPTY_MAP);
+
+        when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
+
+        AtomicInteger updateWorkflowCalledCounter = new AtomicInteger(0);
+        doAnswer(invocation -> {
+            updateWorkflowCalledCounter.incrementAndGet();
+            return null;
+        }).when(executionDAO).updateWorkflow(any());
+
+        AtomicInteger updateTasksCalledCounter = new AtomicInteger(0);
+        doAnswer(invocation -> {
+            updateTasksCalledCounter.incrementAndGet();
+            return null;
+        }).when(executionDAO).updateTasks(any());
+
+        AtomicInteger removeQueueEntryCalledCounter = new AtomicInteger(0);
+        doAnswer(invocation -> {
+            removeQueueEntryCalledCounter.incrementAndGet();
+            return null;
+        }).when(queueDAO).remove(anyString(), anyString());
+
+        workflowExecutor.terminateWorkflow("workflowId", "reason");
+        assertEquals(Workflow.WorkflowStatus.TERMINATED, workflow.getStatus());
+        assertEquals(1, updateWorkflowCalledCounter.get());
+        assertEquals(1, removeQueueEntryCalledCounter.get());
+
+        verify(workflowStatusListener, times(0)).onWorkflowTerminated(any(Workflow.class));
+
+        def.setWorkflowStatusListenerEnabled(true);
+        workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        workflowExecutor.completeWorkflow(workflow);
+        verify(workflowStatusListener, times(1)).onWorkflowCompleted(any(Workflow.class));
+    }
+    
     @Test
     public void testGetFailedTasksToRetry() {
         //setup

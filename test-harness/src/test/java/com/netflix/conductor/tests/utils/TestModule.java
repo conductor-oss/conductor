@@ -19,6 +19,8 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
+import com.netflix.conductor.core.execution.WorkflowStatusListenerStub;
+import com.netflix.conductor.core.execution.WorkflowStatusListener;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -59,6 +61,8 @@ public class TestModule extends AbstractModule {
         bind(ExecutionDAO.class).to(RedisExecutionDAO.class);
         bind(QueueDAO.class).to(DynoQueueDAO.class);
         bind(IndexDAO.class).to(MockIndexDAO.class);
+
+        bind(WorkflowStatusListener.class).to(WorkflowStatusListenerStub.class);
 
         install(new CoreModule());
         bind(UserTask.class).asEagerSingleton();
