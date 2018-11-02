@@ -152,7 +152,16 @@ public class TaskService {
     public String ackTaskReceived(String taskId, String workerId) {
         ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
         LOGGER.debug("Ack received for task: {} from worker: {}", taskId, workerId);
-        return String.valueOf(executionService.ackTaskReceived(taskId));
+        boolean ackResult;
+        try {
+            ackResult = executionService.ackTaskReceived(taskId);
+        } catch (Exception e) {
+            // safe to ignore exception here, since the task will not be processed by the worker due to ack failure
+            // The task will eventually be available to be polled again after the unack timeout
+            LOGGER.error("Exception when trying to ack task {} from worker {}", taskId, workerId, e);
+            ackResult = false;
+        }
+        return String.valueOf(ackResult);
     }
 
     /**

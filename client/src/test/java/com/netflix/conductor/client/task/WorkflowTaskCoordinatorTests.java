@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2017 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
 package com.netflix.conductor.client.task;
 
 import com.google.common.collect.ImmutableList;
@@ -24,6 +21,7 @@ import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -54,7 +52,7 @@ public class WorkflowTaskCoordinatorTests {
 
 	@Test
 	public void testThreadPool() {
-		Worker worker = Worker.create("test", (Task task)-> new TaskResult(task));
+		Worker worker = Worker.create("test", TaskResult::new);
 		WorkflowTaskCoordinator coordinator = new WorkflowTaskCoordinator.Builder().withWorkers(worker, worker, worker).withTaskClient(new TaskClient()).build();
 		assertEquals(-1, coordinator.getThreadCount());		//Not initialized yet
 		coordinator.init();
@@ -114,7 +112,7 @@ public class WorkflowTaskCoordinatorTests {
 	}
 
 	@Test
-	public void testReturnTaskWhenAckFailed() {
+	public void testNoOpWhenAckFailed() {
 		Worker worker = mock(Worker.class);
 		when(worker.getPollingInterval()).thenReturn(1000);
 		when(worker.getPollCount()).thenReturn(1);
@@ -135,27 +133,16 @@ public class WorkflowTaskCoordinatorTests {
 		testTask.setStatus(Task.Status.IN_PROGRESS);
 		when(client.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask));
 		when(client.ack(anyString(), anyString())).thenReturn(false);
-		CountDownLatch latch = new CountDownLatch(1);
-
-		doAnswer(invocation -> {
-					Object[] args = invocation.getArguments();
-					TaskResult result = (TaskResult) args[0];
-					assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
-					latch.countDown();
-					return null;
-				}
-		).when(client).updateTask(any(), anyString());
 
 		coordinator.init();
-		Uninterruptibles.awaitUninterruptibly(latch);
 
 		// then worker.execute must not be called and task must be updated with IN_PROGRESS status
 		verify(worker, never()).execute(any());
-		Mockito.verify(client).updateTask(any(), anyString());
+		verify(client, never()).updateTask(any(), any());
 	}
 
 	@Test
-	public void testReturnTaskWhenAckThrowsException() {
+	public void testNoOpWhenAckThrowsException() {
 		Worker worker = mock(Worker.class);
 		when(worker.getPollingInterval()).thenReturn(1000);
 		when(worker.getPollCount()).thenReturn(1);
@@ -176,24 +163,12 @@ public class WorkflowTaskCoordinatorTests {
 		testTask.setStatus(Task.Status.IN_PROGRESS);
 		when(client.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask));
 		when(client.ack(anyString(), anyString())).thenThrow(new RuntimeException("Ack failed"));
-		CountDownLatch latch = new CountDownLatch(1);
-
-		doAnswer(invocation -> {
-					assertEquals("test-worker-0", Thread.currentThread().getName());
-					Object[] args = invocation.getArguments();
-					TaskResult result = (TaskResult) args[0];
-					assertEquals(TaskResult.Status.IN_PROGRESS, result.getStatus());
-					latch.countDown();
-					return null;
-				}
-		).when(client).updateTask(any(), anyString());
 
 		coordinator.init();
-		Uninterruptibles.awaitUninterruptibly(latch);
 
 		// then worker.execute must not be called and task must be updated with IN_PROGRESS status
 		verify(worker, never()).execute(any());
-		Mockito.verify(client).updateTask(any(), anyString());
+		verify(client, never()).updateTask(any(), any());
 	}
 
 	@Test
