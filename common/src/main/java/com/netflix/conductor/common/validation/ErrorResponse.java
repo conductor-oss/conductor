@@ -1,4 +1,4 @@
-package com.netflix.conductor.core.exceptions;
+package com.netflix.conductor.common.validation;
 
 import java.util.List;
 
@@ -9,6 +9,7 @@ public class ErrorResponse {
     private String message;
     private String instance;
     private boolean retryable;
+    private List<ValidationError> validationErrors;
 
     public int getStatus() {
         return status;
@@ -25,8 +26,6 @@ public class ErrorResponse {
     public void setValidationErrors(List<ValidationError> validationErrors) {
         this.validationErrors = validationErrors;
     }
-
-    private List<ValidationError> validationErrors;
 
     public boolean isRetryable() {
         return retryable;

@@ -137,7 +137,6 @@ public class DecisionTaskMapperTest {
 
     @Test
     public void getEvaluatedCaseValue() {
-
         WorkflowTask decisionTask = new WorkflowTask();
         decisionTask.setType(TaskType.DECISION.name());
         decisionTask.setName("Decision");
@@ -161,8 +160,7 @@ public class DecisionTaskMapperTest {
         Map<String, Object> input = parametersUtils.getTaskInput(decisionTask.getInputParameters(),
                 workflowInstance, null, null);
 
-        assertEquals("0",decisionTaskMapper.getEvaluatedCaseValue(decisionTask, input));
-
+        assertEquals("0", decisionTaskMapper.getEvaluatedCaseValue(decisionTask, input));
     }
 
     @Test

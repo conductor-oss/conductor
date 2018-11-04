@@ -21,10 +21,19 @@ package com.netflix.conductor.common.workflow;
 
 import static org.junit.Assert.*;
 
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Viren
@@ -51,6 +60,20 @@ public class TestWorkflowTask {
 		
 		task.setOptional(Boolean.TRUE);
 		assertTrue(task.isOptional());
-		
+	}
+
+	@Test
+	public void testWorkflowTaskName() {
+		WorkflowTask taskDef = new WorkflowTask();//name is null
+		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+		Validator validator = factory.getValidator();
+		Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
+		assertEquals(2, result.size());
+
+		List<String> validationErrors = new ArrayList<>();
+		result.forEach(e -> validationErrors.add(e.getMessage()));
+
+		assertTrue(validationErrors.contains("WorkflowTask name cannot be empty or null"));
+		assertTrue(validationErrors.contains("WorkflowTask taskReferenceName name cannot be empty or null"));
 	}
 }

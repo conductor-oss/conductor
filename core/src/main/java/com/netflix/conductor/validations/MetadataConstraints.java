@@ -44,7 +44,7 @@ public @interface MetadataConstraints {
 
             if (ValidationContext.getMetadataDAO().getTaskDef(taskDefName) != null) {
                 valid = false;
-                context.buildConstraintViolationWithTemplate( "taskDef by name already exists" ).addConstraintViolation();
+                context.buildConstraintViolationWithTemplate("taskDef by name already exists").addConstraintViolation();
             }
             return valid;
         }

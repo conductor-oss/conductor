@@ -20,9 +20,18 @@ package com.netflix.conductor.common.tasks;
 
 import static org.junit.Assert.*;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
 
 /**
  * @author Viren
@@ -30,9 +39,16 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
  */
 public class TestTaskDef {
 
+    private Validator validator;
+
+    @Before
+    public void setup(){
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        this.validator = factory.getValidator();
+    }
+
 	@Test
 	public void test() {
-		
 		String name = "test1";
 		String description = "desc";
 		int retryCount = 10;
@@ -43,6 +59,41 @@ public class TestTaskDef {
 		assertEquals(description, def.getDescription());
 		assertEquals(retryCount, def.getRetryCount());
 		assertEquals(timeout, def.getTimeoutSeconds());
-		
 	}
+
+	@Test
+	public void testTaskDef() {
+	    TaskDef taskDef = new TaskDef();
+	    taskDef.setName("task1");
+	    taskDef.setRetryCount(-1);
+	    taskDef.setTimeoutSeconds(1000);
+	    taskDef.setResponseTimeoutSeconds(1001);
+
+        Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
+        assertEquals(2, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(validationErrors.contains("TaskDef: task1 responseTimeoutSeconds: 1001 <= timeoutSeconds: 1000"));
+        assertTrue(validationErrors.contains("retryCount: 0 must be >= 0"));
+    }
+
+    @Test
+    public void testTaskDefNameNotSet() {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryCount(-1);
+        taskDef.setTimeoutSeconds(1000);
+        taskDef.setResponseTimeoutSeconds(1);
+
+        Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
+        assertEquals(2, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(validationErrors.contains("retryCount: 0 must be >= 0"));
+        assertTrue(validationErrors.contains("taskDef name cannot be null"));
+    }
+
 }

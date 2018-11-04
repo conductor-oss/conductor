@@ -2,8 +2,8 @@ package com.netflix.conductor.server.resources;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.exceptions.ErrorResponse;
-import com.netflix.conductor.core.exceptions.ValidationError;
+import com.netflix.conductor.common.validation.ErrorResponse;
+import com.netflix.conductor.common.validation.ValidationError;
 import com.netflix.conductor.metrics.Monitors;
 import com.sun.jersey.api.core.HttpContext;
 import org.slf4j.Logger;
@@ -13,7 +13,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
-import javax.validation.Validation;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Request;

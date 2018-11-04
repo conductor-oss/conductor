@@ -1,15 +1,27 @@
 package com.netflix.conductor.service;
 
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Inject;
+import com.google.inject.Injector;
+import com.google.inject.matcher.Matchers;
+import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.core.config.CoreModule;
+import com.netflix.conductor.core.config.ValidationModule;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.interceptors.ServiceInterceptor;
+import com.netflix.conductor.validations.TaskDefConstraint;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import javax.validation.Validator;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertEquals;
@@ -19,12 +31,33 @@ import static org.mockito.Mockito.verify;
 
 public class MetadataServiceTest {
 
+    //@Inject
     private MetadataService metadataService;
+
+    //@Inject
     private MetadataDAO metadataDAO;
+
+    //@Inject
     private EventQueues eventQueues;
+
+//    protected Injector injector = Guice.createInjector(new AbstractModule() {
+//        @Override
+//        protected void configure() {
+//            //install(new CoreModule());
+//            //install(new ValidationModule());
+//            //install(new ArchaiusModule());
+//            //install(new JettyModule());
+//            //install(new GRPCModule());
+//            install(new ValidationModule());
+//            bindInterceptor(Matchers.any(), Matchers.annotatedWith(Service.class), new ServiceInterceptor(getProvider(Validator.class)));
+//        }
+//    });
+
+
 
     @Before
     public void before() {
+        //injector.injectMembers(this);
         metadataDAO = Mockito.mock(MetadataDAO.class);
         eventQueues = Mockito.mock(EventQueues.class);
         metadataService = new MetadataService(metadataDAO, eventQueues);
@@ -35,6 +68,13 @@ public class MetadataServiceTest {
         TaskDef taskDef = new TaskDef();//name is null
         metadataService.registerTaskDef(Arrays.asList(taskDef));
     }
+
+//    @Test(expected = ApplicationException.class)
+//    public void testRegisterTaskDefNull() {
+//        //TODO: Why isn't validator being invoked?
+//        TaskDef taskDef = new TaskDef();//name is null
+//        metadataService.registerTaskDef(null);
+//    }
 
     @Test(expected = ApplicationException.class)
     public void testRegisterTaskDefNoResponseTimeout() {

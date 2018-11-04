@@ -1,11 +1,26 @@
 package com.netflix.conductor.client.exceptions;
 
+import java.util.List;
+import com.netflix.conductor.common.validation.ValidationError;
+
+
+//TODO: Use one from common
 public class ErrorResponse {
 
     private String code;
     private String message;
     private String instance;
     private boolean retryable;
+
+    public List<ValidationError> getValidationErrors() {
+        return validationErrors;
+    }
+
+    public void setValidationErrors(List<ValidationError> validationErrors) {
+        this.validationErrors = validationErrors;
+    }
+
+    private List<ValidationError> validationErrors;
 
     public boolean isRetryable() {
         return retryable;

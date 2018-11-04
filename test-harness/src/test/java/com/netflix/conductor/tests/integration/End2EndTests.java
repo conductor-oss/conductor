@@ -293,10 +293,17 @@ public class End2EndTests extends AbstractEndToEndTest {
         WorkflowDef def = new WorkflowDef();
         def.setName("testWorkflowDel");
         def.setVersion(1);
-        metadataClient.registerWorkflowDef(def);
-        def.setVersion(2);
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("taskUpdate");
+        workflowTask.setTaskReferenceName("taskUpdate");
+        List<WorkflowTask> workflowTaskList = new ArrayList<>();
+        workflowTaskList.add(workflowTask);
+        def.setTasks(workflowTaskList);
         List<WorkflowDef> workflowList = new ArrayList<>();
         workflowList.add(def);
+        metadataClient.registerWorkflowDef(def);
+
+        def.setVersion(2);
         metadataClient.updateWorkflowDefs(workflowList);
         WorkflowDef def1 = metadataClient.getWorkflowDef(def.getName(), 2);
         assertNotNull(def1);
@@ -351,7 +358,7 @@ public class End2EndTests extends AbstractEndToEndTest {
             metadataClient.registerWorkflowDef(workflowDef);
         } catch (ConductorClientException e) {
             assertEquals(400, e.getStatus());
-            assertEquals("Workflow name cannot be null or empty", e.getMessage());
+            assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
         }
     }
@@ -397,5 +404,20 @@ public class End2EndTests extends AbstractEndToEndTest {
     @Test
     public void testListworkflowsByCorrelationId() {
         workflowClient.getWorkflows("test", "test12", false, false);
+    }
+
+    @Test
+    public void testCreateInvalidWorkflowDef() {
+        try {
+            WorkflowDef workflowDef = new WorkflowDef();
+            List<WorkflowDef> workflowDefList = new ArrayList<>();
+            workflowDefList.add(workflowDef);
+            metadataClient.registerWorkflowDef(workflowDef);
+        } catch (ConductorClientException e) {
+            assertEquals(400, e.getStatus());
+            assertEquals("Validation failed, check below errors for detail.", e.getMessage());
+            assertEquals(e.getValidationErrors().size(), 3);
+            assertFalse(e.isRetryable());
+        }
     }
 }

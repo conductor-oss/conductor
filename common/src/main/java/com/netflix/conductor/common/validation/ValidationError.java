@@ -1,4 +1,6 @@
-package com.netflix.conductor.core.exceptions;
+package com.netflix.conductor.common.validation;
+
+import com.netflix.conductor.common.validation.ErrorResponse;
 
 /**
  * Captures a validation error that can be returned in {@link ErrorResponse}.
