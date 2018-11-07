@@ -17,6 +17,7 @@ import com.netflix.conductor.server.DynomiteClusterModule;
 import com.netflix.conductor.server.JerseyModule;
 import com.netflix.conductor.server.LocalRedisModule;
 import com.netflix.conductor.server.RedisClusterModule;
+import com.netflix.conductor.server.RedisSentinelModule;
 import com.netflix.conductor.server.ServerModule;
 import com.netflix.conductor.server.SwaggerModule;
 import org.slf4j.Logger;
@@ -87,6 +88,11 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
                 modules.add(new RedisClusterModule());
                 modules.add(new RedisWorkflowModule());
                 logger.info("Starting conductor server using redis_cluster.");
+                break;
+            case REDIS_SENTINEL:
+                modules.add(new RedisSentinelModule());
+                modules.add(new RedisWorkflowModule());
+                logger.info("Starting conductor server using redis_sentinel.");
                 break;
         }
 
