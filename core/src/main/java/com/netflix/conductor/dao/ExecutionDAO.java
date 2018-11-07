@@ -132,7 +132,7 @@ public interface ExecutionDAO {
 	 * @return List of pending tasks
 	 * 
 	 */
-	public List<Task> getPendingTasksForTaskType(String taskType);
+	List<Task> getPendingTasksForTaskType(String taskType);
 
 	/**
 	 * 

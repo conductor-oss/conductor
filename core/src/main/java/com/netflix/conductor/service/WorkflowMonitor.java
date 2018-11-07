@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,30 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
 package com.netflix.conductor.service;
-
-import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.core.orchestration.DataAccessor;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Viren
@@ -44,73 +39,62 @@ import com.netflix.conductor.metrics.Monitors;
  */
 @Singleton
 public class WorkflowMonitor {
+	private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowMonitor.class);
 
-	private static Logger logger = LoggerFactory.getLogger(WorkflowMonitor.class);
+	private final MetadataDAO metadataDAO;
+	private final QueueDAO queueDAO;
+	private final DataAccessor dataAccessor;
 
-	private MetadataDAO metadata;
+	private ScheduledExecutorService scheduledExecutorService;
 
-	private ExecutionDAO edao;
-
-	private QueueDAO queue;
-
-	private ScheduledExecutorService ses;
-
-	private List<TaskDef> tasks;
-
-	private List<WorkflowDef> workflows;
+	private List<TaskDef> taskDefs;
+	private List<WorkflowDef> workflowDefs;
 
 	private int refreshCounter = 0;
-
 	private int metadataRefreshInterval;
-
 	private int statsFrequencyInSeconds;
 
 	@Inject
-	public WorkflowMonitor(MetadataDAO metadata, ExecutionDAO edao, QueueDAO queue, Configuration config) {
-		this.metadata = metadata;
-		this.edao = edao;
-		this.queue = queue;
+	public WorkflowMonitor(MetadataDAO metadataDAO, QueueDAO queueDAO, DataAccessor dataAccessor, Configuration config) {
+		this.metadataDAO = metadataDAO;
+		this.queueDAO = queueDAO;
+		this.dataAccessor = dataAccessor;
 		this.metadataRefreshInterval = config.getIntProperty("workflow.monitor.metadata.refresh.counter", 10);
 		this.statsFrequencyInSeconds = config.getIntProperty("workflow.monitor.stats.freq.seconds", 60);
 		init();
 	}
 
-
 	public void init() {
-
-		this.ses = Executors.newScheduledThreadPool(1);
-		this.ses.scheduleWithFixedDelay(() -> {
+		this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
+		this.scheduledExecutorService.scheduleWithFixedDelay(() -> {
 			try {
-
 				if (refreshCounter <= 0) {
-					workflows = metadata.getAll();
-					tasks = metadata.getAllTaskDefs().stream().collect(Collectors.toList());
+					workflowDefs = metadataDAO.getAll();
+					taskDefs = new ArrayList<>(metadataDAO.getAllTaskDefs());
 					refreshCounter = metadataRefreshInterval;
 				}
 
-				workflows.forEach(wf -> {
-					String name = wf.getName();
-					String version = "" + wf.getVersion();
-					String ownerApp = wf.getOwnerApp();
-					long count = edao.getPendingWorkflowCount(name);
+				workflowDefs.forEach(workflowDef -> {
+					String name = workflowDef.getName();
+					String version = String.valueOf(workflowDef.getVersion());
+					String ownerApp = workflowDef.getOwnerApp();
+					long count = dataAccessor.getPendingWorkflowCount(name);
 					Monitors.recordRunningWorkflows(count, name, version, ownerApp);
 				});
 
-				tasks.forEach(task -> {
-					long size = queue.getSize(task.getName());
-					long inProgressCount = edao.getInProgressTaskCount(task.getName());
-					Monitors.recordQueueDepth(task.getName(), size, task.getOwnerApp());
-					if(task.concurrencyLimit() > 0) {
-						Monitors.recordTaskInProgress(task.getName(), inProgressCount, task.getOwnerApp());
+				taskDefs.forEach(taskDef -> {
+					long size = queueDAO.getSize(taskDef.getName());
+					long inProgressCount = dataAccessor.getInProgressTaskCount(taskDef.getName());
+					Monitors.recordQueueDepth(taskDef.getName(), size, taskDef.getOwnerApp());
+					if(taskDef.concurrencyLimit() > 0) {
+						Monitors.recordTaskInProgress(taskDef.getName(), inProgressCount, taskDef.getOwnerApp());
 					}
 				});
 
 				refreshCounter--;
-
 			} catch (Exception e) {
-				logger.error("Error while publishing scheduled metrics", e);
+				LOGGER.error("Error while publishing scheduled metrics", e);
 			}
 		}, 120, statsFrequencyInSeconds, TimeUnit.SECONDS);
-
 	}
 }

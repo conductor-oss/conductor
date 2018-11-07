@@ -36,10 +36,8 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.metadata.MetadataMapperService;
+import com.netflix.conductor.core.orchestration.DataAccessor;
 import com.netflix.conductor.core.utils.QueueUtils;
-import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -72,44 +70,29 @@ public class ExecutionService {
     private static final Logger logger = LoggerFactory.getLogger(ExecutionService.class);
 
     private final WorkflowExecutor workflowExecutor;
-
-    private final ExecutionDAO executionDAO;
-
-    private final IndexDAO indexDAO;
-
-    private final QueueDAO queueDAO;
-
+    private final DataAccessor dataAccessor;
     private final MetadataDAO metadataDAO;
+    private final QueueDAO queueDAO;
+	private final ExternalPayloadStorage externalPayloadStorage;
 
     private final int taskRequeueTimeout;
-
     private final int maxSearchSize;
 
-    private final ExternalPayloadStorage externalPayloadStorage;
-
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
-
     private static final int POLL_COUNT_ONE = 1;
-
-	private MetadataMapperService metadataMapperService;
-
     private static final int POLLING_TIMEOUT_IN_MS = 100;
 
 	@Inject
 	public ExecutionService(WorkflowExecutor workflowExecutor,
-				ExecutionDAO executionDAO,
-				QueueDAO queueDAO,
+				DataAccessor dataAccessor,
 				MetadataDAO metadataDAO,
-				MetadataMapperService metadataMapperService,
-				IndexDAO indexDAO,
+				QueueDAO queueDAO,
 				Configuration config,
 				ExternalPayloadStorage externalPayloadStorage) {
 		this.workflowExecutor = workflowExecutor;
-		this.executionDAO = executionDAO;
-		this.queueDAO = queueDAO;
+		this.dataAccessor = dataAccessor;
 		this.metadataDAO = metadataDAO;
-		this.indexDAO = indexDAO;
-		this.metadataMapperService = metadataMapperService;
+		this.queueDAO = queueDAO;
 		this.externalPayloadStorage = externalPayloadStorage;
 		this.taskRequeueTimeout = config.getIntProperty("task.requeue.timeout", 60_000);
         this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
@@ -146,7 +129,7 @@ public class ExecutionService {
 				continue;
 			}
 
-			if(executionDAO.exceedsInProgressLimit(task)) {
+			if(dataAccessor.exceedsInProgressLimit(task)) {
 				continue;
 			}
 
@@ -158,10 +141,10 @@ public class ExecutionService {
 			task.setCallbackAfterSeconds(0);	// reset callbackAfterSeconds when giving the task to the worker
 			task.setWorkerId(workerId);
 			task.setPollCount(task.getPollCount() + 1);
-			executionDAO.updateTask(task);
+			dataAccessor.updateTask(task);
 			tasks.add(task);
 		}
-		executionDAO.updateLastPoll(taskType, domain, workerId);
+		dataAccessor.updateTaskLastPoll(taskType, domain, workerId);
 		Monitors.recordTaskPoll(queueName);
 		return tasks;
 	}
@@ -178,7 +161,7 @@ public class ExecutionService {
 	}
 
 	public List<PollData> getPollData(String taskType) {
-		return executionDAO.getPollData(taskType);
+		return dataAccessor.getTaskPollData(taskType);
 	}
 
 	public List<PollData> getAllPollData() {
@@ -240,7 +223,7 @@ public class ExecutionService {
 	}
 
 	public void removeTaskfromQueue(String taskId) {
-		Task task = executionDAO.getTask(taskId);
+		Task task = dataAccessor.getTaskById(taskId);
 		if (task == null) {
 			throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
 					String.format("No such task found by taskId: %s", taskId));
@@ -328,7 +311,7 @@ public class ExecutionService {
 
 	public List<Workflow> getWorkflowInstances(String workflowName, String correlationId, boolean includeClosed, boolean includeTasks) {
 
-		List<Workflow> workflows = executionDAO.getWorkflowsByCorrelationId(correlationId, includeTasks);
+		List<Workflow> workflows = dataAccessor.getWorkflowsByCorrelationId(correlationId, includeTasks);
 		List<Workflow> result = new LinkedList<>();
 		for (Workflow wf : workflows) {
 			if (wf.getWorkflowName().equals(workflowName) && (includeClosed || wf.getStatus().equals(Workflow.WorkflowStatus.RUNNING))) {
@@ -340,23 +323,23 @@ public class ExecutionService {
 	}
 
 	public Workflow getExecutionStatus(String workflowId, boolean includeTasks) {
-		return executionDAO.getWorkflow(workflowId, includeTasks);
+		return dataAccessor.getWorkflowById(workflowId, includeTasks);
 	}
 
 	public List<String> getRunningWorkflows(String workflowName) {
-		return executionDAO.getRunningWorkflowIds(workflowName);
+		return dataAccessor.getRunningWorkflowIdsByName(workflowName);
 	}
 
 	public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
-		executionDAO.removeWorkflow(workflowId, archiveWorkflow);
+		dataAccessor.removeWorkflow(workflowId, archiveWorkflow);
 	}
 
 	public SearchResult<WorkflowSummary> search(String query, String freeText, int start, int size, List<String> sortOptions) {
 
-		SearchResult<String> result = indexDAO.searchWorkflows(query, freeText, start, size, sortOptions);
+		SearchResult<String> result = dataAccessor.searchWorkflows(query, freeText, start, size, sortOptions);
 		List<WorkflowSummary> workflows = result.getResults().stream().parallel().map(workflowId -> {
 			try {
-				return new WorkflowSummary(executionDAO.getWorkflow(workflowId,false));
+				return new WorkflowSummary(dataAccessor.getWorkflowById(workflowId,false));
 			} catch(Exception e) {
 				logger.error("Error fetching workflow by id: {}", workflowId, e);
 				return null;
@@ -374,7 +357,7 @@ public class ExecutionService {
 				.map(taskSummary -> {
 					try {
 						String workflowId = taskSummary.getWorkflowId();
-						return new WorkflowSummary(executionDAO.getWorkflow(workflowId, false));
+						return new WorkflowSummary(dataAccessor.getWorkflowById(workflowId, false));
 					} catch (Exception e) {
 						logger.error("Error fetching workflow by id: {}", taskSummary.getWorkflowId(), e);
 						return null;
@@ -389,12 +372,12 @@ public class ExecutionService {
 
 	public SearchResult<TaskSummary> searchTasks(String query, String freeText, int start, int size, List<String> sortOptions) {
 
-		SearchResult<String> result = indexDAO.searchTasks(query, freeText, start, size, sortOptions);
+		SearchResult<String> result = dataAccessor.searchTasks(query, freeText, start, size, sortOptions);
 		List<TaskSummary> workflows = result.getResults().stream()
 				.parallel()
 				.map(taskId -> {
 					try {
-						return new TaskSummary(executionDAO.getTask(taskId));
+						return new TaskSummary(dataAccessor.getTaskById(taskId));
 					} catch(Exception e) {
 						logger.error(e.getMessage(), e);
 						return null;
@@ -415,19 +398,19 @@ public class ExecutionService {
     }
 
 	public List<Task> getPendingTasksForTaskType(String taskType) {
-		return executionDAO.getPendingTasksForTaskType(taskType);
+		return dataAccessor.getPendingTasksForTaskType(taskType);
 	}
 
 	public boolean addEventExecution(EventExecution eventExecution) {
-		return executionDAO.addEventExecution(eventExecution);
+		return dataAccessor.addEventExecution(eventExecution);
 	}
 
 	public void removeEventExecution(EventExecution eventExecution) {
-		executionDAO.removeEventExecution(eventExecution);
+		dataAccessor.removeEventExecution(eventExecution);
 	}
 
 	public void updateEventExecution(EventExecution eventExecution) {
-		executionDAO.updateEventExecution(eventExecution);
+		dataAccessor.updateEventExecution(eventExecution);
 	}
 
 	/**
@@ -436,7 +419,7 @@ public class ExecutionService {
 	 * @param msg Message
 	 */
 	public void addMessage(String queue, Message msg) {
-		executionDAO.addMessage(queue, msg);
+		dataAccessor.addMessage(queue, msg);
 	}
 
 	/**
@@ -449,7 +432,7 @@ public class ExecutionService {
 		executionLog.setTaskId(taskId);
 		executionLog.setLog(log);
 		executionLog.setCreatedTime(System.currentTimeMillis());
-		executionDAO.addTaskExecLog(Collections.singletonList(executionLog));
+		dataAccessor.addTaskExecLog(Collections.singletonList(executionLog));
 	}
 
 	/**
@@ -458,7 +441,7 @@ public class ExecutionService {
 	 * @return Execution Logs (logged by the worker)
 	 */
 	public List<TaskExecLog> getTaskLogs(String taskId) {
-		return indexDAO.getTaskExecutionLogs(taskId);
+		return dataAccessor.getTaskExecutionLogs(taskId);
 	}
 
     /**

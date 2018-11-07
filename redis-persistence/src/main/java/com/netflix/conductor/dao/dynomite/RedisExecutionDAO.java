@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -333,19 +333,18 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		recordRedisDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
 	}
 
-	@Override
-	public Task getTask(String taskId) {
-		Preconditions.checkNotNull(taskId, "taskId name cannot be null");
-		String key = nsKey(TASK, taskId);
-		Task task = Optional.ofNullable(dynoClient.get(key))
-				.map(jsonString -> readValue(jsonString, Task.class))
-				.orElse(null);
-		if (task != null) {
-			recordRedisDaoRequests("getTask", task.getTaskType(), task.getWorkflowType());
-			recordRedisDaoPayloadSize("getTask", toJson(task).length(), task.getTaskType(), task.getWorkflowType());
-		}
-		return task;
-	}
+    @Override
+    public Task getTask(String taskId) {
+        Preconditions.checkNotNull(taskId, "taskId cannot be null");
+        return Optional.ofNullable(dynoClient.get(nsKey(TASK, taskId)))
+                .map(json -> {
+                    Task task = readValue(json, Task.class);
+                    recordRedisDaoRequests("getTask", task.getTaskType(), task.getWorkflowType());
+                    recordRedisDaoPayloadSize("getTask", toJson(task).length(), task.getTaskType(), task.getWorkflowType());
+                    return task;
+                })
+                .orElse(null);
+    }
 
 	@Override
 	public List<Task> getTasks(List<String> taskIds) {
