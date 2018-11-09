@@ -25,15 +25,11 @@ import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
-import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dyno.DynoProxy;
 import com.netflix.conductor.metrics.Monitors;
 import org.apache.commons.lang3.StringUtils;
@@ -44,6 +40,7 @@ import javax.inject.Inject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -61,9 +58,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	public static final Logger logger = LoggerFactory.getLogger(RedisExecutionDAO.class);
 
-
-	private static final String ARCHIVED_FIELD = "archived";
-	private static final String RAW_JSON_FIELD = "rawJSON";
 	// Keys Families
 	private static final String TASK_LIMIT_BUCKET = "TASK_LIMIT_BUCKET";
 	private static final String TASK_RATE_LIMIT_BUCKET = "TASK_RATE_LIMIT_BUCKET";
@@ -81,13 +75,9 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	private final static String EVENT_EXECUTION = "EVENT_EXECUTION";
 
-	private IndexDAO indexDAO;
-
 	@Inject
-	public RedisExecutionDAO(DynoProxy dynoClient, ObjectMapper objectMapper,
-							 IndexDAO indexDAO, Configuration config) {
+	public RedisExecutionDAO(DynoProxy dynoClient, ObjectMapper objectMapper, Configuration config) {
 		super(dynoClient, objectMapper, config);
-		this.indexDAO = indexDAO;
 	}
 
 	@Override
@@ -173,7 +163,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	@Override
 	public void updateTask(Task task) {
-
 		task.setUpdateTime(System.currentTimeMillis());
 		if (task.getStatus() != null && task.getStatus().isTerminal() && task.getEndTime() == 0) {
 			task.setEndTime(System.currentTimeMillis());
@@ -217,8 +206,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		if (!taskIds.contains(task.getTaskId())) {
 		    correlateTaskToWorkflowInDS(task.getTaskId(), task.getWorkflowInstanceId());
         }
-
-		indexDAO.indexTask(task);
 	}
 
 	/**
@@ -310,11 +297,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 
 	@Override
-	public void addTaskExecLog(List<TaskExecLog> log) {
-		indexDAO.addTaskExecutionLogs(log);
-	}
-
-	@Override
 	public void removeTask(String taskId) {
 
 		Task task = getTask(taskId);
@@ -391,20 +373,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	@Override
 	public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
-		try {
 			Workflow wf = getWorkflow(workflowId, true);
-
-			if (archiveWorkflow) {
-				//Add to elasticsearch
-				indexDAO.updateWorkflow(workflowId,
-				               new String[] {RAW_JSON_FIELD, ARCHIVED_FIELD},
-				               new Object[] {objectMapper.writeValueAsString(wf), true});
-			}
-			else {
-				// Not archiving, also remove workflowId from index
-				indexDAO.removeWorkflow(workflowId);
-			}
-
 			recordRedisDaoRequests("removeWorkflow");
 
 			// Remove from lists
@@ -418,9 +387,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			for(Task task : wf.getTasks()) {
 				removeTask(task.getTaskId());
 			}
-		}catch(Exception e) {
-			throw new ApplicationException(Code.BACKEND_ERROR, "Error removing workflow: " + workflowId, e);
-		}
 	}
 
 	@Override
@@ -437,7 +403,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	@Override
 	public Workflow getWorkflow(String workflowId, boolean includeTasks) {
 		String json = dynoClient.get(nsKey(WORKFLOW, workflowId));
-		Workflow workflow;
+		Workflow workflow = null;
 
 		if(json != null) {
 			workflow = readValue(json, Workflow.class);
@@ -448,22 +414,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 				tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
 				workflow.setTasks(tasks);
 			}
-		}
-		else {
-			// record dao request metric here, since request is still made to the db even if non-existent key
-			recordRedisDaoRequests("getWorkflow");
-
-			// try from the archive
-			// Expected to include tasks.
-			json = indexDAO.get(workflowId, RAW_JSON_FIELD);
-			if (json == null) {
-				throw new ApplicationException(Code.NOT_FOUND, "No such workflow found by id: " + workflowId);
-			}
-			workflow = readValue(json, Workflow.class);
-		}
-
-		if (!includeTasks){
-			workflow.getTasks().clear();
 		}
 		return workflow;
 	}
@@ -519,19 +469,12 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 	@Override
 	public List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks) {
-		Preconditions.checkNotNull(correlationId, "correlationId cannot be null");
-		List<Workflow> workflows = new LinkedList<>();
-		SearchResult<String> result = indexDAO.searchWorkflows("correlationId='" + correlationId + "'", "*", 0, 10000, null);
-		List<String> workflowIds = result.getResults();
-		for (String wfId : workflowIds) {
-			try {
-				workflows.add(getWorkflow(wfId, includeTasks));
-			} catch (ApplicationException applicationException) {
-				//This might happen when the workflow archival failed and the workflow was removed from dynomite
-				logger.error("Error getting the workflowId: {}  for correlationId: {} from Dynomite/Archival", wfId, correlationId, applicationException);
-			}
-		}
-		return workflows;
+		throw new UnsupportedOperationException("This method is not implemented in RedisExecutionDAO. Please use ExecutionDAOFacade instead.");
+	}
+
+	@Override
+	public boolean canSearchAcrossWorkflows() {
+		return false;
 	}
 
 	/**
@@ -573,10 +516,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		}
 
 		workflow.setTasks(tasks);
-		indexDAO.indexWorkflow(workflow);
-
 		return workflow.getWorkflowId();
-
 	}
 
 	/**
@@ -637,12 +577,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			String json = objectMapper.writeValueAsString(eventExecution);
 			recordRedisDaoEventRequests("addEventExecution", eventExecution.getEvent());
 			recordRedisDaoPayloadSize("addEventExecution", json.length(), eventExecution.getEvent(), "n/a");
-			if(dynoClient.hsetnx(key, eventExecution.getId(), json) == 1L) {
-				indexDAO.addEventExecution(eventExecution);
-				return true;
-			}
-			return false;
-
+            return dynoClient.hsetnx(key, eventExecution.getId(), json) == 1L;
 		} catch (Exception e) {
 			throw new ApplicationException(Code.BACKEND_ERROR, "Unable to add event execution for " + eventExecution.getId(), e);
 		}
@@ -658,8 +593,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			dynoClient.hset(key, eventExecution.getId(), json);
 			recordRedisDaoEventRequests("updateEventExecution", eventExecution.getEvent());
 			recordRedisDaoPayloadSize("updateEventExecution", json.length(),eventExecution.getEvent(), "n/a");
-			indexDAO.addEventExecution(eventExecution);
-
 		} catch (Exception e) {
 			throw new ApplicationException(Code.BACKEND_ERROR, "Unable to update event execution for " + eventExecution.getId(), e);
 		}
@@ -699,11 +632,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		} catch (Exception e) {
 			throw new ApplicationException(Code.BACKEND_ERROR, "Unable to get event executions for " + eventHandlerName, e);
 		}
-	}
-
-	@Override
-	public void addMessage(String queue, Message msg) {
-		indexDAO.addMessage(queue, msg);
 	}
 
 	@Override

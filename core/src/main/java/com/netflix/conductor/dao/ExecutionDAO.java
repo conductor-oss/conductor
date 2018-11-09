@@ -88,20 +88,13 @@ public interface ExecutionDAO {
 	 * 		false: If the {@link Task} is not rateLimited
 	 */
 	boolean exceedsRateLimitPerFrequency(Task task);
-	
-	/**
-	 * 
-	 * @param tasks Multiple tasks to be updated
-	 *  
-	 */
-	void updateTasks(List<Task> tasks);
 
 	/**
-	 * 
-	 * @param log Task Execution Log to be added
-	 *  
+	 *
+	 * @param tasks Multiple tasks to be updated
+	 *
 	 */
-	void addTaskExecLog(List<TaskExecLog> log);
+	void updateTasks(List<Task> tasks);
 	
 	/**
 	 * 
@@ -237,6 +230,12 @@ public interface ExecutionDAO {
 	 */
 	List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks);
 
+	/**
+	 *
+	 * @return true, if the DAO implementation is capable of searching across workflows
+	 * false, if the DAO implementation cannot perform searches across workflows (and needs to use indexDAO)
+	 */
+	boolean canSearchAcrossWorkflows();
 
 	//Events
 	
@@ -268,13 +267,6 @@ public interface ExecutionDAO {
 	 * @return list of matching events
 	 */
 	List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max);
-
-	/**
-	 * Adds an incoming external message into the store/index
-	 * @param queue Name of the registered queue
-	 * @param msg Message
-	 */
-	void addMessage(String queue, Message msg);
 	
 	void updateLastPoll(String taskDefName, String domain, String workerId);
 	

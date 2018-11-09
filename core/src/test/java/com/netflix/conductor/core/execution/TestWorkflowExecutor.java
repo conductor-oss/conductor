@@ -36,7 +36,7 @@ import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
-import com.netflix.conductor.core.orchestration.DataAccessor;
+import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -75,7 +75,7 @@ import static org.mockito.Mockito.when;
 public class TestWorkflowExecutor {
 
     private WorkflowExecutor workflowExecutor;
-    private DataAccessor dataAccessor;
+    private ExecutionDAOFacade executionDAOFacade;
     private MetadataDAO metadataDAO;
     private QueueDAO queueDAO;
     private WorkflowStatusListener workflowStatusListener;
@@ -83,7 +83,7 @@ public class TestWorkflowExecutor {
     @Before
     public void init() {
         TestConfiguration config = new TestConfiguration();
-        dataAccessor = mock(DataAccessor.class);
+        executionDAOFacade = mock(ExecutionDAOFacade.class);
         metadataDAO = mock(MetadataDAO.class);
         queueDAO = mock(QueueDAO.class);
         workflowStatusListener = mock(WorkflowStatusListener.class);
@@ -104,7 +104,7 @@ public class TestWorkflowExecutor {
 
         DeciderService deciderService = new DeciderService(parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers);
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
-        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService, workflowStatusListener, dataAccessor, config);
+        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService, workflowStatusListener, executionDAOFacade, config);
     }
 
     @Test
@@ -202,12 +202,12 @@ public class TestWorkflowExecutor {
         tasks.add(task3);
 
 
-        when(dataAccessor.createTasks(tasks)).thenReturn(tasks);
+        when(executionDAOFacade.createTasks(tasks)).thenReturn(tasks);
         AtomicInteger startedTaskCount = new AtomicInteger(0);
         doAnswer(invocation -> {
             startedTaskCount.incrementAndGet();
             return null;
-        }).when(dataAccessor)
+        }).when(executionDAOFacade)
                 .updateTask(any());
 
         AtomicInteger queuedTaskCount = new AtomicInteger(0);
@@ -242,19 +242,19 @@ public class TestWorkflowExecutor {
         workflow.setEndTime(100L);
         workflow.setOutput(Collections.EMPTY_MAP);
 
-        when(dataAccessor.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
+        when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
 
         AtomicInteger updateWorkflowCalledCounter = new AtomicInteger(0);
         doAnswer(invocation -> {
             updateWorkflowCalledCounter.incrementAndGet();
             return null;
-        }).when(dataAccessor).updateWorkflow(any());
+        }).when(executionDAOFacade).updateWorkflow(any());
 
         AtomicInteger updateTasksCalledCounter = new AtomicInteger(0);
         doAnswer(invocation -> {
             updateTasksCalledCounter.incrementAndGet();
             return null;
-        }).when(dataAccessor).updateTasks(any());
+        }).when(executionDAOFacade).updateTasks(any());
 
         AtomicInteger removeQueueEntryCalledCounter = new AtomicInteger(0);
         doAnswer(invocation -> {
@@ -291,19 +291,19 @@ public class TestWorkflowExecutor {
         workflow.setEndTime(100L);
         workflow.setOutput(Collections.EMPTY_MAP);
 
-        when(dataAccessor.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
+        when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
 
         AtomicInteger updateWorkflowCalledCounter = new AtomicInteger(0);
         doAnswer(invocation -> {
             updateWorkflowCalledCounter.incrementAndGet();
             return null;
-        }).when(dataAccessor).updateWorkflow(any());
+        }).when(executionDAOFacade).updateWorkflow(any());
 
         AtomicInteger updateTasksCalledCounter = new AtomicInteger(0);
         doAnswer(invocation -> {
             updateTasksCalledCounter.incrementAndGet();
             return null;
-        }).when(dataAccessor).updateTasks(any());
+        }).when(executionDAOFacade).updateTasks(any());
 
         AtomicInteger removeQueueEntryCalledCounter = new AtomicInteger(0);
         doAnswer(invocation -> {
@@ -408,7 +408,7 @@ public class TestWorkflowExecutor {
         Workflow workflow = new Workflow();
         workflow.setWorkflowId("testRetryNonTerminalWorkflow");
         workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
-        when(dataAccessor.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
+        when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
 
         workflowExecutor.retry(workflow.getWorkflowId());
 
@@ -421,7 +421,7 @@ public class TestWorkflowExecutor {
         workflow.setStatus(Workflow.WorkflowStatus.FAILED);
         //noinspection unchecked
         workflow.setTasks(new ArrayList());
-        when(dataAccessor.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
+        when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
 
         workflowExecutor.retry(workflow.getWorkflowId());
     }
@@ -444,19 +444,19 @@ public class TestWorkflowExecutor {
         doAnswer(invocation -> {
             updateWorkflowCalledCounter.incrementAndGet();
             return null;
-        }).when(dataAccessor).updateWorkflow(any());
+        }).when(executionDAOFacade).updateWorkflow(any());
 
         AtomicInteger updateTasksCalledCounter = new AtomicInteger(0);
         doAnswer(invocation -> {
             updateTasksCalledCounter.incrementAndGet();
             return null;
-        }).when(dataAccessor).updateTasks(any());
+        }).when(executionDAOFacade).updateTasks(any());
 
         AtomicInteger updateTasksAlledCounter = new AtomicInteger(0);
         doAnswer(invocation -> {
             updateTasksCalledCounter.incrementAndGet();
             return null;
-        }).when(dataAccessor).updateTask(any());
+        }).when(executionDAOFacade).updateTask(any());
 
         AtomicInteger removeQueueEntryCalledCounter = new AtomicInteger(0);
         doAnswer(invocation -> {
@@ -510,7 +510,7 @@ public class TestWorkflowExecutor {
         //end of setup
 
         //when:
-        when(dataAccessor.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
+        when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
         WorkflowDef workflowDef = new WorkflowDef();
         when(metadataDAO.get(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
 

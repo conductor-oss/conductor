@@ -18,7 +18,7 @@ package com.netflix.conductor.service;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.orchestration.DataAccessor;
+import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -43,7 +43,7 @@ public class WorkflowMonitor {
 
 	private final MetadataDAO metadataDAO;
 	private final QueueDAO queueDAO;
-	private final DataAccessor dataAccessor;
+	private final ExecutionDAOFacade executionDAOFacade;
 
 	private ScheduledExecutorService scheduledExecutorService;
 
@@ -55,10 +55,10 @@ public class WorkflowMonitor {
 	private int statsFrequencyInSeconds;
 
 	@Inject
-	public WorkflowMonitor(MetadataDAO metadataDAO, QueueDAO queueDAO, DataAccessor dataAccessor, Configuration config) {
+	public WorkflowMonitor(MetadataDAO metadataDAO, QueueDAO queueDAO, ExecutionDAOFacade executionDAOFacade, Configuration config) {
 		this.metadataDAO = metadataDAO;
 		this.queueDAO = queueDAO;
-		this.dataAccessor = dataAccessor;
+		this.executionDAOFacade = executionDAOFacade;
 		this.metadataRefreshInterval = config.getIntProperty("workflow.monitor.metadata.refresh.counter", 10);
 		this.statsFrequencyInSeconds = config.getIntProperty("workflow.monitor.stats.freq.seconds", 60);
 		init();
@@ -78,13 +78,13 @@ public class WorkflowMonitor {
 					String name = workflowDef.getName();
 					String version = String.valueOf(workflowDef.getVersion());
 					String ownerApp = workflowDef.getOwnerApp();
-					long count = dataAccessor.getPendingWorkflowCount(name);
+					long count = executionDAOFacade.getPendingWorkflowCount(name);
 					Monitors.recordRunningWorkflows(count, name, version, ownerApp);
 				});
 
 				taskDefs.forEach(taskDef -> {
 					long size = queueDAO.getSize(taskDef.getName());
-					long inProgressCount = dataAccessor.getInProgressTaskCount(taskDef.getName());
+					long inProgressCount = executionDAOFacade.getInProgressTaskCount(taskDef.getName());
 					Monitors.recordQueueDepth(taskDef.getName(), size, taskDef.getOwnerApp());
 					if(taskDef.concurrencyLimit() > 0) {
 						Monitors.recordTaskInProgress(taskDef.getName(), inProgressCount, taskDef.getOwnerApp());
