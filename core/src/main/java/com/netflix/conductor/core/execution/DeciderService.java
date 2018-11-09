@@ -213,7 +213,8 @@ public class DeciderService {
     private List<Task> startWorkflow(Workflow workflow) throws TerminateWorkflowException {
         final WorkflowDef workflowDef = workflow.getWorkflowDefinition();
 
-        LOGGER.debug("Starting workflow " + workflowDef.getName() + "/" + workflow.getWorkflowId());
+        LOGGER.debug("Starting workflow {}, version{}, id {}", workflowDef.getName(), workflowDef.getVersion(), workflow.getWorkflowId());
+
         //The tasks will be empty in case of new workflow
         List<Task> tasks = workflow.getTasks();
         // Check if the workflow is a re-run case or if it is a new workflow execution
@@ -223,9 +224,8 @@ public class DeciderService {
                 throw new TerminateWorkflowException("No tasks found to be executed", WorkflowStatus.COMPLETED);
             }
 
-            WorkflowTask taskToSchedule = workflowDef.getTasks().get(0); //Nothing isSystemTask running yet - so schedule the first task
-            //Loop until a non-skipped task isSystemTask found
-
+            WorkflowTask taskToSchedule = workflowDef.getTasks().get(0); //Nothing is running yet - so schedule the first task
+            //Loop until a non-skipped task is found
             while (isTaskSkipped(taskToSchedule, workflow)) {
                 taskToSchedule = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());
             }
@@ -245,7 +245,7 @@ public class DeciderService {
                     return task;
                 })
                 .orElseThrow(() -> {
-                    String reason = String.format("The workflow %s isSystemTask marked for re-run from %s but could not find the starting task",
+                    String reason = String.format("The workflow %s is marked for re-run from %s but could not find the starting task",
                             workflow.getWorkflowId(), workflow.getReRunFromWorkflowId());
                     return new TerminateWorkflowException(reason);
                 });
@@ -446,7 +446,7 @@ public class DeciderService {
 
         long timeout = 1000L * taskDef.getTimeoutSeconds();
         long now = System.currentTimeMillis();
-        long elapsedTime = now - (task.getStartTime() + ((long)task.getStartDelayInSeconds() * 1000L));
+        long elapsedTime = now - (task.getStartTime() + ((long) task.getStartDelayInSeconds() * 1000L));
 
         if (elapsedTime < timeout) {
             return;
