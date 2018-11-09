@@ -102,6 +102,7 @@ public class TaskResource {
 
 	@POST
 	@ApiOperation("Update a task")
+	@Produces({MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON})
 	public String updateTask(TaskResult taskResult) {
 		return taskService.updateTask(taskResult);
 	}
