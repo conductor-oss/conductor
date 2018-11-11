@@ -16,11 +16,15 @@
 package com.netflix.conductor.service;
 
 import com.google.inject.Singleton;
+import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.service.utils.ServiceUtils;
 
 import javax.inject.Inject;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+import javax.validation.constraints.Size;
 import java.util.List;
 
 @Singleton
@@ -34,41 +38,42 @@ public class WorkflowBulkService {
         this.workflowExecutor = workflowExecutor;
     }
 
-    public void pauseWorkflow(List<String> workflowIds) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
+    @Service
+    public void pauseWorkflow(@NotEmpty(message = "WorkflowIds list cannot be null.") List<
+                              @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") String> workflowIds) {
         for (String workflowId : workflowIds) {
             workflowExecutor.pauseWorkflow(workflowId);
         }
     }
 
-    public void resumeWorkflow(List<String> workflowIds) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
+    @Service
+    public void resumeWorkflow(@NotEmpty(message = "WorkflowIds list cannot be null.") List<
+                               @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") String> workflowIds) {
         for (String workflowId : workflowIds) {
             workflowExecutor.resumeWorkflow(workflowId);
         }
     }
 
-    public void restart(List<String> workflowIds) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
+    @Service
+    public void restart(@NotEmpty(message = "WorkflowIds list cannot be null.") List<
+                        @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") String> workflowIds) {
         for (String workflowId : workflowIds) {
             workflowExecutor.rewind(workflowId);
         }
     }
 
-    public void retry(List<String> workflowIds) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
+    @Service
+    public void retry(@NotEmpty(message = "WorkflowIds list cannot be null.") List<
+                      @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") String> workflowIds) {
         for (String workflowId : workflowIds) {
             workflowExecutor.retry(workflowId);
         }
     }
 
-    public void terminate(List<String> workflowIds, String reason) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "workflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
+    @Service
+    public void terminate(@NotEmpty(message = "WorkflowIds list cannot be null.") List<
+                          @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") String> workflowIds,
+                          String reason) {
         for (String workflowId : workflowIds) {
             workflowExecutor.terminateWorkflow(workflowId, reason);
         }

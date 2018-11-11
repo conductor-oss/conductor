@@ -437,12 +437,7 @@ public class End2EndTests extends AbstractEndToEndTest {
                     .map(v -> v.getMessage())
                     .collect(Collectors.toList());
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
-            assertTrue(errorMessages.contains("WorkflowTask list cannot be empty" +
-                    "" +
-                    "" +
-                    "" +
-                    "" +
-                    ""));
+            assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
         }
     }
 

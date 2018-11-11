@@ -46,22 +46,4 @@ public class ValidationModule extends AbstractModule {
         return TaskDefConstraint.getTaskDefConstraint(configuration);
     }
 
-//
-//    @ProvidesIntoSet
-//    public ConstraintMapping getCreateTableConstraintConstraint(final HibernateValidatorConfiguration configuration) {
-//        final ConstraintMapping constraintMapping = configuration.createConstraintMapping();
-//        constraintMapping.type( TaskDef.class )
-//                .property( "name", FIELD )
-//                .constraint( new TaskDefNameConstraintDef() );
-//        return constraintMapping;
-//    }
-//    @Singleton
-//    @Provides
-//    public Validator getValidator(Set<ConstraintMapping> constraintMappings) {
-//        HibernateValidatorConfiguration hibernateValidatorConfiguration = Validation.byProvider(HibernateValidator.class)
-//                .configure();
-//        constraintMappings.forEach(hibernateValidatorConfiguration::addMapping);
-//        return hibernateValidatorConfiguration.buildValidatorFactory().getValidator();
-//    }
-
 }
