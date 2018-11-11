@@ -32,6 +32,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.common.validation.ValidationError;
 import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
@@ -44,6 +45,7 @@ import org.junit.Test;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -333,10 +335,15 @@ public class End2EndTests extends AbstractEndToEndTest {
         try {
             taskClient.updateTask(taskResult, "taskTest");
         } catch (ConductorClientException e) {
-            int statuCode = e.getStatus();
-            assertEquals(400, statuCode);
-            assertEquals("Workflow Id cannot be null or empty", e.getMessage());
+            assertEquals(400, e.getStatus());
+            assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
+            List<ValidationError> errors = e.getValidationErrors();
+            List<String> errorMessages = errors.stream()
+                    .map(v -> v.getMessage())
+                    .collect(Collectors.toList());
+            assertEquals(2, errors.size());
+            assertTrue(errorMessages.contains("Workflow Id cannot be null or empty"));
         }
     }
 
@@ -372,8 +379,15 @@ public class End2EndTests extends AbstractEndToEndTest {
             metadataClient.updateWorkflowDefs(workflowDefList);
         } catch (ConductorClientException e) {
             assertEquals(400, e.getStatus());
-            assertEquals("WorkflowDef name cannot be null", e.getMessage());
+            assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
+            List<ValidationError> errors = e.getValidationErrors();
+            List<String> errorMessages = errors.stream()
+                    .map(v -> v.getMessage())
+                    .collect(Collectors.toList());
+            assertEquals(2, errors.size());
+            assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
+            assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
         }
     }
 
@@ -414,10 +428,23 @@ public class End2EndTests extends AbstractEndToEndTest {
             workflowDefList.add(workflowDef);
             metadataClient.registerWorkflowDef(workflowDef);
         } catch (ConductorClientException e) {
+            assertEquals(2, e.getValidationErrors().size());
             assertEquals(400, e.getStatus());
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
-            assertEquals(e.getValidationErrors().size(), 3);
             assertFalse(e.isRetryable());
+            List<ValidationError> errors = e.getValidationErrors();
+            List<String> errorMessages = errors.stream()
+                    .map(v -> v.getMessage())
+                    .collect(Collectors.toList());
+            assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
+            assertTrue(errorMessages.contains("WorkflowTask list cannot be empty" +
+                    "" +
+                    "" +
+                    "" +
+                    "" +
+                    ""));
         }
     }
+
+
 }
