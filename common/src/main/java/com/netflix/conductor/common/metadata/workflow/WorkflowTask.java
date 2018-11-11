@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
 package com.netflix.conductor.common.metadata.workflow;
 
 import com.github.vmg.protogen.annotations.ProtoField;
@@ -29,12 +26,14 @@ import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.PositiveOrZero;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * @author Viren
@@ -44,6 +43,31 @@ import java.util.Objects;
  */
 @ProtoMessage
 public class WorkflowTask {
+
+	/**
+	 * This field is deprecated and will be removed in the next version.
+	 * Please use {@link TaskType} instead.
+	 */
+	@Deprecated
+	public enum Type {
+		SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, EVENT, WAIT, USER_DEFINED;
+		private static Set<String> systemTasks = new HashSet<>();
+		static {
+			systemTasks.add(Type.SIMPLE.name());
+			systemTasks.add(Type.DYNAMIC.name());
+			systemTasks.add(Type.FORK_JOIN.name());
+			systemTasks.add(Type.FORK_JOIN_DYNAMIC.name());
+			systemTasks.add(Type.DECISION.name());
+			systemTasks.add(Type.JOIN.name());
+			systemTasks.add(Type.SUB_WORKFLOW.name());
+			systemTasks.add(Type.EVENT.name());
+			systemTasks.add(Type.WAIT.name());
+			//Do NOT add USER_DEFINED here...
+		}
+		public static boolean isSystemTask(String name) {
+			return systemTasks.contains(name);
+		}
+	}
 
 	@ProtoField(id = 1)
 	@NotEmpty(message = "WorkflowTask name cannot be empty or null")
@@ -59,7 +83,7 @@ public class WorkflowTask {
 	//Key: Name of the input parameter.  MUST be one of the keys defined in TaskDef (e.g. fileName)
 	//Value: mapping of the parameter from another task (e.g. task1.someOutputParameterAsFileName)
 	@ProtoField(id = 4)
-	private Map<String, Object> inputParameters = new HashMap<String, Object>();
+	private Map<String, Object> inputParameters = new HashMap<>();
 
 	@ProtoField(id = 5)
 	private String type = TaskType.SIMPLE.name();

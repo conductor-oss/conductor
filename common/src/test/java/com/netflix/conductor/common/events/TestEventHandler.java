@@ -31,6 +31,6 @@ public class TestEventHandler {
 
         assertTrue(validationErrors.contains("Missing event handler name"));
         assertTrue(validationErrors.contains("Missing event location"));
-        assertTrue(validationErrors.contains("No actions specified. Please specify atleast one action"));
+        assertTrue(validationErrors.contains("No actions specified. Please specify at-least one action"));
     }
 }

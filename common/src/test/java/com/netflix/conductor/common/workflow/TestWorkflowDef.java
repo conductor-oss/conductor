@@ -106,14 +106,13 @@ public class TestWorkflowDef {
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         Validator validator = factory.getValidator();
         Set<ConstraintViolation<Object>> result = validator.validate(workflowDef);
-        assertEquals(3, result.size());
+        assertEquals(2, result.size());
 
         List<String> validationErrors = new ArrayList<>();
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("workflowDef name cannot be null"));
-        assertTrue(validationErrors.contains("workflowDef name cannot be empty"));
-        assertTrue(validationErrors.contains("workflowTask list cannot be empty"));
+        assertTrue(validationErrors.contains("WorkflowDef name cannot be null or empty"));
+        assertTrue(validationErrors.contains("WorkflowTask list cannot be empty"));
         //assertTrue(validationErrors.contains("workflowDef schemaVersion: 1 should be >= 2"));
     }
 }

@@ -86,7 +86,7 @@ public class TaskDef extends Auditable {
 	private int retryDelaySeconds = 60;
 
 	@ProtoField(id = 10)
-	@Min(value = 1, message = "responseTimeoutSeconds: {value} should be minimum 1 second")
+	@Min(value = 1, message = "responseTimeoutSeconds: ${validatedValue} should be minimum {value} second")
 	private long responseTimeoutSeconds = ONE_HOUR;
 
 	@ProtoField(id = 11)

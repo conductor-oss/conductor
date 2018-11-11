@@ -18,6 +18,12 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.google.common.base.MoreObjects;
+import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
+import com.netflix.conductor.common.metadata.Auditable;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -30,12 +36,14 @@ import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.google.common.base.MoreObjects;
 import com.netflix.conductor.common.metadata.Auditable;
+import com.netflix.conductor.common.metadata.tasks.TaskDefConstraint;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
+
 
 /**
  * @author Viren
@@ -44,9 +52,9 @@ import javax.validation.constraints.NotNull;
 @ProtoMessage
 public class WorkflowDef extends Auditable {
 
-    @NotEmpty(message = "workflowDef name cannot be null")
-    @NotEmpty(message = "workflowDef name cannot be empty")
+    @NotEmpty(message = "WorkflowDef name cannot be null or empty")
     @ProtoField(id = 1)
+	@NoSemiColonConstraint(message = "Workflow name cannot contain the following set of characters: ':'")
 	private String name;
 
 	@ProtoField(id = 2)
@@ -57,7 +65,7 @@ public class WorkflowDef extends Auditable {
 
 	@ProtoField(id = 4)
     @NotNull
-    @NotEmpty(message = "workflowTask list cannot be empty")
+    @NotEmpty(message = "WorkflowTask list cannot be empty")
 	private List<@Valid WorkflowTask> tasks = new LinkedList<>();
 
 	@ProtoField(id = 5)
@@ -76,6 +84,9 @@ public class WorkflowDef extends Auditable {
 	//By default a workflow is restartable
 	@ProtoField(id = 9)
 	private boolean restartable = true;
+
+	@ProtoField(id = 10)
+	private boolean workflowStatusListenerEnabled = false;
 
 	/**
 	 * @return the name
@@ -210,6 +221,22 @@ public class WorkflowDef extends Auditable {
 		this.schemaVersion = schemaVersion;
 	}
 
+	/**
+	 *
+	 * @return true is workflow listener will be invoked when workflow gets into a terminal state
+	 */
+	public boolean isWorkflowStatusListenerEnabled() {
+		return workflowStatusListenerEnabled;
+	}
+
+	/**
+	 * Specify if workflow listener is enabled to invoke a callback for completed or terminated workflows
+	 * @param workflowStatusListenerEnabled
+	 */
+	public void setWorkflowStatusListenerEnabled(boolean workflowStatusListenerEnabled) {
+		this.workflowStatusListenerEnabled = workflowStatusListenerEnabled;
+	}
+
 	public String key(){
 		return getKey(name, version);
 	}
@@ -296,6 +323,7 @@ public class WorkflowDef extends Auditable {
 				.add("failureWorkflow", failureWorkflow)
 				.add("schemaVersion", schemaVersion)
 				.add("restartable", restartable)
+				.add("workflowStatusListenerEnabled", workflowStatusListenerEnabled)
 				.toString();
 	}
 }

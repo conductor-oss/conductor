@@ -90,6 +90,8 @@ public class WorkflowExecutor {
     private final MetadataMapperService metadataMapperService;
     private final ParametersUtils parametersUtils;
 
+    private WorkflowStatusListener workflowStatusListener;
+
     private int activeWorkerLastPollInSecs;
 
     public static final String DECIDER_QUEUE = "_deciderQueue";
@@ -103,6 +105,7 @@ public class WorkflowExecutor {
             QueueDAO queueDAO,
             MetadataMapperService metadataMapperService,
             ParametersUtils parametersUtils,
+            WorkflowStatusListener workflowStatusListener,
             Configuration config
     ) {
         this.deciderService = deciderService;
@@ -113,6 +116,7 @@ public class WorkflowExecutor {
         this.metadataMapperService = metadataMapperService;
         this.activeWorkerLastPollInSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
         this.parametersUtils = parametersUtils;
+        this.workflowStatusListener = workflowStatusListener;
     }
 
     /**
@@ -535,6 +539,10 @@ public class WorkflowExecutor {
         Monitors.recordWorkflowCompletion(workflow.getWorkflowName(), workflow.getEndTime() - workflow.getStartTime(), wf.getOwnerApp());
         queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
         logger.debug("Removed workflow {} from decider queue", wf.getWorkflowId());
+
+        if(wf.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
+            workflowStatusListener.onWorkflowCompleted(wf);
+        }
     }
 
     public void terminateWorkflow(String workflowId, String reason) {
@@ -629,6 +637,10 @@ public class WorkflowExecutor {
 
         // Send to atlas
         Monitors.recordWorkflowTermination(workflow.getWorkflowName(), workflow.getStatus(), workflow.getOwnerApp());
+
+        if(workflow.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
+            workflowStatusListener.onWorkflowTerminated(workflow);
+        }
     }
 
     /**

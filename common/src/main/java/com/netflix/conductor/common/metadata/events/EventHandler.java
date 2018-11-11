@@ -49,7 +49,7 @@ public class EventHandler {
 
 	@ProtoField(id = 4)
 	@NotNull
-	@NotEmpty(message = "No actions specified. Please specify atleast one action")
+	@NotEmpty(message = "No actions specified. Please specify at-least one action")
 	private List<@Valid Action> actions = new LinkedList<>();
 
 	@ProtoField(id = 5)
