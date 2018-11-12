@@ -10,39 +10,39 @@
         "event": {
             "properties": {
                 "action": {
-                    "type": "string",
-                    "index": "not_analyzed"
+                    "type": "keyword",
+                    "index": true
                 },
                 "created": {
                     "type": "long"
                 },
                 "event": {
-                    "type": "string",
-                    "index": "not_analyzed"
+                    "type": "keyword",
+                    "index": true
                 },
                 "id": {
-                    "type": "string",
-                    "index": "not_analyzed"
+                    "type": "keyword",
+                    "index": true
                 },
                 "messageId": {
-                    "type": "string",
-                    "index": "not_analyzed"
+                    "type": "keyword",
+                    "index": true
                 },
                 "name": {
-                    "type": "string",
-                    "index": "not_analyzed"
+                    "type": "keyword",
+                    "index": true
                 },
                 "output": {
                     "properties": {
                         "workflowId": {
-                            "type": "string",
-                            "index": "not_analyzed"
+                            "type": "keyword",
+                            "index": true
                         }
                     }
                 },
                 "status": {
-                    "type": "string",
-                    "index": "not_analyzed"
+                    "type": "keyword",
+                    "index": true
                 }
             }
         },
@@ -52,12 +52,12 @@
                     "type": "long"
                 },
                 "log": {
-                    "type": "string",
-                    "index": "not_analyzed"
+                    "type": "keyword",
+                    "index": true
                 },
                 "taskId": {
-                    "type": "string",
-                    "index": "not_analyzed"
+                    "type": "keyword",
+                    "index": true
                 }
             }
         },
@@ -67,16 +67,16 @@
                     "type": "long"
                 },
                 "messageId": {
-                    "type": "string",
-                    "index": "not_analyzed"
+                    "type": "keyword",
+                    "index": true
                 },
                 "payload": {
-                    "type": "string",
-                    "index": "not_analyzed"
+                    "type": "keyword",
+                    "index": true
                 },
                 "queue": {
-                    "type": "string",
-                    "index": "not_analyzed"
+                    "type": "keyword",
+                    "index": true
                 }
             }
         }
