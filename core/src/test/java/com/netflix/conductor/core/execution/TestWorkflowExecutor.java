@@ -20,6 +20,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -45,6 +46,7 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -69,7 +71,9 @@ import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -84,6 +88,7 @@ public class TestWorkflowExecutor {
     private MetadataDAO metadataDAO;
     private QueueDAO queueDAO;
     private WorkflowStatusListener workflowStatusListener;
+    private DeciderService deciderService;
 
     @Before
     public void init() {
@@ -107,7 +112,7 @@ public class TestWorkflowExecutor {
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
 
-        DeciderService deciderService = new DeciderService(parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers);
+        deciderService = new DeciderService(parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers);
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
         workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService, workflowStatusListener, executionDAOFacade, config);
     }
@@ -328,7 +333,73 @@ public class TestWorkflowExecutor {
         workflowExecutor.completeWorkflow(workflow);
         verify(workflowStatusListener, times(1)).onWorkflowCompleted(any(Workflow.class));
     }
-    
+
+    @Test
+    public void testRestartWorkflow() {
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("test_task");
+        workflowTask.setTaskReferenceName("task_ref");
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testDef");
+        workflowDef.setVersion(1);
+        workflowDef.setRestartable(true);
+        workflowDef.getTasks().addAll(Collections.singletonList(workflowTask));
+
+        Task task_1 = new Task();
+        task_1.setTaskId(UUID.randomUUID().toString());
+        task_1.setSeq(1);
+        task_1.setStatus(Status.FAILED);
+        task_1.setTaskDefName(workflowTask.getName());
+        task_1.setReferenceTaskName(workflowTask.getTaskReferenceName());
+
+        Task task_2 = new Task();
+        task_2.setTaskId(UUID.randomUUID().toString());
+        task_2.setSeq(2);
+        task_2.setStatus(Status.FAILED);
+        task_2.setTaskDefName(workflowTask.getName());
+        task_2.setReferenceTaskName(workflowTask.getTaskReferenceName());
+
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setWorkflowId("test-workflow-id");
+        workflow.getTasks().addAll(Arrays.asList(task_1, task_2));
+        workflow.setStatus(Workflow.WorkflowStatus.FAILED);
+
+        when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
+        doNothing().when(executionDAOFacade).removeTask(any());
+        when(metadataDAO.get(workflow.getWorkflowName(), workflow.getWorkflowVersion())).thenReturn(Optional.of(workflowDef));
+        when(metadataDAO.getTaskDef(workflowTask.getName())).thenReturn(new TaskDef());
+        when(executionDAOFacade.updateWorkflow(any())).thenReturn("");
+
+        workflowExecutor.rewind(workflow.getWorkflowId(), false);
+        assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        verify(metadataDAO, never()).getLatest(any());
+
+        ArgumentCaptor<Workflow> argumentCaptor = ArgumentCaptor.forClass(Workflow.class);
+        verify(executionDAOFacade, times(2)).updateWorkflow(argumentCaptor.capture());
+        assertEquals(workflow.getWorkflowId(), argumentCaptor.getAllValues().get(1).getWorkflowId());
+        assertEquals(workflow.getWorkflowDefinition(), argumentCaptor.getAllValues().get(1).getWorkflowDefinition());
+
+        // add a new version of the workflow definition and restart with latest
+        workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
+        workflowDef = new WorkflowDef();
+        workflowDef.setName("testDef");
+        workflowDef.setVersion(2);
+        workflowDef.setRestartable(true);
+        workflowDef.getTasks().addAll(Collections.singletonList(workflowTask));
+
+        when(metadataDAO.getLatest(workflow.getWorkflowName())).thenReturn(Optional.of(workflowDef));
+        workflowExecutor.rewind(workflow.getWorkflowId(), true);
+        assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        verify(metadataDAO, times(1)).getLatest(anyString());
+
+        argumentCaptor = ArgumentCaptor.forClass(Workflow.class);
+        verify(executionDAOFacade, times(4)).updateWorkflow(argumentCaptor.capture());
+        assertEquals(workflow.getWorkflowId(), argumentCaptor.getAllValues().get(3).getWorkflowId());
+        assertEquals(workflowDef, argumentCaptor.getAllValues().get(3).getWorkflowDefinition());
+    }
+
     @Test
     public void testGetFailedTasksToRetry() {
         //setup
