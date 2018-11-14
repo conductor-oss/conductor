@@ -16,6 +16,8 @@
 package com.netflix.conductor.core.execution;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.util.concurrent.Uninterruptibles;
+import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
@@ -53,11 +55,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
@@ -520,5 +525,40 @@ public class TestWorkflowExecutor {
         assertEquals(2, updateWorkflowCalledCounter.get());
         assertEquals(7, updateTasksCalledCounter.get());
         assertEquals(1, removeQueueEntryCalledCounter.get());
+    }
+
+    @Test
+    public void testGetActiveDomain() {
+        String taskType = "test-task";
+        String[] domains = new String[]{"domain1", "domain2"};
+
+        PollData pollData1 = new PollData("queue1", domains[0], "worker1", System.currentTimeMillis() - 99 * 1000);
+        when(executionDAOFacade.getTaskPollDataByDomain(taskType, domains[0])).thenReturn(pollData1);
+        String activeDomain = workflowExecutor.getActiveDomain(taskType, domains);
+        assertEquals(domains[0], activeDomain);
+
+        Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+
+        PollData pollData2 = new PollData("queue2", domains[1], "worker2", System.currentTimeMillis() - 99 * 1000);
+        when(executionDAOFacade.getTaskPollDataByDomain(taskType, domains[1])).thenReturn(pollData2);
+        activeDomain = workflowExecutor.getActiveDomain(taskType, domains);
+        assertEquals(domains[1], activeDomain);
+
+        Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+        activeDomain = workflowExecutor.getActiveDomain(taskType, domains);
+        assertEquals(domains[1], activeDomain);
+
+        domains = new String[]{""};
+        when(executionDAOFacade.getTaskPollDataByDomain(any(), any())).thenReturn(new PollData());
+        activeDomain = workflowExecutor.getActiveDomain(taskType, domains);
+        assertNotNull(activeDomain);
+        assertEquals("", activeDomain);
+
+        domains = new String[]{};
+        activeDomain = workflowExecutor.getActiveDomain(taskType, domains);
+        assertNull(activeDomain);
+
+        activeDomain = workflowExecutor.getActiveDomain(taskType, null);
+        assertNull(activeDomain);
     }
 }

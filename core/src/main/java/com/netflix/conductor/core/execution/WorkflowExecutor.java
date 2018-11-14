@@ -1047,16 +1047,28 @@ public class WorkflowExecutor {
         }
     }
 
-    private String getActiveDomain(String taskType, String[] domains) {
-        // The domain list has to be ordered.
-        // In sequence check if any worker has polled for last 30 seconds, if so that is the Active domain
+    /**
+     * Gets the active domain from the list of domains where the task is to be queued.
+     * The domain list must be ordered.
+     * In sequence, check if any worker has polled for last `activeWorkerLastPollInSecs` seconds, if so that is the Active domain.
+     *
+     * @param taskType the taskType of the task for which active domain is to be found
+     * @param domains  the array of domains for the task. (Must contain atleast one element).
+     * @return the active domain where the task will be queued
+     */
+    @VisibleForTesting
+    String getActiveDomain(String taskType, String[] domains) {
+        if (domains == null || domains.length == 0) {
+            return null;
+        }
+
         return Arrays.stream(domains)
                 .map(domain -> executionDAOFacade.getTaskPollDataByDomain(taskType, domain.trim()))
                 .filter(Objects::nonNull)
                 .filter(validateLastPolledTime)
                 .findFirst()
                 .map(PollData::getDomain)
-                .orElse(null);
+                .orElse(domains[domains.length - 1].trim());
     }
 
     private long getTaskDuration(long s, Task task) {
