@@ -34,7 +34,6 @@ Below are the various artifacts published:
 |conductor-common|Common models used by various conductor modules|
 |conductor-core|Core Conductor module|
 |conductor-redis-persistence|Persistence using Redis/Dynomite|
-|conductor-es2-persistence|Indexing using Elasticsearch 2.X|
 |conductor-es5-persistence|Indexing using Elasticsearch 5.X|
 |conductor-jersey|Jersey JAX-RS resources for the core services|
 |conductor-ui|node.js based UI for Conductor|
@@ -50,7 +49,7 @@ To build the server, use the following dependencies in your classpath:
 * conductor-core
 * conductor-jersey
 * conductor-redis-persistence (_unless using your own persistence module_)
-* conductor-es2-persistence _or_ conductor-es5-persistence (_unless using your own index module_)
+* conductor-es5-persistence (_unless using your own index module_)
 * conductor-contribs (_optional_)
 
 
@@ -71,7 +70,7 @@ com.netflix.conductor.dao.RedisWorkflowModule
 
 * The default persistence used is [Dynomite](https://github.com/Netflix/dynomite)
 * For queues, we are relying on [dyno-queues](https://github.com/Netflix/dyno-queues)
-* The indexing backend is [Elasticsearch](https://www.elastic.co/) (2.+)
+* The indexing backend is [Elasticsearch](https://www.elastic.co/) (5.x)
 
 ## Other Requirements
 * JDK 1.8+

@@ -34,7 +34,7 @@ import java.util.Optional;
 
 public class SubWorkflowTaskMapper implements TaskMapper {
 
-    public static final Logger logger = LoggerFactory.getLogger(SubWorkflowTaskMapper.class);
+    private static final Logger logger = LoggerFactory.getLogger(SubWorkflowTaskMapper.class);
 
     private final ParametersUtils parametersUtils;
     private final MetadataDAO metadataDAO;

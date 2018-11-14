@@ -1858,6 +1858,8 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals(2, workflow.getTasks().size());
 
         task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNull(task);
+        task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker", "domain12");
         assertNotNull(task);
         assertEquals("junit_task_1", task.getTaskType());
 
