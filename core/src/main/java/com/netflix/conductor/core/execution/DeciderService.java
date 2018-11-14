@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-/**
- *
  */
 package com.netflix.conductor.core.execution;
 
@@ -68,15 +65,14 @@ import static com.netflix.conductor.common.metadata.tasks.Task.Status.TIMED_OUT;
  */
 public class DeciderService {
 
-    private static Logger logger = LoggerFactory.getLogger(DeciderService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeciderService.class);
 
     private final QueueDAO queueDAO;
-
     private final ParametersUtils parametersUtils;
+    private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
 
     private final Map<String, TaskMapper> taskMappers;
 
-    private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
 
     @SuppressWarnings("ConstantConditions")
     private final Predicate<Task> isNonPendingTask = task -> !task.isRetried() && !task.getStatus().equals(SKIPPED) && !task.isExecuted() || SystemTaskType.isBuiltIn(task.getTaskType());
@@ -117,13 +113,13 @@ public class DeciderService {
         DeciderOutcome outcome = new DeciderOutcome();
 
         if (workflow.getStatus().equals(WorkflowStatus.PAUSED)) {
-            logger.debug("Workflow " + workflow.getWorkflowId() + " is paused");
+            LOGGER.debug("Workflow " + workflow.getWorkflowId() + " is paused");
             return outcome;
         }
 
         if (workflow.getStatus().isTerminal()) {
             //you cannot evaluate a terminal workflow
-            logger.debug("Workflow " + workflow.getWorkflowId() + " is already finished.  status=" + workflow.getStatus() + ", reason=" + workflow.getReasonForIncompletion());
+            LOGGER.debug("Workflow " + workflow.getWorkflowId() + " is already finished.  status=" + workflow.getStatus() + ", reason=" + workflow.getReasonForIncompletion());
             return outcome;
         }
 
@@ -187,7 +183,7 @@ public class DeciderService {
                 List<Task> nextTasks = getNextTask(workflow, pendingTask);
                 nextTasks.forEach(nextTask -> tasksToBeScheduled.putIfAbsent(nextTask.getReferenceTaskName(), nextTask));
                 outcome.tasksToBeUpdated.add(pendingTask);
-                logger.debug("Scheduling Tasks from {}, next = {} for workflowId: {}", pendingTask.getTaskDefName(),
+                LOGGER.debug("Scheduling Tasks from {}, next = {} for workflowId: {}", pendingTask.getTaskDefName(),
                         nextTasks.stream()
                                 .map(Task::getTaskDefName)
                                 .collect(Collectors.toList()),
@@ -200,14 +196,14 @@ public class DeciderService {
                 .filter(task -> !executedTaskRefNames.contains(task.getReferenceTaskName()))
                 .collect(Collectors.toList());
         if (!unScheduledTasks.isEmpty()) {
-            logger.debug("Scheduling Tasks {} for workflow: {}", unScheduledTasks.stream()
+            LOGGER.debug("Scheduling Tasks {} for workflow: {}", unScheduledTasks.stream()
                     .map(Task::getTaskDefName)
                     .collect(Collectors.toList()),
                     workflow.getWorkflowId());
             outcome.tasksToBeScheduled.addAll(unScheduledTasks);
         }
         if (outcome.tasksToBeScheduled.isEmpty() && checkForWorkflowCompletion(workflow)) {
-            logger.debug("Marking workflow as complete.  workflow=" + workflow.getWorkflowId() + ", tasks=" + workflow.getTasks());
+            LOGGER.debug("Marking workflow as complete.  workflow=" + workflow.getWorkflowId() + ", tasks=" + workflow.getTasks());
             outcome.isComplete = true;
         }
 
@@ -217,7 +213,7 @@ public class DeciderService {
     private List<Task> startWorkflow(Workflow workflow) throws TerminateWorkflowException {
         final WorkflowDef workflowDef = workflow.getWorkflowDefinition();
 
-        logger.debug("Starting workflow " + workflowDef.getName() + "/" + workflow.getWorkflowId());
+        LOGGER.debug("Starting workflow " + workflowDef.getName() + "/" + workflow.getWorkflowId());
         //The tasks will be empty in case of new workflow
         List<Task> tasks = workflow.getTasks();
         // Check if the workflow is a re-run case or if it is a new workflow execution
@@ -441,7 +437,7 @@ public class DeciderService {
     void checkForTimeout(TaskDef taskDef, Task task) {
 
         if (taskDef == null) {
-            logger.warn("missing task type " + task.getTaskDefName() + ", workflowId=" + task.getWorkflowInstanceId());
+            LOGGER.warn("missing task type " + task.getTaskDefName() + ", workflowId=" + task.getWorkflowInstanceId());
             return;
         }
         if (task.getStatus().isTerminal() || taskDef.getTimeoutSeconds() <= 0 || !task.getStatus().equals(IN_PROGRESS)) {
@@ -476,7 +472,7 @@ public class DeciderService {
     @VisibleForTesting
     boolean isResponseTimedOut(TaskDef taskDefinition, Task task) {
         if (taskDefinition == null) {
-            logger.warn("missing task type : {}, workflowId= {}", task.getTaskDefName(), task.getWorkflowInstanceId());
+            LOGGER.warn("missing task type : {}, workflowId= {}", task.getTaskDefName(), task.getWorkflowInstanceId());
             return false;
         }
         if (task.getStatus().isTerminal() || !task.getStatus().equals(IN_PROGRESS) || taskDefinition.getResponseTimeoutSeconds() == 0) {
@@ -492,14 +488,14 @@ public class DeciderService {
             return false;
         }
 
-        logger.debug("Evaluating responseTimeOut for Task: {}, with Task Definition: {} ", task, taskDefinition);
+        LOGGER.debug("Evaluating responseTimeOut for Task: {}, with Task Definition: {} ", task, taskDefinition);
 
         long responseTimeout = 1000L * taskDefinition.getResponseTimeoutSeconds();
         long now = System.currentTimeMillis();
         long noResponseTime = now - task.getUpdateTime();
 
         if (noResponseTime < responseTimeout) {
-            logger.debug("Current responseTime: {} has not exceeded the configured responseTimeout of {} " +
+            LOGGER.debug("Current responseTime: {} has not exceeded the configured responseTimeout of {} " +
                     "for the Task: {} with Task Definition: {}", noResponseTime, responseTimeout, task, taskDefinition);
             return false;
         }
@@ -510,7 +506,7 @@ public class DeciderService {
 
     private void timeoutTask(TaskDef taskDef, Task task) {
         String reason = "responseTimeout: " + taskDef.getResponseTimeoutSeconds() + " exceeded for the taskId: " + task.getTaskId() + " with Task Definition: " + task.getTaskDefName();
-        logger.debug(reason);
+        LOGGER.debug(reason);
         task.setStatus(TIMED_OUT);
         task.setReasonForIncompletion(reason);
     }
