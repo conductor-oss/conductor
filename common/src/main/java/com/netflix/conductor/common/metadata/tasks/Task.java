@@ -677,13 +677,12 @@ public class Task {
         copy.setTaskDefName(taskDefName);
         copy.setTaskType(taskType);
         copy.setWorkflowInstanceId(workflowInstanceId);
+        copy.setWorkflowType(workflowType);
         copy.setResponseTimeoutSeconds(responseTimeoutSeconds);
         copy.setStatus(status);
         copy.setRetryCount(retryCount);
         copy.setPollCount(pollCount);
         copy.setTaskId(taskId);
-        copy.setReasonForIncompletion(reasonForIncompletion);
-        copy.setWorkerId(workerId);
         copy.setWorkflowTask(workflowTask);
         copy.setDomain(domain);
         copy.setInputMessage(inputMessage);

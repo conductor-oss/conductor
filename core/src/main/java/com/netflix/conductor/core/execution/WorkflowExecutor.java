@@ -400,9 +400,7 @@ public class WorkflowExecutor {
                     "There are no failed tasks! Use restart if you want to attempt entire workflow execution again.");
         }
         List<Task> rescheduledTasks = new ArrayList<>();
-        failedTasks.forEach(failedTask -> {
-            rescheduledTasks.add(taskToBeRescheduled(failedTask));
-        });
+        failedTasks.forEach(failedTask -> rescheduledTasks.add(taskToBeRescheduled(failedTask)));
 
         // Reschedule the cancelled task but if the join is cancelled set that to in progress
         cancelledTasks.forEach(task -> {
@@ -453,6 +451,9 @@ public class WorkflowExecutor {
         taskToBeRetried.setRetriedTaskId(task.getTaskId());
         taskToBeRetried.setStatus(SCHEDULED);
         taskToBeRetried.setRetryCount(task.getRetryCount() + 1);
+        taskToBeRetried.setRetried(false);
+        taskToBeRetried.setPollCount(0);
+        taskToBeRetried.setCallbackAfterSeconds(0);
 
         // update the failed task in the DAO
         task.setRetried(true);
@@ -470,8 +471,8 @@ public class WorkflowExecutor {
 
 
     /**
-     * @param wf
-     * @throws ApplicationException
+     * @param wf the workflow to be completed
+     * @throws ApplicationException if workflow is not in terminal state
      */
     @VisibleForTesting
     void completeWorkflow(Workflow wf) {
@@ -525,7 +526,7 @@ public class WorkflowExecutor {
         Monitors.recordWorkflowCompletion(workflow.getWorkflowName(), workflow.getEndTime() - workflow.getStartTime(), wf.getOwnerApp());
         queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
 
-        if(wf.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
+        if (wf.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
             workflowStatusListener.onWorkflowCompleted(wf);
         }
     }
@@ -622,7 +623,7 @@ public class WorkflowExecutor {
         // Send to atlas
         Monitors.recordWorkflowTermination(workflow.getWorkflowName(), workflow.getStatus(), workflow.getOwnerApp());
 
-        if(workflow.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
+        if (workflow.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
             workflowStatusListener.onWorkflowTerminated(workflow);
         }
     }
