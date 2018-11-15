@@ -1,3 +1,15 @@
+/*
+ * Copyright 2016 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.dao;
 
 import com.netflix.conductor.common.metadata.tasks.PollData;
@@ -8,6 +20,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ApplicationException;
 import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -23,6 +36,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNull;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -32,7 +46,7 @@ public abstract class ExecutionDAOTest {
     abstract protected ExecutionDAO getExecutionDAO();
 
     @Rule
-    public ExpectedException expected = ExpectedException.none();
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void testTaskExceedsLimit() {
@@ -77,13 +91,13 @@ public abstract class ExecutionDAOTest {
         task.setTaskId("t1");
         task.setTaskDefName("task1");
 
-        expected.expect(ApplicationException.class);
-        expected.expectMessage("Workflow instance id cannot be null");
+        expectedException.expect(ApplicationException.class);
+        expectedException.expectMessage("Workflow instance id cannot be null");
         getExecutionDAO().createTasks(Collections.singletonList(task));
 
         task.setWorkflowInstanceId("wfid");
-        expected.expect(ApplicationException.class);
-        expected.expectMessage("Task reference name cannot be null");
+        expectedException.expect(ApplicationException.class);
+        expectedException.expectMessage("Task reference name cannot be null");
         getExecutionDAO().createTasks(Collections.singletonList(task));
     }
 
@@ -96,8 +110,8 @@ public abstract class ExecutionDAOTest {
         task.setTaskDefName("task1");
         task.setWorkflowInstanceId("wfid");
 
-        expected.expect(ApplicationException.class);
-        expected.expectMessage("Task reference name cannot be null");
+        expectedException.expect(ApplicationException.class);
+        expectedException.expectMessage("Task reference name cannot be null");
         getExecutionDAO().createTasks(Collections.singletonList(task));
     }
 
@@ -108,7 +122,7 @@ public abstract class ExecutionDAOTest {
         assertNotNull(pd);
         assertTrue(pd.getLastPollTime() > 0);
         assertEquals(pd.getQueueName(), "taskDef");
-        assertEquals(pd.getDomain(), null);
+        assertNull(pd.getDomain());
         assertEquals(pd.getWorkerId(), "workerId1");
 
         getExecutionDAO().updateLastPoll("taskDef", "domain1", "workerId1");
@@ -123,7 +137,7 @@ public abstract class ExecutionDAOTest {
         assertEquals(pData.size(), 2);
 
         pd = getExecutionDAO().getPollData("taskDef", "domain2");
-        assertTrue(pd == null);
+        Assert.assertNull(pd);
     }
 
     @Test

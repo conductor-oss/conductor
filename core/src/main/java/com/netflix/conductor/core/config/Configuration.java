@@ -212,6 +212,6 @@ public interface Configuration {
 
 
     enum DB {
-        REDIS, DYNOMITE, MEMORY, REDIS_CLUSTER, MYSQL
+        REDIS, DYNOMITE, MEMORY, REDIS_CLUSTER, MYSQL, CASSANDRA
     }
 }

@@ -171,7 +171,7 @@ public class ExecutionDAOFacade {
     public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
         try {
             Workflow workflow = getWorkflowById(workflowId, true);
-            executionDAO.removeWorkflow(workflowId, archiveWorkflow);
+            executionDAO.removeWorkflow(workflowId);
             if (archiveWorkflow) {
                 //Add to elasticsearch
                 indexDAO.updateWorkflow(workflowId,

@@ -251,11 +251,13 @@ public class WorkflowService {
 
     /**
      * Restarts a completed workflow.
-     * @param workflowId WorkflowId of the workflow.
+     *
+     * @param workflowId           WorkflowId of the workflow.
+     * @param useLatestDefinitions if true, use the latest workflow and task definitions upon restart
      */
-    public void restartWorkflow(String workflowId) {
-        ServiceUtils.checkNotNullOrEmpty(workflowId,"WorkflowId cannot be null or empty.");
-        workflowExecutor.rewind(workflowId);
+    public void restartWorkflow(String workflowId, boolean useLatestDefinitions) {
+        ServiceUtils.checkNotNullOrEmpty(workflowId, "WorkflowId cannot be null or empty.");
+        workflowExecutor.rewind(workflowId, useLatestDefinitions);
     }
 
     /**

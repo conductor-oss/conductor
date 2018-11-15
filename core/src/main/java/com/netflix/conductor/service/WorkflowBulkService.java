@@ -50,11 +50,11 @@ public class WorkflowBulkService {
         }
     }
 
-    public void restart(List<String> workflowIds) {
+    public void restart(List<String> workflowIds, boolean useLatestDefinitions) {
         ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
         ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
         for (String workflowId : workflowIds) {
-            workflowExecutor.rewind(workflowId);
+            workflowExecutor.rewind(workflowId, useLatestDefinitions);
         }
     }
 

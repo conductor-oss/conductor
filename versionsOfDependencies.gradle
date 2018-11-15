@@ -4,6 +4,8 @@
 ext {
     revAwsSdk = '1.11.86'
     revArchaius = '0.7.5'
+    revCassandra = '3.6.0'
+    revCassandraUnit = '3.5.0.1'
     revCommonsLang3 = '3.0'
     revCommonsIo = '2.4'
     revDynoQueues = '2.0.0-rc4'
