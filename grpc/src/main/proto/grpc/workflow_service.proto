@@ -137,6 +137,7 @@ message RerunWorkflowResponse {
 
 message RestartWorkflowRequest {
     string workflow_id = 1;
+    bool use_latest_definitions = 2;
 }
 
 message RestartWorkflowResponse {}

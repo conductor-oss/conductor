@@ -337,7 +337,8 @@ public class WorkflowExecutor {
     }
 
     /**
-     * @param workflowId the id of the workflow to be restarted
+     * @param workflowId           the id of the workflow to be restarted
+     * @param useLatestDefinitions if true, use the latest workflow and task definitions upon restart
      * @throws ApplicationException in the following cases:
      *                              <ul>
      *                              <li>Workflow is not in a terminal state</li>
@@ -345,16 +346,24 @@ public class WorkflowExecutor {
      *                              <li>Workflow is deemed non-restartable as per workflow definition</li>
      *                              </ul>
      */
-    public void rewind(String workflowId) {
+    public void rewind(String workflowId, boolean useLatestDefinitions) {
         Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, true);
         if (!workflow.getStatus().isTerminal()) {
             throw new ApplicationException(CONFLICT, "Workflow is still running.  status=" + workflow.getStatus());
         }
 
-        WorkflowDef workflowDef = Optional.ofNullable(workflow.getWorkflowDefinition())
-                .orElseGet(() -> metadataDAO.get(workflow.getWorkflowName(), workflow.getWorkflowVersion())
-                        .orElseThrow(() -> new ApplicationException(NOT_FOUND, String.format("Unable to find definition for %s", workflowId)))
-                );
+        WorkflowDef workflowDef;
+        if (useLatestDefinitions) {
+            workflowDef = metadataDAO.getLatest(workflow.getWorkflowName())
+                    .orElseThrow(() -> new ApplicationException(NOT_FOUND, String.format("Unable to find latest definition for %s", workflowId)));
+            workflow.setVersion(workflowDef.getVersion()); // setting this here to ensure backward compatibility and consistency for workflows without the embedded workflow definition
+            workflow.setWorkflowDefinition(workflowDef);
+        } else {
+            workflowDef = Optional.ofNullable(workflow.getWorkflowDefinition())
+                    .orElseGet(() -> metadataDAO.get(workflow.getWorkflowName(), workflow.getWorkflowVersion())
+                            .orElseThrow(() -> new ApplicationException(NOT_FOUND, String.format("Unable to find definition for %s", workflowId)))
+                    );
+        }
 
         if (!workflowDef.isRestartable() && workflow.getStatus().equals(WorkflowStatus.COMPLETED)) { // Can only restart non-completed workflows when the configuration is set to false
             throw new ApplicationException(CONFLICT, String.format("WorkflowId: %s is an instance of WorkflowDef: %s and version: %d and is non restartable",

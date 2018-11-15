@@ -30,6 +30,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
@@ -117,22 +118,24 @@ public class WorkflowBulkResource {
 
     /**
      * Restart the list of workflows.
-     * @param workflowIds - list of workflow Ids  to perform restart operation on
+     *
+     * @param workflowIds          - list of workflow Ids  to perform restart operation on
+     * @param useLatestDefinitions if true, use latest workflow and task definitions upon restart
      * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
      * @throws IllegalArgumentException - too many workflowIds in one batch request
-     * @throws NullPointerException workflowIds list is null
+     * @throws NullPointerException     workflowIds list is null
      */
     @POST
     @Path("/restart")
     @ApiOperation("Restart the list of completed workflow")
-    public BulkResponse restart(List<String> workflowIds) throws IllegalArgumentException, NullPointerException {
+    public BulkResponse restart(List<String> workflowIds, @QueryParam("useLatestDefinitions") @DefaultValue("false") boolean useLatestDefinitions) throws IllegalArgumentException, NullPointerException {
         Preconditions.checkNotNull(workflowIds, "workflowIds list cannot be null.");
         Preconditions.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, "Cannot process more than  %s  workflows.  Please use multiple requests", MAX_REQUEST_ITEMS);
 
         BulkResponse bulkResponse = new BulkResponse();
         for (String workflowId : workflowIds) {
             try {
-                workflowExecutor.rewind(workflowId);
+                workflowExecutor.rewind(workflowId, useLatestDefinitions);
                 bulkResponse.appendSuccessResponse(workflowId);
             } catch (Exception e) {
                 LOGGER.error("bulk restart exception, workflowId {}, message: {} ",workflowId, e.getMessage(), e);
