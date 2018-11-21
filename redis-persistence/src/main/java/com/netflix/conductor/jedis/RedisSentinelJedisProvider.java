@@ -1,7 +1,5 @@
 package com.netflix.conductor.jedis;
 
-import com.google.common.collect.Lists;
-
 import com.netflix.conductor.dyno.DynomiteConfiguration;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
@@ -42,12 +40,6 @@ public class RedisSentinelJedisProvider implements Provider<JedisCommands> {
 
     @Override
     public JedisCommands get() {
-        return jedisPool.getResource();
-    }
-
-    @Override
-    protected void finalize() throws Throwable {
-        jedisPool.close();
-        super.finalize();
+        return new JedisClusterSentinel(jedisPool);
     }
 }
