@@ -91,7 +91,6 @@ public class EventService {
      */
     @Service
     public List<EventHandler> getEventHandlersForEvent(@NotEmpty(message = "Event cannot be null or empty.") String event, boolean activeOnly) {
-        ServiceUtils.checkNotNullOrEmpty(event, "Event cannot be null or empty.");
         return metadataService.getEventHandlersForEvent(event, activeOnly);
     }
 

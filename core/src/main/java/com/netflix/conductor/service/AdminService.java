@@ -95,7 +95,6 @@ public class AdminService {
     @Service
     public List<Task> getListOfPendingTask(@NotEmpty (message = "TaskType cannot be null or empty.") String taskType,
                                            @NotNull Integer start, @NotNull Integer count) {
-        ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
         List<Task> tasks = executionService.getPendingTasksForTaskType(taskType);
         int total = start + count;
         total = (tasks.size() > total) ? total : tasks.size();
@@ -110,7 +109,6 @@ public class AdminService {
      * @return the id of the workflow instance that can be use for tracking.
      */
     public String requeueSweep(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId) {
-        ServiceUtils.checkNotNullOrEmpty(workflowId, "WorkflowId cannot be null or empty.");
         boolean pushed = queueDAO.pushIfNotExists(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency());
         return pushed + "." + workflowId;
     }

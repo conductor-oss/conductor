@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import javax.validation.constraints.NotEmpty;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,14 +63,13 @@ public class MetadataMapperService {
     }
 
     @VisibleForTesting
-    Optional<WorkflowDef> lookupWorkflowDefinition(String workflowName, int workflowVersion) {
-        ServiceUtils.checkNotNullOrEmpty(workflowName, "Workflow name must be specified when searching for a definition");
+    Optional<WorkflowDef> lookupWorkflowDefinition(@NotEmpty(message = "Workflow name must be specified when searching for a definition") String workflowName,
+                                                   int workflowVersion) {
         return metadataDAO.get(workflowName, workflowVersion);
     }
 
     @VisibleForTesting
-    Optional<WorkflowDef> lookupLatestWorkflowDefinition(String workflowName) {
-        ServiceUtils.checkNotNullOrEmpty(workflowName, "Workflow name must be specified when searching for a definition");
+    Optional<WorkflowDef> lookupLatestWorkflowDefinition(@NotEmpty(message = "Workflow name must be specified when searching for a definition") String workflowName) {
         return metadataDAO.getLatest(workflowName);
     }
 

@@ -282,7 +282,6 @@ public class TaskService {
      */
     @Service
     public String requeuePendingTask(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType) {
-        ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
         return String.valueOf(executionService.requeuePendingTasks(taskType));
     }
 
