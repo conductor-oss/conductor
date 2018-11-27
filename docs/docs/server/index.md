@@ -82,11 +82,12 @@ workflow.namespace.queue.prefix=conductor_queues
 queues.dynomite.threads=10
 
 # Non-quorum port used to connect to local redis.  Used by dyno-queues.
-# When using redis directly, set this to the same port as redis server
+# When using redis directly, set this to the same port as redis server.
 # For Dynomite, this is 22122 by default or the local redis-server port used by Dynomite.
 queues.dynomite.nonQuorum.port=22122
 
 # Transport address to elasticsearch
+# Specifying multiple node urls is not supported. specify one of the nodes' url, or a load balancer.
 workflow.elasticsearch.url=localhost:9300
 
 # Name of the elasticsearch cluster
