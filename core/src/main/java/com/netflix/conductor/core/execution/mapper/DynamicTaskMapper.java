@@ -40,7 +40,7 @@ import java.util.Optional;
  */
 public class DynamicTaskMapper implements TaskMapper {
 
-    public static final Logger logger = LoggerFactory.getLogger(DynamicTaskMapper.class);
+    private static final Logger logger = LoggerFactory.getLogger(DynamicTaskMapper.class);
 
     private final ParametersUtils parametersUtils;
     private final MetadataDAO metadataDAO;

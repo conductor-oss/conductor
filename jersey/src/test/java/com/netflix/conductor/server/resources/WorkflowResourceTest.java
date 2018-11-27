@@ -1,3 +1,18 @@
+/*
+ * Copyright 2016 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.conductor.server.resources;
 
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
@@ -41,7 +56,7 @@ public class WorkflowResourceTest {
     }
 
     @Test
-    public void testStartWorkflow() throws Exception {
+    public void testStartWorkflow() {
         StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
         startWorkflowRequest.setName("w123");
         Map<String, Object> input = new HashMap<>();
@@ -53,7 +68,7 @@ public class WorkflowResourceTest {
     }
 
     @Test
-    public void testStartWorkflowParam() throws Exception {
+    public void testStartWorkflowParam() {
         Map<String, Object> input = new HashMap<>();
         input.put("1", "abc");
         String workflowID = "w112";
@@ -62,7 +77,7 @@ public class WorkflowResourceTest {
     }
 
     @Test
-    public void getWorkflows() throws Exception {
+    public void getWorkflows() {
         Workflow workflow = new Workflow();
         workflow.setCorrelationId("123");
         ArrayList<Workflow> listOfWorkflows = new ArrayList<Workflow>() {{
@@ -73,7 +88,7 @@ public class WorkflowResourceTest {
     }
 
     @Test
-    public void testGetWorklfowsMultipleCorrelationId() throws Exception {
+    public void testGetWorklfowsMultipleCorrelationId() {
         Workflow workflow = new Workflow();
         workflow.setCorrelationId("c123");
 
@@ -95,7 +110,7 @@ public class WorkflowResourceTest {
     }
 
     @Test
-    public void testGetExecutionStatus() throws Exception {
+    public void testGetExecutionStatus() {
         Workflow workflow = new Workflow();
         workflow.setCorrelationId("c123");
 
@@ -104,13 +119,13 @@ public class WorkflowResourceTest {
     }
 
     @Test
-    public void testDelete() throws Exception {
+    public void testDelete() {
         workflowResource.delete("w123", true);
         verify(mockWorkflowService, times(1)).deleteWorkflow(anyString(), anyBoolean());
     }
 
     @Test
-    public void testGetRunningWorkflow() throws Exception {
+    public void testGetRunningWorkflow() {
         List<String> listOfWorklfows = new ArrayList<String>() {{
             add("w123");
         }};
@@ -119,58 +134,58 @@ public class WorkflowResourceTest {
     }
 
     @Test
-    public void testDecide() throws Exception {
+    public void testDecide() {
         workflowResource.decide("w123");
         verify(mockWorkflowService, times(1)).decideWorkflow(anyString());
     }
 
     @Test
-    public void testPauseWorkflow() throws Exception {
+    public void testPauseWorkflow() {
         workflowResource.pauseWorkflow("w123");
         verify(mockWorkflowService, times(1)).pauseWorkflow(anyString());
     }
 
     @Test
-    public void testResumeWorkflow() throws Exception {
+    public void testResumeWorkflow() {
         workflowResource.resumeWorkflow("test");
         verify(mockWorkflowService, times(1)).resumeWorkflow(anyString());
     }
 
     @Test
-    public void testSkipTaskFromWorkflow() throws Exception {
+    public void testSkipTaskFromWorkflow() {
         workflowResource.skipTaskFromWorkflow("test", "testTask", null);
         verify(mockWorkflowService, times(1)).skipTaskFromWorkflow(anyString(), anyString(),
                 any(SkipTaskRequest.class));
     }
 
     @Test
-    public void testRerun() throws Exception {
+    public void testRerun() {
         RerunWorkflowRequest request = new RerunWorkflowRequest();
         workflowResource.rerun("test", request);
         verify(mockWorkflowService, times(1)).rerunWorkflow(anyString(), any(RerunWorkflowRequest.class));
     }
 
     @Test
-    public void restart() throws Exception {
-        workflowResource.restart("w123");
-        verify(mockWorkflowService, times(1)).restartWorkflow(anyString());
+    public void restart() {
+        workflowResource.restart("w123", false);
+        verify(mockWorkflowService, times(1)).restartWorkflow(anyString(), anyBoolean());
     }
 
     @Test
-    public void testRetry() throws Exception {
+    public void testRetry() {
         workflowResource.retry("w123");
         verify(mockWorkflowService, times(1)).retryWorkflow(anyString());
 
     }
 
     @Test
-    public void testResetWorkflow() throws Exception {
+    public void testResetWorkflow() {
         workflowResource.resetWorkflow("w123");
         verify(mockWorkflowService, times(1)).resetWorkflow(anyString());
     }
 
     @Test
-    public void testTerminate() throws Exception {
+    public void testTerminate() {
         workflowResource.terminate("w123", "test");
         verify(mockWorkflowService, times(1)).terminateWorkflow(anyString(), anyString());
     }

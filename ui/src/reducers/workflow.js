@@ -14,6 +14,8 @@ const initialState = {
 };
 
 export default function workflows(state = initialState, action) {
+
+  let data = state.data;
   switch (action.type) {
     case 'GET_WORKFLOWS':
       return {

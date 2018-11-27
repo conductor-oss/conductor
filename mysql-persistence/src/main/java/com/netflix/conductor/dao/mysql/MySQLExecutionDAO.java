@@ -1,3 +1,15 @@
+/*
+ * Copyright 2016 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.dao.mysql;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,12 +20,9 @@ import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.metrics.Monitors;
 
 import javax.inject.Inject;
@@ -35,12 +44,9 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     private static final String ARCHIVED_FIELD = "archived";
     private static final String RAW_JSON_FIELD = "rawJSON";
 
-    private IndexDAO indexer;
-
     @Inject
-    public MySQLExecutionDAO(IndexDAO indexer, ObjectMapper om, DataSource dataSource) {
-        super(om, dataSource);
-        this.indexer = indexer;
+    public MySQLExecutionDAO(ObjectMapper objectMapper, DataSource dataSource) {
+        super(objectMapper, dataSource);
     }
 
     private static String dateStr(Long timeInMs) {
@@ -134,8 +140,8 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     /**
      * This is a dummy implementation and this feature is not for Mysql backed
      * Conductor
-     * @param task:
-     *            which needs to be evaluated whether it is rateLimited or not
+     *
+     * @param task: which needs to be evaluated whether it is rateLimited or not
      * @return
      */
     @Override
@@ -186,11 +192,6 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     @Override
     public void updateTasks(List<Task> tasks) {
         withTransaction(connection -> tasks.forEach(task -> updateTask(connection, task)));
-    }
-
-    @Override
-    public void addTaskExecLog(List<TaskExecLog> log) {
-        indexer.addTaskExecutionLogs(log);
     }
 
     @Override
@@ -261,30 +262,16 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
     @Override
     public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
-        try {
-            Workflow wf = getWorkflow(workflowId, true);
+        Workflow workflow = getWorkflow(workflowId, true);
 
-            if (archiveWorkflow) {
-                // Add to elasticsearch
-                indexer.updateWorkflow(workflowId, new String[] { RAW_JSON_FIELD, ARCHIVED_FIELD },
-                        new Object[] { objectMapper.writeValueAsString(wf), true });
-            } else {
-                // Not archiving, also remove workflowId from index
-                indexer.removeWorkflow(workflowId);
-            }
+        withTransaction(connection -> {
+            removeWorkflowDefToWorkflowMapping(connection, workflow);
+            removeWorkflow(connection, workflowId);
+            removePendingWorkflow(connection, workflow.getWorkflowName(), workflowId);
+        });
 
-            withTransaction(connection -> {
-                removeWorkflowDefToWorkflowMapping(connection, wf);
-                removeWorkflow(connection, workflowId);
-                removePendingWorkflow(connection, wf.getWorkflowName(), workflowId);
-            });
-
-            for (Task task : wf.getTasks()) {
-                removeTask(task.getTaskId());
-            }
-
-        } catch (Exception e) {
-            throw new ApplicationException("Unable to remove workflow " + workflowId, e);
+        for (Task task : workflow.getTasks()) {
+            removeTask(task.getTaskId());
         }
     }
 
@@ -308,14 +295,6 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
                 tasks.sort(Comparator.comparingLong(Task::getScheduledTime).thenComparingInt(Task::getSeq));
                 workflow.setTasks(tasks);
             }
-        } else {
-            // try from the archive
-            // Expected to include tasks.
-            workflow = readWorkflowFromArchive(workflowId);
-        }
-
-        if (!includeTasks) {
-            workflow.getTasks().clear();
         }
         return workflow;
     }
@@ -392,14 +371,14 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     }
 
     @Override
+    public boolean canSearchAcrossWorkflows() {
+        return true;
+    }
+
+    @Override
     public boolean addEventExecution(EventExecution eventExecution) {
         try {
-            boolean added = getWithTransaction(tx -> insertEventExecution(tx, eventExecution));
-            if (added) {
-                indexer.addEventExecution(eventExecution);
-                return true;
-            }
-            return false;
+            return getWithTransaction(tx -> insertEventExecution(tx, eventExecution));
         } catch (Exception e) {
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR,
                     "Unable to add event execution " + eventExecution.getId(), e);
@@ -420,7 +399,6 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     public void updateEventExecution(EventExecution eventExecution) {
         try {
             withTransaction(tx -> updateEventExecution(tx, eventExecution));
-            indexer.addEventExecution(eventExecution);
         } catch (Exception e) {
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR,
                     "Unable to update event execution " + eventExecution.getId(), e);
@@ -450,11 +428,6 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
                     eventHandlerName, eventName, messageId);
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, message, e);
         }
-    }
-
-    @Override
-    public void addMessage(String queue, Message msg) {
-        indexer.addMessage(queue, msg);
     }
 
     @Override
@@ -520,13 +493,12 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
         });
 
         workflow.setTasks(tasks);
-        indexer.indexWorkflow(workflow);
         return workflow.getWorkflowId();
     }
 
     private void updateTask(Connection connection, Task task) {
         task.setUpdateTime(System.currentTimeMillis());
-        if (task.getStatus() != null && task.getStatus().isTerminal()) {
+        if (task.getStatus() != null && task.getStatus().isTerminal() && task.getEndTime() == 0) {
             task.setEndTime(System.currentTimeMillis());
         }
 
@@ -544,24 +516,12 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
         }
 
         addWorkflowToTaskMapping(connection, task);
-
-        indexer.indexTask(task);
     }
 
     private Workflow readWorkflow(Connection connection, String workflowId) {
         String GET_WORKFLOW = "SELECT json_data FROM workflow WHERE workflow_id = ?";
 
         return query(connection, GET_WORKFLOW, q -> q.addParameter(workflowId).executeAndFetchFirst(Workflow.class));
-    }
-
-    private Workflow readWorkflowFromArchive(String workflowId) {
-        String json = indexer.get(workflowId, RAW_JSON_FIELD);
-        if (json != null) {
-            return readValue(json, Workflow.class);
-        } else {
-            throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                    "No such workflow found by id: " + workflowId);
-        }
     }
 
     private void addWorkflow(Connection connection, Workflow workflow) {

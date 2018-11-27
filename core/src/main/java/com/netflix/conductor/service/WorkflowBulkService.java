@@ -56,9 +56,9 @@ public class WorkflowBulkService {
 
     @Service
     public void restart(@NotEmpty(message = "WorkflowIds list cannot be null.") List<
-                        @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") String> workflowIds) {
+                        @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") String> workflowIds, boolean useLatestDefinitions) {
         for (String workflowId : workflowIds) {
-            workflowExecutor.rewind(workflowId);
+            workflowExecutor.rewind(workflowId, useLatestDefinitions);
         }
     }
 

@@ -50,7 +50,6 @@ import java.util.Map;
 
 /**
  * @author Viren
- *
  */
 @Api(value = "/workflow", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON, tags = "Workflow Management")
 @Path("/workflow")
@@ -184,8 +183,8 @@ public class WorkflowResource {
     @Path("/{workflowId}/restart")
     @ApiOperation("Restarts a completed workflow")
     @Consumes(MediaType.WILDCARD)
-    public void restart(@PathParam("workflowId") String workflowId) {
-        workflowService.restartWorkflow(workflowId);
+    public void restart(@PathParam("workflowId") String workflowId, @QueryParam("useLatestDefinitions") @DefaultValue("false") boolean useLatestDefinitions) {
+        workflowService.restartWorkflow(workflowId, useLatestDefinitions);
     }
 
     @POST
