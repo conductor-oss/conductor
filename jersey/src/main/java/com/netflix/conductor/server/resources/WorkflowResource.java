@@ -18,7 +18,6 @@
  */
 package com.netflix.conductor.server.resources;
 
-import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -29,7 +28,6 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.service.WorkflowService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -131,7 +129,6 @@ public class WorkflowResource {
                                            @QueryParam("version") @DefaultValue("1") Integer version,
                                            @QueryParam("startTime") Long startTime,
                                            @QueryParam("endTime") Long endTime) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowName), "Name cannot be null or empty.");
         return workflowService.getRunningWorkflows(workflowName, version, startTime, endTime);
     }
 

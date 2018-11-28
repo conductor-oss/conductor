@@ -7,7 +7,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.426",
+            "locked": "1.11.458",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -141,7 +141,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.426",
+            "locked": "1.11.458",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -285,7 +285,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.426",
+            "locked": "1.11.458",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -429,7 +429,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.426",
+            "locked": "1.11.458",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -563,7 +563,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.426",
+            "locked": "1.11.458",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -697,7 +697,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.426",
+            "locked": "1.11.458",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -847,7 +847,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.426",
+            "locked": "1.11.458",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -997,7 +997,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.426",
+            "locked": "1.11.458",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -1147,7 +1147,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.426",
+            "locked": "1.11.458",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {

@@ -26,7 +26,6 @@ public class CassandraModule extends AbstractModule {
         bind(CassandraConfiguration.class).to(SystemPropertiesCassandraConfiguration.class);
         bind(Cluster.class).toProvider(CassandraClusterProvider.class).asEagerSingleton();
         bind(Session.class).toProvider(CassandraSessionProvider.class);
-        bind(Statements.class).asEagerSingleton();
 
         bind(ExecutionDAO.class).to(CassandraExecutionDAO.class);
     }

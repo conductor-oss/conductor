@@ -287,7 +287,7 @@ public class WorkflowTaskCoordinator {
 				logger.debug("tasks completed, shutting down");
 			} else {
 				logger.warn(String.format("forcing shutdown after waiting for %s second", timeout));
-				this.scheduledExecutorService.shutdownNow();
+				executorService.shutdownNow();
 			}
 		} catch (InterruptedException ie) {
 			logger.warn("shutdown interrupted, invoking shutdownNow");

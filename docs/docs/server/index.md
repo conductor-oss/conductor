@@ -58,6 +58,7 @@ log4j.properties file path is optional and allows finer control over the logging
 # memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo
 # redis : non-Dynomite based redis instance
 # redis_cluster: AWS Elasticache Redis (cluster mode enabled).See [http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.Create.CON.RedisCluster.html]
+# redis_sentinel: Redis HA with Redis Sentinel. See [https://redis.io/topics/sentinel]
 # dynomite : Dynomite cluster.  Use this for HA configuration.
 db=dynomite
 
@@ -82,11 +83,12 @@ workflow.namespace.queue.prefix=conductor_queues
 queues.dynomite.threads=10
 
 # Non-quorum port used to connect to local redis.  Used by dyno-queues.
-# When using redis directly, set this to the same port as redis server
+# When using redis directly, set this to the same port as redis server.
 # For Dynomite, this is 22122 by default or the local redis-server port used by Dynomite.
 queues.dynomite.nonQuorum.port=22122
 
 # Transport address to elasticsearch
+# Specifying multiple node urls is not supported. specify one of the nodes' url, or a load balancer.
 workflow.elasticsearch.url=localhost:9300
 
 # Name of the elasticsearch cluster
@@ -109,7 +111,7 @@ Conductor server can be used with a standlone Redis or ElastiCache server.  To c
 ```properties
 db=redis
 
-# For AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e. 
+# For AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e.
 # The region in this case does not matter
 workflow.dynomite.cluster.hosts=server_address:server_port:us-east-1e
 workflow.dynomite.connection.maxConnsPerHost=31

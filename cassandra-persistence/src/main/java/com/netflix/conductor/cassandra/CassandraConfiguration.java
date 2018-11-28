@@ -22,8 +22,20 @@ public interface CassandraConfiguration extends Configuration {
     String CASSANDRA_PORT_PROPERTY_NAME = "workflow.cassandra.port";
     int CASSANDRA_PORT_DEFAULT_VALUE = 9142;
 
+    String CASSANDRA_CLUSTER_PROPERTY_NAME = "workflow.cassandra.cluster";
+    String CASSANDRA_CLUSTER_DEFAULT_VALUE = "";
+
     String CASSANDRA_KEYSPACE_PROPERTY_NAME = "workflow.cassandra.keyspace";
     String CASSANDRA_KEYSPACE_DEFAULT_VALUE = "conductor";
+
+    String CASSANDRA_REPLICATION_STRATEGY_PROPERTY_NAME = "workflow.cassandra.replication.strategy";
+    String CASSANDRA_REPLICATION_STRATEGY_DEFAULT_VALUE = "SimpleStrategy";
+
+    String CASSANDRA_REPLICATION_FACTOR_KEY_PROPERTY_NAME = "workflow.cassandra.replication.factor.key";
+    String CASSANDRA_REPLICATION_FACTOR_KEY_DEFAULT_VALUE = "replication_factor";
+
+    String CASSANDRA_REPLICATION_FACTOR_VALUE_PROPERTY_NAME = "workflow.cassandra.replicaton.factor.value";
+    int CASSANDRA_REPLICATION_FACTOR_VALUE_DEFAULT_VALUE = 3;
 
     String CASSANDRA_SHARD_SIZE_PROPERTY_KEY = "workflow.cassandra.shard.size";
     int CASSANDRA_SHARD_SIZE_DEFAULT_VALUE = 100;
@@ -36,11 +48,27 @@ public interface CassandraConfiguration extends Configuration {
         return getIntProperty(CASSANDRA_PORT_PROPERTY_NAME, CASSANDRA_PORT_DEFAULT_VALUE);
     }
 
-    default String getKeyspace() {
+    default String getCassandraCluster() {
+        return getProperty(CASSANDRA_CLUSTER_PROPERTY_NAME, CASSANDRA_CLUSTER_DEFAULT_VALUE);
+    }
+
+    default String getCassandraKeyspace() {
         return getProperty(CASSANDRA_KEYSPACE_PROPERTY_NAME, CASSANDRA_KEYSPACE_DEFAULT_VALUE);
     }
 
     default int getShardSize() {
         return getIntProperty(CASSANDRA_SHARD_SIZE_PROPERTY_KEY, CASSANDRA_SHARD_SIZE_DEFAULT_VALUE);
+    }
+
+    default String getReplicationStrategy() {
+        return getProperty(CASSANDRA_REPLICATION_STRATEGY_PROPERTY_NAME, CASSANDRA_REPLICATION_STRATEGY_DEFAULT_VALUE);
+    }
+
+    default String getReplicationFactorKey() {
+        return getProperty(CASSANDRA_REPLICATION_FACTOR_KEY_PROPERTY_NAME, CASSANDRA_REPLICATION_FACTOR_KEY_DEFAULT_VALUE);
+    }
+
+    default int getReplicationFactorValue() {
+        return getIntProperty(CASSANDRA_REPLICATION_FACTOR_VALUE_PROPERTY_NAME, CASSANDRA_REPLICATION_FACTOR_VALUE_DEFAULT_VALUE);
     }
 }

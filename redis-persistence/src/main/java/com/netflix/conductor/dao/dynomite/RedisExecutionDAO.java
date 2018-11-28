@@ -289,7 +289,9 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			logger.info("Task execution count limited. task - {}:{}, limit: {}, current: {}", task.getTaskId(), task.getTaskDefName(), limit, current);
 			String inProgressKey = nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName());
 			//Cleanup any items that are still present in the rate limit bucket but not in progress anymore!
-			ids.stream().filter(id -> !dynoClient.sismember(inProgressKey, id)).forEach(id2 -> dynoClient.zrem(rateLimitKey, id2));
+			ids.stream()
+					.filter(id -> !dynoClient.sismember(inProgressKey, id))
+					.forEach(id2 -> dynoClient.zrem(rateLimitKey, id2));
 			Monitors.recordTaskRateLimited(task.getTaskDefName(), limit);
 		}
 		return rateLimited;

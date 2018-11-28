@@ -15,6 +15,7 @@
  */
 package com.netflix.conductor.util;
 
+import com.datastax.driver.core.Session;
 import org.cassandraunit.utils.EmbeddedCassandraServerHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,9 +32,13 @@ public class EmbeddedCassandra {
         try {
             EmbeddedCassandraServerHelper.startEmbeddedCassandra();
         } catch (Exception e) {
-            LOGGER.error("Error starting embedded cassandra server");
+            LOGGER.error("Error starting embedded cassandra server", e);
             throw e;
         }
+    }
+
+    public Session getSession() {
+        return EmbeddedCassandraServerHelper.getSession();
     }
 
     public void cleanupData() {

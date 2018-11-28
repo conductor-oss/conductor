@@ -73,7 +73,7 @@ const HttpClient = {
           console.error('Error on post! ' + err);
           reject(err);
         } else {
-          resolve(res);
+          resolve(res.body);
         }
       });
     })
