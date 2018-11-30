@@ -36,7 +36,7 @@ public class ServiceInterceptor implements MethodInterceptor{
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
 
-        if (skipMethod( invocation )) {
+        if (skipMethod(invocation)) {
             return invocation.proceed();
         }
 
