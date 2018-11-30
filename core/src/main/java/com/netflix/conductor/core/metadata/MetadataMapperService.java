@@ -16,6 +16,7 @@
 package com.netflix.conductor.core.metadata;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.inject.Singleton;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
@@ -78,13 +79,14 @@ public class MetadataMapperService {
     }
 
     @VisibleForTesting
-    Optional<WorkflowDef> lookupWorkflowDefinition(@NotEmpty(message = "Workflow name must be specified when searching for a definition") String workflowName,
-                                                   int workflowVersion) {
+    Optional<WorkflowDef> lookupWorkflowDefinition(String workflowName, int workflowVersion) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowName), "Workflow name must be specified when searching for a definition");
         return metadataDAO.get(workflowName, workflowVersion);
     }
 
     @VisibleForTesting
-    Optional<WorkflowDef> lookupLatestWorkflowDefinition(@NotEmpty(message = "Workflow name must be specified when searching for a definition") String workflowName) {
+    Optional<WorkflowDef> lookupLatestWorkflowDefinition(String workflowName) {
+        Preconditions.checkArgument(StringUtils.isNotBlank(workflowName), "Workflow name must be specified when searching for a definition");
         return metadataDAO.getLatest(workflowName);
     }
 

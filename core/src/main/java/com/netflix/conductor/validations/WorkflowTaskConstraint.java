@@ -45,12 +45,6 @@ public @interface WorkflowTaskConstraint {
 
             boolean valid = true;
 
-            if (ValidationContext.getMetadataDAO().getTaskDef(workflowTask.getName()) == null){
-                String message = String.format("taskDef %s by name does not exists", workflowTask.getName());
-                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
-                valid = false;
-            }
-
             // depending on task type check if required parameters are set or not
             switch (workflowTask.getType()) {
                 case TaskType.TASK_TYPE_EVENT:

@@ -1,23 +1,39 @@
 package com.netflix.conductor.core.metadata;
 
 import com.google.common.collect.ImmutableList;
+import com.google.inject.AbstractModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.matcher.Matchers;
+import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.config.ValidationModule;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.interceptors.ServiceInterceptor;
+import com.netflix.conductor.service.WorkflowBulkService;
+import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import javax.validation.ConstraintViolationException;
+import javax.validation.Validator;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
+import static com.netflix.conductor.utility.TestUtils.getConstraintViolationMessages;
 import static junit.framework.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -32,8 +48,23 @@ public class MetadataMapperServiceTest {
     @Mock
     private MetadataDAO metadataDAO;
 
-    @InjectMocks
     private MetadataMapperService metadataMapperService;
+
+    @Before
+    public void before() {
+        metadataMapperService = Mockito.mock(MetadataMapperService.class);
+        Injector injector =
+                Guice.createInjector(
+                        new AbstractModule() {
+                            @Override
+                            protected void configure() {
+                                bind(MetadataDAO.class).toInstance(metadataDAO);
+                                install(new ValidationModule());
+                                bindInterceptor(Matchers.any(), Matchers.annotatedWith(Service.class), new ServiceInterceptor(getProvider(Validator.class)));
+                            }
+                        });
+        metadataMapperService = injector.getInstance(MetadataMapperService.class);
+    }
 
     @Test
     public void testMetadataPopulationOnSimpleTask() {
@@ -200,17 +231,22 @@ public class MetadataMapperServiceTest {
         verify(metadataDAO).getLatest(workflowDefinitionName);
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testLookupWorkflowDefinition() {
-        String workflowName = "test";
-        when(metadataDAO.get(workflowName, 0)).thenReturn(Optional.of(new WorkflowDef()));
-        Optional<WorkflowDef> optionalWorkflowDef = metadataMapperService.lookupWorkflowDefinition(workflowName, 0);
-        assertTrue(optionalWorkflowDef.isPresent());
-
-        metadataMapperService.lookupWorkflowDefinition(null, 0);
+        try{
+            String workflowName = "test";
+            when(metadataDAO.get(workflowName, 0)).thenReturn(Optional.of(new WorkflowDef()));
+            Optional<WorkflowDef> optionalWorkflowDef = metadataMapperService.lookupWorkflowDefinition(workflowName, 0);
+            assertTrue(optionalWorkflowDef.isPresent());
+            metadataMapperService.lookupWorkflowDefinition(null, 0);
+        } catch (ConstraintViolationException ex){
+            Assert.assertEquals(1, ex.getConstraintViolations().size());
+            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+            assertTrue(messages.contains("WorkflowIds list cannot be null."));
+        }
     }
 
-    @Test(expected = ApplicationException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void testLookupLatestWorkflowDefinition() {
         String workflowName = "test";
         when(metadataDAO.getLatest(workflowName)).thenReturn(Optional.of(new WorkflowDef()));

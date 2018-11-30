@@ -42,8 +42,13 @@ public class ValidationModule extends AbstractModule {
     }
 
     @ProvidesIntoSet
-    public ConstraintMapping getCreateTableConstraintConstraint(final HibernateValidatorConfiguration configuration) {
-        return TaskDefConstraint.getTaskDefConstraint(configuration);
+    public ConstraintMapping getWorkflowTaskConstraint(final HibernateValidatorConfiguration configuration) {
+        return TaskDefConstraint.getWorkflowTaskConstraint(configuration);
+    }
+
+    @ProvidesIntoSet
+    public ConstraintMapping getWorkflowDefConstraint(final HibernateValidatorConfiguration configuration) {
+        return TaskDefConstraint.getWorkflowDefConstraint(configuration);
     }
 
 }

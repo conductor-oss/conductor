@@ -39,6 +39,7 @@ public class MetadataResourceTest {
     private MetadataResource metadataResource;
 
     private MetadataService mockMetadataService;
+
     @Before
     public void before(){
         this.mockMetadataService = Mockito.mock(MetadataService.class);

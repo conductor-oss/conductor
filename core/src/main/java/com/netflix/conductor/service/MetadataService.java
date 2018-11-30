@@ -80,7 +80,7 @@ public class MetadataService {
      * @param taskDefinition Task Definition to be updated
      */
     @Service
-    public void updateTaskDef(@NotNull @Valid TaskDef taskDefinition) {
+    public void updateTaskDef(@NotNull(message = "TaskDef cannot be null") @Valid TaskDef taskDefinition) {
         TaskDef existing = metadataDAO.getTaskDef(taskDefinition.getName());
         if (existing == null) {
             throw new ApplicationException(Code.NOT_FOUND, "No such task by name " + taskDefinition.getName());
@@ -111,7 +111,7 @@ public class MetadataService {
      * @return Task Definition
      */
     @Service
-    public TaskDef getTaskDef(@NotEmpty String taskType) {
+    public TaskDef getTaskDef(@NotEmpty(message="TaskType cannot be null or empty") String taskType) {
         TaskDef taskDef = metadataDAO.getTaskDef(taskType);
         if (taskDef == null){
             throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
@@ -124,7 +124,7 @@ public class MetadataService {
      * @param def Workflow definition to be updated
      */
     @Service
-    public void updateWorkflowDef(@NotNull @Valid WorkflowDef def) {
+    public void updateWorkflowDef(@NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef def) {
         Preconditions.checkNotNull(def, "WorkflowDef object cannot be null");
         Preconditions.checkNotNull(def.getName(), "WorkflowDef name cannot be null");
         metadataDAO.update(def);
@@ -149,7 +149,7 @@ public class MetadataService {
      * @return Workflow definition
      */
     @Service
-    public WorkflowDef getWorkflowDef(@NotEmpty String name, Integer version) {
+    public WorkflowDef getWorkflowDef(@NotEmpty(message = "Workflow name cannot be null or empty") String name, Integer version) {
         Optional<WorkflowDef> workflowDef;
         if (version == null) {
             workflowDef = metadataDAO.getLatest(name);
@@ -210,7 +210,7 @@ public class MetadataService {
      * @param eventHandler Event handler to be updated.
      */
     @Service
-    public void updateEventHandler(@NotNull @Valid EventHandler eventHandler) {
+    public void updateEventHandler(@NotNull(message = "EventHandler cannot be null") @Valid EventHandler eventHandler) {
         eventQueues.getQueue(eventHandler.getEvent());
         metadataDAO.updateEventHandler(eventHandler);
     }
@@ -218,7 +218,7 @@ public class MetadataService {
     /**
      * @param name Removes the event handler from the system
      */
-    public void removeEventHandlerStatus(@NotEmpty(message = "eventName cannot be null or empty") String name) {
+    public void removeEventHandlerStatus(@NotEmpty(message = "EventName cannot be null or empty") String name) {
         metadataDAO.removeEventHandlerStatus(name);
     }
 
@@ -235,7 +235,7 @@ public class MetadataService {
      * @return Returns the list of all the event handlers for a given event
      */
     @Service
-    public List<EventHandler> getEventHandlersForEvent(@NotEmpty(message = "eventName cannot be null or empty") String event, boolean activeOnly) {
+    public List<EventHandler> getEventHandlersForEvent(@NotEmpty(message = "EventName cannot be null or empty") String event, boolean activeOnly) {
         return metadataDAO.getEventHandlersForEvent(event, activeOnly);
     }
 

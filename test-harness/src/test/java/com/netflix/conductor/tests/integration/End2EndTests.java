@@ -292,6 +292,13 @@ public class End2EndTests extends AbstractEndToEndTest {
 
     @Test
     public void testUpdateWorkflow() {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("taskUpdate");
+        ArrayList<TaskDef> tasks = new ArrayList<>();
+        tasks.add(taskDef);
+        metadataClient.registerTaskDefs(tasks);
+
+
         WorkflowDef def = new WorkflowDef();
         def.setName("testWorkflowDel");
         def.setVersion(1);
@@ -441,5 +448,22 @@ public class End2EndTests extends AbstractEndToEndTest {
         }
     }
 
+    @Test
+    public void testUpdateTaskDefNameNull(){
+        TaskDef taskDef = new TaskDef();
+        try{
+            metadataClient.updateTaskDef(taskDef);
+        } catch (ConductorClientException e){
+            assertEquals(1, e.getValidationErrors().size());
+            assertEquals(400, e.getStatus());
+            assertEquals("Validation failed, check below errors for detail.", e.getMessage());
+            assertFalse(e.isRetryable());
+            List<ValidationError> errors = e.getValidationErrors();
+            List<String> errorMessages = errors.stream()
+                    .map(v -> v.getMessage())
+                    .collect(Collectors.toList());
+            assertTrue(errorMessages.contains("taskDef name cannot be null"));
+        }
+    }
 
 }

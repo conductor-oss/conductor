@@ -1,8 +1,5 @@
 package com.netflix.conductor.validations;
 
-import com.google.inject.Inject;
-import com.netflix.conductor.dao.MetadataDAO;
-
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
@@ -18,26 +15,28 @@ import static java.lang.annotation.ElementType.TYPE;
 
 
 @Documented
-@Constraint(validatedBy = MetadataConstraints.TaskUniqueValidator.class)
+@Constraint(validatedBy = CheckTaskDefNotExists.TaskUniqueValidator.class)
 @Target({TYPE, METHOD, PARAMETER})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface MetadataConstraints {
+public @interface CheckTaskDefNotExists {
     String message() default "";
 
     Class<?>[] groups() default {};
 
     Class<? extends Payload>[] payload() default {};
 
-    class TaskUniqueValidator implements ConstraintValidator<MetadataConstraints, String> {
-        @Inject
-        private MetadataDAO metadataDAO;
+    class TaskUniqueValidator implements ConstraintValidator<CheckTaskDefNotExists, String> {
 
         @Override
-        public void initialize(MetadataConstraints constraintAnnotation) {
+        public void initialize(CheckTaskDefNotExists constraintAnnotation) {
         }
 
         @Override
         public boolean isValid(String taskDefName, ConstraintValidatorContext context) {
+            if (taskDefName == null) {
+                return true;
+            }
+
             context.disableDefaultConstraintViolation();
 
             boolean valid = true;

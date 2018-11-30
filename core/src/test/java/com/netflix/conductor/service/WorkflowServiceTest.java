@@ -368,7 +368,7 @@ public class WorkflowServiceTest {
     @Test
     public void testRestartWorkflowNull() {
         try{
-            workflowService.restartWorkflow(null);
+            workflowService.restartWorkflow(null, false);
         } catch (ConstraintViolationException ex){
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
@@ -473,5 +473,6 @@ public class WorkflowServiceTest {
         workflowService.searchWorkflowsByTasks(0,100,"asc", "*", "*");
         verify(mockExecutionService, times(1)).searchWorkflowByTasks(anyString(), anyString(), anyInt(), anyInt(), anyListOf(String.class));
     }
+
 
 }

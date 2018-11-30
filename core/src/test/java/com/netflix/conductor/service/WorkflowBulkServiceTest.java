@@ -7,7 +7,6 @@ import com.google.inject.matcher.Matchers;
 import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.core.config.ValidationModule;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.interceptors.ServiceInterceptor;
 import org.junit.Before;
 import org.junit.Test;
@@ -22,7 +21,6 @@ import java.util.Set;
 import static com.netflix.conductor.utility.TestUtils.getConstraintViolationMessages;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class WorkflowBulkServiceTest {
 
@@ -86,7 +84,7 @@ public class WorkflowBulkServiceTest {
     @Test
     public void testRestartWorkflowNull(){
         try{
-            workflowBulkService.restart(null);
+            workflowBulkService.restart(null, false);
         } catch (ConstraintViolationException ex){
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());

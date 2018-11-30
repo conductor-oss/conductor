@@ -11,6 +11,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ValidationModule;
 import com.netflix.conductor.core.events.EventQueues;
+import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.interceptors.ServiceInterceptor;
 import org.junit.Before;
@@ -29,6 +30,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static com.netflix.conductor.utility.TestUtils.getConstraintViolationMessages;
+import static org.mockito.Mockito.when;
 
 public class MetadataServiceTest{
 
@@ -95,6 +97,46 @@ public class MetadataServiceTest{
             assertTrue(messages.contains("responseTimeoutSeconds: 0 should be minimum 1 second"));
         }
     }
+
+    @Test
+    public void testUpdateTaskDefNameNull() {
+        try{
+            TaskDef taskDef = new TaskDef();
+            metadataService.updateTaskDef(taskDef);
+        } catch (ConstraintViolationException ex) {
+            assertEquals(1, ex.getConstraintViolations().size());
+            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+            assertTrue(messages.contains("taskDef name cannot be null"));
+        }
+    }
+
+    @Test
+    public void testUpdateTaskDefNull() {
+        try{
+            metadataService.updateTaskDef(null);
+        } catch (ConstraintViolationException ex) {
+            assertEquals(1, ex.getConstraintViolations().size());
+            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
+            assertTrue(messages.contains("TaskDef cannot be null"));
+        }
+    }
+
+    @Test(expected = ApplicationException.class)
+    public void testUpdateTaskDefNotExisting() {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("test");
+        when(metadataDAO.getTaskDef(any())).thenReturn(null);
+        metadataService.updateTaskDef(taskDef);
+    }
+
+    @Test(expected = ApplicationException.class)
+    public void testUpdateTaskDefDaoException() {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("test");
+        when(metadataDAO.getTaskDef(any())).thenReturn(null);
+        metadataService.updateTaskDef(taskDef);
+    }
+
 
     @Test
     public void testRegisterTaskDef() {
@@ -170,6 +212,7 @@ public class MetadataServiceTest{
         workflowTask.setName("hello");
         tasks.add(workflowTask);
         workflowDef.setTasks(tasks);
+        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
         metadataService.updateWorkflowDef(Arrays.asList(workflowDef));
         verify(metadataDAO, times(1)).update(workflowDef);
     }
@@ -212,6 +255,7 @@ public class MetadataServiceTest{
         workflowTask.setName("hello");
         tasks.add(workflowTask);
         workflowDef.setTasks(tasks);
+        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
         metadataService.registerWorkflowDef(workflowDef);
         verify(metadataDAO, times(1)).create(workflowDef);
         assertEquals(2, workflowDef.getSchemaVersion());
