@@ -6,8 +6,6 @@ This Dockerfile create the conductor:server image
 
 Run the following commands from the project root.
 
-`docker build -f docker/server/Dockerfile.build -t conductor:server-build .`
-`docker run -v $(pwd):/conductor conductor:server-build`
 `docker build -f docker/server/Dockerfile -t conductor:server .`
 
 ## Running the conductor server
