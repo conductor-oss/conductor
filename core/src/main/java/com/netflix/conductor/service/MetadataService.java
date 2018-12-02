@@ -94,7 +94,7 @@ public class MetadataService {
      * @param taskType Remove task definition
      */
     @Service
-    public void unregisterTaskDef(@NotEmpty String taskType) {
+    public void unregisterTaskDef(@NotEmpty(message="TaskName cannot be null or empty") String taskType) {
         metadataDAO.removeTaskDef(taskType);
     }
 
@@ -125,8 +125,6 @@ public class MetadataService {
      */
     @Service
     public void updateWorkflowDef(@NotNull(message = "WorkflowDef cannot be null") @Valid WorkflowDef def) {
-        Preconditions.checkNotNull(def, "WorkflowDef object cannot be null");
-        Preconditions.checkNotNull(def.getName(), "WorkflowDef name cannot be null");
         metadataDAO.update(def);
     }
 

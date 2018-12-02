@@ -41,6 +41,7 @@ import com.netflix.conductor.tests.utils.TestEnvironment;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -463,6 +464,32 @@ public class End2EndTests extends AbstractEndToEndTest {
                     .map(v -> v.getMessage())
                     .collect(Collectors.toList());
             assertTrue(errorMessages.contains("taskDef name cannot be null"));
+        }
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testGetTaskDefNotExisting(){
+            metadataClient.getTaskDef("");
+    }
+
+    @Test
+    public void testUpdateWorkflowDefNameNull(){
+        WorkflowDef workflowDef = new WorkflowDef();
+        List<WorkflowDef> list = new ArrayList<>();
+        list.add(workflowDef);
+        try{
+            metadataClient.updateWorkflowDefs(list);
+        } catch (ConductorClientException e){
+            assertEquals(2, e.getValidationErrors().size());
+            assertEquals(400, e.getStatus());
+            assertEquals("Validation failed, check below errors for detail.", e.getMessage());
+            assertFalse(e.isRetryable());
+            List<ValidationError> errors = e.getValidationErrors();
+            List<String> errorMessages = errors.stream()
+                    .map(v -> v.getMessage())
+                    .collect(Collectors.toList());
+            assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
+            assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
         }
     }
 
