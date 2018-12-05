@@ -39,7 +39,7 @@ class Main {
   };
 
   startServer = app => {
-    const server = app.listen(process.env.NODE_PORT || 5000, 'localhost', function () {
+    const server = app.listen(process.env.NODE_PORT || 5000, process.env.NODE_HOST || 'localhost', function () {
       const { address, port } = server.address();
       log.info('Workflow UI listening at http://%s:%s', address, port);
       if (process.send) {
