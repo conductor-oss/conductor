@@ -20,6 +20,11 @@ services:
         condition: service_healthy
       dynomite:
         condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
 
   conductor-ui:
     environment:
@@ -46,6 +51,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
 
   # https://www.elastic.co/guide/en/elasticsearch/reference/5.6/docker.html
   elasticsearch:
@@ -65,6 +75,11 @@ services:
       interval: 5s
       timeout: 5s
       retries: 12
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
 
 networks:
   internal:
