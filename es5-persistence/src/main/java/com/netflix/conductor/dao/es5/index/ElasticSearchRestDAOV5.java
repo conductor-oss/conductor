@@ -77,14 +77,13 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
     private static final int RETRY_COUNT = 3;
 
     private static final String WORKFLOW_DOC_TYPE = "workflow";
-
     private static final String TASK_DOC_TYPE = "task";
-
     private static final String LOG_DOC_TYPE = "task_log";
-
     private static final String EVENT_DOC_TYPE = "event";
-
     private static final String MSG_DOC_TYPE = "message";
+
+    private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
+    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMww");
 
     private @interface HttpMethod {
         String GET = "GET";
@@ -95,18 +94,14 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
 
     private static final String className = ElasticSearchRestDAOV5.class.getSimpleName();
 
-    private String indexName;
-    private String logIndexPrefix;
+    private final String indexName;
+    private final String logIndexPrefix;
     private String logIndexName;
-
-    private ObjectMapper objectMapper;
-    private RestHighLevelClient elasticSearchClient;
-    private RestClient elasticSearchAdminClient;
-
+    private final ObjectMapper objectMapper;
+    private final RestHighLevelClient elasticSearchClient;
+    private final RestClient elasticSearchAdminClient;
     private final ExecutorService executorService;
 
-    private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
-    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMww");
     static {
         SIMPLE_DATE_FORMAT.setTimeZone(GMT);
     }

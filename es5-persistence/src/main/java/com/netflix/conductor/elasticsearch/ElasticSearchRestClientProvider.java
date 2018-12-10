@@ -24,9 +24,10 @@ public class ElasticSearchRestClientProvider implements Provider<RestClient> {
     }
 
     private HttpHost[] convertToHttpHosts(List<URI> hosts) {
-        List<HttpHost> list = hosts.stream().map(host ->
-                new HttpHost(host.getHost(), host.getPort(), host.getScheme()))
-                .collect(Collectors.toList());
+        List<HttpHost> list = hosts.stream()
+            .map(host -> new HttpHost(host.getHost(), host.getPort(), host.getScheme()))
+            .collect(Collectors.toList());
+
         return list.toArray(new HttpHost[list.size()]);
     }
 }
