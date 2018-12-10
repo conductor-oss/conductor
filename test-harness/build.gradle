@@ -23,6 +23,7 @@ dependencies {
     testCompile "io.swagger:swagger-jersey-jaxrs:${revSwaggerJersey}"
 
     testCompile "ch.vorburger.mariaDB4j:mariaDB4j:${revMariaDB4j}"
+    testCompile "org.awaitility:awaitility:${revAwaitility}"
 }
 
 test {

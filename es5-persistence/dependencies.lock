@@ -812,6 +812,10 @@
             "locked": "2.9.1",
             "requested": "2.9.1"
         },
+        "org.awaitility:awaitility": {
+            "locked": "3.1.2",
+            "requested": "3.1.2"
+        },
         "org.elasticsearch.client:elasticsearch-rest-client": {
             "locked": "5.6.8",
             "requested": "5.6.8"
@@ -960,6 +964,10 @@
         "org.apache.logging.log4j:log4j-core": {
             "locked": "2.9.1",
             "requested": "2.9.1"
+        },
+        "org.awaitility:awaitility": {
+            "locked": "3.1.2",
+            "requested": "3.1.2"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
             "locked": "5.6.8",
@@ -1110,6 +1118,10 @@
             "locked": "2.9.1",
             "requested": "2.9.1"
         },
+        "org.awaitility:awaitility": {
+            "locked": "3.1.2",
+            "requested": "3.1.2"
+        },
         "org.elasticsearch.client:elasticsearch-rest-client": {
             "locked": "5.6.8",
             "requested": "5.6.8"
@@ -1258,6 +1270,10 @@
         "org.apache.logging.log4j:log4j-core": {
             "locked": "2.9.1",
             "requested": "2.9.1"
+        },
+        "org.awaitility:awaitility": {
+            "locked": "3.1.2",
+            "requested": "3.1.2"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
             "locked": "5.6.8",

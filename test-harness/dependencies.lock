@@ -387,6 +387,10 @@
             ],
             "locked": "2.9.1"
         },
+        "org.awaitility:awaitility": {
+            "locked": "3.1.2",
+            "requested": "3.1.2"
+        },
         "org.eclipse.jetty:jetty-server": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
@@ -833,6 +837,10 @@
                 "com.netflix.conductor:conductor-es5-persistence"
             ],
             "locked": "2.9.1"
+        },
+        "org.awaitility:awaitility": {
+            "locked": "3.1.2",
+            "requested": "3.1.2"
         },
         "org.eclipse.jetty:jetty-server": {
             "firstLevelTransitive": [
@@ -1281,6 +1289,10 @@
             ],
             "locked": "2.9.1"
         },
+        "org.awaitility:awaitility": {
+            "locked": "3.1.2",
+            "requested": "3.1.2"
+        },
         "org.eclipse.jetty:jetty-server": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
@@ -1727,6 +1739,10 @@
                 "com.netflix.conductor:conductor-es5-persistence"
             ],
             "locked": "2.9.1"
+        },
+        "org.awaitility:awaitility": {
+            "locked": "3.1.2",
+            "requested": "3.1.2"
         },
         "org.eclipse.jetty:jetty-server": {
             "firstLevelTransitive": [
