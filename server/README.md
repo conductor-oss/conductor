@@ -10,13 +10,14 @@ At the minimum, provide these options through VM or Config file:
 `workflow.elasticsearch.url`
 `workflow.elasticsearch.index.name`
 
-### Database persistence model  
-Possible values are memory, redis, redis_cluster and dynomite.
+### Database persistence model
+Possible values are memory, redis, redis_cluster, redis_sentinel and dynomite.
 If omitted, the persistence used is memory
 
 memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo
 redis : non-Dynomite based redis instance
 redis_cluster: AWS Elasticache Redis (cluster mode enabled).See [http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.Create.CON.RedisCluster.html]
+redis_sentinel: Redis HA with Redis Sentinel. See [https://redis.io/topics/sentinel]
 dynomite : Dynomite cluster.  Use this for HA configuration.
 `db=dynomite`
 
