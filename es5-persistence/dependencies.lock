@@ -113,6 +113,10 @@
             "locked": "2.9.1",
             "requested": "2.9.1"
         },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.8",
+            "requested": "5.6.8"
+        },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "5.6.8",
             "requested": "5.6.8"
@@ -246,6 +250,10 @@
             "locked": "2.9.1",
             "requested": "2.9.1"
         },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.8",
+            "requested": "5.6.8"
+        },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "5.6.8",
             "requested": "5.6.8"
@@ -378,6 +386,10 @@
         "org.apache.logging.log4j:log4j-core": {
             "locked": "2.9.1",
             "requested": "2.9.1"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.8",
+            "requested": "5.6.8"
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "5.6.8",
@@ -522,6 +534,10 @@
             "locked": "2.9.1",
             "requested": "2.9.1"
         },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.8",
+            "requested": "5.6.8"
+        },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "5.6.8",
             "requested": "5.6.8"
@@ -654,6 +670,10 @@
         "org.apache.logging.log4j:log4j-core": {
             "locked": "2.9.1",
             "requested": "2.9.1"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.8",
+            "requested": "5.6.8"
         },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "5.6.8",
@@ -792,6 +812,14 @@
             "locked": "2.9.1",
             "requested": "2.9.1"
         },
+        "org.awaitility:awaitility": {
+            "locked": "3.1.2",
+            "requested": "3.1.2"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.8",
+            "requested": "5.6.8"
+        },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "5.6.8",
             "requested": "5.6.8"
@@ -812,7 +840,11 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "1.7.25"
+            "locked": "1.8.0-alpha1"
+        },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
         }
     },
     "testCompileClasspath": {
@@ -933,6 +965,14 @@
             "locked": "2.9.1",
             "requested": "2.9.1"
         },
+        "org.awaitility:awaitility": {
+            "locked": "3.1.2",
+            "requested": "3.1.2"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.8",
+            "requested": "5.6.8"
+        },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "5.6.8",
             "requested": "5.6.8"
@@ -953,7 +993,11 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "1.7.25"
+            "locked": "1.8.0-alpha1"
+        },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
         }
     },
     "testRuntime": {
@@ -1074,6 +1118,14 @@
             "locked": "2.9.1",
             "requested": "2.9.1"
         },
+        "org.awaitility:awaitility": {
+            "locked": "3.1.2",
+            "requested": "3.1.2"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.8",
+            "requested": "5.6.8"
+        },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "5.6.8",
             "requested": "5.6.8"
@@ -1094,7 +1146,11 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "1.7.25"
+            "locked": "1.8.0-alpha1"
+        },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
         }
     },
     "testRuntimeClasspath": {
@@ -1215,6 +1271,14 @@
             "locked": "2.9.1",
             "requested": "2.9.1"
         },
+        "org.awaitility:awaitility": {
+            "locked": "3.1.2",
+            "requested": "3.1.2"
+        },
+        "org.elasticsearch.client:elasticsearch-rest-client": {
+            "locked": "5.6.8",
+            "requested": "5.6.8"
+        },
         "org.elasticsearch.client:elasticsearch-rest-high-level-client": {
             "locked": "5.6.8",
             "requested": "5.6.8"
@@ -1235,7 +1299,11 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "1.7.25"
+            "locked": "1.8.0-alpha1"
+        },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
         }
     }
 }

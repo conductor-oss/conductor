@@ -15,10 +15,10 @@
  */
 package com.netflix.conductor.tests.integration;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.netflix.conductor.bootstrap.BootstrapModule;
-import com.netflix.conductor.bootstrap.ModulesProvider;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import com.netflix.conductor.client.grpc.MetadataClient;
 import com.netflix.conductor.client.grpc.TaskClient;
 import com.netflix.conductor.client.grpc.WorkflowClient;
@@ -34,60 +34,42 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
-import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
-import com.netflix.conductor.grpc.server.GRPCServer;
-import com.netflix.conductor.grpc.server.GRPCServerConfiguration;
-import com.netflix.conductor.grpc.server.GRPCServerProvider;
-import com.netflix.conductor.tests.utils.TestEnvironment;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.junit.Test;
 
 /**
  * @author Viren
  */
-public class End2EndGrpcTests extends AbstractEndToEndTest {
-    private static TaskClient taskClient;
-    private static WorkflowClient workflowClient;
-    private static MetadataClient metadataClient;
-    private static EmbeddedElasticSearch search;
+public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
 
-    @BeforeClass
-    public static void setup() throws Exception {
-        TestEnvironment.setup();
-        System.setProperty(GRPCServerConfiguration.ENABLED_PROPERTY_NAME, "true");
-        System.setProperty(ElasticSearchConfiguration.EMBEDDED_PORT_PROPERTY_NAME, "9202");
-        System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_URL_PROPERTY_NAME, "localhost:9302");
+    protected static TaskClient taskClient;
+    protected static WorkflowClient workflowClient;
+    protected static MetadataClient metadataClient;
+    protected static EmbeddedElasticSearch search;
 
-        Injector bootInjector = Guice.createInjector(new BootstrapModule());
-        Injector serverInjector = Guice.createInjector(bootInjector.getInstance(ModulesProvider.class).get());
-
-        search = serverInjector.getInstance(EmbeddedElasticSearchProvider.class).get().get();
-        search.start();
-
-        Optional<GRPCServer> server = serverInjector.getInstance(GRPCServerProvider.class).get();
-        assertTrue("failed to instantiate GRPCServer", server.isPresent());
-        server.get().start();
-
-        taskClient = new TaskClient("localhost", 8090);
-        workflowClient = new WorkflowClient("localhost", 8090);
-        metadataClient = new MetadataClient("localhost", 8090);
+    @Override
+    protected String startWorkflow(String workflowExecutionName, WorkflowDef workflowDefinition) {
+        StartWorkflowRequest workflowRequest = new StartWorkflowRequest()
+            .withName(workflowExecutionName)
+            .withWorkflowDef(workflowDefinition);
+        return workflowClient.startWorkflow(workflowRequest);
     }
 
-    @AfterClass
-    public static void teardown() throws Exception {
-        TestEnvironment.teardown();
-        search.stop();
+    @Override
+    protected Workflow getWorkflow(String workflowId, boolean includeTasks) {
+        return workflowClient.getWorkflow(workflowId, includeTasks);
+    }
+
+    @Override
+    protected TaskDef getTaskDefinition(String taskName) {
+        return metadataClient.getTaskDef(taskName);
+    }
+
+    @Override
+    protected void registerTaskDefinitions(List<TaskDef> taskDefinitionList) {
+        metadataClient.registerTaskDefs(taskDefinitionList);
     }
 
     @Test
@@ -212,28 +194,5 @@ public class End2EndGrpcTests extends AbstractEndToEndTest {
         assertNotNull(wf);
         assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
         assertEquals(1, wf.getTasks().size());
-    }
-
-    @Override
-    protected String startWorkflow(String workflowExecutionName, WorkflowDef workflowDefinition) {
-        StartWorkflowRequest workflowRequest = new StartWorkflowRequest()
-                .withName(workflowExecutionName)
-                .withWorkflowDef(workflowDefinition);
-        return workflowClient.startWorkflow(workflowRequest);
-    }
-
-    @Override
-    protected Workflow getWorkflow(String workflowId, boolean includeTasks) {
-        return workflowClient.getWorkflow(workflowId, includeTasks);
-    }
-
-    @Override
-    protected TaskDef getTaskDefinition(String taskName) {
-        return metadataClient.getTaskDef(taskName);
-    }
-
-    @Override
-    protected void registerTaskDefinitions(List<TaskDef> taskDefinitionList) {
-        metadataClient.registerTaskDefs(taskDefinitionList);
     }
 }

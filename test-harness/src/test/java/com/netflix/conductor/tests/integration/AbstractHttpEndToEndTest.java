@@ -12,10 +12,11 @@
  */
 package com.netflix.conductor.tests.integration;
 
-import com.google.inject.Guice;
-import com.google.inject.Injector;
-import com.netflix.conductor.bootstrap.BootstrapModule;
-import com.netflix.conductor.bootstrap.ModulesProvider;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import com.netflix.conductor.client.exceptions.ConductorClientException;
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
@@ -32,67 +33,25 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
-import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
-import com.netflix.conductor.jetty.server.JettyServer;
-import com.netflix.conductor.tests.utils.TestEnvironment;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import java.util.concurrent.TimeUnit;
+import org.awaitility.Awaitility;
+import org.junit.Test;
 
 /**
  * @author Viren
  */
+public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
 
-public class End2EndTests extends AbstractEndToEndTest {
+    protected static String apiRoot;
 
-    private static TaskClient taskClient;
-    private static WorkflowClient workflowClient;
-    private static EmbeddedElasticSearch search;
-    private static MetadataClient metadataClient;
-
-    private static final int SERVER_PORT = 8080;
-
-    @BeforeClass
-    public static void setup() throws Exception {
-        TestEnvironment.setup();
-        System.setProperty(ElasticSearchConfiguration.EMBEDDED_PORT_PROPERTY_NAME, "9201");
-        System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_URL_PROPERTY_NAME, "localhost:9301");
-
-        Injector bootInjector = Guice.createInjector(new BootstrapModule());
-        Injector serverInjector = Guice.createInjector(bootInjector.getInstance(ModulesProvider.class).get());
-
-        search = serverInjector.getInstance(EmbeddedElasticSearchProvider.class).get().get();
-        search.start();
-
-        JettyServer server = new JettyServer(SERVER_PORT, false);
-        server.start();
-
-        taskClient = new TaskClient();
-        taskClient.setRootURI("http://localhost:8080/api/");
-
-        workflowClient = new WorkflowClient();
-        workflowClient.setRootURI("http://localhost:8080/api/");
-
-        metadataClient = new MetadataClient();
-        metadataClient.setRootURI("http://localhost:8080/api/");
-    }
-
-    @AfterClass
-    public static void teardown() throws Exception {
-        TestEnvironment.teardown();
-        search.stop();
-    }
+    protected static TaskClient taskClient;
+    protected static WorkflowClient workflowClient;
+    protected static EmbeddedElasticSearch search;
+    protected static MetadataClient metadataClient;
 
     @Override
     protected String startWorkflow(String workflowExecutionName, WorkflowDef workflowDefinition) {
@@ -154,9 +113,13 @@ public class End2EndTests extends AbstractEndToEndTest {
         assertEquals(0, workflow.getTasks().size());
         assertEquals(workflowId, workflow.getWorkflowId());
 
-        List<Workflow> workflowList = workflowClient.getWorkflows(def.getName(), correlationId, false, false);
-        assertEquals(1, workflowList.size());
-        assertEquals(workflowId, workflowList.get(0).getWorkflowId());
+        Awaitility.await()
+            .atMost(5, TimeUnit.SECONDS)
+            .untilAsserted(() -> {
+                List<Workflow> workflowList = workflowClient.getWorkflows(def.getName(), correlationId, false, false);
+                assertEquals(1, workflowList.size());
+                assertEquals(workflowId, workflowList.get(0).getWorkflowId());
+            });
 
         workflow = workflowClient.getWorkflow(workflowId, true);
         assertNotNull(workflow);
@@ -274,7 +237,7 @@ public class End2EndTests extends AbstractEndToEndTest {
     @Test
     public void testInvalidResource() {
         MetadataClient metadataClient = new MetadataClient();
-        metadataClient.setRootURI("http://localhost:8080/api/invalid");
+        metadataClient.setRootURI(String.format("%sinvalid", apiRoot));
         WorkflowDef def = new WorkflowDef();
         def.setName("testWorkflowDel");
         def.setVersion(1);
