@@ -536,7 +536,7 @@ public class WorkflowExecutor {
         queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
 
         if (wf.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
-            workflowStatusListener.onWorkflowCompleted(wf);
+            workflowStatusListener.onWorkflowCompleted(workflow);
         }
     }
 

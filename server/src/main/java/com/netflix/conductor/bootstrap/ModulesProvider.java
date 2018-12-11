@@ -2,6 +2,7 @@ package com.netflix.conductor.bootstrap;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.ProvisionException;
+import com.google.inject.util.Modules;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.contribs.http.HttpTask;
 import com.netflix.conductor.contribs.http.RestClientManager;
@@ -13,12 +14,7 @@ import com.netflix.conductor.core.utils.S3PayloadStorage;
 import com.netflix.conductor.dao.RedisWorkflowModule;
 import com.netflix.conductor.elasticsearch.es5.ElasticSearchV5Module;
 import com.netflix.conductor.mysql.MySQLWorkflowModule;
-import com.netflix.conductor.server.DynomiteClusterModule;
-import com.netflix.conductor.server.JerseyModule;
-import com.netflix.conductor.server.LocalRedisModule;
-import com.netflix.conductor.server.RedisClusterModule;
-import com.netflix.conductor.server.ServerModule;
-import com.netflix.conductor.server.SwaggerModule;
+import com.netflix.conductor.server.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,6 +23,8 @@ import javax.inject.Provider;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static java.util.Collections.singletonList;
 
 // TODO Investigate whether this should really be a ThrowingProvider.
 public class ModulesProvider implements Provider<List<AbstractModule>> {
@@ -45,12 +43,8 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
 
     @Override
     public List<AbstractModule> get() {
-        List<AbstractModule> modulesToLoad = new ArrayList<>();
-
-        modulesToLoad.addAll(selectModulesToLoad());
-        modulesToLoad.addAll(configuration.getAdditionalModules());
-
-        return modulesToLoad;
+        AbstractModule resolvedModule = (AbstractModule) Modules.override(selectModulesToLoad()).with(configuration.getAdditionalModules());
+        return singletonList(resolvedModule);
     }
 
     private List<AbstractModule> selectModulesToLoad() {
