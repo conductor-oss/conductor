@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(MyTestRunner.class)
+@RunWith(StatusListenerTestRunner.class)
 public class StatusListenerPublisherIntegrationTest {
 
     private String CALLBACK_QUEUE = "_callbackQueue";

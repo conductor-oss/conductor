@@ -24,7 +24,7 @@ import com.google.inject.util.Modules;
 import com.netflix.conductor.tests.utils.TestModule;
 import org.junit.runners.BlockJUnit4ClassRunner;
 
-public class MyTestRunner extends BlockJUnit4ClassRunner {
+public class StatusListenerTestRunner extends BlockJUnit4ClassRunner {
 
 	private Injector dependenciesInjector;
 
@@ -34,7 +34,7 @@ public class MyTestRunner extends BlockJUnit4ClassRunner {
 	}
 
 
-	public MyTestRunner(Class<?> klass) throws Exception {
+	public StatusListenerTestRunner(Class<?> klass) throws Exception {
 		super(klass);
 		System.setProperty("workflow.namespace.prefix", "conductor" + System.getProperty("user.name"));
 		dependenciesInjector = Guice.createInjector(Modules.override(new TestModule()).with(new StatusListenerModule()));
