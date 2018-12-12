@@ -16,6 +16,7 @@ dependencies {
     compile "javax.inject:javax.inject:${revJavaxInject}"
     compile "com.github.vmg.protogen:protogen-annotations:${revProtogenAnnotations}"
     compile "org.hibernate:hibernate-validator:6.0.13.Final"
+    compile "org.apache.commons:commons-lang3:${revCommonsLang3}"
     // Bean validation runtime dependencies
     compile "javax.el:javax.el-api:3.0.0"
     // https://mvnrepository.com/artifact/org.glassfish/javax.el
