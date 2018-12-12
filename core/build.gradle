@@ -20,8 +20,5 @@ dependencies {
     // https://mvnrepository.com/artifact/org.glassfish/javax.el
     compile group: 'org.glassfish', name: 'javax.el', version: '3.0.0'
 
-    //compile "org.glassfish.web:javax.el:3.0.0"
-    //compile "javax.interceptor:javax.interceptor-api:1.+"
-
     testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
 }
