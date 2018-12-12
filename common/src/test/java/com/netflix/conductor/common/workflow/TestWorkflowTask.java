@@ -21,7 +21,6 @@ package com.netflix.conductor.common.workflow;
 
 import static org.junit.Assert.*;
 
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import org.junit.Test;
 

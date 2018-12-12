@@ -1,4 +1,6 @@
-package com.netflix.conductor.common.metadata.tasks;
+package com.netflix.conductor.common.constraints;
+
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
@@ -12,20 +14,20 @@ import javax.validation.Payload;
 import static java.lang.annotation.ElementType.TYPE;
 
 @Documented
-@Constraint(validatedBy = TaskDefConstraint.TaskDefValidator.class)
+@Constraint(validatedBy = TaskTimeoutConstraint.TaskTimeoutValidator.class)
 @Target({TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface TaskDefConstraint {
+public @interface TaskTimeoutConstraint {
     String message() default "";
 
     Class<?>[] groups() default {};
 
     Class<? extends Payload>[] payload() default {};
 
-    class TaskDefValidator implements ConstraintValidator<TaskDefConstraint, TaskDef> {
+    class TaskTimeoutValidator implements ConstraintValidator<TaskTimeoutConstraint, TaskDef> {
 
         @Override
-        public void initialize(TaskDefConstraint constraintAnnotation) {
+        public void initialize(TaskTimeoutConstraint constraintAnnotation) {
         }
 
         @Override

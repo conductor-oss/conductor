@@ -16,20 +16,8 @@ public class TaskDefConstraint {
         ConstraintMapping mapping = configuration.createConstraintMapping();
 
         mapping.type(WorkflowTask.class)
-                .constraint(new WorkflowTaskConstraintDef())
-                .property("name", FIELD)
-                    .constraint(new CheckTaskDefExistsConstraintDef());
-
-        return mapping;
-    }
-
-    @Singleton
-    @ProvidesIntoSet
-    public static ConstraintMapping getWorkflowDefConstraint(final HibernateValidatorConfiguration configuration) {
-        ConstraintMapping mapping = configuration.createConstraintMapping();
-
-        mapping.type(WorkflowDef.class)
-                .constraint(new WorkflowDefConstraintDef());
+                .constraint(new WorkflowTaskTypeConstraintDef())
+                .constraint(new WorkflowTaskValidConstraintDef());
 
         return mapping;
     }

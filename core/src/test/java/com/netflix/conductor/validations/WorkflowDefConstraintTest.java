@@ -7,7 +7,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.HibernateValidatorConfiguration;
-import org.hibernate.validator.cfg.ConstraintMapping;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -16,7 +15,6 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
-import java.lang.annotation.ElementType;
 import java.util.*;
 
 import static org.junit.Assert.assertEquals;
@@ -99,22 +97,8 @@ public class WorkflowDefConstraintTest {
 
         workflowDef.setTasks(tasks);
 
-
-        ConstraintMapping mapping = config.createConstraintMapping();
-
-        /*mapping.type(WorkflowDef.class)
-                .constraint(new WorkflowDefConstraintDef())
-                    .property("tasks", ElementType.FIELD)
-                        .containerElementType(0)
-                        .constraint(new WorkflowTaskConstraintDef())
-                        .valid();*/
-
-        mapping.type(WorkflowDef.class)
-                .constraint(new WorkflowDefConstraintDef());
-
-        Validator validator = config.addMapping(mapping)
-                .buildValidatorFactory()
-                .getValidator();
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        validator = factory.getValidator();
 
         when(mockMetadataDao.getTaskDef("work1")).thenReturn(new TaskDef());
         Set<ConstraintViolation<WorkflowDef>> result = validator.validate(workflowDef);
@@ -152,13 +136,8 @@ public class WorkflowDefConstraintTest {
 
         workflowDef.setTasks(tasks);
 
-        ConstraintMapping mapping = config.createConstraintMapping();
-        mapping.type(WorkflowDef.class)
-                .constraint(new WorkflowDefConstraintDef());
-
-        Validator validator = config.addMapping(mapping)
-                .buildValidatorFactory()
-                .getValidator();
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        validator = factory.getValidator();
 
         when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
         Set<ConstraintViolation<WorkflowDef>> result = validator.validate(workflowDef);

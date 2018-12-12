@@ -15,6 +15,7 @@ package com.netflix.conductor.common.metadata.workflow;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 
+import javax.validation.Valid;
 import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.Map;
@@ -38,6 +39,7 @@ public class StartWorkflowRequest {
 	private Map<String, String> taskToDomain = new HashMap<>();
 
     @ProtoField(id = 6)
+    @Valid
     private WorkflowDef workflowDef;
 
     @ProtoField(id = 7)

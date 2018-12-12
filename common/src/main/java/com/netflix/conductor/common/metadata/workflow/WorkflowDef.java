@@ -22,6 +22,7 @@ import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.google.common.base.MoreObjects;
 import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
+import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
 import com.netflix.conductor.common.metadata.Auditable;
 
 import java.util.HashMap;
@@ -31,12 +32,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-
-import com.github.vmg.protogen.annotations.ProtoField;
-import com.github.vmg.protogen.annotations.ProtoMessage;
-import com.google.common.base.MoreObjects;
-import com.netflix.conductor.common.metadata.Auditable;
-import com.netflix.conductor.common.metadata.tasks.TaskDefConstraint;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Min;
@@ -50,6 +45,7 @@ import javax.validation.constraints.NotNull;
  *
  */
 @ProtoMessage
+@TaskReferenceNameUniqueConstraint
 public class WorkflowDef extends Auditable {
 
     @NotEmpty(message = "WorkflowDef name cannot be null or empty")

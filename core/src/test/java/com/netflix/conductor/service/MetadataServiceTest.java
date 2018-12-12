@@ -18,11 +18,9 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -69,7 +67,7 @@ public class MetadataServiceTest{
         } catch (ConstraintViolationException ex){
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
-            assertTrue(messages.contains("taskDef name cannot be null"));
+            assertTrue(messages.contains("TaskDef name cannot be null or empty"));
         }
     }
 
@@ -94,7 +92,7 @@ public class MetadataServiceTest{
         } catch (ConstraintViolationException ex) {
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
-            assertTrue(messages.contains("responseTimeoutSeconds: 0 should be minimum 1 second"));
+            assertTrue(messages.contains("TaskDef responseTimeoutSeconds: 0 should be minimum 1 second"));
         }
     }
 
@@ -106,7 +104,7 @@ public class MetadataServiceTest{
         } catch (ConstraintViolationException ex) {
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
-            assertTrue(messages.contains("taskDef name cannot be null"));
+            assertTrue(messages.contains("TaskDef name cannot be null or empty"));
         }
     }
 

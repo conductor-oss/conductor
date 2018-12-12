@@ -17,26 +17,25 @@ import static java.lang.annotation.ElementType.TYPE;
 
 /**
  * This constraint class validates following things.
- * 1. TaskDef for given name exists or not.
- * 2. Correct parameters are set depending on task type.
+ * 1. Correct parameters are set depending on task type.
  */
 @Documented
-@Constraint(validatedBy = WorkflowTaskConstraint.WorkflowTaskValidator.class)
+@Constraint(validatedBy = WorkflowTaskTypeConstraint.WorkflowTaskValidator.class)
 @Target({TYPE,  ANNOTATION_TYPE})
 @Retention(RetentionPolicy.RUNTIME)
-public @interface WorkflowTaskConstraint {
+public @interface WorkflowTaskTypeConstraint {
     String message() default "";
 
     Class<?>[] groups() default {};
 
     Class<? extends Payload>[] payload() default {};
 
-    class WorkflowTaskValidator implements ConstraintValidator<WorkflowTaskConstraint, WorkflowTask> {
+    class WorkflowTaskValidator implements ConstraintValidator<WorkflowTaskTypeConstraint, WorkflowTask> {
 
         final String PARAM_REQUIRED_STRING_FORMAT = "%s field is required for taskType: %s taskName: %s";
 
         @Override
-        public void initialize(WorkflowTaskConstraint constraintAnnotation) {
+        public void initialize(WorkflowTaskTypeConstraint constraintAnnotation) {
         }
 
         @Override

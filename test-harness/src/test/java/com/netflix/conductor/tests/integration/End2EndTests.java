@@ -41,7 +41,6 @@ import com.netflix.conductor.tests.utils.TestEnvironment;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -463,7 +462,7 @@ public class End2EndTests extends AbstractEndToEndTest {
             List<String> errorMessages = errors.stream()
                     .map(v -> v.getMessage())
                     .collect(Collectors.toList());
-            assertTrue(errorMessages.contains("taskDef name cannot be null"));
+            assertTrue(errorMessages.contains("TaskDef name cannot be null or empty"));
         }
     }
 

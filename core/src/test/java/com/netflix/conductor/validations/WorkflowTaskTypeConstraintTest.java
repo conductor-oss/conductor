@@ -2,7 +2,6 @@ package com.netflix.conductor.validations;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.hibernate.validator.HibernateValidator;
@@ -25,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.when;
 
-public class WorkflowTaskConstraintTest {
+public class WorkflowTaskTypeConstraintTest {
 
     private static Validator validator;
     private MetadataDAO mockMetadataDao;
@@ -74,14 +73,8 @@ public class WorkflowTaskConstraintTest {
 
         ConstraintMapping mapping = config.createConstraintMapping();
 
-        /*mapping.type(WorkflowDef.class)
-                    .property("tasks", ElementType.FIELD)
-                        .containerElementType(0)
-                        .constraint(new WorkflowTaskConstraintDef())
-                        .valid();*/
-
         mapping.type(WorkflowTask.class)
-                .constraint(new WorkflowTaskConstraintDef());
+                .constraint(new WorkflowTaskTypeConstraintDef());
 
         Validator validator = config.addMapping(mapping)
                 .buildValidatorFactory()
@@ -103,7 +96,7 @@ public class WorkflowTaskConstraintTest {
         ConstraintMapping mapping = config.createConstraintMapping();
 
         mapping.type(WorkflowTask.class)
-                .constraint(new WorkflowTaskConstraintDef());
+                .constraint(new WorkflowTaskTypeConstraintDef());
 
         Validator validator = config.addMapping(mapping)
                 .buildValidatorFactory()
@@ -124,7 +117,7 @@ public class WorkflowTaskConstraintTest {
         ConstraintMapping mapping = config.createConstraintMapping();
 
         mapping.type(WorkflowTask.class)
-                .constraint(new WorkflowTaskConstraintDef());
+                .constraint(new WorkflowTaskTypeConstraintDef());
 
         Validator validator = config.addMapping(mapping)
                 .buildValidatorFactory()
@@ -151,7 +144,7 @@ public class WorkflowTaskConstraintTest {
         ConstraintMapping mapping = config.createConstraintMapping();
 
         mapping.type(WorkflowTask.class)
-                .constraint(new WorkflowTaskConstraintDef());
+                .constraint(new WorkflowTaskTypeConstraintDef());
 
         Validator validator = config.addMapping(mapping)
                 .buildValidatorFactory()
@@ -178,7 +171,7 @@ public class WorkflowTaskConstraintTest {
         ConstraintMapping mapping = config.createConstraintMapping();
 
         mapping.type(WorkflowTask.class)
-                .constraint(new WorkflowTaskConstraintDef());
+                .constraint(new WorkflowTaskTypeConstraintDef());
 
         Validator validator = config.addMapping(mapping)
                 .buildValidatorFactory()
@@ -204,7 +197,7 @@ public class WorkflowTaskConstraintTest {
         ConstraintMapping mapping = config.createConstraintMapping();
 
         mapping.type(WorkflowTask.class)
-                .constraint(new WorkflowTaskConstraintDef());
+                .constraint(new WorkflowTaskTypeConstraintDef());
 
         Validator validator = config.addMapping(mapping)
                 .buildValidatorFactory()
@@ -230,7 +223,7 @@ public class WorkflowTaskConstraintTest {
         ConstraintMapping mapping = config.createConstraintMapping();
 
         mapping.type(WorkflowTask.class)
-                .constraint(new WorkflowTaskConstraintDef());
+                .constraint(new WorkflowTaskTypeConstraintDef());
 
         Validator validator = config.addMapping(mapping)
                 .buildValidatorFactory()

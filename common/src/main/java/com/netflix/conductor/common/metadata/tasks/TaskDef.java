@@ -21,11 +21,12 @@ package com.netflix.conductor.common.metadata.tasks;
 import com.github.vmg.protogen.annotations.ProtoEnum;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.netflix.conductor.common.constraints.TaskTimeoutConstraint;
 import com.netflix.conductor.common.metadata.Auditable;
 
 import javax.validation.Valid;
-import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,7 +39,7 @@ import java.util.Objects;
  * Defines a workflow task definition 
  */
 @ProtoMessage
-@TaskDefConstraint
+@TaskTimeoutConstraint
 @Valid
 public class TaskDef extends Auditable {
 	@ProtoEnum
@@ -52,7 +53,7 @@ public class TaskDef extends Auditable {
 	/**
 	 * Unique name identifying the task.  The name is unique across
 	 */
-	@NotNull(message = "taskDef name cannot be null")
+	@NotEmpty(message = "TaskDef name cannot be null or empty")
 	@ProtoField(id = 1)
 	private String name;
 
@@ -60,7 +61,7 @@ public class TaskDef extends Auditable {
 	private String description;
 
 	@ProtoField(id = 3)
-	@Min(value = 0, message = "retryCount: {value} must be >= 0")
+	@Min(value = 0, message = "TaskDef retryCount: {value} must be >= 0")
 	private int retryCount = 3; // Default
 
 	@ProtoField(id = 4)
@@ -86,7 +87,7 @@ public class TaskDef extends Auditable {
 	private int retryDelaySeconds = 60;
 
 	@ProtoField(id = 10)
-	@Min(value = 1, message = "responseTimeoutSeconds: ${validatedValue} should be minimum {value} second")
+	@Min(value = 1, message = "TaskDef responseTimeoutSeconds: ${validatedValue} should be minimum {value} second")
 	private long responseTimeoutSeconds = ONE_HOUR;
 
 	@ProtoField(id = 11)

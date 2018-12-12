@@ -19,6 +19,7 @@ import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.constraints.NullOrNotBlank;
+import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotBlank;
