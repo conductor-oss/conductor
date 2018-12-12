@@ -5,9 +5,13 @@ dependencies {
 
 	compile "org.elasticsearch:elasticsearch:${revElasticSearch5}"
 	compile "org.elasticsearch.client:transport:${revElasticSearch5}"
+    compile "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch5}"
     compile "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch5}"
 
     //ES5 Dependency
     compile "org.apache.logging.log4j:log4j-api:${revLog4jApi}"
     compile "org.apache.logging.log4j:log4j-core:${revLog4jCore}"
+
+    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
+    testCompile "org.awaitility:awaitility:${revAwaitility}"
 }
