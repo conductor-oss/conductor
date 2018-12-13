@@ -7,6 +7,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
@@ -25,13 +26,15 @@ import java.util.stream.Collectors;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(StatusListenerTestRunner.class)
-public class StatusListenerPublisherIntegrationTest {
+@RunWith(StatusPublisherTestRunner.class)
+public class WorkflowStatusPublisherIntegrationTest {
 
-    private String CALLBACK_QUEUE = "_callbackQueue";
+    private String CALLBACK_QUEUE =  "dummy";
     private static final String LINEAR_WORKFLOW_T1_T2 = "junit_test_wf";
+    private static final String INCOMPLETION_REASON = "test reason";
 
-    private ObjectMapper mapper = new ObjectMapper();
+    @Inject
+    private ObjectMapper mapper;
 
     @Inject
     QueueDAO queueDAO;
@@ -56,7 +59,6 @@ public class StatusListenerPublisherIntegrationTest {
 
     @Test
     public void testListenerOnTerminatedWorkflow() throws IOException {
-
         WorkflowDef empty = new WorkflowDef();
         empty.setName("empty_workflow");
         empty.setSchemaVersion(2);
@@ -64,20 +66,22 @@ public class StatusListenerPublisherIntegrationTest {
         metadataService.registerWorkflowDef(empty);
 
         String id = startOrLoadWorkflowExecution(empty.getName(), 1, "testWorkflowTerminatedListener", new HashMap<>(), null, null);
+        workflowExecutor.terminateWorkflow(id, INCOMPLETION_REASON);
 
         List<Message> callbackMessages = queueDAO.pollMessages(CALLBACK_QUEUE, 1, 200);
         queueDAO.ack(CALLBACK_QUEUE, callbackMessages.get(0).getId());
-        JsonNode payload = mapper.readTree(callbackMessages.get(0).getPayload());
+
+        WorkflowSummary payload = mapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
 
         assertEquals(id, callbackMessages.get(0).getId());
-        assertEquals("empty_workflow", payload.get("workflowType").asText());
-        assertEquals("testWorkflowTerminatedListener", payload.get("correlationId").asText());
-        assertEquals("COMPLETED", payload.get("status").asText());
+        assertEquals("empty_workflow", payload.getWorkflowType());
+        assertEquals("testWorkflowTerminatedListener", payload.getCorrelationId());
+        assertEquals(Workflow.WorkflowStatus.TERMINATED, payload.getStatus());
+        assertEquals(INCOMPLETION_REASON, payload.getReasonForIncompletion());
     }
 
     @Test
     public void testListenerOnCompletedWorkflow() throws IOException, InterruptedException {
-
         clearWorkflows();
 
         WorkflowDef def = new WorkflowDef();
@@ -103,22 +107,30 @@ public class StatusListenerPublisherIntegrationTest {
         tasks.get(0).setStatus(COMPLETED);
         workflowExecutionService.updateTask(tasks.get(0));
 
-
-        while (workflowExecutor.getWorkflow(id, false).getStatus() != Workflow.WorkflowStatus.COMPLETED) {
-            Thread.sleep(10);
-        }
+        checkIfWorkflowIsCompleted(id);
 
         List<Message> callbackMessages = queueDAO.pollMessages(CALLBACK_QUEUE, 1, 200);
         queueDAO.ack(CALLBACK_QUEUE, callbackMessages.get(0).getId());
-        JsonNode payload = mapper.readTree(callbackMessages.get(0).getPayload());
+
+        WorkflowSummary payload = mapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
 
         assertEquals(id, callbackMessages.get(0).getId());
-        assertEquals(LINEAR_WORKFLOW_T1_T2, payload.get("workflowType").asText());
-        assertEquals("testWorkflowCompletedListener", payload.get("correlationId").asText());
-        assertEquals("COMPLETED", payload.get("status").asText());
+        assertEquals(LINEAR_WORKFLOW_T1_T2, payload.getWorkflowType());
+        assertEquals("testWorkflowCompletedListener", payload.getCorrelationId());
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, payload.getStatus());
+    }
 
 
 
+    private void checkIfWorkflowIsCompleted(String id) throws InterruptedException {
+        int statusRetrieveAttempts = 0;
+        while (workflowExecutor.getWorkflow(id, false).getStatus() != Workflow.WorkflowStatus.COMPLETED) {
+            if (statusRetrieveAttempts > 5) {
+                break;
+            }
+            Thread.sleep(100);
+            statusRetrieveAttempts++;
+        }
     }
 
     @After
@@ -134,6 +146,7 @@ public class StatusListenerPublisherIntegrationTest {
         }
         queueDAO.queuesDetail().keySet().forEach(queueDAO::flush);
     }
+
 
     private String startOrLoadWorkflowExecution(String workflowName, int version, String correlationId, Map<String, Object> input, String event, Map<String, String> taskToDomain) {
         return startOrLoadWorkflowExecution(workflowName, workflowName, version, correlationId, input, event, taskToDomain);

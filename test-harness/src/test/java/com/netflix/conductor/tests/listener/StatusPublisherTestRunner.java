@@ -21,10 +21,11 @@ package com.netflix.conductor.tests.listener;
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.google.inject.util.Modules;
+import com.netflix.conductor.contribs.PublisherModule;
 import com.netflix.conductor.tests.utils.TestModule;
 import org.junit.runners.BlockJUnit4ClassRunner;
 
-public class StatusListenerTestRunner extends BlockJUnit4ClassRunner {
+public class StatusPublisherTestRunner extends BlockJUnit4ClassRunner {
 
 	private Injector dependenciesInjector;
 
@@ -34,10 +35,10 @@ public class StatusListenerTestRunner extends BlockJUnit4ClassRunner {
 	}
 
 
-	public StatusListenerTestRunner(Class<?> klass) throws Exception {
+	public StatusPublisherTestRunner(Class<?> klass) throws Exception {
 		super(klass);
 		System.setProperty("workflow.namespace.prefix", "conductor" + System.getProperty("user.name"));
-		dependenciesInjector = Guice.createInjector(Modules.override(new TestModule()).with(new StatusListenerModule()));
+		dependenciesInjector = Guice.createInjector(Modules.override(new TestModule()).with(new PublisherModule()));
 	}
 
 	@Override
