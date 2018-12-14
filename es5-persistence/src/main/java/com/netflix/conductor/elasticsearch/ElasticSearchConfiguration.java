@@ -16,6 +16,9 @@ public interface ElasticSearchConfiguration extends Configuration {
     String ELASTIC_SEARCH_URL_PROPERTY_NAME = "workflow.elasticsearch.url";
     String ELASTIC_SEARCH_URL_DEFAULT_VALUE = "localhost:9300";
 
+    String ELASTIC_SEARCH_HEALTH_COLOR_PROPERTY_NAME = "workflow.elasticsearch.cluster.health.color";
+    String ELASTIC_SEARCH_HEALTH_COLOR_DEFAULT_VALUE = "green";
+
     String ELASTIC_SEARCH_INDEX_NAME_PROPERTY_NAME = "workflow.elasticsearch.index.name";
     String ELASTIC_SEARCH_INDEX_NAME_DEFAULT_VALUE = "conductor";
 
@@ -51,7 +54,7 @@ public interface ElasticSearchConfiguration extends Configuration {
         String[] hosts = clusterAddress.split(",");
 
         return Arrays.stream(hosts).map( host ->
-           (host.startsWith("http://") || host.startsWith("tcp://")) ? URI.create(host) : URI.create("tcp://" + host)
+           (host.startsWith("http://") || host.startsWith("https://") || host.startsWith("tcp://")) ? URI.create(host) : URI.create("tcp://" + host)
         ).collect(Collectors.toList());
     }
 
@@ -61,6 +64,10 @@ public interface ElasticSearchConfiguration extends Configuration {
 
     default String getTasklogIndexName() {
         return getProperty(TASK_LOG_INDEX_NAME_PROPERTY_NAME, TASK_LOG_INDEX_NAME_DEFAULT_VALUE);
+    }
+
+    default String getClusterHealthColor() {
+        return getProperty(ELASTIC_SEARCH_HEALTH_COLOR_PROPERTY_NAME, ELASTIC_SEARCH_HEALTH_COLOR_DEFAULT_VALUE);
     }
 
     default String getEmbeddedDataPath() {
