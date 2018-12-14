@@ -76,7 +76,6 @@ public class TaskDef extends Auditable {
 	private List<String> outputKeys = new ArrayList<String>();
 
 	@ProtoField(id = 7)
-	//TODO: How do we validate enum?
 	private TimeoutPolicy timeoutPolicy = TimeoutPolicy.TIME_OUT_WF;
 
 	@ProtoField(id = 8)

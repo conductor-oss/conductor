@@ -7,8 +7,9 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
 /**
- * Use the annotation to allow parameterized
- * validation on API.
+ * Use the annotation to perform some operations when Service
+ * layer method are invoked.
+ *
  *
  * @author fjhaveri
  * Annotation

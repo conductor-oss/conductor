@@ -75,7 +75,7 @@ public class TestTaskDef {
         List<String> validationErrors = new ArrayList<>();
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("TaskDef: task1 responseTimeoutSeconds: 1001 <= timeoutSeconds: 1000"));
+        assertTrue(validationErrors.contains("TaskDef: task1 responseTimeoutSeconds: 1001 must be less than timeoutSeconds: 1000"));
         assertTrue(validationErrors.contains("TaskDef retryCount: 0 must be >= 0"));
     }
 

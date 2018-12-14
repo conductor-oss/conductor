@@ -13,6 +13,9 @@ import javax.validation.Payload;
 
 import static java.lang.annotation.ElementType.TYPE;
 
+/**
+ *  This constraint checks for a given task responseTimeoutSeconds should be less than timeoutSeconds.
+ */
 @Documented
 @Constraint(validatedBy = TaskTimeoutConstraint.TaskTimeoutValidator.class)
 @Target({TYPE})
@@ -39,7 +42,7 @@ public @interface TaskTimeoutConstraint {
             if (taskDef.getTimeoutSeconds() > 0) {
                 if (taskDef.getResponseTimeoutSeconds() > taskDef.getTimeoutSeconds()) {
                     valid = false;
-                    String message = String.format("TaskDef: %s responseTimeoutSeconds: %d <= timeoutSeconds: %d",
+                    String message = String.format("TaskDef: %s responseTimeoutSeconds: %d must be less than timeoutSeconds: %d",
                             taskDef.getName(), taskDef.getResponseTimeoutSeconds(), taskDef.getTimeoutSeconds());
                     context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 }

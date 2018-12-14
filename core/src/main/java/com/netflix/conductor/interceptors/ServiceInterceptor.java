@@ -13,8 +13,8 @@ import java.lang.reflect.Modifier;
 import java.util.Set;
 
 /**
- * Interceptor method calls annotated with {@link com.netflix.conductor.annotations.Service}
- * and run validations on it.
+ * Intercept method calls annotated with {@link com.netflix.conductor.annotations.Service}
+ * and runs hibernate validations on it.
  *
  */
 public class ServiceInterceptor implements MethodInterceptor{

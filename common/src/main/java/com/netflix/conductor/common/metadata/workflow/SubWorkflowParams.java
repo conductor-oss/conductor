@@ -31,7 +31,7 @@ import javax.validation.constraints.NotNull;
 public class SubWorkflowParams {
 
     @ProtoField(id = 1)
-    @NotNull(message = "SubWorkflowParams name is null")
+    @NotNull(message = "SubWorkflowParams name cannot be null")
     @NotEmpty(message = "SubWorkflowParams name cannot be empty")
     private String name;
 

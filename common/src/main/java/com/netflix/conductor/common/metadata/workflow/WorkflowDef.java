@@ -94,7 +94,7 @@ public class WorkflowDef extends Auditable {
 	/**
 	 * @param name the name to set
 	 */
-	public void setName(@NotBlank String name) {
+	public void setName(String name) {
 		this.name = name;
 	}
 

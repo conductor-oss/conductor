@@ -256,7 +256,7 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("SubWorkflowParams name is null"));
+        assertTrue(validationErrors.contains("SubWorkflowParams name cannot be null"));
         assertTrue(validationErrors.contains("SubWorkflowParams name cannot be empty"));
     }
 
