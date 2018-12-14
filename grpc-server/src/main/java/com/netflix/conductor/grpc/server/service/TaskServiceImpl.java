@@ -101,7 +101,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     @Override
     public void getPendingTaskForWorkflow(TaskServicePb.PendingTaskRequest req, StreamObserver<TaskServicePb.PendingTaskResponse> response) {
         try {
-            Task t = taskService.getPendingTaskForWorkflow(req.getTaskRefName(), req.getWorkflowId());
+            Task t = taskService.getPendingTaskForWorkflow(req.getWorkflowId(), req.getTaskRefName());
             response.onNext(
                     TaskServicePb.PendingTaskResponse.newBuilder()
                             .setTask(PROTO_MAPPER.toProto(t))

@@ -55,7 +55,7 @@ public class WorkflowService {
         this.workflowExecutor = workflowExecutor;
         this.executionService = executionService;
         this.metadataService = metadataService;
-        this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
+        this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5000);
     }
 
     /**
@@ -316,7 +316,7 @@ public class WorkflowService {
      * @return instance of {@link SearchResult}
      */
     public SearchResult<WorkflowSummary> searchWorkflows(int start, int size, String sort, String freeText, String query) {
-        ServiceUtils.checkArgument(size < maxSearchSize, String.format("Cannot return more than %d workflows." +
+        ServiceUtils.checkArgument(size <= maxSearchSize, String.format("Cannot return more than %d workflows." +
                 " Please use pagination.", maxSearchSize));
         return executionService.search(query, freeText, start, size, ServiceUtils.convertStringToList(sort));
     }
@@ -332,7 +332,7 @@ public class WorkflowService {
      * @return instance of {@link SearchResult}
      */
     public SearchResult<WorkflowSummary> searchWorkflows(int start, int size, List<String> sort, String freeText, String query) {
-        ServiceUtils.checkArgument(size < maxSearchSize, String.format("Cannot return more than %d workflows." +
+        ServiceUtils.checkArgument(size <= maxSearchSize, String.format("Cannot return more than %d workflows." +
                 " Please use pagination.", maxSearchSize));
         return executionService.search(query, freeText, start, size, sort);
     }
