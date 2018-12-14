@@ -20,7 +20,6 @@ import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.events.EventProcessor;
 import com.netflix.conductor.core.events.EventQueues;
-import com.netflix.conductor.service.utils.ServiceUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

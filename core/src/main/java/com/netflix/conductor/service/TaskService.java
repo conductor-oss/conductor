@@ -28,7 +28,6 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
-import com.netflix.conductor.service.utils.ServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

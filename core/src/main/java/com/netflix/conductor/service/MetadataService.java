@@ -18,8 +18,6 @@
  */
 package com.netflix.conductor.service;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -30,7 +28,6 @@ import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.service.utils.ServiceUtils;
 import com.netflix.conductor.validations.ValidationContext;
 
 import javax.inject.Inject;

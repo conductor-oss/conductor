@@ -21,7 +21,6 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.service.utils.ServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

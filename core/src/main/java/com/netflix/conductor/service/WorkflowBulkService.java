@@ -19,11 +19,9 @@ import com.google.inject.Singleton;
 import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.service.utils.ServiceUtils;
 
 import javax.inject.Inject;
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import java.util.List;
 

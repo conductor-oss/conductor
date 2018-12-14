@@ -28,6 +28,8 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * This class converts Hibernate {@link ValidationException} into jersey
+ * response.
  * @author fjhaveri
  *
  */
