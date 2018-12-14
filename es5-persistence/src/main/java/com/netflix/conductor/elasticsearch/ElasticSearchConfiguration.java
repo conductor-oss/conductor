@@ -40,6 +40,9 @@ public interface ElasticSearchConfiguration extends Configuration {
     String EMBEDDED_SETTINGS_FILE_PROPERTY_NAME = "workflow.elasticsearch.embedded.settings.file";
     String EMBEDDED_SETTINGS_FILE_DEFAULT_VALUE = "embedded-es.yml";
 
+    String ELASTIC_SEARCH_ARCHIVE_SEARCH_BATCH_SIZE_PROPERTY_NAME = "workflow.elasticsearch.archive.search.batchSize";
+    int ELASTIC_SEARCH_ARCHIVE_SEARCH_BATCH_SIZE_DEFAULT_VALUE = 5000;
+
     default String getURL() {
         return getProperty(ELASTIC_SEARCH_URL_PROPERTY_NAME, ELASTIC_SEARCH_URL_DEFAULT_VALUE);
     }
@@ -101,4 +104,8 @@ public interface ElasticSearchConfiguration extends Configuration {
         MEMORY, EXTERNAL
     }
 
+    default int getArchiveSearchBatchSize() {
+        return getIntProperty(ELASTIC_SEARCH_ARCHIVE_SEARCH_BATCH_SIZE_PROPERTY_NAME,
+            ELASTIC_SEARCH_ARCHIVE_SEARCH_BATCH_SIZE_DEFAULT_VALUE);
+    }
 }

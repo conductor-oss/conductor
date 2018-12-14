@@ -31,6 +31,28 @@ import com.netflix.conductor.dao.es5.index.query.parser.Expression;
 import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.query.parser.ParserException;
 import com.netflix.conductor.metrics.Monitors;
+import java.io.IOException;
+import java.io.InputStream;
+import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TimeZone;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.StreamSupport;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.ResourceAlreadyExistsException;
@@ -66,30 +88,6 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.TimeZone;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
-import java.util.stream.StreamSupport;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-
 /**
  * @author Viren
  */
@@ -117,6 +115,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
     private final ObjectMapper objectMapper;
     private final Client elasticSearchClient;
     private final ExecutorService executorService;
+    private final int archiveSearchBatchSize;
 
     static {
         SIMPLE_DATE_FORMAT.setTimeZone(GMT);
@@ -129,6 +128,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         this.elasticSearchClient = elasticSearchClient;
         this.indexName = config.getIndexName();
         this.logIndexPrefix = config.getTasklogIndexName();
+        this.archiveSearchBatchSize = config.getArchiveSearchBatchSize();
 
         int corePoolSize = 6;
         int maximumPoolSize = 12;
@@ -584,8 +584,6 @@ public class ElasticSearchDAOV5 implements IndexDAO {
     @Override
     public List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays) {
         QueryBuilder q = QueryBuilders.boolQuery()
-            .must(QueryBuilders.rangeQuery("endTime")
-                .lt(LocalDate.now().minusDays(archiveTtlDays).toString()))
             .should(QueryBuilders.termQuery("status", "COMPLETED"))
             .should(QueryBuilders.termQuery("status", "FAILED"))
             .mustNot(QueryBuilders.existsQuery("archived"))
@@ -593,11 +591,14 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         SearchRequestBuilder s = elasticSearchClient.prepareSearch(indexName)
             .setTypes("workflow")
             .setQuery(q)
-            .setSize(1000);
+            .addSort("endTime", SortOrder.ASC)
+            .setSize(archiveSearchBatchSize);
 
         SearchResponse response = s.execute().actionGet();
 
         SearchHits hits = response.getHits();
+        logger.info("Archive search totalHits - {}", hits.getTotalHits());
+
         return Arrays.stream(hits.getHits())
             .map(hit -> hit.getId())
             .collect(Collectors.toCollection(LinkedList::new));
