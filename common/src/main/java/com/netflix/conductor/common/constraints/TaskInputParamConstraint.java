@@ -15,7 +15,10 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import com.netflix.conductor.common.utils.ConstraintParamUtil;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.TYPE;
@@ -31,7 +34,6 @@ import static java.lang.annotation.ElementType.TYPE;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface TaskInputParamConstraint {
     String message() default "";
-
 
     Class<?>[] groups() default {};
 
@@ -50,37 +52,29 @@ public @interface TaskInputParamConstraint {
                 return true;
             }
 
-            final boolean[] valid = {true};
+            MutableBoolean valid = new MutableBoolean(true);
+            inputParameters.forEach((key, inputParam) -> {
+                if (inputParam != null && StringUtils.isNotBlank(inputParam.toString())) {
+                    String[] paramPathComponents = ConstraintParamUtil.extractParamPathComponents(inputParam.toString());
 
-            inputParameters.forEach((key, value) -> {
-
-                        String paramPath = "" + value;
-
-                        if (StringUtils.isNotBlank(paramPath)) {
-                            Pattern pattern = Pattern.compile("^\\$\\{(.+)}$");
-                            Matcher matcher = pattern.matcher(paramPath);
-
-                            if (matcher.find()) {
-                                String inputVariable = matcher.group(1);
-                                String[] paramPathComponents = inputVariable.split("\\.");
-
-                                for (String param: paramPathComponents) {
-                                    if(StringUtils.containsWhitespace(param)) {
-                                        valid[0] = false;
-                                        String message = String.format("key: %s input parameter value: %s is not valid",
-                                                key, paramPath);
-                                        context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
-                                    }
-                                }
+                    if (paramPathComponents != null) {
+                        for (String param : paramPathComponents) {
+                            if (StringUtils.containsWhitespace(param)) {
+                                valid.setValue(false);
+                                String message = String.format("key: %s input parameter value: %s is not valid",
+                                        key, inputParam.toString());
+                                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                             }
-                        } else {
-                            valid[0] = false;
-                            String message = String.format("key: %s input parameter value: is null or empty", key);
-                            context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                         }
-                    });
+                    }
+                } else {
+                    valid.setValue(false);
+                    String message = String.format("key: %s input parameter value: is null or empty", key);
+                    context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                }
+            });
 
-            return valid[0];
+            return valid.getValue();
         }
 
     }

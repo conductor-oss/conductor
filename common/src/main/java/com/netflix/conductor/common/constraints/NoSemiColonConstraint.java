@@ -14,6 +14,9 @@ import java.lang.annotation.Target;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.PARAMETER;
 
+/**
+ *  This constraint checks semi-colon is not allowed in a given string.
+ */
 @Documented
 @Constraint(validatedBy = NoSemiColonConstraint.NoSemiColonValidator.class)
 @Target({FIELD, PARAMETER})

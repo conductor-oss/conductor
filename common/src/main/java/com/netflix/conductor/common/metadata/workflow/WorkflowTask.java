@@ -19,11 +19,8 @@ import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.constraints.TaskInputParamConstraint;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.constraints.NullOrNotBlank;
-import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
 
 import javax.validation.Valid;
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.PositiveOrZero;
 import java.util.Collection;
@@ -226,7 +223,7 @@ public class WorkflowTask {
 	/**
 	 * @param type the type to set
 	 */
-	public void setType(@NullOrNotBlank(message = "WorkTask type cannot be null or empty") String type) {
+	public void setType(@NotEmpty(message = "WorkTask type cannot be null or empty") String type) {
 		this.type = type;
 	}
 

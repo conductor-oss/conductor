@@ -2,6 +2,8 @@ package com.netflix.conductor.common.constraints;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.utils.ConstraintParamUtil;
+import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
@@ -63,35 +65,29 @@ public @interface TaskReferenceNameUniqueConstraint {
         }
 
         private boolean verifyTaskInputParameters(ConstraintValidatorContext context, WorkflowDef workflow) {
-            final boolean[] valid = {true};
+            MutableBoolean valid = new MutableBoolean(true);
 
             if (workflow.getTasks() == null) {
-                return valid[0];
+                return valid.getValue();
             }
 
             workflow.getTasks()
                     .stream()
-                    .filter(workflowTask -> workflow.getInputParameters() != null)
+                    .filter(workflowTask -> workflowTask.getInputParameters() != null)
                     .forEach(workflowTask -> {
 
                         workflowTask.getInputParameters()
-                                .forEach((key, value) -> {
+                                .forEach((key, inputParam) -> {
 
-                                    String paramPath = "" + value;
-                                    Pattern pattern = Pattern.compile("^\\$\\{(.+)}$");
-                                    Matcher matcher = pattern.matcher(paramPath);
-
-                                    if (matcher.find()) {
-                                        String inputVariable = matcher.group(1);
-                                        String[] paramPathComponents = inputVariable.split("\\.");
-
+                                    String[] paramPathComponents = ConstraintParamUtil.extractParamPathComponents(inputParam.toString());
+                                    if (paramPathComponents != null) {
                                         String source = paramPathComponents[0];    //workflow, or task reference name
                                         if (!"workflow".equals(source)) {
                                             WorkflowTask task = workflow.getTaskByRefName(source);
                                             if (task == null) {
-                                                valid[0] = false;
+                                                valid.setValue(false);
                                                 String message = String.format("taskDef: %s input parameter: %s value: %s is not valid",
-                                                        workflowTask.getName(), key, paramPath);
+                                                        workflowTask.getName(), key, inputParam.toString());
                                                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                                             }
                                         }
@@ -99,7 +95,7 @@ public @interface TaskReferenceNameUniqueConstraint {
                                 });
                     });
 
-            return valid[0];
+            return valid.getValue();
         }
     }
 }
