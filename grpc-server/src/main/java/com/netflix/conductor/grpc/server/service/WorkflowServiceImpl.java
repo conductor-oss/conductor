@@ -129,7 +129,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void getRunningWorkflows(WorkflowServicePb.GetRunningWorkflowsRequest req, StreamObserver<WorkflowServicePb.GetRunningWorkflowsResponse> response) {
         try {
-            List<String> workflowIds = workflowService.getRunningWorkflows(req.getName(),req.getVersion(), req.getStartTime(), req.getEndTime());
+            List<String> workflowIds = workflowService.getRunningWorkflows(req.getName(), req.getVersion(), req.getStartTime(), req.getEndTime());
 
             response.onNext(
                 WorkflowServicePb.GetRunningWorkflowsResponse.newBuilder()

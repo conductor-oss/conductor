@@ -35,6 +35,7 @@ import javax.inject.Singleton;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Singleton
 @Trace
@@ -205,7 +206,7 @@ public class WorkflowService {
     public List<String> getRunningWorkflows(String workflowName, Integer version,
                                             Long startTime, Long endTime) {
         ServiceUtils.checkNotNullOrEmpty(workflowName,"Workflow name cannot be null or empty.");
-        if (startTime != null && endTime != null) {
+        if (Optional.ofNullable(startTime).orElse(0l) != 0 && Optional.ofNullable(endTime).orElse(0l) != 0) {
             return workflowExecutor.getWorkflows(workflowName, version, startTime, endTime);
         } else {
             return workflowExecutor.getRunningWorkflowIds(workflowName);
