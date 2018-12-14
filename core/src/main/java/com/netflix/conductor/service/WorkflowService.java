@@ -65,35 +65,51 @@ public class WorkflowService {
      */
     public String startWorkflow(StartWorkflowRequest startWorkflowRequest) {
         ServiceUtils.checkNotNull(startWorkflowRequest, "StartWorkflowRequest cannot be null");
-        ServiceUtils.checkNotNullOrEmpty(startWorkflowRequest.getName(), "Workflow name cannot be null or empty");
+        return startWorkflow(startWorkflowRequest.getName(), startWorkflowRequest.getVersion(), startWorkflowRequest.getCorrelationId(), startWorkflowRequest.getInput(),
+                startWorkflowRequest.getExternalInputPayloadStoragePath(), startWorkflowRequest.getTaskToDomain(), startWorkflowRequest.getWorkflowDef());
+    }
 
-        WorkflowDef workflowDef = startWorkflowRequest.getWorkflowDef();
+    /**
+     * Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain.
+     * @param name          Name of the workflow you want to start.
+     * @param version       Version of the workflow you want to start.
+     * @param correlationId CorrelationID of the workflow you want to start.
+     * @param input         Input to the workflow you want to start.
+     * @param externalInputPayloadStoragePath
+     * @param taskToDomain
+     * @param workflowDef - workflow definition
+     * @return the id of the workflow instance that can be use for tracking.
+     */
+    public String startWorkflow(String name, Integer version, String correlationId,  Map<String, Object> input,
+                                String externalInputPayloadStoragePath, Map<String, String> taskToDomain, WorkflowDef workflowDef) {
+
+        ServiceUtils.checkNotNullOrEmpty(name, "Workflow name cannot be null or empty");
 
         if (workflowDef == null) {
-            workflowDef = metadataService.getWorkflowDef(startWorkflowRequest.getName(), startWorkflowRequest.getVersion());
+            workflowDef = metadataService.getWorkflowDef(name, version);
             if (workflowDef == null) {
                 throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                        String.format("No such workflow found by name: %s, version: %d", startWorkflowRequest.getName(),
-                                startWorkflowRequest.getVersion()));
+                        String.format("No such workflow found by name: %s, version: %d", name,
+                                version));
             }
 
             return workflowExecutor.startWorkflow(
-                    startWorkflowRequest.getName(),
-                    startWorkflowRequest.getVersion(),
-                    startWorkflowRequest.getCorrelationId(),
-                    startWorkflowRequest.getInput(),
-                    startWorkflowRequest.getExternalInputPayloadStoragePath(),
+                    name,
+                    version,
+                    correlationId,
+                    input,
+                    externalInputPayloadStoragePath,
                     null,
-                    startWorkflowRequest.getTaskToDomain()
+                    taskToDomain
             );
         } else {
             return workflowExecutor.startWorkflow(
-                    startWorkflowRequest.getWorkflowDef(),
-                    startWorkflowRequest.getInput(),
-                    startWorkflowRequest.getExternalInputPayloadStoragePath(),
-                    startWorkflowRequest.getCorrelationId(),
+                    workflowDef,
+                    input,
+                    externalInputPayloadStoragePath,
+                    correlationId,
                     null,
-                    startWorkflowRequest.getTaskToDomain()
+                    taskToDomain
             );
         }
     }
@@ -305,6 +321,22 @@ public class WorkflowService {
     }
 
     /**
+     * Search for workflows based on payload and given parameters. Use sort options as sort ASCor DESC
+     * e.g. sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
+     * @param start Start index of pagination
+     * @param size  Number of entries
+     * @param sort list of sorting options, separated by "|" delimiter
+     * @param freeText Text you want to search
+     * @param query Query you want to search
+     * @return instance of {@link SearchResult}
+     */
+    public SearchResult<WorkflowSummary> searchWorkflows(int start, int size, List<String> sort, String freeText, String query) {
+        ServiceUtils.checkArgument(size < maxSearchSize, String.format("Cannot return more than %d workflows." +
+                " Please use pagination.", maxSearchSize));
+        return executionService.search(query, freeText, start, size, sort);
+    }
+
+    /**
      * Search for workflows based on task parameters. Use sort options as sort ASC or DESC e.g.
      * sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
      * @param start Start index of pagination
@@ -316,6 +348,20 @@ public class WorkflowService {
      */
     public SearchResult<WorkflowSummary> searchWorkflowsByTasks(int start, int size, String sort, String freeText, String query) {
         return executionService.searchWorkflowByTasks(query, freeText, start, size, ServiceUtils.convertStringToList(sort));
+    }
+
+    /**
+     * Search for workflows based on task parameters. Use sort options as sort ASC or DESC e.g.
+     * sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
+     * @param start Start index of pagination
+     * @param size  Number of entries
+     * @param sort list of sorting options, separated by "|" delimiter
+     * @param freeText Text you want to search
+     * @param query Query you want to search
+     * @return instance of {@link SearchResult}
+     */
+    public SearchResult<WorkflowSummary> searchWorkflowsByTasks(int start, int size, List<String> sort, String freeText, String query) {
+        return executionService.searchWorkflowByTasks(query, freeText, start, size, sort);
     }
 
     /**
