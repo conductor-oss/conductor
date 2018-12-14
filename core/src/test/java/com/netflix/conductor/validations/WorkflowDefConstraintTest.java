@@ -103,7 +103,7 @@ public class WorkflowDefConstraintTest {
         when(mockMetadataDao.getTaskDef("work1")).thenReturn(new TaskDef());
         Set<ConstraintViolation<WorkflowDef>> result = validator.validate(workflowDef);
         assertEquals(1, result.size());
-        assertEquals(result.iterator().next().getMessage(), "taskDef: task_1 input parameter: fileLocation value: ${work.input.fileLocation} is not valid");
+        assertEquals(result.iterator().next().getMessage(), "taskReferenceName: work for given task: task_1 input value: fileLocation of input parameter: ${work.input.fileLocation} is not defined in workflow definition.");
     }
 
     @Test
@@ -147,8 +147,8 @@ public class WorkflowDefConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("taskDef: task_1 input parameter: fileLocation value: ${task_2.input.fileLocation} is not valid"));
-        assertTrue(validationErrors.contains("taskDef: task_2 input parameter: fileLocation value: ${task_2.input.fileLocation} is not valid"));
+        assertTrue(validationErrors.contains("taskReferenceName: task_2 for given task: task_2 input value: fileLocation of input parameter: ${task_2.input.fileLocation} is not defined in workflow definition."));
+        assertTrue(validationErrors.contains("taskReferenceName: task_2 for given task: task_1 input value: fileLocation of input parameter: ${task_2.input.fileLocation} is not defined in workflow definition."));
         assertTrue(validationErrors.contains("taskReferenceName: task_1 should be unique across tasks for a given workflowDefinition: sampleWorkflow"));
     }
 

@@ -66,7 +66,8 @@ public @interface TaskReferenceNameUniqueConstraint {
         }
 
         private boolean verifyTaskInputParameters(ConstraintValidatorContext context, WorkflowDef workflow) {
-            MutableBoolean valid = new MutableBoolean(true);
+            MutableBoolean valid = new MutableBoolean();
+            valid.setValue(true);
 
             if (workflow.getTasks() == null) {
                 return valid.getValue();
@@ -87,8 +88,8 @@ public @interface TaskReferenceNameUniqueConstraint {
                                             WorkflowTask task = workflow.getTaskByRefName(source);
                                             if (task == null) {
                                                 valid.setValue(false);
-                                                String message = String.format("taskDef: %s input parameter: %s value: %s is not valid",
-                                                        workflowTask.getName(), key, paramPath);
+                                                String message = String.format("taskReferenceName: %s for given task: %s input value: %s of input parameter: %s" +
+                                                        " is not defined in workflow definition.", source,  workflowTask.getName(), key, paramPath);
                                                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                                             }
                                         }

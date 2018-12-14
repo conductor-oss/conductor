@@ -53,7 +53,8 @@ public @interface TaskInputParamConstraint {
                 return true;
             }
 
-            MutableBoolean valid = new MutableBoolean(true);
+            MutableBoolean valid = new MutableBoolean();
+            valid.setValue(true);
             inputParameters.forEach((key, inputParam) -> {
                 String paramPath = Objects.toString(inputParam, "");
                 if (inputParam != null && StringUtils.isNotBlank(paramPath)) {
