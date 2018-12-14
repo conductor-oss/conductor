@@ -14,6 +14,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.HashMap;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -78,8 +79,8 @@ public @interface TaskReferenceNameUniqueConstraint {
 
                         workflowTask.getInputParameters()
                                 .forEach((key, inputParam) -> {
-
-                                    String[] paramPathComponents = ConstraintParamUtil.extractParamPathComponents(inputParam.toString());
+                                    String paramPath = Objects.toString(inputParam, "");
+                                    String[] paramPathComponents = ConstraintParamUtil.extractParamPathComponents(paramPath);
                                     if (paramPathComponents != null) {
                                         String source = paramPathComponents[0];    //workflow, or task reference name
                                         if (!"workflow".equals(source)) {
@@ -87,7 +88,7 @@ public @interface TaskReferenceNameUniqueConstraint {
                                             if (task == null) {
                                                 valid.setValue(false);
                                                 String message = String.format("taskDef: %s input parameter: %s value: %s is not valid",
-                                                        workflowTask.getName(), key, inputParam.toString());
+                                                        workflowTask.getName(), key, paramPath);
                                                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                                             }
                                         }

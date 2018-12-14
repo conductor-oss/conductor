@@ -13,6 +13,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -54,7 +55,8 @@ public @interface TaskInputParamConstraint {
 
             MutableBoolean valid = new MutableBoolean(true);
             inputParameters.forEach((key, inputParam) -> {
-                if (inputParam != null && StringUtils.isNotBlank(inputParam.toString())) {
+                String paramPath = Objects.toString(inputParam, "");
+                if (inputParam != null && StringUtils.isNotBlank(paramPath)) {
                     String[] paramPathComponents = ConstraintParamUtil.extractParamPathComponents(inputParam.toString());
 
                     if (paramPathComponents != null) {
@@ -62,7 +64,7 @@ public @interface TaskInputParamConstraint {
                             if (StringUtils.containsWhitespace(param)) {
                                 valid.setValue(false);
                                 String message = String.format("key: %s input parameter value: %s is not valid",
-                                        key, inputParam.toString());
+                                        key, paramPath);
                                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                             }
                         }
