@@ -47,11 +47,7 @@ public @interface WorkflowTaskTypeConstraint {
             // depending on task type check if required parameters are set or not
             switch (workflowTask.getType()) {
                 case TaskType.TASK_TYPE_EVENT:
-                    try {
-                        valid = isEventTaskValid(workflowTask, context);
-                    } catch (NoSuchFieldException e) {
-                        e.printStackTrace();
-                    }
+                    valid = isEventTaskValid(workflowTask, context);
                     break;
                 case TaskType.TASK_TYPE_DECISION:
                     valid = isDecisionTaskValid(workflowTask, context);
@@ -76,7 +72,7 @@ public @interface WorkflowTaskTypeConstraint {
             return valid;
         }
 
-        private boolean isEventTaskValid(WorkflowTask workflowTask, ConstraintValidatorContext context) throws NoSuchFieldException {
+        private boolean isEventTaskValid(WorkflowTask workflowTask, ConstraintValidatorContext context) {
             boolean valid = true;
             if (workflowTask.getSink() == null){
                 String message = String.format(PARAM_REQUIRED_STRING_FORMAT, "sink", TaskType.TASK_TYPE_EVENT, workflowTask.getName());

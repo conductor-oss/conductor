@@ -15,6 +15,17 @@ import javax.validation.Validator;
 import javax.validation.ValidatorContext;
 import java.util.Set;
 
+/**
+ * Most of the constraints validators are define at data model
+ * but there custom validators which requires access to DAO which
+ * is not possible in common layer.
+ * This class defines programmatic constraints validators defined
+ * on WokflowTask which accesses MetadataDao to check if TaskDef
+ * exists in store or not.
+ *
+ * @author fjhaveri
+ */
+
 public class ValidationModule extends AbstractModule {
 
     protected void configure() {
