@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
  * @author Viren
  *
  */
-public class TestWorkflowDef {
+public class WorkflowDefTest {
 
 	private WorkflowTask createTask(int c){
 		WorkflowTask task = new WorkflowTask();

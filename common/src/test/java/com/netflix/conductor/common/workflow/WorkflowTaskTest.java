@@ -36,7 +36,7 @@ import java.util.*;
  * @author Viren
  *
  */
-public class TestWorkflowTask {
+public class WorkflowTaskTest {
 
 	@Test
 	public void test() {

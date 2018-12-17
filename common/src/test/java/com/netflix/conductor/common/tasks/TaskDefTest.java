@@ -37,7 +37,7 @@ import java.util.Set;
  * @author Viren
  *
  */
-public class TestTaskDef {
+public class TaskDefTest {
 
     private Validator validator;
 

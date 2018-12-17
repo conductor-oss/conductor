@@ -1,7 +1,6 @@
-package com.netflix.conductor.common.events;
+package com.netflix.conductor.common.workflow;
 
-import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import org.junit.Test;
 
 import javax.validation.ConstraintViolation;
@@ -15,22 +14,21 @@ import java.util.Set;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestEventHandler {
+public class SubWorkflowParamsTest {
 
     @Test
     public void testWorkflowTaskName() {
-        EventHandler taskDef = new EventHandler();//name is null
-
+        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();//name is null
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         Validator validator = factory.getValidator();
-        Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
-        assertEquals(3, result.size());
+
+        Set<ConstraintViolation<Object>> result = validator.validate(subWorkflowParams);
+        assertEquals(2, result.size());
 
         List<String> validationErrors = new ArrayList<>();
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("Missing event handler name"));
-        assertTrue(validationErrors.contains("Missing event location"));
-        assertTrue(validationErrors.contains("No actions specified. Please specify at-least one action"));
+        assertTrue(validationErrors.contains("SubWorkflowParams name cannot be null"));
+        assertTrue(validationErrors.contains("SubWorkflowParams name cannot be empty"));
     }
 }
