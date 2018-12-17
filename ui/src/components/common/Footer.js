@@ -1,22 +1,23 @@
 import React, { Component } from 'react';
-import { connect } from 'react-redux';
 import http from '../../core/HttpClient';
 
-class Footer extends Component {
-
+export default class Footer extends Component {
   constructor(props) {
     super(props);
+
     this.state = {
       sys: {}
     };
 
     http.get('/api/sys/').then((data) => {
-      this.state = {
+      this.setState({
         sys: data.sys
-      };
+      });
+
       window.sys = this.state.sys;
     });
   }
+
   render() {
     return (
       <div className="Footer navbar-fixed-bottom">
@@ -29,7 +30,4 @@ class Footer extends Component {
       </div>
     );
   }
-
 }
-
-export default connect(state => state.workflow)(Footer);
