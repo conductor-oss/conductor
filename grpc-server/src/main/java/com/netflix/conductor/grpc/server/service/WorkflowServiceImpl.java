@@ -22,7 +22,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.grpc.ProtoMapper;
 import com.netflix.conductor.grpc.SearchPb;
 import com.netflix.conductor.grpc.WorkflowServiceGrpc;
@@ -30,8 +29,7 @@ import com.netflix.conductor.grpc.WorkflowServicePb;
 import com.netflix.conductor.proto.RerunWorkflowRequestPb;
 import com.netflix.conductor.proto.StartWorkflowRequestPb;
 import com.netflix.conductor.proto.WorkflowPb;
-import com.netflix.conductor.service.ExecutionService;
-import com.netflix.conductor.service.MetadataService;
+import com.netflix.conductor.service.WorkflowService;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import org.slf4j.Logger;
@@ -47,45 +45,27 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     private static final ProtoMapper PROTO_MAPPER = ProtoMapper.INSTANCE;
     private static final GRPCHelper GRPC_HELPER = new GRPCHelper(LOGGER);
 
-    private final WorkflowExecutor executor;
-    private final ExecutionService service;
-    private final MetadataService metadata;
+    private final WorkflowService workflowService;
     private final int maxSearchSize;
 
     @Inject
-    public WorkflowServiceImpl(WorkflowExecutor executor, ExecutionService service, MetadataService metadata, Configuration config) {
-        this.executor = executor;
-        this.service = service;
-        this.metadata = metadata;
+    public WorkflowServiceImpl(WorkflowService workflowService, Configuration config) {
+        this.workflowService = workflowService;
         this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
     }
 
     @Override
     public void startWorkflow(StartWorkflowRequestPb.StartWorkflowRequest pbRequest, StreamObserver<WorkflowServicePb.StartWorkflowResponse> response) {
+
         // TODO: better handling of optional 'version'
         final StartWorkflowRequest request = PROTO_MAPPER.fromProto(pbRequest);
-
         try {
-            // TODO When moving to Java 9: Use ifPresentOrElse(Consumer<? super T> action, Runnable emptyAction)
-            String id;
-            if (request.getWorkflowDef() == null) {
-                id = executor.startWorkflow(
-                        request.getName(),
-                        GRPC_HELPER.optional(request.getVersion()),
-                        request.getCorrelationId(),
-                        request.getInput(),
-                        request.getExternalInputPayloadStoragePath(),
-                        null,
-                        request.getTaskToDomain());
-            } else {
-                id = executor.startWorkflow(
-                        request.getWorkflowDef(),
-                        request.getInput(),
-                        request.getExternalInputPayloadStoragePath(),
-                        request.getCorrelationId(),
-                        null,
-                        request.getTaskToDomain());
-            }
+            String id = workflowService.startWorkflow(pbRequest.getName(),
+                    GRPC_HELPER.optional(request.getVersion()),request.getCorrelationId(),
+                    request.getInput(),
+                    request.getExternalInputPayloadStoragePath(),
+                    request.getTaskToDomain(), request.getWorkflowDef());
+
             response.onNext(WorkflowServicePb.StartWorkflowResponse.newBuilder()
                     .setWorkflowId(id)
                     .build()
@@ -112,7 +92,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
         WorkflowServicePb.GetWorkflowsResponse.Builder builder = WorkflowServicePb.GetWorkflowsResponse.newBuilder();
 
         for (String correlationId : req.getCorrelationIdList()) {
-            List<Workflow> workflows = service.getWorkflowInstances(name, correlationId, includeClosed, includeTasks);
+            List<Workflow> workflows =  workflowService.getWorkflows(name, correlationId, includeClosed, includeTasks);
             builder.putWorkflowsById(correlationId,
                     WorkflowServicePb.GetWorkflowsResponse.Workflows.newBuilder()
                             .addAllWorkflows(workflows.stream().map(PROTO_MAPPER::toProto)::iterator)
@@ -127,7 +107,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void getWorkflowStatus(WorkflowServicePb.GetWorkflowStatusRequest req, StreamObserver<WorkflowPb.Workflow> response) {
         try {
-            Workflow workflow = service.getExecutionStatus(req.getWorkflowId(), req.getIncludeTasks());
+            Workflow workflow = workflowService.getExecutionStatus(req.getWorkflowId(), req.getIncludeTasks());
             response.onNext(PROTO_MAPPER.toProto(workflow));
             response.onCompleted();
         } catch (Exception e) {
@@ -138,7 +118,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void removeWorkflow(WorkflowServicePb.RemoveWorkflowRequest req, StreamObserver<WorkflowServicePb.RemoveWorkflowResponse> response) {
         try {
-            service.removeWorkflow(req.getWorkflodId(), req.getArchiveWorkflow());
+            workflowService.deleteWorkflow(req.getWorkflodId(), req.getArchiveWorkflow());
             response.onNext(WorkflowServicePb.RemoveWorkflowResponse.getDefaultInstance());
             response.onCompleted();
         } catch (Exception e) {
@@ -149,13 +129,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void getRunningWorkflows(WorkflowServicePb.GetRunningWorkflowsRequest req, StreamObserver<WorkflowServicePb.GetRunningWorkflowsResponse> response) {
         try {
-            List<String> workflowIds;
-
-            if (req.getStartTime() != 0 && req.getEndTime() != 0) {
-                workflowIds = executor.getWorkflows(req.getName(), req.getVersion(), req.getStartTime(), req.getEndTime());
-            } else {
-                workflowIds = executor.getRunningWorkflowIds(req.getName());
-            }
+            List<String> workflowIds = workflowService.getRunningWorkflows(req.getName(), req.getVersion(), req.getStartTime(), req.getEndTime());
 
             response.onNext(
                 WorkflowServicePb.GetRunningWorkflowsResponse.newBuilder()
@@ -171,7 +145,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void decideWorkflow(WorkflowServicePb.DecideWorkflowRequest req, StreamObserver<WorkflowServicePb.DecideWorkflowResponse> response) {
         try {
-            executor.decide(req.getWorkflowId());
+            workflowService.decideWorkflow(req.getWorkflowId());
             response.onNext(WorkflowServicePb.DecideWorkflowResponse.getDefaultInstance());
             response.onCompleted();
         } catch (Exception e) {
@@ -182,7 +156,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void pauseWorkflow(WorkflowServicePb.PauseWorkflowRequest req, StreamObserver<WorkflowServicePb.PauseWorkflowResponse> response) {
         try {
-            executor.pauseWorkflow(req.getWorkflowId());
+            workflowService.pauseWorkflow(req.getWorkflowId());
             response.onNext(WorkflowServicePb.PauseWorkflowResponse.getDefaultInstance());
             response.onCompleted();
         } catch (Exception e) {
@@ -193,7 +167,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void resumeWorkflow(WorkflowServicePb.ResumeWorkflowRequest req, StreamObserver<WorkflowServicePb.ResumeWorkflowResponse> response) {
         try {
-            executor.resumeWorkflow(req.getWorkflowId());
+            workflowService.resumeWorkflow(req.getWorkflowId());
             response.onNext(WorkflowServicePb.ResumeWorkflowResponse.getDefaultInstance());
             response.onCompleted();
         } catch (Exception e) {
@@ -205,7 +179,8 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     public void skipTaskFromWorkflow(WorkflowServicePb.SkipTaskRequest req, StreamObserver<WorkflowServicePb.SkipTaskResponse> response) {
         try {
             SkipTaskRequest skipTask = PROTO_MAPPER.fromProto(req.getRequest());
-            executor.skipTaskFromWorkflow(req.getWorkflowId(), req.getTaskReferenceName(), skipTask);
+
+            workflowService.skipTaskFromWorkflow(req.getWorkflowId(),req.getTaskReferenceName(), skipTask);
             response.onNext(WorkflowServicePb.SkipTaskResponse.getDefaultInstance());
             response.onCompleted();
         } catch (Exception e) {
@@ -216,7 +191,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void rerunWorkflow(RerunWorkflowRequestPb.RerunWorkflowRequest req, StreamObserver<WorkflowServicePb.RerunWorkflowResponse> response) {
         try {
-            String id = executor.rerun(PROTO_MAPPER.fromProto(req));
+            String id = workflowService.rerunWorkflow(req.getReRunFromWorkflowId(), PROTO_MAPPER.fromProto(req));
             response.onNext(WorkflowServicePb.RerunWorkflowResponse.newBuilder()
                     .setWorkflowId(id)
                     .build()
@@ -230,7 +205,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void restartWorkflow(WorkflowServicePb.RestartWorkflowRequest req, StreamObserver<WorkflowServicePb.RestartWorkflowResponse> response) {
         try {
-            executor.rewind(req.getWorkflowId(), req.getUseLatestDefinitions());
+            workflowService.restartWorkflow(req.getWorkflowId(), req.getUseLatestDefinitions());
             response.onNext(WorkflowServicePb.RestartWorkflowResponse.getDefaultInstance());
             response.onCompleted();
         } catch (Exception e) {
@@ -241,7 +216,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void retryWorkflow(WorkflowServicePb.RetryWorkflowRequest req, StreamObserver<WorkflowServicePb.RetryWorkflowResponse> response) {
         try {
-            executor.retry(req.getWorkflowId());
+            workflowService.retryWorkflow(req.getWorkflowId());
             response.onNext(WorkflowServicePb.RetryWorkflowResponse.getDefaultInstance());
             response.onCompleted();
         } catch (Exception e) {
@@ -252,7 +227,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void resetWorkflowCallbacks(WorkflowServicePb.ResetWorkflowCallbacksRequest req, StreamObserver<WorkflowServicePb.ResetWorkflowCallbacksResponse> response) {
         try {
-            executor.resetCallbacksForInProgressTasks(req.getWorkflowId());
+            workflowService.resetWorkflow(req.getWorkflowId());
             response.onNext(WorkflowServicePb.ResetWorkflowCallbacksResponse.getDefaultInstance());
             response.onCompleted();
         } catch (Exception e) {
@@ -263,7 +238,7 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
     @Override
     public void terminateWorkflow(WorkflowServicePb.TerminateWorkflowRequest req, StreamObserver<WorkflowServicePb.TerminateWorkflowResponse> response) {
         try {
-            executor.terminateWorkflow(req.getWorkflowId(), req.getReason());
+            workflowService.terminateWorkflow(req.getWorkflowId(), req.getReason());
             response.onNext(WorkflowServicePb.TerminateWorkflowResponse.getDefaultInstance());
             response.onCompleted();
         } catch (Exception e) {
@@ -289,9 +264,9 @@ public class WorkflowServiceImpl extends WorkflowServiceGrpc.WorkflowServiceImpl
 
         SearchResult<WorkflowSummary> search;
         if (searchByTask) {
-            search = service.searchWorkflowByTasks(query, freeText, start, size, sort);
+            search = workflowService.searchWorkflowsByTasks(start, size, sort, freeText,query);
         } else {
-            search = service.search(query, freeText, start, size, sort);
+            search = workflowService.searchWorkflows(start, size, sort, freeText, query);
         }
 
         response.onNext(
