@@ -47,6 +47,7 @@ public class WorkflowContext {
 	}
 
 	/**
+	 * todo: rename to more generic callerName
 	 * @return the clientApp
 	 */
 	public String getClientApp() {
