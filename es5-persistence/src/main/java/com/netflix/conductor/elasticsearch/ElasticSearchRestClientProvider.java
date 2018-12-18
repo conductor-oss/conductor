@@ -3,12 +3,11 @@ package com.netflix.conductor.elasticsearch;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
 import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 public class ElasticSearchRestClientProvider implements Provider<RestClient> {
     private final ElasticSearchConfiguration configuration;

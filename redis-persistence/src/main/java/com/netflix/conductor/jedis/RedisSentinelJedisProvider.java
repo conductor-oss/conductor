@@ -3,21 +3,18 @@ package com.netflix.conductor.jedis;
 import com.netflix.conductor.dyno.DynomiteConfiguration;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
-
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-
 import redis.clients.jedis.JedisCommands;
 import redis.clients.jedis.JedisSentinelPool;
 
-public class trRedisSentinelJedisProvider implements Provider<JedisCommands> {
+import javax.inject.Inject;
+import javax.inject.Provider;
+import java.util.HashSet;
+import java.util.Set;
+
+public class RedisSentinelJedisProvider implements Provider<JedisCommands> {
     private static Logger logger = LoggerFactory.getLogger(RedisSentinelJedisProvider.class);
     private final JedisSentinelPool jedisPool;
 
