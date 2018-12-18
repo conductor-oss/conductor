@@ -113,8 +113,4 @@ public interface MetadataService {
      * @return Returns the list of all the event handlers for a given event
      */
     List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly);
-
-    void validateEvent(EventHandler eh);
-
-
 }

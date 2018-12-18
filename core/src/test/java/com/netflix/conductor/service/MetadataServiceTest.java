@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verify;
 
 public class MetadataServiceTest {
 
-    private MetadataService metadataService;
+    private MetadataServiceImpl metadataService;
     private MetadataDAO metadataDAO;
     private EventQueues eventQueues;
 

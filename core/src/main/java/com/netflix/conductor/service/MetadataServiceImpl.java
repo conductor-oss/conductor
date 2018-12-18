@@ -222,7 +222,7 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     @VisibleForTesting
-    public void validateEvent(EventHandler eh) {
+    void validateEvent(EventHandler eh) {
         ServiceUtils.checkNotNullOrEmpty(eh.getName(), "Missing event handler name");
         ServiceUtils.checkNotNullOrEmpty(eh.getEvent(), "Missing event location");
         ServiceUtils.checkNotNullOrEmpty(eh.getActions(), "No actions specified. Please specify at-least one action");
