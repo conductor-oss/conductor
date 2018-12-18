@@ -27,7 +27,7 @@ public class MetadataServiceTest {
     public void before() {
         metadataDAO = Mockito.mock(MetadataDAO.class);
         eventQueues = Mockito.mock(EventQueues.class);
-        metadataService = new MetadataService(metadataDAO, eventQueues);
+        metadataService = new MetadataServiceImpl(metadataDAO, eventQueues);
     }
 
     @Test(expected = ApplicationException.class)

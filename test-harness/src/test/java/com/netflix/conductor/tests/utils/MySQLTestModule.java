@@ -22,6 +22,8 @@ import com.netflix.conductor.dao.mysql.MySQLQueueDAO;
 import com.netflix.conductor.mysql.MySQLConfiguration;
 import com.netflix.conductor.mysql.MySQLDataSourceProvider;
 import com.netflix.conductor.mysql.SystemPropertiesMySQLConfiguration;
+import com.netflix.conductor.service.MetadataService;
+import com.netflix.conductor.service.MetadataServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +61,7 @@ public class MySQLTestModule extends AbstractModule {
         bind(ObjectMapper.class).toProvider(JsonMapperProvider.class);
         bind(ExternalPayloadStorage.class).to(MockExternalPayloadStorage.class);
 
+        bind(MetadataService.class).to(MetadataServiceImpl.class);
     }
 
 

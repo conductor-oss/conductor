@@ -65,7 +65,7 @@ public class WorkflowServiceTest {
         Configuration mockConfig = Mockito.mock(Configuration.class);
 
         when(mockConfig.getIntProperty(anyString(), anyInt())).thenReturn(5_000);
-        this.workflowService = new WorkflowService(this.mockWorkflowExecutor, this.mockExecutionService,
+        this.workflowService = new WorkflowServiceImpl(this.mockWorkflowExecutor, this.mockExecutionService,
                 this.mockMetadata, mockConfig);
     }
 
