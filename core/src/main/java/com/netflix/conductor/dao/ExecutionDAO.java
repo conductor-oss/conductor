@@ -154,10 +154,8 @@ public interface ExecutionDAO {
 	/**
 	 *
 	 * @param workflowId workflow instance id
-	 * @param archiveWorkflow if true, archives the workflow in elasticsearch, else, removes the workflow completely
-	 *  
 	 */
-	void removeWorkflow(String workflowId, boolean archiveWorkflow);
+	void removeWorkflow(String workflowId);
 	
 	/**
 	 * 

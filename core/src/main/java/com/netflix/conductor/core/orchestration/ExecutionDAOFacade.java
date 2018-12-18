@@ -172,6 +172,7 @@ public class ExecutionDAOFacade {
     public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
         try {
             Workflow workflow = getWorkflowById(workflowId, true);
+
             // remove workflow from ES
             if (archiveWorkflow) {
                 //Add to elasticsearch
@@ -185,7 +186,7 @@ public class ExecutionDAOFacade {
 
             // remove workflow from DAO
             try {
-                executionDAO.removeWorkflow(workflowId, archiveWorkflow);
+                executionDAO.removeWorkflow(workflowId);
             } catch (Exception ex) {
                 Monitors.recordDaoError("executionDao", "removeWorkflow");
                 throw ex;

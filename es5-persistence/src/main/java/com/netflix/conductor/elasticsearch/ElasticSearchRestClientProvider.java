@@ -3,12 +3,11 @@ package com.netflix.conductor.elasticsearch;
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
 import java.net.URI;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 public class ElasticSearchRestClientProvider implements Provider<RestClient> {
     private final ElasticSearchConfiguration configuration;
@@ -25,8 +24,8 @@ public class ElasticSearchRestClientProvider implements Provider<RestClient> {
 
     private HttpHost[] convertToHttpHosts(List<URI> hosts) {
         List<HttpHost> list = hosts.stream()
-            .map(host -> new HttpHost(host.getHost(), host.getPort(), host.getScheme()))
-            .collect(Collectors.toList());
+                .map(host -> new HttpHost(host.getHost(), host.getPort(), host.getScheme()))
+                .collect(Collectors.toList());
 
         return list.toArray(new HttpHost[list.size()]);
     }
