@@ -69,6 +69,10 @@ public class AdminServiceImpl implements AdminService {
         }
     }
 
+    /**
+     * Get all the configuration parameters.
+     * @return all the configuration parameters.
+     */
     public Map<String, Object> getAllConfig() {
         Map<String, Object> map = config.getAll();
         map.put("version", version);
@@ -76,6 +80,14 @@ public class AdminServiceImpl implements AdminService {
         return map;
     }
 
+    /**
+     * Get the list of pending tasks for a given task type.
+     *
+     * @param taskType Name of the task
+     * @param start Start index of pagination
+     * @param count Number of entries
+     * @return list of pending {@link Task}
+     */
     public List<Task> getListOfPendingTask(String taskType, Integer start, Integer count) {
         ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
         List<Task> tasks = executionService.getPendingTasksForTaskType(taskType);
@@ -85,7 +97,12 @@ public class AdminServiceImpl implements AdminService {
         return tasks.subList(start, total);
     }
 
-
+    /**
+     * Queue up all the running workflows for sweep.
+     *
+     * @param workflowId Id of the workflow
+     * @return the id of the workflow instance that can be use for tracking.
+     */
     public String requeueSweep(String workflowId) {
         ServiceUtils.checkNotNullOrEmpty(workflowId, "WorkflowId cannot be null or empty.");
         boolean pushed = queueDAO.pushIfNotExists(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency());
