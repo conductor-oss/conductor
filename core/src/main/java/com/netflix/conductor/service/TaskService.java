@@ -94,7 +94,7 @@ public interface TaskService {
      * @param taskId   Id of the task
      * @return `true|false` if task if received or not
      */
-    String ackTaskReceived(String taskId);
+    boolean ackTaskReceived(String taskId);
 
     /**
      * Log Task Execution Details.
