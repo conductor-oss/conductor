@@ -15,16 +15,19 @@
  */
 package com.netflix.conductor.service;
 
+import com.netflix.conductor.service.common.BulkResponse;
+
 import java.util.List;
 
 public interface WorkflowBulkService {
-   void pauseWorkflow(List<String> workflowIds);
 
-   void resumeWorkflow(List<String> workflowIds);
+   BulkResponse pauseWorkflow(List<String> workflowIds);
 
-   void restart(List<String> workflowIds, boolean useLatestDefinitions);
+   BulkResponse resumeWorkflow(List<String> workflowIds);
 
-   void retry(List<String> workflowIds);
+   BulkResponse restart(List<String> workflowIds, boolean useLatestDefinitions);
 
-   void terminate(List<String> workflowIds, String reason);
+   BulkResponse retry(List<String> workflowIds);
+
+   BulkResponse terminate(List<String> workflowIds, String reason);
 }

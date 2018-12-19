@@ -255,4 +255,8 @@ public class Monitors {
 	public static void recordExternalPayloadStorageUsage(String name, String operation, String payloadType) {
 		counter(classQualifier, "external_payload_storage_usage", "name", name, "operation", operation, "payloadType", payloadType);
 	}
+
+	public static void recordDaoError(String dao, String action) {
+		counter(classQualifier, "dao_errors", "dao", dao, "action", action);
+	}
 }

@@ -261,7 +261,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     }
 
     @Override
-    public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
+    public void removeWorkflow(String workflowId) {
         Workflow workflow = getWorkflow(workflowId, true);
 
         withTransaction(connection -> {

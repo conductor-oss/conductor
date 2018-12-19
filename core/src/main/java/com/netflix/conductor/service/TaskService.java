@@ -89,6 +89,14 @@ public interface TaskService {
     String ackTaskReceived(String taskId, String workerId);
 
     /**
+     * Ack Task is received.
+     *
+     * @param taskId   Id of the task
+     * @return `true|false` if task if received or not
+     */
+    String ackTaskReceived(String taskId);
+
+    /**
      * Log Task Execution Details.
      *
      * @param taskId Id of the task
@@ -119,6 +127,13 @@ public interface TaskService {
      * @param taskId   ID of the task
      */
     void removeTaskFromQueue(String taskType, String taskId);
+
+    /**
+     * Remove Task from a Task type queue.
+     *
+     * @param taskId   ID of the task
+     */
+    void removeTaskFromQueue(String taskId);
 
     /**
      * Get Task type queue sizes.

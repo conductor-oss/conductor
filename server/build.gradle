@@ -24,6 +24,7 @@ dependencies {
     compile project(':conductor-jersey')
     compile project(':conductor-redis-persistence')
     compile project(':conductor-mysql-persistence')
+    compile project(':conductor-cassandra-persistence')
     compile project(':conductor-contribs')
     compile project(':conductor-es5-persistence')
     compile project(':conductor-grpc-server')

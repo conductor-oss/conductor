@@ -148,18 +148,29 @@ public class TaskServiceImpl implements TaskService {
      * @return `true|false` if task if received or not
      */
     public String ackTaskReceived(String taskId, String workerId) {
-        ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
         LOGGER.debug("Ack received for task: {} from worker: {}", taskId, workerId);
+        return String.valueOf(ackTaskReceived(taskId));
+    }
+
+    /**
+     * Ack Task is received.
+     *
+     * @param taskId   Id of the task
+     * @return `true|false` if task if received or not
+     */
+    public boolean ackTaskReceived(String taskId) {
+        ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
+        LOGGER.debug("Ack received for task: {}", taskId);
         boolean ackResult;
         try {
             ackResult = executionService.ackTaskReceived(taskId);
         } catch (Exception e) {
             // safe to ignore exception here, since the task will not be processed by the worker due to ack failure
             // The task will eventually be available to be polled again after the unack timeout
-            LOGGER.error("Exception when trying to ack task {} from worker {}", taskId, workerId, e);
+            LOGGER.error("Exception when trying to ack task {}", taskId, e);
             ackResult = false;
         }
-        return String.valueOf(ackResult);
+        return ackResult;
     }
 
     /**
@@ -204,6 +215,15 @@ public class TaskServiceImpl implements TaskService {
      */
     public void removeTaskFromQueue(String taskType, String taskId) {
         ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
+        removeTaskFromQueue(taskId);
+    }
+
+    /**
+     * Remove Task from a Task type queue.
+     *
+     * @param taskId   ID of the task
+     */
+    public void removeTaskFromQueue(String taskId) {
         ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
         executionService.removeTaskfromQueue(taskId);
     }

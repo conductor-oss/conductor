@@ -18,6 +18,7 @@ package com.netflix.conductor.service;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
@@ -36,6 +37,19 @@ public interface WorkflowService {
      */
     String startWorkflow(StartWorkflowRequest startWorkflowRequest);
 
+    /**
+     * Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain.
+     * @param name          Name of the workflow you want to start.
+     * @param version       Version of the workflow you want to start.
+     * @param correlationId CorrelationID of the workflow you want to start.
+     * @param input         Input to the workflow you want to start.
+     * @param externalInputPayloadStoragePath
+     * @param taskToDomain
+     * @param workflowDef - workflow definition
+     * @return the id of the workflow instance that can be use for tracking.
+     */
+    String startWorkflow(String name, Integer version, String correlationId,  Map<String, Object> input,
+                                String externalInputPayloadStoragePath, Map<String, String> taskToDomain, WorkflowDef workflowDef);
     /**
      * Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking.
      *
@@ -170,6 +184,18 @@ public interface WorkflowService {
     SearchResult<WorkflowSummary> searchWorkflows(int start, int size, String sort, String freeText, String query);
 
     /**
+     * Search for workflows based on payload and given parameters. Use sort options as sort ASCor DESC
+     * e.g. sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
+     * @param start Start index of pagination
+     * @param size  Number of entries
+     * @param sort list of sorting options, separated by "|" delimiter
+     * @param freeText Text you want to search
+     * @param query Query you want to search
+     * @return instance of {@link SearchResult}
+     */
+    SearchResult<WorkflowSummary> searchWorkflows(int start, int size, List<String> sort, String freeText, String query);
+
+    /**
      * Search for workflows based on task parameters. Use sort options as sort ASC or DESC e.g.
      * sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
      * @param start Start index of pagination
@@ -180,6 +206,18 @@ public interface WorkflowService {
      * @return instance of {@link SearchResult}
      */
     SearchResult<WorkflowSummary> searchWorkflowsByTasks(int start, int size, String sort, String freeText, String query);
+
+    /**
+     * Search for workflows based on task parameters. Use sort options as sort ASC or DESC e.g.
+     * sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
+     * @param start Start index of pagination
+     * @param size  Number of entries
+     * @param sort list of sorting options, separated by "|" delimiter
+     * @param freeText Text you want to search
+     * @param query Query you want to search
+     * @return instance of {@link SearchResult}
+     */
+    SearchResult<WorkflowSummary> searchWorkflowsByTasks(int start, int size, List<String> sort, String freeText, String query);
 
     /**
      * Get the external storage location where the workflow input payload is stored/to be stored
