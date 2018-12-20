@@ -328,7 +328,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg);
         }
-        workflow.getTasks().forEach(this::removeTask);
+        workflow.getTasks().forEach(this::removeTaskLookup);
     }
 
     /**
@@ -519,10 +519,10 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             WorkflowMetadata workflowMetadata = getWorkflowMetadata(task.getWorkflowInstanceId());
             int totalTasks = workflowMetadata.getTotalTasks();
 
-            recordCassandraDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
             // remove from task_lookup table
-            session.execute(deleteTaskLookupStatement.bind(UUID.fromString(task.getTaskId())));
+            removeTaskLookup(task);
 
+            recordCassandraDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
             // delete task from workflows table and decrement total tasks by 1
             BatchStatement batchStatement = new BatchStatement();
             batchStatement.add(deleteTaskStatement.bind(UUID.fromString(task.getWorkflowInstanceId()), DEFAULT_SHARD_ID, task.getTaskId()));
@@ -534,6 +534,11 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg);
         }
+    }
+
+    private void removeTaskLookup(Task task) {
+        recordCassandraDaoRequests("removeTaskLookup", task.getTaskType(), task.getWorkflowType());
+        session.execute(deleteTaskLookupStatement.bind(UUID.fromString(task.getTaskId())));
     }
 
     @VisibleForTesting

@@ -246,5 +246,14 @@ public class CassandraExecutionDAOTest {
         // try to read removed task
         Task t = executionDAO.getTask(task3.getTaskId());
         assertNull(t);
+
+        // remove the workflow
+        executionDAO.removeWorkflow(workflowId);
+
+        // check task_lookup table
+        foundId = executionDAO.lookupWorkflowIdFromTaskId(task1Id);
+        assertNull(foundId);
+        foundId = executionDAO.lookupWorkflowIdFromTaskId(task2Id);
+        assertNull(foundId);
     }
 }
