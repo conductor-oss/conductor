@@ -805,9 +805,10 @@ public class WorkflowExecutor {
             if (!tasksToBeRequeued.isEmpty()) {
                 addTaskToQueue(tasksToBeRequeued);
             }
-            workflow.getTasks().addAll(tasksToBeScheduled);
 
-            for (Task task : tasksToBeScheduled) {
+            tasksToBeScheduled = dedupAndAddTasks(workflow, tasksToBeScheduled);
+
+            for (Task task : outcome.tasksToBeScheduled) {
                 if (isSystemTask.and(isNonTerminalTask).test(task)) {
                     WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
 
@@ -837,7 +838,7 @@ public class WorkflowExecutor {
                 }
             }
 
-            if (!outcome.tasksToBeUpdated.isEmpty() || !outcome.tasksToBeScheduled.isEmpty()) {
+            if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
                 executionDAOFacade.updateTasks(tasksToBeUpdated);
                 executionDAOFacade.updateWorkflow(workflow);
                 queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), config.getSweepFrequency());
@@ -856,6 +857,20 @@ public class WorkflowExecutor {
             throw e;
         }
         return false;
+    }
+
+    @VisibleForTesting
+    List<Task> dedupAndAddTasks(Workflow workflow, List<Task> tasks) {
+        List<String> tasksInWorkflow = workflow.getTasks().stream()
+                .map(task -> task.getReferenceTaskName() + task.getRetryCount())
+                .collect(Collectors.toList());
+
+        List<Task> dedupedTasks = tasks.stream()
+                .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName() + task.getRetryCount()))
+                .collect(Collectors.toList());
+
+        workflow.getTasks().addAll(dedupedTasks);
+        return dedupedTasks;
     }
 
     /**
