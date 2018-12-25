@@ -1,4 +1,4 @@
-package com.netflix.conductor.server.common;
+package com.netflix.conductor.service.common;
 
 import java.util.ArrayList;
 import java.util.HashMap;

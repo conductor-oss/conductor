@@ -41,7 +41,7 @@ public class WorkflowBulkServiceTest {
                                 bindInterceptor(Matchers.any(), Matchers.annotatedWith(Service.class), new ServiceInterceptor(getProvider(Validator.class)));
                             }
                         });
-        workflowBulkService = injector.getInstance(WorkflowBulkService.class);
+        workflowBulkService = injector.getInstance(WorkflowBulkServiceImpl.class);
     }
 
     @Test

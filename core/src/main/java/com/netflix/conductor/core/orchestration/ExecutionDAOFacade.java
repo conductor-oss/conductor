@@ -23,6 +23,7 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -171,7 +172,8 @@ public class ExecutionDAOFacade {
     public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
         try {
             Workflow workflow = getWorkflowById(workflowId, true);
-            executionDAO.removeWorkflow(workflowId, archiveWorkflow);
+
+            // remove workflow from ES
             if (archiveWorkflow) {
                 //Add to elasticsearch
                 indexDAO.updateWorkflow(workflowId,
@@ -181,6 +183,15 @@ public class ExecutionDAOFacade {
                 // Not archiving, also remove workflowId from index
                 indexDAO.removeWorkflow(workflowId);
             }
+
+            // remove workflow from DAO
+            try {
+                executionDAO.removeWorkflow(workflowId);
+            } catch (Exception ex) {
+                Monitors.recordDaoError("executionDao", "removeWorkflow");
+                throw ex;
+            }
+
         } catch (Exception e) {
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "Error removing workflow: " + workflowId, e);
         }

@@ -3,8 +3,8 @@ dependencies {
 
     compile "commons-io:commons-io:${revCommonsIo}"
 
-	compile "org.elasticsearch:elasticsearch:${revElasticSearch5}"
-	compile "org.elasticsearch.client:transport:${revElasticSearch5}"
+    compile "org.elasticsearch:elasticsearch:${revElasticSearch5}"
+    compile "org.elasticsearch.client:transport:${revElasticSearch5}"
     compile "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch5}"
     compile "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch5}"
 

@@ -96,11 +96,13 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
 
     private final String indexName;
     private final String logIndexPrefix;
+    private final String clusterHealthColor;
     private String logIndexName;
     private final ObjectMapper objectMapper;
     private final RestHighLevelClient elasticSearchClient;
     private final RestClient elasticSearchAdminClient;
     private final ExecutorService executorService;
+
 
     static {
         SIMPLE_DATE_FORMAT.setTimeZone(GMT);
@@ -114,6 +116,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
         this.elasticSearchClient = new RestHighLevelClient(lowLevelRestClient);
         this.indexName = config.getIndexName();
         this.logIndexPrefix = config.getTasklogIndexName();
+        this.clusterHealthColor = config.getClusterHealthColor();
 
         // Set up a workerpool for performing async operations.
         int corePoolSize = 6;
@@ -129,7 +132,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
 
     @Override
     public void setup() throws Exception {
-        waitForGreenCluster();
+        waitForHealthyCluster();
 
         try {
             initIndex();
@@ -165,9 +168,9 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
      * Waits for the ES cluster to become green.
      * @throws Exception If there is an issue connecting with the ES cluster.
      */
-    private void waitForGreenCluster() throws Exception {
+    private void waitForHealthyCluster() throws Exception {
         Map<String, String> params = new HashMap<>();
-        params.put("wait_for_status", "green");
+        params.put("wait_for_status", this.clusterHealthColor);
         params.put("timeout", "30s");
 
         elasticSearchAdminClient.performRequest("GET", "/_cluster/health", params);

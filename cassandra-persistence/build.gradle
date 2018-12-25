@@ -1,0 +1,11 @@
+apply plugin: 'java'
+
+dependencies {
+    compile project(':conductor-core')
+    compile "com.datastax.cassandra:cassandra-driver-core:${revCassandra}"
+
+    testCompile("org.cassandraunit:cassandra-unit:${revCassandraUnit}") {
+        exclude group: "com.datastax.cassandra", module: "cassandra-driver-core"
+    }
+    testCompile project(':conductor-core').sourceSets.test.output
+}

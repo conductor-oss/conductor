@@ -32,7 +32,7 @@ import static org.mockito.Mockito.when;
 
 public class MetadataServiceTest{
 
-    private MetadataService metadataService;
+    private MetadataServiceImpl metadataService;
 
     private MetadataDAO metadataDAO;
 
@@ -42,6 +42,7 @@ public class MetadataServiceTest{
     public void before() {
         metadataDAO = Mockito.mock(MetadataDAO.class);
         eventQueues = Mockito.mock(EventQueues.class);
+
         Injector injector =
                 Guice.createInjector(
                         new AbstractModule() {
@@ -56,7 +57,7 @@ public class MetadataServiceTest{
                                         Matchers.any(), Matchers.annotatedWith(Service.class), new ServiceInterceptor(getProvider(Validator.class)));
                             }
                         });
-        metadataService = injector.getInstance(MetadataService.class);
+        metadataService = injector.getInstance(MetadataServiceImpl.class);
     }
 
     @Test
@@ -134,7 +135,6 @@ public class MetadataServiceTest{
         when(metadataDAO.getTaskDef(any())).thenReturn(null);
         metadataService.updateTaskDef(taskDef);
     }
-
 
     @Test
     public void testRegisterTaskDef() {

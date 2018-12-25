@@ -69,7 +69,7 @@ public class WorkflowServiceTest {
         Configuration mockConfig = Mockito.mock(Configuration.class);
 
         when(mockConfig.getIntProperty(anyString(), anyInt())).thenReturn(5_000);
-        this.workflowService = new WorkflowService(this.mockWorkflowExecutor, this.mockExecutionService,
+        this.workflowService = new WorkflowServiceImpl(this.mockWorkflowExecutor, this.mockExecutionService,
                 this.mockMetadata, mockConfig);
         Injector injector =
                 Guice.createInjector(
@@ -84,7 +84,7 @@ public class WorkflowServiceTest {
                                 bindInterceptor(Matchers.any(), Matchers.annotatedWith(Service.class), new ServiceInterceptor(getProvider(Validator.class)));
                             }
                         });
-        workflowService = injector.getInstance(WorkflowService.class);
+        workflowService = injector.getInstance(WorkflowServiceImpl.class);
     }
 
     @Test

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,8 +15,6 @@
  */
 package com.netflix.conductor.service;
 
-import com.netflix.conductor.annotations.Service;
-import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -25,42 +23,15 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
-import com.netflix.conductor.common.utils.ExternalPayloadStorage;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.service.utils.ServiceUtils;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-@Singleton
-@Trace
-public class WorkflowService {
-
-    private final WorkflowExecutor workflowExecutor;
-
-    private final ExecutionService executionService;
-
-    private final MetadataService metadataService;
-
-    private int maxSearchSize;
-
-    @Inject
-    public WorkflowService(WorkflowExecutor workflowExecutor, ExecutionService executionService,
-                           MetadataService metadataService, Configuration config) {
-        this.workflowExecutor = workflowExecutor;
-        this.executionService = executionService;
-        this.metadataService = metadataService;
-        this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
-    }
+public interface WorkflowService {
 
     /**
      * Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain.
@@ -68,39 +39,21 @@ public class WorkflowService {
      * @param startWorkflowRequest StartWorkflow request for the workflow you want to start.
      * @return the id of the workflow instance that can be use for tracking.
      */
-    @Service
-    public String startWorkflow(@NotNull(message = "StartWorkflowRequest cannot be null") @Valid StartWorkflowRequest startWorkflowRequest) {
-        WorkflowDef workflowDef = startWorkflowRequest.getWorkflowDef();
+    String startWorkflow(@NotNull(message = "StartWorkflowRequest cannot be null") @Valid StartWorkflowRequest startWorkflowRequest);
 
-        if (workflowDef == null) {
-            workflowDef = metadataService.getWorkflowDef(startWorkflowRequest.getName(), startWorkflowRequest.getVersion());
-            if (workflowDef == null) {
-                throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                        String.format("No such workflow found by name: %s, version: %d", startWorkflowRequest.getName(),
-                                startWorkflowRequest.getVersion()));
-            }
-
-            return workflowExecutor.startWorkflow(
-                    startWorkflowRequest.getName(),
-                    startWorkflowRequest.getVersion(),
-                    startWorkflowRequest.getCorrelationId(),
-                    startWorkflowRequest.getInput(),
-                    startWorkflowRequest.getExternalInputPayloadStoragePath(),
-                    null,
-                    startWorkflowRequest.getTaskToDomain()
-            );
-        } else {
-            return workflowExecutor.startWorkflow(
-                    startWorkflowRequest.getWorkflowDef(),
-                    startWorkflowRequest.getInput(),
-                    startWorkflowRequest.getExternalInputPayloadStoragePath(),
-                    startWorkflowRequest.getCorrelationId(),
-                    null,
-                    startWorkflowRequest.getTaskToDomain()
-            );
-        }
-    }
-
+    /**
+     * Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain.
+     * @param name          Name of the workflow you want to start.
+     * @param version       Version of the workflow you want to start.
+     * @param correlationId CorrelationID of the workflow you want to start.
+     * @param input         Input to the workflow you want to start.
+     * @param externalInputPayloadStoragePath
+     * @param taskToDomain
+     * @param workflowDef - workflow definition
+     * @return the id of the workflow instance that can be use for tracking.
+     */
+    String startWorkflow(@NotEmpty(message = "Workflow name cannot be null or empty") String name, Integer version, String correlationId, Map<String, Object> input,
+                         String externalInputPayloadStoragePath, Map<String, String> taskToDomain, WorkflowDef workflowDef);
     /**
      * Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking.
      *
@@ -110,19 +63,8 @@ public class WorkflowService {
      * @param input         Input to the workflow you want to start.
      * @return the id of the workflow instance that can be use for tracking.
      */
-    @Service
-    public String startWorkflow(@NotEmpty(message="Workflow name cannot be null or empty") String name,
-                                Integer version,
-                                String correlationId,
-                                Map<String, Object> input) {
-        WorkflowDef workflowDef = metadataService.getWorkflowDef(name, version);
-        if (workflowDef == null) {
-            throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                    String.format("No such workflow found by name: %s, version: %d", name, version));
-        }
-        return workflowExecutor.startWorkflow(workflowDef.getName(), workflowDef.getVersion(),
-                correlationId, input, null);
-    }
+    String startWorkflow(@NotEmpty(message = "Workflow name cannot be null or empty") String name, Integer version,
+                                String correlationId, Map<String, Object> input);
 
     /**
      * Lists workflows for the given correlation id.
@@ -133,13 +75,8 @@ public class WorkflowService {
      * @param includeTasks  Includes tasks associated with workflows.
      * @return a list of {@link Workflow}
      */
-    @Service
-    public List<Workflow> getWorkflows(@NotEmpty(message="Workflow name cannot be null or empty") String name,
-                                       String correlationId,
-                                       boolean includeClosed,
-                                       boolean includeTasks) {
-        return executionService.getWorkflowInstances(name, correlationId, includeClosed, includeTasks);
-    }
+    List<Workflow> getWorkflows(@NotEmpty(message="Workflow name cannot be null or empty") String name, String correlationId,
+                                       boolean includeClosed, boolean includeTasks);
 
     /**
      * Lists workflows for the given correlation id.
@@ -149,18 +86,8 @@ public class WorkflowService {
      * @param correlationIds Includes tasks associated with workflows.
      * @return a {@link Map} of {@link String} as key and a list of {@link Workflow} as value
      */
-    @Service
-    public Map<String, List<Workflow>> getWorkflows(@NotEmpty(message="Workflow name cannot be null or empty") String name,
-                                                    boolean includeClosed,
-                                                    boolean includeTasks,
-                                                    List<String> correlationIds) {
-        Map<String, List<Workflow>> workflowMap = new HashMap<>();
-        for (String correlationId : correlationIds) {
-            List<Workflow> workflows = executionService.getWorkflowInstances(name, correlationId, includeClosed, includeTasks);
-            workflowMap.put(correlationId, workflows);
-        }
-        return workflowMap;
-    }
+    Map<String, List<Workflow>> getWorkflows(@NotEmpty(message="Workflow name cannot be null or empty") String name, boolean includeClosed,
+                                                    boolean includeTasks, List<String> correlationIds);
 
     /**
      * Gets the workflow by workflow Id.
@@ -168,27 +95,14 @@ public class WorkflowService {
      * @param includeTasks Includes tasks associated with workflow.
      * @return an instance of {@link Workflow}
      */
-    @Service
-    public Workflow getExecutionStatus(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
-                                       boolean includeTasks) {
-        Workflow workflow = executionService.getExecutionStatus(workflowId, includeTasks);
-        if (workflow == null) {
-            throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                    String.format("Workflow with Id: %s not found.", workflowId));
-        }
-        return workflow;
-    }
+    Workflow getExecutionStatus(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId, boolean includeTasks);
 
     /**
      * Removes the workflow from the system.
      * @param workflowId WorkflowID of the workflow you want to remove from system.
      * @param archiveWorkflow Archives the workflow.
      */
-    @Service
-    public void deleteWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
-                               boolean archiveWorkflow) {
-        executionService.removeWorkflow(workflowId, archiveWorkflow);
-    }
+    void deleteWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId, boolean archiveWorkflow);
 
     /**
      * Retrieves all the running workflows.
@@ -198,44 +112,26 @@ public class WorkflowService {
      * @param endTime EndTime of the workflow
      * @return a list of workflow Ids.
      */
-    @Service
-    public List<String> getRunningWorkflows(@NotEmpty(message = "Workflow name cannot be null or empty.") String workflowName,
-                                            Integer version,
-                                            Long startTime,
-                                            Long endTime) {
-        if (startTime != null && endTime != null) {
-            return workflowExecutor.getWorkflows(workflowName, version, startTime, endTime);
-        } else {
-            return workflowExecutor.getRunningWorkflowIds(workflowName);
-        }
-    }
+    List<String> getRunningWorkflows(@NotEmpty(message = "Workflow name cannot be null or empty.") String workflowName, Integer version,
+                                            Long startTime, Long endTime);
 
     /**
      * Starts the decision task for a workflow.
      * @param workflowId WorkflowId of the workflow.
      */
-    @Service
-    public void decideWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId) {
-        workflowExecutor.decide(workflowId);
-    }
+    void decideWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
 
     /**
      * Pauses the workflow given a worklfowId.
      * @param workflowId WorkflowId of the workflow.
      */
-    @Service
-    public void pauseWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId) {
-        workflowExecutor.pauseWorkflow(workflowId);
-    }
+    void pauseWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
 
     /**
      * Resumes the workflow.
      * @param workflowId WorkflowId of the workflow.
      */
-    @Service
-    public void resumeWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId) {
-        workflowExecutor.resumeWorkflow(workflowId);
-    }
+    void resumeWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
 
     /**
      * Skips a given task from a current running workflow.
@@ -243,12 +139,9 @@ public class WorkflowService {
      * @param taskReferenceName The task reference name.
      * @param skipTaskRequest {@link SkipTaskRequest} for task you want to skip.
      */
-    @Service
-    public void skipTaskFromWorkflow(@NotEmpty(message = "WorkflowId name cannot be null or empty.") String workflowId,
-                                     @NotEmpty(message = "TaskReferenceName cannot be null or empty.") String taskReferenceName,
-                                     SkipTaskRequest skipTaskRequest) {
-        workflowExecutor.skipTaskFromWorkflow(workflowId, taskReferenceName, skipTaskRequest);
-    }
+    void skipTaskFromWorkflow(@NotEmpty(message = "WorkflowId name cannot be null or empty.") String workflowId,
+                              @NotEmpty(message = "TaskReferenceName cannot be null or empty.") String taskReferenceName,
+                                     SkipTaskRequest skipTaskRequest);
 
     /**
      * Reruns the workflow from a specific task.
@@ -256,12 +149,8 @@ public class WorkflowService {
      * @param request (@link RerunWorkflowRequest) for the workflow.
      * @return WorkflowId of the rerun workflow.
      */
-    @Service
-    public String rerunWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
-                                @NotNull(message = "RerunWorkflowRequest cannot be null.") RerunWorkflowRequest request) {
-       request.setReRunFromWorkflowId(workflowId);
-        return workflowExecutor.rerun(request);
-    }
+    String rerunWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
+                         @NotNull(message = "RerunWorkflowRequest cannot be null.") RerunWorkflowRequest request);
 
     /**
      * Restarts a completed workflow.
@@ -269,38 +158,26 @@ public class WorkflowService {
      * @param workflowId           WorkflowId of the workflow.
      * @param useLatestDefinitions if true, use the latest workflow and task definitions upon restart
      */
-    @Service
-    public void restartWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId, boolean useLatestDefinitions) {
-        workflowExecutor.rewind(workflowId, useLatestDefinitions);
-    }
+    void restartWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId, boolean useLatestDefinitions);
 
     /**
      * Retries the last failed task.
      * @param workflowId WorkflowId of the workflow.
      */
-    @Service
-    public void retryWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId) {
-        workflowExecutor.retry(workflowId);
-    }
+    void retryWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
 
     /**
      * Resets callback times of all in_progress tasks to 0.
      * @param workflowId WorkflowId of the workflow.
      */
-    @Service
-    public void resetWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId) {
-        workflowExecutor.resetCallbacksForInProgressTasks(workflowId);
-    }
+    void resetWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
 
     /**
      * Terminate workflow execution.
      * @param workflowId WorkflowId of the workflow.
      * @param reason Reason for terminating the workflow.
      */
-    @Service
-    public void terminateWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId, String reason) {
-        workflowExecutor.terminateWorkflow(workflowId, reason);
-    }
+    void terminateWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId, String reason);
 
     /**
      * Search for workflows based on payload and given parameters. Use sort options as sort ASCor DESC
@@ -312,15 +189,22 @@ public class WorkflowService {
      * @param query Query you want to search
      * @return instance of {@link SearchResult}
      */
-    @Service
-    public SearchResult<WorkflowSummary> searchWorkflows(int start,
-                                                         @Max(value = 5_000, message = "Cannot return more than {value} workflows. Please use pagination.") int size,
-                                                         String sort, String freeText, String query) {
-//        //TODO: Move this to constraint
-//        ServiceUtils.checkArgument(size < maxSearchSize, String.format("Cannot return more than %d workflows." +
-//                " Please use pagination.", maxSearchSize));
-        return executionService.search(query, freeText, start, size, ServiceUtils.convertStringToList(sort));
-    }
+    SearchResult<WorkflowSummary> searchWorkflows(int start, @Max(value = 5_000, message = "Cannot return more than {value} workflows. Please use pagination.") int size,
+                                                  String sort, String freeText, String query);
+
+    /**
+     * Search for workflows based on payload and given parameters. Use sort options as sort ASCor DESC
+     * e.g. sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
+     * @param start Start index of pagination
+     * @param size  Number of entries
+     * @param sort list of sorting options, separated by "|" delimiter
+     * @param freeText Text you want to search
+     * @param query Query you want to search
+     * @return instance of {@link SearchResult}
+     */
+    SearchResult<WorkflowSummary> searchWorkflows(int start, @Max(value = 5_000, message = "Cannot return more than {value} workflows. Please use pagination.") int size,
+                                                  List<String> sort, String freeText, String query);
+
 
     /**
      * Search for workflows based on task parameters. Use sort options as sort ASC or DESC e.g.
@@ -332,9 +216,19 @@ public class WorkflowService {
      * @param query Query you want to search
      * @return instance of {@link SearchResult}
      */
-    public SearchResult<WorkflowSummary> searchWorkflowsByTasks(int start, int size, String sort, String freeText, String query) {
-        return executionService.searchWorkflowByTasks(query, freeText, start, size, ServiceUtils.convertStringToList(sort));
-    }
+    SearchResult<WorkflowSummary> searchWorkflowsByTasks(int start, int size, String sort, String freeText, String query);
+
+    /**
+     * Search for workflows based on task parameters. Use sort options as sort ASC or DESC e.g.
+     * sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
+     * @param start Start index of pagination
+     * @param size  Number of entries
+     * @param sort list of sorting options, separated by "|" delimiter
+     * @param freeText Text you want to search
+     * @param query Query you want to search
+     * @return instance of {@link SearchResult}
+     */
+    SearchResult<WorkflowSummary> searchWorkflowsByTasks(int start, int size, List<String> sort, String freeText, String query);
 
     /**
      * Get the external storage location where the workflow input payload is stored/to be stored
@@ -342,7 +236,5 @@ public class WorkflowService {
      * @param path the path for which the external storage location is to be populated
      * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external storage
      */
-    public ExternalStorageLocation getExternalStorageLocation(String path) {
-        return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT, path);
-    }
+    ExternalStorageLocation getExternalStorageLocation(String path);
 }

@@ -48,7 +48,7 @@ public class TaskServiceTest {
                                 bindInterceptor(Matchers.any(), Matchers.annotatedWith(Service.class), new ServiceInterceptor(getProvider(Validator.class)));
                             }
                         });
-        taskService = injector.getInstance(TaskService.class);
+        taskService = injector.getInstance(TaskServiceImpl.class);
     }
 
     @Test
@@ -125,9 +125,10 @@ public class TaskServiceTest {
         try{
             taskService.ackTaskReceived(null, null);
         } catch (ConstraintViolationException ex){
-            assertEquals(1, ex.getConstraintViolations().size());
+            assertEquals(2, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("TaskId cannot be null or empty."));
+            assertTrue(messages.contains("WorkerID cannot be null or empty."));
         }
     }
 
