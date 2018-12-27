@@ -632,4 +632,39 @@ public class TestWorkflowExecutor {
         activeDomain = workflowExecutor.getActiveDomain(taskType, null);
         assertNull(activeDomain);
     }
+
+    @Test
+    public void testDedupAndAddTasks() {
+        Workflow workflow = new Workflow();
+
+        Task task1 = new Task();
+        task1.setReferenceTaskName("task1");
+        task1.setRetryCount(1);
+
+        Task task2 = new Task();
+        task2.setReferenceTaskName("task2");
+        task2.setRetryCount(2);
+
+        List<Task> tasks = new ArrayList<>(Arrays.asList(task1, task2));
+
+        List<Task> taskList = workflowExecutor.dedupAndAddTasks(workflow, tasks);
+        assertEquals(2, taskList.size());
+        assertEquals(tasks, taskList);
+        assertEquals(workflow.getTasks(), taskList);
+
+        // Adding the same tasks again
+        taskList = workflowExecutor.dedupAndAddTasks(workflow, tasks);
+        assertEquals(0, taskList.size());
+        assertEquals(workflow.getTasks(), tasks);
+
+        // Adding a new task
+        Task newTask = new Task();
+        newTask.setReferenceTaskName("newTask");
+        newTask.setRetryCount(0);
+
+        taskList = workflowExecutor.dedupAndAddTasks(workflow, Collections.singletonList(newTask));
+        assertEquals(1, taskList.size());
+        assertEquals(newTask, taskList.get(0));
+        assertEquals(3, workflow.getTasks().size());
+    }
 }
