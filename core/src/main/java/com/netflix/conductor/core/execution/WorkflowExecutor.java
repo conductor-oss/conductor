@@ -862,11 +862,11 @@ public class WorkflowExecutor {
     @VisibleForTesting
     List<Task> dedupAndAddTasks(Workflow workflow, List<Task> tasks) {
         List<String> tasksInWorkflow = workflow.getTasks().stream()
-                .map(task -> task.getReferenceTaskName() + task.getRetryCount())
+                .map(task -> task.getReferenceTaskName() + "_" + task.getRetryCount())
                 .collect(Collectors.toList());
 
         List<Task> dedupedTasks = tasks.stream()
-                .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName() + task.getRetryCount()))
+                .filter(task -> !tasksInWorkflow.contains(task.getReferenceTaskName() + "_" + task.getRetryCount()))
                 .collect(Collectors.toList());
 
         workflow.getTasks().addAll(dedupedTasks);
