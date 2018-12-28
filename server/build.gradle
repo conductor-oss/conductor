@@ -5,12 +5,12 @@ buildscript {
 }
 
 plugins {
-	id 'com.github.johnrengelman.shadow' version '2.0.4'
+    id 'com.github.johnrengelman.shadow' version '2.0.4'
 }
 
 configurations.all {
     resolutionStrategy {
-		force 'com.fasterxml.jackson.core:jackson-core:2.7.5'
+        force 'com.fasterxml.jackson.core:jackson-core:2.7.5'
     }
 }
 
@@ -18,46 +18,46 @@ apply plugin: 'war'
 apply plugin: "org.akhikhl.gretty"
 
 dependencies {
- 
-	//Conductor
-	compile project(':conductor-core')
-	compile project(':conductor-jersey')
-	compile project(':conductor-redis-persistence')
-	compile project(':conductor-mysql-persistence')
-	compile project(':conductor-contribs')
-    compile project(':conductor-es2-persistence')
+
+    //Conductor
+    compile project(':conductor-core')
+    compile project(':conductor-jersey')
+    compile project(':conductor-redis-persistence')
+    compile project(':conductor-mysql-persistence')
+    compile project(':conductor-cassandra-persistence')
+    compile project(':conductor-contribs')
     compile project(':conductor-es5-persistence')
-	
-	//Jetty
-	compile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
-	compile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
-	
-	//Guice
-	compile "com.sun.jersey.contribs:jersey-guice:${revJerseyGuice}"
-	compile "com.google.inject:guice:${revGuice}"
-	compile "com.google.inject.extensions:guice-servlet:${revGuiceServlet}"
-	
-	//Swagger
-	compile "io.swagger:swagger-jersey-jaxrs:${revSwagger}"
-	
-	//In memory
-	compile "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
+    compile project(':conductor-grpc-server')
+
+    compile "com.netflix.runtime:health-guice:${revHealth}"
+
+    //Jetty
+    compile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
+    compile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
+
+    //Guice
+    compile "com.sun.jersey.contribs:jersey-guice:${revJerseyGuice}"
+    compile "com.google.inject:guice:${revGuice}"
+    compile "com.google.inject.extensions:guice-servlet:${revGuiceServlet}"
+
+    //Swagger
+    compile "io.swagger:swagger-jersey-jaxrs:${revSwagger}"
 }
 
 shadowJar {
-   mergeServiceFiles()
-   configurations = [project.configurations.compile]
-   manifest {
-       attributes 'Description': 'Self contained Conductor server jar'
-       attributes 'Main-Class' : 'com.netflix.conductor.server.Main'
-   }
+    mergeServiceFiles()
+    configurations = [project.configurations.compile]
+    manifest {
+        attributes 'Description': 'Self contained Conductor server jar'
+        attributes 'Main-Class': 'com.netflix.conductor.bootstrap.Main'
+    }
 }
 publishing {
-  publications {
-    nebula(MavenPublication) {
-      artifact shadowJar
+    publications {
+        nebula(MavenPublication) {
+            artifact shadowJar
+        }
     }
-  }
 }
 
 gretty {
@@ -77,11 +77,10 @@ configurations.grettyRunnerTomcat8 {
 build.dependsOn('shadowJar')
 
 task server(type: JavaExec) {
-  systemProperty 'workflow.elasticsearch.url', 'localhost:9300'
+    systemProperty 'workflow.elasticsearch.url', 'localhost:9300'
     // Switch between Elasticsearch versions 2 & 5 with major version number.
-  systemProperty 'workflow.elasticsearch.version', '2'
-  systemProperty 'loadSample', 'true'
-  systemProperties System.properties
-  main = 'com.netflix.conductor.server.Main'
-  classpath = sourceSets.test.runtimeClasspath  
+    systemProperty 'loadSample', 'true'
+    systemProperties System.properties
+    main = 'com.netflix.conductor.bootstrap.Main'
+    classpath = sourceSets.test.runtimeClasspath
 }

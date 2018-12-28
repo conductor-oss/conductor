@@ -72,7 +72,7 @@ public class SQSObservableQueue implements ObservableQueue {
 
 	private String queueName;
 
-	private int visibilityTimeout;
+	private int visibilityTimeoutInSeconds;
 
 	private int batchSize;
 
@@ -82,10 +82,10 @@ public class SQSObservableQueue implements ObservableQueue {
 
 	private String queueURL;
 
-	private SQSObservableQueue(String queueName, AmazonSQSClient client, int visibilityTimeout, int batchSize, int pollTimeInMS, List<String> accountsToAuthorize) {
+	private SQSObservableQueue(String queueName, AmazonSQSClient client, int visibilityTimeoutInSeconds, int batchSize, int pollTimeInMS, List<String> accountsToAuthorize) {
 		this.queueName = queueName;
 		this.client = client;
-		this.visibilityTimeout = visibilityTimeout;
+		this.visibilityTimeoutInSeconds = visibilityTimeoutInSeconds;
 		this.batchSize = batchSize;
 		this.pollTimeInMS = pollTimeInMS;
 		this.queueURL = getOrCreateQueue();
@@ -139,6 +139,18 @@ public class SQSObservableQueue implements ObservableQueue {
 	@Override
 	public String getURI() {
 		return queueURL;
+	}
+
+	public int getPollTimeInMS() {
+		return pollTimeInMS;
+	}
+
+	public int getBatchSize() {
+		return batchSize;
+	}
+
+	public int getVisibilityTimeoutInSeconds() {
+		return visibilityTimeoutInSeconds;
 	}
 
 	public static class Builder {
@@ -271,7 +283,7 @@ public class SQSObservableQueue implements ObservableQueue {
 		try {
 			ReceiveMessageRequest receiveMessageRequest = new ReceiveMessageRequest()
 					.withQueueUrl(queueURL)
-					.withVisibilityTimeout(visibilityTimeout)
+					.withVisibilityTimeout(visibilityTimeoutInSeconds)
 					.withMaxNumberOfMessages(batchSize);
 
 			ReceiveMessageResult result = client.receiveMessage(receiveMessageRequest);

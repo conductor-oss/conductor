@@ -1,11 +1,13 @@
 dependencies {
 
-	compile project(':conductor-common')
-	compile project(':conductor-core')
-	
-	compile "javax.ws.rs:jsr311-api:${revJsr311Api}"
-	compile "io.swagger:swagger-jaxrs:${revSwagger}"
-	compile "com.sun.jersey:jersey-bundle:${revJerseyBundle}"
+    compile project(':conductor-common')
+    compile project(':conductor-core')
 
-	provided "javax.servlet:javax.servlet-api:${revServletApi}"
+    compile "com.netflix.runtime:health-api:${revHealth}"
+
+    compile "javax.ws.rs:jsr311-api:${revJsr311Api}"
+    compile "io.swagger:swagger-jaxrs:${revSwagger}"
+    compile "com.sun.jersey:jersey-bundle:${revJerseyBundle}"
+
+    compileOnly "javax.servlet:javax.servlet-api:${revServletApi}"
 }

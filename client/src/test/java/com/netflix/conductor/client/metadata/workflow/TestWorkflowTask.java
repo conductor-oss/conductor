@@ -1,12 +1,12 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,46 +15,65 @@
  */
 package com.netflix.conductor.client.metadata.workflow;
 
-import static org.junit.Assert.*;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
+import org.junit.Before;
 import org.junit.Test;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
+import java.io.InputStream;
+import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /**
- * 
  * @author Viren
- *
  */
 public class TestWorkflowTask {
 
-	@Test
-	public void test() throws Exception {
-		ObjectMapper om = new ObjectMapper();
-		WorkflowTask task = new WorkflowTask();
-		task.setType("Hello");
-		task.setName("name");
-		
-		String json = om.writeValueAsString(task);
+    private ObjectMapper objectMapper;
 
-		WorkflowTask read = om.readValue(json, WorkflowTask.class);
-		assertNotNull(read);
-		assertEquals(task.getName(), read.getName());
-		assertEquals(task.getType(), read.getType());
-		
-		task = new WorkflowTask();
-		task.setWorkflowTaskType(Type.SUB_WORKFLOW);
-		task.setName("name");
-		
-		json = om.writeValueAsString(task);
+    @Before
+    public void setup() {
+        objectMapper = new JsonMapperProvider().get();
+    }
 
-		read = om.readValue(json, WorkflowTask.class);
-		assertNotNull(read);
-		assertEquals(task.getName(), read.getName());
-		assertEquals(task.getType(), read.getType());
-		assertEquals(Type.SUB_WORKFLOW.name(), read.getType());
-	}
+    @Test
+    public void test() throws Exception {
+        WorkflowTask task = new WorkflowTask();
+        task.setType("Hello");
+        task.setName("name");
 
+        String json = objectMapper.writeValueAsString(task);
+
+        WorkflowTask read = objectMapper.readValue(json, WorkflowTask.class);
+        assertNotNull(read);
+        assertEquals(task.getName(), read.getName());
+        assertEquals(task.getType(), read.getType());
+
+        task = new WorkflowTask();
+        task.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        task.setName("name");
+
+        json = objectMapper.writeValueAsString(task);
+
+        read = objectMapper.readValue(json, WorkflowTask.class);
+        assertNotNull(read);
+        assertEquals(task.getName(), read.getName());
+        assertEquals(task.getType(), read.getType());
+        assertEquals(TaskType.SUB_WORKFLOW.name(), read.getType());
+    }
+
+    @SuppressWarnings("unchecked")
+    @Test
+    public void testObectMapper() throws Exception {
+        try (InputStream stream = TestWorkflowTask.class.getResourceAsStream("/tasks.json")) {
+            List<Task> tasks = objectMapper.readValue(stream, List.class);
+            assertNotNull(tasks);
+            assertEquals(1, tasks.size());
+        }
+    }
 }

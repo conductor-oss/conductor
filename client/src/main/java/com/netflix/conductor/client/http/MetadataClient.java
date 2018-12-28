@@ -118,15 +118,6 @@ public class MetadataClient extends ClientBase {
     }
 
     /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * This API can return 503 for a large number of workflow definitions because of no pagination.
-     */
-    @Deprecated
-    public List<WorkflowDef> getAllWorkflowDefs() {
-        return getForEntity("metadata/workflow", null, workflowDefList);
-    }
-
-    /**
      * Removes the workflow definition of a workflow from the conductor server.
      * It does not remove associated workflows. Use with caution.
      *
@@ -159,15 +150,6 @@ public class MetadataClient extends ClientBase {
     public void updateTaskDef(TaskDef taskDef) {
         Preconditions.checkNotNull(taskDef, "Task definition cannot be null");
         put("metadata/taskdefs", null, taskDef);
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * This API can return 503 for a large number of workflow definitions because of no pagination.
-     */
-    @Deprecated
-    public List<TaskDef> getAllTaskDefs() {
-        return getForEntity("metadata/taskdefs", null, taskDefList);
     }
 
     /**

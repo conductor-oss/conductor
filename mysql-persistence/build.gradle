@@ -1,19 +1,17 @@
 dependencies {
-	compile project(':conductor-core')
-	compile "com.google.inject:guice:${revGuice}"
+    compile project(':conductor-core')
+    compile "com.google.inject:guice:${revGuice}"
 
-	compile "commons-io:commons-io:${revCommonsIo}"
-	compile "mysql:mysql-connector-java:${revMySqlConnector}"
-	compile "com.zaxxer:HikariCP:${revHikariCP}"
-	compile "org.flywaydb:flyway-core:${revFlywayCore}"
+    compile "commons-io:commons-io:${revCommonsIo}"
+    compile "mysql:mysql-connector-java:${revMySqlConnector}"
+    compile "com.zaxxer:HikariCP:${revHikariCP}"
+    compile "org.flywaydb:flyway-core:${revFlywayCore}"
 
-	testCompile "ch.vorburger.mariaDB4j:mariaDB4j:${revMariaDB4j}"
-	//TODO Change the below deps to use the same version as one in versionsOfDependencies.gradle
-	testCompile 'ch.qos.logback:logback-core:1.2.3'
-	testCompile 'ch.qos.logback:logback-classic:1.2.3'
+    testCompile project(':conductor-core').sourceSets.test.output
+    testCompile "ch.vorburger.mariaDB4j:mariaDB4j:${revMariaDB4j}"
 }
 
 test {
-	//the MySQL unit tests must run within the same JVM to share the same embedded DB
-	maxParallelForks = 1
+    //the MySQL unit tests must run within the same JVM to share the same embedded DB
+    maxParallelForks = 1
 }

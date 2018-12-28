@@ -21,10 +21,10 @@ package com.netflix.conductor.common.workflow;
 
 import static org.junit.Assert.*;
 
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import org.junit.Test;
 
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask.Type;
 
 /**
  * @author Viren
@@ -35,10 +35,10 @@ public class TestWorkflowTask {
 	@Test
 	public void test() {
 		WorkflowTask wt = new WorkflowTask();
-		wt.setWorkflowTaskType(Type.DECISION);
+		wt.setWorkflowTaskType(TaskType.DECISION);
 		
 		assertNotNull(wt.getType());
-		assertEquals(Type.DECISION.name(), wt.getType());
+		assertEquals(TaskType.DECISION.name(), wt.getType());
 	}
 	
 	@Test

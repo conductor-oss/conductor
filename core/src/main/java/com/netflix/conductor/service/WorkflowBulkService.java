@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2018 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,62 +15,19 @@
  */
 package com.netflix.conductor.service;
 
-import com.google.inject.Singleton;
-import com.netflix.conductor.annotations.Trace;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.service.utils.ServiceUtils;
+import com.netflix.conductor.service.common.BulkResponse;
 
-import javax.inject.Inject;
 import java.util.List;
 
-@Singleton
-@Trace
-public class WorkflowBulkService {
-    private static final int MAX_REQUEST_ITEMS = 1000;
-    private final WorkflowExecutor workflowExecutor;
+public interface WorkflowBulkService {
 
-    @Inject
-    public WorkflowBulkService(WorkflowExecutor workflowExecutor) {
-        this.workflowExecutor = workflowExecutor;
-    }
+   BulkResponse pauseWorkflow(List<String> workflowIds);
 
-    public void pauseWorkflow(List<String> workflowIds) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
-        for (String workflowId : workflowIds) {
-            workflowExecutor.pauseWorkflow(workflowId);
-        }
-    }
+   BulkResponse resumeWorkflow(List<String> workflowIds);
 
-    public void resumeWorkflow(List<String> workflowIds) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
-        for (String workflowId : workflowIds) {
-            workflowExecutor.resumeWorkflow(workflowId);
-        }
-    }
+   BulkResponse restart(List<String> workflowIds, boolean useLatestDefinitions);
 
-    public void restart(List<String> workflowIds) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
-        for (String workflowId : workflowIds) {
-            workflowExecutor.rewind(workflowId);
-        }
-    }
+   BulkResponse retry(List<String> workflowIds);
 
-    public void retry(List<String> workflowIds) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
-        for (String workflowId : workflowIds) {
-            workflowExecutor.retry(workflowId);
-        }
-    }
-
-    public void terminate(List<String> workflowIds, String reason) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "workflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
-        for (String workflowId : workflowIds) {
-            workflowExecutor.terminateWorkflow(workflowId, reason);
-        }
-    }
+   BulkResponse terminate(List<String> workflowIds, String reason);
 }

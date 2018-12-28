@@ -1,0 +1,43 @@
+syntax = "proto3";
+package conductor.proto;
+
+import "google/protobuf/struct.proto";
+import "google/protobuf/any.proto";
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "EventHandlerPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message EventHandler {
+    message StartWorkflow {
+        string name = 1;
+        int32 version = 2;
+        string correlation_id = 3;
+        map<string, google.protobuf.Value> input = 4;
+        google.protobuf.Any input_message = 5;
+    }
+    message TaskDetails {
+        string workflow_id = 1;
+        string task_ref_name = 2;
+        map<string, google.protobuf.Value> output = 3;
+        google.protobuf.Any output_message = 4;
+        string task_id = 5;
+    }
+    message Action {
+        enum Type {
+            START_WORKFLOW = 0;
+            COMPLETE_TASK = 1;
+            FAIL_TASK = 2;
+        }
+        EventHandler.Action.Type action = 1;
+        EventHandler.StartWorkflow start_workflow = 2;
+        EventHandler.TaskDetails complete_task = 3;
+        EventHandler.TaskDetails fail_task = 4;
+        bool expand_inline_json = 5;
+    }
+    string name = 1;
+    string event = 2;
+    string condition = 3;
+    repeated EventHandler.Action actions = 4;
+    bool active = 5;
+}

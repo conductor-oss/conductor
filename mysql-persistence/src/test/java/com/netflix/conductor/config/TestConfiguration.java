@@ -15,53 +15,128 @@
  */
 package com.netflix.conductor.config;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
-import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.mysql.MySQLConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
 
 /**
  * @author Viren
- *
  */
-public class TestConfiguration implements Configuration {
+public class TestConfiguration implements MySQLConfiguration {
 
-	private Map<String, String> testProperties = Maps.newHashMap(ImmutableMap.of("test", "dummy"));
+	private static final Logger logger = LoggerFactory.getLogger(TestConfiguration.class);
+	private static final Map<String, String> testProperties = new HashMap<>();
 
 	@Override
 	public int getSweepFrequency() {
-		return 1;
+		return getIntProperty("decider.sweep.frequency.seconds", 30);
 	}
 
 	@Override
 	public boolean disableSweep() {
-		return false;
+		String disable = getProperty("decider.sweep.disable", "false");
+		return Boolean.getBoolean(disable);
 	}
 
 	@Override
 	public boolean disableAsyncWorkers() {
-		return false;
+		String disable = getProperty("conductor.disable.async.workers", "false");
+		return Boolean.getBoolean(disable);
 	}
 
 	@Override
 	public String getServerId() {
-		return "server_id";
+		try {
+			return InetAddress.getLocalHost().getHostName();
+		} catch (UnknownHostException e) {
+			return "unknown";
+		}
 	}
 
 	@Override
 	public String getEnvironment() {
-		return "test";
+		return getProperty("environment", "test");
 	}
 
 	@Override
 	public String getStack() {
-		return "junit";
+		return getProperty("STACK", "test");
 	}
 
 	@Override
 	public String getAppId() {
-		return "workflow";
+		return getProperty("APP_ID", "conductor");
+	}
+
+	@Override
+	public String getRegion() {
+		return getProperty("EC2_REGION", "us-east-1");
+	}
+
+	@Override
+	public String getAvailabilityZone() {
+		return getProperty("EC2_AVAILABILITY_ZONE", "us-east-1c");
+	}
+
+	public void setProperty(String key, String value) {
+		testProperties.put(key, value);
+	}
+
+	@Override
+	public int getIntProperty(String key, int defaultValue) {
+		String val = getProperty(key, Integer.toString(defaultValue));
+		try {
+			defaultValue = Integer.parseInt(val);
+		} catch (NumberFormatException e) {
+		}
+		return defaultValue;
+	}
+
+	@Override
+	public long getLongProperty(String key, long defaultValue) {
+		String val = getProperty(key, Long.toString(defaultValue));
+		try {
+			defaultValue = Long.parseLong(val);
+		} catch (NumberFormatException e) {
+			logger.error("Error parsing the Long value for Key:{} , returning a default value: {}", key, defaultValue);
+		}
+		return defaultValue;
+	}
+
+	@SuppressWarnings("Duplicates")
+	@Override
+	public String getProperty(String key, String defaultValue) {
+		String val = null;
+		if (testProperties.containsKey(key)) {
+			return testProperties.get(key);
+		}
+
+		try {
+			val = System.getenv(key.replace('.', '_'));
+			if (val == null || val.isEmpty()) {
+				val = Optional.ofNullable(System.getProperty(key)).orElse(defaultValue);
+			}
+		} catch (Exception e) {
+			logger.error(e.getMessage(), e);
+		}
+
+		return val;
+	}
+
+	@Override
+	public Map<String, Object> getAll() {
+		Map<String, Object> map = new HashMap<>();
+		Properties props = System.getProperties();
+		props.entrySet().forEach(entry -> map.put(entry.getKey().toString(), entry.getValue()));
+		map.putAll(testProperties);
+		return map;
 	}
 
 	@Override
@@ -78,6 +153,10 @@ public class TestConfiguration implements Configuration {
 	public Long getWorkflowOutputPayloadSizeThresholdKB() {
 		return 5120L;
 	}
+    @Override
+    public boolean getBooleanProperty(String name, boolean defaultValue) {
+        return false;
+    }
 
 	@Override
 	public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
@@ -103,39 +182,5 @@ public class TestConfiguration implements Configuration {
 	public Long getMaxTaskOutputPayloadSizeThresholdKB() {
 		return 10240L;
 	}
-
-	@Override
-	public String getProperty(String string, String def) {
-		String val = testProperties.get(string);
-		return val != null ? val : def;
-	}
-
-	public void setProperty(String key, String value) {
-		testProperties.put(key, value);
-	}
-
-	@Override
-	public String getAvailabilityZone() {
-		return "us-east-1a";
-	}
-
-	@Override
-	public int getIntProperty(String string, int def) {
-		return 100;
-	}
-
-	@Override
-	public long getLongProperty(String name, long defaultValue) {
-		return 0;
-	}
-
-	@Override
-	public String getRegion() {
-		return "us-east-1";
-	}
-
-	@Override
-	public Map<String, Object> getAll() {
-		return null;
-	}
 }
+

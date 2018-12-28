@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,10 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
 package com.netflix.conductor.common.metadata.workflow;
+
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 
 import java.util.Collection;
 import java.util.HashMap;
@@ -26,6 +27,7 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -34,11 +36,16 @@ import java.util.Set;
  * This is the task definition definied as part of the {@link WorkflowDef}. The tasks definied in the Workflow definition are saved
  * as part of {@link WorkflowDef#tasks}
  */
+@ProtoMessage
 public class WorkflowTask {
 
+	/**
+	 * This field is deprecated and will be removed in the next version.
+	 * Please use {@link TaskType} instead.
+	 */
+	@Deprecated
 	public enum Type {
 		SIMPLE, DYNAMIC, FORK_JOIN, FORK_JOIN_DYNAMIC, DECISION, JOIN, SUB_WORKFLOW, EVENT, WAIT, USER_DEFINED;
-		
 		private static Set<String> systemTasks = new HashSet<>();
 		static {
 			systemTasks.add(Type.SIMPLE.name());
@@ -52,56 +59,91 @@ public class WorkflowTask {
 			systemTasks.add(Type.WAIT.name());
 			//Do NOT add USER_DEFINED here...
 		}
-		
 		public static boolean isSystemTask(String name) {
 			return systemTasks.contains(name);
 		}
 	}
-	
+
+	@ProtoField(id = 1)
 	private String name;
-	
+
+	@ProtoField(id = 2)
 	private String taskReferenceName;
 
+	@ProtoField(id = 3)
 	private String description;
 
 	//Key: Name of the input parameter.  MUST be one of the keys defined in TaskDef (e.g. fileName)
 	//Value: mapping of the parameter from another task (e.g. task1.someOutputParameterAsFileName)
-	private Map<String, Object> inputParameters = new HashMap<String, Object>();
+	@ProtoField(id = 4)
+	private Map<String, Object> inputParameters = new HashMap<>();
 
-	private String type = Type.SIMPLE.name();
+	@ProtoField(id = 5)
+	private String type = TaskType.SIMPLE.name();
 
+	@ProtoField(id = 6)
 	private String dynamicTaskNameParam;
-	
+
+	@ProtoField(id = 7)
 	private String caseValueParam;
-	
+
+	@ProtoField(id = 8)
 	private String caseExpression;
-	
+
+	@ProtoMessage(wrapper = true)
+	public static class WorkflowTaskList {
+		public List<WorkflowTask> getTasks() {
+			return tasks;
+		}
+
+		public void setTasks(List<WorkflowTask> tasks) {
+			this.tasks = tasks;
+		}
+
+		@ProtoField(id = 1)
+		private List<WorkflowTask> tasks;
+	}
+
 	//Populates for the tasks of the decision type
+	@ProtoField(id = 9)
 	private Map<String, List<WorkflowTask>> decisionCases = new LinkedHashMap<>();
-	
+
 	@Deprecated
 	private String dynamicForkJoinTasksParam;
-	
+
+	@ProtoField(id = 10)
 	private String dynamicForkTasksParam;
-	
+
+	@ProtoField(id = 11)
 	private String dynamicForkTasksInputParamName;
-	
+
+	@ProtoField(id = 12)
 	private List<WorkflowTask> defaultCase = new LinkedList<>();
-	
+
+	@ProtoField(id = 13)
 	private List<List<WorkflowTask>> forkTasks = new LinkedList<>();
-	
+
+	@ProtoField(id = 14)
 	private int startDelay;		//No. of seconds (at-least) to wait before starting a task.
 
-	private SubWorkflowParams subWorkflow;
-	
-	private List<String> joinOn = new LinkedList<>();
-	
-	private String sink;
-	
-	private Boolean optional;
+	@ProtoField(id = 15)
+	private SubWorkflowParams subWorkflowParam;
 
+	@ProtoField(id = 16)
+	private List<String> joinOn = new LinkedList<>();
+
+	@ProtoField(id = 17)
+	private String sink;
+
+	@ProtoField(id = 18)
+	private boolean optional = false;
+
+	@ProtoField(id = 19)
+	private TaskDef taskDefinition;
+
+	@ProtoField(id = 20)
 	private Boolean rateLimited;
-	
+
 	/**
 	 * @return the name
 	 */
@@ -165,7 +207,7 @@ public class WorkflowTask {
 		return type;
 	}
 
-	public void setWorkflowTaskType(Type type) {
+	public void setWorkflowTaskType(TaskType type) {
 		this.type = type.name();
 	}
 	
@@ -313,14 +355,14 @@ public class WorkflowTask {
 	 * @return the subWorkflow
 	 */
 	public SubWorkflowParams getSubWorkflowParam() {
-		return subWorkflow;
+		return subWorkflowParam;
 	}
 
 	/**
 	 * @param subWorkflow the subWorkflowParam to set
 	 */
 	public void setSubWorkflowParam(SubWorkflowParams subWorkflow) {
-		this.subWorkflow = subWorkflow;
+		this.subWorkflowParam = subWorkflow;
 	}
 
 	/**
@@ -354,26 +396,33 @@ public class WorkflowTask {
 	}
 	
 	/**
-	 * 
+	 *
 	 * @return If the task is optional.  When set to true, the workflow execution continues even when the task is in failed status.
 	 */
-	public Boolean getOptional() {
+	public boolean isOptional() {
 		return optional;
 	}
-	
+
 	/**
-	 * 
-	 * @return true if the task is optional.  False otherwise.
+	 *
+	 * @return Task definition associated to the Workflow Task
 	 */
-	public boolean isOptional() {
-		return (optional != null && optional.booleanValue()); 
+	public TaskDef getTaskDefinition() {
+		return taskDefinition;
 	}
-	
+
+	/**
+	 * @param taskDefinition Task definition
+	 */
+	public void setTaskDefinition(TaskDef taskDefinition) {
+		this.taskDefinition = taskDefinition;
+	}
+
 	/**
 	 * 
 	 * @param optional when set to true, the task is marked as optional
 	 */
-	public void setOptional(Boolean optional) {
+	public void setOptional(boolean optional) {
 		this.optional = optional;
 	}
 
@@ -385,89 +434,91 @@ public class WorkflowTask {
 		this.rateLimited = rateLimited;
 	}
 
-	public boolean isRateLimited() {
-		return (rateLimited !=null && rateLimited.booleanValue());
+	public Boolean isRateLimited() {
+		return rateLimited != null && rateLimited;
 	}
 
-	private Collection<List<WorkflowTask>> children(){
-		Collection<List<WorkflowTask>> v1 = new LinkedList<>();
-		Type tt = Type.USER_DEFINED;
-		if(Type.isSystemTask(type)) {
-			tt = Type.valueOf(type);
+	private Collection<List<WorkflowTask>> children() {
+		Collection<List<WorkflowTask>> workflowTaskLists = new LinkedList<>();
+		TaskType taskType = TaskType.USER_DEFINED;
+		if (TaskType.isSystemTask(type)) {
+			taskType = TaskType.valueOf(type);
 		}
-		
-		switch(tt){
+
+		switch (taskType) {
 			case DECISION:
-				v1.addAll(decisionCases.values());
-				v1.add(defaultCase);
+				workflowTaskLists.addAll(decisionCases.values());
+				workflowTaskLists.add(defaultCase);
 				break;
 			case FORK_JOIN:
-				v1.addAll(forkTasks);
+				workflowTaskLists.addAll(forkTasks);
 				break;
 			default:
 				break;
 		}
-		return v1;
-		
+		return workflowTaskLists;
+
 	}
-	
-	public List<WorkflowTask> all(){
-		List<WorkflowTask> all = new LinkedList<>();
-		all.add(this);
-		for (List<WorkflowTask> wfts : children() ){
-			for(WorkflowTask wft : wfts){
-				all.addAll(wft.all());
+
+	public List<WorkflowTask> collectTasks() {
+		List<WorkflowTask> tasks = new LinkedList<>();
+		tasks.add(this);
+		for (List<WorkflowTask> workflowTaskList : children()) {
+			for (WorkflowTask workflowTask : workflowTaskList) {
+				tasks.addAll(workflowTask.collectTasks());
 			}
 		}
-		return all;
+		return tasks;
 	}
-	
-	public WorkflowTask next(String taskReferenceName, WorkflowTask parent){
-		Type tt = Type.USER_DEFINED;
-		if(Type.isSystemTask(type)) {
-			tt = Type.valueOf(type);
+
+	public WorkflowTask next(String taskReferenceName, WorkflowTask parent) {
+		TaskType taskType = TaskType.USER_DEFINED;
+		if (TaskType.isSystemTask(type)) {
+			taskType = TaskType.valueOf(type);
 		}
-		
-		switch(tt){
+
+		switch (taskType) {
 			case DECISION:
-				for (List<WorkflowTask> wfts : children() ){
+				for (List<WorkflowTask> wfts : children()) {
 					Iterator<WorkflowTask> it = wfts.iterator();
-					while(it.hasNext()){
+					while (it.hasNext()) {
 						WorkflowTask task = it.next();
-						if(task.getTaskReferenceName().equals(taskReferenceName)){
+						if (task.getTaskReferenceName().equals(taskReferenceName)) {
 							break;
 						}
 						WorkflowTask nextTask = task.next(taskReferenceName, this);
-						if(nextTask != null){
+						if (nextTask != null) {
 							return nextTask;
 						}
-						if(task.has(taskReferenceName)){
+						if (task.has(taskReferenceName)) {
 							break;
 						}
 					}
-					if(it.hasNext()) { return it.next(); }
+					if (it.hasNext()) {
+						return it.next();
+					}
 				}
 				break;
 			case FORK_JOIN:
 				boolean found = false;
-				for (List<WorkflowTask> wfts : children() ){
+				for (List<WorkflowTask> wfts : children()) {
 					Iterator<WorkflowTask> it = wfts.iterator();
-					while(it.hasNext()){
+					while (it.hasNext()) {
 						WorkflowTask task = it.next();
-						if(task.getTaskReferenceName().equals(taskReferenceName)){
+						if (task.getTaskReferenceName().equals(taskReferenceName)) {
 							found = true;
 							break;
 						}
 						WorkflowTask nextTask = task.next(taskReferenceName, this);
-						if(nextTask != null){
+						if (nextTask != null) {
 							return nextTask;
 						}
 					}
-					if(it.hasNext()) { 
-						return it.next(); 
+					if (it.hasNext()) {
+						return it.next();
 					}
-					if(found && parent != null){
-						return parent.next(this.taskReferenceName, parent);		//we need to return join task... -- get my sibling from my parent..
+					if (found && parent != null) {
+						return parent.next(this.taskReferenceName, parent);        //we need to return join task... -- get my sibling from my parent..
 					}
 				}
 				break;
@@ -486,9 +537,9 @@ public class WorkflowTask {
 			return true;
 		}
 		
-		Type tt = Type.USER_DEFINED;
-		if(Type.isSystemTask(type)) {
-			tt = Type.valueOf(type);
+		TaskType tt = TaskType.USER_DEFINED;
+		if(TaskType.isSystemTask(type)) {
+			tt = TaskType.valueOf(type);
 		}
 		
 		switch(tt){
@@ -507,35 +558,6 @@ public class WorkflowTask {
 				break;
 		}
 		
-		return false;
-		
-	}
-	
-	public boolean has2(String taskReferenceName){
-
-		if(this.getTaskReferenceName().equals(taskReferenceName)){
-			return true;
-		}
-		Type tt = Type.USER_DEFINED;
-		if(Type.isSystemTask(type)) {
-			tt = Type.valueOf(type);
-		}
-		
-		switch(tt){
-			
-			case DECISION:
-			case FORK_JOIN:	
-				for(List<WorkflowTask> childx : children()){
-					for(WorkflowTask child : childx){
-						if(child.getTaskReferenceName().equals(taskReferenceName)){
-							return true;
-						}
-					}
-				}
-				break;
-			default:
-				break;
-		}		
 		return false;
 		
 	}
@@ -561,4 +583,56 @@ public class WorkflowTask {
 	public String toString() {
 		return name + "/" + taskReferenceName;
 	}
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        WorkflowTask that = (WorkflowTask) o;
+        return getStartDelay() == that.getStartDelay() &&
+                isOptional() == that.isOptional() &&
+                Objects.equals(getName(), that.getName()) &&
+                Objects.equals(getTaskReferenceName(), that.getTaskReferenceName()) &&
+                Objects.equals(getDescription(), that.getDescription()) &&
+                Objects.equals(getInputParameters(), that.getInputParameters()) &&
+                Objects.equals(getType(), that.getType()) &&
+                Objects.equals(getDynamicTaskNameParam(), that.getDynamicTaskNameParam()) &&
+                Objects.equals(getCaseValueParam(), that.getCaseValueParam()) &&
+                Objects.equals(getCaseExpression(), that.getCaseExpression()) &&
+                Objects.equals(getDecisionCases(), that.getDecisionCases()) &&
+                Objects.equals(getDynamicForkJoinTasksParam(), that.getDynamicForkJoinTasksParam()) &&
+                Objects.equals(getDynamicForkTasksParam(), that.getDynamicForkTasksParam()) &&
+                Objects.equals(getDynamicForkTasksInputParamName(), that.getDynamicForkTasksInputParamName()) &&
+                Objects.equals(getDefaultCase(), that.getDefaultCase()) &&
+                Objects.equals(getForkTasks(), that.getForkTasks()) &&
+                Objects.equals(getSubWorkflowParam(), that.getSubWorkflowParam()) &&
+                Objects.equals(getJoinOn(), that.getJoinOn()) &&
+                Objects.equals(getSink(), that.getSink());
+    }
+
+    @Override
+    public int hashCode() {
+
+        return Objects.hash(
+                getName(),
+                getTaskReferenceName(),
+                getDescription(),
+                getInputParameters(),
+                getType(),
+                getDynamicTaskNameParam(),
+                getCaseValueParam(),
+                getCaseExpression(),
+                getDecisionCases(),
+                getDynamicForkJoinTasksParam(),
+                getDynamicForkTasksParam(),
+                getDynamicForkTasksInputParamName(),
+                getDefaultCase(),
+                getForkTasks(),
+                getStartDelay(),
+                getSubWorkflowParam(),
+                getJoinOn(),
+                getSink(),
+                isOptional()
+        );
+    }
 }

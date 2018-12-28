@@ -1,5 +1,9 @@
 package com.netflix.conductor.dao.mysql;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import ch.vorburger.mariadb4j.DBConfiguration;
+import ch.vorburger.mariadb4j.DBConfigurationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,7 +14,8 @@ public enum EmbeddedDatabase {
 	INSTANCE;
 
 	private final DB db;
-	private final Logger logger = LoggerFactory.getLogger(getClass());
+	private final Logger logger = LoggerFactory.getLogger(EmbeddedDatabase.class);
+	private static final AtomicBoolean hasBeenMigrated = new AtomicBoolean(false);
 
 	public DB getDB() {
 		return db;
@@ -18,7 +23,11 @@ public enum EmbeddedDatabase {
 
 	private DB startEmbeddedDatabase() {
 		try {
-			DB db = DB.newEmbeddedDB(33307);
+			DBConfiguration dbConfiguration = DBConfigurationBuilder.newBuilder()
+					.setPort(33307)
+					.addArg("--user=root")
+					.build();
+			DB db = DB.newEmbeddedDB(dbConfiguration);
 			db.start();
 			db.createDB("conductor");
 			return db;
@@ -31,4 +40,13 @@ public enum EmbeddedDatabase {
 		logger.info("Starting embedded database");
 		db = startEmbeddedDatabase();
 	}
+
+	public static boolean hasBeenMigrated() {
+		return hasBeenMigrated.get();
+	}
+
+	public static void setHasBeenMigrated() {
+		hasBeenMigrated.getAndSet(true);
+	}
+
 }

@@ -18,13 +18,20 @@
  */
 package com.netflix.conductor.dao.es5.index.query.parser;
 
+import com.netflix.conductor.elasticsearch.query.parser.AbstractParserTest;
+import com.netflix.conductor.elasticsearch.query.parser.ConstValue;
+
 import org.junit.Test;
 
 import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Viren

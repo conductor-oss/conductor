@@ -41,7 +41,7 @@ When starting the workflow, make sure the task to domain mapping is passes
 		.withInput(input)
 		.withTaskToDomain(taskToDomain);
 	
-	wfclient.startWorkflow(swr);
+	wfclient.start_workflow(swr);
 
 ```
 

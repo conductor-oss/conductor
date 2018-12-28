@@ -1,0 +1,34 @@
+syntax = "proto3";
+package conductor.proto;
+
+import "google/protobuf/struct.proto";
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "TaskDefPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message TaskDef {
+    enum RetryLogic {
+        FIXED = 0;
+        EXPONENTIAL_BACKOFF = 1;
+    }
+    enum TimeoutPolicy {
+        RETRY = 0;
+        TIME_OUT_WF = 1;
+        ALERT_ONLY = 2;
+    }
+    string name = 1;
+    string description = 2;
+    int32 retry_count = 3;
+    int64 timeout_seconds = 4;
+    repeated string input_keys = 5;
+    repeated string output_keys = 6;
+    TaskDef.TimeoutPolicy timeout_policy = 7;
+    TaskDef.RetryLogic retry_logic = 8;
+    int32 retry_delay_seconds = 9;
+    int64 response_timeout_seconds = 10;
+    int32 concurrent_exec_limit = 11;
+    map<string, google.protobuf.Value> input_template = 12;
+    int32 rate_limit_per_frequency = 14;
+    int32 rate_limit_frequency_in_seconds = 15;
+}

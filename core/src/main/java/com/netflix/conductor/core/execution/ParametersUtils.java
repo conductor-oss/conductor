@@ -84,8 +84,8 @@ public class ParametersUtils {
         workflowParams.put("workflowId", workflow.getWorkflowId());
         workflowParams.put("parentWorkflowId", workflow.getParentWorkflowId());
         workflowParams.put("parentWorkflowTaskId", workflow.getParentWorkflowTaskId());
-        workflowParams.put("workflowType", workflow.getWorkflowType());
-        workflowParams.put("version", workflow.getVersion());
+        workflowParams.put("workflowType", workflow.getWorkflowName());
+        workflowParams.put("version", workflow.getWorkflowVersion());
         workflowParams.put("correlationId", workflow.getCorrelationId());
         workflowParams.put("reasonForIncompletion", workflow.getReasonForIncompletion());
         workflowParams.put("schemaVersion", workflow.getSchemaVersion());
@@ -159,7 +159,7 @@ public class ParametersUtils {
     private Map<String, Object> replace(Map<String, Object> input, DocumentContext documentContext, String taskId) {
         for (Entry<String, Object> e : input.entrySet()) {
             Object value = e.getValue();
-            if (value instanceof String || value instanceof Number) {
+            if (value instanceof String) {
                 Object replaced = replaceVariables(value.toString(), documentContext, taskId);
                 e.setValue(replaced);
             } else if (value instanceof Map) {
@@ -252,7 +252,9 @@ public class ParametersUtils {
                 return true;
             }
         }
-        String value = Optional.ofNullable(System.getProperty(test)).orElse(Optional.ofNullable(System.getenv(test)).orElse(null));
+        String value = Optional.ofNullable(System.getProperty(test))
+                .orElseGet(() -> Optional.ofNullable(System.getenv(test))
+                        .orElse(null));
         return value != null;
     }
 

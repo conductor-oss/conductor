@@ -1,16 +1,16 @@
 buildscript {
-	
 	repositories {
         jcenter()
     }
-    
+
     dependencies {
-        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:3.0.3'
+        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:4.0.1'
         classpath 'org.apache.ant:ant:1.9.7'
     }
 }
 plugins {
     id 'nebula.netflixoss' version '5.1.1'
+    id 'com.github.kt3k.coveralls' version '2.8.2'
 }
 
 // Establish version and status
@@ -19,41 +19,115 @@ ext.githubProjectName = rootProject.name // Change if github project name is not
 apply plugin: 'project-report'
 apply from: "$rootDir/versionsOfDependencies.gradle"
 
-
-subprojects {
-
-    apply plugin: 'nebula.netflixoss'
-    apply plugin: 'nebula.provided-base'
-    apply plugin: 'java'
+allprojects {
     apply plugin: 'idea'
+    apply plugin: 'jacoco'
     apply plugin: 'eclipse'
+
+    repositories {
+        jcenter()
+
+        // oss-candidate for -rc.* verions:
+        maven {
+            url "https://dl.bintray.com/netflixoss/oss-candidate"
+        }
+    }
+}
+
+def javaProjects = subprojects.findAll {
+    it.name != "ui"
+}
+
+configure(javaProjects) {
+    apply plugin: 'nebula.netflixoss'
+    apply plugin: 'java'
     apply plugin: 'project-report'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
-    repositories {
-        jcenter()
-    }
-
     dependencies {
-    	testCompile "junit:junit-dep:${revJUnit}"
-    	testCompile "org.mockito:mockito-all:${revMockito}"
+        testCompile "junit:junit:${revJUnit}"
+        testCompile("org.mockito:mockito-core:${revMockito}") {
+            exclude group: 'org.hamcrest', module: 'hamcrest-core'
+        }
     }
 
     group = "com.netflix.${githubProjectName}"
-    
+
     tasks.withType(Test)  {
         maxParallelForks = 100
     }
-    
+
     license {
 		excludes(['**/*.txt', '**/*.conf', '**/*.properties', '**/*.json', '**/swagger-ui/*'])
 	}
-	
+
 	task licenseFormatTests (type:nl.javadude.gradle.plugins.license.License) {
     	source = fileTree(dir: "src/test").include("**/*")
 	}
 	licenseFormat.dependsOn licenseFormatTests
 
+
+
+    tasks.withType(Test) {
+        task ->
+            // set heap size for the test JVM(s)
+            minHeapSize = "256m"
+            maxHeapSize = "2g"
+
+            jacocoTestReport.executionData += files("$buildDir/jacoco/${task.name}.exec")
+    }
+
+    jacocoTestReport {
+        reports {
+            html.enabled = true
+            xml.enabled = true
+            csv.enabled = false
+        }
+    }
 }
+
+
+
+/**********************************
+ * Coverage Tasks
+ **********************************/
+task codeCoverageReport(type: JacocoReport, group: "Coverage reports") {
+    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
+    dependsOn subprojects*.test
+
+    subprojects.each {
+        sourceSets it.sourceSets.main
+    }
+
+    reports {
+        xml.enabled = true
+        xml.destination new File("${buildDir}/reports/jacoco/report.xml")
+        html.enabled = true
+        html.destination new File("${buildDir}/reports/jacoco/html")
+        csv.enabled = false
+    }
+    afterEvaluate {
+        // Exclude generated files from top-level coverage report
+        classDirectories = files(
+                classDirectories.files.collect {
+                    fileTree(
+                            dir: it
+                    )
+                }
+        )
+    }
+}
+
+coveralls {
+    sourceDirs = subprojects.sourceSets.main.allSource.srcDirs.flatten()
+    jacocoReportPath = "${project.buildDir}/reports/jacoco/report.xml"
+}
+
+tasks.coveralls {
+    group = "Coverage reports"
+    description = "Uploads the aggregated coverage report to Coveralls"
+    dependsOn codeCoverageReport
+}
+

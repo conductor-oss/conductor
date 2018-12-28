@@ -80,8 +80,8 @@ public class WorkflowSweeper {
 					logger.info("Workflow sweep is disabled.");
 					return;
 				}
-				List<String> workflowIds = queueDAO.pop(WorkflowExecutor.deciderQueue, 2 * executorThreadPoolSize, 2000);
-				int currentQueueSize = queueDAO.getSize(WorkflowExecutor.deciderQueue);
+				List<String> workflowIds = queueDAO.pop(WorkflowExecutor.DECIDER_QUEUE, 2 * executorThreadPoolSize, 2000);
+				int currentQueueSize = queueDAO.getSize(WorkflowExecutor.DECIDER_QUEUE);
 				logger.debug("Sweeper's current deciderqueue size: {}.", currentQueueSize);
 				int retrievedWorkflows = (workflowIds != null) ? workflowIds.size() : 0;
 				logger.debug("Sweeper retrieved {} workflows from the decider queue.", retrievedWorkflows);
@@ -108,15 +108,15 @@ public class WorkflowSweeper {
 					}
 					boolean done = workflowExecutor.decide(workflowId);
 					if(!done) {
-						queueDAO.setUnackTimeout(WorkflowExecutor.deciderQueue, workflowId, config.getSweepFrequency() * 1000);
+						queueDAO.setUnackTimeout(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency() * 1000);
 					} else {
-						queueDAO.remove(WorkflowExecutor.deciderQueue, workflowId);
+						queueDAO.remove(WorkflowExecutor.DECIDER_QUEUE, workflowId);
 					}
 
 				} catch (ApplicationException e) {
 					if(e.getCode().equals(Code.NOT_FOUND)) {
 						logger.error("Workflow NOT found for id: " + workflowId, e);
-						queueDAO.remove(WorkflowExecutor.deciderQueue, workflowId);
+						queueDAO.remove(WorkflowExecutor.DECIDER_QUEUE, workflowId);
 					}
 
 				} catch (Exception e) {

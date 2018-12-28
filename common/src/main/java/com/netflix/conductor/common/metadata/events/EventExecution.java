@@ -21,36 +21,47 @@ package com.netflix.conductor.common.metadata.events;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.github.vmg.protogen.annotations.*;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 
 /**
  * @author Viren
  *
  */
+@ProtoMessage
 public class EventExecution {
 
+	@ProtoEnum
 	public enum Status {
 		IN_PROGRESS, COMPLETED, FAILED, SKIPPED
 	}
-	
+
+	@ProtoField(id = 1)
 	private String id;
-	
+
+	@ProtoField(id = 2)
 	private String messageId;
-	
+
+	@ProtoField(id = 3)
 	private String name;
-	
+
+	@ProtoField(id = 4)
 	private String event;
-	
+
+	@ProtoField(id = 5)
 	private long created;
-	
+
+	@ProtoField(id = 6)
 	private Status status;
-	
+
+	@ProtoField(id = 7)
 	private Action.Type action;
-	
+
+	@ProtoField(id = 8)
 	private Map<String, Object> output = new HashMap<>();
 
 	public EventExecution() {
-		
+
 	}
 	
 	public EventExecution(String id, String messageId) {

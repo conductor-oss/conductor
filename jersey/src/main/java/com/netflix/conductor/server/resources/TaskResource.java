@@ -25,8 +25,6 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.service.TaskService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -44,7 +42,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 
+ *
  * @author visingh
  *
  */
@@ -54,9 +52,6 @@ import java.util.Map;
 @Consumes({ MediaType.APPLICATION_JSON })
 @Singleton
 public class TaskResource {
-
-	private static final Logger logger = LoggerFactory.getLogger(TaskResource.class);
-
 	private final TaskService taskService;
 
 	@Inject
@@ -69,8 +64,8 @@ public class TaskResource {
 	@ApiOperation("Poll for a task of a certain type")
 	@Consumes({MediaType.WILDCARD})
 	public Task poll(@PathParam("tasktype") String taskType,
-                     @QueryParam("workerid") String workerId,
-                     @QueryParam("domain") String domain) {
+					 @QueryParam("workerid") String workerId,
+					 @QueryParam("domain") String domain) {
 		return taskService.poll(taskType, workerId, domain);
 	}
 
@@ -91,8 +86,8 @@ public class TaskResource {
 	@ApiOperation("Get in progress tasks. The results are paginated.")
 	@Consumes({MediaType.WILDCARD})
 	public List<Task> getTasks(@PathParam("tasktype") String taskType,
-                               @QueryParam("startKey") String startKey,
-                               @QueryParam("count") @DefaultValue("100") Integer count) {
+							   @QueryParam("startKey") String startKey,
+							   @QueryParam("count") @DefaultValue("100") Integer count) {
 		return taskService.getTasks(taskType, startKey, count);
 	}
 
@@ -101,12 +96,13 @@ public class TaskResource {
 	@ApiOperation("Get in progress task for a given workflow id.")
 	@Consumes({MediaType.WILDCARD})
 	public Task getPendingTaskForWorkflow(@PathParam("workflowId") String workflowId,
-                                          @PathParam("taskRefName") String taskReferenceName) {
+										  @PathParam("taskRefName") String taskReferenceName) {
 		return taskService.getPendingTaskForWorkflow(workflowId, taskReferenceName);
 	}
 
 	@POST
 	@ApiOperation("Update a task")
+	@Produces({MediaType.TEXT_PLAIN, MediaType.APPLICATION_JSON})
 	public String updateTask(TaskResult taskResult) {
 		return taskService.updateTask(taskResult);
 	}
@@ -116,22 +112,22 @@ public class TaskResource {
 	@ApiOperation("Ack Task is received")
 	@Consumes({MediaType.WILDCARD})
 	public String ack(@PathParam("taskId") String taskId,
-                      @QueryParam("workerid") String workerId) {
+					  @QueryParam("workerid") String workerId) {
 		return taskService.ackTaskReceived(taskId, workerId);
 	}
-	
+
 	@POST
 	@Path("/{taskId}/log")
 	@ApiOperation("Log Task Execution Details")
 	public void log(@PathParam("taskId") String taskId, String log) {
-        taskService.log(taskId, log);
+		taskService.log(taskId, log);
 	}
-	
+
 	@GET
 	@Path("/{taskId}/log")
 	@ApiOperation("Get Task Execution Logs")
 	public List<TaskExecLog> getTaskLogs(@PathParam("taskId") String taskId) {
-        return taskService.getTaskLogs(taskId);
+		return taskService.getTaskLogs(taskId);
 	}
 
 	@GET
@@ -139,7 +135,7 @@ public class TaskResource {
 	@ApiOperation("Get task by Id")
 	@Consumes(MediaType.WILDCARD)
 	public Task getTask(@PathParam("taskId") String taskId) {
-        return taskService.getTask(taskId);
+		return taskService.getTask(taskId);
 	}
 
 	@DELETE
@@ -148,7 +144,7 @@ public class TaskResource {
 	@Consumes({MediaType.WILDCARD})
 	public void removeTaskFromQueue(@PathParam("taskType") String taskType,
 									@PathParam("taskId") String taskId) {
-        taskService.removeTaskFromQueue(taskType, taskId);
+		taskService.removeTaskFromQueue(taskType, taskId);
 	}
 
 	@GET
@@ -197,7 +193,7 @@ public class TaskResource {
 	public String requeue() {
 		return taskService.requeue();
 	}
-	
+
 	@POST
 	@Path("/queue/requeue/{taskType}")
 	@ApiOperation("Requeue pending tasks")
@@ -206,19 +202,19 @@ public class TaskResource {
 	public String requeuePendingTask(@PathParam("taskType") String taskType) {
 		return taskService.requeuePendingTask(taskType);
 	}
-	
+
 	@ApiOperation(value="Search for tasks based in payload and other parameters",
-            notes="use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
-                    " If order is not specified, defaults to ASC")
+			notes="use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
+					" If order is not specified, defaults to ASC")
 	@GET
 	@Consumes(MediaType.WILDCARD)
 	@Produces(MediaType.APPLICATION_JSON)
 	@Path("/search")
-    public SearchResult<TaskSummary> search(@QueryParam("start") @DefaultValue("0") int start,
-                                            @QueryParam("size") @DefaultValue("100") int size,
-                                            @QueryParam("sort") String sort,
-                                            @QueryParam("freeText") @DefaultValue("*") String freeText,
-                                            @QueryParam("query") String query) {
+	public SearchResult<TaskSummary> search(@QueryParam("start") @DefaultValue("0") int start,
+											@QueryParam("size") @DefaultValue("100") int size,
+											@QueryParam("sort") String sort,
+											@QueryParam("freeText") @DefaultValue("*") String freeText,
+											@QueryParam("query") String query) {
 		return taskService.search(start, size, sort, freeText, query);
 	}
 

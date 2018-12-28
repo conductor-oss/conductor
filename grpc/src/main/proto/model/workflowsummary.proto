@@ -1,0 +1,25 @@
+syntax = "proto3";
+package conductor.proto;
+
+import "model/workflow.proto";
+
+option java_package = "com.netflix.conductor.proto";
+option java_outer_classname = "WorkflowSummaryPb";
+option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
+
+message WorkflowSummary {
+    string workflow_type = 1;
+    int32 version = 2;
+    string workflow_id = 3;
+    string correlation_id = 4;
+    string start_time = 5;
+    string update_time = 6;
+    string end_time = 7;
+    Workflow.WorkflowStatus status = 8;
+    string input = 9;
+    string output = 10;
+    string reason_for_incompletion = 11;
+    int64 execution_time = 12;
+    string event = 13;
+    string failed_reference_task_names = 14;
+}

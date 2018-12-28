@@ -2,6 +2,7 @@ package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -17,41 +18,42 @@ import org.junit.rules.ExpectedException;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class UserDefinedTaskMapperTest {
 
-    ParametersUtils parametersUtils;
-    MetadataDAO metadataDAO;
-
-    //subject
-    UserDefinedTaskMapper userDefinedTaskMapper;
+    private ParametersUtils parametersUtils;
+    private MetadataDAO metadataDAO;
+    private UserDefinedTaskMapper userDefinedTaskMapper;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         parametersUtils = mock(ParametersUtils.class);
         metadataDAO = mock(MetadataDAO.class);
         userDefinedTaskMapper = new UserDefinedTaskMapper(parametersUtils, metadataDAO);
     }
 
     @Test
-    public void getMappedTasks() throws Exception {
+    public void getMappedTasks() {
         //Given
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setName("user_task");
-        taskToSchedule.setType(WorkflowTask.Type.USER_DEFINED.name());
+        taskToSchedule.setType(TaskType.USER_DEFINED.name());
+        taskToSchedule.setTaskDefinition(new TaskDef("user_task"));
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
-        when(metadataDAO.getTaskDef("user_task")).thenReturn(new TaskDef());
+
+        Workflow workflow = new Workflow();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflow.setWorkflowDefinition(workflowDef);
 
         TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-                .withWorkflowDefinition(new WorkflowDef())
-                .withWorkflowInstance(new Workflow())
+                .withWorkflowDefinition(workflowDef)
+                .withWorkflowInstance(workflow)
                 .withTaskDefinition(new TaskDef())
                 .withTaskToSchedule(taskToSchedule)
                 .withTaskInput(new HashMap<>())
@@ -65,22 +67,25 @@ public class UserDefinedTaskMapperTest {
 
         //Then
         assertEquals(1, mappedTasks.size());
-        assertEquals(WorkflowTask.Type.USER_DEFINED.name(), mappedTasks.get(0).getTaskType());
+        assertEquals(TaskType.USER_DEFINED.name(), mappedTasks.get(0).getTaskType());
     }
 
     @Test
-    public void getMappedTasksException() throws Exception {
+    public void getMappedTasksException() {
         //Given
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setName("user_task");
-        taskToSchedule.setType(WorkflowTask.Type.USER_DEFINED.name());
+        taskToSchedule.setType(TaskType.USER_DEFINED.name());
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
-        when(metadataDAO.getTaskDef("user_task")).thenReturn(null);
+
+        Workflow workflow = new Workflow();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflow.setWorkflowDefinition(workflowDef);
 
         TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-                .withWorkflowDefinition(new WorkflowDef())
-                .withWorkflowInstance(new Workflow())
+                .withWorkflowDefinition(workflowDef)
+                .withWorkflowInstance(workflow)
                 .withTaskToSchedule(taskToSchedule)
                 .withTaskInput(new HashMap<>())
                 .withRetryCount(0)
@@ -95,5 +100,4 @@ public class UserDefinedTaskMapperTest {
         userDefinedTaskMapper.getMappedTasks(taskMapperContext);
 
     }
-
 }

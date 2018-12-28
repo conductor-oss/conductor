@@ -1,9 +1,7 @@
 import { Jumbotron } from 'react-bootstrap';
 import React, { Component } from 'react';
-import { connect } from 'react-redux'
 
 class Introduction extends Component {
-
   constructor(props) {
     super(props);
   }
@@ -20,4 +18,4 @@ class Introduction extends Component {
   }
 }
 
-export default connect(state => state)(Introduction);
+export default Introduction;

@@ -1,11 +1,5 @@
 package com.netflix.conductor.dao.mysql;
 
-import javax.sql.DataSource;
-
-import org.flywaydb.core.Flyway;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
 import com.google.inject.Singleton;
@@ -14,6 +8,12 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.zaxxer.hikari.HikariDataSource;
+
+import org.flywaydb.core.Flyway;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
 
 /**
  * @author mustafa

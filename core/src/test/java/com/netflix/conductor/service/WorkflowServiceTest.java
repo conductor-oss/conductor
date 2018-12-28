@@ -1,3 +1,18 @@
+/*
+ * Copyright 2016 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.conductor.service;
 
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
@@ -50,7 +65,7 @@ public class WorkflowServiceTest {
         Configuration mockConfig = Mockito.mock(Configuration.class);
 
         when(mockConfig.getIntProperty(anyString(), anyInt())).thenReturn(5_000);
-        this.workflowService = new WorkflowService(this.mockWorkflowExecutor, this.mockExecutionService,
+        this.workflowService = new WorkflowServiceImpl(this.mockWorkflowExecutor, this.mockExecutionService,
                 this.mockMetadata, mockConfig);
     }
 
@@ -73,23 +88,6 @@ public class WorkflowServiceTest {
                 anyMapOf(String.class, Object.class), any(String.class), any(String.class),
                 anyMapOf(String.class, String.class))).thenReturn(workflowID);
         assertEquals("w112", workflowService.startWorkflow(startWorkflowRequest));
-    }
-
-    @Test(expected = ApplicationException.class)
-    public void testApplicationExceptionStartWorkflowMessage() {
-        try {
-            when(mockMetadata.getWorkflowDef(anyString(), anyInt())).thenReturn(null);
-
-            StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
-            startWorkflowRequest.setName("w123");
-            startWorkflowRequest.setVersion(1);
-            workflowService.startWorkflow(startWorkflowRequest);
-        } catch (ApplicationException ex) {
-            String message = "No such workflow found by name: w123, version: 1";
-            assertEquals(message, ex.getMessage());
-            throw ex;
-        }
-        fail("ApplicationException did not throw!");
     }
 
     @Test
@@ -268,8 +266,8 @@ public class WorkflowServiceTest {
 
     @Test
     public void testRestartWorkflow() {
-        workflowService.restartWorkflow("w123");
-        verify(mockWorkflowExecutor, times(1)).rewind(anyString());
+        workflowService.restartWorkflow("w123", false);
+        verify(mockWorkflowExecutor, times(1)).rewind(anyString(), anyBoolean());
     }
 
     @Test

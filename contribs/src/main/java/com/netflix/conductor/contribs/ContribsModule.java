@@ -18,6 +18,8 @@
  */
 package com.netflix.conductor.contribs;
 
+import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -55,9 +57,9 @@ public class ContribsModule extends AbstractModule {
 	@ProvidesIntoMap
 	@StringMapKey("sqs")
 	@Singleton
-	@Named("EventQueueProviders")
-	public EventQueueProvider getSQSEventQueueProvider(AmazonSQSClient amazonSQSClient) {
-		return new SQSEventQueueProvider(amazonSQSClient);
+	@Named(EVENT_QUEUE_PROVIDERS_QUALIFIER)
+	public EventQueueProvider getSQSEventQueueProvider(AmazonSQSClient amazonSQSClient, Configuration config) {
+		return new SQSEventQueueProvider(amazonSQSClient, config);
 	}
 
 

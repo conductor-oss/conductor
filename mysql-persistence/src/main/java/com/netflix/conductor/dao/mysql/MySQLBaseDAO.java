@@ -5,6 +5,13 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.sql.ExecuteFunction;
+import com.netflix.conductor.sql.QueryFunction;
+import com.netflix.conductor.sql.TransactionalFunction;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -13,14 +20,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-import javax.sql.DataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-
-/**
- * @author mustafa
- */
 public abstract class MySQLBaseDAO {
     private static final List<String> EXCLUDED_STACKTRACE_CLASS = ImmutableList.of(
             MySQLBaseDAO.class.getName(),
@@ -110,6 +110,33 @@ public abstract class MySQLBaseDAO {
             logger.trace("{} : took {}ms", callingMethod, Duration.between(start, Instant.now()).toMillis());
         }
     }
+
+    protected <R> R getWithTransactionWithOutErrorPropagation(TransactionalFunction<R> function) {
+        Instant start = Instant.now();
+        LazyToString callingMethod = getCallingMethod();
+        logger.trace("{} : starting transaction", callingMethod);
+
+        try(Connection tx = dataSource.getConnection()) {
+            boolean previousAutoCommitMode = tx.getAutoCommit();
+            tx.setAutoCommit(false);
+            try {
+                R result = function.apply(tx);
+                tx.commit();
+                return result;
+            } catch (Throwable th) {
+                tx.rollback();
+                logger.info(ApplicationException.Code.CONFLICT + " " +th.getMessage());
+                return null;
+            } finally {
+                tx.setAutoCommit(previousAutoCommitMode);
+            }
+        } catch (SQLException ex) {
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, ex.getMessage(), ex);
+        } finally {
+            logger.trace("{} : took {}ms", callingMethod, Duration.between(start, Instant.now()).toMillis());
+        }
+    }
+
 
     /**
      * Wraps {@link #getWithTransaction(TransactionalFunction)} with no return value.

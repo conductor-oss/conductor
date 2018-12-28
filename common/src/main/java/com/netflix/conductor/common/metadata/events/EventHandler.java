@@ -18,6 +18,9 @@
  */
 package com.netflix.conductor.common.metadata.events;
 
+import com.google.protobuf.Any;
+import com.github.vmg.protogen.annotations.*;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -27,16 +30,22 @@ import java.util.Map;
  * @author Viren
  * Defines an event handler
  */
+@ProtoMessage
 public class EventHandler {
 
+	@ProtoField(id = 1)
 	private String name;
-	
+
+	@ProtoField(id = 2)
 	private String event;
-	
+
+	@ProtoField(id = 3)
 	private String condition;
 	
+	@ProtoField(id = 4)
 	private List<Action> actions = new LinkedList<>();
-	
+
+	@ProtoField(id = 5)
 	private boolean active;
 	
 	public EventHandler() {
@@ -119,18 +128,27 @@ public class EventHandler {
 	}
 
 
+	@ProtoMessage
 	public static class Action {
-		
-		public enum Type { start_workflow, complete_task, fail_task }
-		
+
+		@ProtoEnum
+		public enum Type {
+			start_workflow, complete_task, fail_task
+		}
+
+		@ProtoField(id = 1)
 		private Type action;
-		
+
+		@ProtoField(id = 2)
 		private StartWorkflow start_workflow;
-		
+
+		@ProtoField(id = 3)
 		private TaskDetails complete_task;
-		
+
+		@ProtoField(id = 4)
 		private TaskDetails fail_task;
-		
+
+		@ProtoField(id = 5)
 		private boolean expandInlineJSON;
 
 		/**
@@ -195,7 +213,7 @@ public class EventHandler {
 		
 		/**
 		 * 
-		 * @param expandInlineJSON when set to true, the in-lined JSON strings are expanded to a full json document 
+		 * @param expandInlineJSON when set to true, the in-lined JSON strings are expanded to a full json document
 		 */
 		public void setExpandInlineJSON(boolean expandInlineJSON) {
 			this.expandInlineJSON = expandInlineJSON;
@@ -209,14 +227,24 @@ public class EventHandler {
 			return expandInlineJSON;
 		}
 	}
-	
+
+	@ProtoMessage
 	public static class TaskDetails {
-		
+
+		@ProtoField(id = 1)
 		private String workflowId;
-		
+
+		@ProtoField(id = 2)
 		private String taskRefName;
-		
+
+		@ProtoField(id = 3)
 		private Map<String, Object> output = new HashMap<>();
+
+		@ProtoField(id = 4)
+		private Any outputMessage;
+
+		@ProtoField(id = 5)
+		private String taskId;
 
 		/**
 		 * @return the workflowId
@@ -262,20 +290,47 @@ public class EventHandler {
 		public void setOutput(Map<String, Object> output) {
 			this.output = output;
 		}
-		
-		
-		
+
+		public Any getOutputMessage() {
+			return outputMessage;
+		}
+
+		public void setOutputMessage(Any outputMessage) {
+			this.outputMessage = outputMessage;
+		}
+
+        /**
+         * @return the taskId
+         */
+        public String getTaskId() {
+            return taskId;
+        }
+
+        /**
+         * @param taskId the taskId to set
+         */
+        public void setTaskId(String taskId) {
+            this.taskId = taskId;
+        }
 	}
-	
+
+	@ProtoMessage
 	public static class StartWorkflow {
-		
+
+		@ProtoField(id = 1)
 		private String name;
-		
+
+		@ProtoField(id = 2)
 		private Integer version;
-		
+
+		@ProtoField(id = 3)
 		private String correlationId;
-		
+
+		@ProtoField(id = 4)
 		private Map<String, Object> input = new HashMap<>();
+
+		@ProtoField(id = 5)
+		private Any inputMessage;
 
 		/**
 		 * @return the name
@@ -337,8 +392,14 @@ public class EventHandler {
 		public void setInput(Map<String, Object> input) {
 			this.input = input;
 		}
-		
-		
+
+		public Any getInputMessage() {
+			return inputMessage;
+		}
+
+		public void setInputMessage(Any inputMessage) {
+			this.inputMessage = inputMessage;
+		}
 	}
 	
 }

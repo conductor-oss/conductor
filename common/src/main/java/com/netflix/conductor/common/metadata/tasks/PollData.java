@@ -1,6 +1,4 @@
-package com.netflix.conductor.common.metadata.tasks;
-
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,11 +13,26 @@ package com.netflix.conductor.common.metadata.tasks;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.netflix.conductor.common.metadata.tasks;
+
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
+
+import java.util.Objects;
+
+@ProtoMessage
 public class PollData {
-	String queueName;
-	String domain;
-	String workerId;
-	long lastPollTime;
+	@ProtoField(id = 1)
+	private String queueName;
+
+	@ProtoField(id = 2)
+	private String domain;
+
+	@ProtoField(id = 3)
+	private String workerId;
+
+	@ProtoField(id = 4)
+	private long lastPollTime;
 	
 	public PollData() {
 		super();
@@ -58,46 +71,29 @@ public class PollData {
 		this.lastPollTime = lastPollTime;
 	}
 
-	
 	@Override
-	public synchronized int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((domain == null) ? 0 : domain.hashCode());
-		result = prime * result + (int) (lastPollTime ^ (lastPollTime >>> 32));
-		result = prime * result + ((queueName == null) ? 0 : queueName.hashCode());
-		result = prime * result + ((workerId == null) ? 0 : workerId.hashCode());
-		return result;
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		PollData pollData = (PollData) o;
+		return getLastPollTime() == pollData.getLastPollTime() &&
+				Objects.equals(getQueueName(), pollData.getQueueName()) &&
+				Objects.equals(getDomain(), pollData.getDomain()) &&
+				Objects.equals(getWorkerId(), pollData.getWorkerId());
 	}
 
 	@Override
-	public synchronized boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		PollData other = (PollData) obj;
-		if (domain == null) {
-			if (other.domain != null)
-				return false;
-		} else if (!domain.equals(other.domain))
-			return false;
-		if (lastPollTime != other.lastPollTime)
-			return false;
-		if (queueName == null) {
-			if (other.queueName != null)
-				return false;
-		} else if (!queueName.equals(other.queueName))
-			return false;
-		if (workerId == null) {
-			if (other.workerId != null)
-				return false;
-		} else if (!workerId.equals(other.workerId))
-			return false;
-		return true;
+	public int hashCode() {
+		return Objects.hash(getQueueName(), getDomain(), getWorkerId(), getLastPollTime());
 	}
-	
-	
+
+	@Override
+	public String toString() {
+		return "PollData{" +
+				"queueName='" + queueName + '\'' +
+				", domain='" + domain + '\'' +
+				", workerId='" + workerId + '\'' +
+				", lastPollTime=" + lastPollTime +
+				'}';
+	}
 }

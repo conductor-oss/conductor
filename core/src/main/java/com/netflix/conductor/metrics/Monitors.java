@@ -18,12 +18,6 @@
  */
 package com.netflix.conductor.metrics;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
-
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
@@ -35,6 +29,12 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.Timer;
 import com.netflix.spectator.api.histogram.PercentileTimer;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Viren
@@ -232,6 +232,10 @@ public class Monitors {
 		counter(classQualifier, "observable_queue_error", "queueType", queueType);
 	}
 
+	public static void recordEventQueueMessagesHandled(String queueType, String queueName) {
+		counter(classQualifier, "event_queue_messages_handled", "queueType", queueType, "queueName", queueName);
+	}
+
 	public static void recordDaoRequests(String dao, String action, String taskType, String workflowType) {
 		counter(classQualifier, "dao_requests", "dao", dao, "action", action, "taskType", taskType, "workflowType", workflowType);
 	}
@@ -250,5 +254,9 @@ public class Monitors {
 
 	public static void recordExternalPayloadStorageUsage(String name, String operation, String payloadType) {
 		counter(classQualifier, "external_payload_storage_usage", "name", name, "operation", operation, "payloadType", payloadType);
+	}
+
+	public static void recordDaoError(String dao, String action) {
+		counter(classQualifier, "dao_errors", "dao", dao, "action", action);
 	}
 }

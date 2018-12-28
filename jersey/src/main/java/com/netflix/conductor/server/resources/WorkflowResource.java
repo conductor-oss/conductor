@@ -18,7 +18,6 @@
  */
 package com.netflix.conductor.server.resources;
 
-import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -29,7 +28,6 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.service.WorkflowService;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.apache.commons.lang3.StringUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -50,7 +48,6 @@ import java.util.Map;
 
 /**
  * @author Viren
- *
  */
 @Api(value = "/workflow", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON, tags = "Workflow Management")
 @Path("/workflow")
@@ -132,7 +129,6 @@ public class WorkflowResource {
                                            @QueryParam("version") @DefaultValue("1") Integer version,
                                            @QueryParam("startTime") Long startTime,
                                            @QueryParam("endTime") Long endTime) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowName), "Name cannot be null or empty.");
         return workflowService.getRunningWorkflows(workflowName, version, startTime, endTime);
     }
 
@@ -184,8 +180,8 @@ public class WorkflowResource {
     @Path("/{workflowId}/restart")
     @ApiOperation("Restarts a completed workflow")
     @Consumes(MediaType.WILDCARD)
-    public void restart(@PathParam("workflowId") String workflowId) {
-        workflowService.restartWorkflow(workflowId);
+    public void restart(@PathParam("workflowId") String workflowId, @QueryParam("useLatestDefinitions") @DefaultValue("false") boolean useLatestDefinitions) {
+        workflowService.restartWorkflow(workflowId, useLatestDefinitions);
     }
 
     @POST

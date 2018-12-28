@@ -22,6 +22,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
+import com.github.vmg.protogen.annotations.*;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 
@@ -29,45 +30,65 @@ import com.netflix.conductor.common.metadata.tasks.Task.Status;
  * @author Viren
  *
  */
+@ProtoMessage(fromProto = false)
 public class TaskSummary {
 
 	/**
 	 * The time should be stored as GMT
 	 */
 	private static final TimeZone gmt = TimeZone.getTimeZone("GMT");
-	
+
+	@ProtoField(id = 1)
 	private String workflowId;
 
+	@ProtoField(id = 2)
 	private String workflowType;
-	
+
+	@ProtoField(id = 3)
 	private String correlationId;
-	
+
+	@ProtoField(id = 4)
 	private String scheduledTime;
-	
+
+	@ProtoField(id = 5)
 	private String startTime;
-	
+
+	@ProtoField(id = 6)
 	private String updateTime;
-	
+
+	@ProtoField(id = 7)
 	private String endTime;
-	
+
+	@ProtoField(id = 8)
 	private Status status;
-	
+
+	@ProtoField(id = 9)
 	private String reasonForIncompletion;
-	
+
+	@ProtoField(id = 10)
 	private long executionTime;
-	
+
+	@ProtoField(id = 11)
 	private long queueWaitTime;
-	
+
+	@ProtoField(id = 12)
 	private String taskDefName;
-	
+
+	@ProtoField(id = 13)
 	private String taskType;
-	
+
+	@ProtoField(id = 14)
 	private String input;
-	
+
+	@ProtoField(id = 15)
 	private String output;
-	
+
+	@ProtoField(id = 16)
 	private String taskId;
-	
+
+    public TaskSummary() {
+    }
+
 	public TaskSummary(Task task) {
 		
 		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");

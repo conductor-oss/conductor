@@ -287,7 +287,7 @@ public class WorkflowTaskCoordinator {
 				logger.debug("tasks completed, shutting down");
 			} else {
 				logger.warn(String.format("forcing shutdown after waiting for %s second", timeout));
-				this.scheduledExecutorService.shutdownNow();
+				executorService.shutdownNow();
 			}
 		} catch (InterruptedException ie) {
 			logger.warn("shutdown interrupted, invoking shutdownNow");
@@ -355,7 +355,6 @@ public class WorkflowTaskCoordinator {
 	private void execute(Worker worker, Task task) {
 		String taskType = task.getTaskDefName();
 		try {
-
 			if(!worker.preAck(task)) {
 				logger.debug("Worker decided not to ack the task {}, taskId = {}", taskType, task.getTaskId());
 				return;
@@ -363,15 +362,13 @@ public class WorkflowTaskCoordinator {
 
 			if (!taskClient.ack(task.getTaskId(), worker.getIdentity())) {
 				WorkflowTaskMetrics.incrementTaskAckFailedCount(worker.getTaskDefName());
-				logger.error("Ack failed for {}, taskId = {}", taskType, task.getTaskId());
-				returnTask(worker, task);
 				return;
 			}
+			logger.debug("Ack successful for {}, taskId = {}", taskType, task.getTaskId());
 
 		} catch (Exception e) {
 			logger.error(String.format("ack exception for task %s, taskId = %s in worker - %s", task.getTaskDefName(), task.getTaskId(), worker.getIdentity()), e);
 			WorkflowTaskMetrics.incrementTaskAckErrorCount(worker.getTaskDefName(), e);
-			returnTask(worker, task);
 			return;
 		}
 

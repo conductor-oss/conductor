@@ -21,6 +21,7 @@ package com.netflix.conductor.core.events.sqs;
 import com.amazonaws.services.sqs.AmazonSQSClient;
 import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue;
 import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 
@@ -38,21 +39,27 @@ public class SQSEventQueueProvider implements EventQueueProvider {
 
 	private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
 	private final AmazonSQSClient client;
+	private final int batchSize;
+	private final int pollTimeInMS;
+	private final int visibilityTimeoutInSeconds;
 	
 	@Inject
-	public SQSEventQueueProvider(AmazonSQSClient client) {
+	public SQSEventQueueProvider(AmazonSQSClient client, Configuration config) {
 		this.client = client;
+		this.batchSize = config.getIntProperty("workflow.event.queues.sqs.batchSize", 1);
+		this.pollTimeInMS = config.getIntProperty("workflow.event.queues.sqs.pollTimeInMS", 100);
+		this.visibilityTimeoutInSeconds = config.getIntProperty("workflow.event.queues.sqs.visibilityTimeoutInSeconds", 60);
 	}
 	
 	@Override
 	public ObservableQueue getQueue(String queueURI) {
 		return queues.computeIfAbsent(queueURI, q -> {
 			Builder builder = new SQSObservableQueue.Builder();
-			return builder.withBatchSize(1)
+			return builder.withBatchSize(this.batchSize)
 					.withClient(client)
-					.withPollTimeInMS(100)
+					.withPollTimeInMS(this.pollTimeInMS)
 					.withQueueName(queueURI)
-					.withVisibilityTimeout(60)
+					.withVisibilityTimeout(this.visibilityTimeoutInSeconds)
 					.build();
 		});
 	}

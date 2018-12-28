@@ -147,7 +147,7 @@ class WorkflowDetails extends React.Component {
         return (
             <div className="ui-content">
                 <h4>
-                    {wf.workflowType}/{wf.version}
+                    {wf.workflowName}/{wf.version}
                     <span
                         className={(wf.status === 'FAILED' || wf.status === 'TERMINATED' || wf.status === 'TIMED_OUT') ? "red" : "green"}>
           {wf.status}
@@ -215,7 +215,7 @@ class WorkflowDetails extends React.Component {
                                                        data-clipboard-target="#wfoutput"/></strong>
                             <pre style={{height: '200px'}}
                                  id="wfoutput">{JSON.stringify(wf.output == null ? {} : wf.output, null, 3)}</pre>
-                            {wf.status === 'FAILED' ? <div><strong>Workflow Faiure Reason (if any)</strong>
+                            {wf.status === 'FAILED' ? <div><strong>Workflow Failure Reason (if any)</strong>
                                 <pre>{wf.reasonForIncompletion ? JSON.stringify(wf.reasonForIncompletion, null, 3) : ''}</pre>
                             </div> : ''}
                         </div>

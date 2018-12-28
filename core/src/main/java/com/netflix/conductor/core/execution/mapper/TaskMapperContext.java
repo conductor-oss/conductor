@@ -29,7 +29,6 @@ import java.util.Map;
  */
 public class TaskMapperContext {
 
-    private WorkflowDef workflowDefinition;
     private Workflow workflowInstance;
     private TaskDef taskDefinition;
     private WorkflowTask taskToSchedule;
@@ -40,7 +39,6 @@ public class TaskMapperContext {
     private DeciderService deciderService;
 
     private TaskMapperContext(Builder builder) {
-        workflowDefinition = builder.workflowDefinition;
         workflowInstance = builder.workflowInstance;
         taskDefinition = builder.taskDefinition;
         taskToSchedule = builder.taskToSchedule;
@@ -70,7 +68,7 @@ public class TaskMapperContext {
     }
 
     public WorkflowDef getWorkflowDefinition() {
-        return workflowDefinition;
+        return workflowInstance.getWorkflowDefinition();
     }
 
     public Workflow getWorkflowInstance() {
@@ -109,7 +107,7 @@ public class TaskMapperContext {
     @Override
     public String toString() {
         return "TaskMapperContext{" +
-                "workflowDefinition=" + workflowDefinition +
+                "workflowDefinition=" + getWorkflowDefinition() +
                 ", workflowInstance=" + workflowInstance +
                 ", taskToSchedule=" + taskToSchedule +
                 ", taskInput=" + taskInput +

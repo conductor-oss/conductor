@@ -1,0 +1,259 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1534999254315,
+  "updateTime": 1534999254327,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "DECISION",
+      "status": "COMPLETED",
+      "inputData": {
+        "hasChildren": "true",
+        "case": "nested"
+      },
+      "referenceTaskName": "conditional",
+      "retryCount": 0,
+      "seq": 1,
+      "correlationId": "testCaseStatements: 1534999254108",
+      "pollCount": 0,
+      "taskDefName": "DECISION",
+      "scheduledTime": 1534999254316,
+      "startTime": 1534999254317,
+      "endTime": 1534999254326,
+      "updateTime": 1534999254326,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "ConditionalTaskWF",
+      "taskId": "455c0446-edfb-492b-946d-89ec2fa34fe6",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "caseOutput": [
+          "nested"
+        ]
+      },
+      "workflowTask": {
+        "name": "conditional",
+        "taskReferenceName": "conditional",
+        "inputParameters": {
+          "case": "workflow.input.param1"
+        },
+        "type": "DECISION",
+        "caseValueParam": "case",
+        "decisionCases": {
+          "nested": [
+            {
+              "name": "conditional2",
+              "taskReferenceName": "conditional2",
+              "inputParameters": {
+                "case": "workflow.input.param2"
+              },
+              "type": "DECISION",
+              "caseValueParam": "case",
+              "decisionCases": {
+                "one": [
+                  {
+                    "name": "junit_task_1",
+                    "taskReferenceName": "t1",
+                    "inputParameters": {
+                      "p1": "workflow.input.param1",
+                      "p2": "workflow.input.param2"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0,
+                    "optional": false
+                  },
+                  {
+                    "name": "junit_task_3",
+                    "taskReferenceName": "t3",
+                    "type": "SIMPLE",
+                    "startDelay": 0,
+                    "optional": false
+                  }
+                ],
+                "two": [
+                  {
+                    "name": "junit_task_2",
+                    "taskReferenceName": "t2",
+                    "inputParameters": {
+                      "tp1": "workflow.input.param1",
+                      "tp3": "workflow.input.param2"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0,
+                    "optional": false
+                  }
+                ]
+              },
+              "startDelay": 0,
+              "optional": false
+            }
+          ],
+          "three": [
+            {
+              "name": "junit_task_3",
+              "taskReferenceName": "t3",
+              "type": "SIMPLE",
+              "startDelay": 0,
+              "optional": false
+            }
+          ]
+        },
+        "defaultCase": [
+          {
+            "name": "junit_task_2",
+            "taskReferenceName": "t2",
+            "inputParameters": {
+              "tp1": "workflow.input.param1",
+              "tp3": "workflow.input.param2"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "optional": false
+          }
+        ],
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "COMPLETED",
+      "queueWaitTime": 1
+    },
+    {
+      "taskType": "DECISION",
+      "status": "COMPLETED",
+      "inputData": {
+        "hasChildren": "true",
+        "case": "one"
+      },
+      "referenceTaskName": "conditional2",
+      "retryCount": 0,
+      "seq": 2,
+      "correlationId": "testCaseStatements: 1534999254108",
+      "pollCount": 0,
+      "taskDefName": "DECISION",
+      "scheduledTime": 1534999254316,
+      "startTime": 1534999254318,
+      "endTime": 1534999254327,
+      "updateTime": 1534999254327,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "ConditionalTaskWF",
+      "taskId": "d8547bbd-39a2-415a-81bf-9783f563bdbe",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "caseOutput": [
+          "one"
+        ]
+      },
+      "workflowTask": {
+        "name": "conditional2",
+        "taskReferenceName": "conditional2",
+        "inputParameters": {
+          "case": "workflow.input.param2"
+        },
+        "type": "DECISION",
+        "caseValueParam": "case",
+        "decisionCases": {
+          "one": [
+            {
+              "name": "junit_task_1",
+              "taskReferenceName": "t1",
+              "inputParameters": {
+                "p1": "workflow.input.param1",
+                "p2": "workflow.input.param2"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0,
+              "optional": false
+            },
+            {
+              "name": "junit_task_3",
+              "taskReferenceName": "t3",
+              "type": "SIMPLE",
+              "startDelay": 0,
+              "optional": false
+            }
+          ],
+          "two": [
+            {
+              "name": "junit_task_2",
+              "taskReferenceName": "t2",
+              "inputParameters": {
+                "tp1": "workflow.input.param1",
+                "tp3": "workflow.input.param2"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0,
+              "optional": false
+            }
+          ]
+        },
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "COMPLETED",
+      "queueWaitTime": 2
+    },
+    {
+      "taskType": "junit_task_1",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": "nested",
+        "p2": "one"
+      },
+      "referenceTaskName": "t1",
+      "retryCount": 0,
+      "seq": 3,
+      "correlationId": "testCaseStatements: 1534999254108",
+      "pollCount": 0,
+      "taskDefName": "junit_task_1",
+      "scheduledTime": 1534999254317,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1534999254317,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "ConditionalTaskWF",
+      "taskId": "64423d29-e6e4-4a69-a5f3-a64c62f552b0",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "junit_task_1",
+        "taskReferenceName": "t1",
+        "inputParameters": {
+          "p1": "workflow.input.param1",
+          "p2": "workflow.input.param2"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    }
+  ],
+  "input": {
+    "param1": "nested",
+    "param2": "one"
+  },
+  "workflowType": "ConditionalTaskWF",
+  "version": 1,
+  "correlationId": "testCaseStatements: 1534999254108",
+  "schemaVersion": 1,
+  "startTime": 1534999254315
+}

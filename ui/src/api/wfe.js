@@ -8,6 +8,7 @@ import transform from 'lodash/transform';
 import identity from 'lodash/identity';
 
 const router = new Router();
+
 const baseURL = process.env.WF_SERVER;
 const baseURL2 = baseURL + 'workflow/';
 const baseURLMeta = baseURL + 'metadata/';
@@ -35,6 +36,7 @@ router.get('/', async (req, res, next) => {
     }
 
     let query = req.query.q;
+
     const url =
       baseURL2 +
       'search?size=100&sort=startTime:DESC&freeText=' +
@@ -78,6 +80,7 @@ router.get('/search-by-task/:taskId', async (req, res, next) => {
     const url =
       baseURL2 + 'search-by-tasks?size=100&sort=startTime:DESC&freeText=' + freeText.join(' AND ') + '&start=' + start;
     const result = await http.get(url, req.token);
+
     const hits = result.results;
     res.status(200).send({ result: { hits: hits, totalHits: result.totalHits } });
   } catch (err) {
@@ -86,12 +89,17 @@ router.get('/search-by-task/:taskId', async (req, res, next) => {
 });
 
 router.get('/id/:workflowId', async (req, res, next) => {
+
   try {
     const result = await http.get(baseURL2 + req.params.workflowId + '?includeTasks=true', req.token);
-    const meta = await http.get(
-      baseURLMeta + 'workflow/' + result.workflowType + '?version=' + result.version,
-      req.token
-    );
+
+    let meta = result.workflowDefinition;
+    if (!meta) {
+      meta = await http.get(
+          baseURLMeta + 'workflow/' + result.workflowType + '?version=' + result.version,
+          req.token
+      );
+    }
 
     const subs = filter(identity)(
       map(task => {
@@ -197,7 +205,7 @@ router.post('/bulk/restart', async (req, res, next) => {
 
 router.delete('/bulk/terminate', async (req, res, next) => {
   try {
-    const result = await http.delete(baseURL2 + "bulk", req.body, req.token);
+    const result = await http.delete(baseURL2 + "bulk/terminate", req.body, req.token);
     res.status(200).send(result);
   } catch (err) {
     next(err);
@@ -234,8 +242,8 @@ router.post('/retry/:workflowId', async (req, res, next) => {
 
 router.post('/pause/:workflowId', async (req, res, next) => {
   try {
-    const result = await http.put(baseURL2 + req.params.workflowId + '/pause', {}, req.token);
-    res.status(200).send({ result: req.params.workflowId });
+    const result = await http.put(baseURL2 + req.params.workflowId + '/pause');
+    res.status(200).send({result: req.params.workflowId });
   } catch (err) {
     next(err);
   }
