@@ -24,6 +24,7 @@ import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -60,7 +61,7 @@ public class MetadataServiceTest{
         metadataService = injector.getInstance(MetadataServiceImpl.class);
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testRegisterTaskDefNoName() {
         TaskDef taskDef = new TaskDef();//name is null
         try{
@@ -69,10 +70,12 @@ public class MetadataServiceTest{
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("TaskDef name cannot be null or empty"));
+            throw ex;
         }
+        fail("metadataService.registerTaskDef did not throw ConstraintViolationException !");
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testRegisterTaskDefNull() {
         try{
             metadataService.registerTaskDef(null);
@@ -80,10 +83,12 @@ public class MetadataServiceTest{
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("TaskDefList cannot be empty or null"));
+            throw ex;
         }
+        fail("metadataService.registerTaskDef did not throw ConstraintViolationException !");
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testRegisterTaskDefNoResponseTimeout() {
         try{
             TaskDef taskDef = new TaskDef();
@@ -94,10 +99,12 @@ public class MetadataServiceTest{
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("TaskDef responseTimeoutSeconds: 0 should be minimum 1 second"));
+            throw ex;
         }
+        fail("metadataService.registerTaskDef did not throw ConstraintViolationException !");
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testUpdateTaskDefNameNull() {
         try{
             TaskDef taskDef = new TaskDef();
@@ -106,10 +113,12 @@ public class MetadataServiceTest{
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("TaskDef name cannot be null or empty"));
+            throw ex;
         }
+        fail("metadataService.updateTaskDef did not throw ConstraintViolationException !");
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testUpdateTaskDefNull() {
         try{
             metadataService.updateTaskDef(null);
@@ -117,7 +126,9 @@ public class MetadataServiceTest{
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("TaskDef cannot be null"));
+            throw ex;
         }
+        fail("metadataService.updateTaskDef did not throw ConstraintViolationException !");
     }
 
     @Test(expected = ApplicationException.class)
@@ -145,7 +156,7 @@ public class MetadataServiceTest{
         verify(metadataDAO, times(1)).createTaskDef(any(TaskDef.class));
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testUpdateWorkflowDefNull() {
         try{
             List<WorkflowDef> workflowDefList = null;
@@ -154,10 +165,12 @@ public class MetadataServiceTest{
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowDef list name cannot be null or empty"));
+            throw ex;
         }
+        fail("metadataService.updateWorkflowDef did not throw ConstraintViolationException !");
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testUpdateWorkflowDefEmptyList() {
         try{
             List<WorkflowDef> workflowDefList = new ArrayList<>();
@@ -166,24 +179,27 @@ public class MetadataServiceTest{
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowDefList is empty"));
+            throw ex;
         }
+        fail("metadataService.updateWorkflowDef did not throw ConstraintViolationException !");
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testUpdateWorkflowDefWithNullWorkflowDef() {
         try{
             List<WorkflowDef> workflowDefList = new ArrayList<>();
             workflowDefList.add(null);
             metadataService.updateWorkflowDef(workflowDefList);
-
         } catch (ConstraintViolationException ex) {
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowDef cannot be null"));
+            throw ex;
         }
+        fail("metadataService.updateWorkflowDef did not throw ConstraintViolationException !");
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testUpdateWorkflowDefWithEmptyWorkflowDefName() {
         try{
             List<WorkflowDef> workflowDefList = new ArrayList<>();
@@ -191,13 +207,14 @@ public class MetadataServiceTest{
             workflowDef.setName(null);
             workflowDefList.add(workflowDef);
             metadataService.updateWorkflowDef(workflowDefList);
-
         } catch (ConstraintViolationException ex) {
             assertEquals(2, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(messages.contains("WorkflowTask list cannot be empty"));
+            throw ex;
         }
+        fail("metadataService.updateWorkflowDef did not throw ConstraintViolationException !");
     }
 
     @Test
@@ -215,7 +232,7 @@ public class MetadataServiceTest{
         verify(metadataDAO, times(1)).update(workflowDef);
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testRegisterWorkflowDefNoName() {
         try{
             WorkflowDef workflowDef = new WorkflowDef();//name is null
@@ -225,10 +242,12 @@ public class MetadataServiceTest{
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(messages.contains("WorkflowTask list cannot be empty"));
+            throw ex;
         }
+        fail("metadataService.registerWorkflowDef did not throw ConstraintViolationException !");
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testRegisterWorkflowDefInvalidName() {
         try{
             WorkflowDef workflowDef = new WorkflowDef();
@@ -239,7 +258,9 @@ public class MetadataServiceTest{
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowTask list cannot be empty"));
             assertTrue(messages.contains("Workflow name cannot contain the following set of characters: ':'"));
+            throw ex;
         }
+        fail("metadataService.registerWorkflowDef did not throw ConstraintViolationException !");
     }
 
     @Test
@@ -259,7 +280,7 @@ public class MetadataServiceTest{
         assertEquals(2, workflowDef.getSchemaVersion());
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testUnregisterWorkflowDefNoName() {
         try{
             metadataService.unregisterWorkflowDef("", null);
@@ -268,7 +289,9 @@ public class MetadataServiceTest{
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("Workflow name cannot be null or empty"));
             assertTrue(messages.contains("Version cannot be null"));
+            throw ex;
         }
+        fail("metadataService.unregisterWorkflowDef did not throw ConstraintViolationException !");
     }
 
     @Test
@@ -277,7 +300,7 @@ public class MetadataServiceTest{
         verify(metadataDAO, times(1)).removeWorkflowDef("somename", 111);
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testValidateEventNull() {
         try{
             metadataService.addEventHandler(null);
@@ -285,10 +308,12 @@ public class MetadataServiceTest{
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("EventHandler cannot be null"));
+            throw ex;
         }
+        fail("metadataService.addEventHandler did not throw ConstraintViolationException !");
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testValidateEventNoEvent() {
         try{
             EventHandler eventHandler = new EventHandler();
@@ -299,7 +324,9 @@ public class MetadataServiceTest{
             assertTrue(messages.contains("Missing event handler name"));
             assertTrue(messages.contains("Missing event location"));
             assertTrue(messages.contains("No actions specified. Please specify at-least one action"));
+            throw ex;
         }
+        fail("metadataService.addEventHandler did not throw ConstraintViolationException !");
     }
 
 }

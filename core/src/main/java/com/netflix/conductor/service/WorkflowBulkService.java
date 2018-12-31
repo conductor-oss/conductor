@@ -25,20 +25,20 @@ public interface WorkflowBulkService {
 
    static final int MAX_REQUEST_ITEMS = 1000;
 
-   BulkResponse pauseWorkflow(@NotEmpty(message = "WorkflowIds list cannot be null.") List<
-           @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") String> workflowIds);
+   BulkResponse pauseWorkflow(@NotEmpty(message = "WorkflowIds list cannot be null.")
+                              @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") List<String> workflowIds);
 
-   BulkResponse resumeWorkflow(@NotEmpty(message = "WorkflowIds list cannot be null.") List<
-           @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") String> workflowIds);
+   BulkResponse resumeWorkflow(@NotEmpty(message = "WorkflowIds list cannot be null.")
+                               @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") List<String> workflowIds);
 
-   BulkResponse restart(@NotEmpty(message = "WorkflowIds list cannot be null.") List<
-           @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") String> workflowIds, boolean useLatestDefinitions);
+   BulkResponse restart(@NotEmpty(message = "WorkflowIds list cannot be null.")
+                        @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") List<String> workflowIds, boolean useLatestDefinitions);
 
-   BulkResponse retry(@NotEmpty(message = "WorkflowIds list cannot be null.") List<
-           @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") String> workflowIds);
+   BulkResponse retry(@NotEmpty(message = "WorkflowIds list cannot be null.")
+                      @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") List<String> workflowIds);
 
-   BulkResponse terminate(@NotEmpty(message = "WorkflowIds list cannot be null.") List<
-           @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") String> workflowIds,
+   BulkResponse terminate(@NotEmpty(message = "WorkflowIds list cannot be null.")
+                          @Size(max=MAX_REQUEST_ITEMS, message = "Cannot process more than {max} workflows. Please use multiple requests.") List<String> workflowIds,
                                  String reason);
 
 }

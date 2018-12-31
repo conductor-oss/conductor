@@ -107,8 +107,10 @@ public abstract class ClientBase {
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
             client.resource(uri).delete();
+        } catch (UniformInterfaceException e) {
+            handleUniformInterfaceException(e, uri);
         } catch (RuntimeException e) {
-            handleException(uri, e);
+            handleRuntimeException(e, uri);
         }
     }
 

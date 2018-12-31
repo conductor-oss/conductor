@@ -8,7 +8,6 @@ import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.core.config.ValidationModule;
 import com.netflix.conductor.core.events.EventProcessor;
 import com.netflix.conductor.core.events.EventQueues;
-import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.interceptors.ServiceInterceptor;
 import org.junit.Before;
 import org.junit.Test;
@@ -21,6 +20,7 @@ import java.util.Set;
 import static com.netflix.conductor.utility.TestUtils.getConstraintViolationMessages;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class EventServiceTest {
 
@@ -34,7 +34,7 @@ public class EventServiceTest {
         metadataService = Mockito.mock(MetadataService.class);
         eventProcessor = Mockito.mock(EventProcessor.class);
         eventQueues = Mockito.mock(EventQueues.class);
-        eventService = Mockito.mock(EventService.class);
+
         Injector injector =
                 Guice.createInjector(
                         new AbstractModule() {
@@ -44,16 +44,15 @@ public class EventServiceTest {
                                 bind(MetadataService.class).toInstance(metadataService);
                                 bind(EventProcessor.class).toInstance(eventProcessor);
                                 bind(EventQueues.class).toInstance(eventQueues);
-                                bind(EventService.class).toInstance(eventService);
 
                                 install(new ValidationModule());
                                 bindInterceptor(Matchers.any(), Matchers.annotatedWith(Service.class), new ServiceInterceptor(getProvider(Validator.class)));
                             }
                         });
-        eventService = injector.getInstance(EventService.class);
+        eventService = injector.getInstance(EventServiceImpl.class);
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testAddEventHandler(){
         try{
             eventService.addEventHandler(null);
@@ -61,10 +60,12 @@ public class EventServiceTest {
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("EventHandler cannot be null."));
+            throw ex;
         }
+        fail("eventService.addEventHandler did not throw ConstraintViolationException !");
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testUpdateEventHandler(){
         try{
             eventService.updateEventHandler(null);
@@ -72,28 +73,34 @@ public class EventServiceTest {
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("EventHandler cannot be null."));
+            throw ex;
         }
+        fail("eventService.updateEventHandler did not throw ConstraintViolationException !");
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testRemoveEventHandlerStatus(){
         try{
             eventService.removeEventHandlerStatus(null);
         } catch (ConstraintViolationException ex){
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
-            assertTrue(messages.contains("EventHandler cannot be null."));
+            assertTrue(messages.contains("EventHandler name cannot be null or empty."));
+            throw ex;
         }
+        fail("eventService.removeEventHandlerStatus did not throw ConstraintViolationException !");
     }
 
-    @Test
+    @Test(expected = ConstraintViolationException.class)
     public void testGetEventHandlersForEvent(){
         try{
             eventService.getEventHandlersForEvent(null, false);
         } catch (ConstraintViolationException ex){
             assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
-            assertTrue(messages.contains("EventHandler cannot be null."));
+            assertTrue(messages.contains("Event cannot be null or empty."));
+            throw ex;
         }
+        fail("eventService.getEventHandlersForEvent did not throw ConstraintViolationException !");
     }
 }

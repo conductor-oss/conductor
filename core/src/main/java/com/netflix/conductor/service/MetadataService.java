@@ -15,7 +15,6 @@
  */
 package com.netflix.conductor.service;
 
-import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;

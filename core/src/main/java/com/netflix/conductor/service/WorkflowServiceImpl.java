@@ -336,6 +336,7 @@ public class WorkflowServiceImpl implements WorkflowService {
      * @param query Query you want to search
      * @return instance of {@link SearchResult}
      */
+    @Service
     public SearchResult<WorkflowSummary> searchWorkflows(int start, int size, List<String> sort, String freeText, String query) {
         return executionService.search(query, freeText, start, size, sort);
     }

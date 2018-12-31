@@ -1,6 +1,7 @@
 package com.netflix.conductor.validations;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import javax.validation.Constraint;
@@ -13,6 +14,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_SIMPLE;
 import static java.lang.annotation.ElementType.FIELD;
 import static java.lang.annotation.ElementType.TYPE;
 
@@ -52,6 +54,11 @@ public @interface WorkflowTaskValidConstraint {
             }
 
             boolean valid = true;
+
+            // avoid task type definition check incase of non simple task
+            if (!workflowTask.getType().equals(TASK_TYPE_SIMPLE)) {
+                return valid;
+            }
 
             if (ValidationContext.getMetadataDAO().getTaskDef(workflowTask.getName()) == null) {
                 //check if task type is ephemeral

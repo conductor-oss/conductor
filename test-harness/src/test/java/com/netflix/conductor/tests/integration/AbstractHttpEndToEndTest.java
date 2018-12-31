@@ -16,6 +16,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.netflix.conductor.client.exceptions.ConductorClientException;
 import com.netflix.conductor.client.http.MetadataClient;
@@ -206,7 +207,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         assertEquals(1, workflow.getTasks().size());
     }
 
-    @Test
+    @Test(expected = ConductorClientException.class)
     public void testMetadataWorkflowDefinition() {
         String workflowDefName = "testWorkflowDefMetadata";
         WorkflowDef def = new WorkflowDef();
@@ -222,7 +223,10 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         t1.setTaskReferenceName("t1");
         def.getTasks().add(t0);
         def.getTasks().add(t1);
+
         metadataClient.registerWorkflowDef(def);
+        metadataClient.unregisterWorkflowDef(workflowDefName, 1);
+
         try {
             metadataClient.getWorkflowDef(workflowDefName, 1);
         } catch (ConductorClientException e) {
@@ -232,11 +236,11 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertEquals(404, statusCode);
             assertEquals("No such workflow found by name: testWorkflowDefMetadata, version: 1", errorMessage);
             assertFalse(retryable);
+            throw e;
         }
-        metadataClient.unregisterWorkflowDef(workflowDefName, 1);
     }
 
-    @Test
+    @Test(expected = ConductorClientException.class)
     public void testInvalidResource() {
         MetadataClient metadataClient = new MetadataClient();
         metadataClient.setRootURI(String.format("%sinvalid", apiRoot));
@@ -250,10 +254,11 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             boolean retryable = e.isRetryable();
             assertEquals(404, statusCode);
             assertFalse(retryable);
+            throw e;
         }
     }
 
-    @Test
+    @Test(expected = ConductorClientException.class)
     public void testUpdateWorkflow() {
         TaskDef taskDef = new TaskDef();
         taskDef.setName("taskUpdate");
@@ -286,20 +291,22 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertEquals(404, statuCode);
             assertEquals("No such taskType found by name: test", e.getMessage());
             assertFalse(e.isRetryable());
+            throw e;
         }
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void testStartWorkflow() {
         StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
         try {
             workflowClient.startWorkflow(startWorkflowRequest);
         } catch (IllegalArgumentException e) {
             assertEquals("Workflow name cannot be null or empty", e.getMessage());
+            throw e;
         }
     }
 
-    @Test
+    @Test(expected = ConductorClientException.class)
     public void testUpdateTask() {
         TaskResult taskResult = new TaskResult();
         try {
@@ -314,10 +321,11 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
                     .collect(Collectors.toList());
             assertEquals(2, errors.size());
             assertTrue(errorMessages.contains("Workflow Id cannot be null or empty"));
+            throw e;
         }
     }
 
-    @Test
+    @Test(expected = ConductorClientException.class)
     public void testGetWorfklowNotFound() {
         try {
             workflowClient.getWorkflow("w123", true);
@@ -325,10 +333,11 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertEquals(404, e.getStatus());
             assertEquals("No such workflow found by id: w123", e.getMessage());
             assertFalse(e.isRetryable());
+            throw e;
         }
     }
 
-    @Test
+    @Test(expected = ConductorClientException.class)
     public void testEmptyCreateWorkflowDef() {
         try {
             WorkflowDef workflowDef = new WorkflowDef();
@@ -337,10 +346,11 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertEquals(400, e.getStatus());
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
+            throw e;
         }
     }
 
-    @Test
+    @Test(expected = ConductorClientException.class)
     public void testUpdateWorkflowDef() {
         try {
             WorkflowDef workflowDef = new WorkflowDef();
@@ -358,6 +368,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertEquals(2, errors.size());
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
+            throw e;
         }
     }
 
@@ -366,22 +377,23 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         taskClient.getPendingTaskForWorkflow("test", "t1");
     }
 
-    @Test
+    @Test(expected = ConductorClientException.class)
     public void testRemoveTaskFromTaskQueue() {
         try {
             taskClient.removeTaskFromQueue("test", "fakeQueue");
         } catch (ConductorClientException e) {
             assertEquals(404, e.getStatus());
+            throw e;
         }
     }
 
     @Test
     public void testTaskByTaskId() {
         try {
-            taskClient.getTaskDetails("test123");
+            taskClient.getTaskDetails("test999");
         } catch (ConductorClientException e) {
             assertEquals(404, e.getStatus());
-            assertEquals("No such task found by taskId: test123", e.getMessage());
+            assertEquals("No such task found by taskId: test999", e.getMessage());
         }
     }
 
@@ -390,7 +402,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         workflowClient.getWorkflows("test", "test12", false, false);
     }
 
-    @Test
+    @Test(expected = ConductorClientException.class)
     public void testCreateInvalidWorkflowDef() {
         try {
             WorkflowDef workflowDef = new WorkflowDef();
@@ -408,10 +420,11 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
                     .collect(Collectors.toList());
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
+            throw e;
         }
     }
 
-    @Test
+    @Test(expected = ConductorClientException.class)
     public void testUpdateTaskDefNameNull(){
         TaskDef taskDef = new TaskDef();
         try{
@@ -426,6 +439,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
                     .map(v -> v.getMessage())
                     .collect(Collectors.toList());
             assertTrue(errorMessages.contains("TaskDef name cannot be null or empty"));
+            throw e;
         }
     }
 
@@ -434,7 +448,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             metadataClient.getTaskDef("");
     }
 
-    @Test
+    @Test(expected = ConductorClientException.class)
     public void testUpdateWorkflowDefNameNull(){
         WorkflowDef workflowDef = new WorkflowDef();
         List<WorkflowDef> list = new ArrayList<>();
@@ -452,6 +466,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
                     .collect(Collectors.toList());
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
+            throw e;
         }
     }
 

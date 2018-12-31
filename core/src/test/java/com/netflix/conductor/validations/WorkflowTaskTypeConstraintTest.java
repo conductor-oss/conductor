@@ -215,31 +215,6 @@ public class WorkflowTaskTypeConstraintTest {
         assertTrue(validationErrors.contains("forkTasks should have atleast one task for taskType: FORK_JOIN taskName: encode"));
     }
 
-    @Test
-    public void testWorkflowTaskTypeJoin() {
-        WorkflowTask workflowTask = createSampleWorkflowTask();
-        workflowTask.setType("JOIN");
-
-        ConstraintMapping mapping = config.createConstraintMapping();
-
-        mapping.type(WorkflowTask.class)
-                .constraint(new WorkflowTaskTypeConstraintDef());
-
-        Validator validator = config.addMapping(mapping)
-                .buildValidatorFactory()
-                .getValidator();
-
-        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
-
-        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
-        assertEquals(1, result.size());
-
-        List<String> validationErrors = new ArrayList<>();
-
-        result.forEach(e -> validationErrors.add(e.getMessage()));
-
-        assertTrue(validationErrors.contains("joinOn should have atleast one value for taskType: JOIN taskName: encode"));
-    }
 
     @Test
     public void testWorkflowTaskTypeSubworkflow() {

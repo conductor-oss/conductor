@@ -15,7 +15,6 @@
  */
 package com.netflix.conductor.service;
 
-
 import com.netflix.conductor.annotations.Audit;
 import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.annotations.Trace;
@@ -29,15 +28,11 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
-import com.netflix.conductor.service.utils.ServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;

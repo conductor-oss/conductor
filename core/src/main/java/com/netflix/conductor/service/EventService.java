@@ -17,6 +17,10 @@
 package com.netflix.conductor.service;
 
 import com.netflix.conductor.common.metadata.events.EventHandler;
+
+import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 
@@ -27,19 +31,19 @@ public interface EventService {
      * Add a new event handler.
      * @param eventHandler Instance of {@link EventHandler}
      */
-    void addEventHandler(EventHandler eventHandler);
+    void addEventHandler(@NotNull(message = "EventHandler cannot be null.") @Valid EventHandler eventHandler);
 
     /**
      * Update an existing event handler.
      * @param eventHandler Instance of {@link EventHandler}
      */
-    void updateEventHandler(EventHandler eventHandler);
+    void updateEventHandler(@NotNull(message = "EventHandler cannot be null.") @Valid EventHandler eventHandler);
 
     /**
      * Remove an event handler.
      * @param name Event name
      */
-    void removeEventHandlerStatus(String name);
+    void removeEventHandlerStatus(@NotEmpty(message = "EventHandler name cannot be null or empty.") String name);
 
     /**
      * Get all the event handlers.
@@ -53,7 +57,7 @@ public interface EventService {
      * @param activeOnly `true|false` for active only events
      * @return list of {@link EventHandler}
      */
-    List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly);
+    List<EventHandler> getEventHandlersForEvent(@NotEmpty(message = "Event cannot be null or empty.") String event, boolean activeOnly);
 
     /**
      * Get registered queues.

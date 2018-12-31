@@ -64,9 +64,6 @@ public @interface WorkflowTaskTypeConstraint {
                 case TaskType.TASK_TYPE_FORK_JOIN:
                     valid = isForkJoinTaskValid(workflowTask, context);
                     break;
-                case TaskType.TASK_TYPE_JOIN:
-                    valid = isJoinTaskValid(workflowTask, context);
-                    break;
             }
 
             return valid;
@@ -149,16 +146,6 @@ public @interface WorkflowTaskTypeConstraint {
                 valid = false;
             }
 
-            return valid;
-        }
-
-        private boolean isJoinTaskValid(WorkflowTask workflowTask, ConstraintValidatorContext context) {
-            boolean valid = true;
-            if (workflowTask.getJoinOn() != null && (workflowTask.getJoinOn().size() == 0)){
-                String message = String.format("joinOn should have atleast one value for taskType: %s taskName: %s", TaskType.JOIN, workflowTask.getName());
-                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
-                valid = false;
-            }
             return valid;
         }
     }
