@@ -371,14 +371,20 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
                     }
                 }
 
-                workflow.setTasks(tasks);
+                if (workflow != null) {
+                    recordCassandraDaoRequests("getWorkflow", "n/a", workflow.getWorkflowName());
+                    workflow.setTasks(tasks);
+                }
             } else {
                 resultSet = session.execute(selectWorkflowStatement.bind(UUID.fromString(workflowId)));
                 workflow = Optional.ofNullable(resultSet.one())
-                        .map(row -> readValue(row.getString(PAYLOAD_KEY), Workflow.class))
+                        .map(row -> {
+                            Workflow wf = readValue(row.getString(PAYLOAD_KEY), Workflow.class);
+                            recordCassandraDaoRequests("getWorkflow", "n/a", wf.getWorkflowName());
+                            return wf;
+                        })
                         .orElse(null);
             }
-            recordCassandraDaoRequests("getWorkflow", "n/a", workflow.getWorkflowName());
             return workflow;
         } catch (ApplicationException e) {
             throw e;
