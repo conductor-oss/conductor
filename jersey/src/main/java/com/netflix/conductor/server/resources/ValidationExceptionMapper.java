@@ -101,10 +101,8 @@ public class ValidationExceptionMapper implements ExceptionMapper<ValidationExce
     }
 
     private static String getViolationPath(final ConstraintViolation violation) {
-        final String rootBeanName = violation.getRootBean().getClass().getSimpleName();
         final String propertyPath = violation.getPropertyPath().toString();
-
-        return rootBeanName + (!"".equals(propertyPath) ? '.' + propertyPath : "");
+        return !"".equals(propertyPath) ? propertyPath : "";
     }
 
     private static String getViolationInvalidValue(final Object invalidValue) {

@@ -346,6 +346,12 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertEquals(400, e.getStatus());
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
+            List<ValidationError> errors = e.getValidationErrors();
+            List<String> errorMessages = errors.stream()
+                    .map(v -> v.getMessage())
+                    .collect(Collectors.toList());
+            assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
+            assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
             throw e;
         }
     }
