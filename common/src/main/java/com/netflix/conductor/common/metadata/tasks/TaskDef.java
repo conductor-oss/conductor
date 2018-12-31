@@ -66,7 +66,6 @@ public class TaskDef extends Auditable {
 
 	@ProtoField(id = 4)
 	@NotNull
-	@Min(0)
 	private long timeoutSeconds;
 
 	@ProtoField(id = 5)
@@ -82,7 +81,6 @@ public class TaskDef extends Auditable {
 	private RetryLogic retryLogic = RetryLogic.FIXED;
 
 	@ProtoField(id = 9)
-	@Min(1)
 	private int retryDelaySeconds = 60;
 
 	@ProtoField(id = 10)
