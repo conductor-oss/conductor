@@ -17,10 +17,10 @@ package com.netflix.conductor.service;
 
 import com.google.inject.Singleton;
 import com.netflix.conductor.annotations.Audit;
+import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.service.common.BulkResponse;
-import com.netflix.conductor.service.utils.ServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,7 +31,6 @@ import java.util.List;
 @Singleton
 @Trace
 public class WorkflowBulkServiceImpl implements WorkflowBulkService {
-    private static final int MAX_REQUEST_ITEMS = 1000;
     private final WorkflowExecutor workflowExecutor;
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowBulkService.class);
 
@@ -45,9 +44,9 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * @param workflowIds - list of workflow Ids  to perform pause operation on
      * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
      */
-    public BulkResponse pauseWorkflow(List<String> workflowIds) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
+    @Service
+    public BulkResponse pauseWorkflow(List<String> workflowIds){
+
         for (String workflowId : workflowIds) {
             workflowExecutor.pauseWorkflow(workflowId);
         }
@@ -71,11 +70,9 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * @param workflowIds - list of workflow Ids  to perform resume operation on
      * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
      */
+    @Service
     public BulkResponse resumeWorkflow(List<String> workflowIds) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
-
-        BulkResponse bulkResponse = new BulkResponse();
+    BulkResponse bulkResponse = new BulkResponse();
         for (String workflowId : workflowIds) {
             workflowExecutor.resumeWorkflow(workflowId);
             try {
@@ -96,10 +93,9 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * @param useLatestDefinitions if true, use latest workflow and task definitions upon restart
      * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
      */
+    @Service
     public BulkResponse restart(List<String> workflowIds, boolean useLatestDefinitions) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
-        BulkResponse bulkResponse = new BulkResponse();
+    BulkResponse bulkResponse = new BulkResponse();
         for (String workflowId : workflowIds) {
             workflowExecutor.rewind(workflowId, useLatestDefinitions);
             try {
@@ -118,10 +114,9 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * @param workflowIds - list of workflow Ids  to perform retry operation on
      * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
      */
+    @Service
     public BulkResponse retry(List<String> workflowIds) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "WorkflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
-        BulkResponse bulkResponse = new BulkResponse();
+    BulkResponse bulkResponse = new BulkResponse();
         for (String workflowId : workflowIds) {
             workflowExecutor.retry(workflowId);
             try {
@@ -141,10 +136,9 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
      * @param reason - description to be specified for the terminated workflow for future references.
      * @return bulk response object containing a list of succeeded workflows and a list of failed ones with errors
      */
+    @Service
     public BulkResponse terminate(List<String> workflowIds, String reason) {
-        ServiceUtils.checkNotNullOrEmpty(workflowIds, "workflowIds list cannot be null.");
-        ServiceUtils.checkArgument(workflowIds.size() < MAX_REQUEST_ITEMS, String.format("Cannot process more than %s workflows. Please use multiple requests", MAX_REQUEST_ITEMS));
-        BulkResponse bulkResponse = new BulkResponse();
+     BulkResponse bulkResponse = new BulkResponse();
         for (String workflowId : workflowIds) {
             workflowExecutor.terminateWorkflow(workflowId, reason);
             try {

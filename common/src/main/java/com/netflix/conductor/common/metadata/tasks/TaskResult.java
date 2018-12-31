@@ -19,6 +19,7 @@ package com.netflix.conductor.common.metadata.tasks;
 import com.google.protobuf.Any;
 import com.github.vmg.protogen.annotations.*;
 
+import javax.validation.constraints.NotEmpty;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,9 +38,11 @@ public class TaskResult {
         IN_PROGRESS, FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED, SCHEDULED;        //SCHEDULED is added for the backward compatibility and should NOT be used when updating the task result
     }
 
+    @NotEmpty(message = "Workflow Id cannot be null or empty")
     @ProtoField(id = 1)
     private String workflowInstanceId;
 
+    @NotEmpty(message = "Task ID cannot be null or empty")
     @ProtoField(id = 2)
     private String taskId;
 

@@ -16,9 +16,8 @@
 
 package com.netflix.conductor.service;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Audit;
+import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -28,7 +27,7 @@ import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.service.utils.ServiceUtils;
+import com.netflix.conductor.validations.ValidationContext;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -46,11 +45,14 @@ public class MetadataServiceImpl implements MetadataService {
     public MetadataServiceImpl(MetadataDAO metadataDAO, EventQueues eventQueues) {
         this.metadataDAO = metadataDAO;
         this.eventQueues = eventQueues;
+
+        ValidationContext.initialize(metadataDAO);
     }
 
     /**
      * @param taskDefinitions Task Definitions to register
      */
+    @Service
     public void registerTaskDef(List<TaskDef> taskDefinitions) {
         for (TaskDef taskDefinition : taskDefinitions) {
             taskDefinition.setCreatedBy(WorkflowContext.get().getClientApp());
@@ -58,17 +60,14 @@ public class MetadataServiceImpl implements MetadataService {
             taskDefinition.setUpdatedBy(null);
             taskDefinition.setUpdateTime(null);
 
-            ServiceUtils.checkNotNull(taskDefinition,"TaskDef object cannot be null");
-            ServiceUtils.checkNotNull(taskDefinition.getName(),"TaskDef name cannot be null");
-            ServiceUtils.checkArgument(taskDefinition.getResponseTimeoutSeconds()>0, "ResponseTimeoutSeconds must be positive");
-
             metadataDAO.createTaskDef(taskDefinition);
         }
     }
 
-    /**
+    /*
      * @param taskDefinition Task Definition to be updated
      */
+    @Service
     public void updateTaskDef(TaskDef taskDefinition) {
         TaskDef existing = metadataDAO.getTaskDef(taskDefinition.getName());
         if (existing == null) {
@@ -82,6 +81,7 @@ public class MetadataServiceImpl implements MetadataService {
     /**
      * @param taskType Remove task definition
      */
+    @Service
     public void unregisterTaskDef(String taskType) {
         metadataDAO.removeTaskDef(taskType);
     }
@@ -97,6 +97,7 @@ public class MetadataServiceImpl implements MetadataService {
      * @param taskType Task to retrieve
      * @return Task Definition
      */
+    @Service
     public TaskDef getTaskDef(String taskType) {
         TaskDef taskDef = metadataDAO.getTaskDef(taskType);
         if (taskDef == null){
@@ -109,9 +110,8 @@ public class MetadataServiceImpl implements MetadataService {
     /**
      * @param def Workflow definition to be updated
      */
+    @Service
     public void updateWorkflowDef(WorkflowDef def) {
-        Preconditions.checkNotNull(def, "WorkflowDef object cannot be null");
-        Preconditions.checkNotNull(def.getName(), "WorkflowDef name cannot be null");
         metadataDAO.update(def);
     }
 
@@ -119,12 +119,9 @@ public class MetadataServiceImpl implements MetadataService {
      *
      * @param workflowDefList Workflow definitions to be updated.
      */
+    @Service
     public void updateWorkflowDef(List<WorkflowDef> workflowDefList) {
-        ServiceUtils.checkNotNullOrEmpty(workflowDefList, "WorkflowDef list name cannot be null or empty");
         for (WorkflowDef workflowDef : workflowDefList) {
-            //TODO: revisit this error handling
-            ServiceUtils.checkNotNull(workflowDef, "WorkflowDef cannot be null");
-            ServiceUtils.checkNotNullOrEmpty(workflowDef.getName(), "WorkflowDef name cannot be null");
             metadataDAO.update(workflowDef);
         }
     }
@@ -134,6 +131,7 @@ public class MetadataServiceImpl implements MetadataService {
      * @param version Optional.  Version.  If null, then retrieves the latest
      * @return Workflow definition
      */
+    @Service
     public WorkflowDef getWorkflowDef(String name, Integer version) {
         Optional<WorkflowDef> workflowDef;
         if (version == null) {
@@ -150,6 +148,7 @@ public class MetadataServiceImpl implements MetadataService {
      * @param name Name of the workflow to retrieve
      * @return Latest version of the workflow definition
      */
+    @Service
     public Optional<WorkflowDef> getLatestWorkflow(String name) {
         return metadataDAO.getLatest(name);
     }
@@ -158,9 +157,8 @@ public class MetadataServiceImpl implements MetadataService {
         return metadataDAO.getAll();
     }
 
+    @Service
     public void registerWorkflowDef(WorkflowDef workflowDef) {
-        ServiceUtils.checkNotNull(workflowDef, "WorkflowDef cannot be null");
-        ServiceUtils.checkNotNullOrEmpty(workflowDef.getName(), "Workflow name cannot be null or empty");
         if (workflowDef.getName().contains(":")) {
             throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
         }
@@ -175,9 +173,8 @@ public class MetadataServiceImpl implements MetadataService {
      * @param name Name of the workflow definition to be removed
      * @param version Version of the workflow definition to be removed
      */
+    @Service
     public void unregisterWorkflowDef(String name, Integer version) {
-        ServiceUtils.checkNotNullOrEmpty(name, "Workflow name cannot be null");
-        ServiceUtils.checkNotNull(version, "Version is not valid");
         metadataDAO.removeWorkflowDef(name, version);
     }
 
@@ -185,22 +182,25 @@ public class MetadataServiceImpl implements MetadataService {
      * @param eventHandler Event handler to be added.
      *                     Will throw an exception if an event handler already exists with the name
      */
+    @Service
     public void addEventHandler(EventHandler eventHandler) {
-        validateEvent(eventHandler);
+        eventQueues.getQueue(eventHandler.getEvent());
         metadataDAO.addEventHandler(eventHandler);
     }
 
     /**
      * @param eventHandler Event handler to be updated.
      */
+    @Service
     public void updateEventHandler(EventHandler eventHandler) {
-        validateEvent(eventHandler);
+        eventQueues.getQueue(eventHandler.getEvent());
         metadataDAO.updateEventHandler(eventHandler);
     }
 
     /**
      * @param name Removes the event handler from the system
      */
+    @Service
     public void removeEventHandlerStatus(String name) {
         metadataDAO.removeEventHandlerStatus(name);
     }
@@ -217,17 +217,9 @@ public class MetadataServiceImpl implements MetadataService {
      * @param activeOnly if true, returns only the active handlers
      * @return Returns the list of all the event handlers for a given event
      */
+    @Service
     public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
         return metadataDAO.getEventHandlersForEvent(event, activeOnly);
-    }
-
-    @VisibleForTesting
-    void validateEvent(EventHandler eh) {
-        ServiceUtils.checkNotNullOrEmpty(eh.getName(), "Missing event handler name");
-        ServiceUtils.checkNotNullOrEmpty(eh.getEvent(), "Missing event location");
-        ServiceUtils.checkNotNullOrEmpty(eh.getActions(), "No actions specified. Please specify at-least one action");
-        String event = eh.getEvent();
-        eventQueues.getQueue(event);
     }
 
 }

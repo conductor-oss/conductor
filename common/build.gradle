@@ -15,6 +15,12 @@ dependencies {
     compile "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
     compile "javax.inject:javax.inject:${revJavaxInject}"
     compile "com.github.vmg.protogen:protogen-annotations:${revProtogenAnnotations}"
+    compile "org.hibernate:hibernate-validator:${revHiberante}"
+    compile "org.apache.commons:commons-lang3:${revCommonsLang3}"
+    // Bean validation runtime dependencies
+    compile "javax.el:javax.el-api:${revJavaElApi}"
+    // https://mvnrepository.com/artifact/org.glassfish/javax.el
+    compile group: 'org.glassfish', name: 'javax.el', version: "${revJavaElApi}"
 }
 
 import com.github.vmg.protogen.ProtoGenTask;

@@ -39,7 +39,7 @@ import com.netflix.conductor.common.metadata.tasks.Task.Status;
  * @author Viren
  *
  */
-public class TestTask {
+public class TaskTest {
 
     @Test
     public void test() {

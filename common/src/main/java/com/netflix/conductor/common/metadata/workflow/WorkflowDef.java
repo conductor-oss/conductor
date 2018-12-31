@@ -21,6 +21,8 @@ package com.netflix.conductor.common.metadata.workflow;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.google.common.base.MoreObjects;
+import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
+import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
 import com.netflix.conductor.common.metadata.Auditable;
 
 import java.util.HashMap;
@@ -31,14 +33,24 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+import javax.validation.Valid;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+
+
 /**
  * @author Viren
  *
  */
 @ProtoMessage
+@TaskReferenceNameUniqueConstraint
 public class WorkflowDef extends Auditable {
 
+    @NotEmpty(message = "WorkflowDef name cannot be null or empty")
     @ProtoField(id = 1)
+	@NoSemiColonConstraint(message = "Workflow name cannot contain the following set of characters: ':'")
 	private String name;
 
 	@ProtoField(id = 2)
@@ -48,7 +60,9 @@ public class WorkflowDef extends Auditable {
 	private int version = 1;
 
 	@ProtoField(id = 4)
-	private List<WorkflowTask> tasks = new LinkedList<>();
+    @NotNull
+    @NotEmpty(message = "WorkflowTask list cannot be empty")
+	private List<@Valid WorkflowTask> tasks = new LinkedList<>();
 
 	@ProtoField(id = 5)
 	private List<String> inputParameters = new LinkedList<>();
@@ -60,7 +74,8 @@ public class WorkflowDef extends Auditable {
 	private String failureWorkflow;
 
 	@ProtoField(id = 8)
-	private int schemaVersion = 1;
+    @Min(value = 1, message = "workflowDef schemaVersion: ${validatedValue} should be >= {value}")
+    private int schemaVersion = 1;
 
 	//By default a workflow is restartable
 	@ProtoField(id = 9)
@@ -107,7 +122,7 @@ public class WorkflowDef extends Auditable {
 	/**
 	 * @param tasks the tasks to set
 	 */
-	public void setTasks(List<WorkflowTask> tasks) {
+	public void setTasks(List<@Valid WorkflowTask> tasks) {
 		this.tasks = tasks;
 	}
 
@@ -124,7 +139,6 @@ public class WorkflowDef extends Auditable {
 	public void setInputParameters(List<String> inputParameters) {
 		this.inputParameters = inputParameters;
 	}
-
 	
 	/**
 	 * @return the outputParameters
@@ -168,7 +182,6 @@ public class WorkflowDef extends Auditable {
 	public void setVersion(int version) {
 		this.version = version;
 	}
-
 
 	/**
 	 * This method determines if the workflow is restartable or not

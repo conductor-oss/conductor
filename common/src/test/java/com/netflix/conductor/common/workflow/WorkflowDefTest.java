@@ -23,21 +23,21 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import org.junit.Test;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Viren
  *
  */
-public class TestWorkflowDef {
+public class WorkflowDefTest {
 
 	private WorkflowTask createTask(int c){
 		WorkflowTask task = new WorkflowTask();
@@ -48,14 +48,12 @@ public class TestWorkflowDef {
 	
 	@Test
 	public void test() {
-
 		String COND_TASK_WF = "COND_TASK_WF";
 		List<WorkflowTask> wfts = new ArrayList<WorkflowTask>(10);
 		for(int i = 0; i < 10; i++){
 			wfts.add(createTask(i));
 		}
-		
-		
+
 		WorkflowDef wf = new WorkflowDef();
 		wf.setName(COND_TASK_WF);
 		wf.setDescription(COND_TASK_WF);
@@ -69,8 +67,7 @@ public class TestWorkflowDef {
 		dcx.put("sc1", wfts.subList(4, 5));
 		dcx.put("sc2", wfts.subList(5, 7));
 		subCaseTask.setDecisionCases(dcx);
-		
-		
+
 		WorkflowTask caseTask = new WorkflowTask();
 		caseTask.setType(TaskType.DECISION.name());
 		caseTask.setCaseValueParam("case");
@@ -91,7 +88,6 @@ public class TestWorkflowDef {
 		WorkflowTask nxt = wf.getNextTask("case");
 		assertEquals("t8", nxt.getTaskReferenceName());
 		
-		
 		nxt = wf.getNextTask("t8");
 		assertNull(nxt);
 		
@@ -100,6 +96,23 @@ public class TestWorkflowDef {
 		
 		nxt = wf.getNextTask("case2");
 		assertEquals("t1", nxt.getTaskReferenceName());
-	
 	}
+
+	@Test
+	public void testWorkflowDefConstraints() {
+        WorkflowDef workflowDef = new WorkflowDef();//name is null
+        workflowDef.setSchemaVersion(1);
+
+        ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+        Validator validator = factory.getValidator();
+        Set<ConstraintViolation<Object>> result = validator.validate(workflowDef);
+        assertEquals(2, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(validationErrors.contains("WorkflowDef name cannot be null or empty"));
+        assertTrue(validationErrors.contains("WorkflowTask list cannot be empty"));
+        //assertTrue(validationErrors.contains("workflowDef schemaVersion: 1 should be >= 2"));
+    }
 }

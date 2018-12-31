@@ -20,6 +20,9 @@ package com.netflix.conductor.common.metadata.workflow;
 
 import com.github.vmg.protogen.annotations.*;
 
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+
 /**
  * @author Viren
  *
@@ -28,6 +31,8 @@ import com.github.vmg.protogen.annotations.*;
 public class SubWorkflowParams {
 
     @ProtoField(id = 1)
+    @NotNull(message = "SubWorkflowParams name cannot be null")
+    @NotEmpty(message = "SubWorkflowParams name cannot be empty")
     private String name;
 
     @ProtoField(id = 2)

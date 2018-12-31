@@ -16,12 +16,12 @@
 package com.netflix.conductor.service;
 
 import com.netflix.conductor.annotations.Audit;
+import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.service.utils.ServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,8 +88,8 @@ public class AdminServiceImpl implements AdminService {
      * @param count Number of entries
      * @return list of pending {@link Task}
      */
+    @Service
     public List<Task> getListOfPendingTask(String taskType, Integer start, Integer count) {
-        ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
         List<Task> tasks = executionService.getPendingTasksForTaskType(taskType);
         int total = start + count;
         total = (tasks.size() > total) ? total : tasks.size();
@@ -103,9 +103,10 @@ public class AdminServiceImpl implements AdminService {
      * @param workflowId Id of the workflow
      * @return the id of the workflow instance that can be use for tracking.
      */
+    @Service
     public String requeueSweep(String workflowId) {
-        ServiceUtils.checkNotNullOrEmpty(workflowId, "WorkflowId cannot be null or empty.");
         boolean pushed = queueDAO.pushIfNotExists(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency());
         return pushed + "." + workflowId;
     }
+
 }

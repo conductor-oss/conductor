@@ -15,7 +15,6 @@
  */
 package com.netflix.conductor.service;
 
-
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -24,13 +23,14 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 
 public interface TaskService {
-
-
-    /**
+    /*
      * Poll for a task of a certain type.
      *
      * @param taskType Task name
@@ -38,7 +38,7 @@ public interface TaskService {
      * @param domain   Domain of the workflow
      * @return polled {@link Task}
      */
-    Task poll(String taskType, String workerId, String domain);
+    Task poll(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType, String workerId, String domain);
 
     /**
      * Batch Poll for a task of a certain type.
@@ -50,7 +50,7 @@ public interface TaskService {
      * @param timeout  Timeout for polling in milliseconds
      * @return list of {@link Task}
      */
-    List<Task> batchPoll(String taskType, String workerId, String domain, Integer count, Integer timeout);
+    List<Task> batchPoll(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType, String workerId, String domain, Integer count, Integer timeout);
 
     /**
      * Get in progress tasks. The results are paginated.
@@ -60,7 +60,7 @@ public interface TaskService {
      * @param count    Number of entries
      * @return list of {@link Task}
      */
-    List<Task> getTasks(String taskType, String startKey, Integer count);
+    List<Task> getTasks(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType, String startKey, Integer count);
 
     /**
      * Get in progress task for a given workflow id.
@@ -69,7 +69,8 @@ public interface TaskService {
      * @param taskReferenceName Task reference name.
      * @return instance of {@link Task}
      */
-    Task getPendingTaskForWorkflow(String workflowId, String taskReferenceName);
+    Task getPendingTaskForWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
+                                   @NotEmpty(message = "TaskReferenceName cannot be null or empty.") String taskReferenceName);
 
     /**
      * Updates a task.
@@ -77,7 +78,7 @@ public interface TaskService {
      * @param taskResult Instance of {@link TaskResult}
      * @return task Id of the updated task.
      */
-    String updateTask(TaskResult taskResult);
+    String updateTask(@NotNull(message = "TaskResult cannot be null or empty.") @Valid TaskResult taskResult);
 
     /**
      * Ack Task is received.
@@ -86,7 +87,8 @@ public interface TaskService {
      * @param workerId Id of the worker
      * @return `true|false` if task if received or not
      */
-    String ackTaskReceived(String taskId, String workerId);
+    String ackTaskReceived(@NotEmpty(message = "TaskId cannot be null or empty.") String taskId,
+                           @NotEmpty(message = "WorkerID cannot be null or empty.") String workerId);
 
     /**
      * Ack Task is received.
@@ -94,7 +96,7 @@ public interface TaskService {
      * @param taskId   Id of the task
      * @return `true|false` if task if received or not
      */
-    boolean ackTaskReceived(String taskId);
+    boolean ackTaskReceived(@NotEmpty(message = "TaskId cannot be null or empty.") String taskId);
 
     /**
      * Log Task Execution Details.
@@ -102,7 +104,7 @@ public interface TaskService {
      * @param taskId Id of the task
      * @param log    Details you want to log
      */
-    void log(String taskId, String log);
+    void log(@NotEmpty(message = "TaskId cannot be null or empty.") String taskId, String log);
 
     /**
      * Get Task Execution Logs.
@@ -110,7 +112,7 @@ public interface TaskService {
      * @param taskId Id of the task.
      * @return list of {@link TaskExecLog}
      */
-    List<TaskExecLog> getTaskLogs(String taskId);
+    List<TaskExecLog> getTaskLogs(@NotEmpty(message = "TaskId cannot be null or empty.") String taskId);
 
     /**
      * Get task by Id.
@@ -118,7 +120,7 @@ public interface TaskService {
      * @param taskId Id of the task.
      * @return instance of {@link Task}
      */
-    Task getTask(String taskId);
+    Task getTask(@NotEmpty(message = "TaskId cannot be null or empty.") String taskId);
 
     /**
      * Remove Task from a Task type queue.
@@ -126,14 +128,15 @@ public interface TaskService {
      * @param taskType Task Name
      * @param taskId   ID of the task
      */
-    void removeTaskFromQueue(String taskType, String taskId);
+    void removeTaskFromQueue(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType,
+                             @NotEmpty(message = "TaskId cannot be null or empty.") String taskId);
 
     /**
      * Remove Task from a Task type queue.
      *
      * @param taskId   ID of the task
      */
-    void removeTaskFromQueue(String taskId);
+    void removeTaskFromQueue(@NotEmpty(message = "TaskId cannot be null or empty.") String taskId);
 
     /**
      * Get Task type queue sizes.
@@ -141,7 +144,7 @@ public interface TaskService {
      * @param taskTypes List of task types.
      * @return map of task type as Key and queue size as value.
      */
-    Map<String, Integer> getTaskQueueSizes(List<String> taskTypes);
+    Map<String, Integer> getTaskQueueSizes(@NotEmpty(message = "List of taskType cannot be null or empty") List<@NotEmpty String> taskTypes);
 
     /**
      * Get the details about each queue.
@@ -163,7 +166,7 @@ public interface TaskService {
      * @param taskType Task Name
      * @return list of {@link PollData}
      */
-    List<PollData> getPollData(String taskType);
+    List<PollData> getPollData(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType);
 
     /**
      * Get the last poll data for all task types.
@@ -185,7 +188,7 @@ public interface TaskService {
      * @param taskType Task name.
      * @return number of tasks requeued.
      */
-    String requeuePendingTask(String taskType);
+    String requeuePendingTask(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType);
 
     /**
      * Search for tasks based in payload and other parameters. Use sort options as ASC or DESC e.g.

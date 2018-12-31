@@ -16,11 +16,11 @@
 package com.netflix.conductor.service;
 
 import com.netflix.conductor.annotations.Audit;
+import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.events.EventProcessor;
 import com.netflix.conductor.core.events.EventQueues;
-import com.netflix.conductor.service.utils.ServiceUtils;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -47,6 +47,7 @@ public class EventServiceImpl implements EventService {
      * Add a new event handler.
      * @param eventHandler Instance of {@link EventHandler}
      */
+    @Service
     public void addEventHandler(EventHandler eventHandler) {
         metadataService.addEventHandler(eventHandler);
     }
@@ -55,6 +56,7 @@ public class EventServiceImpl implements EventService {
      * Update an existing event handler.
      * @param eventHandler Instance of {@link EventHandler}
      */
+    @Service
     public void updateEventHandler(EventHandler eventHandler) {
         metadataService.updateEventHandler(eventHandler);
     }
@@ -63,8 +65,8 @@ public class EventServiceImpl implements EventService {
      * Remove an event handler.
      * @param name Event name
      */
+    @Service
     public void removeEventHandlerStatus(String name) {
-        ServiceUtils.checkNotNullOrEmpty(name, "Name cannot be null or empty.");
         metadataService.removeEventHandlerStatus(name);
     }
 
@@ -82,8 +84,8 @@ public class EventServiceImpl implements EventService {
      * @param activeOnly `true|false` for active only events
      * @return list of {@link EventHandler}
      */
+    @Service
     public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
-        ServiceUtils.checkNotNullOrEmpty(event, "Event cannot be null or empty.");
         return metadataService.getEventHandlersForEvent(event, activeOnly);
     }
 

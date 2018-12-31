@@ -15,8 +15,8 @@
  */
 package com.netflix.conductor.service;
 
-
 import com.netflix.conductor.annotations.Audit;
+import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -28,7 +28,6 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
-import com.netflix.conductor.service.utils.ServiceUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,8 +65,8 @@ public class TaskServiceImpl implements TaskService {
      * @param domain   Domain of the workflow
      * @return polled {@link Task}
      */
+    @Service
     public Task poll(String taskType, String workerId, String domain) {
-        ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
         LOGGER.debug("Task being polled: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
         Task task = executionService.getLastPollTask(taskType, workerId, domain);
         if (task != null) {
@@ -87,8 +86,8 @@ public class TaskServiceImpl implements TaskService {
      * @param timeout  Timeout for polling in milliseconds
      * @return list of {@link Task}
      */
+    @Service
     public List<Task> batchPoll(String taskType, String workerId, String domain, Integer count, Integer timeout) {
-        ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
         List<Task> polledTasks = executionService.poll(taskType, workerId, domain, count, timeout);
         LOGGER.debug("The Tasks {} being returned for /tasks/poll/{}?{}&{}",
                 polledTasks.stream()
@@ -106,8 +105,8 @@ public class TaskServiceImpl implements TaskService {
      * @param count    Number of entries
      * @return list of {@link Task}
      */
+    @Service
     public List<Task> getTasks(String taskType, String startKey, Integer count) {
-        ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
         return executionService.getTasks(taskType, startKey, count);
     }
 
@@ -118,9 +117,8 @@ public class TaskServiceImpl implements TaskService {
      * @param taskReferenceName Task reference name.
      * @return instance of {@link Task}
      */
+    @Service
     public Task getPendingTaskForWorkflow(String workflowId, String taskReferenceName) {
-        ServiceUtils.checkNotNullOrEmpty(workflowId, "WorkflowId cannot be null or empty.");
-        ServiceUtils.checkNotNullOrEmpty(taskReferenceName, "TaskReferenceName cannot be null or empty.");
         return executionService.getPendingTaskForWorkflow(taskReferenceName, workflowId);
     }
 
@@ -130,10 +128,8 @@ public class TaskServiceImpl implements TaskService {
      * @param taskResult Instance of {@link TaskResult}
      * @return task Id of the updated task.
      */
+    @Service
     public String updateTask(TaskResult taskResult) {
-        ServiceUtils.checkNotNull(taskResult, "TaskResult cannot be null or empty.");
-        ServiceUtils.checkNotNullOrEmpty(taskResult.getWorkflowInstanceId(), "Workflow Id cannot be null or empty");
-        ServiceUtils.checkNotNullOrEmpty(taskResult.getTaskId(), "Task ID cannot be null or empty");
         LOGGER.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
         executionService.updateTask(taskResult);
         LOGGER.debug("Task: {} updated successfully with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
@@ -147,6 +143,7 @@ public class TaskServiceImpl implements TaskService {
      * @param workerId Id of the worker
      * @return `true|false` if task if received or not
      */
+    @Service
     public String ackTaskReceived(String taskId, String workerId) {
         LOGGER.debug("Ack received for task: {} from worker: {}", taskId, workerId);
         return String.valueOf(ackTaskReceived(taskId));
@@ -158,8 +155,8 @@ public class TaskServiceImpl implements TaskService {
      * @param taskId   Id of the task
      * @return `true|false` if task if received or not
      */
+    @Service
     public boolean ackTaskReceived(String taskId) {
-        ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
         LOGGER.debug("Ack received for task: {}", taskId);
         boolean ackResult;
         try {
@@ -179,8 +176,8 @@ public class TaskServiceImpl implements TaskService {
      * @param taskId Id of the task
      * @param log    Details you want to log
      */
+    @Service
     public void log(String taskId, String log) {
-        ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
         executionService.log(taskId, log);
     }
 
@@ -190,8 +187,8 @@ public class TaskServiceImpl implements TaskService {
      * @param taskId Id of the task.
      * @return list of {@link TaskExecLog}
      */
+    @Service
     public List<TaskExecLog> getTaskLogs(String taskId) {
-        ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
         return executionService.getTaskLogs(taskId);
     }
 
@@ -201,9 +198,8 @@ public class TaskServiceImpl implements TaskService {
      * @param taskId Id of the task.
      * @return instance of {@link Task}
      */
+    @Service
     public Task getTask(String taskId) {
-        ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
-        //TODO: add check if return task is null or not
         return executionService.getTask(taskId);
     }
 
@@ -213,9 +209,9 @@ public class TaskServiceImpl implements TaskService {
      * @param taskType Task Name
      * @param taskId   ID of the task
      */
+    @Service
     public void removeTaskFromQueue(String taskType, String taskId) {
-        ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
-        removeTaskFromQueue(taskId);
+        executionService.removeTaskfromQueue(taskId);
     }
 
     /**
@@ -223,8 +219,8 @@ public class TaskServiceImpl implements TaskService {
      *
      * @param taskId   ID of the task
      */
+    @Service
     public void removeTaskFromQueue(String taskId) {
-        ServiceUtils.checkNotNullOrEmpty(taskId, "TaskId cannot be null or empty.");
         executionService.removeTaskfromQueue(taskId);
     }
 
@@ -234,6 +230,7 @@ public class TaskServiceImpl implements TaskService {
      * @param taskTypes List of task types.
      * @return map of task type as Key and queue size as value.
      */
+    @Service
     public Map<String, Integer> getTaskQueueSizes(List<String> taskTypes) {
         return executionService.getTaskQueueSizes(taskTypes);
     }
@@ -264,9 +261,9 @@ public class TaskServiceImpl implements TaskService {
      * @param taskType Task Name
      * @return list of {@link PollData}
      */
+    @Service
     public List<PollData> getPollData(String taskType) {
-        ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
-        //TODO: check if taskType is valid or not
+        //TODO: check task type is valid or not
         return executionService.getPollData(taskType);
     }
 
@@ -294,8 +291,8 @@ public class TaskServiceImpl implements TaskService {
      * @param taskType Task name.
      * @return number of tasks requeued.
      */
+    @Service
     public String requeuePendingTask(String taskType) {
-        ServiceUtils.checkNotNullOrEmpty(taskType, "TaskType cannot be null or empty.");
         return String.valueOf(executionService.requeuePendingTasks(taskType));
     }
 
