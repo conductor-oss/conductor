@@ -113,16 +113,30 @@ public @interface WorkflowTaskTypeConstraint {
         private boolean isDynamicForkJoinValid(WorkflowTask workflowTask, ConstraintValidatorContext context) {
             boolean valid = true;
 
-            if (workflowTask.getDynamicForkTasksParam() == null) {
-                String message = String.format(PARAM_REQUIRED_STRING_FORMAT, "dynamicForkTasksParam", TaskType.FORK_JOIN_DYNAMIC, workflowTask.getName());
+            //For DYNAMIC_FORK_JOIN_TASK support dynamicForkJoinTasksParam or combination of dynamicForkTasksParam and dynamicForkTasksInputParamName.
+            // Both are not allowed.
+            if (workflowTask.getDynamicForkJoinTasksParam() != null &&
+                    (workflowTask.getDynamicForkTasksParam() != null || workflowTask.getDynamicForkTasksInputParamName() != null)) {
+                String message = String.format("dynamicForkJoinTasksParam or combination of dynamicForkTasksInputParamName and dynamicForkTasksParam cam be used for taskType: %s taskName: %s", TaskType.FORK_JOIN_DYNAMIC, workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
-                valid = false;
+                return false;
             }
-            if (workflowTask.getDynamicForkTasksInputParamName() == null) {
-                String message = String.format(PARAM_REQUIRED_STRING_FORMAT, "dynamicForkTasksInputParamName", TaskType.FORK_JOIN_DYNAMIC, workflowTask.getName());
-                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
-                valid = false;
+
+            if (workflowTask.getDynamicForkJoinTasksParam() != null) {
+                return valid;
+            } else {
+                if (workflowTask.getDynamicForkTasksParam() == null) {
+                    String message = String.format(PARAM_REQUIRED_STRING_FORMAT, "dynamicForkTasksParam", TaskType.FORK_JOIN_DYNAMIC, workflowTask.getName());
+                    context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                    valid = false;
+                }
+                if (workflowTask.getDynamicForkTasksInputParamName() == null) {
+                    String message = String.format(PARAM_REQUIRED_STRING_FORMAT, "dynamicForkTasksInputParamName", TaskType.FORK_JOIN_DYNAMIC, workflowTask.getName());
+                    context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                    valid = false;
+                }
             }
+
             return valid;
         }
 
