@@ -3,6 +3,7 @@ package com.netflix.conductor.validations;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.validation.ValidationError;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.hibernate.validator.HibernateValidator;
 import org.hibernate.validator.HibernateValidatorConfiguration;
@@ -161,6 +162,106 @@ public class WorkflowTaskTypeConstraintTest {
 
         assertTrue(validationErrors.contains("dynamicForkTasksInputParamName field is required for taskType: FORK_JOIN_DYNAMIC taskName: encode"));
         assertTrue(validationErrors.contains("dynamicForkTasksParam field is required for taskType: FORK_JOIN_DYNAMIC taskName: encode"));
+    }
+
+    @Test
+    public void testWorkflowTaskTypeForJoinDynamicLegacy() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("FORK_JOIN_DYNAMIC");
+        workflowTask.setDynamicForkJoinTasksParam("taskList");
+
+        ConstraintMapping mapping = config.createConstraintMapping();
+
+        mapping.type(WorkflowTask.class)
+                .constraint(new WorkflowTaskTypeConstraintDef());
+
+        Validator validator = config.addMapping(mapping)
+                .buildValidatorFactory()
+                .getValidator();
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testWorkflowTaskTypeForJoinDynamicWithForJoinTaskParam() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("FORK_JOIN_DYNAMIC");
+        workflowTask.setDynamicForkJoinTasksParam("taskList");
+        workflowTask.setDynamicForkTasksInputParamName("ForkTaskInputParam");
+
+        ConstraintMapping mapping = config.createConstraintMapping();
+
+        mapping.type(WorkflowTask.class)
+                .constraint(new WorkflowTaskTypeConstraintDef());
+
+        Validator validator = config.addMapping(mapping)
+                .buildValidatorFactory()
+                .getValidator();
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(1, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(validationErrors.contains("dynamicForkJoinTasksParam or combination of dynamicForkTasksInputParamName and dynamicForkTasksParam cam be used for taskType: FORK_JOIN_DYNAMIC taskName: encode"));
+    }
+
+    @Test
+    public void testWorkflowTaskTypeForJoinDynamicValid() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("FORK_JOIN_DYNAMIC");
+        workflowTask.setDynamicForkTasksParam("ForkTasksParam");
+        workflowTask.setDynamicForkTasksInputParamName("ForkTaskInputParam");
+
+        ConstraintMapping mapping = config.createConstraintMapping();
+
+        mapping.type(WorkflowTask.class)
+                .constraint(new WorkflowTaskTypeConstraintDef());
+
+        Validator validator = config.addMapping(mapping)
+                .buildValidatorFactory()
+                .getValidator();
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testWorkflowTaskTypeForJoinDynamicWithForJoinTaskParamAndInputTaskParam() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("FORK_JOIN_DYNAMIC");
+        workflowTask.setDynamicForkJoinTasksParam("taskList");
+        workflowTask.setDynamicForkTasksInputParamName("ForkTaskInputParam");
+        workflowTask.setDynamicForkTasksParam("ForkTasksParam");
+
+        ConstraintMapping mapping = config.createConstraintMapping();
+
+        mapping.type(WorkflowTask.class)
+                .constraint(new WorkflowTaskTypeConstraintDef());
+
+        Validator validator = config.addMapping(mapping)
+                .buildValidatorFactory()
+                .getValidator();
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(1, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(validationErrors.contains("dynamicForkJoinTasksParam or combination of dynamicForkTasksInputParamName and dynamicForkTasksParam cam be used for taskType: FORK_JOIN_DYNAMIC taskName: encode") );
     }
 
     @Test
