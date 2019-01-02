@@ -13,6 +13,7 @@
 package com.netflix.conductor.dao.cassandra;
 
 import com.datastax.driver.core.BatchStatement;
+import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -78,23 +79,23 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     public CassandraExecutionDAO(Session session, ObjectMapper objectMapper, CassandraConfiguration config, Statements statements) {
         super(session, objectMapper, config);
 
-        this.insertWorkflowStatement = session.prepare(statements.getInsertWorkflowStatement());
-        this.insertTaskStatement = session.prepare(statements.getInsertTaskStatement());
+        this.insertWorkflowStatement = session.prepare(statements.getInsertWorkflowStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
+        this.insertTaskStatement = session.prepare(statements.getInsertTaskStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
 
-        this.selectTotalStatement = session.prepare(statements.getSelectTotalStatement());
-        this.selectTaskStatement = session.prepare(statements.getSelectTaskStatement());
-        this.selectWorkflowStatement = session.prepare(statements.getSelectWorkflowStatement());
-        this.selectWorkflowWithTasksStatement = session.prepare(statements.getSelectWorkflowWithTasksStatement());
-        this.selectTaskLookupStatement = session.prepare(statements.getSelectTaskFromLookupTableStatement());
+        this.selectTotalStatement = session.prepare(statements.getSelectTotalStatement()).setConsistencyLevel(config.getReadConsistencyLevel());
+        this.selectTaskStatement = session.prepare(statements.getSelectTaskStatement()).setConsistencyLevel(config.getReadConsistencyLevel());
+        this.selectWorkflowStatement = session.prepare(statements.getSelectWorkflowStatement()).setConsistencyLevel(config.getReadConsistencyLevel());
+        this.selectWorkflowWithTasksStatement = session.prepare(statements.getSelectWorkflowWithTasksStatement()).setConsistencyLevel(config.getReadConsistencyLevel());
+        this.selectTaskLookupStatement = session.prepare(statements.getSelectTaskFromLookupTableStatement()).setConsistencyLevel(config.getReadConsistencyLevel());
 
-        this.updateWorkflowStatement = session.prepare(statements.getUpdateWorkflowStatement());
-        this.updateTotalTasksStatement = session.prepare(statements.getUpdateTotalTasksStatement());
-        this.updateTotalPartitionsStatement = session.prepare(statements.getUpdateTotalPartitionsStatement());
-        this.updateTaskLookupStatement = session.prepare(statements.getUpdateTaskLookupStatement());
+        this.updateWorkflowStatement = session.prepare(statements.getUpdateWorkflowStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
+        this.updateTotalTasksStatement = session.prepare(statements.getUpdateTotalTasksStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
+        this.updateTotalPartitionsStatement = session.prepare(statements.getUpdateTotalPartitionsStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
+        this.updateTaskLookupStatement = session.prepare(statements.getUpdateTaskLookupStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
 
-        this.deleteWorkflowStatement = session.prepare(statements.getDeleteWorkflowStatement());
-        this.deleteTaskStatement = session.prepare(statements.getDeleteTaskStatement());
-        this.deleteTaskLookupStatement = session.prepare(statements.getDeleteTaskLookupStatement());
+        this.deleteWorkflowStatement = session.prepare(statements.getDeleteWorkflowStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
+        this.deleteTaskStatement = session.prepare(statements.getDeleteTaskStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
+        this.deleteTaskLookupStatement = session.prepare(statements.getDeleteTaskLookupStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
     }
 
     @Override
@@ -319,16 +320,18 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         Workflow workflow = getWorkflow(workflowId, true);
 
         // TODO: calculate number of shards and iterate
-        try {
-            recordCassandraDaoRequests("removeWorkflow", "n/a", workflow.getWorkflowName());
-            session.execute(deleteWorkflowStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID));
-        } catch (Exception e) {
-            Monitors.error(CLASS_NAME, "removeWorkflow");
-            String errorMsg = String.format("Failed to remove workflow: %s", workflowId);
-            LOGGER.error(errorMsg, e);
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg);
+        if (workflow != null) {
+            try {
+                recordCassandraDaoRequests("removeWorkflow", "n/a", workflow.getWorkflowName());
+                session.execute(deleteWorkflowStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID));
+            } catch (Exception e) {
+                Monitors.error(CLASS_NAME, "removeWorkflow");
+                String errorMsg = String.format("Failed to remove workflow: %s", workflowId);
+                LOGGER.error(errorMsg, e);
+                throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg);
+            }
+            workflow.getTasks().forEach(this::removeTaskLookup);
         }
-        workflow.getTasks().forEach(this::removeTaskLookup);
     }
 
     /**
