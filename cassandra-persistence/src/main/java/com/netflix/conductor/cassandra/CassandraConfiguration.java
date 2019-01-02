@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.cassandra;
 
+import com.datastax.driver.core.ConsistencyLevel;
 import com.netflix.conductor.core.config.Configuration;
 
 public interface CassandraConfiguration extends Configuration {
@@ -39,6 +40,12 @@ public interface CassandraConfiguration extends Configuration {
 
     String CASSANDRA_SHARD_SIZE_PROPERTY_KEY = "workflow.cassandra.shard.size";
     int CASSANDRA_SHARD_SIZE_DEFAULT_VALUE = 100;
+
+    String CASSANDRA_READ_CONSISTENCY_LEVEL = "workflow.cassandra.read.consistency.level";
+    String CASSANDRA_READ_CONSISTENCY_LEVEL_DEFAULT_VALUE = "LOCAL_QUORUM";
+
+    String CASSANDRA_WRITE_CONSISTENCY_LEVEL = "workflow.cassandra.write.consistency.level";
+    String CASSANDRA_WRITE_CONSISTENCY_LEVEL_DEFAULT_VALUE = "LOCAL_QUORUM";
 
     default String getHostAddress() {
         return getProperty(CASSANDRA_HOST_ADDRESS_PROPERTY_NAME, CASSANDRA_HOST_ADDRESS_DEFAULT_VALUE);
@@ -70,5 +77,13 @@ public interface CassandraConfiguration extends Configuration {
 
     default int getReplicationFactorValue() {
         return getIntProperty(CASSANDRA_REPLICATION_FACTOR_VALUE_PROPERTY_NAME, CASSANDRA_REPLICATION_FACTOR_VALUE_DEFAULT_VALUE);
+    }
+
+    default ConsistencyLevel getReadConsistencyLevel() {
+        return ConsistencyLevel.valueOf(getProperty(CASSANDRA_READ_CONSISTENCY_LEVEL, CASSANDRA_READ_CONSISTENCY_LEVEL_DEFAULT_VALUE));
+    }
+
+    default ConsistencyLevel getWriteConsistencyLevel() {
+        return ConsistencyLevel.valueOf(getProperty(CASSANDRA_WRITE_CONSISTENCY_LEVEL, CASSANDRA_WRITE_CONSISTENCY_LEVEL_DEFAULT_VALUE));
     }
 }
