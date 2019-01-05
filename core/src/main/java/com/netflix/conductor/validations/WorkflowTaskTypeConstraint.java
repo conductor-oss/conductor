@@ -1,5 +1,6 @@
 package com.netflix.conductor.validations;
 
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
@@ -11,6 +12,7 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Optional;
 
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.TYPE;
@@ -128,12 +130,26 @@ public @interface WorkflowTaskTypeConstraint {
 
         private boolean isHttpTaskValid(WorkflowTask workflowTask, ConstraintValidatorContext context) {
             boolean valid = true;
+            boolean isInputParameterSet = false;
+            boolean isInputTemplateSet = false;
 
-            if (workflowTask.getInputParameters() == null || !workflowTask.getInputParameters().containsKey("http_request")) {
+            //Either http_request in WorkflowTask inputParam should be set or in inputTemplate Taskdef should be set
+            if (workflowTask.getInputParameters() != null && workflowTask.getInputParameters().containsKey("http_request")) {
+                isInputParameterSet = true;
+            }
+
+            TaskDef taskDef = Optional.ofNullable(workflowTask.getTaskDefinition()).orElse(ValidationContext.getMetadataDAO().getTaskDef(workflowTask.getName()));
+
+            if (taskDef != null && taskDef.getInputTemplate() != null  && taskDef.getInputTemplate().containsKey("http_request")) {
+                isInputTemplateSet = true;
+            }
+
+            if (!(isInputParameterSet || isInputTemplateSet)) {
                 String message = String.format(PARAM_REQUIRED_STRING_FORMAT, "inputParameters.http_request", TaskType.HTTP, workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             }
+
             return valid;
         }
 
