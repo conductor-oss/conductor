@@ -3,7 +3,6 @@ package com.netflix.conductor.common.constraints;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.ConstraintParamUtil;
-import com.netflix.conductor.common.utils.EnvUtils;
 import org.apache.commons.lang3.mutable.MutableBoolean;
 
 import javax.validation.Constraint;
@@ -14,12 +13,8 @@ import java.lang.annotation.Documented;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import static java.lang.annotation.ElementType.TYPE;
 
@@ -81,10 +76,8 @@ public @interface TaskReferenceNameUniqueConstraint {
                     .filter(workflowTask -> workflowTask.getInputParameters() != null)
                     .forEach(workflowTask -> {
 
-                        List<String> errors = ConstraintParamUtil.extractInputParam(workflowTask.getInputParameters(), workflowTask.getName(), workflow);
-
+                        List<String> errors = ConstraintParamUtil.validateInputParam(workflowTask.getInputParameters(), workflowTask.getName(), workflow);
                         errors.forEach(message -> context.buildConstraintViolationWithTemplate(message).addConstraintViolation());
-
                         if(errors.size() > 0) {
                             valid.setValue(false);
                         }
@@ -92,5 +85,6 @@ public @interface TaskReferenceNameUniqueConstraint {
 
             return valid.getValue();
         }
+
     }
 }

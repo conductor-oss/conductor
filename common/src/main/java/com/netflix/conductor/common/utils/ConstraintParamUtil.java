@@ -11,7 +11,14 @@ import java.util.Map.Entry;
 
 public class ConstraintParamUtil {
 
-    public static List<String> extractInputParam(Map<String, Object> input, String taskName, WorkflowDef workflow) {
+    /**
+     * Validates inputParam and returns a list of errors if input is not valid.
+     * @param input {@link Map} of inputParameters
+     * @param taskName TaskName of inputParameters
+     * @param workflow WorkflowDef
+     * @return {@link List} of error strings.
+     */
+    public static List<String> validateInputParam(Map<String, Object> input, String taskName, WorkflowDef workflow) {
         ArrayList<String> errorList = new ArrayList<>();
 
         for (Entry<String, Object> e : input.entrySet()) {
@@ -20,7 +27,7 @@ public class ConstraintParamUtil {
                 errorList.addAll(extractParamPathComponentsFromString(e.getKey(), value.toString(), taskName, workflow));
             } else if (value instanceof Map) {
                 //recursive call
-                errorList.addAll(extractInputParam((Map<String, Object>) value, taskName, workflow));
+                errorList.addAll( validateInputParam((Map<String, Object>) value, taskName, workflow));
             } else if (value instanceof List) {
                 errorList.addAll(extractListInputParam(e.getKey(), (List<?>) value, taskName, workflow));
             } else {
@@ -36,7 +43,7 @@ public class ConstraintParamUtil {
             if (listVal instanceof String) {
                 errorList.addAll(extractParamPathComponentsFromString(key, listVal.toString(), taskName, workflow));
             } else if (listVal instanceof Map) {
-                errorList.addAll(extractInputParam((Map<String, Object>) listVal, taskName, workflow));
+                errorList.addAll( validateInputParam((Map<String, Object>) listVal, taskName, workflow));
             } else if (listVal instanceof List) {
                 errorList.addAll(extractListInputParam(key, (List<?>) listVal, taskName, workflow));
             }

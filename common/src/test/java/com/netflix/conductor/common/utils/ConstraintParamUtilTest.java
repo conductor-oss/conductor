@@ -22,11 +22,16 @@ public class ConstraintParamUtilTest {
         System.setProperty("TEST_ENV", "test");
     }
 
-    @Test
-    public void testExtractParamPathComponents() {
+    private WorkflowDef constructWorkflowDef() {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setSchemaVersion(2);
         workflowDef.setName("test_env");
+        return workflowDef;
+    }
+
+    @Test
+    public void testExtractParamPathComponents() {
+        WorkflowDef workflowDef = constructWorkflowDef();
 
         WorkflowTask workflowTask_1 = new WorkflowTask();
         workflowTask_1.setName("task_1");
@@ -43,15 +48,13 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.extractInputParam(inputParam, "task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam, "task_1", workflowDef);
         assertEquals(results.size(), 0);
     }
 
     @Test
     public void testExtractParamPathComponentsWithMissingEnvVariable() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setSchemaVersion(2);
-        workflowDef.setName("test_env");
+        WorkflowDef workflowDef = constructWorkflowDef();
 
         WorkflowTask workflowTask_1 = new WorkflowTask();
         workflowTask_1.setName("task_1");
@@ -68,15 +71,13 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.extractInputParam(inputParam, "task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam, "task_1", workflowDef);
         assertEquals(results.size(), 0);
     }
 
     @Test
     public void testExtractParamPathComponentsWithValidEnvVariable() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setSchemaVersion(2);
-        workflowDef.setName("test_env");
+        WorkflowDef workflowDef = constructWorkflowDef();
 
         WorkflowTask workflowTask_1 = new WorkflowTask();
         workflowTask_1.setName("task_1");
@@ -93,15 +94,13 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.extractInputParam(inputParam,"task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam,"task_1", workflowDef);
         assertEquals(results.size(), 0);
     }
 
     @Test
     public void testExtractParamPathComponentsWithValidMap() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setSchemaVersion(2);
-        workflowDef.setName("test_env");
+        WorkflowDef workflowDef = constructWorkflowDef();
 
         WorkflowTask workflowTask_1 = new WorkflowTask();
         workflowTask_1.setName("task_1");
@@ -125,15 +124,13 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.extractInputParam(inputParam,"task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam,"task_1", workflowDef);
         assertEquals(results.size(), 0);
     }
 
     @Test
     public void testExtractParamPathComponentsWithInvalidEnv() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setSchemaVersion(2);
-        workflowDef.setName("test_env");
+        WorkflowDef workflowDef = constructWorkflowDef();
 
         WorkflowTask workflowTask_1 = new WorkflowTask();
         workflowTask_1.setName("task_1");
@@ -155,15 +152,13 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.extractInputParam(inputParam,"task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam,"task_1", workflowDef);
         assertEquals(results.size(), 1);
     }
 
     @Test
     public void testExtractParamPathComponentsWithInputParamEmpty() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setSchemaVersion(2);
-        workflowDef.setName("test_env");
+        WorkflowDef workflowDef = constructWorkflowDef();
 
         WorkflowTask workflowTask_1 = new WorkflowTask();
         workflowTask_1.setName("task_1");
@@ -179,15 +174,13 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.extractInputParam(inputParam,"task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam,"task_1", workflowDef);
         assertEquals(results.size(), 1);
     }
 
     @Test
     public void testExtractParamPathComponentsWithInputFieldWithSpace() {
-        WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setSchemaVersion(2);
-        workflowDef.setName("test_env");
+        WorkflowDef workflowDef = constructWorkflowDef();
 
         WorkflowTask workflowTask_1 = new WorkflowTask();
         workflowTask_1.setName("task_1");
@@ -203,7 +196,7 @@ public class ConstraintParamUtilTest {
 
         workflowDef.setTasks(tasks);
 
-        List<String> results = ConstraintParamUtil.extractInputParam(inputParam,"task_1", workflowDef);
+        List<String> results = ConstraintParamUtil.validateInputParam(inputParam,"task_1", workflowDef);
         assertEquals(results.size(), 1);
     }
 }
