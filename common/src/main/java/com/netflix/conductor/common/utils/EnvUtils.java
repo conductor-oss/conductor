@@ -6,8 +6,7 @@ public class EnvUtils {
     public enum SystemParameters {
         CPEWF_TASK_ID,
         NETFLIX_ENV,
-        NETFLIX_STACK,
-        NETFLIX_ENVIRONMENT
+        NETFLIX_STACK
     }
 
     public static boolean isEnvironmentVariable(String test) {
