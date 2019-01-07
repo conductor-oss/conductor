@@ -17,7 +17,6 @@ package com.netflix.conductor.common.metadata.workflow;
 
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
-import com.netflix.conductor.common.constraints.TaskInputParamConstraint;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 
 import javax.validation.Valid;
@@ -82,7 +81,6 @@ public class WorkflowTask {
 	//Key: Name of the input parameter.  MUST be one of the keys defined in TaskDef (e.g. fileName)
 	//Value: mapping of the parameter from another task (e.g. task1.someOutputParameterAsFileName)
 	@ProtoField(id = 4)
-	@TaskInputParamConstraint
 	private Map<String, Object> inputParameters = new HashMap<>();
 
 	@ProtoField(id = 5)

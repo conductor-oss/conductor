@@ -14,9 +14,7 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.HashMap;
-import java.util.Objects;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
+import java.util.List;
 
 import static java.lang.annotation.ElementType.TYPE;
 
@@ -78,26 +76,15 @@ public @interface TaskReferenceNameUniqueConstraint {
                     .filter(workflowTask -> workflowTask.getInputParameters() != null)
                     .forEach(workflowTask -> {
 
-                        workflowTask.getInputParameters()
-                                .forEach((key, inputParam) -> {
-                                    String paramPath = Objects.toString(inputParam, "");
-                                    String[] paramPathComponents = ConstraintParamUtil.extractParamPathComponents(paramPath);
-                                    if (paramPathComponents != null) {
-                                        String source = paramPathComponents[0];    //workflow, or task reference name
-                                        if (!"workflow".equals(source)) {
-                                            WorkflowTask task = workflow.getTaskByRefName(source);
-                                            if (task == null) {
-                                                valid.setValue(false);
-                                                String message = String.format("taskReferenceName: %s for given task: %s input value: %s of input parameter: %s" +
-                                                        " is not defined in workflow definition.", source,  workflowTask.getName(), key, paramPath);
-                                                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
-                                            }
-                                        }
-                                    }
-                                });
+                        List<String> errors = ConstraintParamUtil.validateInputParam(workflowTask.getInputParameters(), workflowTask.getName(), workflow);
+                        errors.forEach(message -> context.buildConstraintViolationWithTemplate(message).addConstraintViolation());
+                        if(errors.size() > 0) {
+                            valid.setValue(false);
+                        }
                     });
 
             return valid.getValue();
         }
+
     }
 }
