@@ -159,7 +159,7 @@ public class WorkflowResource {
     @PUT
     @Path("/{workflowId}/skiptask/{taskReferenceName}")
     @ApiOperation("Skips a given task from a current running workflow")
-    @Consumes(MediaType.WILDCARD)
+    @Consumes(MediaType.APPLICATION_JSON)
     public void skipTaskFromWorkflow(@PathParam("workflowId") String workflowId,
                                      @PathParam("taskReferenceName") String taskReferenceName,
                                      SkipTaskRequest skipTaskRequest) {

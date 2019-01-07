@@ -298,12 +298,11 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 
 	@Override
-	public void removeTask(String taskId) {
-
+	public boolean removeTask(String taskId) {
 		Task task = getTask(taskId);
 		if(task == null) {
-			logger.warn("No such Task by id {}", taskId);
-			return;
+			logger.warn("No such task found by id {}", taskId);
+			return false;
 		}
 		String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
 
@@ -314,6 +313,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		dynoClient.del(nsKey(TASK, task.getTaskId()));
 		dynoClient.zrem(nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName()), task.getTaskId());
 		recordRedisDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
+		return true;
 	}
 
     @Override
@@ -373,21 +373,25 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 
 	@Override
-	public void removeWorkflow(String workflowId) {
-			Workflow wf = getWorkflow(workflowId, true);
+	public boolean removeWorkflow(String workflowId) {
+		Workflow workflow = getWorkflow(workflowId, true);
+		if (workflow != null) {
 			recordRedisDaoRequests("removeWorkflow");
 
 			// Remove from lists
-			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, wf.getWorkflowName(), dateStr(wf.getCreateTime()));
+			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, workflow.getWorkflowName(), dateStr(workflow.getCreateTime()));
 			dynoClient.srem(key, workflowId);
-			dynoClient.srem(nsKey(CORR_ID_TO_WORKFLOWS, wf.getCorrelationId()), workflowId);
-			dynoClient.srem(nsKey(PENDING_WORKFLOWS, wf.getWorkflowName()), workflowId);
+			dynoClient.srem(nsKey(CORR_ID_TO_WORKFLOWS, workflow.getCorrelationId()), workflowId);
+			dynoClient.srem(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflowId);
 
 			// Remove the object
 			dynoClient.del(nsKey(WORKFLOW, workflowId));
-			for(Task task : wf.getTasks()) {
+			for (Task task : workflow.getTasks()) {
 				removeTask(task.getTaskId());
 			}
+			return true;
+		}
+		return false;
 	}
 
 	@Override
