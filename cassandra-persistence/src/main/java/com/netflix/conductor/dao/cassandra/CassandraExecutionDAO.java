@@ -13,7 +13,6 @@
 package com.netflix.conductor.dao.cassandra;
 
 import com.datastax.driver.core.BatchStatement;
-import com.datastax.driver.core.ConsistencyLevel;
 import com.datastax.driver.core.PreparedStatement;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -208,13 +207,13 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     }
 
     @Override
-    public void removeTask(String taskId) {
+    public boolean removeTask(String taskId) {
         Task task = getTask(taskId);
         if (task == null) {
-            LOGGER.warn("No such task by id {}", taskId);
-            return;
+            LOGGER.warn("No such task found by id {}", taskId);
+            return false;
         }
-        removeTask(task);
+        return removeTask(task);
     }
 
     @Override
@@ -316,14 +315,17 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     }
 
     @Override
-    public void removeWorkflow(String workflowId) {
+    public boolean removeWorkflow(String workflowId) {
         Workflow workflow = getWorkflow(workflowId, true);
-
+        boolean removed = false;
         // TODO: calculate number of shards and iterate
         if (workflow != null) {
             try {
                 recordCassandraDaoRequests("removeWorkflow", "n/a", workflow.getWorkflowName());
-                session.execute(deleteWorkflowStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID));
+                ResultSet resultSet = session.execute(deleteWorkflowStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID));
+                if (resultSet.wasApplied()) {
+                    removed = true;
+                }
             } catch (Exception e) {
                 Monitors.error(CLASS_NAME, "removeWorkflow");
                 String errorMsg = String.format("Failed to remove workflow: %s", workflowId);
@@ -332,6 +334,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             }
             workflow.getTasks().forEach(this::removeTaskLookup);
         }
+        return removed;
     }
 
     /**
@@ -521,7 +524,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         throw new UnsupportedOperationException("This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
-    private void removeTask(Task task) {
+    private boolean removeTask(Task task) {
         // TODO: calculate shard number based on seq and maxTasksPerShard
         try {
             // get total tasks for this workflow
@@ -536,7 +539,8 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             BatchStatement batchStatement = new BatchStatement();
             batchStatement.add(deleteTaskStatement.bind(UUID.fromString(task.getWorkflowInstanceId()), DEFAULT_SHARD_ID, task.getTaskId()));
             batchStatement.add(updateTotalTasksStatement.bind(totalTasks - 1, UUID.fromString(task.getWorkflowInstanceId()), DEFAULT_SHARD_ID));
-            session.execute(batchStatement);
+            ResultSet resultSet = session.execute(batchStatement);
+            return resultSet.wasApplied();
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "removeTask");
             String errorMsg = String.format("Failed to remove task: %s", task.getTaskId());
@@ -546,8 +550,15 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     }
 
     private void removeTaskLookup(Task task) {
-        recordCassandraDaoRequests("removeTaskLookup", task.getTaskType(), task.getWorkflowType());
-        session.execute(deleteTaskLookupStatement.bind(UUID.fromString(task.getTaskId())));
+        try {
+            recordCassandraDaoRequests("removeTaskLookup", task.getTaskType(), task.getWorkflowType());
+            session.execute(deleteTaskLookupStatement.bind(UUID.fromString(task.getTaskId())));
+        } catch (Exception e) {
+            Monitors.error(CLASS_NAME, "removeTaskLookup");
+            String errorMsg = String.format("Failed to remove task lookup: %s", task.getTaskId());
+            LOGGER.error(errorMsg, e);
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg);
+        }
     }
 
     @VisibleForTesting

@@ -489,6 +489,7 @@ public class WorkflowExecutor {
         Workflow workflow = executionDAOFacade.getWorkflowById(wf.getWorkflowId(), false);
 
         if (workflow.getStatus().equals(WorkflowStatus.COMPLETED)) {
+            queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
             executionDAOFacade.removeFromPendingWorkflow(workflow.getWorkflowName(), workflow.getWorkflowId());
             LOGGER.info("Workflow has already been completed.  Current status={}, workflowId= {}", workflow.getStatus(), wf.getWorkflowId());
             return;
