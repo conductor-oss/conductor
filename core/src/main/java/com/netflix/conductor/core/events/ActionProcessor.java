@@ -130,7 +130,7 @@ public class ActionProcessor {
 			workflowInput.put("conductor.event.messageId", messageId);
 			workflowInput.put("conductor.event.name", event);
 
-			String id = executor.startWorkflow(params.getName(), params.getVersion(), params.getCorrelationId(), workflowInput, null, event);
+			String id = executor.startWorkflow(params.getName(), params.getVersion(), params.getCorrelationId(), workflowInput, null, event, params.getTaskToDomain());
 			output.put("workflowId", id);
 
 		} catch (RuntimeException e) {

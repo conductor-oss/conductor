@@ -213,6 +213,7 @@ public abstract class AbstractProtoMapper {
         if (from.getInputMessage() != null) {
             to.setInputMessage( toProto( from.getInputMessage() ) );
         }
+        to.putAllTaskToDomain( from.getTaskToDomain() );
         return to.build();
     }
 
@@ -229,6 +230,7 @@ public abstract class AbstractProtoMapper {
         if (from.hasInputMessage()) {
             to.setInputMessage( fromProto( from.getInputMessage() ) );
         }
+        to.setTaskToDomain( from.getTaskToDomainMap() );
         return to;
     }
 
