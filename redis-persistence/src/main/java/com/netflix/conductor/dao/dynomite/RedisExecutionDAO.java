@@ -127,14 +127,14 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 			recordRedisDaoRequests("createTask", task.getTaskType(), task.getWorkflowType());
 
-			task.setScheduledTime(System.currentTimeMillis());
-
 			String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
 			Long added = dynoClient.hset(nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()), taskKey, task.getTaskId());
 			if (added < 1) {
 				logger.debug("Task already scheduled, skipping the run " + task.getTaskId() + ", ref=" + task.getReferenceTaskName() + ", key=" + taskKey);
 				continue;
 			}
+
+			task.setScheduledTime(System.currentTimeMillis());
 
 			correlateTaskToWorkflowInDS(task.getTaskId(), task.getWorkflowInstanceId());
 			logger.debug("Scheduled task added to WORKFLOW_TO_TASKS workflowId: {}, taskId: {}, taskType: {} during createTasks",
