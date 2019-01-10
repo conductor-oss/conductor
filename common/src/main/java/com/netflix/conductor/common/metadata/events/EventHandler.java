@@ -339,6 +339,9 @@ public class EventHandler {
 		@ProtoField(id = 5)
 		private Any inputMessage;
 
+		@ProtoField(id = 6)
+		private Map<String, String> taskToDomain;
+
 		/**
 		 * @return the name
 		 */
@@ -406,6 +409,14 @@ public class EventHandler {
 
 		public void setInputMessage(Any inputMessage) {
 			this.inputMessage = inputMessage;
+		}
+
+		public Map<String, String> getTaskToDomain() {
+			return taskToDomain;
+		}
+
+		public void setTaskToDomain(Map<String, String> taskToDomain) {
+			this.taskToDomain = taskToDomain;
 		}
 	}
 

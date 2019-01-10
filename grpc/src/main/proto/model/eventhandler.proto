@@ -15,6 +15,7 @@ message EventHandler {
         string correlation_id = 3;
         map<string, google.protobuf.Value> input = 4;
         google.protobuf.Any input_message = 5;
+        map<string, string> task_to_domain = 6;
     }
     message TaskDetails {
         string workflow_id = 1;
