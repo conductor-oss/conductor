@@ -86,8 +86,8 @@ public class WorkflowSummary {
 	}
 	public WorkflowSummary(Workflow workflow) {
 
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-    	sdf.setTimeZone(gmt);
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
+        sdf.setTimeZone(gmt);
     	
 		this.workflowType = workflow.getWorkflowName();
 		this.version = workflow.getWorkflowVersion();
