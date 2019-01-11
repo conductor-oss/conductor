@@ -86,12 +86,28 @@ public class TaskSummary {
 	@ProtoField(id = 16)
 	private String taskId;
 
+	@ProtoField(id = 17)
+	private int seq;
+
+	@ProtoField(id = 18)
+	private String workerId;
+
+	@ProtoField(id = 19)
+	private int retryCount;
+
+	@ProtoField(id = 20)
+	private int pollCount;
+
+	@ProtoField(id = 21)
+	private String referenceTaskName;
+
+
     public TaskSummary() {
     }
 
 	public TaskSummary(Task task) {
-		
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     	sdf.setTimeZone(gmt);
     	
     	this.taskId = task.getTaskId();
@@ -107,6 +123,12 @@ public class TaskSummary {
 		this.status = task.getStatus();
 		this.reasonForIncompletion = task.getReasonForIncompletion();
 		this.queueWaitTime = task.getQueueWaitTime();
+		this.workerId = task.getWorkerId();
+		this.retryCount = task.getRetryCount();
+		this.pollCount = task.getPollCount();
+		this.referenceTaskName = task.getReferenceTaskName();
+		this.seq = task.getSeq();
+
 		if (task.getInputData() != null) {
 			this.input = task.getInputData().toString();
 		}
@@ -348,6 +370,45 @@ public class TaskSummary {
 	public void setTaskId(String taskId) {
 		this.taskId = taskId;
 	}
-	
-	
+
+
+	public String getWorkerId() {
+		return workerId;
+	}
+
+	public void setWorkerId(String workerId) {
+		this.workerId = workerId;
+	}
+
+	public int getRetryCount() {
+		return retryCount;
+	}
+
+	public void setRetryCount(int retryCount) {
+		this.retryCount = retryCount;
+	}
+
+	public int getPollCount() {
+		return pollCount;
+	}
+
+	public void setPollCount(int pollCount) {
+		this.pollCount = pollCount;
+	}
+
+	public String getReferenceTaskName() {
+		return referenceTaskName;
+	}
+
+	public void setReferenceTaskName(String referenceTaskName) {
+		this.referenceTaskName = referenceTaskName;
+	}
+
+	public int getSeq() {
+		return seq;
+	}
+
+	public void setSeq(int seq) {
+		this.seq = seq;
+	}
 }
