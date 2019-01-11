@@ -380,7 +380,7 @@ public class DeciderService {
         rescheduled.setPollCount(0);
         rescheduled.setInputData(new HashMap<>());
         rescheduled.getInputData().putAll(task.getInputData());
-
+        rescheduled.setReasonForIncompletion("");
 
         if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
             rescheduled.setExternalInputPayloadStoragePath(task.getExternalInputPayloadStoragePath());
