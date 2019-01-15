@@ -114,7 +114,7 @@ public class TestWorkflowExecutor {
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
         taskMappers.put("HTTP", new HTTPTaskMapper(parametersUtils, metadataDAO));
 
-        deciderService = new DeciderService(parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers);
+        deciderService = new DeciderService(parametersUtils, queueDAO, metadataDAO, externalPayloadStorageUtils, taskMappers);
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
         workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService, workflowStatusListener, executionDAOFacade, config);
     }
