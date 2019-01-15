@@ -355,7 +355,7 @@ public class DeciderService {
         int retryCount = task.getRetryCount();
 
         if(taskDefinition == null) {
-            taskDefinition = metadataDAO.getTaskDef(task.getTaskType());
+            taskDefinition = metadataDAO.getTaskDef(task.getTaskDefName());
         }
 
         if (!task.getStatus().isRetriable() || SystemTaskType.isBuiltIn(task.getTaskType()) || taskDefinition == null || taskDefinition.getRetryCount() <= retryCount) {
