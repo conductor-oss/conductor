@@ -723,6 +723,7 @@ public class WorkflowExecutor {
             case CANCELED:
             case FAILED:
             case FAILED_WITH_TERMINAL_ERROR:
+            case TIMED_OUT:
                 queueDAO.remove(taskQueueName, taskResult.getTaskId());
                 LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
                 break;
