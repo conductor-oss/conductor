@@ -45,7 +45,6 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.io.InputStream;
 import java.util.Arrays;
@@ -59,7 +58,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -87,6 +85,8 @@ public class TestDeciderOutcomes {
     public void init() {
         metadataDAO = mock(MetadataDAO.class);
         QueueDAO queueDAO = mock(QueueDAO.class);
+        MetadataDAO metadataDAO = mock(MetadataDAO.class);
+
         ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         Configuration configuration = mock(Configuration.class);
         when(configuration.getTaskInputPayloadSizeThresholdKB()).thenReturn(10L);
@@ -111,7 +111,7 @@ public class TestDeciderOutcomes {
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
         taskMappers.put("HTTP", new HTTPTaskMapper(parametersUtils, metadataDAO));
 
-        this.deciderService = new DeciderService(parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers);
+        this.deciderService = new DeciderService(parametersUtils, queueDAO, metadataDAO,  externalPayloadStorageUtils, taskMappers);
     }
 
     @Test

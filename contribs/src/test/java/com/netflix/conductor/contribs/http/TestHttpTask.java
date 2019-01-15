@@ -31,6 +31,7 @@ import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
+import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -288,11 +289,12 @@ public class TestHttpTask {
         workflow.getTasks().add(task);
 
         QueueDAO queueDAO = mock(QueueDAO.class);
+        MetadataDAO metadataDAO = mock(MetadataDAO.class);
         ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
 
         Map<String, TaskMapper> taskMappers = new HashMap<>();
-        new DeciderService(parametersUtils, queueDAO, externalPayloadStorageUtils, taskMappers).decide(workflow);
+        new DeciderService(parametersUtils, queueDAO, metadataDAO, externalPayloadStorageUtils, taskMappers).decide(workflow);
 
         System.out.println(workflow.getTasks());
         System.out.println(workflow.getStatus());
