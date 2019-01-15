@@ -6,7 +6,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertNotNull;
 
-public class TestTaskSummary {
+public class TaskSummaryTest {
 
     @Test
     public void testJsonSerializing() throws Exception {

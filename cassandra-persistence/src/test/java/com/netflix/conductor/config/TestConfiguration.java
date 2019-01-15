@@ -15,6 +15,7 @@
  */
 package com.netflix.conductor.config;
 
+import com.datastax.driver.core.ConsistencyLevel;
 import com.netflix.conductor.cassandra.CassandraConfiguration;
 
 import java.util.Map;
@@ -159,5 +160,15 @@ public class TestConfiguration implements CassandraConfiguration {
     @Override
     public int getReplicationFactorValue() {
         return CASSANDRA_REPLICATION_FACTOR_VALUE_DEFAULT_VALUE;
+    }
+
+    @Override
+    public ConsistencyLevel getReadConsistencyLevel() {
+        return ConsistencyLevel.LOCAL_ONE;
+    }
+
+    @Override
+    public ConsistencyLevel getWriteConsistencyLevel() {
+        return ConsistencyLevel.LOCAL_ONE;
     }
 }

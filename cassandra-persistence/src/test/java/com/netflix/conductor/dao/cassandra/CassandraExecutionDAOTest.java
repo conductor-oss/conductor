@@ -37,6 +37,7 @@ import static com.netflix.conductor.dao.cassandra.CassandraBaseDAO.WorkflowMetad
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class CassandraExecutionDAOTest {
     private final TestConfiguration testConfiguration = new TestConfiguration();
@@ -113,7 +114,8 @@ public class CassandraExecutionDAOTest {
         assertEquals(workflow, found);
 
         // remove the workflow from datastore
-        executionDAO.removeWorkflow(workflowId);
+        boolean removed = executionDAO.removeWorkflow(workflowId);
+        assertTrue(removed);
 
         // read workflow again
         workflow = executionDAO.getWorkflow(workflowId, true);
@@ -220,7 +222,8 @@ public class CassandraExecutionDAOTest {
         assertEquals(task1, pendingTasks.get(0));
 
         // remove a task
-        executionDAO.removeTask(task3.getTaskId());
+        boolean removed = executionDAO.removeTask(task3.getTaskId());
+        assertTrue(removed);
 
         workflowMetadata = executionDAO.getWorkflowMetadata(workflowId);
         assertEquals(2, workflowMetadata.getTotalTasks());
@@ -246,5 +249,15 @@ public class CassandraExecutionDAOTest {
         // try to read removed task
         Task t = executionDAO.getTask(task3.getTaskId());
         assertNull(t);
+
+        // remove the workflow
+        removed = executionDAO.removeWorkflow(workflowId);
+        assertTrue(removed);
+
+        // check task_lookup table
+        foundId = executionDAO.lookupWorkflowIdFromTaskId(task1Id);
+        assertNull(foundId);
+        foundId = executionDAO.lookupWorkflowIdFromTaskId(task2Id);
+        assertNull(foundId);
     }
 }

@@ -32,12 +32,14 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -61,6 +63,10 @@ public class TestActionProcessor {
         startWorkflow.setName("testWorkflow");
         startWorkflow.getInput().put("testInput", "${testId}");
 
+        Map<String, String> taskToDomain = new HashMap<>();
+        taskToDomain.put("*", "dev");
+        startWorkflow.setTaskToDomain(taskToDomain);
+
         Action action = new Action();
         action.setAction(Type.start_workflow);
         action.setStart_workflow(startWorkflow);
@@ -71,7 +77,7 @@ public class TestActionProcessor {
         workflowDef.setName("testWorkflow");
         workflowDef.setVersion(1);
 
-        when(workflowExecutor.startWorkflow(eq("testWorkflow"), eq(null), any(), any(), any(), eq("testEvent")))
+        when(workflowExecutor.startWorkflow(eq("testWorkflow"), eq(null), any(), any(), any(), eq("testEvent"), anyMap()))
                 .thenReturn("workflow_1");
 
         Map<String, Object> output = actionProcessor.execute(action, payload, "testEvent", "testMessage");
@@ -80,10 +86,12 @@ public class TestActionProcessor {
         assertEquals("workflow_1", output.get("workflowId"));
 
         ArgumentCaptor<Map> argumentCaptor = ArgumentCaptor.forClass(Map.class);
-        verify(workflowExecutor).startWorkflow(eq("testWorkflow"), eq(null), any(), argumentCaptor.capture(), any(), eq("testEvent"));
+        ArgumentCaptor<Map> captor = ArgumentCaptor.forClass(Map.class);
+        verify(workflowExecutor).startWorkflow(eq("testWorkflow"), eq(null), any(), argumentCaptor.capture(), any(), eq("testEvent"), captor.capture());
         assertEquals("test_1", argumentCaptor.getValue().get("testInput"));
         assertEquals("testMessage", argumentCaptor.getValue().get("conductor.event.messageId"));
         assertEquals("testEvent", argumentCaptor.getValue().get("conductor.event.name"));
+        assertEquals(taskToDomain, captor.getValue());
     }
 
     @Test

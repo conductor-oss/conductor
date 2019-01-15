@@ -78,23 +78,23 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     public CassandraExecutionDAO(Session session, ObjectMapper objectMapper, CassandraConfiguration config, Statements statements) {
         super(session, objectMapper, config);
 
-        this.insertWorkflowStatement = session.prepare(statements.getInsertWorkflowStatement());
-        this.insertTaskStatement = session.prepare(statements.getInsertTaskStatement());
+        this.insertWorkflowStatement = session.prepare(statements.getInsertWorkflowStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
+        this.insertTaskStatement = session.prepare(statements.getInsertTaskStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
 
-        this.selectTotalStatement = session.prepare(statements.getSelectTotalStatement());
-        this.selectTaskStatement = session.prepare(statements.getSelectTaskStatement());
-        this.selectWorkflowStatement = session.prepare(statements.getSelectWorkflowStatement());
-        this.selectWorkflowWithTasksStatement = session.prepare(statements.getSelectWorkflowWithTasksStatement());
-        this.selectTaskLookupStatement = session.prepare(statements.getSelectTaskFromLookupTableStatement());
+        this.selectTotalStatement = session.prepare(statements.getSelectTotalStatement()).setConsistencyLevel(config.getReadConsistencyLevel());
+        this.selectTaskStatement = session.prepare(statements.getSelectTaskStatement()).setConsistencyLevel(config.getReadConsistencyLevel());
+        this.selectWorkflowStatement = session.prepare(statements.getSelectWorkflowStatement()).setConsistencyLevel(config.getReadConsistencyLevel());
+        this.selectWorkflowWithTasksStatement = session.prepare(statements.getSelectWorkflowWithTasksStatement()).setConsistencyLevel(config.getReadConsistencyLevel());
+        this.selectTaskLookupStatement = session.prepare(statements.getSelectTaskFromLookupTableStatement()).setConsistencyLevel(config.getReadConsistencyLevel());
 
-        this.updateWorkflowStatement = session.prepare(statements.getUpdateWorkflowStatement());
-        this.updateTotalTasksStatement = session.prepare(statements.getUpdateTotalTasksStatement());
-        this.updateTotalPartitionsStatement = session.prepare(statements.getUpdateTotalPartitionsStatement());
-        this.updateTaskLookupStatement = session.prepare(statements.getUpdateTaskLookupStatement());
+        this.updateWorkflowStatement = session.prepare(statements.getUpdateWorkflowStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
+        this.updateTotalTasksStatement = session.prepare(statements.getUpdateTotalTasksStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
+        this.updateTotalPartitionsStatement = session.prepare(statements.getUpdateTotalPartitionsStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
+        this.updateTaskLookupStatement = session.prepare(statements.getUpdateTaskLookupStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
 
-        this.deleteWorkflowStatement = session.prepare(statements.getDeleteWorkflowStatement());
-        this.deleteTaskStatement = session.prepare(statements.getDeleteTaskStatement());
-        this.deleteTaskLookupStatement = session.prepare(statements.getDeleteTaskLookupStatement());
+        this.deleteWorkflowStatement = session.prepare(statements.getDeleteWorkflowStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
+        this.deleteTaskStatement = session.prepare(statements.getDeleteTaskStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
+        this.deleteTaskLookupStatement = session.prepare(statements.getDeleteTaskLookupStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
     }
 
     @Override
@@ -207,13 +207,13 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     }
 
     @Override
-    public void removeTask(String taskId) {
+    public boolean removeTask(String taskId) {
         Task task = getTask(taskId);
         if (task == null) {
-            LOGGER.warn("No such task by id {}", taskId);
-            return;
+            LOGGER.warn("No such task found by id {}", taskId);
+            return false;
         }
-        removeTask(task);
+        return removeTask(task);
     }
 
     @Override
@@ -315,20 +315,26 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     }
 
     @Override
-    public void removeWorkflow(String workflowId) {
+    public boolean removeWorkflow(String workflowId) {
         Workflow workflow = getWorkflow(workflowId, true);
-
+        boolean removed = false;
         // TODO: calculate number of shards and iterate
-        try {
-            recordCassandraDaoRequests("removeWorkflow", "n/a", workflow.getWorkflowName());
-            session.execute(deleteWorkflowStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID));
-        } catch (Exception e) {
-            Monitors.error(CLASS_NAME, "removeWorkflow");
-            String errorMsg = String.format("Failed to remove workflow: %s", workflowId);
-            LOGGER.error(errorMsg, e);
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg);
+        if (workflow != null) {
+            try {
+                recordCassandraDaoRequests("removeWorkflow", "n/a", workflow.getWorkflowName());
+                ResultSet resultSet = session.execute(deleteWorkflowStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID));
+                if (resultSet.wasApplied()) {
+                    removed = true;
+                }
+            } catch (Exception e) {
+                Monitors.error(CLASS_NAME, "removeWorkflow");
+                String errorMsg = String.format("Failed to remove workflow: %s", workflowId);
+                LOGGER.error(errorMsg, e);
+                throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg);
+            }
+            workflow.getTasks().forEach(this::removeTaskLookup);
         }
-        workflow.getTasks().forEach(this::removeTask);
+        return removed;
     }
 
     /**
@@ -371,14 +377,20 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
                     }
                 }
 
-                workflow.setTasks(tasks);
+                if (workflow != null) {
+                    recordCassandraDaoRequests("getWorkflow", "n/a", workflow.getWorkflowName());
+                    workflow.setTasks(tasks);
+                }
             } else {
                 resultSet = session.execute(selectWorkflowStatement.bind(UUID.fromString(workflowId)));
                 workflow = Optional.ofNullable(resultSet.one())
-                        .map(row -> readValue(row.getString(PAYLOAD_KEY), Workflow.class))
+                        .map(row -> {
+                            Workflow wf = readValue(row.getString(PAYLOAD_KEY), Workflow.class);
+                            recordCassandraDaoRequests("getWorkflow", "n/a", wf.getWorkflowName());
+                            return wf;
+                        })
                         .orElse(null);
             }
-            recordCassandraDaoRequests("getWorkflow", "n/a", workflow.getWorkflowName());
             return workflow;
         } catch (ApplicationException e) {
             throw e;
@@ -512,25 +524,38 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         throw new UnsupportedOperationException("This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
-    private void removeTask(Task task) {
+    private boolean removeTask(Task task) {
         // TODO: calculate shard number based on seq and maxTasksPerShard
         try {
             // get total tasks for this workflow
             WorkflowMetadata workflowMetadata = getWorkflowMetadata(task.getWorkflowInstanceId());
             int totalTasks = workflowMetadata.getTotalTasks();
 
-            recordCassandraDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
             // remove from task_lookup table
-            session.execute(deleteTaskLookupStatement.bind(UUID.fromString(task.getTaskId())));
+            removeTaskLookup(task);
 
+            recordCassandraDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
             // delete task from workflows table and decrement total tasks by 1
             BatchStatement batchStatement = new BatchStatement();
             batchStatement.add(deleteTaskStatement.bind(UUID.fromString(task.getWorkflowInstanceId()), DEFAULT_SHARD_ID, task.getTaskId()));
             batchStatement.add(updateTotalTasksStatement.bind(totalTasks - 1, UUID.fromString(task.getWorkflowInstanceId()), DEFAULT_SHARD_ID));
-            session.execute(batchStatement);
+            ResultSet resultSet = session.execute(batchStatement);
+            return resultSet.wasApplied();
         } catch (Exception e) {
             Monitors.error(CLASS_NAME, "removeTask");
             String errorMsg = String.format("Failed to remove task: %s", task.getTaskId());
+            LOGGER.error(errorMsg, e);
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg);
+        }
+    }
+
+    private void removeTaskLookup(Task task) {
+        try {
+            recordCassandraDaoRequests("removeTaskLookup", task.getTaskType(), task.getWorkflowType());
+            session.execute(deleteTaskLookupStatement.bind(UUID.fromString(task.getTaskId())));
+        } catch (Exception e) {
+            Monitors.error(CLASS_NAME, "removeTaskLookup");
+            String errorMsg = String.format("Failed to remove task lookup: %s", task.getTaskId());
             LOGGER.error(errorMsg, e);
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg);
         }

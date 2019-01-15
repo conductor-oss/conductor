@@ -113,11 +113,15 @@ public class TestEventProcessor {
         eventHandler.setName(UUID.randomUUID().toString());
         eventHandler.setActive(true);
 
+        Map<String, String> taskToDomain = new HashMap<>();
+        taskToDomain.put("*", "dev");
+
         Action startWorkflowAction = new Action();
         startWorkflowAction.setAction(Type.start_workflow);
         startWorkflowAction.setStart_workflow(new StartWorkflow());
         startWorkflowAction.getStart_workflow().setName("workflow_x");
         startWorkflowAction.getStart_workflow().setVersion(1);
+        startWorkflowAction.getStart_workflow().setTaskToDomain(taskToDomain);
         eventHandler.getActions().add(startWorkflowAction);
 
         Action completeTaskAction = new Action();
@@ -140,7 +144,7 @@ public class TestEventProcessor {
         doAnswer((Answer<String>) invocation -> {
             started.set(true);
             return id;
-        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStart_workflow().getName(), startWorkflowAction.getStart_workflow().getVersion(), startWorkflowAction.getStart_workflow().getCorrelationId(), startWorkflowAction.getStart_workflow().getInput(), null, event);
+        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStart_workflow().getName(), startWorkflowAction.getStart_workflow().getVersion(), startWorkflowAction.getStart_workflow().getCorrelationId(), startWorkflowAction.getStart_workflow().getInput(), null, event, taskToDomain);
 
         AtomicBoolean completed = new AtomicBoolean(false);
         doAnswer((Answer<String>) invocation -> {
@@ -212,7 +216,7 @@ public class TestEventProcessor {
         doAnswer((Answer<String>) invocation -> {
             started.set(true);
             return id;
-        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStart_workflow().getName(), startWorkflowAction.getStart_workflow().getVersion(), startWorkflowAction.getStart_workflow().getCorrelationId(), startWorkflowAction.getStart_workflow().getInput(), null, event);
+        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStart_workflow().getName(), startWorkflowAction.getStart_workflow().getVersion(), startWorkflowAction.getStart_workflow().getCorrelationId(), startWorkflowAction.getStart_workflow().getInput(), null, event, null);
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(startWorkflowAction.getStart_workflow().getName());
