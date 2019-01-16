@@ -648,8 +648,8 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             return mapGetMessagesResponse(srb.execute().actionGet());
         } catch (Exception e) {
             logger.error("Failed to get messages for queue: {}", queue, e);
+            throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
         }
-        return null;
     }
 
     private List<Message> mapGetMessagesResponse(SearchResponse response) throws IOException {
@@ -684,8 +684,8 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             return mapEventExecutionsResponse(srb.execute().actionGet());
         } catch (Exception e) {
             logger.error("Failed to get executions for event: {}", event, e);
+            throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
         }
-        return null;
     }
 
     private List<EventExecution> mapEventExecutionsResponse(SearchResponse response) throws IOException {
