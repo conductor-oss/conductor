@@ -6,19 +6,30 @@ This module provides ES6 persistence when indexing workflows and tasks.
 
 In order to use the ES6, you must change the following files from ES5 to ES6:
 
-https://github.com/Netflix/conductor/blob/master/server/build.gradle#L29
 
-https://github.com/Netflix/conductor/blob/master/settings.gradle#L3
+https://github.com/Netflix/conductor/blob/master/server/build.gradle
+https://github.com/Netflix/conductor/blob/master/settings.gradle
+https://github.com/Netflix/conductor/blob/master/test-harness/build.gradle
 
-https://github.com/Netflix/conductor/blob/master/test-harness/build.gradle#L16
+In files:
+- /server/build.gradle
+- /settings.gradle
+
+change module inclusion from 'es5-persistence' to 'es6-persistence'
+
+
+In file:
+ 
+- /test-harness/build.gradle
+
+change org.elasticsearch:elasticsearch:${revElasticSearch5} dependency version from ${revElasticSearch5} to ${revElasticSearch6}
+
 
 Also you need to recreate dependencies.lock files with ES6 dependencies. To do that delete all dependencies.lock files and then run: 
 
 ```
 ./gradlew generateLock updateLock saveLock
 ```
-
-Take a look at the branch 'es6-build' to see an example.
 
 ## Usage
 
