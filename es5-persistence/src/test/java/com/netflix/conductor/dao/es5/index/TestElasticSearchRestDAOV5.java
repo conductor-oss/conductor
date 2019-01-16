@@ -337,6 +337,11 @@ public class TestElasticSearchRestDAOV5 {
                     assertEquals("indexed message id should match", messageId, source.get("messageId"));
                     assertEquals("indexed payload should match", "some-payload", source.get("payload"));
                 });
+
+        List<Message> messages = indexDAO.getMessages("some-queue");
+        assertEquals(1, messages.size());
+        assertEquals(message.getId(), messages.get(0).getId());
+        assertEquals(message.getPayload(), messages.get(0).getPayload());
     }
 
     @Test
@@ -384,6 +389,10 @@ public class TestElasticSearchRestDAOV5 {
                     assertEquals("indexed event should match", "some-event", sourceMap.get("event"));
                     assertEquals("indexed status should match", EventExecution.Status.COMPLETED.name(), sourceMap.get("status"));
                 });
+
+        List<EventExecution> events = indexDAO.getEventExecutions("some-event");
+        assertEquals(1, events.size());
+        assertEquals(eventExecution, events.get(0));
     }
 
     private SearchResponse searchObjectIdsViaExpression(String indexName, String structuredQuery, int start, int size,
