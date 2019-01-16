@@ -10,7 +10,15 @@ https://github.com/Netflix/conductor/blob/master/server/build.gradle#L29
 
 https://github.com/Netflix/conductor/blob/master/settings.gradle#L3
 
-Also you need to recreate dependencies.lock files with ES6 dependencies
+https://github.com/Netflix/conductor/blob/master/test-harness/build.gradle#L16
+
+Also you need to recreate dependencies.lock files with ES6 dependencies. To do that delete all dependencies.lock files and then run: 
+
+```
+./gradlew generateLock updateLock saveLock
+```
+
+Take a look at the branch 'es6-build' to see an example.
 
 ## Usage
 
