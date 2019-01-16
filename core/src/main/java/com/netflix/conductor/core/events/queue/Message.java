@@ -18,6 +18,8 @@
  */
 package com.netflix.conductor.core.events.queue;
 
+import java.util.Objects;
+
 /**
  * @author Viren
  *
@@ -88,5 +90,20 @@ public class Message {
 	public String toString() {
 		return id;
 	}
-	
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Message message = (Message) o;
+		return Objects.equals(payload, message.payload) &&
+				Objects.equals(id, message.id) &&
+				Objects.equals(receipt, message.receipt);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(payload, id, receipt);
+	}
+
 }

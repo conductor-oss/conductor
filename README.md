@@ -34,7 +34,7 @@ Below are the various artifacts published:
 |conductor-common|Common models used by various conductor modules|
 |conductor-core|Core Conductor module|
 |conductor-redis-persistence|Persistence using Redis/Dynomite|
-|conductor-es5-persistence|Indexing using Elasticsearch 5.X|
+|conductor-es6-persistence|Indexing using Elasticsearch 6.X|
 |conductor-jersey|Jersey JAX-RS resources for the core services|
 |conductor-ui|node.js based UI for Conductor|
 |conductor-contribs|Optional contrib package that holds extended workflow tasks and support for SQS|
@@ -49,7 +49,7 @@ To build the server, use the following dependencies in your classpath:
 * conductor-core
 * conductor-jersey
 * conductor-redis-persistence (_unless using your own persistence module_)
-* conductor-es5-persistence (_unless using your own index module_)
+* conductor-es6-persistence (_unless using your own index module_)
 * conductor-contribs (_optional_)
 
 

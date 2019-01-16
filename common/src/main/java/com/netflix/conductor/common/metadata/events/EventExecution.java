@@ -20,6 +20,7 @@ package com.netflix.conductor.common.metadata.events;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import com.github.vmg.protogen.annotations.*;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
@@ -189,7 +190,25 @@ public class EventExecution {
 	public void setOutput(Map<String, Object> output) {
 		this.output = output;
 	}
-	
-	
-	
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		EventExecution execution = (EventExecution) o;
+		return created == execution.created &&
+				Objects.equals(id, execution.id) &&
+				Objects.equals(messageId, execution.messageId) &&
+				Objects.equals(name, execution.name) &&
+				Objects.equals(event, execution.event) &&
+				status == execution.status &&
+				action == execution.action &&
+				Objects.equals(output, execution.output);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(id, messageId, name, event, created, status, action, output);
+	}
+
 }

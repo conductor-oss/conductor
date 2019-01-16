@@ -20,6 +20,8 @@ package com.netflix.conductor.common.metadata.tasks;
 
 import com.github.vmg.protogen.annotations.*;
 
+import java.util.Objects;
+
 /**
  * @author Viren
  * Model that represents the task's execution log.
@@ -88,6 +90,19 @@ public class TaskExecLog {
 	public void setCreatedTime(long createdTime) {
 		this.createdTime = createdTime;
 	}
-	
-	
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		TaskExecLog that = (TaskExecLog) o;
+		return createdTime == that.createdTime &&
+				Objects.equals(log, that.log) &&
+				Objects.equals(taskId, that.taskId);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(log, taskId, createdTime);
+	}
 }
