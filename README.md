@@ -34,7 +34,7 @@ Below are the various artifacts published:
 |conductor-common|Common models used by various conductor modules|
 |conductor-core|Core Conductor module|
 |conductor-redis-persistence|Persistence using Redis/Dynomite|
-|conductor-es6-persistence|Indexing using Elasticsearch 6.X|
+|conductor-es5-persistence|Indexing using Elasticsearch 5.X|
 |conductor-jersey|Jersey JAX-RS resources for the core services|
 |conductor-ui|node.js based UI for Conductor|
 |conductor-contribs|Optional contrib package that holds extended workflow tasks and support for SQS|
