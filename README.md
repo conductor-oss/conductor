@@ -49,7 +49,7 @@ To build the server, use the following dependencies in your classpath:
 * conductor-core
 * conductor-jersey
 * conductor-redis-persistence (_unless using your own persistence module_)
-* conductor-es6-persistence (_unless using your own index module_)
+* conductor-es5-persistence (_unless using your own index module_)
 * conductor-contribs (_optional_)
 
 
