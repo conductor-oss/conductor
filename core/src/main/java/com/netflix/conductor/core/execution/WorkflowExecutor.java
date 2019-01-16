@@ -421,10 +421,10 @@ public class WorkflowExecutor {
             }
         });
 
-        scheduleTask(workflow, rescheduledTasks);
-
         workflow.setStatus(WorkflowStatus.RUNNING);
         executionDAOFacade.updateWorkflow(workflow);
+
+        scheduleTask(workflow, rescheduledTasks);
         executionDAOFacade.updateTasks(workflow.getTasks());
 
         decide(workflowId);
@@ -1236,6 +1236,16 @@ public class WorkflowExecutor {
         }
 
         if (rerunFromTask != null) {
+            // set workflow as RUNNING
+            workflow.setStatus(WorkflowStatus.RUNNING);
+            if (correlationId != null) {
+                workflow.setCorrelationId(correlationId);
+            }
+            if (workflowInput != null) {
+                workflow.setInput(workflowInput);
+            }
+            executionDAOFacade.updateWorkflow(workflow);
+
             // Remove all tasks after the "rerunFromTask"
             for (Task task : workflow.getTasks()) {
                 if (task.getSeq() > rerunFromTask.getSeq()) {
@@ -1256,15 +1266,6 @@ public class WorkflowExecutor {
             rerunFromTask.setExecuted(false);
             executionDAOFacade.updateTask(rerunFromTask);
 
-            // and set workflow as RUNNING
-            workflow.setStatus(WorkflowStatus.RUNNING);
-            if (correlationId != null) {
-                workflow.setCorrelationId(correlationId);
-            }
-            if (workflowInput != null) {
-                workflow.setInput(workflowInput);
-            }
-            executionDAOFacade.updateWorkflow(workflow);
             decide(workflowId);
             return true;
         }
