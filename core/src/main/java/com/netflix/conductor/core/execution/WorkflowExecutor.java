@@ -408,6 +408,11 @@ public class WorkflowExecutor {
             throw new ApplicationException(CONFLICT,
                     "There are no failed tasks! Use restart if you want to attempt entire workflow execution again.");
         }
+
+        // set workflow to RUNNING status
+        workflow.setStatus(WorkflowStatus.RUNNING);
+        executionDAOFacade.updateWorkflow(workflow);
+
         List<Task> rescheduledTasks = new ArrayList<>();
         failedTasks.forEach(failedTask -> rescheduledTasks.add(taskToBeRescheduled(failedTask)));
 
@@ -420,9 +425,6 @@ public class WorkflowExecutor {
                 rescheduledTasks.add(taskToBeRescheduled(task));
             }
         });
-
-        workflow.setStatus(WorkflowStatus.RUNNING);
-        executionDAOFacade.updateWorkflow(workflow);
 
         scheduleTask(workflow, rescheduledTasks);
         executionDAOFacade.updateTasks(workflow.getTasks());
@@ -463,10 +465,7 @@ public class WorkflowExecutor {
         taskToBeRetried.setRetried(false);
         taskToBeRetried.setPollCount(0);
         taskToBeRetried.setCallbackAfterSeconds(0);
-
-        // update the failed task in the DAO
         task.setRetried(true);
-        executionDAOFacade.updateTask(task);
         return taskToBeRetried;
     }
 
