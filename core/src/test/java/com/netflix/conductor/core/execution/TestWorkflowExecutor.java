@@ -530,9 +530,9 @@ public class TestWorkflowExecutor {
             return null;
         }).when(executionDAOFacade).updateTasks(any());
 
-        AtomicInteger updateTasksAlledCounter = new AtomicInteger(0);
+        AtomicInteger updateTaskCalledCounter = new AtomicInteger(0);
         doAnswer(invocation -> {
-            updateTasksCalledCounter.incrementAndGet();
+            updateTaskCalledCounter.incrementAndGet();
             return null;
         }).when(executionDAOFacade).updateTask(any());
 
@@ -596,7 +596,8 @@ public class TestWorkflowExecutor {
 
         assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
         assertEquals(2, updateWorkflowCalledCounter.get());
-        assertEquals(7, updateTasksCalledCounter.get());
+        assertEquals(2, updateTasksCalledCounter.get());
+        assertEquals(0, updateTaskCalledCounter.get());
         assertEquals(1, removeQueueEntryCalledCounter.get());
     }
 
