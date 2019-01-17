@@ -438,20 +438,12 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
 
     @Override
     public SearchResult<String> searchWorkflows(String query, String freeText, int start, int count, List<String> sort) {
-        try {
-            return searchObjectIdsViaExpression(query, start, count, sort, freeText, WORKFLOW_DOC_TYPE);
-        } catch (Exception e) {
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
-        }
+        return searchObjectIdsViaExpression(query, start, count, sort, freeText, WORKFLOW_DOC_TYPE);
     }
 
     @Override
     public SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort) {
-        try {
-            return searchObjectIdsViaExpression(query, start, count, sort, freeText, TASK_DOC_TYPE);
-        } catch (Exception e) {
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
-        }
+        return searchObjectIdsViaExpression(query, start, count, sort, freeText, TASK_DOC_TYPE);
     }
 
     @Override
@@ -529,20 +521,23 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
         return null;
     }
 
-    private SearchResult<String> searchObjectIdsViaExpression(String structuredQuery, int start, int size, List<String> sortOptions, String freeTextQuery, String docType) throws ParserException, IOException {
+    private SearchResult<String> searchObjectIdsViaExpression(String structuredQuery, int start, int size, List<String> sortOptions, String freeTextQuery, String docType) {
+        try {
+            // Build query
+            QueryBuilder queryBuilder = QueryBuilders.matchAllQuery();
+            if(StringUtils.isNotEmpty(structuredQuery)) {
+                Expression expression = Expression.fromString(structuredQuery);
+                queryBuilder = expression.getFilterBuilder();
+            }
 
-        // Build query
-        QueryBuilder queryBuilder = QueryBuilders.matchAllQuery();
-        if(StringUtils.isNotEmpty(structuredQuery)) {
-            Expression expression = Expression.fromString(structuredQuery);
-            queryBuilder = expression.getFilterBuilder();
+            BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(queryBuilder);
+            QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery(freeTextQuery);
+            BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
+
+            return searchObjectIds(indexName, fq, start, size, sortOptions, docType);
+        } catch (Exception e) {
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
         }
-
-        BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(queryBuilder);
-        QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery(freeTextQuery);
-        BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
-
-        return searchObjectIds(indexName, fq, start, size, sortOptions, docType);
     }
 
     private SearchResult<String> searchObjectIds(String indexName, QueryBuilder queryBuilder, int start, int size, String docType) throws IOException {
