@@ -427,6 +427,7 @@ public class WorkflowExecutor {
         });
 
         scheduleTask(workflow, rescheduledTasks);
+        dedupAndAddTasks(workflow, rescheduledTasks);
         executionDAOFacade.updateTasks(workflow.getTasks());
 
         decide(workflowId);

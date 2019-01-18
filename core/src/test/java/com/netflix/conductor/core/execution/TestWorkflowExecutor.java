@@ -536,16 +536,11 @@ public class TestWorkflowExecutor {
             return null;
         }).when(executionDAOFacade).updateTask(any());
 
-        AtomicInteger removeQueueEntryCalledCounter = new AtomicInteger(0);
-        doAnswer(invocation -> {
-            removeQueueEntryCalledCounter.incrementAndGet();
-            return null;
-        }).when(queueDAO).remove(anyString(), anyString());
-
         // add 2 failed task in 2 forks and 1 cancelled in the 3rd fork
         Task task_1_1 = new Task();
         task_1_1.setTaskId(UUID.randomUUID().toString());
         task_1_1.setSeq(20);
+        task_1_1.setRetryCount(0);
         task_1_1.setTaskType(TaskType.SIMPLE.toString());
         task_1_1.setStatus(Status.CANCELED);
         task_1_1.setTaskDefName("task1");
@@ -554,6 +549,7 @@ public class TestWorkflowExecutor {
         Task task_1_2 = new Task();
         task_1_2.setTaskId(UUID.randomUUID().toString());
         task_1_2.setSeq(21);
+        task_1_2.setRetryCount(1);
         task_1_2.setTaskType(TaskType.SIMPLE.toString());
         task_1_2.setStatus(Status.FAILED);
         task_1_2.setTaskDefName("task1");
@@ -562,6 +558,7 @@ public class TestWorkflowExecutor {
         Task task_2_1 = new Task();
         task_2_1.setTaskId(UUID.randomUUID().toString());
         task_2_1.setSeq(22);
+        task_2_1.setRetryCount(0);
         task_2_1.setStatus(Status.FAILED);
         task_2_1.setTaskType(TaskType.SIMPLE.toString());
         task_2_1.setTaskDefName("task2");
@@ -571,6 +568,7 @@ public class TestWorkflowExecutor {
         Task task_3_1 = new Task();
         task_3_1.setTaskId(UUID.randomUUID().toString());
         task_3_1.setSeq(23);
+        task_3_1.setRetryCount(0);
         task_3_1.setStatus(Status.CANCELED);
         task_3_1.setTaskType(TaskType.SIMPLE.toString());
         task_3_1.setTaskDefName("task3");
@@ -579,12 +577,13 @@ public class TestWorkflowExecutor {
         Task task_4_1 = new Task();
         task_4_1.setTaskId(UUID.randomUUID().toString());
         task_4_1.setSeq(122);
+        task_4_1.setRetryCount(0);
         task_4_1.setStatus(Status.FAILED);
         task_4_1.setTaskType(TaskType.SIMPLE.toString());
         task_4_1.setTaskDefName("task1");
         task_4_1.setReferenceTaskName("task4_refABC");
 
-        workflow.setTasks(Arrays.asList(task_1_1, task_1_2, task_2_1, task_3_1, task_4_1));
+        workflow.getTasks().addAll(Arrays.asList(task_1_1, task_1_2, task_2_1, task_3_1, task_4_1));
         //end of setup
 
         //when:
@@ -594,11 +593,10 @@ public class TestWorkflowExecutor {
 
         workflowExecutor.retry(workflow.getWorkflowId());
 
-        assertEquals(Workflow.WorkflowStatus.COMPLETED, workflow.getStatus());
-        assertEquals(2, updateWorkflowCalledCounter.get());
-        assertEquals(2, updateTasksCalledCounter.get());
+        assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(1, updateWorkflowCalledCounter.get());
+        assertEquals(1, updateTasksCalledCounter.get());
         assertEquals(0, updateTaskCalledCounter.get());
-        assertEquals(1, removeQueueEntryCalledCounter.get());
     }
 
     @Test
@@ -660,7 +658,7 @@ public class TestWorkflowExecutor {
         assertEquals(0, taskList.size());
         assertEquals(workflow.getTasks(), tasks);
 
-        // Adding a new task
+        // Adding 2 new tasks
         Task newTask = new Task();
         newTask.setReferenceTaskName("newTask");
         newTask.setRetryCount(0);
