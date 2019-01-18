@@ -40,11 +40,11 @@ router.get('/', async (req, res, next) => {
     const url =
       baseURL2 +
       'search?size=100&sort=startTime:DESC&freeText=' +
-      freeText.join(' AND ') +
+      encodeURIComponent(freeText.join(' AND ')) +
       '&start=' +
       start +
       '&query=' +
-      query;
+      encodeURIComponent(query);
     const result = await http.get(url, req.token);
     const hits = result.results;
     res.status(200).send({ result: { hits: hits, totalHits: result.totalHits } });
