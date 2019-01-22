@@ -14,10 +14,10 @@
 package conductor
 
 import (
+	"conductor/task"
+	"log"
 	"os"
 	"time"
-	"log"
-	"conductor/task"
 )
 
 var (
@@ -32,8 +32,8 @@ func init() {
 
 type ConductorWorker struct {
 	ConductorHttpClient *ConductorHttpClient
-	ThreadCount int
-	PollingInterval int
+	ThreadCount         int
+	PollingInterval     int
 }
 
 func NewConductorWorker(baseUrl string, threadCount int, pollingInterval int) *ConductorWorker {
@@ -45,7 +45,6 @@ func NewConductorWorker(baseUrl string, threadCount int, pollingInterval int) *C
 	return conductorWorker
 }
 
-
 func (c *ConductorWorker) Execute(taskData string, executeFunction func(t *task.Task) (*task.TaskResult, error)) {
 	t, err := task.ParseTask(taskData)
 	if err != nil {
@@ -55,7 +54,7 @@ func (c *ConductorWorker) Execute(taskData string, executeFunction func(t *task.
 
 	taskResult, err := executeFunction(t)
 	if err != nil {
-		log.Println("Error Executing task")
+		log.Println("Error Executing task:", err.Error())
 		return
 	}
 
@@ -86,6 +85,6 @@ func (c *ConductorWorker) Start(taskType string, executeFunction func(t *task.Ta
 
 	// wait infinitely while the go routines are running
 	if wait {
-		select{}
+		select {}
 	}
 }
