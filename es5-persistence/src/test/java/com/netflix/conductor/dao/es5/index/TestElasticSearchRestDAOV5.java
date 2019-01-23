@@ -290,9 +290,9 @@ public class TestElasticSearchRestDAOV5 {
     }
 
     @Test
-    public void testSearchArchivableWorkflows() {
+    public void testSearchArchivableWorkflows() throws IOException {
         String workflowId = "search-workflow-id";
-        Long time = DateTime.now().minusDays(1).toDate().getTime();
+        Long time = DateTime.now().minusDays(2).toDate().getTime();
 
         workflow.setWorkflowId(workflowId);
         workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
@@ -302,11 +302,13 @@ public class TestElasticSearchRestDAOV5 {
 
         indexDAO.indexWorkflow(workflow);
 
+        assertTrue(indexExists("conductor"));
+
         await()
                 .atMost(3, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
-                            List<String> searchIds = indexDAO.searchArchivableWorkflows("conductor",0);
+                            List<String> searchIds = indexDAO.searchArchivableWorkflows("conductor",1);
                             assertEquals(1, searchIds.size());
                             assertEquals(workflowId, searchIds.get(0));
                         }
