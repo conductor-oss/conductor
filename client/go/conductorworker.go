@@ -45,13 +45,7 @@ func NewConductorWorker(baseUrl string, threadCount int, pollingInterval int) *C
 	return conductorWorker
 }
 
-func (c *ConductorWorker) Execute(taskData string, executeFunction func(t *task.Task) (*task.TaskResult, error)) {
-	t, err := task.ParseTask(taskData)
-	if err != nil {
-		log.Println("Error Parsing task")
-		return
-	}
-
+func (c *ConductorWorker) Execute(t *task.Task, executeFunction func(t *task.Task) (*task.TaskResult, error)) {
 	taskResult, err := executeFunction(t)
 	if err != nil {
 		log.Println("Error Executing task:", err.Error())
@@ -70,10 +64,34 @@ func (c *ConductorWorker) Execute(taskData string, executeFunction func(t *task.
 func (c *ConductorWorker) PollAndExecute(taskType string, executeFunction func(t *task.Task) (*task.TaskResult, error)) {
 	for {
 		time.Sleep(time.Duration(c.PollingInterval) * time.Millisecond)
+		
+		// Poll for Task taskType
 		polled, err := c.ConductorHttpClient.PollForTask(taskType, hostname)
-		if err == nil {
-			c.Execute(polled, executeFunction)
+		if err != nil {
+			log.Println("Error Polling task:", err.Error())
+			continue
 		}
+		if polled == "" {
+			log.Println("No task found for:", taskType)
+			continue
+		}
+		
+		// Parse Http response into Task
+		parsedTask, err := task.ParseTask(polled)
+		if err != nil {
+			log.Println("Error Parsing task:", err.Error())
+			continue
+		}
+
+		// Found a task, so we send an Ack
+		_, ackErr := c.ConductorHttpClient.AckTask(parsedTask.TaskId, hostname)
+		if ackErr != nil {
+			log.Println("Error Acking task:", ackErr.Error())
+			continue
+		}
+
+		// Execute given function
+		c.Execute(parsedTask, executeFunction)
 	}
 }
 
