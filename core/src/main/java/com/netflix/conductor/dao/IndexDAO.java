@@ -148,6 +148,8 @@ public interface IndexDAO {
      */
     void addEventExecution(EventExecution eventExecution);
 
+    List<EventExecution> getEventExecutions(String event);
+
     /**
      *
      * @param eventExecution Event Execution to be indexed
@@ -161,6 +163,8 @@ public interface IndexDAO {
      * @param msg Message
      */
     void addMessage(String queue, Message msg);
+
+    List<Message> getMessages(String queue);
 
     /**
      * Search for Workflows completed or failed beyond archiveTtlDays

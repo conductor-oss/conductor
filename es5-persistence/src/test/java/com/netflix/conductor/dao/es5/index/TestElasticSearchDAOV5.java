@@ -1,10 +1,5 @@
 package com.netflix.conductor.dao.es5.index;
 
-import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action.Type;
@@ -21,18 +16,6 @@ import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 import com.netflix.conductor.elasticsearch.SystemPropertiesElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.es5.EmbeddedElasticSearchV5;
 import com.netflix.conductor.elasticsearch.query.parser.ParserException;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsRequest;
@@ -56,6 +39,25 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestElasticSearchDAOV5 {
 
@@ -255,6 +257,70 @@ public class TestElasticSearchDAOV5 {
 	}
 
 	@Test
+	public void testWorkflowSearch() {
+		String workflowId = "search-workflow-id";
+		workflow.setWorkflowId(workflowId);
+		indexDAO.indexWorkflow(workflow);
+        await()
+                .atMost(3, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+							List<String> searchIds = indexDAO.searchWorkflows("", "workflowId:\"" + workflowId + "\"", 0, 100, Collections.singletonList("workflowId:ASC")).getResults();
+							assertEquals(1, searchIds.size());
+							assertEquals(workflowId, searchIds.get(0));
+                        }
+                );
+	}
+
+	@Test
+	public void testSearchRecentRunningWorkflows() {
+		workflow.setWorkflowId("completed-workflow");
+		workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
+		indexDAO.indexWorkflow(workflow);
+
+		String workflowId = "recent-running-workflow-id";
+		workflow.setWorkflowId(workflowId);
+		workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+		workflow.setCreateTime(new Date().getTime());
+		workflow.setUpdateTime(new Date().getTime());
+		workflow.setEndTime(new Date().getTime());
+		indexDAO.indexWorkflow(workflow);
+
+		await()
+				.atMost(3, TimeUnit.SECONDS)
+				.untilAsserted(
+						() -> {
+							List<String> searchIds = indexDAO.searchRecentRunningWorkflows(1,0);
+							assertEquals(1, searchIds.size());
+							assertEquals(workflowId, searchIds.get(0));
+						}
+				);
+	}
+
+	@Test
+	public void testSearchArchivableWorkflows() {
+		String workflowId = "search-workflow-id";
+
+		workflow.setWorkflowId(workflowId);
+		workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
+		workflow.setCreateTime(new Date().getTime());
+		workflow.setUpdateTime(new Date().getTime());
+		workflow.setEndTime(new Date().getTime());
+
+		indexDAO.indexWorkflow(workflow);
+
+		await()
+				.atMost(3, TimeUnit.SECONDS)
+				.untilAsserted(
+						() -> {
+							List<String> searchIds = indexDAO.searchArchivableWorkflows("conductor",10);
+							assertEquals(1, searchIds.size());
+							assertEquals(workflowId, searchIds.get(0));
+						}
+				);
+	}
+
+	@Test
 	public void taskExecutionLogs() throws Exception {
 		TaskExecLog taskExecLog1 = new TaskExecLog();
 		taskExecLog1.setTaskId("some-task-id");
@@ -337,6 +403,11 @@ public class TestElasticSearchDAOV5 {
 				assertEquals("indexed message id should match", messageId, response.getSource().get("messageId"));
 				assertEquals("indexed payload should match", "some-payload", response.getSource().get("payload"));
 			});
+
+		List<Message> messages = indexDAO.getMessages("some-queue");
+		assertEquals(1, messages.size());
+		assertEquals(message.getId(), messages.get(0).getId());
+		assertEquals(message.getPayload(), messages.get(0).getPayload());
 	}
 
 	@Test
@@ -375,6 +446,11 @@ public class TestElasticSearchDAOV5 {
 				assertEquals("indexed id should match", "some-id", response.getSource().get("id"));
 				assertEquals("indexed status should match", EventExecution.Status.COMPLETED.name(), response.getSource().get("status"));
 			});
+
+		List<EventExecution> events = indexDAO.getEventExecutions("some-event");
+		assertEquals(1, events.size());
+		assertEquals(eventExecution, events.get(0));
+
 	}
 
 

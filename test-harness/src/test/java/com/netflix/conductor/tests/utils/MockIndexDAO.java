@@ -104,6 +104,11 @@ public class MockIndexDAO implements IndexDAO {
 	}
 
 	@Override
+	public List<EventExecution> getEventExecutions(String event) {
+		return null;
+	}
+
+	@Override
 	public CompletableFuture<Void> asyncAddEventExecution(EventExecution eventExecution) {
 		return null;
 	}
@@ -112,7 +117,12 @@ public class MockIndexDAO implements IndexDAO {
 	public void addMessage(String queue, Message msg) {
 		
 	}
-  
+
+	@Override
+	public List<Message> getMessages(String queue) {
+		return null;
+	}
+
 	@Override
 	public String get(String workflowInstanceId, String key) {
 		return null;

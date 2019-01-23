@@ -1,10 +1,5 @@
 package com.netflix.conductor.dao.es5.index;
 
-import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,21 +18,6 @@ import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 import com.netflix.conductor.elasticsearch.SystemPropertiesElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.es5.EmbeddedElasticSearchV5;
 import com.netflix.conductor.elasticsearch.query.parser.ParserException;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -52,6 +32,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -59,6 +40,28 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestElasticSearchRestDAOV5 {
 
@@ -246,6 +249,71 @@ public class TestElasticSearchRestDAOV5 {
     }
 
     @Test
+    public void testWorkflowSearch() {
+        String workflowId = "search-workflow-id";
+        workflow.setWorkflowId(workflowId);
+        indexDAO.indexWorkflow(workflow);
+        await()
+                .atMost(3, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            List<String> searchIds = indexDAO.searchWorkflows("", "workflowId:\"" + workflowId + "\"", 0, 100, Collections.singletonList("workflowId:ASC")).getResults();
+                            assertEquals(1, searchIds.size());
+                            assertEquals(workflowId, searchIds.get(0));
+                        }
+                );
+    }
+
+    @Test
+    public void testSearchRecentRunningWorkflows() {
+        workflow.setWorkflowId("completed-workflow");
+        workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
+        indexDAO.indexWorkflow(workflow);
+
+        String workflowId = "recent-running-workflow-id";
+        workflow.setWorkflowId(workflowId);
+        workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        workflow.setCreateTime(new Date().getTime());
+        workflow.setUpdateTime(new Date().getTime());
+        workflow.setEndTime(new Date().getTime());
+        indexDAO.indexWorkflow(workflow);
+
+        await()
+                .atMost(3, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            List<String> searchIds = indexDAO.searchRecentRunningWorkflows(1,0);
+                            assertEquals(1, searchIds.size());
+                            assertEquals(workflowId, searchIds.get(0));
+                        }
+                );
+    }
+
+    @Test
+    public void testSearchArchivableWorkflows() {
+        String workflowId = "search-workflow-id";
+        Long time = DateTime.now().minusDays(1).toDate().getTime();
+
+        workflow.setWorkflowId(workflowId);
+        workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
+        workflow.setCreateTime(time);
+        workflow.setUpdateTime(time);
+        workflow.setEndTime(time);
+
+        indexDAO.indexWorkflow(workflow);
+
+        await()
+                .atMost(3, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            List<String> searchIds = indexDAO.searchArchivableWorkflows("conductor",0);
+                            assertEquals(1, searchIds.size());
+                            assertEquals(workflowId, searchIds.get(0));
+                        }
+                );
+    }
+
+    @Test
     public void taskExecutionLogs() throws Exception {
         TaskExecLog taskExecLog1 = new TaskExecLog();
         taskExecLog1.setTaskId("some-task-id");
@@ -337,6 +405,11 @@ public class TestElasticSearchRestDAOV5 {
                     assertEquals("indexed message id should match", messageId, source.get("messageId"));
                     assertEquals("indexed payload should match", "some-payload", source.get("payload"));
                 });
+
+        List<Message> messages = indexDAO.getMessages("some-queue");
+        assertEquals(1, messages.size());
+        assertEquals(message.getId(), messages.get(0).getId());
+        assertEquals(message.getPayload(), messages.get(0).getPayload());
     }
 
     @Test
@@ -384,6 +457,10 @@ public class TestElasticSearchRestDAOV5 {
                     assertEquals("indexed event should match", "some-event", sourceMap.get("event"));
                     assertEquals("indexed status should match", EventExecution.Status.COMPLETED.name(), sourceMap.get("status"));
                 });
+
+        List<EventExecution> events = indexDAO.getEventExecutions("some-event");
+        assertEquals(1, events.size());
+        assertEquals(eventExecution, events.get(0));
     }
 
     private SearchResponse searchObjectIdsViaExpression(String indexName, String structuredQuery, int start, int size,
