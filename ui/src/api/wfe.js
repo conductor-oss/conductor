@@ -40,11 +40,11 @@ router.get('/', async (req, res, next) => {
     const url =
       baseURL2 +
       'search?size=100&sort=startTime:DESC&freeText=' +
-      freeText.join(' AND ') +
+      encodeURIComponent(freeText.join(' AND ')) +
       '&start=' +
       start +
       '&query=' +
-      query;
+      encodeURIComponent(query);
     const result = await http.get(url, req.token);
     const hits = result.results;
     res.status(200).send({ result: { hits: hits, totalHits: result.totalHits } });
@@ -78,7 +78,7 @@ router.get('/search-by-task/:taskId', async (req, res, next) => {
 
     let query = req.query.q || '';
     const url =
-      baseURL2 + 'search-by-tasks?size=100&sort=startTime:DESC&freeText=' + freeText.join(' AND ') + '&start=' + start;
+      baseURL2 + 'search-by-tasks?size=100&sort=startTime:DESC&freeText=' + encodeURIComponent(freeText.join(' AND ')) + '&start=' + start;
     const result = await http.get(url, req.token);
 
     const hits = result.results;
