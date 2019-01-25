@@ -19,6 +19,7 @@ import (
     "io/ioutil"
     "bytes"
     "strings"
+    "fmt"
 )
 
 type HttpClient struct {
@@ -95,6 +96,14 @@ func (c *HttpClient) httpRequest(url string, requestType string, headers map[str
     resp, err := client.Do(req)
     if err != nil {
         return "", err
+    }
+
+    // If successful HTTP call, but Client/Server error, we return error
+    if resp.StatusCode >= 400 && resp.StatusCode < 500 {
+        return "", fmt.Errorf("%d Http Client Error for url: %s", resp.StatusCode, url)
+    }
+    if resp.StatusCode >= 500 && resp.StatusCode < 600 {
+        return "", fmt.Errorf("%d Http Server Error for url: %s", resp.StatusCode, url)
     }
 
     defer resp.Body.Close()
