@@ -146,7 +146,7 @@ class MetadataClient(BaseClient):
         url = self.makeUrl('taskdefs')
         return self.post(url, None, listOfTaskDefObj)
 
-    def registerTaskDef(self, taskDefObj):
+    def updateTaskDef(self, taskDefObj):
         url = self.makeUrl('taskdefs')
         self.put(url, None, taskDefObj)
 
