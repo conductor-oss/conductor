@@ -18,6 +18,7 @@ import requests
 import json
 import sys
 import socket
+import warnings
 
 
 hostname = socket.gethostname()
@@ -147,6 +148,15 @@ class MetadataClient(BaseClient):
         return self.post(url, None, listOfTaskDefObj)
 
     def registerTaskDef(self, taskDefObj):
+        """registerTaskDef is deprecated since PUT /metadata/taskdefs does not
+        register but updates a task definition. Use updateTaskDef function 
+        instead.
+        """
+        warnings.warn(self.registerTaskDef.__doc__, DeprecationWarning)
+        url = self.makeUrl('taskdefs')
+        self.put(url, None, taskDefObj)
+
+    def updateTaskDef(self, taskDefObj):
         url = self.makeUrl('taskdefs')
         self.put(url, None, taskDefObj)
 
