@@ -44,9 +44,9 @@ public class DecisionTaskMapperTest {
         parametersUtils = new ParametersUtils();
 
         ip1 = new HashMap<>();
-        ip1.put("p1", "workflow.input.param1");
-        ip1.put("p2", "workflow.input.param2");
-        ip1.put("case", "workflow.input.case");
+        ip1.put("p1", "${workflow.input.param1}");
+        ip1.put("p2", "${workflow.input.param2}");
+        ip1.put("case", "${workflow.input.case}");
 
         task1 = new WorkflowTask();
         task1.setName("Test1");
@@ -152,8 +152,8 @@ public class DecisionTaskMapperTest {
         Workflow workflowInstance = new Workflow();
         workflowInstance.setWorkflowDefinition(new WorkflowDef());
         Map<String, Object> workflowInput = new HashMap<>();
-        workflowInput.put("p1", "workflow.input.param1");
-        workflowInput.put("p2", "workflow.input.param2");
+        workflowInput.put("param1", "test1");
+        workflowInput.put("param2", "test2");
         workflowInput.put("case", "0");
         workflowInstance.setInput(workflowInput);
 
