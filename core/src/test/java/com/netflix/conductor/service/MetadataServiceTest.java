@@ -267,7 +267,7 @@ public class MetadataServiceTest{
     public void testRegisterWorkflowDef() {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("somename");
-        workflowDef.setSchemaVersion(5);
+        workflowDef.setSchemaVersion(2);
         List<WorkflowTask> tasks = new ArrayList<>();
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setTaskReferenceName("hello");

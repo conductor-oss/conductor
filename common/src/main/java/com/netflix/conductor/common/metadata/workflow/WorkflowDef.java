@@ -34,6 +34,7 @@ import java.util.Objects;
 import java.util.Optional;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
@@ -74,8 +75,9 @@ public class WorkflowDef extends Auditable {
 	private String failureWorkflow;
 
 	@ProtoField(id = 8)
-    @Min(value = 1, message = "workflowDef schemaVersion: ${validatedValue} should be >= {value}")
-    private int schemaVersion = 1;
+    @Min(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
+	@Max(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
+    private int schemaVersion = 2;
 
 	//By default a workflow is restartable
 	@ProtoField(id = 9)

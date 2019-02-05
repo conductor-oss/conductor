@@ -110,7 +110,7 @@ public class WorkflowDefTest {
 	@Test
 	public void testWorkflowDefConstraints() {
         WorkflowDef workflowDef = new WorkflowDef();//name is null
-        workflowDef.setSchemaVersion(1);
+        workflowDef.setSchemaVersion(2);
 
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         Validator validator = factory.getValidator();
@@ -128,7 +128,7 @@ public class WorkflowDefTest {
 	@Test
 	public void testWorkflowDefConstraintsWithMultipleEnvVariable() {
 		WorkflowDef workflowDef = new WorkflowDef();//name is null
-		workflowDef.setSchemaVersion(1);
+		workflowDef.setSchemaVersion(2);
 		workflowDef.setName("test_env");
 
 		WorkflowTask workflowTask_1 = new WorkflowTask();
@@ -167,7 +167,7 @@ public class WorkflowDefTest {
 	@Test
 	public void testWorkflowDefConstraintsSingleEnvVariable() {
 		WorkflowDef workflowDef = new WorkflowDef();//name is null
-		workflowDef.setSchemaVersion(1);
+		workflowDef.setSchemaVersion(2);
 		workflowDef.setName("test_env");
 
 		WorkflowTask workflowTask_1 = new WorkflowTask();
@@ -194,7 +194,7 @@ public class WorkflowDefTest {
 	@Test
 	public void testWorkflowDefConstraintsDualEnvVariable() {
 		WorkflowDef workflowDef = new WorkflowDef();//name is null
-		workflowDef.setSchemaVersion(1);
+		workflowDef.setSchemaVersion(2);
 		workflowDef.setName("test_env");
 
 		WorkflowTask workflowTask_1 = new WorkflowTask();
@@ -223,7 +223,7 @@ public class WorkflowDefTest {
 	@Test
 	public void testWorkflowDefConstraintsWithMapAsInputParam() {
 		WorkflowDef workflowDef = new WorkflowDef();//name is null
-		workflowDef.setSchemaVersion(1);
+		workflowDef.setSchemaVersion(2);
 		workflowDef.setName("test_env");
 
 		WorkflowTask workflowTask_1 = new WorkflowTask();
@@ -310,5 +310,34 @@ public class WorkflowDefTest {
 		result.forEach(e -> validationErrors.add(e.getMessage()));
 
 		assertTrue(validationErrors.contains("key: blabla input parameter value: is null or empty"));
+	}
+
+	@Test
+	public void testWorkflowSchemaVersion1() {
+		WorkflowDef workflowDef = new WorkflowDef();//name is null
+		workflowDef.setSchemaVersion(3);
+		workflowDef.setName("test_env");
+
+		WorkflowTask workflowTask = new WorkflowTask();
+
+		workflowTask.setName("t1");
+		workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
+		workflowTask.setTaskReferenceName("t1");
+
+		Map<String, Object> map = new HashMap<>();
+		map.put("blabla", "");
+		workflowTask.setInputParameters(map);
+
+		workflowDef.getTasks().add(workflowTask);
+
+		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+		Validator validator = factory.getValidator();
+		Set<ConstraintViolation<Object>> result = validator.validate(workflowDef);
+		assertEquals(2, result.size());
+
+		List<String> validationErrors = new ArrayList<>();
+		result.forEach(e -> validationErrors.add(e.getMessage()));
+
+		assertTrue(validationErrors.contains("workflowDef schemaVersion: 2 is only supported"));
 	}
 }
