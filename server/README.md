@@ -26,6 +26,10 @@ format is host:port:rack separated by semicolon
 for AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e. The region in this case does not matter
 `workflow.dynomite.cluster.hosts=host1:8102:us-east-1c;host2:8102:us-east-1d;host3:8102:us-east-1e`
 
+#### Redis authentication
+An optional 4th colon-delimited field can be appended to the cluster definition to specify the password for Redis authentication.
+`workflow.dynomite.cluster.hosts=host1:8102:us-east-1c:password`
+
 ### Dynomite cluster name
 `workflow.dynomite.cluster.name=dyno_cluster_name`
 

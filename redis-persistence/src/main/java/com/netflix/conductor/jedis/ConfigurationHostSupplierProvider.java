@@ -51,6 +51,12 @@ public class ConfigurationHostSupplierProvider implements Provider<HostSupplier>
             String host = hostConfigValues[0];
             int port = Integer.parseInt(hostConfigValues[1]);
             String rack = hostConfigValues[2];
+
+            if (hostConfigValues.length >= 4) {
+                String password = hostConfigValues[3];
+                return new Host(host, port, rack, Host.Status.Up, null, password);
+            }
+
             return new Host(host, port, rack, Host.Status.Up);
         }).collect(Collectors.toList());
 
