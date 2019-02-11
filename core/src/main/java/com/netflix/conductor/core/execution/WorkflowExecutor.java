@@ -538,8 +538,8 @@ public class WorkflowExecutor {
         Monitors.recordWorkflowCompletion(workflow.getWorkflowName(), workflow.getEndTime() - workflow.getStartTime(), wf.getOwnerApp());
         queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
 
-        if (wf.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
-            workflowStatusListener.onWorkflowCompleted(wf);
+        if (workflow.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
+            workflowStatusListener.onWorkflowCompleted(workflow);
         }
     }
 
