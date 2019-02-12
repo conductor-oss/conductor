@@ -224,7 +224,7 @@ router.delete('/terminate/:workflowId', async (req, res, next) => {
 
 router.post('/restart/:workflowId', async (req, res, next) => {
   try {
-    const result = await http.post(baseURL2 + req.params.workflowId + '/restart', {}, req.token);
+    const result = await http.post(baseURL2 + req.params.workflowId + '/restart?useLatestDefinitions=' + (req.query && req.query.useLatestDefinitions || false), {}, req.token);
     res.status(200).send({ result: req.params.workflowId });
   } catch (err) {
     next(err);
