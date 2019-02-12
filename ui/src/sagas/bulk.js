@@ -1,7 +1,7 @@
 import {call, put, takeLatest} from 'redux-saga/effects';
 import {PERFORM_BULK_OPERATION} from '../actions/bulk';
 import {failBulkOperation, receiveBulkOperationResponse} from '../actions/bulk';
-import http from '../core/HttpClient';
+import http from '../core/HttpClientClientSide';
 
 
 function* sendBulkRequest(action) {

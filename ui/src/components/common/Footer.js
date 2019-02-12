@@ -1,5 +1,5 @@
 import React, { Component } from 'react';
-import http from '../../core/HttpClient';
+import http from '../../core/HttpClientClientSide';
 
 export default class Footer extends Component {
   constructor(props) {
