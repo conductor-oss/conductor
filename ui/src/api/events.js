@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import http from '../core/HttpClient';
+import http from '../core/HttpClientServerSide';
 
 const router = new Router();
 const baseURL = process.env.WF_SERVER;

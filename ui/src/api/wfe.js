@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import http from '../core/HttpClient';
+import http from '../core/HttpClientServerSide';
 import moment from 'moment';
 import filter from 'lodash/fp/filter';
 import forEach from 'lodash/fp/forEach';

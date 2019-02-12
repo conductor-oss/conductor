@@ -1,4 +1,4 @@
-import http from '../core/HttpClient';
+import http from '../core/HttpClientClientSide';
 
 export const FETCH_WORKFLOW_METADATA = "FETCH_WORKFLOW_METADATA";
 export const RECEIVE_WORKFLOW_METADATA = "RECEIVE_WORKFLOW_METADATA";

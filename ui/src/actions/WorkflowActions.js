@@ -1,4 +1,4 @@
-import http from '../core/HttpClient';
+import http from '../core/HttpClientClientSide';
 
 
 export function getWorkflowDetails(workflowId){
