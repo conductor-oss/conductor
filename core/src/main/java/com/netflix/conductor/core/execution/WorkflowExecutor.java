@@ -978,6 +978,10 @@ public class WorkflowExecutor {
     public void executeSystemTask(WorkflowSystemTask systemTask, String taskId, int unackTimeout) {
         try {
             Task task = executionDAOFacade.getTaskById(taskId);
+            if (task == null){
+                LOGGER.error("TaskId: {} could not be found while executing SystemTask", taskId);
+                return;
+            }
             LOGGER.info("Task: {} fetched from execution DAO for taskId: {}", task, taskId);
             if (task.getStatus().isTerminal()) {
                 //Tune the SystemTaskWorkerCoordinator's queues - if the queue size is very big this can happen!
