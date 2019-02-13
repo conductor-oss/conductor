@@ -15,12 +15,15 @@ package com.netflix.conductor.common.metadata.workflow;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.Map;
 
 @ProtoMessage
 public class StartWorkflowRequest {
     @ProtoField(id = 1)
+	@NotNull(message = "Workflow name cannot be null or empty")
 	private String name;
 
     @ProtoField(id = 2)
@@ -36,11 +39,11 @@ public class StartWorkflowRequest {
 	private Map<String, String> taskToDomain = new HashMap<>();
 
     @ProtoField(id = 6)
+    @Valid
     private WorkflowDef workflowDef;
 
     @ProtoField(id = 7)
     private String externalInputPayloadStoragePath;
-
 
     public String getName() {
 		return name;

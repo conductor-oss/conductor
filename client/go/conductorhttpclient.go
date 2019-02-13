@@ -17,6 +17,7 @@ import (
     "conductor/httpclient"
     "strconv"
     "log"
+    "fmt"
 )
 
 type ConductorHttpClient struct {
@@ -199,17 +200,18 @@ func (c *ConductorHttpClient) PollForTask(taskType string, workerid string) (str
     }
 }
 
-func (c *ConductorHttpClient) AckTask(taskType string, workerid string) (string, error) {
-    url := c.httpClient.MakeUrl("/tasks/{taskType}/ack", "{taskType}", taskType)
+func (c *ConductorHttpClient) AckTask(taskId string, workerid string) (string, error) {
+    url := c.httpClient.MakeUrl("/tasks/{taskId}/ack", "{taskId}", taskId)
     params := map[string]string{"workerid":workerid}
-    headers := map[string]string{"Accept":"text/plain"}
+    headers := map[string]string{"Accept":"application/json"}
     outputString, err := c.httpClient.Post(url, params, headers, "")
     if err != nil {
-        log.Println("Error while trying to Ack Task taskType:", taskType, ",workerid:", workerid, err)
-        return "", nil
-    } else {
-        return outputString, nil
+        return "", err
     }
+    if outputString != "true" {
+        return "", fmt.Errorf("Task id: %s has already been Acked", taskId)
+    }
+    return outputString, nil
 }
 
 func (c *ConductorHttpClient) GetAllTasksInQueue() (string, error) {

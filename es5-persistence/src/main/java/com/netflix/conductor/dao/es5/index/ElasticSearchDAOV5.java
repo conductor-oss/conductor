@@ -14,6 +14,8 @@
 package com.netflix.conductor.dao.es5.index;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.MapType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -34,6 +36,7 @@ import com.netflix.conductor.metrics.Monitors;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -450,23 +453,13 @@ public class ElasticSearchDAOV5 implements IndexDAO {
     }
 
     @Override
-    public SearchResult<String> searchWorkflows(String query, String freeText, int start, int count,
-        List<String> sort) {
-        try {
-            return search(indexName, query, start, count, sort, freeText, WORKFLOW_DOC_TYPE);
-        } catch (ParserException e) {
-            throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
-        }
+    public SearchResult<String> searchWorkflows(String query, String freeText, int start, int count, List<String> sort) {
+        return search(indexName, query, start, count, sort, freeText, WORKFLOW_DOC_TYPE);
     }
 
     @Override
-    public SearchResult<String> searchTasks(String query, String freeText, int start, int count,
-        List<String> sort) {
-        try {
-            return search(indexName, query, start, count, sort, freeText, TASK_DOC_TYPE);
-        } catch (ParserException e) {
-            throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
-        }
+    public SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort) {
+        return search(indexName, query, start, count, sort, freeText, TASK_DOC_TYPE);
     }
 
     @Override
@@ -536,37 +529,40 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         return null;
     }
 
-    private SearchResult<String> search(String indexName, String structuredQuery, int start,
-        int size,
-        List<String> sortOptions, String freeTextQuery, String docType) throws ParserException {
-        QueryBuilder queryBuilder = QueryBuilders.matchAllQuery();
-        if (StringUtils.isNotEmpty(structuredQuery)) {
-            Expression expression = Expression.fromString(structuredQuery);
-            queryBuilder = expression.getFilterBuilder();
+    private SearchResult<String> search(String indexName, String structuredQuery, int start, int size,
+        List<String> sortOptions, String freeTextQuery, String docType) {
+        try {
+            QueryBuilder queryBuilder = QueryBuilders.matchAllQuery();
+            if (StringUtils.isNotEmpty(structuredQuery)) {
+                Expression expression = Expression.fromString(structuredQuery);
+                queryBuilder = expression.getFilterBuilder();
+            }
+
+            BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(queryBuilder);
+            QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery(freeTextQuery);
+            BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
+            final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(indexName)
+                    .setQuery(fq)
+                    .setTypes(docType)
+                    .storedFields("_id")
+                    .setFrom(start)
+                    .setSize(size);
+
+            if (sortOptions != null) {
+                sortOptions.forEach(sortOption -> addSortOptionToSearchRequest(srb, sortOption));
+            }
+
+            SearchResponse response = srb.get();
+
+            LinkedList<String> result = StreamSupport.stream(response.getHits().spliterator(), false)
+                    .map(SearchHit::getId)
+                    .collect(Collectors.toCollection(LinkedList::new));
+            long count = response.getHits().getTotalHits();
+
+            return new SearchResult<String>(count, result);
+        } catch (ParserException e) {
+            throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
         }
-
-        BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(queryBuilder);
-        QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery(freeTextQuery);
-        BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
-        final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(indexName)
-            .setQuery(fq)
-            .setTypes(docType)
-            .storedFields("_id")
-            .setFrom(start)
-            .setSize(size);
-
-        if (sortOptions != null) {
-            sortOptions.forEach(sortOption -> addSortOptionToSearchRequest(srb, sortOption));
-        }
-
-        SearchResponse response = srb.get();
-
-        LinkedList<String> result = StreamSupport.stream(response.getHits().spliterator(), false)
-            .map(SearchHit::getId)
-            .collect(Collectors.toCollection(LinkedList::new));
-        long count = response.getHits().getTotalHits();
-
-        return new SearchResult<String>(count, result);
     }
 
     private void addSortOptionToSearchRequest(SearchRequestBuilder searchRequestBuilder,
@@ -625,6 +621,75 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         return StreamSupport.stream(response.getHits().spliterator(), false)
             .map(hit -> hit.getId())
             .collect(Collectors.toCollection(LinkedList::new));
+    }
+
+    @Override
+    public List<Message> getMessages(String queue) {
+        try {
+            Expression expression = Expression.fromString("queue='" + queue + "'");
+            QueryBuilder queryBuilder = expression.getFilterBuilder();
+
+            BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(queryBuilder);
+            QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery("*");
+            BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
+
+            final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(logIndexPrefix + "*")
+                    .setQuery(fq)
+                    .setTypes(MSG_DOC_TYPE)
+                    .addSort(SortBuilders.fieldSort("created").order(SortOrder.ASC));
+
+            return mapGetMessagesResponse(srb.execute().actionGet());
+        } catch (Exception e) {
+            logger.error("Failed to get messages for queue: {}", queue, e);
+            throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
+        }
+    }
+
+    private List<Message> mapGetMessagesResponse(SearchResponse response) throws IOException {
+        SearchHit[] hits = response.getHits().getHits();
+        TypeFactory factory = TypeFactory.defaultInstance();
+        MapType type = factory.constructMapType(HashMap.class, String.class, String.class);
+        List<Message> messages = new ArrayList<>(hits.length);
+        for (SearchHit hit : hits) {
+            String source = hit.getSourceAsString();
+            Map<String, String> mapSource = objectMapper.readValue(source, type);
+            Message msg = new Message(mapSource.get("messageId"), mapSource.get("payload"), null);
+            messages.add(msg);
+        }
+        return messages;
+    }
+
+    @Override
+    public List<EventExecution> getEventExecutions(String event) {
+        try {
+            Expression expression = Expression.fromString("event='" + event + "'");
+            QueryBuilder queryBuilder = expression.getFilterBuilder();
+
+            BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(queryBuilder);
+            QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery("*");
+            BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
+
+            final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(logIndexPrefix + "*")
+                    .setQuery(fq).setTypes(EVENT_DOC_TYPE)
+                    .addSort(SortBuilders.fieldSort("created")
+                            .order(SortOrder.ASC));
+
+            return mapEventExecutionsResponse(srb.execute().actionGet());
+        } catch (Exception e) {
+            logger.error("Failed to get executions for event: {}", event, e);
+            throw new ApplicationException(Code.BACKEND_ERROR, e.getMessage(), e);
+        }
+    }
+
+    private List<EventExecution> mapEventExecutionsResponse(SearchResponse response) throws IOException {
+        SearchHit[] hits = response.getHits().getHits();
+        List<EventExecution> executions = new ArrayList<>(hits.length);
+        for (SearchHit hit : hits) {
+            String source = hit.getSourceAsString();
+            EventExecution tel = objectMapper.readValue(source, EventExecution.class);
+            executions.add(tel);
+        }
+        return executions;
     }
 
 }

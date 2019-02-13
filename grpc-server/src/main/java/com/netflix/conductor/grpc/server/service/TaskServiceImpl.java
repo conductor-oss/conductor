@@ -1,29 +1,22 @@
 package com.netflix.conductor.grpc.server.service;
 
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
+import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.grpc.ProtoMapper;
-import com.netflix.conductor.proto.TaskPb;
 import com.netflix.conductor.grpc.TaskServiceGrpc;
 import com.netflix.conductor.grpc.TaskServicePb;
+import com.netflix.conductor.proto.TaskPb;
+import com.netflix.conductor.service.ExecutionService;
+import com.netflix.conductor.service.TaskService;
 import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
-
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.service.ExecutionService;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.dao.QueueDAO;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.util.List;
+import java.util.Map;
 
 public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskServiceImpl.class);
@@ -34,19 +27,20 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     private static final int POLL_TIMEOUT_MS = 100;
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
 
-    private final ExecutionService taskService;
-    private final QueueDAO queues;
+    private final TaskService taskService;
+
+    private final ExecutionService executionService;
 
     @Inject
-    public TaskServiceImpl(ExecutionService taskService, QueueDAO queues, Configuration config) {
+    public TaskServiceImpl(ExecutionService executionService, TaskService taskService) {
+        this.executionService = executionService;
         this.taskService = taskService;
-        this.queues = queues;
     }
 
     @Override
     public void poll(TaskServicePb.PollRequest req, StreamObserver<TaskServicePb.PollResponse> response) {
         try {
-            List<Task> tasks = taskService.poll(req.getTaskType(), req.getWorkerId(),
+            List<Task> tasks = executionService.poll(req.getTaskType(), req.getWorkerId(),
                     GRPC_HELPER.optional(req.getDomain()), 1, POLL_TIMEOUT_MS);
             if (!tasks.isEmpty()) {
                 TaskPb.Task t = PROTO_MAPPER.toProto(tasks.get(0));
@@ -75,7 +69,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
         }
 
         try {
-            List<Task> polledTasks = taskService.poll(req.getTaskType(), req.getWorkerId(),
+            List<Task> polledTasks = taskService.batchPoll(req.getTaskType(), req.getWorkerId(),
                     GRPC_HELPER.optional(req.getDomain()), count, timeout);
             LOGGER.info("polled tasks: "+polledTasks);
             polledTasks.stream().map(PROTO_MAPPER::toProto).forEach(response::onNext);
@@ -107,7 +101,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
     @Override
     public void getPendingTaskForWorkflow(TaskServicePb.PendingTaskRequest req, StreamObserver<TaskServicePb.PendingTaskResponse> response) {
         try {
-            Task t = taskService.getPendingTaskForWorkflow(req.getTaskRefName(), req.getWorkflowId());
+            Task t = taskService.getPendingTaskForWorkflow(req.getWorkflowId(), req.getTaskRefName());
             response.onNext(
                     TaskServicePb.PendingTaskResponse.newBuilder()
                             .setTask(PROTO_MAPPER.toProto(t))
@@ -189,7 +183,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
 
     @Override
     public void removeTaskFromQueue(TaskServicePb.RemoveTaskRequest req, StreamObserver<TaskServicePb.RemoveTaskResponse> response) {
-        taskService.removeTaskfromQueue(req.getTaskId());
+        taskService.removeTaskFromQueue(req.getTaskId());
         response.onNext(TaskServicePb.RemoveTaskResponse.getDefaultInstance());
         response.onCompleted();
     }
@@ -207,9 +201,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
 
     @Override
     public void getQueueInfo(TaskServicePb.QueueInfoRequest req, StreamObserver<TaskServicePb.QueueInfoResponse> response) {
-        Map<String, Long> queueInfo = queues.queuesDetail().entrySet().stream()
-                .sorted(Comparator.comparing(Map.Entry::getKey))
-                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (v1, v2) -> v1, HashMap::new));
+        Map<String, Long> queueInfo = taskService.getAllQueueDetails();
 
         response.onNext(
                 TaskServicePb.QueueInfoResponse.newBuilder()
@@ -221,7 +213,7 @@ public class TaskServiceImpl extends TaskServiceGrpc.TaskServiceImplBase {
 
     @Override
     public void getQueueAllInfo(TaskServicePb.QueueAllInfoRequest req, StreamObserver<TaskServicePb.QueueAllInfoResponse> response) {
-        Map<String, Map<String, Map<String, Long>>> info = queues.queuesDetailVerbose();
+        Map<String, Map<String, Map<String, Long>>> info = taskService.allVerbose();
         TaskServicePb.QueueAllInfoResponse.Builder queuesBuilder = TaskServicePb.QueueAllInfoResponse.newBuilder();
 
         for (Map.Entry<String, Map<String, Map<String, Long>>> queue : info.entrySet()) {

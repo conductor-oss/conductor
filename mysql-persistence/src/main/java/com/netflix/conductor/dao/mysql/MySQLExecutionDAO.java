@@ -195,12 +195,12 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     }
 
     @Override
-    public void removeTask(String taskId) {
+    public boolean removeTask(String taskId) {
         Task task = getTask(taskId);
 
         if (task == null) {
-            logger.warn("No such Task by id {}", taskId);
-            return;
+            logger.warn("No such task found by id {}", taskId);
+            return false;
         }
 
         final String taskKey = taskKey(task);
@@ -211,6 +211,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
             removeTaskInProgress(connection, task);
             removeTaskData(connection, task);
         });
+        return true;
     }
 
     @Override
@@ -261,18 +262,24 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     }
 
     @Override
-    public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
+    public boolean removeWorkflow(String workflowId) {
+        boolean removed = false;
         Workflow workflow = getWorkflow(workflowId, true);
+        if (workflow != null) {
+            withTransaction(connection -> {
+                removeWorkflowDefToWorkflowMapping(connection, workflow);
+                removeWorkflow(connection, workflowId);
+                removePendingWorkflow(connection, workflow.getWorkflowName(), workflowId);
+            });
+            removed = true;
 
-        withTransaction(connection -> {
-            removeWorkflowDefToWorkflowMapping(connection, workflow);
-            removeWorkflow(connection, workflowId);
-            removePendingWorkflow(connection, workflow.getWorkflowName(), workflowId);
-        });
-
-        for (Task task : workflow.getTasks()) {
-            removeTask(task.getTaskId());
+            for (Task task : workflow.getTasks()) {
+                if (!removeTask(task.getTaskId())) {
+                    removed = false;
+                }
+            }
         }
+        return removed;
     }
 
     @Override

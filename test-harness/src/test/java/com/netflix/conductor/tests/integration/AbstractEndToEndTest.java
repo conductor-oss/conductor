@@ -55,6 +55,7 @@ public abstract class AbstractEndToEndTest {
         workflowDefinition.getTasks().addAll(Arrays.asList(workflowTask1, workflowTask2));
 
         String workflowId = startWorkflow(workflowExecutionName, workflowDefinition);
+
         assertNotNull(workflowId);
 
         Workflow workflow = getWorkflow(workflowId, true);

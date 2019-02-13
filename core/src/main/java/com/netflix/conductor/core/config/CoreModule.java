@@ -33,6 +33,7 @@ import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
 import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
 import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
 import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.HTTPTaskMapper;
 import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
 import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
@@ -52,6 +53,7 @@ import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_EVENT;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_FORK_JOIN;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_FORK_JOIN_DYNAMIC;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_HTTP;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_JOIN;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_SIMPLE;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_SUB_WORKFLOW;
@@ -177,5 +179,13 @@ public class CoreModule extends AbstractModule {
     @Named(TASK_MAPPERS_QUALIFIER)
     public TaskMapper getSimpleTaskMapper(ParametersUtils parametersUtils) {
         return new SimpleTaskMapper(parametersUtils);
+    }
+
+    @ProvidesIntoMap
+    @StringMapKey(TASK_TYPE_HTTP)
+    @Singleton
+    @Named(TASK_MAPPERS_QUALIFIER)
+    public TaskMapper getHTTPTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+        return new HTTPTaskMapper(parametersUtils, metadataDAO);
     }
 }

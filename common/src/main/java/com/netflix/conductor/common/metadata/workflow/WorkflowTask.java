@@ -19,6 +19,9 @@ import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.PositiveOrZero;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -65,9 +68,11 @@ public class WorkflowTask {
 	}
 
 	@ProtoField(id = 1)
+	@NotEmpty(message = "WorkflowTask name cannot be empty or null")
 	private String name;
 
 	@ProtoField(id = 2)
+	@NotEmpty(message = "WorkflowTask taskReferenceName name cannot be empty or null")
 	private String taskReferenceName;
 
 	@ProtoField(id = 3)
@@ -106,7 +111,7 @@ public class WorkflowTask {
 
 	//Populates for the tasks of the decision type
 	@ProtoField(id = 9)
-	private Map<String, List<WorkflowTask>> decisionCases = new LinkedHashMap<>();
+	private Map<String,@Valid List<@Valid WorkflowTask>> decisionCases = new LinkedHashMap<>();
 
 	@Deprecated
 	private String dynamicForkJoinTasksParam;
@@ -118,15 +123,17 @@ public class WorkflowTask {
 	private String dynamicForkTasksInputParamName;
 
 	@ProtoField(id = 12)
-	private List<WorkflowTask> defaultCase = new LinkedList<>();
+	private List<@Valid WorkflowTask> defaultCase = new LinkedList<>();
 
 	@ProtoField(id = 13)
-	private List<List<WorkflowTask>> forkTasks = new LinkedList<>();
+	private List<@Valid List<@Valid WorkflowTask>> forkTasks = new LinkedList<>();
 
 	@ProtoField(id = 14)
-	private int startDelay;		//No. of seconds (at-least) to wait before starting a task.
+    @PositiveOrZero
+	private int startDelay;	//No. of seconds (at-least) to wait before starting a task.
 
 	@ProtoField(id = 15)
+    @Valid
 	private SubWorkflowParams subWorkflowParam;
 
 	@ProtoField(id = 16)
@@ -214,7 +221,7 @@ public class WorkflowTask {
 	/**
 	 * @param type the type to set
 	 */
-	public void setType(String type) {
+	public void setType(@NotEmpty(message = "WorkTask type cannot be null or empty") String type) {
 		this.type = type;
 	}
 
@@ -231,7 +238,6 @@ public class WorkflowTask {
 	public void setDecisionCases(Map<String, List<WorkflowTask>> decisionCases) {
 		this.decisionCases = decisionCases;
 	}
-
 	
 	/**
 	 * @return the defaultCase
@@ -260,7 +266,6 @@ public class WorkflowTask {
 	public void setForkTasks(List<List<WorkflowTask>> forkTasks) {
 		this.forkTasks = forkTasks;
 	}
-
 	
 	/**
 	 * @return the startDelay in seconds
@@ -292,7 +297,6 @@ public class WorkflowTask {
 		this.dynamicTaskNameParam = dynamicTaskNameParam;
 	}
 
-	
 	/**
 	 * @return the caseValueParam
 	 */

@@ -40,7 +40,6 @@ import javax.inject.Inject;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -128,14 +127,14 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
 			recordRedisDaoRequests("createTask", task.getTaskType(), task.getWorkflowType());
 
-			task.setScheduledTime(System.currentTimeMillis());
-
 			String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
 			Long added = dynoClient.hset(nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()), taskKey, task.getTaskId());
 			if (added < 1) {
 				logger.debug("Task already scheduled, skipping the run " + task.getTaskId() + ", ref=" + task.getReferenceTaskName() + ", key=" + taskKey);
 				continue;
 			}
+
+			task.setScheduledTime(System.currentTimeMillis());
 
 			correlateTaskToWorkflowInDS(task.getTaskId(), task.getWorkflowInstanceId());
 			logger.debug("Scheduled task added to WORKFLOW_TO_TASKS workflowId: {}, taskId: {}, taskType: {} during createTasks",
@@ -290,19 +289,20 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			logger.info("Task execution count limited. task - {}:{}, limit: {}, current: {}", task.getTaskId(), task.getTaskDefName(), limit, current);
 			String inProgressKey = nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName());
 			//Cleanup any items that are still present in the rate limit bucket but not in progress anymore!
-			ids.stream().filter(id -> !dynoClient.sismember(inProgressKey, id)).forEach(id2 -> dynoClient.zrem(rateLimitKey, id2));
+			ids.stream()
+					.filter(id -> !dynoClient.sismember(inProgressKey, id))
+					.forEach(id2 -> dynoClient.zrem(rateLimitKey, id2));
 			Monitors.recordTaskRateLimited(task.getTaskDefName(), limit);
 		}
 		return rateLimited;
 	}
 
 	@Override
-	public void removeTask(String taskId) {
-
+	public boolean removeTask(String taskId) {
 		Task task = getTask(taskId);
 		if(task == null) {
-			logger.warn("No such Task by id {}", taskId);
-			return;
+			logger.warn("No such task found by id {}", taskId);
+			return false;
 		}
 		String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
 
@@ -313,6 +313,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		dynoClient.del(nsKey(TASK, task.getTaskId()));
 		dynoClient.zrem(nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName()), task.getTaskId());
 		recordRedisDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
+		return true;
 	}
 
     @Override
@@ -372,21 +373,25 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 
 	@Override
-	public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
-			Workflow wf = getWorkflow(workflowId, true);
+	public boolean removeWorkflow(String workflowId) {
+		Workflow workflow = getWorkflow(workflowId, true);
+		if (workflow != null) {
 			recordRedisDaoRequests("removeWorkflow");
 
 			// Remove from lists
-			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, wf.getWorkflowName(), dateStr(wf.getCreateTime()));
+			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, workflow.getWorkflowName(), dateStr(workflow.getCreateTime()));
 			dynoClient.srem(key, workflowId);
-			dynoClient.srem(nsKey(CORR_ID_TO_WORKFLOWS, wf.getCorrelationId()), workflowId);
-			dynoClient.srem(nsKey(PENDING_WORKFLOWS, wf.getWorkflowName()), workflowId);
+			dynoClient.srem(nsKey(CORR_ID_TO_WORKFLOWS, workflow.getCorrelationId()), workflowId);
+			dynoClient.srem(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflowId);
 
 			// Remove the object
 			dynoClient.del(nsKey(WORKFLOW, workflowId));
-			for(Task task : wf.getTasks()) {
+			for (Task task : workflow.getTasks()) {
 				removeTask(task.getTaskId());
 			}
+			return true;
+		}
+		return false;
 	}
 
 	@Override

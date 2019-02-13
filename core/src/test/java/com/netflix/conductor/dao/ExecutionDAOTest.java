@@ -1,3 +1,15 @@
+/*
+ * Copyright 2016 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.dao;
 
 import com.netflix.conductor.common.metadata.tasks.PollData;
@@ -12,6 +24,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -22,9 +35,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public abstract class ExecutionDAOTest {
@@ -32,7 +46,7 @@ public abstract class ExecutionDAOTest {
     abstract protected ExecutionDAO getExecutionDAO();
 
     @Rule
-    public ExpectedException expected = ExpectedException.none();
+    public ExpectedException expectedException = ExpectedException.none();
 
     @Test
     public void testTaskExceedsLimit() {
@@ -49,7 +63,7 @@ public abstract class ExecutionDAOTest {
         for (int i = 0; i < 15; i++) {
             Task task = new Task();
             task.setScheduledTime(1L);
-            task.setSeq(1);
+            task.setSeq(i + 1);
             task.setTaskId("t_" + i);
             task.setWorkflowInstanceId("workflow_" + i);
             task.setReferenceTaskName("task1");
@@ -74,16 +88,16 @@ public abstract class ExecutionDAOTest {
         Task task = new Task();
         task.setScheduledTime(1L);
         task.setSeq(1);
-        task.setTaskId("t1");
+        task.setTaskId(UUID.randomUUID().toString());
         task.setTaskDefName("task1");
 
-        expected.expect(ApplicationException.class);
-        expected.expectMessage("Workflow instance id cannot be null");
+        expectedException.expect(ApplicationException.class);
+        expectedException.expectMessage("Workflow instance id cannot be null");
         getExecutionDAO().createTasks(Collections.singletonList(task));
 
-        task.setWorkflowInstanceId("wfid");
-        expected.expect(ApplicationException.class);
-        expected.expectMessage("Task reference name cannot be null");
+        task.setWorkflowInstanceId(UUID.randomUUID().toString());
+        expectedException.expect(ApplicationException.class);
+        expectedException.expectMessage("Task reference name cannot be null");
         getExecutionDAO().createTasks(Collections.singletonList(task));
     }
 
@@ -92,12 +106,12 @@ public abstract class ExecutionDAOTest {
         Task task = new Task();
         task.setScheduledTime(1L);
         task.setSeq(1);
-        task.setTaskId("t1");
+        task.setTaskId(UUID.randomUUID().toString());
         task.setTaskDefName("task1");
-        task.setWorkflowInstanceId("wfid");
+        task.setWorkflowInstanceId(UUID.randomUUID().toString());
 
-        expected.expect(ApplicationException.class);
-        expected.expectMessage("Task reference name cannot be null");
+        expectedException.expect(ApplicationException.class);
+        expectedException.expectMessage("Task reference name cannot be null");
         getExecutionDAO().createTasks(Collections.singletonList(task));
     }
 
@@ -108,7 +122,7 @@ public abstract class ExecutionDAOTest {
         assertNotNull(pd);
         assertTrue(pd.getLastPollTime() > 0);
         assertEquals(pd.getQueueName(), "taskDef");
-        assertEquals(pd.getDomain(), null);
+        assertNull(pd.getDomain());
         assertEquals(pd.getWorkerId(), "workerId1");
 
         getExecutionDAO().updateLastPoll("taskDef", "domain1", "workerId1");
@@ -123,7 +137,7 @@ public abstract class ExecutionDAOTest {
         assertEquals(pData.size(), 2);
 
         pd = getExecutionDAO().getPollData("taskDef", "domain2");
-        assertTrue(pd == null);
+        assertNull(pd);
     }
 
     @Test
@@ -134,7 +148,7 @@ public abstract class ExecutionDAOTest {
         for (int i = 0; i < 3; i++) {
             Task task = new Task();
             task.setScheduledTime(1L);
-            task.setSeq(1);
+            task.setSeq(i + 1);
             task.setTaskId(workflowId + "_t" + i);
             task.setReferenceTaskName("t" + i);
             task.setRetryCount(0);
@@ -215,7 +229,7 @@ public abstract class ExecutionDAOTest {
             task.setWorkflowInstanceId("x" + workflowId);
             task.setTaskDefName("testTaskOps" + i);
             task.setStatus(Task.Status.IN_PROGRESS);
-            getExecutionDAO().createTasks(Arrays.asList(task));
+            getExecutionDAO().createTasks(Collections.singletonList(task));
         }
 
 
@@ -245,7 +259,8 @@ public abstract class ExecutionDAOTest {
         found.forEach(task -> {
             assertTrue(task.getOutputData().containsKey("updated"));
             assertEquals(true, task.getOutputData().get("updated"));
-            getExecutionDAO().removeTask(task.getTaskId());
+            boolean removed = getExecutionDAO().removeTask(task.getTaskId());
+            assertTrue(removed);
         });
 
         found = getExecutionDAO().getTasks(taskIds);
@@ -260,15 +275,14 @@ public abstract class ExecutionDAOTest {
         Workflow workflow = createTestWorkflow();
         workflow.setWorkflowDefinition(def);
 
-        String idBase = workflow.getWorkflowId();
-        generateWorkflows(workflow, idBase, 10);
-
+        List<String> workflowIds = generateWorkflows(workflow, 10);
         long count = getExecutionDAO().getPendingWorkflowCount(def.getName());
         assertEquals(10, count);
 
         for (int i = 0; i < 10; i++) {
-            getExecutionDAO().removeFromPendingWorkflow(def.getName(), "x" + i + idBase);
+            getExecutionDAO().removeFromPendingWorkflow(def.getName(), workflowIds.get(i));
         }
+
         count = getExecutionDAO().getPendingWorkflowCount(def.getName());
         assertEquals(0, count);
     }
@@ -276,16 +290,18 @@ public abstract class ExecutionDAOTest {
     @Test
     public void complexExecutionTest() {
         Workflow workflow = createTestWorkflow();
+        int numTasks = workflow.getTasks().size();
 
         String workflowId = getExecutionDAO().createWorkflow(workflow);
+        assertEquals(workflow.getWorkflowId(), workflowId);
+
         List<Task> created = getExecutionDAO().createTasks(workflow.getTasks());
         assertEquals(workflow.getTasks().size(), created.size());
 
         Workflow workflowWithTasks = getExecutionDAO().getWorkflow(workflow.getWorkflowId(), true);
-        assertEquals(workflowWithTasks.getWorkflowId(), workflowId);
-        assertTrue(!workflowWithTasks.getTasks().isEmpty());
+        assertEquals(workflowId, workflowWithTasks.getWorkflowId());
+        assertEquals(numTasks, workflowWithTasks.getTasks().size());
 
-        assertEquals(workflow.getWorkflowId(), workflowId);
         Workflow found = getExecutionDAO().getWorkflow(workflowId, false);
         assertTrue(found.getTasks().isEmpty());
 
@@ -362,14 +378,14 @@ public abstract class ExecutionDAOTest {
         workflow.setReRunFromWorkflowId("re-run from id1");
         workflow.setStartTime(90L);
         workflow.setStatus(Workflow.WorkflowStatus.FAILED);
-        workflow.setWorkflowId("workflow0");
+        workflow.setWorkflowId(UUID.randomUUID().toString());
 
         List<Task> tasks = new LinkedList<>();
 
         Task task = new Task();
         task.setScheduledTime(1L);
         task.setSeq(1);
-        task.setTaskId("t1");
+        task.setTaskId(UUID.randomUUID().toString());
         task.setReferenceTaskName("t1");
         task.setWorkflowInstanceId(workflow.getWorkflowId());
         task.setTaskDefName("task1");
@@ -377,7 +393,7 @@ public abstract class ExecutionDAOTest {
         Task task2 = new Task();
         task2.setScheduledTime(2L);
         task2.setSeq(2);
-        task2.setTaskId("t2");
+        task2.setTaskId(UUID.randomUUID().toString());
         task2.setReferenceTaskName("t2");
         task2.setWorkflowInstanceId(workflow.getWorkflowId());
         task2.setTaskDefName("task2");
@@ -385,7 +401,7 @@ public abstract class ExecutionDAOTest {
         Task task3 = new Task();
         task3.setScheduledTime(2L);
         task3.setSeq(3);
-        task3.setTaskId("t3");
+        task3.setTaskId(UUID.randomUUID().toString());
         task3.setReferenceTaskName("t3");
         task3.setWorkflowInstanceId(workflow.getWorkflowId());
         task3.setTaskDefName("task3");
@@ -402,12 +418,16 @@ public abstract class ExecutionDAOTest {
         return workflow;
     }
 
-    protected void generateWorkflows(Workflow base, String baseId, int count) {
+    protected List<String> generateWorkflows(Workflow base, int count) {
+        List<String> workflowIds = new ArrayList<>();
         for (int i = 0; i < count; i++) {
-            base.setWorkflowId("x" + i + baseId);
+            String workflowId = UUID.randomUUID().toString();
+            base.setWorkflowId(workflowId);
             base.setCorrelationId("corr001");
             base.setStatus(Workflow.WorkflowStatus.RUNNING);
             getExecutionDAO().createWorkflow(base);
+            workflowIds.add(workflowId);
         }
+        return workflowIds;
     }
 }

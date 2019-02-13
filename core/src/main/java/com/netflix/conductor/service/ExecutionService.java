@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.validation.constraints.Max;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -81,6 +82,8 @@ public class ExecutionService {
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
     private static final int POLL_COUNT_ONE = 1;
     private static final int POLLING_TIMEOUT_IN_MS = 100;
+
+    private static final int MAX_SEARCH_SIZE = 5_000;
 
 	@Inject
 	public ExecutionService(WorkflowExecutor workflowExecutor,
@@ -390,10 +393,9 @@ public class ExecutionService {
 		return new SearchResult<>(totalHits, workflows);
 	}
 
-	public SearchResult<TaskSummary> getSearchTasks(String query, String freeText, int start, int size, String sortString) {
-
-	    ServiceUtils.checkArgument(size < maxSearchSize, String.format("Cannot return more than %d workflows." +
-                " Please use pagination.", maxSearchSize));
+	public SearchResult<TaskSummary> getSearchTasks(String query, String freeText, int start,
+													@Max(value = MAX_SEARCH_SIZE, message = "Cannot return more than {value} workflows." +
+															" Please use pagination.") int size, String sortString) {
 	    return searchTasks(query, freeText, start, size, ServiceUtils.convertStringToList(sortString));
     }
 

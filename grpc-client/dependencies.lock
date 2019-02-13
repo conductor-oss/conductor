@@ -82,7 +82,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.1.3"
+            "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -230,7 +230,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.1.3"
+            "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -378,7 +378,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.1.3"
+            "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -536,7 +536,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.1.3"
+            "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -684,7 +684,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.1.3"
+            "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -832,7 +832,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.1.3"
+            "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -988,7 +988,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.1.3"
+            "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -1144,7 +1144,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.1.3"
+            "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [
@@ -1300,7 +1300,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-grpc"
             ],
-            "locked": "1.1.3"
+            "locked": "1.1.4"
         },
         "com.netflix.servo:servo-core": {
             "firstLevelTransitive": [

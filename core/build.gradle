@@ -14,6 +14,11 @@ dependencies {
     compile "org.apache.commons:commons-lang3:${revCommonsLang3}"
     compile "com.spotify:completable-futures:${revSpotifyCompletableFutures}"
     compile "com.amazonaws:aws-java-sdk-s3:${revAwsSdk}"
+    compile "org.hibernate:hibernate-validator:${revHiberante}"
+    // Bean validation runtime dependencies
+    compile "javax.el:javax.el-api:${revJavaElApi}"
+    // https://mvnrepository.com/artifact/org.glassfish/javax.el
+    compile group: 'org.glassfish', name: 'javax.el', version: "${revJavaElApi}"
 
     testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
 }

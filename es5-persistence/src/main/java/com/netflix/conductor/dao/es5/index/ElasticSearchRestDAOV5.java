@@ -3,6 +3,8 @@ package com.netflix.conductor.dao.es5.index;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.MapType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -96,11 +98,13 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
 
     private final String indexName;
     private final String logIndexPrefix;
+    private final String clusterHealthColor;
     private String logIndexName;
     private final ObjectMapper objectMapper;
     private final RestHighLevelClient elasticSearchClient;
     private final RestClient elasticSearchAdminClient;
     private final ExecutorService executorService;
+
 
     static {
         SIMPLE_DATE_FORMAT.setTimeZone(GMT);
@@ -114,6 +118,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
         this.elasticSearchClient = new RestHighLevelClient(lowLevelRestClient);
         this.indexName = config.getIndexName();
         this.logIndexPrefix = config.getTasklogIndexName();
+        this.clusterHealthColor = config.getClusterHealthColor();
 
         // Set up a workerpool for performing async operations.
         int corePoolSize = 6;
@@ -129,7 +134,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
 
     @Override
     public void setup() throws Exception {
-        waitForGreenCluster();
+        waitForHealthyCluster();
 
         try {
             initIndex();
@@ -165,9 +170,9 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
      * Waits for the ES cluster to become green.
      * @throws Exception If there is an issue connecting with the ES cluster.
      */
-    private void waitForGreenCluster() throws Exception {
+    private void waitForHealthyCluster() throws Exception {
         Map<String, String> params = new HashMap<>();
-        params.put("wait_for_status", "green");
+        params.put("wait_for_status", this.clusterHealthColor);
         params.put("timeout", "30s");
 
         elasticSearchAdminClient.performRequest("GET", "/_cluster/health", params);
@@ -433,20 +438,12 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
 
     @Override
     public SearchResult<String> searchWorkflows(String query, String freeText, int start, int count, List<String> sort) {
-        try {
-            return searchObjectIdsViaExpression(query, start, count, sort, freeText, WORKFLOW_DOC_TYPE);
-        } catch (Exception e) {
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
-        }
+        return searchObjectIdsViaExpression(query, start, count, sort, freeText, WORKFLOW_DOC_TYPE);
     }
 
     @Override
     public SearchResult<String> searchTasks(String query, String freeText, int start, int count, List<String> sort) {
-        try {
-            return searchObjectIdsViaExpression(query, start, count, sort, freeText, TASK_DOC_TYPE);
-        } catch (Exception e) {
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
-        }
+        return searchObjectIdsViaExpression(query, start, count, sort, freeText, TASK_DOC_TYPE);
     }
 
     @Override
@@ -524,20 +521,23 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
         return null;
     }
 
-    private SearchResult<String> searchObjectIdsViaExpression(String structuredQuery, int start, int size, List<String> sortOptions, String freeTextQuery, String docType) throws ParserException, IOException {
+    private SearchResult<String> searchObjectIdsViaExpression(String structuredQuery, int start, int size, List<String> sortOptions, String freeTextQuery, String docType) {
+        try {
+            // Build query
+            QueryBuilder queryBuilder = QueryBuilders.matchAllQuery();
+            if(StringUtils.isNotEmpty(structuredQuery)) {
+                Expression expression = Expression.fromString(structuredQuery);
+                queryBuilder = expression.getFilterBuilder();
+            }
 
-        // Build query
-        QueryBuilder queryBuilder = QueryBuilders.matchAllQuery();
-        if(StringUtils.isNotEmpty(structuredQuery)) {
-            Expression expression = Expression.fromString(structuredQuery);
-            queryBuilder = expression.getFilterBuilder();
+            BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(queryBuilder);
+            QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery(freeTextQuery);
+            BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
+
+            return searchObjectIds(indexName, fq, start, size, sortOptions, docType);
+        } catch (Exception e) {
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
         }
-
-        BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(queryBuilder);
-        QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery(freeTextQuery);
-        BoolQueryBuilder fq = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
-
-        return searchObjectIds(indexName, fq, start, size, sortOptions, docType);
     }
 
     private SearchResult<String> searchObjectIds(String indexName, QueryBuilder queryBuilder, int start, int size, String docType) throws IOException {
@@ -672,4 +672,85 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
         }
     }
 
+    @Override
+    public List<Message> getMessages(String queue) {
+        try {
+            Expression expression = Expression.fromString("queue='" + queue + "'");
+            QueryBuilder queryBuilder = expression.getFilterBuilder();
+
+            BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(queryBuilder);
+            QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery("*");
+            BoolQueryBuilder query = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
+
+            // Create the searchObjectIdsViaExpression source
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+            searchSourceBuilder.query(query);
+            searchSourceBuilder.sort(new FieldSortBuilder("created").order(SortOrder.ASC));
+
+            // Generate the actual request to send to ES.
+            SearchRequest searchRequest = new SearchRequest(logIndexPrefix + "*");
+            searchRequest.types(MSG_DOC_TYPE);
+            searchRequest.source(searchSourceBuilder);
+
+            SearchResponse response = elasticSearchClient.search(searchRequest);
+            return mapGetMessagesResponse(response);
+        } catch (Exception e) {
+            logger.error("Failed to get messages for queue: {}", queue, e);
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
+        }
+    }
+
+    private List<Message> mapGetMessagesResponse(SearchResponse response) throws IOException {
+        SearchHit[] hits = response.getHits().getHits();
+        TypeFactory factory = TypeFactory.defaultInstance();
+        MapType type = factory.constructMapType(HashMap.class, String.class, String.class);
+        List<Message> messages = new ArrayList<>(hits.length);
+        for (SearchHit hit : hits) {
+            String source = hit.getSourceAsString();
+            Map<String, String> mapSource = objectMapper.readValue(source, type);
+            Message msg = new Message(mapSource.get("messageId"), mapSource.get("payload"), null);
+            messages.add(msg);
+        }
+        return messages;
+    }
+
+    @Override
+    public List<EventExecution> getEventExecutions(String event) {
+        try {
+            Expression expression = Expression.fromString("event='" + event + "'");
+            QueryBuilder queryBuilder = expression.getFilterBuilder();
+
+            BoolQueryBuilder filterQuery = QueryBuilders.boolQuery().must(queryBuilder);
+            QueryStringQueryBuilder stringQuery = QueryBuilders.queryStringQuery("*");
+            BoolQueryBuilder query = QueryBuilders.boolQuery().must(stringQuery).must(filterQuery);
+
+            // Create the searchObjectIdsViaExpression source
+            SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
+            searchSourceBuilder.query(query);
+            searchSourceBuilder.sort(new FieldSortBuilder("created").order(SortOrder.ASC));
+
+            // Generate the actual request to send to ES.
+            SearchRequest searchRequest = new SearchRequest(logIndexPrefix + "*");
+            searchRequest.types(EVENT_DOC_TYPE);
+            searchRequest.source(searchSourceBuilder);
+
+            SearchResponse response = elasticSearchClient.search(searchRequest);
+
+            return mapEventExecutionsResponse(response);
+        } catch (Exception e) {
+            logger.error("Failed to get executions for event: {}", event, e);
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, e.getMessage(), e);
+        }
+    }
+
+    private List<EventExecution> mapEventExecutionsResponse(SearchResponse response) throws IOException {
+        SearchHit[] hits = response.getHits().getHits();
+        List<EventExecution> executions = new ArrayList<>(hits.length);
+        for (SearchHit hit : hits) {
+            String source = hit.getSourceAsString();
+            EventExecution tel = objectMapper.readValue(source, EventExecution.class);
+            executions.add(tel);
+        }
+        return executions;
+    }
 }

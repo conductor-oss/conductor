@@ -1,10 +1,5 @@
 package com.netflix.conductor.dao.es5.index;
 
-import static org.awaitility.Awaitility.await;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import com.amazonaws.util.IOUtils;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,21 +18,6 @@ import com.netflix.conductor.elasticsearch.EmbeddedElasticSearch;
 import com.netflix.conductor.elasticsearch.SystemPropertiesElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.es5.EmbeddedElasticSearchV5;
 import com.netflix.conductor.elasticsearch.query.parser.ParserException;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.Reader;
-import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
-import java.time.ZoneOffset;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.TimeZone;
-import java.util.concurrent.TimeUnit;
 import org.apache.commons.lang3.StringUtils;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
@@ -52,6 +32,7 @@ import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
+import org.joda.time.DateTime;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -59,6 +40,28 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.ZoneOffset;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.await;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class TestElasticSearchRestDAOV5 {
 
@@ -104,7 +107,7 @@ public class TestElasticSearchRestDAOV5 {
         embeddedElasticSearch.start();
 
         ElasticSearchRestClientProvider restClientProvider =
-            new ElasticSearchRestClientProvider(configuration);
+                new ElasticSearchRestClientProvider(configuration);
         restClient = restClientProvider.get();
         elasticSearchClient = new RestHighLevelClient(restClient);
 
@@ -246,29 +249,96 @@ public class TestElasticSearchRestDAOV5 {
     }
 
     @Test
+    public void testWorkflowSearch() {
+        String workflowId = "search-workflow-id";
+        workflow.setWorkflowId(workflowId);
+        indexDAO.indexWorkflow(workflow);
+        await()
+                .atMost(3, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            List<String> searchIds = indexDAO.searchWorkflows("", "workflowId:\"" + workflowId + "\"", 0, 100, Collections.singletonList("workflowId:ASC")).getResults();
+                            assertEquals(1, searchIds.size());
+                            assertEquals(workflowId, searchIds.get(0));
+                        }
+                );
+    }
+
+    @Test
+    public void testSearchRecentRunningWorkflows() {
+        workflow.setWorkflowId("completed-workflow");
+        workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
+        indexDAO.indexWorkflow(workflow);
+
+        String workflowId = "recent-running-workflow-id";
+        workflow.setWorkflowId(workflowId);
+        workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        workflow.setCreateTime(new Date().getTime());
+        workflow.setUpdateTime(new Date().getTime());
+        workflow.setEndTime(new Date().getTime());
+        indexDAO.indexWorkflow(workflow);
+
+        await()
+                .atMost(3, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            List<String> searchIds = indexDAO.searchRecentRunningWorkflows(1,0);
+                            assertEquals(1, searchIds.size());
+                            assertEquals(workflowId, searchIds.get(0));
+                        }
+                );
+    }
+
+    @Test
+    public void testSearchArchivableWorkflows() throws IOException {
+        String workflowId = "search-workflow-id";
+        Long time = DateTime.now().minusDays(2).toDate().getTime();
+
+        workflow.setWorkflowId(workflowId);
+        workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
+        workflow.setCreateTime(time);
+        workflow.setUpdateTime(time);
+        workflow.setEndTime(time);
+
+        indexDAO.indexWorkflow(workflow);
+
+        assertTrue(indexExists("conductor"));
+
+        await()
+                .atMost(3, TimeUnit.SECONDS)
+                .untilAsserted(
+                        () -> {
+                            List<String> searchIds = indexDAO.searchArchivableWorkflows("conductor",1);
+                            assertEquals(1, searchIds.size());
+                            assertEquals(workflowId, searchIds.get(0));
+                        }
+                );
+    }
+
+    @Test
     public void taskExecutionLogs() throws Exception {
         TaskExecLog taskExecLog1 = new TaskExecLog();
         taskExecLog1.setTaskId("some-task-id");
         long createdTime1 = LocalDateTime.of(2018, 11, 01, 06, 33, 22)
-            .toEpochSecond(ZoneOffset.UTC);
+                .toEpochSecond(ZoneOffset.UTC);
         taskExecLog1.setCreatedTime(createdTime1);
         taskExecLog1.setLog("some-log");
         TaskExecLog taskExecLog2 = new TaskExecLog();
         taskExecLog2.setTaskId("some-task-id");
         long createdTime2 = LocalDateTime.of(2018, 11, 01, 06, 33, 22)
-            .toEpochSecond(ZoneOffset.UTC);
+                .toEpochSecond(ZoneOffset.UTC);
         taskExecLog2.setCreatedTime(createdTime2);
         taskExecLog2.setLog("some-log");
         List<TaskExecLog> logsToAdd = Arrays.asList(taskExecLog1, taskExecLog2);
         indexDAO.addTaskExecutionLogs(logsToAdd);
 
         await()
-            .atMost(5, TimeUnit.SECONDS)
-            .untilAsserted(() -> {
-                List<TaskExecLog> taskExecutionLogs = indexDAO.getTaskExecutionLogs("some-task-id");
-                assertEquals(2, taskExecutionLogs.size());
-            });
-		}
+                .atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    List<TaskExecLog> taskExecutionLogs = indexDAO.getTaskExecutionLogs("some-task-id");
+                    assertEquals(2, taskExecutionLogs.size());
+                });
+    }
 
     @Test
     public void indexTask() throws Exception {
@@ -287,14 +357,14 @@ public class TestElasticSearchRestDAOV5 {
         indexDAO.indexTask(task);
 
         await()
-            .atMost(5, TimeUnit.SECONDS)
-            .untilAsserted(() -> {
-                SearchResult<String> result = indexDAO
-                    .searchTasks("correlationId='" + correlationId + "'", "*", 0, 10000, null);
+                .atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    SearchResult<String> result = indexDAO
+                            .searchTasks("correlationId='" + correlationId + "'", "*", 0, 10000, null);
 
-                assertTrue("should return 1 or more search results", result.getResults().size() > 0);
-                assertEquals("taskId should match the indexed task", "some-task-id", result.getResults().get(0));
-            });
+                    assertTrue("should return 1 or more search results", result.getResults().size() > 0);
+                    assertEquals("taskId should match the indexed task", "some-task-id", result.getResults().get(0));
+                });
     }
 
     @Test
@@ -309,34 +379,39 @@ public class TestElasticSearchRestDAOV5 {
         indexDAO.addMessage("some-queue", message);
 
         await()
-            .atMost(5, TimeUnit.SECONDS)
-            .untilAsserted(() -> {
-                SearchResponse searchResponse = searchObjectIdsViaExpression(
-                    LOG_INDEX_PREFIX + "*",
-                    "messageId='" + messageId + "'",
-                    0,
-                    10000,
-                    null,
-                    "*",
-                    MSG_DOC_TYPE
-                );
-                assertTrue("should return 1 or more search results", searchResponse.getHits().getTotalHits() > 0);
+                .atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    SearchResponse searchResponse = searchObjectIdsViaExpression(
+                            LOG_INDEX_PREFIX + "*",
+                            "messageId='" + messageId + "'",
+                            0,
+                            10000,
+                            null,
+                            "*",
+                            MSG_DOC_TYPE
+                    );
+                    assertTrue("should return 1 or more search results", searchResponse.getHits().getTotalHits() > 0);
 
-                SearchHit searchHit = searchResponse.getHits().getAt(0);
-                String resourcePath =
-                    String.format("/%s/%s/%s", searchHit.getIndex(), MSG_DOC_TYPE, searchHit.getId());
-                Response response = restClient.performRequest(HttpMethod.GET, resourcePath);
+                    SearchHit searchHit = searchResponse.getHits().getAt(0);
+                    String resourcePath =
+                            String.format("/%s/%s/%s", searchHit.getIndex(), MSG_DOC_TYPE, searchHit.getId());
+                    Response response = restClient.performRequest(HttpMethod.GET, resourcePath);
 
-                String responseBody = IOUtils.toString(response.getEntity().getContent());
-                logger.info("responseBody: {}", responseBody);
+                    String responseBody = IOUtils.toString(response.getEntity().getContent());
+                    logger.info("responseBody: {}", responseBody);
 
-                TypeReference<HashMap<String, Object>> typeRef =
-                    new TypeReference<HashMap<String, Object>>() {};
-                Map<String, Object> responseMap = objectMapper.readValue(responseBody, typeRef);
-                Map<String, Object> source = (Map<String, Object>) responseMap.get("_source");
-                assertEquals("indexed message id should match", messageId, source.get("messageId"));
-                assertEquals("indexed payload should match", "some-payload", source.get("payload"));
-            });
+                    TypeReference<HashMap<String, Object>> typeRef =
+                            new TypeReference<HashMap<String, Object>>() {};
+                    Map<String, Object> responseMap = objectMapper.readValue(responseBody, typeRef);
+                    Map<String, Object> source = (Map<String, Object>) responseMap.get("_source");
+                    assertEquals("indexed message id should match", messageId, source.get("messageId"));
+                    assertEquals("indexed payload should match", "some-payload", source.get("payload"));
+                });
+
+        List<Message> messages = indexDAO.getMessages("some-queue");
+        assertEquals(1, messages.size());
+        assertEquals(message.getId(), messages.get(0).getId());
+        assertEquals(message.getPayload(), messages.get(0).getPayload());
     }
 
     @Test
@@ -353,41 +428,45 @@ public class TestElasticSearchRestDAOV5 {
         indexDAO.addEventExecution(eventExecution);
 
         await()
-            .atMost(5, TimeUnit.SECONDS)
-            .untilAsserted(() -> {
-                SearchResponse searchResponse = searchObjectIdsViaExpression(
-                    LOG_INDEX_PREFIX + "*",
-                    "messageId='" + messageId + "'",
-                    0,
-                    10000,
-                    null,
-                    "*",
-                    EVENT_DOC_TYPE
-                );
-                assertTrue("should return 1 or more search results", searchResponse.getHits().getTotalHits() > 0);
+                .atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    SearchResponse searchResponse = searchObjectIdsViaExpression(
+                            LOG_INDEX_PREFIX + "*",
+                            "messageId='" + messageId + "'",
+                            0,
+                            10000,
+                            null,
+                            "*",
+                            EVENT_DOC_TYPE
+                    );
+                    assertTrue("should return 1 or more search results", searchResponse.getHits().getTotalHits() > 0);
 
-                SearchHit searchHit = searchResponse.getHits().getAt(0);
-                String resourcePath =
-                    String.format("/%s/%s/%s", searchHit.getIndex(), EVENT_DOC_TYPE, searchHit.getId());
-                Response response = restClient.performRequest(HttpMethod.GET, resourcePath);
+                    SearchHit searchHit = searchResponse.getHits().getAt(0);
+                    String resourcePath =
+                            String.format("/%s/%s/%s", searchHit.getIndex(), EVENT_DOC_TYPE, searchHit.getId());
+                    Response response = restClient.performRequest(HttpMethod.GET, resourcePath);
 
-                String responseBody = IOUtils.toString(response.getEntity().getContent());
-                TypeReference<HashMap<String, Object>> typeRef =
-                    new TypeReference<HashMap<String, Object>>() {
-                    };
-                Map<String, Object> responseMap = objectMapper.readValue(responseBody, typeRef);
+                    String responseBody = IOUtils.toString(response.getEntity().getContent());
+                    TypeReference<HashMap<String, Object>> typeRef =
+                            new TypeReference<HashMap<String, Object>>() {
+                            };
+                    Map<String, Object> responseMap = objectMapper.readValue(responseBody, typeRef);
 
-                Map<String, Object> sourceMap = (Map<String, Object>) responseMap.get("_source");
-                assertEquals("indexed id should match", "some-id", sourceMap.get("id"));
-                assertEquals("indexed message id should match", messageId, sourceMap.get("messageId"));
-                assertEquals("indexed action should match", Type.complete_task.name(), sourceMap.get("action"));
-                assertEquals("indexed event should match", "some-event", sourceMap.get("event"));
-                assertEquals("indexed status should match", EventExecution.Status.COMPLETED.name(), sourceMap.get("status"));
-            });
+                    Map<String, Object> sourceMap = (Map<String, Object>) responseMap.get("_source");
+                    assertEquals("indexed id should match", "some-id", sourceMap.get("id"));
+                    assertEquals("indexed message id should match", messageId, sourceMap.get("messageId"));
+                    assertEquals("indexed action should match", Type.complete_task.name(), sourceMap.get("action"));
+                    assertEquals("indexed event should match", "some-event", sourceMap.get("event"));
+                    assertEquals("indexed status should match", EventExecution.Status.COMPLETED.name(), sourceMap.get("status"));
+                });
+
+        List<EventExecution> events = indexDAO.getEventExecutions("some-event");
+        assertEquals(1, events.size());
+        assertEquals(eventExecution, events.get(0));
     }
 
     private SearchResponse searchObjectIdsViaExpression(String indexName, String structuredQuery, int start, int size,
-        List<String> sortOptions, String freeTextQuery, String docType) throws ParserException, IOException {
+                                                        List<String> sortOptions, String freeTextQuery, String docType) throws ParserException, IOException {
 
         // Build query
         QueryBuilder queryBuilder = QueryBuilders.matchAllQuery();

@@ -21,6 +21,9 @@ package com.netflix.conductor.common.metadata.events;
 import com.google.protobuf.Any;
 import com.github.vmg.protogen.annotations.*;
 
+import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -34,22 +37,26 @@ import java.util.Map;
 public class EventHandler {
 
 	@ProtoField(id = 1)
+	@NotEmpty(message = "Missing event handler name")
 	private String name;
 
 	@ProtoField(id = 2)
+	@NotEmpty(message = "Missing event location")
 	private String event;
 
 	@ProtoField(id = 3)
 	private String condition;
-	
+
 	@ProtoField(id = 4)
-	private List<Action> actions = new LinkedList<>();
+	@NotNull
+	@NotEmpty(message = "No actions specified. Please specify at-least one action")
+	private List<@Valid Action> actions = new LinkedList<>();
 
 	@ProtoField(id = 5)
 	private boolean active;
-	
+
 	public EventHandler() {
-		
+
 	}
 
 	/**
@@ -61,7 +68,7 @@ public class EventHandler {
 
 	/**
 	 * @param name the name to set
-	 * 
+	 *
 	 */
 	public void setName(String name) {
 		this.name = name;
@@ -76,7 +83,7 @@ public class EventHandler {
 
 	/**
 	 * @param event the event to set
-	 * 
+	 *
 	 */
 	public void setEvent(String event) {
 		this.event = event;
@@ -91,7 +98,7 @@ public class EventHandler {
 
 	/**
 	 * @param condition the condition to set
-	 * 
+	 *
 	 */
 	public void setCondition(String condition) {
 		this.condition = condition;
@@ -106,7 +113,7 @@ public class EventHandler {
 
 	/**
 	 * @param actions the actions to set
-	 * 
+	 *
 	 */
 	public void setActions(List<Action> actions) {
 		this.actions = actions;
@@ -121,7 +128,7 @@ public class EventHandler {
 
 	/**
 	 * @param active if set to false, the event handler is deactivated
-	 * 
+	 *
 	 */
 	public void setActive(boolean active) {
 		this.active = active;
@@ -160,7 +167,7 @@ public class EventHandler {
 
 		/**
 		 * @param action the action to set
-		 * 
+		 *
 		 */
 		public void setAction(Type action) {
 			this.action = action;
@@ -175,7 +182,7 @@ public class EventHandler {
 
 		/**
 		 * @param start_workflow the start_workflow to set
-		 * 
+		 *
 		 */
 		public void setStart_workflow(StartWorkflow start_workflow) {
 			this.start_workflow = start_workflow;
@@ -190,7 +197,7 @@ public class EventHandler {
 
 		/**
 		 * @param complete_task the complete_task to set
-		 * 
+		 *
 		 */
 		public void setComplete_task(TaskDetails complete_task) {
 			this.complete_task = complete_task;
@@ -205,22 +212,22 @@ public class EventHandler {
 
 		/**
 		 * @param fail_task the fail_task to set
-		 * 
+		 *
 		 */
 		public void setFail_task(TaskDetails fail_task) {
 			this.fail_task = fail_task;
 		}
-		
+
 		/**
-		 * 
+		 *
 		 * @param expandInlineJSON when set to true, the in-lined JSON strings are expanded to a full json document
 		 */
 		public void setExpandInlineJSON(boolean expandInlineJSON) {
 			this.expandInlineJSON = expandInlineJSON;
 		}
-		
+
 		/**
-		 * 
+		 *
 		 * @return true if the json strings within the payload should be expanded.
 		 */
 		public boolean isExpandInlineJSON() {
@@ -255,7 +262,7 @@ public class EventHandler {
 
 		/**
 		 * @param workflowId the workflowId to set
-		 * 
+		 *
 		 */
 		public void setWorkflowId(String workflowId) {
 			this.workflowId = workflowId;
@@ -270,7 +277,7 @@ public class EventHandler {
 
 		/**
 		 * @param taskRefName the taskRefName to set
-		 * 
+		 *
 		 */
 		public void setTaskRefName(String taskRefName) {
 			this.taskRefName = taskRefName;
@@ -285,7 +292,7 @@ public class EventHandler {
 
 		/**
 		 * @param output the output to set
-		 * 
+		 *
 		 */
 		public void setOutput(Map<String, Object> output) {
 			this.output = output;
@@ -299,19 +306,19 @@ public class EventHandler {
 			this.outputMessage = outputMessage;
 		}
 
-        /**
-         * @return the taskId
-         */
-        public String getTaskId() {
-            return taskId;
-        }
+		/**
+		 * @return the taskId
+		 */
+		public String getTaskId() {
+			return taskId;
+		}
 
-        /**
-         * @param taskId the taskId to set
-         */
-        public void setTaskId(String taskId) {
-            this.taskId = taskId;
-        }
+		/**
+		 * @param taskId the taskId to set
+		 */
+		public void setTaskId(String taskId) {
+			this.taskId = taskId;
+		}
 	}
 
 	@ProtoMessage
@@ -332,6 +339,9 @@ public class EventHandler {
 		@ProtoField(id = 5)
 		private Any inputMessage;
 
+		@ProtoField(id = 6)
+		private Map<String, String> taskToDomain;
+
 		/**
 		 * @return the name
 		 */
@@ -341,7 +351,7 @@ public class EventHandler {
 
 		/**
 		 * @param name the name to set
-		 * 
+		 *
 		 */
 		public void setName(String name) {
 			this.name = name;
@@ -356,13 +366,13 @@ public class EventHandler {
 
 		/**
 		 * @param version the version to set
-		 * 
+		 *
 		 */
 		public void setVersion(Integer version) {
 			this.version = version;
 		}
 
-		
+
 		/**
 		 * @return the correlationId
 		 */
@@ -372,7 +382,7 @@ public class EventHandler {
 
 		/**
 		 * @param correlationId the correlationId to set
-		 * 
+		 *
 		 */
 		public void setCorrelationId(String correlationId) {
 			this.correlationId = correlationId;
@@ -387,7 +397,7 @@ public class EventHandler {
 
 		/**
 		 * @param input the input to set
-		 * 
+		 *
 		 */
 		public void setInput(Map<String, Object> input) {
 			this.input = input;
@@ -400,6 +410,14 @@ public class EventHandler {
 		public void setInputMessage(Any inputMessage) {
 			this.inputMessage = inputMessage;
 		}
+
+		public Map<String, String> getTaskToDomain() {
+			return taskToDomain;
+		}
+
+		public void setTaskToDomain(Map<String, String> taskToDomain) {
+			this.taskToDomain = taskToDomain;
+		}
 	}
-	
+
 }

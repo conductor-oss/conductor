@@ -24,6 +24,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 @ProtoMessage
@@ -734,5 +735,51 @@ public class Task {
                 ", externalInputPayloadStoragePath='" + externalInputPayloadStoragePath + '\'' +
                 ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Task task = (Task) o;
+        return getRetryCount() == task.getRetryCount() &&
+                getSeq() == task.getSeq() &&
+                getPollCount() == task.getPollCount() &&
+                getScheduledTime() == task.getScheduledTime() &&
+                getStartTime() == task.getStartTime() &&
+                getEndTime() == task.getEndTime() &&
+                getUpdateTime() == task.getUpdateTime() &&
+                getStartDelayInSeconds() == task.getStartDelayInSeconds() &&
+                isRetried() == task.isRetried() &&
+                isExecuted() == task.isExecuted() &&
+                isCallbackFromWorker() == task.isCallbackFromWorker() &&
+                getResponseTimeoutSeconds() == task.getResponseTimeoutSeconds() &&
+                getCallbackAfterSeconds() == task.getCallbackAfterSeconds() &&
+                getRateLimitPerFrequency() == task.getRateLimitPerFrequency() &&
+                getRateLimitFrequencyInSeconds() == task.getRateLimitFrequencyInSeconds() &&
+                Objects.equals(getTaskType(), task.getTaskType()) &&
+                getStatus() == task.getStatus() &&
+                Objects.equals(getInputData(), task.getInputData()) &&
+                Objects.equals(getReferenceTaskName(), task.getReferenceTaskName()) &&
+                Objects.equals(getCorrelationId(), task.getCorrelationId()) &&
+                Objects.equals(getTaskDefName(), task.getTaskDefName()) &&
+                Objects.equals(getRetriedTaskId(), task.getRetriedTaskId()) &&
+                Objects.equals(getWorkflowInstanceId(), task.getWorkflowInstanceId()) &&
+                Objects.equals(getWorkflowType(), task.getWorkflowType()) &&
+                Objects.equals(getTaskId(), task.getTaskId()) &&
+                Objects.equals(getReasonForIncompletion(), task.getReasonForIncompletion()) &&
+                Objects.equals(getWorkerId(), task.getWorkerId()) &&
+                Objects.equals(getOutputData(), task.getOutputData()) &&
+                Objects.equals(getWorkflowTask(), task.getWorkflowTask()) &&
+                Objects.equals(getDomain(), task.getDomain()) &&
+                Objects.equals(getInputMessage(), task.getInputMessage()) &&
+                Objects.equals(getOutputMessage(), task.getOutputMessage()) &&
+                Objects.equals(getExternalInputPayloadStoragePath(), task.getExternalInputPayloadStoragePath()) &&
+                Objects.equals(getExternalOutputPayloadStoragePath(), task.getExternalOutputPayloadStoragePath());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getTaskType(), getStatus(), getInputData(), getReferenceTaskName(), getRetryCount(), getSeq(), getCorrelationId(), getPollCount(), getTaskDefName(), getScheduledTime(), getStartTime(), getEndTime(), getUpdateTime(), getStartDelayInSeconds(), getRetriedTaskId(), isRetried(), isExecuted(), isCallbackFromWorker(), getResponseTimeoutSeconds(), getWorkflowInstanceId(), getWorkflowType(), getTaskId(), getReasonForIncompletion(), getCallbackAfterSeconds(), getWorkerId(), getOutputData(), getWorkflowTask(), getDomain(), getInputMessage(), getOutputMessage(), getRateLimitPerFrequency(), getRateLimitFrequencyInSeconds(), getExternalInputPayloadStoragePath(), getExternalOutputPayloadStoragePath());
     }
 }

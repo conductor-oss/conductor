@@ -3,6 +3,7 @@ package com.netflix.conductor.bootstrap;
 import com.google.inject.AbstractModule;
 import com.google.inject.ProvisionException;
 import com.google.inject.util.Modules;
+import com.netflix.conductor.cassandra.CassandraModule;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.contribs.http.HttpTask;
 import com.netflix.conductor.contribs.http.RestClientManager;
@@ -82,6 +83,9 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
                 modules.add(new RedisWorkflowModule());
                 logger.info("Starting conductor server using redis_cluster.");
                 break;
+            case CASSANDRA:
+                modules.add(new CassandraModule());
+                logger.info("Starting conductor server using cassandra.");
             case REDIS_SENTINEL:
                 modules.add(new RedisSentinelModule());
                 modules.add(new RedisWorkflowModule());
@@ -102,7 +106,7 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
         String externalPayloadStorageString = configuration.getProperty("workflow.external.payload.storage", "");
         try {
             externalPayloadStorageType = ExternalPayloadStorageType.valueOf(externalPayloadStorageString);
-        } catch(IllegalArgumentException e) {
+        } catch (IllegalArgumentException e) {
             logger.info("External payload storage is not configured, provided: {}, supported values are: {}", externalPayloadStorageString, Arrays.toString(ExternalPayloadStorageType.values()), e);
         }
 

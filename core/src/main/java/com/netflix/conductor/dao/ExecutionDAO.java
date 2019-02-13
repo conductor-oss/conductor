@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-/**
- * 
  */
 package com.netflix.conductor.dao;
 
@@ -99,9 +96,9 @@ public interface ExecutionDAO {
 	/**
 	 * 
 	 * @param taskId id of the task to be removed.
-	 *  
+	 * @return true if the deletion is successful, false otherwise.
 	 */
-	void removeTask(String taskId);
+	boolean removeTask(String taskId);
 
 	/**
 	 * 
@@ -154,10 +151,9 @@ public interface ExecutionDAO {
 	/**
 	 *
 	 * @param workflowId workflow instance id
-	 * @param archiveWorkflow if true, archives the workflow in elasticsearch, else, removes the workflow completely
-	 *  
+	 * @return true if the deletion is successful, false otherwise
 	 */
-	void removeWorkflow(String workflowId, boolean archiveWorkflow);
+	boolean removeWorkflow(String workflowId);
 	
 	/**
 	 * 
