@@ -19,8 +19,8 @@ public class Lambda extends WorkflowSystemTask {
     private static final String QUERY_EXPRESSION_PARAMETER = "scriptExpression";
 
     public Lambda() {
-        super("SCRIPT_TASK");
-        logger.info("SCRIPT_TASK initialized...");
+        super("LAMBDA");
+        logger.info("LAMBDA task initialized...");
     }
 
 
