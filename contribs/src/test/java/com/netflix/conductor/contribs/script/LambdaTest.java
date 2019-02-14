@@ -38,9 +38,10 @@ public class LambdaTest {
          */
         task = new Task();
         task.getInputData().put("input", inputObj);
-        task.getInputData().put("scriptExpression", "if ($.input.a==1){return {a:true}}else{return {a:false} } ");
+        task.getInputData().put("scriptExpression", "if ($.input.a==1){return 1}else{return 0 } ");
         lambda.start(workflow, task, executor);
         assertEquals(Task.Status.COMPLETED, task.getStatus());
+        assertEquals(task.getOutputData().toString(), "{result=1}");
 
         /**
          * test for scriptExpression ScriptException
