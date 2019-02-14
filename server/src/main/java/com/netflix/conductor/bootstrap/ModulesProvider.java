@@ -7,7 +7,7 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.contribs.http.HttpTask;
 import com.netflix.conductor.contribs.http.RestClientManager;
 import com.netflix.conductor.contribs.json.JsonJqTransform;
-import com.netflix.conductor.contribs.script.ScriptTask;
+import com.netflix.conductor.contribs.lambda.ScriptTask;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.WorkflowExecutorModule;
 import com.netflix.conductor.core.utils.DummyPayloadStorage;

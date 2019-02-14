@@ -1,4 +1,4 @@
-package com.netflix.conductor.contribs.script;
+package com.netflix.conductor.contribs.lambda;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
@@ -13,12 +13,12 @@ import javax.script.ScriptException;
 import java.util.Map;
 
 @Singleton
-public class ScriptTask extends WorkflowSystemTask {
+public class Lambda extends WorkflowSystemTask {
 
-    private static final Logger logger = LoggerFactory.getLogger(ScriptTask.class);
+    private static final Logger logger = LoggerFactory.getLogger(Lambda.class);
     private static final String QUERY_EXPRESSION_PARAMETER = "scriptExpression";
 
-    public ScriptTask() {
+    public Lambda() {
         super("SCRIPT_TASK");
         logger.info("SCRIPT_TASK initialized...");
     }
