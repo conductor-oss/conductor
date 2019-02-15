@@ -81,7 +81,7 @@ class WorkflowAction extends React.Component {
     if (this.props.workflowStatus === 'RUNNING') {
       return (
         <ButtonGroup>
-          <OverlayTrigger placement="bottom" overlay={ttTerm}>
+          <OverlayTrigger placement="bottom" rootClose="true" overlay={ttTerm}>
             <Button
               bsStyle="danger"
               bsSize="xsmall"
@@ -101,7 +101,7 @@ class WorkflowAction extends React.Component {
     }
     if (this.props.workflowStatus === 'COMPLETED') {
       return (
-        <OverlayTrigger placement="bottom" trigger="click" overlay={ttRestart}>
+        <OverlayTrigger placement="bottom" trigger="focus" overlay={ttRestart}>
           <Button bsStyle="default" bsSize="xsmall" disabled={restarting}>
             {restarting ? <i className="fa fa-spinner fa-spin" /> : 'Restart'}
           </Button>
@@ -110,7 +110,7 @@ class WorkflowAction extends React.Component {
     } else if (this.props.workflowStatus === 'FAILED' || this.props.workflowStatus === 'TERMINATED') {
       return (
         <ButtonGroup>
-          <OverlayTrigger placement="bottom" trigger="click" overlay={ttRestart}>
+          <OverlayTrigger placement="bottom" trigger="focus" overlay={ttRestart}>
             <Button bsStyle="default" bsSize="xsmall" disabled={restarting}>
               {restarting ? <i className="fa fa-spinner fa-spin" /> : 'Restart'}
             </Button>
@@ -135,7 +135,7 @@ class WorkflowAction extends React.Component {
     }
     return (
       <ButtonGroup>
-        <OverlayTrigger placement="bottom" trigger="click" overlay={ttRestart}>
+        <OverlayTrigger placement="bottom" trigger="focus" overlay={ttRestart}>
           <Button bsStyle="default" bsSize="xsmall" disabled={restarting}>
             {restarting ? <i className="fa fa-spinner fa-spin" /> : 'Restart'}
           </Button>
