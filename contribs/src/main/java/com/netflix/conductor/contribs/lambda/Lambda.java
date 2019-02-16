@@ -49,7 +49,7 @@ public class Lambda extends WorkflowSystemTask {
             taskOutput.put("result", returnValue);
             task.setStatus(Task.Status.COMPLETED);
         } catch (ScriptException e) {
-            logger.error(e.getMessage(), e);
+            logger.error("Failed to execute  Lambda: {}", scriptExpression, e);
             task.setStatus(Task.Status.FAILED);
             task.setReasonForIncompletion(e.getMessage());
             taskOutput.put("error", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
