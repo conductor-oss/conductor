@@ -83,8 +83,9 @@ public @interface WorkflowTaskTypeConstraint {
 
         private boolean isDecisionTaskValid(WorkflowTask workflowTask, ConstraintValidatorContext context) {
             boolean valid = true;
-            if (workflowTask.getCaseValueParam() == null){
-                String message = String.format(PARAM_REQUIRED_STRING_FORMAT, "caseValueParam", TaskType.DECISION, workflowTask.getName());
+            if (workflowTask.getCaseValueParam() == null && workflowTask.getCaseExpression() == null){
+                String message = String.format(PARAM_REQUIRED_STRING_FORMAT, "caseValueParam or caseExpression", TaskType.DECISION,
+                    workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             }
@@ -93,7 +94,8 @@ public @interface WorkflowTaskTypeConstraint {
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             }
-            else if (workflowTask.getDecisionCases() != null && (workflowTask.getDecisionCases().size() == 0)){
+            else if ((workflowTask.getDecisionCases() != null || workflowTask.getCaseExpression() != null) &&
+                (workflowTask.getDecisionCases().size() == 0)){
                 String message = String.format("decisionCases should have atleast one task for taskType: %s taskName: %s", TaskType.DECISION, workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
