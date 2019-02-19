@@ -124,30 +124,35 @@ public class ExecutionService {
 		}
 		String queueName = QueueUtils.getQueueName(taskType, domain);
 
-		List<String> taskIds = queueDAO.pop(queueName, count, timeoutInMilliSecond);
-		List<Task> tasks = new LinkedList<>();
-		for(String taskId : taskIds) {
-			Task task = getTask(taskId);
-			if(task == null) {
-				continue;
-			}
+        List<Task> tasks = new LinkedList<>();
+		try {
+			List<String> taskIds = queueDAO.pop(queueName, count, timeoutInMilliSecond);
+			for (String taskId : taskIds) {
+				Task task = getTask(taskId);
+				if (task == null) {
+					continue;
+				}
 
-			if(executionDAOFacade.exceedsInProgressLimit(task)) {
-				continue;
-			}
+				if (executionDAOFacade.exceedsInProgressLimit(task)) {
+					continue;
+				}
 
-			task.setStatus(Status.IN_PROGRESS);
-			if (task.getStartTime() == 0) {
-				task.setStartTime(System.currentTimeMillis());
-				Monitors.recordQueueWaitTime(task.getTaskDefName(), task.getQueueWaitTime());
+				task.setStatus(Status.IN_PROGRESS);
+				if (task.getStartTime() == 0) {
+					task.setStartTime(System.currentTimeMillis());
+					Monitors.recordQueueWaitTime(task.getTaskDefName(), task.getQueueWaitTime());
+				}
+				task.setCallbackAfterSeconds(0);    // reset callbackAfterSeconds when giving the task to the worker
+				task.setWorkerId(workerId);
+				task.setPollCount(task.getPollCount() + 1);
+				executionDAOFacade.updateTask(task);
+				tasks.add(task);
 			}
-			task.setCallbackAfterSeconds(0);	// reset callbackAfterSeconds when giving the task to the worker
-			task.setWorkerId(workerId);
-			task.setPollCount(task.getPollCount() + 1);
-			executionDAOFacade.updateTask(task);
-			tasks.add(task);
-		}
-		executionDAOFacade.updateTaskLastPoll(taskType, domain, workerId);
+			executionDAOFacade.updateTaskLastPoll(taskType, domain, workerId);
+		} catch (Exception e) {
+		    logger.error("Error polling for task: {} from worker: {} in domain: {}, count: {}", taskType, workerId, domain, count, e);
+		    throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "Error polling for task " + taskType);
+        }
 		Monitors.recordTaskPoll(queueName);
 		return tasks;
 	}
