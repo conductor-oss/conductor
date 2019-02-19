@@ -120,11 +120,11 @@ public class ExecutionService {
 	public List<Task> poll(String taskType, String workerId, String domain, int count, int timeoutInMilliSecond) {
 		if (timeoutInMilliSecond > MAX_POLL_TIMEOUT_MS) {
 			throw new ApplicationException(ApplicationException.Code.INVALID_INPUT,
-                    "Long Poll Timeout value cannot be more than 5 seconds");
+					"Long Poll Timeout value cannot be more than 5 seconds");
 		}
 		String queueName = QueueUtils.getQueueName(taskType, domain);
 
-        List<Task> tasks = new LinkedList<>();
+		List<Task> tasks = new LinkedList<>();
 		try {
 			List<String> taskIds = queueDAO.pop(queueName, count, timeoutInMilliSecond);
 			for (String taskId : taskIds) {
@@ -149,11 +149,11 @@ public class ExecutionService {
 				tasks.add(task);
 			}
 			executionDAOFacade.updateTaskLastPoll(taskType, domain, workerId);
+			Monitors.recordTaskPoll(queueName);
 		} catch (Exception e) {
-		    logger.error("Error polling for task: {} from worker: {} in domain: {}, count: {}", taskType, workerId, domain, count, e);
-		    throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "Error polling for task " + taskType);
-        }
-		Monitors.recordTaskPoll(queueName);
+			logger.error("Error polling for task: {} from worker: {} in domain: {}, count: {}", taskType, workerId, domain, count, e);
+			Monitors.error(this.getClass().getCanonicalName(), "taskPoll");
+		}
 		return tasks;
 	}
 
