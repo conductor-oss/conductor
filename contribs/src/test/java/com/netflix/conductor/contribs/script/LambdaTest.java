@@ -2,7 +2,7 @@ package com.netflix.conductor.contribs.script;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.contribs.lambda.Lambda;
+import com.netflix.conductor.contribs.lambda.LambdaTask;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import org.junit.Test;
 
@@ -20,7 +20,7 @@ public class LambdaTest {
 
     @Test
     public void start() throws Exception {
-        Lambda lambda = new Lambda();
+        LambdaTask lambda = new LambdaTask();
 
         Map inputObj = new HashMap();
         inputObj.put("a",1);
