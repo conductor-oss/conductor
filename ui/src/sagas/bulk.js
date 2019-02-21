@@ -17,7 +17,11 @@ function* sendBulkRequest(action) {
     switch (operation) {
       case "retry":
       case "restart":
+      case "restart_with_current_definition":
         response = yield call(http.post, url, workflows);
+        break;
+      case "restart_with_latest_definition":
+        response = yield call(http.post, url + "?useLatestDefinitions=true", workflows);
         break;
       case "pause":
       case "resume":

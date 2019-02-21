@@ -28,7 +28,8 @@ export default class WorkflowBulkAction extends Component {
             <Input type="select" onChange={onChangeBulkProcessSelection} value={bulkProcessOperation}>
               <option value="pause">Pause</option>
               <option value="resume">Resume</option>
-              <option value="restart">Restart</option>
+              <option value="restart_with_latest_definition">Restart With Latest Definition</option>
+              <option value="restart_with_current_definition">Restart With Current Definition</option>
               <option value="retry">Retry</option>
               <option value="terminate">Terminate</option>
             </Input>

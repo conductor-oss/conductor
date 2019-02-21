@@ -203,6 +203,24 @@ router.post('/bulk/restart', async (req, res, next) => {
   }
 })
 
+router.post('/bulk/restart_with_latest_definition', async (req, res, next) => {
+  try {
+    const result = await http.post(baseURL2 + "bulk/restart?useLatestDefinition=true", req.body, req.token);
+    res.status(200).send(result);
+  } catch (err) {
+    next(err);
+  }
+})
+
+router.post('/bulk/restart_with_current_definition', async (req, res, next) => {
+  try {
+    const result = await http.post(baseURL2 + "bulk/restart", req.body, req.token);
+    res.status(200).send(result);
+  } catch (err) {
+    next(err);
+  }
+})
+
 router.delete('/bulk/terminate', async (req, res, next) => {
   try {
     const result = await http.delete(baseURL2 + "bulk/terminate", req.body, req.token);
