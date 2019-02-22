@@ -11,7 +11,7 @@ Contributions will be accepted to the [dev](https://github.com/Netflix/conductor
 2. If in step 1 you get an acknowledge from the project leaders, use the
    following procedure to submit a patch:
 
-    a. Fork Dynomite on github ( http://help.github.com/fork-a-repo/ )
+    a. Fork conductor on github ( http://help.github.com/fork-a-repo/ )
 
     b. Create a topic branch (git checkout -b my_branch)
 
