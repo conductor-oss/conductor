@@ -190,6 +190,9 @@ class Grapher extends Component {
                     p.propsDivElem.style.display = "block"
                     p.setState({selectedTask: data.task, showSideBar: true, subGraph: null, showSubGraph: false});
                 }
+            })
+            .append("svg:title")
+            .text(function(d) { return vertices[d].description;
             });
 
         return (
