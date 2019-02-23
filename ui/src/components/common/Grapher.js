@@ -192,8 +192,7 @@ class Grapher extends Component {
                 }
             })
             .append("svg:title")
-            .text(function(d) { return vertices[d].description;
-            });
+            .text(function(v) { return vertices[v].description; });
 
         return (
             <div className="graph-ui-content" id="graph-ui-content">
