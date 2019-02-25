@@ -34,8 +34,8 @@ class ConductorWorker:
     def execute(self, task, exec_function):
         try:
             resp = exec_function(task)
-            if resp is None:
-                raise Exception('Task execution function MUST return a response as a dict with status and output fields')
+            if type(resp) is not dict or not all(key in resp for key in ('status', 'output', 'logs')):
+                raise Exception('Task execution function MUST return a response as a dict with status, output and logs fields')
             task['status'] = resp['status']
             task['outputData'] = resp['output']
             task['logs'] = resp['logs']
