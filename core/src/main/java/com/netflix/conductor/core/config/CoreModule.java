@@ -31,6 +31,7 @@ import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
 import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ExclusiveJoinTaskMapper;
 import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
 import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
 import com.netflix.conductor.core.execution.mapper.HTTPTaskMapper;
@@ -60,7 +61,7 @@ import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_USER_DEFINED;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_WAIT;
 import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
-
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_EXLCUSIVE_JOIN;
 /**
  * @author Viren
  */
@@ -188,4 +189,13 @@ public class CoreModule extends AbstractModule {
     public TaskMapper getHTTPTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
         return new HTTPTaskMapper(parametersUtils, metadataDAO);
     }
+    
+    @ProvidesIntoMap
+    @StringMapKey(TASK_TYPE_EXLCUSIVE_JOIN)
+    @Singleton
+    @Named(TASK_MAPPERS_QUALIFIER)
+    public TaskMapper getExclusiveJoinTaskMapper() {
+        return new ExclusiveJoinTaskMapper();
+    }
+
 }

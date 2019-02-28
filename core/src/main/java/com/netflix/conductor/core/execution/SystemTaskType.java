@@ -22,10 +22,10 @@ import java.util.HashSet;
 import java.util.Set;
 
 import com.netflix.conductor.core.execution.tasks.Decision;
+import com.netflix.conductor.core.execution.tasks.ExclusiveJoin;
 import com.netflix.conductor.core.execution.tasks.Fork;
 import com.netflix.conductor.core.execution.tasks.Join;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
-
 /**
  * Defines a system task type
  * 
@@ -33,7 +33,7 @@ import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
  */
 public enum SystemTaskType {
 
-	DECISION(new Decision()), FORK(new Fork()), JOIN(new Join());
+	DECISION(new Decision()), FORK(new Fork()), JOIN(new Join()), EXCLUSIVE_JOIN(new ExclusiveJoin());
 	
 	private static Set<String> builtInTasks = new HashSet<>();
 	static {
@@ -41,6 +41,7 @@ public enum SystemTaskType {
 		builtInTasks.add(SystemTaskType.DECISION.name());
 		builtInTasks.add(SystemTaskType.FORK.name());
 		builtInTasks.add(SystemTaskType.JOIN.name());
+		builtInTasks.add(SystemTaskType.EXCLUSIVE_JOIN.name());
 	}
 
 	private WorkflowSystemTask impl;
