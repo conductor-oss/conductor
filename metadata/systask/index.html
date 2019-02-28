@@ -13,19 +13,20 @@
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   <link href="../../css/custom.css" rel="stylesheet">
   
   <script>
     // Current page data
     var mkdocs_page_name = "System Tasks";
     var mkdocs_page_input_path = "metadata/systask.md";
-    var mkdocs_page_url = "/metadata/systask/";
+    var mkdocs_page_url = null;
   </script>
   
-  <script src="../../js/jquery-2.1.1.min.js"></script>
-  <script src="../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../js/highlight.pack.js"></script> 
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -35,160 +36,213 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
-      <div class="wy-side-nav-search" style="background-color:#fcfcfc">
-        <a href="../.." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#fcfcfc;border:0;padding:0" class="cornerlogo" src="../../img/conductor-vector-x.png"/>
-        </a>
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Conductor</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
 	<ul class="current">
+	  
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../..">Introduction</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../intro/">Getting Started</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../../intro/">Getting Started</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../intro/concepts/">Basic Concepts</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../../intro/concepts/">Basic Concepts</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../">Metadata Definitions</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../">Metadata Definitions</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 current">
-        <a class="current" href="./">System Tasks</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#dynamic-task">Dynamic Task</a></li>
-            
-                <li class="toctree-l3"><a href="#decision">Decision</a></li>
-            
-                <li class="toctree-l3"><a href="#fork">Fork</a></li>
-            
-                <li class="toctree-l3"><a href="#dynamic-fork">Dynamic Fork</a></li>
-            
-                <li class="toctree-l3"><a href="#join">Join</a></li>
-            
-                <li class="toctree-l3"><a href="#sub-workflow">Sub Workflow</a></li>
-            
-                <li class="toctree-l3"><a href="#wait">Wait</a></li>
-            
-                <li class="toctree-l3"><a href="#http">HTTP</a></li>
-            
-                <li class="toctree-l3"><a href="#event">Event</a></li>
-            
-            </ul>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../events/">Event Handlers</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../kitchensink/">Kitchensink Example</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../server/">Conductor Server</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../worker/">Conductor Task Workers</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../domains/">Task Domains</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../extend/">Extending Conductor</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../runtime/">APIs</a>
-        
-    </li>
-<li>
-          
-            <li>
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">System Tasks</a>
     <ul class="subnav">
-    <li><span>Workflow Metrics</span></li>
-
-        
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../metrics/">Server Metrics</a>
+    <li class="toctree-l2"><a href="#dynamic-task">Dynamic Task</a></li>
+    
+        <ul>
         
-    </li>
+            <li><a class="toctree-l3" href="#parameters">Parameters:</a></li>
+        
+            <li><a class="toctree-l3" href="#example">Example</a></li>
+        
+        </ul>
+    
 
+    <li class="toctree-l2"><a href="#decision">Decision</a></li>
+    
+        <ul>
         
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../metrics/client/">Worker Metrics</a>
+            <li><a class="toctree-l3" href="#parameters_1">Parameters:</a></li>
         
-    </li>
+            <li><a class="toctree-l3" href="#example_1">Example</a></li>
+        
+        </ul>
+    
 
+    <li class="toctree-l2"><a href="#fork">Fork</a></li>
+    
+        <ul>
         
+            <li><a class="toctree-l3" href="#parameters_2">Parameters:</a></li>
+        
+            <li><a class="toctree-l3" href="#example_2">Example</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l2"><a href="#dynamic-fork">Dynamic Fork</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#example_3">Example</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l2"><a href="#join">Join</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#parameters_3">Parameters</a></li>
+        
+            <li><a class="toctree-l3" href="#example_4">Example</a></li>
+        
+            <li><a class="toctree-l3" href="#join-task-output">Join Task Output</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l2"><a href="#sub-workflow">Sub Workflow</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#parameters_4">Parameters</a></li>
+        
+            <li><a class="toctree-l3" href="#example_5">Example</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l2"><a href="#wait">Wait</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#parameters_5">Parameters</a></li>
+        
+            <li><a class="toctree-l3" href="#external-triggers-for-wait-task">External Triggers for Wait Task</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l2"><a href="#http">HTTP</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#parameters_6">Parameters</a></li>
+        
+            <li><a class="toctree-l3" href="#http-task-output">HTTP Task Output</a></li>
+        
+            <li><a class="toctree-l3" href="#example_6">Example</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l2"><a href="#event">Event</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#parameters_7">Parameters</a></li>
+        
+            <li><a class="toctree-l3" href="#example_7">Example</a></li>
+        
+            <li><a class="toctree-l3" href="#supported-sinks">Supported Sinks</a></li>
+        
+            <li><a class="toctree-l3" href="#event-task-input">Event Task Input</a></li>
+        
+            <li><a class="toctree-l3" href="#event-task-output">Event Task Output</a></li>
+        
+        </ul>
+    
+
     </ul>
-<li>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../faq/">FAQ</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../../events/">Event Handlers</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../license/">License</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../kitchensink/">Kitchensink Example</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../server/">Conductor Server</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../worker/">Conductor Task Workers</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../domains/">Task Domains</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../extend/">Extending Conductor</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../runtime/">APIs</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Workflow Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../metrics/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../metrics/client/">Worker Metrics</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../faq/">FAQ</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../license/">License</a>
+	    </li>
           
         </ul>
       </div>
@@ -198,7 +252,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" style="background:#000000" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
         <a href="../..">Conductor</a>
       </nav>
@@ -695,8 +749,9 @@ To use a wait task, set the task type as <code>WAIT</code></p>
     
   </div>
 
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
-	  
+      
         </div>
       </div>
 
@@ -717,9 +772,9 @@ To use a wait task, set the task type as <code>WAIT</code></p>
       
     </span>
 </div>
-    <script src="../../js/theme.js"></script>
-      <script src="../../search/require.js"></script>
-      <script src="../../search/search.js"></script>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
 
 </body>
 </html>

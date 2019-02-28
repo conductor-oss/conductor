@@ -128,8 +128,11 @@ pre .cs, pre .c {
  * Additions specific to the search functionality provided by MkDocs
  */
 
-.search-results article {
+.search-results {
     margin-top: 23px;
+}
+
+.search-results article {
     border-top: 1px solid #E1E4E5;
     padding-top: 24px;
 }

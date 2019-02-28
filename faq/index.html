@@ -13,19 +13,20 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   <link href="../css/custom.css" rel="stylesheet">
   
   <script>
     // Current page data
     var mkdocs_page_name = "FAQ";
     var mkdocs_page_input_path = "faq.md";
-    var mkdocs_page_url = "/faq/";
+    var mkdocs_page_url = null;
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js"></script>
-  <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -35,158 +36,130 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
-      <div class="wy-side-nav-search" style="background-color:#fcfcfc">
-        <a href=".." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#fcfcfc;border:0;padding:0" class="cornerlogo" src="../img/conductor-vector-x.png"/>
-        </a>
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Conductor</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
 	<ul class="current">
+	  
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="..">Introduction</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Introduction</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../intro/">Getting Started</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../intro/">Getting Started</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../intro/concepts/">Basic Concepts</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../intro/concepts/">Basic Concepts</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../metadata/">Metadata Definitions</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../metadata/">Metadata Definitions</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../metadata/systask/">System Tasks</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../metadata/systask/">System Tasks</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../events/">Event Handlers</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../events/">Event Handlers</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../server/">Conductor Server</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../server/">Conductor Server</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../worker/">Conductor Task Workers</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../worker/">Conductor Task Workers</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../domains/">Task Domains</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../domains/">Task Domains</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../extend/">Extending Conductor</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../extend/">Extending Conductor</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../runtime/">APIs</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../runtime/">APIs</a>
+	    </li>
           
-            <li>
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Workflow Metrics</span>
     <ul class="subnav">
-    <li><span>Workflow Metrics</span></li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../metrics/">Server Metrics</a>
-        
-    </li>
-
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../metrics/client/">Worker Metrics</a>
-        
-    </li>
-
-        
+                <li class="">
+                    
+    <a class="" href="../metrics/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../metrics/client/">Worker Metrics</a>
+                </li>
     </ul>
-<li>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 current">
-        <a class="current" href="./">FAQ</a>
-        
-            <ul>
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">FAQ</a>
+    <ul class="subnav">
             
-                <li class="toctree-l3"><a href="#how-do-you-schedule-a-task-to-be-put-in-the-queue-after-some-time-eg-1-hour-1-day-etc">How do you schedule a task to be put in the queue after some time (e.g. 1 hour, 1 day etc.)</a></li>
-            
-                <li class="toctree-l3"><a href="#how-long-can-a-workflow-be-in-running-state-can-i-have-a-workflow-that-keeps-running-for-days-or-months">How long can a workflow be in running state?  Can I have a workflow that keeps running for days or months?</a></li>
-            
-                <li class="toctree-l3"><a href="#my-workflow-fails-to-start-with-missing-task-error">My workflow fails to start with missing task error</a></li>
-            
-                <li class="toctree-l3"><a href="#where-does-my-worker-run-how-does-conductor-run-my-tasks">Where does my worker run?  How does conductor run my tasks?</a></li>
-            
-                <li class="toctree-l3"><a href="#how-can-i-schedule-workflows-to-run-at-a-specific-time">How can I schedule workflows to run at a specific time?</a></li>
-            
-                <li class="toctree-l3"><a href="#how-do-i-setup-dynomite-cluster">How do I setup Dynomite cluster?</a></li>
-            
-                <li class="toctree-l3"><a href="#can-i-use-conductor-with-ruby-go-python">Can I use conductor with Ruby / Go / Python?</a></li>
-            
-                <li class="toctree-l3"><a href="#how-can-i-get-help-with-dynomite">How can I get help with Dynomite?</a></li>
-            
-            </ul>
-        
-    </li>
-<li>
+    <li class="toctree-l2"><a href="#how-do-you-schedule-a-task-to-be-put-in-the-queue-after-some-time-eg-1-hour-1-day-etc">How do you schedule a task to be put in the queue after some time (e.g. 1 hour, 1 day etc.)</a></li>
+    
+
+    <li class="toctree-l2"><a href="#how-long-can-a-workflow-be-in-running-state-can-i-have-a-workflow-that-keeps-running-for-days-or-months">How long can a workflow be in running state?  Can I have a workflow that keeps running for days or months?</a></li>
+    
+
+    <li class="toctree-l2"><a href="#my-workflow-fails-to-start-with-missing-task-error">My workflow fails to start with missing task error</a></li>
+    
+
+    <li class="toctree-l2"><a href="#where-does-my-worker-run-how-does-conductor-run-my-tasks">Where does my worker run?  How does conductor run my tasks?</a></li>
+    
+
+    <li class="toctree-l2"><a href="#how-can-i-schedule-workflows-to-run-at-a-specific-time">How can I schedule workflows to run at a specific time?</a></li>
+    
+
+    <li class="toctree-l2"><a href="#how-do-i-setup-dynomite-cluster">How do I setup Dynomite cluster?</a></li>
+    
+
+    <li class="toctree-l2"><a href="#can-i-use-conductor-with-ruby-go-python">Can I use conductor with Ruby / Go / Python?</a></li>
+    
+
+    <li class="toctree-l2"><a href="#how-can-i-get-help-with-dynomite">How can I get help with Dynomite?</a></li>
+    
+
+    </ul>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../license/">License</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../license/">License</a>
+	    </li>
           
         </ul>
       </div>
@@ -196,7 +169,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" style="background:#000000" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
         <a href="..">Conductor</a>
       </nav>
@@ -232,10 +205,10 @@
 <p>Ensure all the tasks are registered via <code>/metadata/taskdefs</code> APIs.  Add any missing task definition (as reported in the error) and try again.</p>
 <h4 id="where-does-my-worker-run-how-does-conductor-run-my-tasks">Where does my worker run?  How does conductor run my tasks?<a class="headerlink" href="#where-does-my-worker-run-how-does-conductor-run-my-tasks" title="Permanent link">&para;</a></h4>
 <p>Conductor does not run the workers.  When a task is scheduled, it is put into the queue maintained by Conductor.  Workers are required to poll for tasks using <code>/tasks/poll</code> API at periodic interval, execute the business logic for the task and report back the results using <code>POST /tasks</code> API call. 
-Conductor, however will run <a href="../metadata/systask/">system tasks</a> on the Conductor server.</p>
+Conductor, however will run <a href="/metadata/systask/">system tasks</a> on the Conductor server.</p>
 <h4 id="how-can-i-schedule-workflows-to-run-at-a-specific-time">How can I schedule workflows to run at a specific time?<a class="headerlink" href="#how-can-i-schedule-workflows-to-run-at-a-specific-time" title="Permanent link">&para;</a></h4>
 <p>Conductor does not provide any scheduling mechanism.  But you can use any of the available scheduling systems to make REST calls to Conductor to start a workflow.  Alternatively, publish a message to a supported eventing system like SQS to trigger a workflow.<br />
-More details about <a href="../events">eventing</a>.</p>
+More details about <a href="/events">eventing</a>.</p>
 <h4 id="how-do-i-setup-dynomite-cluster">How do I setup Dynomite cluster?<a class="headerlink" href="#how-do-i-setup-dynomite-cluster" title="Permanent link">&para;</a></h4>
 <p>Visit Dynomite's github page.  <a href="https://github.com/Netflix/dynomite">https://github.com/Netflix/dynomite</a> to find details on setup and support mechanism.</p>
 <h4 id="can-i-use-conductor-with-ruby-go-python">Can I use conductor with Ruby / Go / Python?<a class="headerlink" href="#can-i-use-conductor-with-ruby-go-python" title="Permanent link">&para;</a></h4>
@@ -266,8 +239,9 @@ More details about <a href="../events">eventing</a>.</p>
     
   </div>
 
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
-	  
+      
         </div>
       </div>
 
@@ -288,9 +262,9 @@ More details about <a href="../events">eventing</a>.</p>
       
     </span>
 </div>
-    <script src="../js/theme.js"></script>
-      <script src="../search/require.js"></script>
-      <script src="../search/search.js"></script>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
 
 </body>
 </html>

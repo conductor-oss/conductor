@@ -13,19 +13,20 @@
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   <link href="../../css/custom.css" rel="stylesheet">
   
   <script>
     // Current page data
     var mkdocs_page_name = "Basic Concepts";
     var mkdocs_page_input_path = "intro/concepts.md";
-    var mkdocs_page_url = "/intro/concepts/";
+    var mkdocs_page_url = null;
   </script>
   
-  <script src="../../js/jquery-2.1.1.min.js"></script>
-  <script src="../../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../../js/highlight.pack.js"></script> 
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -35,152 +36,121 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
-      <div class="wy-side-nav-search" style="background-color:#fcfcfc">
-        <a href="../.." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#fcfcfc;border:0;padding:0" class="cornerlogo" src="../../img/conductor-vector-x.png"/>
-        </a>
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Conductor</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
 	<ul class="current">
+	  
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../..">Introduction</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../">Getting Started</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../">Getting Started</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Basic Concepts</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#workflow-definition">Workflow Definition</a></li>
-            
-                <li class="toctree-l3"><a href="#task-definition">Task Definition</a></li>
-            
-                <li class="toctree-l3"><a href="#system-tasks">System Tasks</a></li>
-            
-                <li class="toctree-l3"><a href="#worker-tasks">Worker Tasks</a></li>
-            
-                <li class="toctree-l3"><a href="#lifecycle-of-a-workflow-task">Lifecycle of a Workflow Task</a></li>
-            
-            </ul>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../metadata/">Metadata Definitions</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../metadata/systask/">System Tasks</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../events/">Event Handlers</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../metadata/kitchensink/">Kitchensink Example</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../server/">Conductor Server</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../worker/">Conductor Task Workers</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../domains/">Task Domains</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../extend/">Extending Conductor</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../runtime/">APIs</a>
-        
-    </li>
-<li>
-          
-            <li>
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">Basic Concepts</a>
     <ul class="subnav">
-    <li><span>Workflow Metrics</span></li>
-
-        
             
-    <li class="toctree-l1 ">
-        <a class="" href="../../metrics/">Server Metrics</a>
-        
-    </li>
+    <li class="toctree-l2"><a href="#workflow-definition">Workflow Definition</a></li>
+    
 
-        
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../../metrics/client/">Worker Metrics</a>
-        
-    </li>
+    <li class="toctree-l2"><a href="#task-definition">Task Definition</a></li>
+    
 
-        
+    <li class="toctree-l2"><a href="#system-tasks">System Tasks</a></li>
+    
+
+    <li class="toctree-l2"><a href="#worker-tasks">Worker Tasks</a></li>
+    
+
+    <li class="toctree-l2"><a href="#lifecycle-of-a-workflow-task">Lifecycle of a Workflow Task</a></li>
+    
+
     </ul>
-<li>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../faq/">FAQ</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../../metadata/">Metadata Definitions</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../../license/">License</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../../metadata/systask/">System Tasks</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../events/">Event Handlers</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../metadata/kitchensink/">Kitchensink Example</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../server/">Conductor Server</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../worker/">Conductor Task Workers</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../domains/">Task Domains</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../extend/">Extending Conductor</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../runtime/">APIs</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Workflow Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../metrics/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../metrics/client/">Worker Metrics</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../faq/">FAQ</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../license/">License</a>
+	    </li>
           
         </ul>
       </div>
@@ -190,7 +160,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" style="background:#000000" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
         <a href="../..">Conductor</a>
       </nav>
@@ -219,7 +189,7 @@
               
                 <h2 id="workflow-definition">Workflow Definition<a class="headerlink" href="#workflow-definition" title="Permanent link">&para;</a></h2>
 <p>Workflows are defined using a JSON based DSL and includes a set of tasks that are executed as part of the workflows.  The tasks are either control tasks (fork, conditional etc) or application tasks (e.g. encode a file) that are executed on a remote machine.
-<a href="../../metadata">more details</a></p>
+<a href="/metadata">more details</a></p>
 <h2 id="task-definition">Task Definition<a class="headerlink" href="#task-definition" title="Permanent link">&para;</a></h2>
 <ul>
 <li>All tasks need to be registered before they can be used by active workflows.</li>
@@ -241,31 +211,31 @@ Worker tasks fall into two categories:<ul>
 </thead>
 <tbody>
 <tr>
-<td><a href="../../metadata/systask/#dynamic-task">DYNAMIC</a></td>
+<td><a href="/metadata/systask/#dynamic-task">DYNAMIC</a></td>
 <td align="left">A worker task which is derived based on the input expression to the task, rather than being statically defined as part of the blueprint</td>
 </tr>
 <tr>
-<td><a href="../../metadata/systask/#decision">DECIDE</a></td>
+<td><a href="/metadata/systask/#decision">DECIDE</a></td>
 <td align="left">Decision tasks - implements case...switch style fork</td>
 </tr>
 <tr>
-<td><a href="../../metadata/systask/#fork">FORK</a></td>
+<td><a href="/metadata/systask/#fork">FORK</a></td>
 <td align="left">Forks a parallel set of tasks.  Each set is scheduled to be executed in parallel</td>
 </tr>
 <tr>
-<td><a href="../../metadata/systask/#dynamic-fork">FORK_JOIN_DYNAMIC</a></td>
+<td><a href="/metadata/systask/#dynamic-fork">FORK_JOIN_DYNAMIC</a></td>
 <td align="left">Similar to FORK, but rather than the set of tasks defined in the blueprint for parallel execution, FORK_JOIN_DYNAMIC spawns the parallel tasks based on the input expression to this task</td>
 </tr>
 <tr>
-<td><a href="../../metadata/systask/#join">JOIN</a></td>
+<td><a href="/metadata/systask/#join">JOIN</a></td>
 <td align="left">Complements FORK and FORK_JOIN_DYNAMIC.  Used to merge one of more parallel branches*</td>
 </tr>
 <tr>
-<td><a href="../../metadata/systask/#sub-workflow">SUB_WORKFLOW</a></td>
+<td><a href="/metadata/systask/#sub-workflow">SUB_WORKFLOW</a></td>
 <td align="left">Nest another workflow as a sub workflow task.  Upon execution it instantiates the sub workflow and awaits it completion</td>
 </tr>
 <tr>
-<td><a href="../../metadata/systask/#event">EVENT</a></td>
+<td><a href="/metadata/systask/#event">EVENT</a></td>
 <td align="left">Produces an event in a supported eventing system (e.g. Conductor, SQS)</td>
 </tr>
 </tbody>
@@ -275,8 +245,8 @@ Worker tasks fall into two categories:<ul>
 <p>Worker tasks are implemented by application(s) and runs in a separate environment from Conductor.  The worker tasks can be implemented in any language.  These tasks talk to Conductor server via REST API endpoints to poll for tasks and update its status after execution.</p>
 <p>Worker tasks are identified by task type <strong>SIMPLE</strong> in the blueprint.</p>
 <h2 id="lifecycle-of-a-workflow-task">Lifecycle of a Workflow Task<a class="headerlink" href="#lifecycle-of-a-workflow-task" title="Permanent link">&para;</a></h2>
-<p><img alt="Task_States" src="../../img/task_states.png" /></p>
-<p><a href="../../metadata/#task-definition">more details</a></p>
+<p><img alt="Task_States" src="/img/task_states.png" /></p>
+<p><a href="/metadata/#task-definition">more details</a></p>
               
             </div>
           </div>
@@ -299,8 +269,9 @@ Worker tasks fall into two categories:<ul>
     
   </div>
 
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
-	  
+      
         </div>
       </div>
 
@@ -321,9 +292,9 @@ Worker tasks fall into two categories:<ul>
       
     </span>
 </div>
-    <script src="../../js/theme.js"></script>
-      <script src="../../search/require.js"></script>
-      <script src="../../search/search.js"></script>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
 
 </body>
 </html>

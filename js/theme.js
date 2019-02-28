@@ -13,19 +13,27 @@ $( document ).ready(function() {
 
     // Keyboard navigation
     document.addEventListener("keydown", function(e) {
-        if ($(e.target).is(':input')) return true;
-        var key = e.which || e.keyCode || window.event && window.event.keyCode;
-        var page;
-        switch (key) {
-            case 39:  // right arrow
-                page = $('[role="navigation"] a:contains(Next):first').prop('href');
-                break;
-            case 37:  // left arrow
-                page = $('[role="navigation"] a:contains(Previous):first').prop('href');
-                break;
-            default: break;
-        }
-        if (page) window.location.href = page;
+      var key = e.which || e.keyCode || window.event && window.event.keyCode;
+      var page;
+      switch (key) {
+          case 78:  // n
+              page = $('[role="navigation"] a:contains(Next):first').prop('href');
+              break;
+          case 80:  // p
+              page = $('[role="navigation"] a:contains(Previous):first').prop('href');
+              break;
+          case 13:  // enter
+              if (e.target === document.getElementById('mkdocs-search-query')) {
+                e.preventDefault();
+              }
+              break;
+          default: break;
+      }
+      if ($(e.target).is(':input')) {
+        return true;
+      } else if (page) {
+        window.location.href = page;
+      }
     });
 
     $(document).on('click', "[data-toggle='rst-current-version']", function() {
@@ -34,8 +42,6 @@ $( document ).ready(function() {
 
     // Make tables responsive
     $("table.docutils:not(.field-list)").wrap("<div class='wy-table-responsive'></div>");
-
-    hljs.initHighlightingOnLoad();
 
     $('table').addClass('docutils');
 });

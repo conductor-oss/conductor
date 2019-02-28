@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+  <meta name="description" content="None">
   
   <link rel="shortcut icon" href="../img/favicon.ico">
   <title>Getting Started - Conductor</title>
@@ -13,19 +13,20 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   <link href="../css/custom.css" rel="stylesheet">
   
   <script>
     // Current page data
     var mkdocs_page_name = "Getting Started";
     var mkdocs_page_input_path = "intro/index.md";
-    var mkdocs_page_url = "/intro/";
+    var mkdocs_page_url = null;
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js"></script>
-  <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -35,150 +36,124 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
-      <div class="wy-side-nav-search" style="background-color:#fcfcfc">
-        <a href=".." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#fcfcfc;border:0;padding:0" class="cornerlogo" src="../img/conductor-vector-x.png"/>
-        </a>
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Conductor</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
 	<ul class="current">
+	  
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="..">Introduction</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Introduction</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Getting Started</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#high-level-architecture">High Level Architecture</a></li>
-            
-                <li class="toctree-l3"><a href="#installing-and-running">Installing and Running</a></li>
-            
-                <li class="toctree-l3"><a href="#runtime-model">Runtime Model</a></li>
-            
-                <li class="toctree-l3"><a href="#high-level-steps">High Level Steps</a></li>
-            
-            </ul>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="concepts/">Basic Concepts</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../metadata/">Metadata Definitions</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../metadata/systask/">System Tasks</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../events/">Event Handlers</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../server/">Conductor Server</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../worker/">Conductor Task Workers</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../domains/">Task Domains</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../extend/">Extending Conductor</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../runtime/">APIs</a>
-        
-    </li>
-<li>
-          
-            <li>
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">Getting Started</a>
     <ul class="subnav">
-    <li><span>Workflow Metrics</span></li>
-
-        
             
-    <li class="toctree-l1 ">
-        <a class="" href="../metrics/">Server Metrics</a>
-        
-    </li>
+    <li class="toctree-l2"><a href="#high-level-architecture">High Level Architecture</a></li>
+    
 
+    <li class="toctree-l2"><a href="#installing-and-running">Installing and Running</a></li>
+    
+        <ul>
         
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../metrics/client/">Worker Metrics</a>
+            <li><a class="toctree-l3" href="#running-in-memory-server">Running In-Memory Server</a></li>
         
-    </li>
+        </ul>
+    
 
-        
+    <li class="toctree-l2"><a href="#runtime-model">Runtime Model</a></li>
+    
+
+    <li class="toctree-l2"><a href="#high-level-steps">High Level Steps</a></li>
+    
+
     </ul>
-<li>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../faq/">FAQ</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="concepts/">Basic Concepts</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../license/">License</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../metadata/">Metadata Definitions</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../metadata/systask/">System Tasks</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../events/">Event Handlers</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../server/">Conductor Server</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../worker/">Conductor Task Workers</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../domains/">Task Domains</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../extend/">Extending Conductor</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../runtime/">APIs</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Workflow Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../metrics/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../metrics/client/">Worker Metrics</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../faq/">FAQ</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../license/">License</a>
+	    </li>
           
         </ul>
       </div>
@@ -188,7 +163,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" style="background:#000000" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
         <a href="..">Conductor</a>
       </nav>
@@ -216,12 +191,12 @@
             <div class="section">
               
                 <h1 id="high-level-architecture">High Level Architecture<a class="headerlink" href="#high-level-architecture" title="Permanent link">&para;</a></h1>
-<p><img alt="Architecture" src="./images/conductor-architecture.png" /></p>
+<p><img alt="Architecture" src="images/conductor-architecture.png" /></p>
 <p>The API and storage layers are pluggable and provide ability to work with different backend and queue service providers.</p>
 <h1 id="installing-and-running">Installing and Running<a class="headerlink" href="#installing-and-running" title="Permanent link">&para;</a></h1>
 <div class="admonition hint">
 <p class="admonition-title">Running in production</p>
-<p>For a detailed configuration guide on installing and running Conductor server in production visit <a href="../server">Conductor Server</a> documentation.</p>
+<p>For a detailed configuration guide on installing and running Conductor server in production visit <a href="/server">Conductor Server</a> documentation.</p>
 </div>
 <h2 id="running-in-memory-server">Running In-Memory Server<a class="headerlink" href="#running-in-memory-server" title="Permanent link">&para;</a></h2>
 <p>Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.</p>
@@ -243,17 +218,17 @@
 gulp watch
 </code></pre>
 
-<h4 id="or-start-all-the-services-using-docker-compose">Or Start all the services using <a href="../docker/docker-compose.yaml">docker-compose</a><a class="headerlink" href="#or-start-all-the-services-using-docker-compose" title="Permanent link">&para;</a></h4>
+<h4 id="or-start-all-the-services-using-docker-compose">Or Start all the services using <a href="/docker/docker-compose.yaml">docker-compose</a><a class="headerlink" href="#or-start-all-the-services-using-docker-compose" title="Permanent link">&para;</a></h4>
 <pre><code class="shell">cd docker
 docker-compose up
 </code></pre>
 
 <p>If you ran it locally, launch UI at <a href="http://localhost:3000/">http://localhost:3000/</a> or if you have ran it using docker-compose launch the UI at <a href="http://localhost:5000/">http://localhost:5000/</a></p>
 <p>!!!Note:
-    The server will load a sample kitchen sink workflow definition by default.  See <a href="../metadata/kitchensink/">here</a> for details.</p>
+    The server will load a sample kitchen sink workflow definition by default.  See <a href="/metadata/kitchensink/">here</a> for details.</p>
 <h1 id="runtime-model">Runtime Model<a class="headerlink" href="#runtime-model" title="Permanent link">&para;</a></h1>
 <p>Conductor follows RPC based communication model where workers are running on a separate machine from the server.  Workers communicate with server over HTTP based endpoints and employs polling model for managing work queues.</p>
-<p><img alt="name_for_alt" src="./overview.png" /></p>
+<p><img alt="name_for_alt" src="overview.png" /></p>
 <p><strong>Notes</strong></p>
 <ul>
 <li>Workers are remote systems and communicates over HTTP (or any supported RPC mechanism) with conductor servers.</li>
@@ -312,8 +287,9 @@ docker-compose up
     
   </div>
 
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
-	  
+      
         </div>
       </div>
 
@@ -334,9 +310,14 @@ docker-compose up
       
     </span>
 </div>
-    <script src="../js/theme.js"></script>
-      <script src="../search/require.js"></script>
-      <script src="../search/search.js"></script>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
 
 </body>
 </html>
+
+<!--
+MkDocs version : 1.0.4
+Build Date UTC : 2019-02-28 19:23:53
+-->

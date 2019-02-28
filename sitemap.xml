@@ -1,132 +1,83 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-
-    
     <url>
-     <loc>/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
     <url>
-     <loc>/intro/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
     <url>
-     <loc>/intro/concepts/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
     <url>
-     <loc>/metadata/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
     <url>
-     <loc>/metadata/systask/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
     <url>
-     <loc>/events/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
     <url>
-     <loc>/metadata/kitchensink/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
     <url>
-     <loc>/server/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
     <url>
-     <loc>/worker/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
     <url>
-     <loc>/domains/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
     <url>
-     <loc>/extend/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
     <url>
-     <loc>/runtime/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
-        
     <url>
-     <loc>/metrics/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
     <url>
-     <loc>/metrics/client/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-        
-    
-
-    
     <url>
-     <loc>/faq/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
-    
     <url>
-     <loc>/license/</loc>
-     <lastmod>2017-12-13</lastmod>
+     <loc>None</loc>
+     <lastmod>2019-02-28</lastmod>
      <changefreq>daily</changefreq>
     </url>
-    
-
 </urlset>

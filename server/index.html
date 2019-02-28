@@ -5,7 +5,7 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  
+  <meta name="description" content="None">
   
   <link rel="shortcut icon" href="../img/favicon.ico">
   <title>Conductor Server - Conductor</title>
@@ -13,19 +13,20 @@
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
   <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
-  <link rel="stylesheet" href="../css/highlight.css">
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
   <link href="../css/custom.css" rel="stylesheet">
   
   <script>
     // Current page data
     var mkdocs_page_name = "Conductor Server";
     var mkdocs_page_input_path = "server/index.md";
-    var mkdocs_page_url = "/server/";
+    var mkdocs_page_url = null;
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js"></script>
-  <script src="../js/modernizr-2.8.3.min.js"></script>
-  <script type="text/javascript" src="../js/highlight.pack.js"></script> 
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
   
 </head>
 
@@ -35,150 +36,130 @@
 
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
-      <div class="wy-side-nav-search" style="background-color:#fcfcfc">
-        <a href=".." style="border:0;padding:0"> <img style="border-radius:0;width:238px;height:87px;margin:0 0 0 0;background-color:#fcfcfc;border:0;padding:0" class="cornerlogo" src="../img/conductor-vector-x.png"/>
-        </a>
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Conductor</a>
         <div role="search">
   <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
       </div>
 
       <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
 	<ul class="current">
+	  
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="..">Introduction</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Introduction</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../intro/">Getting Started</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../intro/">Getting Started</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../intro/concepts/">Basic Concepts</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../intro/concepts/">Basic Concepts</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../metadata/">Metadata Definitions</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../metadata/">Metadata Definitions</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../metadata/systask/">System Tasks</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../metadata/systask/">System Tasks</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../events/">Event Handlers</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../events/">Event Handlers</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 current">
-        <a class="current" href="./">Conductor Server</a>
-        
-            <ul>
-            
-                <li class="toctree-l3"><a href="#installing">Installing</a></li>
-            
-                <li class="toctree-l3"><a href="#configuration">Configuration</a></li>
-            
-                <li class="toctree-l3"><a href="#high-availability-configuration">High Availability Configuration</a></li>
-            
-                <li class="toctree-l3"><a href="#using-standalone-redis-elasticache">Using Standalone Redis / ElastiCache</a></li>
-            
-            </ul>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../worker/">Conductor Task Workers</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../domains/">Task Domains</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../extend/">Extending Conductor</a>
-        
-    </li>
-<li>
-          
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../runtime/">APIs</a>
-        
-    </li>
-<li>
-          
-            <li>
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">Conductor Server</a>
     <ul class="subnav">
-    <li><span>Workflow Metrics</span></li>
-
-        
             
-    <li class="toctree-l1 ">
-        <a class="" href="../metrics/">Server Metrics</a>
+    <li class="toctree-l2"><a href="#installing">Installing</a></li>
+    
+        <ul>
         
-    </li>
+            <li><a class="toctree-l3" href="#requirements">Requirements</a></li>
+        
+        </ul>
+    
 
+    <li class="toctree-l2"><a href="#configuration">Configuration</a></li>
+    
+        <ul>
         
-            
-    <li class="toctree-l1 ">
-        <a class="" href="../metrics/client/">Worker Metrics</a>
+            <li><a class="toctree-l3" href="#configuration-parameters">Configuration Parameters</a></li>
         
-    </li>
+        </ul>
+    
 
-        
+    <li class="toctree-l2"><a href="#high-availability-configuration">High Availability Configuration</a></li>
+    
+
+    <li class="toctree-l2"><a href="#using-standalone-redis-elasticache">Using Standalone Redis / ElastiCache</a></li>
+    
+
     </ul>
-<li>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../faq/">FAQ</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../worker/">Conductor Task Workers</a>
+	    </li>
           
-            <li>
-    <li class="toctree-l1 ">
-        <a class="" href="../license/">License</a>
-        
-    </li>
-<li>
+            <li class="toctree-l1">
+		
+    <a class="" href="../domains/">Task Domains</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../extend/">Extending Conductor</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../runtime/">APIs</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Workflow Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../metrics/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../metrics/client/">Worker Metrics</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../faq/">FAQ</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../license/">License</a>
+	    </li>
           
         </ul>
       </div>
@@ -188,7 +169,7 @@
     <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
 
       
-      <nav class="wy-nav-top" style="background:#000000" role="navigation" aria-label="top navigation">
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
         <a href="..">Conductor</a>
       </nav>
@@ -273,6 +254,7 @@ docker-compose build
 # memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo
 # redis : non-Dynomite based redis instance
 # redis_cluster: AWS Elasticache Redis (cluster mode enabled).See [http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.Create.CON.RedisCluster.html]
+# redis_sentinel: Redis HA with Redis Sentinel. See [https://redis.io/topics/sentinel]
 # dynomite : Dynomite cluster.  Use this for HA configuration.
 db=dynomite
 
@@ -297,11 +279,12 @@ workflow.namespace.queue.prefix=conductor_queues
 queues.dynomite.threads=10
 
 # Non-quorum port used to connect to local redis.  Used by dyno-queues.
-# When using redis directly, set this to the same port as redis server
+# When using redis directly, set this to the same port as redis server.
 # For Dynomite, this is 22122 by default or the local redis-server port used by Dynomite.
 queues.dynomite.nonQuorum.port=22122
 
 # Transport address to elasticsearch
+# Specifying multiple node urls is not supported. specify one of the nodes' url, or a load balancer.
 workflow.elasticsearch.url=localhost:9300
 
 # Name of the elasticsearch cluster
@@ -319,7 +302,7 @@ conductor.additional.modules=class_extending_com.google.inject.AbstractModule
 <p>Conductor server can be used with a standlone Redis or ElastiCache server.  To configure the server, change the config to use the following:</p>
 <pre><code class="properties">db=redis
 
-# For AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e. 
+# For AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e.
 # The region in this case does not matter
 workflow.dynomite.cluster.hosts=server_address:server_port:us-east-1e
 workflow.dynomite.connection.maxConnsPerHost=31
@@ -348,8 +331,9 @@ queues.dynomite.nonQuorum.port=server_port
     
   </div>
 
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
 </footer>
-	  
+      
         </div>
       </div>
 
@@ -370,9 +354,14 @@ queues.dynomite.nonQuorum.port=server_port
       
     </span>
 </div>
-    <script src="../js/theme.js"></script>
-      <script src="../search/require.js"></script>
-      <script src="../search/search.js"></script>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
 
 </body>
 </html>
+
+<!--
+MkDocs version : 1.0.4
+Build Date UTC : 2019-02-28 19:23:53
+-->
