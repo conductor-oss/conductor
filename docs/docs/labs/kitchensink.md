@@ -164,7 +164,7 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
 ![img](../img/kitchensink.png)
 
 ### Running Kitchensink Workflow
-1. Start the server as documented [here](/server).  Use ```-DloadSample=true``` java system property when launching the server.  This will create a kitchensink workflow, related task definition and kick off an instance of kitchensink workflow.
+1. Start the server as documented [here](/server).  Use ```-DloadSample=true``` java system property when launching the server.  This will create a kitchensink workflow, related task definitions and kick off an instance of kitchensink workflow.
 2. Once the workflow has started, the first task remains in the ```SCHEDULED``` state.  This is because no workers are currently polling for the task.
 3. We will use the REST endpoints directly to poll for tasks and updating the status.
 
@@ -254,6 +254,3 @@ curl -H 'Content-Type:application/json' -H 'Accept:application/json' -X POST htt
 ```
 This will mark the task_1 as completed and schedule ```task_5``` as the next task.  
 Repeat the same process for the subsequently scheduled tasks until the completion.
-
-!!! hint "Using Client Libraries"
-	Conductor provides client libraries in Java (a Python client is works) to simplify task polling and execution.  

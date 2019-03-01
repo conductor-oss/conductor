@@ -11,7 +11,7 @@ Conductor provides SUB_WORKFLOW task that can be used to embed a workflow inside
 ## Event Task
 Event task provides ability to publish an event (message) to either Conductor or an external eventing system like SQS. Event tasks are useful for creating event based dependencies for workflows and tasks.
 
-See [Event Task](/metadata/systask/#event) for documentation.
+See [Event Task](/configuration/systask/#event) for documentation.
 
 ## Event Handler
 Event handlers are listeners registered that executes an action when a matching event occurs.  The supported actions are:
@@ -47,8 +47,8 @@ Given the following payload in the message:
     "fileType": "AUDIO",
     "version": 3,
     "metadata": {
-       length: 300,
-       codec: "aac"
+       "length": 300,
+       "codec": "aac"
     }
 }
 ```
@@ -69,7 +69,7 @@ Given the following payload in the message:
     "action": "start_workflow",
     "start_workflow": {
         "name": "WORKFLOW_NAME",
-        "version": <optional>
+        "version": "<optional_param>",
         "input": {
             "param1": "${param1}" 
         }
@@ -83,10 +83,10 @@ Given the following payload in the message:
 {
     "action": "complete_task",
     "complete_task": {
-      "workflowId": "${source.externalId.workflowId}",
+      "workflowId": "${workflowId}",
       "taskRefName": "task_1",
       "output": {
-        "response": "${source.result}"
+        "response": "${result}"
       }
     },
     "expandInlineJSON": true
@@ -99,16 +99,16 @@ Given the following payload in the message:
 {
     "action": "fail_task",
     "fail_task": {
-      "workflowId": "${source.externalId.workflowId}",
+      "workflowId": "${workflowId}",
       "taskRefName": "task_1",
       "output": {
-        "response": "${source.result}"
+        "response": "${result}"
       }
     },
     "expandInlineJSON": true
 }
 ```
-Input for starting a workflow and output when completing / failing task follows the same [expressions](/metadata/#wiring-inputs-and-outputs) used for wiring workflow inputs.
+Input for starting a workflow and output when completing / failing task follows the same [expressions](/configuration/workflowdef/#wiring-inputs-and-outputs) used for wiring workflow inputs.
 
 !!!info "Expanding stringified JSON elements in payload"
 	`expandInlineJSON` property, when set to true will expand the inlined stringified JSON elements in the payload to JSON documents and replace the string value with JSON document.  
