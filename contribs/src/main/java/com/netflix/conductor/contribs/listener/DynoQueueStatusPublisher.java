@@ -33,32 +33,37 @@ import javax.inject.Inject;
 import java.util.Collections;
 
 
-public class WorkflowStatusPublisher implements WorkflowStatusListener {
+public class DynoQueueStatusPublisher implements WorkflowStatusListener {
 
-    private static final Logger LOG = LoggerFactory.getLogger(WorkflowStatusPublisher.class);
+    private static final Logger LOG = LoggerFactory.getLogger(DynoQueueStatusPublisher.class);
     private final QueueDAO queueDAO;
     private final ObjectMapper objectMapper;
     private final Configuration config;
-    private final String publisherQueue;
+    private final String successStatusQueue;
+    private final String failureStatusQueue;
 
+    /**
+     * Publishes a message containing a WorkflowSummary on a configured DynoQueue on workflow completion or termination.
+     */
     @Inject
-    public WorkflowStatusPublisher(QueueDAO queueDAO, ObjectMapper objectMapper, Configuration config) {
+    public DynoQueueStatusPublisher(QueueDAO queueDAO, ObjectMapper objectMapper, Configuration config) {
         this.queueDAO = queueDAO;
         this.objectMapper = objectMapper;
         this.config = config;
-        this.publisherQueue = config.getProperty("workflow.status.publisher.queue.name", "_callbackQueue");
+        this.successStatusQueue = config.getProperty("status.publisher.success.queue", "_callbackSuccessQueue");
+        this.failureStatusQueue = config.getProperty("status.publisher.failure.queue", "_callbackFailureQueue");
     }
 
     @Override
     public void onWorkflowCompleted(Workflow workflow) {
         LOG.info("Publishing callback of workflow {} on completion ", workflow.getWorkflowId());
-        queueDAO.push(publisherQueue, Collections.singletonList(workflowToMessage(workflow)));
+        queueDAO.push(successStatusQueue, Collections.singletonList(workflowToMessage(workflow)));
     }
 
     @Override
     public void onWorkflowTerminated(Workflow workflow) {
         LOG.info("Publishing callback of workflow {} on termination", workflow.getWorkflowId());
-        queueDAO.push(publisherQueue, Collections.singletonList(workflowToMessage(workflow)));
+        queueDAO.push(failureStatusQueue, Collections.singletonList(workflowToMessage(workflow)));
     }
 
     private Message workflowToMessage(Workflow workflow) {
