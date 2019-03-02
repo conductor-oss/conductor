@@ -22,7 +22,7 @@ Conductor builds are run on Travis CI [here](https://travis-ci.org/Netflix/condu
 ## Documentation & Getting Started
 [http://netflix.github.io/conductor/](http://netflix.github.io/conductor/)
 
-[Getting Started](http://netflix.github.io/conductor/intro) guide.
+[Getting Started](https://netflix.github.io/conductor/gettingstarted/basicconcepts/) guide.
 
 ## Get Conductor
 Binaries are available from Maven Central and jcenter.
