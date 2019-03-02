@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>System Tasks - Conductor</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../../css/custom.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "System Tasks";
+    var mkdocs_page_input_path = "configuration/systask.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Conductor</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Getting Started</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/client/">Using the Client</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Configuration</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../taskdef/">Task Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../workflowdef/">Workflow Definition</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">System Tasks</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#decision">Decision</a></li>
+    
+
+    <li class="toctree-l3"><a href="#event">Event</a></li>
+    
+
+    <li class="toctree-l3"><a href="#http">HTTP</a></li>
+    
+
+    <li class="toctree-l3"><a href="#sub-workflow">Sub Workflow</a></li>
+    
+
+    <li class="toctree-l3"><a href="#fork">Fork</a></li>
+    
+
+    <li class="toctree-l3"><a href="#dynamic-fork">Dynamic Fork</a></li>
+    
+
+    <li class="toctree-l3"><a href="#join">Join</a></li>
+    
+
+    <li class="toctree-l3"><a href="#wait">Wait</a></li>
+    
+
+    <li class="toctree-l3"><a href="#dynamic-task">Dynamic Task</a></li>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../eventhandlers/">Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../taskdomains/">Task Domains</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../server/">Conductor Server</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../apispec/">API Specification</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Conductor Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../metrics/server/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../metrics/client/">Client Metrics</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../extend/">Extending Conductor</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../tasklifecycle/">Task Lifecycle</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../externalpayloadstorage/">External Payload Storage</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Developer Labs</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../labs/beginner/">Beginner</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../labs/eventhandlers/">Events and Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../labs/kitchensink/">Kitchensink</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../bestpractices/">Best Practices</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../faq/">FAQ</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../license/">License</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Configuration &raquo;</li>
+        
+      
+    
+    <li>System Tasks</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/configuration/systask.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="decision">Decision<a class="headerlink" href="#decision" title="Permanent link">&para;</a></h2>
+<p>A decision task is similar to <code>case...switch</code> statement in a programming language.
+The task takes 3 parameters:</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>caseValueParam</td>
+<td>Name of the parameter in task input whose value will be used as a switch.</td>
+</tr>
+<tr>
+<td>decisionCases</td>
+<td>Map where key is possible values of <code>caseValueParam</code> with value being list of tasks to be executed.</td>
+</tr>
+<tr>
+<td>defaultCase</td>
+<td>List of tasks to be executed when no matching value if found in decision case (default condition)</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;decide_task&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;decide1&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;case_value_param&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.movieType}&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;DECISION&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;caseValueParam&quot;</span><span class="p">:</span> <span class="s2">&quot;case_value_param&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;decisionCases&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;Show&quot;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;setup_episodes&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;se1&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.movieId}&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;generate_episode_artwork&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;ga&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.movieId}&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+      <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="nt">&quot;Movie&quot;</span><span class="p">:</span> <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;setup_movie&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;sm&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.movieId}&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;generate_movie_artwork&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;gma&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.movieId}&quot;</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+      <span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<h2 id="event">Event<a class="headerlink" href="#event" title="Permanent link">&para;</a></h2>
+<p>Event task provides ability to publish an event (message) to either Conductor or an external eventing system like SQS.  Event tasks are useful for creating event based dependencies for workflows and tasks.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>sink</td>
+<td>Qualified name of the event that is produced.  e.g. conductor or sqs:sqs_queue_name</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;sink&quot;</span><span class="p">:</span> <span class="s2">&quot;sqs:example_sqs_queue_name&quot;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>When producing an event with Conductor as sink, the event name follows the structure:
+<code>conductor:&lt;workflow_name&gt;:&lt;task_reference_name&gt;</code></p>
+<p>For SQS, use the <strong>name</strong> of the queue and NOT the URI.  Conductor looks up the URI based on the name.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>When using SQS add the <a href="https://github.com/Netflix/conductor/blob/master/contribs/src/main/java/com/netflix/conductor/contribs/ContribsModule.java">ContribsModule</a> to the deployment.  The module needs to be configured with AWSCredentialsProvider for Conductor to be able to use AWS APIs.</p>
+</div>
+<p><strong>Supported Sinks</strong></p>
+<ul>
+<li>Conductor</li>
+<li>SQS</li>
+</ul>
+<p><strong>Event Task Input</strong>
+The input given to the event task is made available to the published message as payload.  e.g. if a message is put into SQS queue (sink is sqs) then the message payload will be the input to the task.</p>
+<p><strong>Event Task Output</strong></p>
+<p><code>event_produced</code> Name of the event produced.</p>
+<h2 id="http">HTTP<a class="headerlink" href="#http" title="Permanent link">&para;</a></h2>
+<p>An HTTP task is used to make calls to another microservice over HTTP.</p>
+<p><strong>Parameters:</strong></p>
+<p>The task expects an input parameter named <code>http_request</code> as part of the task's input with the following details:</p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>uri</td>
+<td>URI for the service.  Can be a partial when using vipAddress or includes the server address.</td>
+</tr>
+<tr>
+<td>method</td>
+<td>HTTP method.  One of the GET, PUT, POST, DELETE, OPTIONS, HEAD</td>
+</tr>
+<tr>
+<td>accept</td>
+<td>Accept header as required by server.</td>
+</tr>
+<tr>
+<td>contentType</td>
+<td>Content Type - supported types are text/plain, text/html and, application/json</td>
+</tr>
+<tr>
+<td>headers</td>
+<td>A map of additional http headers to be sent along with the request.</td>
+</tr>
+<tr>
+<td>body</td>
+<td>Request body</td>
+</tr>
+<tr>
+<td>vipAddress</td>
+<td>When using discovery based service URLs.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>HTTP Task Output</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>response</td>
+<td>JSON body containing the response if one is present</td>
+</tr>
+<tr>
+<td>headers</td>
+<td>Response Headers</td>
+</tr>
+<tr>
+<td>statusCode</td>
+<td>Integer status code</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<p>Task Input payload using vipAddress</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;vipAddress&quot;</span><span class="p">:</span> <span class="s2">&quot;examplevip-prod&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;GET&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;accept&quot;</span><span class="p">:</span> <span class="s2">&quot;text/plain&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Task Input using an absolute URL</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;http://example.com/&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;GET&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;accept&quot;</span><span class="p">:</span> <span class="s2">&quot;text/plain&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>The task is marked as <code>FAILED</code> if the request cannot be completed or the remote server returns non successful status code. </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>HTTP task currently only supports Content-Type as application/json and is able to parse the text as well as JSON response.  XML input/output is currently not supported.  However, if the response cannot be parsed as JSON or Text, a string representation is stored as a text value.</p>
+</div>
+<h2 id="sub-workflow">Sub Workflow<a class="headerlink" href="#sub-workflow" title="Permanent link">&para;</a></h2>
+<p>Sub Workflow task allows for nesting a workflow within another workflow.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>subWorkflowParam</td>
+<td>name and version of the Workflow to be executed as Sub Workflow. Input to this Task will be forwarded to SubWorflow as Workflow input</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sub_workflow_task&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;sub1&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;requestId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.requestId}&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;file&quot;</span><span class="p">:</span> <span class="s2">&quot;${encode.output.location}&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SUB_WORKFLOW&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;deployment_workflow&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>When executed, a <code>deployment_workflow</code> is executed with two input parameters requestId and <em>file</em>.  The task is marked as completed upon the completion of the spawned workflow.  If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. </p>
+<h2 id="fork">Fork<a class="headerlink" href="#fork" title="Permanent link">&para;</a></h2>
+<p>Fork is used to schedule parallel set of tasks.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>forkTasks</td>
+<td>A list of list of tasks.  Each sublist is scheduled to be executed in parallel.  However, tasks within the sublists are scheduled in a serial fashion.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;forkTasks&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task11&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t11&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task12&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t12&quot;</span>
+      <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="p">[</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task21&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t21&quot;</span>
+      <span class="p">},</span>
+      <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task22&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t22&quot;</span>
+      <span class="p">}</span>
+    <span class="p">]</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>When executed, <em>task11</em> and <em>task21</em> are scheduled to be executed at the same time.</p>
+<h2 id="dynamic-fork">Dynamic Fork<a class="headerlink" href="#dynamic-fork" title="Permanent link">&para;</a></h2>
+<p>A dynamic fork is same as FORK_JOIN task.  Except that the list of tasks to be forked is provided at runtime using task's input.  Useful when number of tasks to be forked is not fixed and varies based on the input.</p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dynamicForkTasksParam</td>
+<td>Name of the parameter that contains list of workflow task configuration to be executed in parallel</td>
+</tr>
+<tr>
+<td>dynamicForkTasksInputParamName</td>
+<td>Name of the parameter whose value should be a map with key as forked task's reference name and value as input the forked task</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+     <span class="nt">&quot;dynamicTasks&quot;</span><span class="p">:</span> <span class="s2">&quot;${taskA.output.dynamicTasksJSON}&quot;</span><span class="p">,</span>
+     <span class="nt">&quot;dynamicTasksInput&quot;</span><span class="p">:</span> <span class="s2">&quot;${taskA.output.dynamicTasksInputJSON}&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;FORK_JOIN_DYNAMIC&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;dynamicForkTasksParam&quot;</span><span class="p">:</span> <span class="s2">&quot;dynamicTasks&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;dynamicForkTasksInputParamName&quot;</span><span class="p">:</span> <span class="s2">&quot;dynamicTasksInput&quot;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Consider <strong>taskA</strong>'s output as:</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;dynamicTasksInputJSON&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;forkedTask1&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;width&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+      <span class="nt">&quot;height&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+      <span class="nt">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;recipe&quot;</span><span class="p">:</span> <span class="s2">&quot;jpg&quot;</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;forkedTask2&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;width&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
+      <span class="nt">&quot;height&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
+      <span class="nt">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;recipe&quot;</span><span class="p">:</span> <span class="s2">&quot;jpg&quot;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;dynamicTasksJSON&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_task&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;forkedTask1&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_task&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;forkedTask2&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+    <span class="p">}</span>
+  <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>When executed, the dynamic fork task will schedule two parallel task of type "encode_task" with reference names "forkedTask1" and "forkedTask2" and inputs as specified by _ dynamicTasksInputJSON_</p>
+<div class="admonition warning">
+<p class="admonition-title">Dynamic Fork and Join</p>
+<p><strong>A Join task MUST follow FORK_JOIN_DYNAMIC</strong></p>
+<p>Workflow definition MUST include a Join task definition followed by FORK_JOIN_DYNAMIC task.  However, given the dynamic nature of the task, no joinOn parameters are required for this Join.  The join will wait for ALL the forked branches to complete before completing.</p>
+<p>Unlike FORK, which can execute parallel flows with each fork executing a series of tasks in  sequence, FORK_JOIN_DYNAMIC is limited to only one task per fork.  However, forked task can be a Sub Workflow, allowing for more complex execution flows.</p>
+</div>
+<h2 id="join">Join<a class="headerlink" href="#join" title="Permanent link">&para;</a></h2>
+<p>Join task is used to wait for completion of one or more tasks spawned by fork tasks.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>joinOn</td>
+<td>List of task reference name, for which the JOIN will wait for completion.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;joinOn&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;taskRef1&quot;</span><span class="p">,</span> <span class="s2">&quot;taskRef3&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p><strong>Join Task Output</strong>
+Fork task's output will be a JSON object with key being the task reference name and value as the output of the fork task.</p>
+<h2 id="wait">Wait<a class="headerlink" href="#wait" title="Permanent link">&para;</a></h2>
+<p>A wait task is implemented as a gate that remains in <code>IN_PROGRESS</code> state unless marked as <code>COMPLETED</code> or <code>FAILED</code> by an external trigger.
+To use a wait task, set the task type as <code>WAIT</code></p>
+<p><strong>Parameters:</strong>
+None required.</p>
+<p><strong>External Triggers for Wait Task</strong></p>
+<p>Task Resource endpoint can be used to update the status of a task to a terminate state. </p>
+<p>Contrib module provides SQS integration where an external system can place a message in a pre-configured queue that the server listens on.  As the messages arrive, they are marked as <code>COMPLETED</code> or <code>FAILED</code>.  </p>
+<p><strong>SQS Queues</strong></p>
+<ul>
+<li>SQS queues used by the server to update the task status can be retrieve using the following API:</li>
+</ul>
+<div class="codehilite"><pre><span></span><span class="err">GET /queue</span>
+</pre></div>
+
+
+<ul>
+<li>When updating the status of the task, the message needs to conform to the following spec:<ul>
+<li>Message has to be a valid JSON string.</li>
+<li>The message JSON should contain a key named <code>externalId</code> with the value being a JSONified string that contains the following keys:<ul>
+<li><code>workflowId</code>: Id of the workflow</li>
+<li><code>taskRefName</code>: Task reference name that should be updated.</li>
+</ul>
+</li>
+<li>Each queue represents a specific task status and tasks are marked accordingly.  e.g. message coming to a <code>COMPLETED</code> queue marks the task status as <code>COMPLETED</code>.</li>
+<li>Tasks' output is updated with the message.</li>
+</ul>
+</li>
+</ul>
+<p><strong>Example SQS Payload:</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;some_key&quot;</span><span class="p">:</span> <span class="s2">&quot;valuex&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;externalId&quot;</span><span class="p">:</span> <span class="s2">&quot;{\&quot;taskRefName\&quot;:\&quot;TASK_REFERENCE_NAME\&quot;,\&quot;workflowId\&quot;:\&quot;WORKFLOW_ID\&quot;}&quot;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<h2 id="dynamic-task">Dynamic Task<a class="headerlink" href="#dynamic-task" title="Permanent link">&para;</a></h2>
+<p>Dynamic Task allows to execute one of the registered Tasks dynamically at run-time. It accepts the task name to execute in inputParameters.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>dynamicTaskNameParam</td>
+<td>Name of the parameter from the task input whose value is used to schedule the task.  e.g. if the value of the parameter is ABC, the next task scheduled is of type 'ABC'.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;user_task&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t1&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;files&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.files}&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;taskToExecute&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.user_supplied_task}&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;DYNAMIC&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;dynamicTaskNameParam&quot;</span><span class="p">:</span> <span class="s2">&quot;taskToExecute&quot;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>If the workflow is started with input parameter user_supplied_task's value as <strong>user_task_2</strong>, Conductor will schedule <strong>user_task_2</strong> when scheduling this dynamic task.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../eventhandlers/" class="btn btn-neutral float-right" title="Event Handlers">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../workflowdef/" class="btn btn-neutral" title="Workflow Definition"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../workflowdef/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../eventhandlers/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>

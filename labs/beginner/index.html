@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Beginner - Conductor</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../../css/custom.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Beginner";
+    var mkdocs_page_input_path = "labs/beginner.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Conductor</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Getting Started</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/client/">Using the Client</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Configuration</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../configuration/taskdef/">Task Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../configuration/workflowdef/">Workflow Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../configuration/systask/">System Tasks</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../configuration/eventhandlers/">Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../configuration/taskdomains/">Task Domains</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../server/">Conductor Server</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../apispec/">API Specification</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Conductor Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../metrics/server/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../metrics/client/">Client Metrics</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../extend/">Extending Conductor</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../tasklifecycle/">Task Lifecycle</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../externalpayloadstorage/">External Payload Storage</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Developer Labs</span>
+    <ul class="subnav">
+                <li class=" current">
+                    
+    <a class="current" href="./">Beginner</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#hands-on-mode">Hands on mode</a></li>
+    
+
+    <li class="toctree-l3"><a href="#creating-a-workflow">Creating a Workflow</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#creating-task-definitions">Creating Task definitions</a></li>
+        
+            <li><a class="toctree-l4" href="#creating-workflow-definition">Creating Workflow Definition</a></li>
+        
+            <li><a class="toctree-l4" href="#starting-the-workflow">Starting the Workflow</a></li>
+        
+            <li><a class="toctree-l4" href="#conductor-user-interface">Conductor User Interface</a></li>
+        
+            <li><a class="toctree-l4" href="#poll-for-worker-task">Poll for Worker task</a></li>
+        
+            <li><a class="toctree-l4" href="#ack-the-task">Ack the Task</a></li>
+        
+            <li><a class="toctree-l4" href="#return-response-add-logs">Return response, add logs</a></li>
+        
+            <li><a class="toctree-l4" href="#why-is-system-task-executed-but-worker-task-is-scheduled">Why is System task executed, but Worker task is Scheduled.</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l3"><a href="#next-steps">Next steps</a></li>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../eventhandlers/">Events and Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../kitchensink/">Kitchensink</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../bestpractices/">Best Practices</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../faq/">FAQ</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../license/">License</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Developer Labs &raquo;</li>
+        
+      
+    
+    <li>Beginner</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/labs/beginner.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="hands-on-mode">Hands on mode<a class="headerlink" href="#hands-on-mode" title="Permanent link">&para;</a></h2>
+<p>Please feel free to follow along using any of these resources:</p>
+<ul>
+<li>Using cURL.</li>
+<li>Postman or similar REST client.</li>
+</ul>
+<h2 id="creating-a-workflow">Creating a Workflow<a class="headerlink" href="#creating-a-workflow" title="Permanent link">&para;</a></h2>
+<p>Let's create a simple workflow that adds Netflix Idents to videos. We'll be mocking the adding Idents part and focusing on actually executing this process flow.</p>
+<div class="admonition info">
+<p class="admonition-title">What are Netflix Idents?</p>
+<p>Netflix Idents are those 4 second videos with Netflix logo, which appears at the beginning and end of shows.
+Learn more about them <a href="https://partnerhelp.netflixstudios.com/hc/en-us/articles/115004750187-Master-QC-Identifying-and-Implementing-the-Netflix-Ident-">here</a>. You might have also noticed they're different for Animation and several other genres.</p>
+</div>
+<div class="admonition warning">
+<p class="admonition-title">Disclaimer</p>
+<p>Obviously, this is not how Netflix adds Idents. Those Workflows are indeed very complex. But, it should give you an idea about how Conductor can be used to implement similar features.</p>
+</div>
+<p>The workflow in this lab will look like this:</p>
+<p><img alt="img" src="../img/bgnr_complete_workflow.png" /></p>
+<p>This workflow contains the following:</p>
+<ul>
+<li>Worker Task <code>verify_if_idents_are_added</code> to verify if Idents are already added.</li>
+<li><a href="/configuration/systask/#decision">Decision Task</a> that takes output from the previous task, and decides whether to schedule the <code>add_idents</code> task.</li>
+<li><code>add_idents</code> task which is another worker Task.</li>
+</ul>
+<h3 id="creating-task-definitions">Creating Task definitions<a class="headerlink" href="#creating-task-definitions" title="Permanent link">&para;</a></h3>
+<p>Let's create the <a href="/configuration/taskdef">task definition</a> for <code>verify_if_idents_are_added</code> in JSON. This task will be a <em>SIMPLE</em> task which is supposed to be executed by an Idents microservice. We'll be mocking the Idents microservice part.</p>
+<p><strong>Note</strong> that at this point, we don't have to specify whether it is a System task or Worker task. We are only specifying the required configurations for the task, like number of times it should be retried, timeouts etc. We shall start by using <code>name</code> parameter for task name.</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>We'd like this task to be retried 3 times on failure.</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+  <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">10</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>And to timeout after 300 seconds.<br />
+i.e. if the task doesn't finish execution within this time limit after transitioning to <code>IN_PROGRESS</code> state, the Conductor server cancels this task and schedules a new execution of this task in the queue.</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+  <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+  <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+  <span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;TIME_OUT_WF&quot;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>And a <a href="/tasklifecycle/#response-timeout-seconds">responseTimeout</a> of 180 seconds.</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+  <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+  <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+  <span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;TIME_OUT_WF&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;responseTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">180</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>We can define several other fields defined <a href="/configuration/taskdef">here</a>, but this is a good place to start with.</p>
+<p>Similarly, create another task definition: <code>add_idents</code>.</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_idents&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+  <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
+  <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+  <span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;TIME_OUT_WF&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;responseTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">500</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Send a <code>POST</code> request to <code>/metadata/taskdefs</code> endpoint to register these tasks. You can use Swagger, Postman, CURL or similar tools.</p>
+<div class="admonition info">
+<p class="admonition-title">Why is the Decision Task not registered?</p>
+<p>System Tasks that are part of control flow do not need to be registered. However, some system tasks where the retries, rate limiting and other mechanisms are required, like <code>HTTP</code> Task, are to be registered though.</p>
+</div>
+<div class="admonition important">
+<p class="admonition-title">Important</p>
+<p>Task and Workflow Definition names are unique. The names we use below might have already been registered. For this lab, add a prefix with your username, <code>{my_username}_verify_if_idents_are_added</code> for example. This is definitely not recommended for Production usage though.</p>
+</div>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span>curl -X POST \
+  http://localhost:8080/api/metadata/taskdefs \
+  -H &#39;Content-Type: application/json&#39; \
+  -d &#39;[
+    {
+      &quot;name&quot;: &quot;verify_if_idents_are_added&quot;,
+      &quot;retryCount&quot;: 3,
+      &quot;retryLogic&quot;: &quot;FIXED&quot;,
+      &quot;retryDelaySeconds&quot;: 10,
+      &quot;timeoutSeconds&quot;: 300,
+      &quot;timeoutPolicy&quot;: &quot;TIME_OUT_WF&quot;,
+      &quot;responseTimeoutSeconds&quot;: 180
+    },
+    {
+      &quot;name&quot;: &quot;add_idents&quot;,
+      &quot;retryCount&quot;: 3,
+      &quot;retryLogic&quot;: &quot;FIXED&quot;,
+      &quot;retryDelaySeconds&quot;: 10,
+      &quot;timeoutSeconds&quot;: 300,
+      &quot;timeoutPolicy&quot;: &quot;TIME_OUT_WF&quot;,
+      &quot;responseTimeoutSeconds&quot;: 180
+    }
+]&#39;
+</pre></div>
+
+
+<h3 id="creating-workflow-definition">Creating Workflow Definition<a class="headerlink" href="#creating-workflow-definition" title="Permanent link">&para;</a></h3>
+<p>Creating Workflow definition is almost similar. We shall use the Task definitions created above. Note that same Task definitions can be used in multiple workflows, or for multipe times in same Workflow (that's where <code>taskReferenceName</code> is useful).</p>
+<p>A workflow without any tasks looks like this:</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_netflix_identation&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Adds Netflix Identation to video files.&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[]</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Add the first task that this workflow has to execute. All the tasks must be added to the <code>tasks</code> array.</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_netflix_identation&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Adds Netflix Identation to video files.&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;ident_verification&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;contentId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.contentId}&quot;</span>
+            <span class="p">},</span>
+            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p><strong>Wiring Input/Outputs</strong></p>
+<p>Notice how we were using <code>${workflow.input.contentId}</code> to pass inputs to this task. Conductor can wire inputs between workflow and tasks, and between tasks.<br />
+i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs from the workflow input using JSONPath expression <code>${workflow.input.param}</code>.</p>
+<p>Learn more about wiring inputs and outputs <a href="/configuration/workflowdef/#wiring-inputs-and-outputs">here</a>.</p>
+<p>Let's define <code>decisionCases</code> now. Checkout the Decision task structure <a href="/configuration/systask/#decision">here</a>.</p>
+<p>A Decision task is specified by <code>type:"DECISION"</code>, <code>caseValueParam</code> and <code>decisionCases</code> which lists all the branches of Decision task. This is similar to a <code>switch..case</code> but written in Conductor JSON DSL.</p>
+<p>Adding the decision task:</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_netflix_identation&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Adds Netflix Identation to video files.&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;ident_verification&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;contentId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.contentId}&quot;</span>
+            <span class="p">},</span>
+            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;decide_task&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;is_idents_added&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;case_value_param&quot;</span><span class="p">:</span> <span class="s2">&quot;${ident_verification.output.is_idents_added}&quot;</span>
+            <span class="p">},</span>
+            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;DECISION&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;caseValueParam&quot;</span><span class="p">:</span> <span class="s2">&quot;case_value_param&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;decisionCases&quot;</span><span class="p">:</span> <span class="p">{</span>
+
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Each decision branch could have multiple tasks, so it has to be defined as an array.</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_netflix_identation&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Adds Netflix Identation to video files.&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;ident_verification&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;contentId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.contentId}&quot;</span>
+            <span class="p">},</span>
+            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+        <span class="p">},</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;decide_task&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;is_idents_added&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;case_value_param&quot;</span><span class="p">:</span> <span class="s2">&quot;${ident_verification.output.is_idents_added}&quot;</span>
+            <span class="p">},</span>
+            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;DECISION&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;caseValueParam&quot;</span><span class="p">:</span> <span class="s2">&quot;case_value_param&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;decisionCases&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;false&quot;</span><span class="p">:</span> <span class="p">[</span>
+                    <span class="p">{</span>
+                        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_idents&quot;</span><span class="p">,</span>
+                        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;add_idents_by_type&quot;</span><span class="p">,</span>
+                        <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+                            <span class="nt">&quot;identType&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.identType}&quot;</span><span class="p">,</span>
+                            <span class="nt">&quot;contentId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.contentId}&quot;</span>
+                        <span class="p">},</span>
+                        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+                    <span class="p">}</span>
+                <span class="p">]</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Just like the task definitions, register this workflow definition by sending a POST request to <code>/workflow</code> endpoint.</p>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span>curl -X POST \
+  http://localhost:8080/api/metadata/workflow \
+  -H &#39;Content-Type: application/json&#39; \
+  -d &#39;{
+    &quot;name&quot;: &quot;add_netflix_identation&quot;,
+    &quot;description&quot;: &quot;Adds Netflix Identation to video files.&quot;,
+    &quot;version&quot;: 2,
+    &quot;schemaVersion&quot;: 2,
+    &quot;tasks&quot;: [
+        {
+            &quot;name&quot;: &quot;verify_if_idents_are_added&quot;,
+            &quot;taskReferenceName&quot;: &quot;ident_verification&quot;,
+            &quot;inputParameters&quot;: {
+                &quot;contentId&quot;: &quot;<span class="cp">${</span><span class="n">workflow</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">contentId</span><span class="cp">}</span>&quot;
+            },
+            &quot;type&quot;: &quot;SIMPLE&quot;
+        },
+        {
+            &quot;name&quot;: &quot;decide_task&quot;,
+            &quot;taskReferenceName&quot;: &quot;is_idents_added&quot;,
+            &quot;inputParameters&quot;: {
+                &quot;case_value_param&quot;: &quot;<span class="cp">${</span><span class="n">ident_verification</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">is_idents_added</span><span class="cp">}</span>&quot;
+            },
+            &quot;type&quot;: &quot;DECISION&quot;,
+            &quot;caseValueParam&quot;: &quot;case_value_param&quot;,
+            &quot;decisionCases&quot;: {
+                &quot;false&quot;: [
+                    {
+                        &quot;name&quot;: &quot;add_idents&quot;,
+                        &quot;taskReferenceName&quot;: &quot;add_idents_by_type&quot;,
+                        &quot;inputParameters&quot;: {
+                            &quot;identType&quot;: &quot;<span class="cp">${</span><span class="n">workflow</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">identType</span><span class="cp">}</span>&quot;,
+                            &quot;contentId&quot;: &quot;<span class="cp">${</span><span class="n">workflow</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">contentId</span><span class="cp">}</span>&quot;
+                        },
+                        &quot;type&quot;: &quot;SIMPLE&quot;
+                    }
+                ]
+            }
+        }
+    ]
+}&#39;
+</pre></div>
+
+
+<h3 id="starting-the-workflow">Starting the Workflow<a class="headerlink" href="#starting-the-workflow" title="Permanent link">&para;</a></h3>
+<p>Send a <code>POST</code> request to <code>/workflow</code> with:</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_netflix_identation&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
+    <span class="nt">&quot;correlationId&quot;</span><span class="p">:</span> <span class="s2">&quot;my_netflix_identation_workflows&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;identType&quot;</span><span class="p">:</span> <span class="s2">&quot;animation&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;contentId&quot;</span><span class="p">:</span> <span class="s2">&quot;my_unique_content_id&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Example:</p>
+<div class="codehilite"><pre><span></span>curl -X POST \
+  http://localhost:8080/api/workflow/add_netflix_identation \
+  -H &#39;Content-Type: application/json&#39; \
+  -d &#39;{
+    &quot;identType&quot;: &quot;animation&quot;,
+    &quot;contentId&quot;: &quot;my_unique_content_id&quot;
+}&#39;
+</pre></div>
+
+
+<p>Successful POST request should return a workflow Id, which you can use to find the execution in the UI.</p>
+<h3 id="conductor-user-interface">Conductor User Interface<a class="headerlink" href="#conductor-user-interface" title="Permanent link">&para;</a></h3>
+<p>Open the UI and navigate to the RUNNING tab, the Workflow should be in the state as below:</p>
+<p><img alt="img" src="../img/bgnr_state_scheduled.png" /></p>
+<p>Feel free to explore the various functionalities that the UI exposes. To elaborate on a few:</p>
+<ul>
+<li>Workflow Task modals (Opens on clicking any of the tasks in the workflow), which includes task I/O, logs and task JSON.</li>
+<li>Task Details tab, which shows the sequence of task execution, status, start/end time, and link to worker details which executed the task.</li>
+<li>Input/Output tab shows workflow input and output.</li>
+</ul>
+<h3 id="poll-for-worker-task">Poll for Worker task<a class="headerlink" href="#poll-for-worker-task" title="Permanent link">&para;</a></h3>
+<p>Now that <code>verify_if_idents_are_added</code> task is in <code>SCHEDULED</code> state, it is the worker's turn to fetch the task, execute it and update Conductor with final status of the task.</p>
+<p>Ideally, the workers implementing the <a href="/gettingstarted/client/#worker">Client</a> interface would do this process, executing the tasks on real microservices. But, let's mock this part.</p>
+<p>Send a <code>GET</code> request to <code>/poll</code> endpoint with your task type.</p>
+<p>For example:</p>
+<div class="codehilite"><pre><span></span>curl -X GET \
+    http://localhost:8080/api/tasks/poll/verify_if_idents_are_added
+</pre></div>
+
+
+<h3 id="ack-the-task">Ack the Task<a class="headerlink" href="#ack-the-task" title="Permanent link">&para;</a></h3>
+<p>Let's notify the Conductor server that we have successfully received the task by sending an ACK request with <code>taskId</code> received in the previous step.<br />
+Otherwise, Conductor would assume that the worker did not receive the task, and requeue it.</p>
+<p>Send a POST request to <code>/tasks/{taskId}/ack</code> endpoint.</p>
+<p>Example:</p>
+<div class="codehilite"><pre><span></span>curl -X POST \
+  http://localhost:8080/api/tasks/{taskId}/ack \
+  -H &#39;Content-Type: application/json&#39;
+</pre></div>
+
+
+<h3 id="return-response-add-logs">Return response, add logs<a class="headerlink" href="#return-response-add-logs" title="Permanent link">&para;</a></h3>
+<p>We can respond to Conductor with any of the following states:</p>
+<ul>
+<li>Task has COMPLETED.</li>
+<li>Task has FAILED.</li>
+<li>Call back after seconds [Process the task at a later time].</li>
+</ul>
+<p>Considering our Ident Service has verified that the Ident's are not yet added to given Content Id, let's return the task status by sending the below <code>POST</code> request to <code>/tasks</code> endpoint, with payload:</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;workflowInstanceId&quot;</span><span class="p">:</span> <span class="s2">&quot;{workflowId}&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;taskId&quot;</span><span class="p">:</span> <span class="s2">&quot;{taskId}&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;reasonForIncompletion&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;callbackAfterSeconds&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+  <span class="nt">&quot;workerId&quot;</span><span class="p">:</span> <span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;COMPLETED&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;outputData&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;is_idents_added&quot;</span><span class="p">:</span> <span class="kc">false</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Example:</p>
+<div class="codehilite"><pre><span></span>curl -X POST \
+  http://localhost:8080/api/tasks \
+  -H &#39;Content-Type: application/json&#39; \
+  -d &#39;{
+    &quot;workflowInstanceId&quot;: &quot;cb7c5041-aa85-4940-acb4-3bdcfa9f5c5c&quot;,
+    &quot;taskId&quot;: &quot;741f362b-ee9a-47b6-81b5-9bbbd5c4c992&quot;,
+    &quot;reasonForIncompletion&quot;: &quot;&quot;,
+    &quot;callbackAfterSeconds&quot;: 0,
+    &quot;workerId&quot;: &quot;string&quot;,
+    &quot;status&quot;: &quot;COMPLETED&quot;,
+    &quot;outputData&quot;: {
+        &quot;is_idents_added&quot;: false
+    },
+    &quot;logs&quot;: [
+        {
+            &quot;log&quot;: &quot;Ident verification successful for title: {some_title_name}, with Id: {some_id}&quot;,
+            &quot;createdTime&quot;: 1550178825
+        }   
+    ]
+  }&#39;
+</pre></div>
+
+
+<div class="admonition info">
+<p class="admonition-title">Check logs in UI</p>
+<p>You can find the logs we just sent by clicking the <code>verify_if_idents_are_added</code>, upon which a modal should open with <code>Logs</code> tab.</p>
+</div>
+<h3 id="why-is-system-task-executed-but-worker-task-is-scheduled">Why is System task executed, but Worker task is Scheduled.<a class="headerlink" href="#why-is-system-task-executed-but-worker-task-is-scheduled" title="Permanent link">&para;</a></h3>
+<p>You will notice that Workflow is in the state as below after sending the POST request:</p>
+<p><img alt="img" src="../img/bgnr_systask_state.png" /></p>
+<p>Conductor has executed <code>is_idents_added</code> all through it's lifecycle, without us polling, acking, or returning the status of Task. If it is still unclear, <code>is_idents_added</code> is a System task, and System tasks are executed by Conductor Server.</p>
+<p>But, <code>add_idents</code> is a SIMPLE task. So, the complete lifecyle of this task (Poll, Ack, Update) should be handled by a worker to continue with W\workflow execution. When Conductor has finished executing all the tasks in given flow, the workflow will reach Terminal state (COMPLETED, FAILED, TIMED_OUT etc.)</p>
+<h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
+<p>You can play around this workflow by failing one of the Tasks, restarting or retrying the Workflow, or by tuning the number of retries, timeoutSeconds etc.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../eventhandlers/" class="btn btn-neutral float-right" title="Events and Event Handlers">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../../externalpayloadstorage/" class="btn btn-neutral" title="External Payload Storage"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../../externalpayloadstorage/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../eventhandlers/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Task Definition - Conductor</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../../css/custom.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Task Definition";
+    var mkdocs_page_input_path = "configuration/taskdef.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Conductor</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Getting Started</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/client/">Using the Client</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Configuration</span>
+    <ul class="subnav">
+                <li class=" current">
+                    
+    <a class="current" href="./">Task Definition</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#task-definition">Task Definition</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#retry-logic">Retry Logic</a></li>
+        
+            <li><a class="toctree-l4" href="#timeout-policy">Timeout Policy</a></li>
+        
+            <li><a class="toctree-l4" href="#task-concurrent-execution-limits">Task Concurrent Execution Limits</a></li>
+        
+            <li><a class="toctree-l4" href="#task-rate-limits">Task Rate limits</a></li>
+        
+            <li><a class="toctree-l4" href="#using-inputkeys-and-outputkeys">Using inputKeys and outputKeys</a></li>
+        
+            <li><a class="toctree-l4" href="#using-inputtemplate">Using inputTemplate</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../workflowdef/">Workflow Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../systask/">System Tasks</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../eventhandlers/">Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../taskdomains/">Task Domains</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../server/">Conductor Server</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../apispec/">API Specification</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Conductor Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../metrics/server/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../metrics/client/">Client Metrics</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../extend/">Extending Conductor</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../tasklifecycle/">Task Lifecycle</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../externalpayloadstorage/">External Payload Storage</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Developer Labs</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../labs/beginner/">Beginner</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../labs/eventhandlers/">Events and Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../labs/kitchensink/">Kitchensink</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../bestpractices/">Best Practices</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../faq/">FAQ</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../license/">License</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Configuration &raquo;</li>
+        
+      
+    
+    <li>Task Definition</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/configuration/taskdef.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="task-definition">Task Definition<a class="headerlink" href="#task-definition" title="Permanent link">&para;</a></h2>
+<p>Conductor maintains a registry of worker tasks.  A task MUST be registered before being used in a workflow.</p>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_task&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+
+  <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">1200</span><span class="p">,</span>
+  <span class="nt">&quot;inputKeys&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="s2">&quot;sourceRequestId&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;qcElementType&quot;</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;outputKeys&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="s2">&quot;state&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;skipped&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;result&quot;</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;TIME_OUT_WF&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span>
+  <span class="nt">&quot;responseTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">3600</span><span class="p">,</span>
+  <span class="nt">&quot;concurrentExecLimit&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+  <span class="nt">&quot;rateLimitFrequencyInSeconds&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+  <span class="nt">&quot;rateLimitPerFrequency&quot;</span><span class="p">:</span> <span class="mi">50</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>description</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>Task Type. Unique name of the Task that resonates with it's function.</td>
+<td>Unique</td>
+</tr>
+<tr>
+<td>description</td>
+<td>Description of the task</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>retryCount</td>
+<td>No. of retries to attempt when a Task is marked as failure</td>
+<td>defaults to 3</td>
+</tr>
+<tr>
+<td>retryLogic</td>
+<td>Mechanism for the retries</td>
+<td>see possible values below</td>
+</tr>
+<tr>
+<td>retryDelaySeconds</td>
+<td>Time to wait before retries</td>
+<td>defaults to 60 seconds</td>
+</tr>
+<tr>
+<td>timeoutPolicy</td>
+<td>Task's timeout policy</td>
+<td>see possible values below</td>
+</tr>
+<tr>
+<td>timeoutSeconds</td>
+<td>Time in milliseconds, after which the task is marked as <code>TIMED_OUT</code> if not completed after transitioning to <code>IN_PROGRESS</code> status for the first time</td>
+<td>No timeouts if set to 0</td>
+</tr>
+<tr>
+<td>responseTimeoutSeconds</td>
+<td>If greater than 0, the task is rescheduled if not updated with a status after this time (heartbeat mechanism). Useful when the worker polls for the task but fails to complete due to errors/network failure.</td>
+<td>defaults to 0</td>
+</tr>
+<tr>
+<td>inputKeys</td>
+<td>Array of keys of task's expected input.  Used for documenting task's input. See <a href="#using-inputkeys-and-outputkeys">Using inputKeys and outputKeys</a>.</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>outputKeys</td>
+<td>Array of keys of task's expected output.  Used for documenting task's output</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>inputTemplate</td>
+<td>See <a href="#using-inputtemplate">Using inputTemplate</a> below.</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>concurrentExecLimit</td>
+<td>Number of tasks that can be executed at any given time.</td>
+<td>optional</td>
+</tr>
+<tr>
+<td>rateLimitFrequencyInSeconds, rateLimitPerFrequency</td>
+<td>See <a href="#task-rate-limits">Task Rate limits</a> below.</td>
+<td>optional</td>
+</tr>
+</tbody>
+</table>
+<h3 id="retry-logic">Retry Logic<a class="headerlink" href="#retry-logic" title="Permanent link">&para;</a></h3>
+<ul>
+<li>FIXED : Reschedule the task after the <code>retryDelaySeconds</code></li>
+<li>EXPONENTIAL_BACKOFF : reschedule after <code>retryDelaySeconds  * attemptNumber</code></li>
+</ul>
+<h3 id="timeout-policy">Timeout Policy<a class="headerlink" href="#timeout-policy" title="Permanent link">&para;</a></h3>
+<ul>
+<li>RETRY : Retries the task again</li>
+<li>TIME_OUT_WF : Workflow is marked as TIMED_OUT and terminated</li>
+<li>ALERT_ONLY : Registers a counter (task_timeout)</li>
+</ul>
+<h3 id="task-concurrent-execution-limits">Task Concurrent Execution Limits<a class="headerlink" href="#task-concurrent-execution-limits" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>concurrentExecLimit</code> limits the number of simultaneous Task executions at any point.<br />
+<strong>Example:</strong><br />
+If you have 1000 task executions waiting in the queue, and 1000 workers polling this queue for tasks, but if you have set <code>concurrentExecLimit</code> to 10, only 10 tasks would be given to workers (which would lead to starvation). If any of the workers finishes execution, a new task(s) will be removed from the queue, while still keeping the current execution count to 10.</li>
+</ul>
+<h3 id="task-rate-limits">Task Rate limits<a class="headerlink" href="#task-rate-limits" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>rateLimitFrequencyInSeconds</code> and <code>rateLimitPerFrequency</code> should be used together.</li>
+<li><code>rateLimitFrequencyInSeconds</code> sets the "frequency window", i.e the <code>duration</code> to be used in <code>events per duration</code>. Eg: 1s, 5s, 60s, 300s etc.</li>
+<li><code>rateLimitPerFrequency</code>defines the number of Tasks that can be given to Workers per given "frequency window".<br />
+<strong>Example:</strong><br />
+Let's set <code>rateLimitFrequencyInSeconds = 5</code>, and <code>rateLimitPerFrequency = 12</code>. This means, our frequency window is of 5 seconds duration, and for each frequency window, Conductor would only give 12 tasks to workers. So, in a given minute, Conductor would only give 12*(60/5) = 144 tasks to workers irrespective of the number of workers that are polling for the task.<br />
+Note that unlike <code>concurrentExecLimit</code>, rate limiting doesn't take into account tasks already in progress/completed. Even if all the previous tasks are executed within 1 sec, or would take a few days, the new tasks are still given to workers at configured frequency, 144 tasks per minute in above example.</li>
+</ul>
+<h3 id="using-inputkeys-and-outputkeys">Using inputKeys and outputKeys<a class="headerlink" href="#using-inputkeys-and-outputkeys" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>inputKeys</code> and <code>outputKeys</code> can be considered as parameters and return values for the Task. </li>
+<li>Consider the task Definition as being represented by an interface: <code>(value1, value2 .. valueN) someTaskDefinition(key1, key2 .. keyN);</code></li>
+<li>However, these parameters are not strictly enforced at the moment. Both <code>inputKeys</code> and <code>outputKeys</code> act as a documentation for task re-use. The tasks in workflow need not define all of the keys in the task definition.</li>
+<li>In the future, this can be extended to be a strict template that all task implementations must adhere to, just like interfaces in programming languages.</li>
+</ul>
+<h3 id="using-inputtemplate">Using inputTemplate<a class="headerlink" href="#using-inputtemplate" title="Permanent link">&para;</a></h3>
+<ul>
+<li><code>inputTemplate</code> allows to define default values, which can be overridden by values provided in Workflow.</li>
+<li>Eg: In your Task Definition, you can define your inputTemplate as:</li>
+</ul>
+<div class="codehilite"><pre><span></span><span class="s2">&quot;inputTemplate&quot;</span><span class="err">:</span> <span class="p">{</span>
+    <span class="nt">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://some_url:7004&quot;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<ul>
+<li>Now, in your workflow Definition, when using above task, you can use the default <code>url</code> or override with something else in the task's <code>inputParameters</code>.</li>
+</ul>
+<div class="codehilite"><pre><span></span><span class="s2">&quot;inputParameters&quot;</span><span class="err">:</span> <span class="p">{</span>
+    <span class="nt">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.some_new_url}&quot;</span>
+<span class="p">}</span>
+</pre></div>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../workflowdef/" class="btn btn-neutral float-right" title="Workflow Definition">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../../gettingstarted/startworkflow/" class="btn btn-neutral" title="Start a Workflow"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../../gettingstarted/startworkflow/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../workflowdef/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>

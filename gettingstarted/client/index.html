@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Using the Client - Conductor</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../../css/custom.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Using the Client";
+    var mkdocs_page_input_path = "gettingstarted/client.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Conductor</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Getting Started</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../basicconcepts/">Basic Concepts</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">Using the Client</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#client-apis">Client APIs</a></li>
+    
+
+    <li class="toctree-l3"><a href="#java">Java</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#worker">Worker</a></li>
+        
+            <li><a class="toctree-l4" href="#workflowtaskcoordinator">WorkflowTaskCoordinator</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l3"><a href="#python">Python</a></li>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../startworkflow/">Start a Workflow</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Configuration</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../configuration/taskdef/">Task Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../configuration/workflowdef/">Workflow Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../configuration/systask/">System Tasks</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../configuration/eventhandlers/">Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../configuration/taskdomains/">Task Domains</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../server/">Conductor Server</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../apispec/">API Specification</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Conductor Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../metrics/server/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../metrics/client/">Client Metrics</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../extend/">Extending Conductor</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../tasklifecycle/">Task Lifecycle</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../externalpayloadstorage/">External Payload Storage</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Developer Labs</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../labs/beginner/">Beginner</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../labs/eventhandlers/">Events and Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../labs/kitchensink/">Kitchensink</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../bestpractices/">Best Practices</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../faq/">FAQ</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../license/">License</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Getting Started &raquo;</li>
+        
+      
+    
+    <li>Using the Client</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/gettingstarted/client.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <p>Conductor tasks that are executed by remote workers communicate over HTTP endpoints/gRPC to poll for the task and update the status of the execution.</p>
+<h2 id="client-apis">Client APIs<a class="headerlink" href="#client-apis" title="Permanent link">&para;</a></h2>
+<p>Conductor provides the following java clients to interact with the various APIs</p>
+<table>
+<thead>
+<tr>
+<th>Client</th>
+<th>Usage</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Metadata Client</td>
+<td>Register / Update workflow and task definitions</td>
+</tr>
+<tr>
+<td>Workflow Client</td>
+<td>Start a new workflow / Get execution status of a workflow</td>
+</tr>
+<tr>
+<td>Task Client</td>
+<td>Poll for task / Update task result after execution / Get status of a task</td>
+</tr>
+</tbody>
+</table>
+<h2 id="java">Java<a class="headerlink" href="#java" title="Permanent link">&para;</a></h2>
+<h4 id="worker">Worker<a class="headerlink" href="#worker" title="Permanent link">&para;</a></h4>
+<p>Conductor provides a framework to poll for tasks, manage the execution thread and update the status of the execution back to the server.</p>
+<p>Implement the <a href="https://github.com/Netflix/conductor/blob/dev/client/src/main/java/com/netflix/conductor/client/worker/Worker.java">Worker</a> interface to execute the task.</p>
+<h4 id="workflowtaskcoordinator">WorkflowTaskCoordinator<a class="headerlink" href="#workflowtaskcoordinator" title="Permanent link">&para;</a></h4>
+<p>Manages the task workers thread pool and server communication (poll, task update and ack).<br />
+The WorkflowTaskCoordinator can be used to register the worker(s) and initialize the polling loop.  </p>
+<p>Use the <a href="https://github.com/Netflix/conductor/blob/dev/client/src/main/java/com/netflix/conductor/client/task/WorkflowTaskCoordinator.java#L117">Builder</a> to create an instance of the WorkflowTaskCoordinator. The builder accepts the following parameters:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>withEurekaClient</td>
+<td>EurekaClient is used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is stopped. If passed null, discovery check is not done.</td>
+<td>provided by platform</td>
+</tr>
+<tr>
+<td>withTaskClient</td>
+<td>TaskClient used to communicate to the Conductor server</td>
+<td>(required)</td>
+</tr>
+<tr>
+<td>withWorkers</td>
+<td>Workers that will be used for polling work and task execution.</td>
+<td>(required)</td>
+</tr>
+<tr>
+<td>withThreadCount</td>
+<td>Number of threads assigned to the workers. Should be at-least the size of taskWorkers to avoid starvation in a busy system.</td>
+<td>Number of registered workers</td>
+</tr>
+<tr>
+<td>withSleepWhenRetry</td>
+<td>Time in milliseconds, for which the thread should sleep when task update call fails, before retrying the operation.</td>
+<td>500</td>
+</tr>
+<tr>
+<td>withUpdateRetryCount</td>
+<td>Number of attempts to be made when updating task status when update status call fails.</td>
+<td>3</td>
+</tr>
+<tr>
+<td>withWorkerQueueSize</td>
+<td>Worker queue size for the polled task.</td>
+<td>100</td>
+</tr>
+<tr>
+<td>withWorkerNamePrefix</td>
+<td>String prefix that will be used for all the workers.</td>
+<td>workflow-worker-</td>
+</tr>
+</tbody>
+</table>
+<p>Once an instance is created, call <code>init()</code> method to initialize the executor service within the coordinator and begin the polling for tasks.</p>
+<div class="admonition tip">
+<p class="admonition-title">Note</p>
+<p>To ensure that the WorkflowTaskCoordinator stops polling for tasks when the instance becomes unhealthy, call the provided <code>shutdown()</code> hook in a <code>PreDestroy</code> block.</p>
+</div>
+<p><strong>Properties</strong>
+The worker behavior can be further controlled by using these properties:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Type</th>
+<th>Description</th>
+<th>Default</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>paused</td>
+<td>boolean</td>
+<td>If set to true, the worker stops polling.</td>
+<td>false</td>
+</tr>
+<tr>
+<td>pollCount</td>
+<td>int</td>
+<td>Number of tasks to poll for in a single poll request. Used for batched polling. Each task will be executed in a separate thread.</td>
+<td>1</td>
+</tr>
+<tr>
+<td>pollInterval</td>
+<td>int</td>
+<td>Interval in milliseconds at which the server should be polled for tasks.</td>
+<td>1000</td>
+</tr>
+<tr>
+<td>longPollTimeout</td>
+<td>int</td>
+<td>Time in milliseconds for long polling to Conductor server for tasks. Use a higher number here as opposed to more frequent polls to reduce excessive calls.</td>
+<td>100</td>
+</tr>
+</tbody>
+</table>
+<p>Further, these properties can be set either by Worker implementation or by setting the following system properties in the JVM:</p>
+<table>
+<thead>
+<tr>
+<th>Name</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>conductor.worker.&lt;property&gt;</code></td>
+<td>Applies to ALL the workers in the JVM.</td>
+</tr>
+<tr>
+<td><code>conductor.worker.&lt;taskDefName&gt;.&lt;property&gt;</code></td>
+<td>Applies to the specified worker.  Overrides the global property.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Examples</strong></p>
+<ul>
+<li><a href="https://github.com/Netflix/conductor/blob/dev/client/src/test/java/com/netflix/conductor/client/sample/SampleWorker.java">Sample Worker Implementation</a></li>
+<li><a href="https://github.com/Netflix/conductor/blob/dev/client/src/test/java/com/netflix/conductor/client/sample/Main.java">Example</a></li>
+</ul>
+<h2 id="python">Python<a class="headerlink" href="#python" title="Permanent link">&para;</a></h2>
+<p><a href="https://github.com/Netflix/conductor/tree/dev/client/python">https://github.com/Netflix/conductor/tree/dev/client/python</a></p>
+<p>Follow the example as documented in the readme or take a look at <a href="https://github.com/Netflix/conductor/blob/dev/client/python/kitchensink_workers.py">kitchensink_workers.py</a></p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Python client is a community contribution. We encourage you to test it out and let us know the feedback. Pull Requests with fixes or enhancements are welcomed!</p>
+</div>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../startworkflow/" class="btn btn-neutral float-right" title="Start a Workflow">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../basicconcepts/" class="btn btn-neutral" title="Basic Concepts"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../basicconcepts/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../startworkflow/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>

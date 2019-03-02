@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Extending Conductor - Conductor</title>
+  <title>External Payload Storage - Conductor</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -18,8 +18,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Extending Conductor";
-    var mkdocs_page_input_path = "extend.md";
+    var mkdocs_page_name = "External Payload Storage";
+    var mkdocs_page_input_path = "externalpayloadstorage.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -130,24 +130,9 @@
     </ul>
 	    </li>
           
-            <li class="toctree-l1 current">
+            <li class="toctree-l1">
 		
-    <a class="current" href="./">Extending Conductor</a>
-    <ul class="subnav">
-            
-    <li class="toctree-l2"><a href="#backend">Backend</a></li>
-    
-
-    <li class="toctree-l2"><a href="#system-tasks">System Tasks</a></li>
-    
-
-    <li class="toctree-l2"><a href="#external-payload-storage">External Payload Storage</a></li>
-    
-
-    <li class="toctree-l2"><a href="#workflow-status-listener">Workflow Status Listener</a></li>
-    
-
-    </ul>
+    <a class="" href="../extend/">Extending Conductor</a>
 	    </li>
           
             <li class="toctree-l1">
@@ -155,9 +140,29 @@
     <a class="" href="../tasklifecycle/">Task Lifecycle</a>
 	    </li>
           
-            <li class="toctree-l1">
+            <li class="toctree-l1 current">
 		
-    <a class="" href="../externalpayloadstorage/">External Payload Storage</a>
+    <a class="current" href="./">External Payload Storage</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l2"><a href="#context">Context</a></li>
+    
+
+    <li class="toctree-l2"><a href="#barriers">Barriers</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#soft-barrier">Soft Barrier</a></li>
+        
+            <li><a class="toctree-l3" href="#hard-barrier">Hard Barrier</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l2"><a href="#usage">Usage</a></li>
+    
+
+    </ul>
 	    </li>
           
             <li class="toctree-l1">
@@ -216,10 +221,10 @@
     
       
     
-    <li>Extending Conductor</li>
+    <li>External Payload Storage</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/Netflix/conductor/edit/master/docs/extend.md"
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/externalpayloadstorage.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -229,53 +234,105 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="backend">Backend<a class="headerlink" href="#backend" title="Permanent link">&para;</a></h2>
-<p>Conductor provides a pluggable backend.  The current implementation uses Dynomite.</p>
-<p>There are 4 interfaces that needs to be implemented for each backend:</p>
-<div class="codehilite"><pre><span></span><span class="c1">//Store for workflow and task definitions</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">MetadataDAO</span>
-</pre></div>
-
-
-<div class="codehilite"><pre><span></span><span class="c1">//Store for workflow executions</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">ExecutionDAO</span>
-</pre></div>
-
-
-<div class="codehilite"><pre><span></span><span class="c1">//Index for workflow executions</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">IndexDAO</span>
-</pre></div>
-
-
-<div class="codehilite"><pre><span></span><span class="c1">//Queue provider for tasks</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">QueueDAO</span>
-</pre></div>
-
-
-<p>It is possible to mix and match different implementations for each of these.<br />
-For example, SQS for queueing and a relational store for others.</p>
-<h2 id="system-tasks">System Tasks<a class="headerlink" href="#system-tasks" title="Permanent link">&para;</a></h2>
-<p>To create system tasks follow the steps below:</p>
+                <div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>The external payload storage is currently only implemented to be used to by the Java client. Client libraries in other languages need to be modified to enable this.<br />
+Contributions are welcomed.</p>
+</div>
+<h2 id="context">Context<a class="headerlink" href="#context" title="Permanent link">&para;</a></h2>
+<p>Conductor can be configured to enforce barriers on the size of workflow and task payloads for both input and output.<br />
+These barriers can be used as safeguards to prevent the usage of conductor as a data persistence system and to reduce the pressure on its datastore.</p>
+<h2 id="barriers">Barriers<a class="headerlink" href="#barriers" title="Permanent link">&para;</a></h2>
+<p>Conductor typically applies two kinds of barriers:</p>
 <ul>
-<li>Extend <code>com.netflix.conductor.core.execution.tasks.WorkflowSystemTask</code></li>
-<li>Instantiate the new class as part of the startup (eager singleton)</li>
-<li>Implement the <code>TaskMapper</code> <a href="https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/execution/mapper/TaskMapper.java">interface</a></li>
-<li>Add this implementation to the map identified by <a href="https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/config/CoreModule.java#L70">TaskMappers</a></li>
+<li>Soft Barrier</li>
+<li>Hard Barrier</li>
 </ul>
-<h2 id="external-payload-storage">External Payload Storage<a class="headerlink" href="#external-payload-storage" title="Permanent link">&para;</a></h2>
-<p>To configure conductor to externalize the storage of large payloads:</p>
-<ul>
-<li>Implement the <code>ExternalPayloadStorage</code> <a href="https://github.com/Netflix/conductor/blob/master/common/src/main/java/com/netflix/conductor/common/utils/ExternalPayloadStorage.java">interface</a>.</li>
-<li>Add the storage option to the enum <a href="https://github.com/Netflix/conductor/blob/master/server/src/main/java/com/netflix/conductor/bootstrap/ModulesProvider.java#L39">here</a>.</li>
-<li>Set this JVM system property <code>workflow.external.payload.storage</code> to the value of the enum element added above.</li>
-<li>Add a binding similar to <a href="https://github.com/Netflix/conductor/blob/master/server/src/main/java/com/netflix/conductor/bootstrap/ModulesProvider.java#L120-L127">this</a>.</li>
-</ul>
-<h2 id="workflow-status-listener">Workflow Status Listener<a class="headerlink" href="#workflow-status-listener" title="Permanent link">&para;</a></h2>
-<p>To provide a notification mechanism upon completion/termination of workflows:</p>
-<ul>
-<li>Implement the <code>WorkflowStatusListener</code> <a href="https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/execution/WorkflowStatusListener.java">interface</a></li>
-<li>This can be configured to plugin custom notification/eventing upon workflows reaching a terminal state.</li>
-</ul>
+<h4 id="soft-barrier">Soft Barrier<a class="headerlink" href="#soft-barrier" title="Permanent link">&para;</a></h4>
+<p>The soft barrier is used to alleviate pressure on the conductor datastore. In some special workflow use-cases, the size of the payload is warranted enough to be stored as part of the workflow execution.<br />
+In such cases, conductor externalizes the storage of such payloads to S3 and uploads/downloads to/from S3 as needed during the execution. This process is completely transparent to the user/worker process.  </p>
+<h4 id="hard-barrier">Hard Barrier<a class="headerlink" href="#hard-barrier" title="Permanent link">&para;</a></h4>
+<p>The hard barriers are enforced to safeguard the conductor backend from the pressure of having to persist and deal with voluminous data which is not essential for workflow execution.
+In such cases, conductor will reject such payloads and will terminate/fail the workflow execution with the reasonForIncompletion set to an appropriate error message detailing the payload size.</p>
+<h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<p>Conductor provides an implementation of <a href="https://aws.amazon.com/s3/">Amazon S3</a> used to externalize large payload storage.<br />
+Set the following property in the JVM system properties:</p>
+<div class="codehilite"><pre><span></span>workflow.external.payload.storage=S3
+</pre></div>
+
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This <a href="https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/utils/S3PayloadStorage.java#L44-L45">implementation</a> assumes that S3 access is configured on the instance.</p>
+</div>
+<p>Set the following properties to the desired values in the JVM system properties:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+<th>default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>workflow.external.payload.storage.s3.bucket</td>
+<td>S3 bucket where the payloads will be stored</td>
+<td></td>
+</tr>
+<tr>
+<td>workflow.external.payload.storage.s3.signedurlexpirationseconds</td>
+<td>The expiration time in seconds of the signed url for the payload</td>
+<td>5</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+<td></td>
+</tr>
+<tr>
+<td>conductor.workflow.input.payload.threshold.kb</td>
+<td>Soft barrier for workflow input payload in KB</td>
+<td>5120</td>
+</tr>
+<tr>
+<td>conductor.max.workflow.input.payload.threshold.kb</td>
+<td>Hard barrier for workflow input payload in KB</td>
+<td>10240</td>
+</tr>
+<tr>
+<td>conductor.workflow.output.payload.threshold.kb</td>
+<td>Soft barrier for workflow output payload in KB</td>
+<td>5120</td>
+</tr>
+<tr>
+<td>conductor.max.workflow.output.payload.threshold.kb</td>
+<td>Hard barrier for workflow output payload in KB</td>
+<td>10240</td>
+</tr>
+<tr>
+<td>conductor.task.input.payload.threshold.kb</td>
+<td>Soft barrier for task input payload in KB</td>
+<td>3072</td>
+</tr>
+<tr>
+<td>conductor.max.task.input.payload.threshold.kb</td>
+<td>Hard barrier for task input payload in KB</td>
+<td>10240</td>
+</tr>
+<tr>
+<td>conductor.task.output.payload.threshold.kb</td>
+<td>Soft barrier for task output payload in KB</td>
+<td>3072</td>
+</tr>
+<tr>
+<td>conductor.max.task.output.payload.threshold.kb</td>
+<td>Hard barrier for task output payload in KB</td>
+<td>10240</td>
+</tr>
+</tbody>
+</table>
+<p>The payloads will be stored in the bucket configured above in a <code>UUID.json</code> file at locations determined by the type of the payload. See <a href="https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/utils/S3PayloadStorage.java#L149-L167">here</a> for information about how the object key is determined.</p>
               
             </div>
           </div>
@@ -283,10 +340,10 @@ For example, SQS for queueing and a relational store for others.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../tasklifecycle/" class="btn btn-neutral float-right" title="Task Lifecycle">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../labs/beginner/" class="btn btn-neutral float-right" title="Beginner">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../metrics/client/" class="btn btn-neutral" title="Client Metrics"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../tasklifecycle/" class="btn btn-neutral" title="Task Lifecycle"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -314,10 +371,10 @@ For example, SQS for queueing and a relational store for others.</p>
           <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../metrics/client/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../tasklifecycle/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../tasklifecycle/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../labs/beginner/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

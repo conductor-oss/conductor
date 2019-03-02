@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Extending Conductor - Conductor</title>
+  <title>Task Lifecycle - Conductor</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -18,8 +18,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Extending Conductor";
-    var mkdocs_page_input_path = "extend.md";
+    var mkdocs_page_name = "Task Lifecycle";
+    var mkdocs_page_input_path = "tasklifecycle.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -130,29 +130,33 @@
     </ul>
 	    </li>
           
+            <li class="toctree-l1">
+		
+    <a class="" href="../extend/">Extending Conductor</a>
+	    </li>
+          
             <li class="toctree-l1 current">
 		
-    <a class="current" href="./">Extending Conductor</a>
+    <a class="current" href="./">Task Lifecycle</a>
     <ul class="subnav">
             
-    <li class="toctree-l2"><a href="#backend">Backend</a></li>
+    <li class="toctree-l2"><a href="#task-state-transitions">Task state transitions</a></li>
     
 
-    <li class="toctree-l2"><a href="#system-tasks">System Tasks</a></li>
+    <li class="toctree-l2"><a href="#retries-and-failure-scenarios">Retries and Failure Scenarios</a></li>
     
-
-    <li class="toctree-l2"><a href="#external-payload-storage">External Payload Storage</a></li>
-    
-
-    <li class="toctree-l2"><a href="#workflow-status-listener">Workflow Status Listener</a></li>
+        <ul>
+        
+            <li><a class="toctree-l3" href="#task-failure-and-retries">Task failure and retries</a></li>
+        
+            <li><a class="toctree-l3" href="#timeout-seconds">Timeout seconds</a></li>
+        
+            <li><a class="toctree-l3" href="#response-timeout-seconds">Response timeout seconds</a></li>
+        
+        </ul>
     
 
     </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../tasklifecycle/">Task Lifecycle</a>
 	    </li>
           
             <li class="toctree-l1">
@@ -216,10 +220,10 @@
     
       
     
-    <li>Extending Conductor</li>
+    <li>Task Lifecycle</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/Netflix/conductor/edit/master/docs/extend.md"
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/tasklifecycle.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -229,53 +233,35 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="backend">Backend<a class="headerlink" href="#backend" title="Permanent link">&para;</a></h2>
-<p>Conductor provides a pluggable backend.  The current implementation uses Dynomite.</p>
-<p>There are 4 interfaces that needs to be implemented for each backend:</p>
-<div class="codehilite"><pre><span></span><span class="c1">//Store for workflow and task definitions</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">MetadataDAO</span>
-</pre></div>
-
-
-<div class="codehilite"><pre><span></span><span class="c1">//Store for workflow executions</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">ExecutionDAO</span>
-</pre></div>
-
-
-<div class="codehilite"><pre><span></span><span class="c1">//Index for workflow executions</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">IndexDAO</span>
-</pre></div>
-
-
-<div class="codehilite"><pre><span></span><span class="c1">//Queue provider for tasks</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">QueueDAO</span>
-</pre></div>
-
-
-<p>It is possible to mix and match different implementations for each of these.<br />
-For example, SQS for queueing and a relational store for others.</p>
-<h2 id="system-tasks">System Tasks<a class="headerlink" href="#system-tasks" title="Permanent link">&para;</a></h2>
-<p>To create system tasks follow the steps below:</p>
-<ul>
-<li>Extend <code>com.netflix.conductor.core.execution.tasks.WorkflowSystemTask</code></li>
-<li>Instantiate the new class as part of the startup (eager singleton)</li>
-<li>Implement the <code>TaskMapper</code> <a href="https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/execution/mapper/TaskMapper.java">interface</a></li>
-<li>Add this implementation to the map identified by <a href="https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/config/CoreModule.java#L70">TaskMappers</a></li>
-</ul>
-<h2 id="external-payload-storage">External Payload Storage<a class="headerlink" href="#external-payload-storage" title="Permanent link">&para;</a></h2>
-<p>To configure conductor to externalize the storage of large payloads:</p>
-<ul>
-<li>Implement the <code>ExternalPayloadStorage</code> <a href="https://github.com/Netflix/conductor/blob/master/common/src/main/java/com/netflix/conductor/common/utils/ExternalPayloadStorage.java">interface</a>.</li>
-<li>Add the storage option to the enum <a href="https://github.com/Netflix/conductor/blob/master/server/src/main/java/com/netflix/conductor/bootstrap/ModulesProvider.java#L39">here</a>.</li>
-<li>Set this JVM system property <code>workflow.external.payload.storage</code> to the value of the enum element added above.</li>
-<li>Add a binding similar to <a href="https://github.com/Netflix/conductor/blob/master/server/src/main/java/com/netflix/conductor/bootstrap/ModulesProvider.java#L120-L127">this</a>.</li>
-</ul>
-<h2 id="workflow-status-listener">Workflow Status Listener<a class="headerlink" href="#workflow-status-listener" title="Permanent link">&para;</a></h2>
-<p>To provide a notification mechanism upon completion/termination of workflows:</p>
-<ul>
-<li>Implement the <code>WorkflowStatusListener</code> <a href="https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/execution/WorkflowStatusListener.java">interface</a></li>
-<li>This can be configured to plugin custom notification/eventing upon workflows reaching a terminal state.</li>
-</ul>
+                <h2 id="task-state-transitions">Task state transitions<a class="headerlink" href="#task-state-transitions" title="Permanent link">&para;</a></h2>
+<p>The figure below depicts the state transitions that a task can go through within a workflow execution.</p>
+<p><img alt="Task_States" src="/img/task_states.png" /></p>
+<h2 id="retries-and-failure-scenarios">Retries and Failure Scenarios<a class="headerlink" href="#retries-and-failure-scenarios" title="Permanent link">&para;</a></h2>
+<h3 id="task-failure-and-retries">Task failure and retries<a class="headerlink" href="#task-failure-and-retries" title="Permanent link">&para;</a></h3>
+<p>Retries for failed task executions of each task can be configured independently. retryCount, retryDelaySeconds and retryLogic can be used to configure the retry mechanism.</p>
+<p><img alt="Task Failure" src="/img/TaskFailure.png" /></p>
+<ol>
+<li>Worker (W1) polls for task T1 from the Conductor server and receives the task.</li>
+<li>Upon processing this task, the worker determines that the task execution is a failure and reports this to the server with FAILED status after 10 seconds.</li>
+<li>The server will persist this FAILED execution of T1. A new execution of task T1 will be created and scheduled to be polled. This task will be available to be polled after 5 (retryDelaySeconds) seconds.</li>
+</ol>
+<h3 id="timeout-seconds">Timeout seconds<a class="headerlink" href="#timeout-seconds" title="Permanent link">&para;</a></h3>
+<p>Timeout is the maximum amount of time that the task must reach a terminal state in, else the task will be marked as TIMED_OUT.</p>
+<p><img alt="Task Timeout" src="/img/TimeoutSeconds.png" /></p>
+<p><strong>0 seconds</strong> -&gt; Worker polls for task T1 fom the Conductor server and receives the task. T1 is put into IN_PROGRESS status by the server.<br />
+Worker starts processing the task but is unable to process the task at this time. Worker updates the server with T1 set to IN_PROGRESS status and a callback of 9 seconds.<br />
+Server puts T1 back in the queue but makes it invisible and the worker continues to poll for the task but does not receive T1 for 9 seconds.  </p>
+<p><strong>9,18 seconds</strong> -&gt; Worker receives T1 from the server and is still unable to process the task and updates the server with a callback of 9 seconds.</p>
+<p><strong>27 seconds</strong> -&gt; Worker polls and receives task T1 from the server and is now able to process this task.</p>
+<p><strong>30 seconds</strong> (T1 timeout) -&gt; Server marks T1 as TIMED_OUT because it is not in a terminal state after first being moved to IN_PROGRESS status. Server schedules a new task based on the retry count.</p>
+<p><strong>32 seconds</strong> -&gt; Worker completes processing of T1 and updates the server with COMPLETED status. Server will ignore this update since T1 has already been moved to a terminal status (TIMED_OUT).</p>
+<h3 id="response-timeout-seconds">Response timeout seconds<a class="headerlink" href="#response-timeout-seconds" title="Permanent link">&para;</a></h3>
+<p>Response timeout is the time within which the worker must respond to the server with an update for the task, else the task will be marked as TIMED_OUT.</p>
+<p><img alt="Response Timeout" src="/img/ResponseTimeoutSeconds.png" /></p>
+<p><strong>0 seconds</strong> -&gt; Worker polls for the task T1 from the Conductor server and receives the task. T1 is put into IN_PROGRESS status by the server.</p>
+<p>Worker starts processing the task but the worker instance dies during this execution.</p>
+<p><strong>20 seconds</strong> (T1 responseTimeout) -&gt; Server marks T1 as TIMED_OUT since the task has not been updated by the worker within the configured responseTimeoutSeconds (20). A new instance of task T1 is scheduled as per the retry configuration.</p>
+<p><strong>25 seconds</strong> -&gt; The retried instance of T1 is available to be polled by the worker, after the retryDelaySeconds (5) has elapsed.</p>
               
             </div>
           </div>
@@ -283,10 +269,10 @@ For example, SQS for queueing and a relational store for others.</p>
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../tasklifecycle/" class="btn btn-neutral float-right" title="Task Lifecycle">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../externalpayloadstorage/" class="btn btn-neutral float-right" title="External Payload Storage">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../metrics/client/" class="btn btn-neutral" title="Client Metrics"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../extend/" class="btn btn-neutral" title="Extending Conductor"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -314,10 +300,10 @@ For example, SQS for queueing and a relational store for others.</p>
           <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../metrics/client/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../extend/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../tasklifecycle/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../externalpayloadstorage/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

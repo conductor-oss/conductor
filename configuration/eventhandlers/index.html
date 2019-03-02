@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Event Handlers - Conductor</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../../css/custom.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Event Handlers";
+    var mkdocs_page_input_path = "configuration/eventhandlers.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Conductor</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Getting Started</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/client/">Using the Client</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Configuration</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../taskdef/">Task Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../workflowdef/">Workflow Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../systask/">System Tasks</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">Event Handlers</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#introduction">Introduction</a></li>
+    
+
+    <li class="toctree-l3"><a href="#event-task">Event Task</a></li>
+    
+
+    <li class="toctree-l3"><a href="#event-handler">Event Handler</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#configuration">Configuration</a></li>
+        
+            <li><a class="toctree-l4" href="#actions">Actions</a></li>
+        
+        </ul>
+    
+
+    <li class="toctree-l3"><a href="#extending">Extending</a></li>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../taskdomains/">Task Domains</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../server/">Conductor Server</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../apispec/">API Specification</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Conductor Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../metrics/server/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../metrics/client/">Client Metrics</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../extend/">Extending Conductor</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../tasklifecycle/">Task Lifecycle</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../externalpayloadstorage/">External Payload Storage</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Developer Labs</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../labs/beginner/">Beginner</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../labs/eventhandlers/">Events and Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../labs/kitchensink/">Kitchensink</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../bestpractices/">Best Practices</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../faq/">FAQ</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../license/">License</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Configuration &raquo;</li>
+        
+      
+    
+    <li>Event Handlers</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/configuration/eventhandlers.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="introduction">Introduction<a class="headerlink" href="#introduction" title="Permanent link">&para;</a></h2>
+<p>Eventing in Conductor provides for loose coupling between workflows and support for producing and consuming events from external systems.</p>
+<p>This includes:</p>
+<ol>
+<li>Being able to produce an event (message) in an external system like SQS or internal to Conductor. </li>
+<li>Start a workflow when a specific event occurs that matches the provided criteria.</li>
+</ol>
+<p>Conductor provides SUB_WORKFLOW task that can be used to embed a workflow inside parent workflow.  Eventing supports provides similar capability without explicitly adding dependencies and provides <strong>fire-and-forget</strong> style integrations.</p>
+<h2 id="event-task">Event Task<a class="headerlink" href="#event-task" title="Permanent link">&para;</a></h2>
+<p>Event task provides ability to publish an event (message) to either Conductor or an external eventing system like SQS. Event tasks are useful for creating event based dependencies for workflows and tasks.</p>
+<p>See <a href="/configuration/systask/#event">Event Task</a> for documentation.</p>
+<h2 id="event-handler">Event Handler<a class="headerlink" href="#event-handler" title="Permanent link">&para;</a></h2>
+<p>Event handlers are listeners registered that executes an action when a matching event occurs.  The supported actions are:</p>
+<ol>
+<li>Start a Workflow</li>
+<li>Fail a Task</li>
+<li>Complete a Task</li>
+</ol>
+<p>Event Handlers can be configured to listen to Conductor Events or an external event like SQS.</p>
+<h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
+<p>Event Handlers are configured via <code>/event/</code> APIs.</p>
+<h4 id="structure">Structure:<a class="headerlink" href="#structure" title="Permanent link">&para;</a></h4>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span> <span class="p">:</span> <span class="s2">&quot;descriptive unique name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;event_type:event_location&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;condition&quot;</span><span class="p">:</span> <span class="s2">&quot;boolean condition&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;actions&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;see examples below&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<h4 id="condition">Condition<a class="headerlink" href="#condition" title="Permanent link">&para;</a></h4>
+<p>Condition is an expression that MUST evaluate to a boolean value.  A Javascript like syntax is supported that can be used to evaluate condition based on the payload.
+Actions are executed only when the condition evaluates to <code>true</code>.</p>
+<p><strong>Examples</strong></p>
+<p>Given the following payload in the message:</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;fileType&quot;</span><span class="p">:</span> <span class="s2">&quot;AUDIO&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="nt">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span>
+       <span class="nt">&quot;length&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+       <span class="nt">&quot;codec&quot;</span><span class="p">:</span> <span class="s2">&quot;aac&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<table>
+<thead>
+<tr>
+<th>Expression</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>$.version &gt; 1</code></td>
+<td>true</td>
+</tr>
+<tr>
+<td><code>$.version &gt; 10</code></td>
+<td>false</td>
+</tr>
+<tr>
+<td><code>$.metadata.length == 300</code></td>
+<td>true</td>
+</tr>
+</tbody>
+</table>
+<h3 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h3>
+<p><strong>Start A Workflow</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;start_workflow&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;start_workflow&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;WORKFLOW_NAME&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;optional_param&gt;&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;param1&quot;</span><span class="p">:</span> <span class="s2">&quot;${param1}&quot;</span> 
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p><strong>Complete Task</strong>*</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;complete_task&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;complete_task&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;workflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${source.externalId.workflowId}&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;taskRefName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;output&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;response&quot;</span><span class="p">:</span> <span class="s2">&quot;${source.result}&quot;</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;expandInlineJSON&quot;</span><span class="p">:</span> <span class="kc">true</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p><strong>Fail Task</strong>*</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;fail_task&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;fail_task&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;workflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${source.externalId.workflowId}&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;taskRefName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;output&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;response&quot;</span><span class="p">:</span> <span class="s2">&quot;${source.result}&quot;</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;expandInlineJSON&quot;</span><span class="p">:</span> <span class="kc">true</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Input for starting a workflow and output when completing / failing task follows the same <a href="/configuration/workflowdef/#wiring-inputs-and-outputs">expressions</a> used for wiring workflow inputs.</p>
+<div class="admonition info">
+<p class="admonition-title">Expanding stringified JSON elements in payload</p>
+<p><code>expandInlineJSON</code> property, when set to true will expand the inlined stringified JSON elements in the payload to JSON documents and replace the string value with JSON document.<br />
+This feature allows such elements to be used with JSON path expressions. </p>
+</div>
+<h2 id="extending">Extending<a class="headerlink" href="#extending" title="Permanent link">&para;</a></h2>
+<p>Provide the implementation of <a href="https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/events/EventQueueProvider.java">EventQueueProvider</a>.</p>
+<p>SQS Queue Provider: 
+<a href="https://github.com/Netflix/conductor/blob/master/contribs/src/main/java/com/netflix/conductor/core/events/sqs/SQSEventQueueProvider.java">SQSEventQueueProvider.java </a></p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../taskdomains/" class="btn btn-neutral float-right" title="Task Domains">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../systask/" class="btn btn-neutral" title="System Tasks"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../systask/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../taskdomains/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>

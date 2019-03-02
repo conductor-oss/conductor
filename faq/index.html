@@ -56,32 +56,53 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../intro/">Getting Started</a>
+    <a class="" href="../architecture/">Architecture</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../intro/concepts/">Basic Concepts</a>
+    <span class="caption-text">Getting Started</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../gettingstarted/basicconcepts/">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../gettingstarted/client/">Using the Client</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../gettingstarted/startworkflow/">Start a Workflow</a>
+                </li>
+    </ul>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../metadata/">Metadata Definitions</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../metadata/systask/">System Tasks</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../events/">Event Handlers</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
+    <span class="caption-text">Configuration</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../configuration/taskdef/">Task Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/workflowdef/">Workflow Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/systask/">System Tasks</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/eventhandlers/">Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/taskdomains/">Task Domains</a>
+                </li>
+    </ul>
 	    </li>
           
             <li class="toctree-l1">
@@ -91,12 +112,22 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../worker/">Conductor Task Workers</a>
+    <a class="" href="../apispec/">API Specification</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../domains/">Task Domains</a>
+    <span class="caption-text">Conductor Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../metrics/server/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../metrics/client/">Client Metrics</a>
+                </li>
+    </ul>
 	    </li>
           
             <li class="toctree-l1">
@@ -106,22 +137,36 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../runtime/">APIs</a>
+    <a class="" href="../tasklifecycle/">Task Lifecycle</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <span class="caption-text">Workflow Metrics</span>
+    <a class="" href="../externalpayloadstorage/">External Payload Storage</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Developer Labs</span>
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../metrics/">Server Metrics</a>
+    <a class="" href="../labs/beginner/">Beginner</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../metrics/client/">Worker Metrics</a>
+    <a class="" href="../labs/eventhandlers/">Events and Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../labs/kitchensink/">Kitchensink</a>
                 </li>
     </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../bestpractices/">Best Practices</a>
 	    </li>
           
             <li class="toctree-l1 current">
@@ -151,6 +196,12 @@
     
 
     <li class="toctree-l2"><a href="#how-can-i-get-help-with-dynomite">How can I get help with Dynomite?</a></li>
+    
+
+    <li class="toctree-l2"><a href="#my-workflow-is-running-and-the-task-is-scheduled-but-it-is-not-being-processed">My workflow is running and the task is SCHEDULED but it is not being processed.</a></li>
+    
+
+    <li class="toctree-l2"><a href="#how-do-i-configure-a-notification-when-my-workflow-completes-or-fails">How do I configure a notification when my workflow completes or fails?</a></li>
     
 
     </ul>
@@ -196,27 +247,31 @@
           <div role="main">
             <div class="section">
               
-                <h4 id="how-do-you-schedule-a-task-to-be-put-in-the-queue-after-some-time-eg-1-hour-1-day-etc">How do you schedule a task to be put in the queue after some time (e.g. 1 hour, 1 day etc.)<a class="headerlink" href="#how-do-you-schedule-a-task-to-be-put-in-the-queue-after-some-time-eg-1-hour-1-day-etc" title="Permanent link">&para;</a></h4>
+                <h3 id="how-do-you-schedule-a-task-to-be-put-in-the-queue-after-some-time-eg-1-hour-1-day-etc">How do you schedule a task to be put in the queue after some time (e.g. 1 hour, 1 day etc.)<a class="headerlink" href="#how-do-you-schedule-a-task-to-be-put-in-the-queue-after-some-time-eg-1-hour-1-day-etc" title="Permanent link">&para;</a></h3>
 <p>After polling for the task update the status of the task to <code>IN_PROGRESS</code> and set the <code>callbackAfterSeconds</code> value to the desired time.  The task will remain in the queue until the specified second before worker polling for it will receive it again.</p>
 <p>If there is a timeout set for the task, and the <code>callbackAfterSeconds</code> exceeds the timeout value, it will result in task being TIMED_OUT.</p>
-<h4 id="how-long-can-a-workflow-be-in-running-state-can-i-have-a-workflow-that-keeps-running-for-days-or-months">How long can a workflow be in running state?  Can I have a workflow that keeps running for days or months?<a class="headerlink" href="#how-long-can-a-workflow-be-in-running-state-can-i-have-a-workflow-that-keeps-running-for-days-or-months" title="Permanent link">&para;</a></h4>
+<h3 id="how-long-can-a-workflow-be-in-running-state-can-i-have-a-workflow-that-keeps-running-for-days-or-months">How long can a workflow be in running state?  Can I have a workflow that keeps running for days or months?<a class="headerlink" href="#how-long-can-a-workflow-be-in-running-state-can-i-have-a-workflow-that-keeps-running-for-days-or-months" title="Permanent link">&para;</a></h3>
 <p>Yes.  As long as the timeouts on the tasks are set to handle long running workflows, it will stay in running state.</p>
-<h4 id="my-workflow-fails-to-start-with-missing-task-error">My workflow fails to start with missing task error<a class="headerlink" href="#my-workflow-fails-to-start-with-missing-task-error" title="Permanent link">&para;</a></h4>
+<h3 id="my-workflow-fails-to-start-with-missing-task-error">My workflow fails to start with missing task error<a class="headerlink" href="#my-workflow-fails-to-start-with-missing-task-error" title="Permanent link">&para;</a></h3>
 <p>Ensure all the tasks are registered via <code>/metadata/taskdefs</code> APIs.  Add any missing task definition (as reported in the error) and try again.</p>
-<h4 id="where-does-my-worker-run-how-does-conductor-run-my-tasks">Where does my worker run?  How does conductor run my tasks?<a class="headerlink" href="#where-does-my-worker-run-how-does-conductor-run-my-tasks" title="Permanent link">&para;</a></h4>
+<h3 id="where-does-my-worker-run-how-does-conductor-run-my-tasks">Where does my worker run?  How does conductor run my tasks?<a class="headerlink" href="#where-does-my-worker-run-how-does-conductor-run-my-tasks" title="Permanent link">&para;</a></h3>
 <p>Conductor does not run the workers.  When a task is scheduled, it is put into the queue maintained by Conductor.  Workers are required to poll for tasks using <code>/tasks/poll</code> API at periodic interval, execute the business logic for the task and report back the results using <code>POST /tasks</code> API call. 
-Conductor, however will run <a href="/metadata/systask/">system tasks</a> on the Conductor server.</p>
-<h4 id="how-can-i-schedule-workflows-to-run-at-a-specific-time">How can I schedule workflows to run at a specific time?<a class="headerlink" href="#how-can-i-schedule-workflows-to-run-at-a-specific-time" title="Permanent link">&para;</a></h4>
+Conductor, however will run <a href="/configuration/systask/">system tasks</a> on the Conductor server.</p>
+<h3 id="how-can-i-schedule-workflows-to-run-at-a-specific-time">How can I schedule workflows to run at a specific time?<a class="headerlink" href="#how-can-i-schedule-workflows-to-run-at-a-specific-time" title="Permanent link">&para;</a></h3>
 <p>Conductor does not provide any scheduling mechanism.  But you can use any of the available scheduling systems to make REST calls to Conductor to start a workflow.  Alternatively, publish a message to a supported eventing system like SQS to trigger a workflow.<br />
 More details about <a href="/events">eventing</a>.</p>
-<h4 id="how-do-i-setup-dynomite-cluster">How do I setup Dynomite cluster?<a class="headerlink" href="#how-do-i-setup-dynomite-cluster" title="Permanent link">&para;</a></h4>
+<h3 id="how-do-i-setup-dynomite-cluster">How do I setup Dynomite cluster?<a class="headerlink" href="#how-do-i-setup-dynomite-cluster" title="Permanent link">&para;</a></h3>
 <p>Visit Dynomite's github page.  <a href="https://github.com/Netflix/dynomite">https://github.com/Netflix/dynomite</a> to find details on setup and support mechanism.</p>
-<h4 id="can-i-use-conductor-with-ruby-go-python">Can I use conductor with Ruby / Go / Python?<a class="headerlink" href="#can-i-use-conductor-with-ruby-go-python" title="Permanent link">&para;</a></h4>
+<h3 id="can-i-use-conductor-with-ruby-go-python">Can I use conductor with Ruby / Go / Python?<a class="headerlink" href="#can-i-use-conductor-with-ruby-go-python" title="Permanent link">&para;</a></h3>
 <p>Yes.  Workers can be written any language as long as they can poll and update the task results via HTTP endpoints.</p>
 <p>Conductor provides frameworks for Java and Python to simplify the task of polling and updating the status back to Conductor server.</p>
-<p><strong>Note:</strong> Python client is currently in development and not battle tested for production use cases. </p>
-<h4 id="how-can-i-get-help-with-dynomite">How can I get help with Dynomite?<a class="headerlink" href="#how-can-i-get-help-with-dynomite" title="Permanent link">&para;</a></h4>
+<p><strong>Note:</strong> Python and Go clients have been contributed by the community.</p>
+<h3 id="how-can-i-get-help-with-dynomite">How can I get help with Dynomite?<a class="headerlink" href="#how-can-i-get-help-with-dynomite" title="Permanent link">&para;</a></h3>
 <p>Visit Dynomite's github page.  <a href="https://github.com/Netflix/dynomite">https://github.com/Netflix/dynomite</a> to find details on setup and support mechanism.</p>
+<h3 id="my-workflow-is-running-and-the-task-is-scheduled-but-it-is-not-being-processed">My workflow is running and the task is SCHEDULED but it is not being processed.<a class="headerlink" href="#my-workflow-is-running-and-the-task-is-scheduled-but-it-is-not-being-processed" title="Permanent link">&para;</a></h3>
+<p>Make sure that the worker is actively polling for this task. Navigate to the <code>Poll Data</code> tab on the Condictor UI and search for your task name in the search box on the top right corner. Ensure that <code>Last Poll Time</code> for this task is current and the <code>Last Polled By</code> is an active instance. The <code>Size</code> column shows the number of scheduled tasks for this task name.</p>
+<h3 id="how-do-i-configure-a-notification-when-my-workflow-completes-or-fails">How do I configure a notification when my workflow completes or fails?<a class="headerlink" href="#how-do-i-configure-a-notification-when-my-workflow-completes-or-fails" title="Permanent link">&para;</a></h3>
+<p>Refer this <a href="./configuration/workflowdef/#workflow-notifications">documentation</a> to extend conductor to send out events/notifications upon workflow completion/failure.</p>
               
             </div>
           </div>
@@ -227,7 +282,7 @@ More details about <a href="/events">eventing</a>.</p>
         <a href="../license/" class="btn btn-neutral float-right" title="License">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../metrics/client/" class="btn btn-neutral" title="Worker Metrics"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../bestpractices/" class="btn btn-neutral" title="Best Practices"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -255,7 +310,7 @@ More details about <a href="/events">eventing</a>.</p>
           <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../metrics/client/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../bestpractices/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
         <span style="margin-left: 15px"><a href="../license/" style="color: #fcfcfc">Next &raquo;</a></span>

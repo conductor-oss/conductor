@@ -5,26 +5,26 @@
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="None">
   
-  <link rel="shortcut icon" href="../img/favicon.ico">
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
   <title>Task Domains - Conductor</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
-  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
-  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
   <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
-  <link href="../css/custom.css" rel="stylesheet">
+  <link href="../../css/custom.css" rel="stylesheet">
   
   <script>
     // Current page data
     var mkdocs_page_name = "Task Domains";
-    var mkdocs_page_input_path = "domains/index.md";
+    var mkdocs_page_input_path = "configuration/taskdomains.md";
     var mkdocs_page_url = null;
   </script>
   
-  <script src="../js/jquery-2.1.1.min.js" defer></script>
-  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
   <script>hljs.initHighlightingOnLoad();</script> 
   
@@ -37,9 +37,9 @@
     
     <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
       <div class="wy-side-nav-search">
-        <a href=".." class="icon icon-home"> Conductor</a>
+        <a href="../.." class="icon icon-home"> Conductor</a>
         <div role="search">
-  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
     <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
   </form>
 </div>
@@ -51,104 +51,149 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="..">Introduction</a>
+    <a class="" href="../..">Introduction</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../intro/">Getting Started</a>
+    <a class="" href="../../architecture/">Architecture</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../intro/concepts/">Basic Concepts</a>
+    <span class="caption-text">Getting Started</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/client/">Using the Client</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+                </li>
+    </ul>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../metadata/">Metadata Definitions</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../metadata/systask/">System Tasks</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../events/">Event Handlers</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../server/">Conductor Server</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../worker/">Conductor Task Workers</a>
-	    </li>
-          
-            <li class="toctree-l1 current">
-		
+    <span class="caption-text">Configuration</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../taskdef/">Task Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../workflowdef/">Workflow Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../systask/">System Tasks</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../eventhandlers/">Event Handlers</a>
+                </li>
+                <li class=" current">
+                    
     <a class="current" href="./">Task Domains</a>
     <ul class="subnav">
             
-    <li class="toctree-l2"><a href="#task-domains">Task Domains</a></li>
+    <li class="toctree-l3"><a href="#task-domains">Task Domains</a></li>
     
 
-    <li class="toctree-l2"><a href="#how-to-use-task-domains">How to use Task Domains</a></li>
+    <li class="toctree-l3"><a href="#how-to-use-task-domains">How to use Task Domains</a></li>
     
         <ul>
         
-            <li><a class="toctree-l3" href="#change-the-poll-call">Change the poll call</a></li>
+            <li><a class="toctree-l4" href="#change-the-poll-call">Change the poll call</a></li>
         
-            <li><a class="toctree-l3" href="#change-the-start-workflow-call">Change the start workflow call</a></li>
+            <li><a class="toctree-l4" href="#change-the-start-workflow-call">Change the start workflow call</a></li>
         
         </ul>
     
 
     </ul>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../extend/">Extending Conductor</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../runtime/">APIs</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <span class="caption-text">Workflow Metrics</span>
-    <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../metrics/">Server Metrics</a>
-                </li>
-                <li class="">
-                    
-    <a class="" href="../metrics/client/">Worker Metrics</a>
                 </li>
     </ul>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../faq/">FAQ</a>
+    <a class="" href="../../server/">Conductor Server</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../license/">License</a>
+    <a class="" href="../../apispec/">API Specification</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Conductor Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../metrics/server/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../metrics/client/">Client Metrics</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../extend/">Extending Conductor</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../tasklifecycle/">Task Lifecycle</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../externalpayloadstorage/">External Payload Storage</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Developer Labs</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../labs/beginner/">Beginner</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../labs/eventhandlers/">Events and Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../labs/kitchensink/">Kitchensink</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../bestpractices/">Best Practices</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../faq/">FAQ</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../license/">License</a>
 	    </li>
           
         </ul>
@@ -161,7 +206,7 @@
       
       <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
         <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
-        <a href="..">Conductor</a>
+        <a href="../..">Conductor</a>
       </nav>
 
       
@@ -169,14 +214,18 @@
         <div class="rst-content">
           <div role="navigation" aria-label="breadcrumbs navigation">
   <ul class="wy-breadcrumbs">
-    <li><a href="..">Docs</a> &raquo;</li>
+    <li><a href="../..">Docs</a> &raquo;</li>
     
+      
+        
+          <li>Configuration &raquo;</li>
+        
       
     
     <li>Task Domains</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/Netflix/conductor/edit/master/docs/domains/index.md"
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/configuration/taskdomains.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -195,8 +244,9 @@
 <p>The poll call must now specify the domain. </p>
 <h4 id="java-client">Java Client<a class="headerlink" href="#java-client" title="Permanent link">&para;</a></h4>
 <p>If you are using the java client then a simple property change will force  WorkflowTaskCoordinator to pass the domain to the poller.</p>
-<pre><code>    conductor.worker.T2.domain=mydomain //Task T2 needs to poll for domain &quot;mydomain&quot;
-</code></pre>
+<div class="codehilite"><pre><span></span>    conductor.worker.T2.domain=mydomain //Task T2 needs to poll for domain &quot;mydomain&quot;
+</pre></div>
+
 
 <h4 id="rest-call">REST call<a class="headerlink" href="#rest-call" title="Permanent link">&para;</a></h4>
 <p><code>GET /tasks/poll/batch/T2?workerid=myworker&amp;domain=mydomain</code>
@@ -204,7 +254,7 @@
 <h3 id="change-the-start-workflow-call">Change the start workflow call<a class="headerlink" href="#change-the-start-workflow-call" title="Permanent link">&para;</a></h3>
 <p>When starting the workflow, make sure the task to domain mapping is passes</p>
 <h4 id="java-client_1">Java Client<a class="headerlink" href="#java-client_1" title="Permanent link">&para;</a></h4>
-<pre><code>    Map&lt;String, Object&gt; input = new HashMap&lt;&gt;();
+<div class="codehilite"><pre><span></span>    Map&lt;String, Object&gt; input = new HashMap&lt;&gt;();
     input.put(&quot;wf_input1&quot;, &quot;one”);
 
     Map&lt;String, String&gt; taskToDomain = new HashMap&lt;&gt;();
@@ -222,25 +272,24 @@
         .withInput(input)
         .withTaskToDomain(taskToDomain);
 
-    wfclient.start_workflow(swr);
+    wfclient.startWorkflow(swr);
+</pre></div>
 
-</code></pre>
 
 <h4 id="rest-call_1">REST call<a class="headerlink" href="#rest-call_1" title="Permanent link">&para;</a></h4>
 <p><code>POST /workflow</code></p>
-<pre><code class="json">{
-  &quot;name&quot;: &quot;myWorkflow&quot;,
-  &quot;version&quot;: 1,
-  &quot;correlatonId&quot;: &quot;corr1&quot;
-  &quot;input&quot;: {
-    &quot;wf_input1&quot;: &quot;one&quot;
-  },
-  &quot;taskToDomain&quot;: {
-    &quot;T2&quot;: &quot;mydomain&quot;
-  }
-}
-
-</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;myWorkflow&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">&quot;correlatonId&quot;</span><span class="p">:</span> <span class="s2">&quot;corr1&quot;</span>
+  <span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;wf_input1&quot;</span><span class="p">:</span> <span class="s2">&quot;one&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;taskToDomain&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;T2&quot;</span><span class="p">:</span> <span class="s2">&quot;mydomain&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
               
             </div>
           </div>
@@ -248,10 +297,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../extend/" class="btn btn-neutral float-right" title="Extending Conductor">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../../server/" class="btn btn-neutral float-right" title="Conductor Server">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../worker/" class="btn btn-neutral" title="Conductor Task Workers"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../eventhandlers/" class="btn btn-neutral" title="Event Handlers"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -279,21 +328,16 @@
           <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../worker/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../eventhandlers/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../extend/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../../server/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
-    <script>var base_url = '..';</script>
-    <script src="../js/theme.js" defer></script>
-      <script src="../search/main.js" defer></script>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
 
 </body>
 </html>
-
-<!--
-MkDocs version : 1.0.4
-Build Date UTC : 2019-02-28 19:23:53
--->

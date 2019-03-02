@@ -54,13 +54,7 @@
     <a class="current" href=".">Introduction</a>
     <ul class="subnav">
             
-    <li class="toctree-l2"><a href="#conductor">Conductor</a></li>
-    
-        <ul>
-        
-            <li><a class="toctree-l3" href="#motivation">Motivation</a></li>
-        
-        </ul>
+    <li class="toctree-l2"><a href="#motivation">Motivation</a></li>
     
 
     </ul>
@@ -68,32 +62,53 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="intro/">Getting Started</a>
+    <a class="" href="architecture/">Architecture</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="intro/concepts/">Basic Concepts</a>
+    <span class="caption-text">Getting Started</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="gettingstarted/basicconcepts/">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="gettingstarted/client/">Using the Client</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="gettingstarted/startworkflow/">Start a Workflow</a>
+                </li>
+    </ul>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="metadata/">Metadata Definitions</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="metadata/systask/">System Tasks</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="events/">Event Handlers</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="metadata/kitchensink/">Kitchensink Example</a>
+    <span class="caption-text">Configuration</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="configuration/taskdef/">Task Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="configuration/workflowdef/">Workflow Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="configuration/systask/">System Tasks</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="configuration/eventhandlers/">Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="configuration/taskdomains/">Task Domains</a>
+                </li>
+    </ul>
 	    </li>
           
             <li class="toctree-l1">
@@ -103,12 +118,22 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="worker/">Conductor Task Workers</a>
+    <a class="" href="apispec/">API Specification</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="domains/">Task Domains</a>
+    <span class="caption-text">Conductor Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="metrics/server/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="metrics/client/">Client Metrics</a>
+                </li>
+    </ul>
 	    </li>
           
             <li class="toctree-l1">
@@ -118,22 +143,36 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="runtime/">APIs</a>
+    <a class="" href="tasklifecycle/">Task Lifecycle</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <span class="caption-text">Workflow Metrics</span>
+    <a class="" href="externalpayloadstorage/">External Payload Storage</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Developer Labs</span>
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="metrics/">Server Metrics</a>
+    <a class="" href="labs/beginner/">Beginner</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="metrics/client/">Worker Metrics</a>
+    <a class="" href="labs/eventhandlers/">Events and Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="labs/kitchensink/">Kitchensink</a>
                 </li>
     </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="bestpractices/">Best Practices</a>
 	    </li>
           
             <li class="toctree-l1">
@@ -181,23 +220,26 @@
           <div role="main">
             <div class="section">
               
-                <h1 id="conductor">Conductor<a class="headerlink" href="#conductor" title="Permanent link">&para;</a></h1>
-<p><center><img alt="Logo" src="img/conductor-vector-x.png" /></center>
+                <p><center><img alt="Logo" src="img/conductor-vector-x.png" /></center>
 <center><img alt="Logo" src="img/corner-logo-oss.png" /></center>
-<center>Conductor is an <em>orchestration</em> engine that runs in the cloud. </center></p>
+<center><strong>Conductor is a <em>Workflow Orchestration engine</em> that runs in the cloud.</strong> </center></p>
 <h2 id="motivation">Motivation<a class="headerlink" href="#motivation" title="Permanent link">&para;</a></h2>
 <p>We built Conductor to help us orchestrate microservices based process flows at Netflix with the following features:</p>
 <ul>
-<li>Allow creating complex process / business flows in which individual task is implemented by a microservice.</li>
+<li>A distributed server ecosystem, which stores workflow state information efficiently.</li>
+<li>Allow creation of process / business flows in which each individual task can be implemented by the same / different microservices.</li>
 <li>A JSON DSL based blueprint defines the execution flow.</li>
 <li>Provide visibility and traceability into the these process flows.</li>
-<li>Expose control semantics around pause, resume, restart, etc allowing for better devops experience.</li>
+<li>Simple interface to connect workers, which execute the tasks in workflows.</li>
+<li>Full operational control over workflows with the ability to pause, resume, restart, retry and terminate.</li>
 <li>Allow greater reuse of existing microservices providing an easier path for onboarding.</li>
-<li>User interface to visualize the process flows.</li>
-<li>Ability to synchronously process all the tasks when needed.</li>
-<li>Ability to scale millions of concurrently running process flows.</li>
+<li>User interface to visualize, replay and search the process flows.</li>
+<li>Ability to scale to millions of concurrently running process flows.</li>
 <li>Backed by a queuing service abstracted from the clients.</li>
 <li>Be able to operate on HTTP or other transports e.g. gRPC.</li>
+<li>Event handlers to control workflows via external actions.</li>
+<li>Client implementations in Java, Python and other languages.</li>
+<li>Various configurable properties with sensible defaults to fine tune workflow and task executions like rate limiting, concurrent execution limits etc.</li>
 </ul>
 <p><strong>Why not peer to peer choreography?</strong></p>
 <p>With peer to peer task choreography, we found it was harder to scale with growing business needs and complexities.
@@ -205,7 +247,7 @@ Pub/sub model worked for simplest of the flows, but quickly highlighted some of 
 <ul>
 <li>Process flows are “embedded” within the code of multiple application.</li>
 <li>Often, there is tight coupling and assumptions around input/output, SLAs etc, making it harder to adapt to changing needs.</li>
-<li>Almost no way to systematically answer “how much are we done with process X”?</li>
+<li>Almost no way to systematically answer “How much are we done with process X”?</li>
 </ul>
               
             </div>
@@ -214,7 +256,7 @@ Pub/sub model worked for simplest of the flows, but quickly highlighted some of 
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="intro/" class="btn btn-neutral float-right" title="Getting Started">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="architecture/" class="btn btn-neutral float-right" title="Architecture">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
     </div>
@@ -244,7 +286,7 @@ Pub/sub model worked for simplest of the flows, but quickly highlighted some of 
       
       
       
-        <span style="margin-left: 15px"><a href="intro/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="architecture/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>
@@ -257,5 +299,5 @@ Pub/sub model worked for simplest of the flows, but quickly highlighted some of 
 
 <!--
 MkDocs version : 1.0.4
-Build Date UTC : 2019-02-28 19:23:53
+Build Date UTC : 2019-03-02 01:20:29
 -->

@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Client Metrics - Conductor</title>
+  <title>Basic Concepts - Conductor</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -18,8 +18,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Client Metrics";
-    var mkdocs_page_input_path = "metrics/client.md";
+    var mkdocs_page_name = "Basic Concepts";
+    var mkdocs_page_input_path = "gettingstarted/basicconcepts.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -63,17 +63,41 @@
 		
     <span class="caption-text">Getting Started</span>
     <ul class="subnav">
-                <li class="">
+                <li class=" current">
                     
-    <a class="" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+    <a class="current" href="./">Basic Concepts</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#definitions-aka-metadata-or-blueprints">Definitions (aka Metadata or Blueprints)</a></li>
+    
+
+    <li class="toctree-l3"><a href="#tasks">Tasks</a></li>
+    
+
+    <li class="toctree-l3"><a href="#workflow">Workflow</a></li>
+    
+
+    <li class="toctree-l3"><a href="#workflow-definition">Workflow Definition</a></li>
+    
+
+    <li class="toctree-l3"><a href="#task-definition">Task Definition</a></li>
+    
+
+    <li class="toctree-l3"><a href="#system-tasks">System Tasks</a></li>
+    
+
+    <li class="toctree-l3"><a href="#worker-tasks">Worker Tasks</a></li>
+    
+
+    </ul>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../gettingstarted/client/">Using the Client</a>
+    <a class="" href="../client/">Using the Client</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+    <a class="" href="../startworkflow/">Start a Workflow</a>
                 </li>
     </ul>
 	    </li>
@@ -121,14 +145,11 @@
     <ul class="subnav">
                 <li class="">
                     
-    <a class="" href="../server/">Server Metrics</a>
+    <a class="" href="../../metrics/server/">Server Metrics</a>
                 </li>
-                <li class=" current">
+                <li class="">
                     
-    <a class="current" href="./">Client Metrics</a>
-    <ul class="subnav">
-            
-    </ul>
+    <a class="" href="../../metrics/client/">Client Metrics</a>
                 </li>
     </ul>
 	    </li>
@@ -204,14 +225,14 @@
     
       
         
-          <li>Conductor Metrics &raquo;</li>
+          <li>Getting Started &raquo;</li>
         
       
     
-    <li>Client Metrics</li>
+    <li>Basic Concepts</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/Netflix/conductor/edit/master/docs/metrics/client.md"
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/gettingstarted/basicconcepts.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -221,84 +242,36 @@
           <div role="main">
             <div class="section">
               
-                <p>When using the Java client, the following metrics are published:</p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th align="left">Purpose</th>
-<th>Tags</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>task_execution_queue_full</td>
-<td align="left">Counter to record execution queue has saturated</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>task_poll_error</td>
-<td align="left">Client error when polling for a task queue</td>
-<td>taskType, includeRetries, status</td>
-</tr>
-<tr>
-<td>task_paused</td>
-<td align="left">Counter for number of times the task has been polled, when the worker has been paused</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>task_execute_error</td>
-<td align="left">Execution error</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>task_ack_failed</td>
-<td align="left">Task ack failed</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>task_ack_error</td>
-<td align="left">Task ack has encountered an exception</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>task_update_error</td>
-<td align="left">Task status cannot be updated back to server</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>task_poll_counter</td>
-<td align="left">Incremented each time polling is done</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>task_poll_time</td>
-<td align="left">Time to poll for a batch of tasks</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>task_execute_time</td>
-<td align="left">Time to execute a task</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>task_result_size</td>
-<td align="left">Records output payload size of a task</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>workflow_input_size</td>
-<td align="left">Records input payload size of a workflow</td>
-<td>workflowType, workflowVersion</td>
-</tr>
-<tr>
-<td>external_payload_used</td>
-<td align="left">Incremented each time external payload storage is used</td>
-<td>name, operation, payloadType</td>
-</tr>
-</tbody>
-</table>
-<p>Metrics on client side supplements the one collected from server in identifying the network as well as client side issues.</p>
+                <h2 id="definitions-aka-metadata-or-blueprints">Definitions (aka Metadata or Blueprints)<a class="headerlink" href="#definitions-aka-metadata-or-blueprints" title="Permanent link">&para;</a></h2>
+<p>Conductor definitions are like class defintions in OOP paradigm, or templates. You define this once, and use for each workflow execution. Definitions to Executions have 1:N relationship.</p>
+<h2 id="tasks">Tasks<a class="headerlink" href="#tasks" title="Permanent link">&para;</a></h2>
+<p>Tasks are the building blocks of Workflow. There must be at least one task in a Workflow.<br />
+Tasks can be categorized into two types: </p>
+<ul>
+<li><a href="/configuration/systask/">Systems tasks</a> - executed by Conductor server.</li>
+<li>Worker tasks - executed by your own workers.</li>
+</ul>
+<h2 id="workflow">Workflow<a class="headerlink" href="#workflow" title="Permanent link">&para;</a></h2>
+<p>A Workflow is the container of your process flow. It could include several different types of Tasks, Sub-Workflows, inputs and outputs connected to each other, to effectively achieve the desired result.</p>
+<h2 id="workflow-definition">Workflow Definition<a class="headerlink" href="#workflow-definition" title="Permanent link">&para;</a></h2>
+<p>Workflows are defined using a JSON based DSL and includes a set of tasks that are executed as part of the workflows.  The tasks are either control tasks (fork, conditional etc) or application tasks (e.g. encode a file) that are executed on a remote machine. <a href="/configuration/workflowdef/">Detailed description</a></p>
+<h2 id="task-definition">Task Definition<a class="headerlink" href="#task-definition" title="Permanent link">&para;</a></h2>
+<p>Task definitions help define Task level parameters like inputs and outputs, timeouts, retries etc.</p>
+<ul>
+<li>All tasks need to be registered before they can be used by active workflows.</li>
+<li>A task can be re-used within multiple workflows.</li>
+</ul>
+<p><a href="/configuration/taskdef/">Detailed description</a></p>
+<h2 id="system-tasks">System Tasks<a class="headerlink" href="#system-tasks" title="Permanent link">&para;</a></h2>
+<p>System tasks are executed within the JVM of the Conductor server and managed by Conductor for its execution and scalability.</p>
+<p>See <a href="/configuration/systask/">Systems tasks</a> for list of available Task types, and instructions for using them.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Conductor provides an API to create user defined tasks that are executed in the same JVM as the engine.  see <a href="https://github.com/Netflix/conductor/blob/dev/core/src/main/java/com/netflix/conductor/core/execution/tasks/WorkflowSystemTask.java">WorkflowSystemTask</a> interface for details.</p>
+</div>
+<h2 id="worker-tasks">Worker Tasks<a class="headerlink" href="#worker-tasks" title="Permanent link">&para;</a></h2>
+<p>Worker tasks are implemented by your application(s) and run in a separate environment from Conductor. The worker tasks can be implemented in any language.  These tasks talk to Conductor server via REST/gRPC to poll for tasks and update its status after execution.</p>
+<p>Worker tasks are identified by task type <strong>SIMPLE</strong> in the blueprint.</p>
               
             </div>
           </div>
@@ -306,10 +279,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../../extend/" class="btn btn-neutral float-right" title="Extending Conductor">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../client/" class="btn btn-neutral float-right" title="Using the Client">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../server/" class="btn btn-neutral" title="Server Metrics"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../architecture/" class="btn btn-neutral" title="Architecture"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -337,10 +310,10 @@
           <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../server/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../../architecture/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../../extend/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../client/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

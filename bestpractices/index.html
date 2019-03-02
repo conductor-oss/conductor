@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../img/favicon.ico">
-  <title>Server Metrics - Conductor</title>
+  <title>Best Practices - Conductor</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../css/theme.css" type="text/css" />
@@ -18,8 +18,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Server Metrics";
-    var mkdocs_page_input_path = "metrics/index.md";
+    var mkdocs_page_name = "Best Practices";
+    var mkdocs_page_input_path = "bestpractices.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -56,32 +56,53 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../intro/">Getting Started</a>
+    <a class="" href="../architecture/">Architecture</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../intro/concepts/">Basic Concepts</a>
+    <span class="caption-text">Getting Started</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../gettingstarted/basicconcepts/">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../gettingstarted/client/">Using the Client</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../gettingstarted/startworkflow/">Start a Workflow</a>
+                </li>
+    </ul>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../metadata/">Metadata Definitions</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../metadata/systask/">System Tasks</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../events/">Event Handlers</a>
-	    </li>
-          
-            <li class="toctree-l1">
-		
-    <a class="" href="../metadata/kitchensink/">Kitchensink Example</a>
+    <span class="caption-text">Configuration</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../configuration/taskdef/">Task Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/workflowdef/">Workflow Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/systask/">System Tasks</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/eventhandlers/">Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/taskdomains/">Task Domains</a>
+                </li>
+    </ul>
 	    </li>
           
             <li class="toctree-l1">
@@ -91,12 +112,22 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../worker/">Conductor Task Workers</a>
+    <a class="" href="../apispec/">API Specification</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <a class="" href="../domains/">Task Domains</a>
+    <span class="caption-text">Conductor Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../metrics/server/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../metrics/client/">Client Metrics</a>
+                </li>
+    </ul>
 	    </li>
           
             <li class="toctree-l1">
@@ -106,24 +137,44 @@
           
             <li class="toctree-l1">
 		
-    <a class="" href="../runtime/">APIs</a>
+    <a class="" href="../tasklifecycle/">Task Lifecycle</a>
 	    </li>
           
             <li class="toctree-l1">
 		
-    <span class="caption-text">Workflow Metrics</span>
+    <a class="" href="../externalpayloadstorage/">External Payload Storage</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Developer Labs</span>
     <ul class="subnav">
-                <li class=" current">
+                <li class="">
                     
-    <a class="current" href="./">Server Metrics</a>
-    <ul class="subnav">
-            
-    </ul>
+    <a class="" href="../labs/beginner/">Beginner</a>
                 </li>
                 <li class="">
                     
-    <a class="" href="client/">Worker Metrics</a>
+    <a class="" href="../labs/eventhandlers/">Events and Event Handlers</a>
                 </li>
+                <li class="">
+                    
+    <a class="" href="../labs/kitchensink/">Kitchensink</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">Best Practices</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l2"><a href="#response-timeout">Response Timeout</a></li>
+    
+
+    <li class="toctree-l2"><a href="#payload-sizes">Payload sizes</a></li>
+    
+
     </ul>
 	    </li>
           
@@ -158,15 +209,11 @@
     <li><a href="..">Docs</a> &raquo;</li>
     
       
-        
-          <li>Workflow Metrics &raquo;</li>
-        
-      
     
-    <li>Server Metrics</li>
+    <li>Best Practices</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/Netflix/conductor/edit/master/docs/metrics/index.md"
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/bestpractices.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -176,63 +223,17 @@
           <div role="main">
             <div class="section">
               
-                <p>Conductor uses <a href="https://github.com/Netflix/spectator">spectator</a> to collect the metrics.</p>
-<table>
-<thead>
-<tr>
-<th>Name</th>
-<th align="left">Purpose</th>
-<th>Tags</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>workflow_server_error</td>
-<td align="left">Rate at which server side error is happening</td>
-<td>methodName</td>
-</tr>
-<tr>
-<td>workflow_failure</td>
-<td align="left">Counter for failing workflows</td>
-<td>workflowName, status</td>
-</tr>
-<tr>
-<td>workflow_start_error</td>
-<td align="left">Counter for failing to start a workflow</td>
-<td>workflowName</td>
-</tr>
-<tr>
-<td>workflow_running</td>
-<td align="left">Counter for no. of running workflows</td>
-<td>workflowName, version</td>
-</tr>
-<tr>
-<td>task_queue_wait</td>
-<td align="left">Time spent by a task in queue</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>task_execution</td>
-<td align="left">Time taken to execute a task</td>
-<td>taskType, includeRetries, status</td>
-</tr>
-<tr>
-<td>task_poll</td>
-<td align="left">Time taken to poll for a task</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>task_queue_depth</td>
-<td align="left">Pending tasks queue depth</td>
-<td>taskType</td>
-</tr>
-<tr>
-<td>task_timeout</td>
-<td align="left">Counter for timed out tasks</td>
-<td>taskType</td>
-</tr>
-</tbody>
-</table>
+                <h2 id="response-timeout">Response Timeout<a class="headerlink" href="#response-timeout" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Configure the responseTimeoutSeconds of each task to be &gt; 0.</li>
+<li>This value should at least be equal to or greater than the value of timeoutSeconds.</li>
+</ul>
+<h2 id="payload-sizes">Payload sizes<a class="headerlink" href="#payload-sizes" title="Permanent link">&para;</a></h2>
+<ul>
+<li>Configure your workflows such that conductor is not used as a persistence store.</li>
+<li>Ensure that the output data in the task result set in your worker is used by your workflow for execution. If the values in the output payloads are not used by subsequent tasks in your workflow, this data should not be sent back to conductor in the task result.</li>
+<li>In cases where the output data of your task is used within subsequent tasks in your workflow but is substantially large (&gt; 100KB), consider uploading this data to an object store (S3 or similar) and set the location to the object in your task output. The subsequent tasks can then download this data from the given location and use it during execution.</li>
+</ul>
               
             </div>
           </div>
@@ -240,10 +241,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="client/" class="btn btn-neutral float-right" title="Worker Metrics">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../faq/" class="btn btn-neutral float-right" title="FAQ">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../runtime/" class="btn btn-neutral" title="APIs"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../labs/kitchensink/" class="btn btn-neutral" title="Kitchensink"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -271,10 +272,10 @@
           <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../runtime/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../labs/kitchensink/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="client/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../faq/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

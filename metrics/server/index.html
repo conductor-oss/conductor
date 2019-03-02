@@ -8,7 +8,7 @@
   
   
   <link rel="shortcut icon" href="../../img/favicon.ico">
-  <title>Client Metrics - Conductor</title>
+  <title>Server Metrics - Conductor</title>
   <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
 
   <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
@@ -18,8 +18,8 @@
   
   <script>
     // Current page data
-    var mkdocs_page_name = "Client Metrics";
-    var mkdocs_page_input_path = "metrics/client.md";
+    var mkdocs_page_name = "Server Metrics";
+    var mkdocs_page_input_path = "metrics/server.md";
     var mkdocs_page_url = null;
   </script>
   
@@ -119,16 +119,19 @@
 		
     <span class="caption-text">Conductor Metrics</span>
     <ul class="subnav">
-                <li class="">
-                    
-    <a class="" href="../server/">Server Metrics</a>
-                </li>
                 <li class=" current">
                     
-    <a class="current" href="./">Client Metrics</a>
+    <a class="current" href="./">Server Metrics</a>
     <ul class="subnav">
             
+    <li class="toctree-l3"><a href="#publishing-metrics">Publishing metrics</a></li>
+    
+
     </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../client/">Client Metrics</a>
                 </li>
     </ul>
 	    </li>
@@ -208,10 +211,10 @@
         
       
     
-    <li>Client Metrics</li>
+    <li>Server Metrics</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/Netflix/conductor/edit/master/docs/metrics/client.md"
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/metrics/server.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -221,7 +224,15 @@
           <div role="main">
             <div class="section">
               
-                <p>When using the Java client, the following metrics are published:</p>
+                <h2 id="publishing-metrics">Publishing metrics<a class="headerlink" href="#publishing-metrics" title="Permanent link">&para;</a></h2>
+<p>Conductor uses <a href="https://github.com/Netflix/spectator">spectator</a> to collect the metrics.</p>
+<ul>
+<li>To enable conductor serve to publish metrics, add this <a href="http://netflix.github.io/spectator/en/latest/registry/metrics3/">dependency</a> to your build.gradle.</li>
+<li>Conductor Server enables you to load additional modules dynamically, this feature can be controlled using this <a href="https://github.com/Netflix/conductor/blob/master/server/README.md#additional-modules-optional">configuration</a>.</li>
+<li>Create your own AbstractModule that overides configure function and registers the Spectator metrics registry.</li>
+<li>Initialize the Registry and add it to the global registry via <code>((CompositeRegistry)Spectator.globalRegistry()).add(...)</code>.</li>
+</ul>
+<p>The following metrics are published by the server. You can use these metrics to configure alerts for your workflows and tasks.</p>
 <table>
 <thead>
 <tr>
@@ -232,73 +243,102 @@
 </thead>
 <tbody>
 <tr>
-<td>task_execution_queue_full</td>
-<td align="left">Counter to record execution queue has saturated</td>
+<td>workflow_server_error</td>
+<td align="left">Rate at which server side error is happening</td>
+<td>methodName</td>
+</tr>
+<tr>
+<td>workflow_failure</td>
+<td align="left">Counter for failing workflows</td>
+<td>workflowName, status</td>
+</tr>
+<tr>
+<td>workflow_start_error</td>
+<td align="left">Counter for failing to start a workflow</td>
+<td>workflowName</td>
+</tr>
+<tr>
+<td>workflow_running</td>
+<td align="left">Counter for no. of running workflows</td>
+<td>workflowName, version</td>
+</tr>
+<tr>
+<td>workflow_execution</td>
+<td align="left">Timer for Workflow completion</td>
+<td>workflowName, ownerApp</td>
+</tr>
+<tr>
+<td>task_queue_wait</td>
+<td align="left">Time spent by a task in queue</td>
 <td>taskType</td>
 </tr>
 <tr>
-<td>task_poll_error</td>
-<td align="left">Client error when polling for a task queue</td>
+<td>task_execution</td>
+<td align="left">Time taken to execute a task</td>
 <td>taskType, includeRetries, status</td>
 </tr>
 <tr>
-<td>task_paused</td>
-<td align="left">Counter for number of times the task has been polled, when the worker has been paused</td>
+<td>task_poll</td>
+<td align="left">Time taken to poll for a task</td>
 <td>taskType</td>
 </tr>
 <tr>
-<td>task_execute_error</td>
-<td align="left">Execution error</td>
+<td>task_poll_count</td>
+<td align="left">Counter for number of times the task is being polled</td>
+<td>taskType, domain</td>
+</tr>
+<tr>
+<td>task_queue_depth</td>
+<td align="left">Pending tasks queue depth</td>
+<td>taskType, ownerApp</td>
+</tr>
+<tr>
+<td>task_rate_limited</td>
+<td align="left">Current number of tasks being rate limited</td>
 <td>taskType</td>
 </tr>
 <tr>
-<td>task_ack_failed</td>
-<td align="left">Task ack failed</td>
+<td>task_concurrent_execution_limited</td>
+<td align="left">Current number of tasks being limited by concurrent execution limit</td>
 <td>taskType</td>
 </tr>
 <tr>
-<td>task_ack_error</td>
-<td align="left">Task ack has encountered an exception</td>
+<td>task_timeout</td>
+<td align="left">Counter for timed out tasks</td>
 <td>taskType</td>
 </tr>
 <tr>
-<td>task_update_error</td>
-<td align="left">Task status cannot be updated back to server</td>
+<td>task_response_timeout</td>
+<td align="left">Counter for tasks timedout due to responseTimeout</td>
 <td>taskType</td>
 </tr>
 <tr>
-<td>task_poll_counter</td>
-<td align="left">Incremented each time polling is done</td>
-<td>taskType</td>
+<td>task_update_conflict</td>
+<td align="left">Counter for task update conflicts. Eg: when the workflow is in terminal state</td>
+<td>workflowName, taskType, taskStatus, workflowStatus</td>
 </tr>
 <tr>
-<td>task_poll_time</td>
-<td align="left">Time to poll for a batch of tasks</td>
-<td>taskType</td>
+<td>event_queue_messages_processed</td>
+<td align="left">Counter for number of messages fetched from an event queue</td>
+<td>queueType, queueName</td>
 </tr>
 <tr>
-<td>task_execute_time</td>
-<td align="left">Time to execute a task</td>
-<td>taskType</td>
+<td>observable_queue_error</td>
+<td align="left">Counter for number of errors encountered when fetching messages from an event queue</td>
+<td>queueType</td>
 </tr>
 <tr>
-<td>task_result_size</td>
-<td align="left">Records output payload size of a task</td>
-<td>taskType</td>
+<td>event_queue_messages_handled</td>
+<td align="left">Counter for number of messages executed from an event queue</td>
+<td>queueType, queueName</td>
 </tr>
 <tr>
-<td>workflow_input_size</td>
-<td align="left">Records input payload size of a workflow</td>
-<td>workflowType, workflowVersion</td>
-</tr>
-<tr>
-<td>external_payload_used</td>
-<td align="left">Incremented each time external payload storage is used</td>
+<td>external_payload_storage_usage</td>
+<td align="left">Counter for number of times external payload storage was used</td>
 <td>name, operation, payloadType</td>
 </tr>
 </tbody>
 </table>
-<p>Metrics on client side supplements the one collected from server in identifying the network as well as client side issues.</p>
               
             </div>
           </div>
@@ -306,10 +346,10 @@
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="../../extend/" class="btn btn-neutral float-right" title="Extending Conductor">Next <span class="icon icon-circle-arrow-right"></span></a>
+        <a href="../client/" class="btn btn-neutral float-right" title="Client Metrics">Next <span class="icon icon-circle-arrow-right"></span></a>
       
       
-        <a href="../server/" class="btn btn-neutral" title="Server Metrics"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+        <a href="../../apispec/" class="btn btn-neutral" title="API Specification"><span class="icon icon-circle-arrow-left"></span> Previous</a>
       
     </div>
   
@@ -337,10 +377,10 @@
           <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
       
       
-        <span><a href="../server/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+        <span><a href="../../apispec/" style="color: #fcfcfc;">&laquo; Previous</a></span>
       
       
-        <span style="margin-left: 15px"><a href="../../extend/" style="color: #fcfcfc">Next &raquo;</a></span>
+        <span style="margin-left: 15px"><a href="../client/" style="color: #fcfcfc">Next &raquo;</a></span>
       
     </span>
 </div>

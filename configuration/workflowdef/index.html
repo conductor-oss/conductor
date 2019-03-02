@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../../img/favicon.ico">
+  <title>Workflow Definition - Conductor</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../../css/custom.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Workflow Definition";
+    var mkdocs_page_input_path = "configuration/workflowdef.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href="../.." class="icon icon-home"> Conductor</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Getting Started</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/basicconcepts/">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/client/">Using the Client</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../gettingstarted/startworkflow/">Start a Workflow</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Configuration</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../taskdef/">Task Definition</a>
+                </li>
+                <li class=" current">
+                    
+    <a class="current" href="./">Workflow Definition</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l3"><a href="#workflow-definition">Workflow Definition</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l4" href="#tasks-within-workflow">Tasks within Workflow</a></li>
+        
+            <li><a class="toctree-l4" href="#wiring-inputs-and-outputs">Wiring Inputs and Outputs</a></li>
+        
+            <li><a class="toctree-l4" href="#workflow-notifications">Workflow notifications</a></li>
+        
+        </ul>
+    
+
+    </ul>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../systask/">System Tasks</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../eventhandlers/">Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../taskdomains/">Task Domains</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../server/">Conductor Server</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../apispec/">API Specification</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Conductor Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../metrics/server/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../metrics/client/">Client Metrics</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../extend/">Extending Conductor</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../tasklifecycle/">Task Lifecycle</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../externalpayloadstorage/">External Payload Storage</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Developer Labs</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../../labs/beginner/">Beginner</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../labs/eventhandlers/">Events and Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../../labs/kitchensink/">Kitchensink</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../bestpractices/">Best Practices</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../faq/">FAQ</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../../license/">License</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="../..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="../..">Docs</a> &raquo;</li>
+    
+      
+        
+          <li>Configuration &raquo;</li>
+        
+      
+    
+    <li>Workflow Definition</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/master/docs/configuration/workflowdef.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="workflow-definition">Workflow Definition<a class="headerlink" href="#workflow-definition" title="Permanent link">&para;</a></h2>
+<p>Workflows are defined using a JSON based DSL.</p>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_and_deploy&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Encodes a file and deploys to CDN&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;encode&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;fileLocation&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.fileLocation}&quot;</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;deploy&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;d1&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;fileLocation&quot;</span><span class="p">:</span> <span class="s2">&quot;${encode.output.encodeLocation}&quot;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;outputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;cdn_url&quot;</span><span class="p">:</span> <span class="s2">&quot;${d1.output.location}&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;failureWorkflow&quot;</span><span class="p">:</span> <span class="s2">&quot;cleanup_encode_resources&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;restartable&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+  <span class="nt">&quot;workflowStatusListenerEnabled&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+  <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<table>
+<thead>
+<tr>
+<th align="left">field</th>
+<th align="left">description</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">name</td>
+<td align="left">Name of the workflow</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">description</td>
+<td align="left">Description of the workflow</td>
+<td align="left">optional</td>
+</tr>
+<tr>
+<td align="left">version</td>
+<td align="left">Numeric field used to identify the version of the schema.  Use incrementing numbers</td>
+<td align="left">When starting a workflow execution, if not specified, the definition with highest version is used</td>
+</tr>
+<tr>
+<td align="left">tasks</td>
+<td align="left">An array of task definitions as described below.</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">inputParameters</td>
+<td align="left">List of input parameters. Used for documenting the required inputs to workflow</td>
+<td align="left">optional</td>
+</tr>
+<tr>
+<td align="left">outputParameters</td>
+<td align="left">JSON template used to generate the output of the workflow</td>
+<td align="left">If not specified, the output is defined as the output of the <em>last</em> executed task</td>
+</tr>
+<tr>
+<td align="left">failureWorkflow</td>
+<td align="left">String; Workflow to be run on current Workflow failure. Useful for cleanup or post actions on failure.</td>
+<td align="left">optional</td>
+</tr>
+<tr>
+<td align="left">schemaVersion</td>
+<td align="left">Current Conductor Schema version. schemaVersion 1 is discontinued.</td>
+<td align="left">Must be 2</td>
+</tr>
+<tr>
+<td align="left">restartable</td>
+<td align="left">Boolean flag to allow Workflow restarts</td>
+<td align="left">defaults to true</td>
+</tr>
+<tr>
+<td align="left">workflowStatusListenerEnabled</td>
+<td align="left">If true, every workflow that gets terminated or completed will send a notification. See <a href="#workflow-notifications">below</a></td>
+<td align="left">optional (false by default)</td>
+</tr>
+</tbody>
+</table>
+<h3 id="tasks-within-workflow">Tasks within Workflow<a class="headerlink" href="#tasks-within-workflow" title="Permanent link">&para;</a></h3>
+<p><code>tasks</code> property in a workflow execution defines an array of tasks to be executed in that order.</p>
+<table>
+<thead>
+<tr>
+<th align="left">field</th>
+<th align="left">description</th>
+<th align="left">Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td align="left">name</td>
+<td align="left">Name of the task. MUST be registered as a task with Conductor before starting the workflow</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">taskReferenceName</td>
+<td align="left">Alias used to refer the task within the workflow.  MUST be unique within workflow.</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">type</td>
+<td align="left">Type of task. SIMPLE for tasks executed by remote workers, or one of the system task types</td>
+<td align="left"></td>
+</tr>
+<tr>
+<td align="left">description</td>
+<td align="left">Description of the task</td>
+<td align="left">optional</td>
+</tr>
+<tr>
+<td align="left">optional</td>
+<td align="left">true  or false.  When set to true - workflow continues even if the task fails.  The status of the task is reflected as <code>COMPLETED_WITH_ERRORS</code></td>
+<td align="left">Defaults to <code>false</code></td>
+</tr>
+<tr>
+<td align="left">inputParameters</td>
+<td align="left">JSON template that defines the input given to the task</td>
+<td align="left">See <a href="#wiring-inputs-and-outputs">Wiring Inputs and Outputs</a> for details</td>
+</tr>
+<tr>
+<td align="left">domain</td>
+<td align="left">See <a href="/configuration/taskdomains">Task Domains</a> for more information.</td>
+<td align="left">optional</td>
+</tr>
+</tbody>
+</table>
+<p>In addition to these parameters, System Tasks have their own parameters. Checkout <a href="/configuration/systask">System Tasks</a> for more information.</p>
+<h3 id="wiring-inputs-and-outputs">Wiring Inputs and Outputs<a class="headerlink" href="#wiring-inputs-and-outputs" title="Permanent link">&para;</a></h3>
+<p>Workflows are supplied inputs by client when a new execution is triggered. 
+Workflow input is a JSON payload that is available via <code>${workflow.input...}</code> expressions.</p>
+<p>Each task in the workflow is given input based on the <code>inputParameters</code> template configured in workflow definition.  <code>inputParameters</code> is a JSON fragment with value containing parameters for mapping values from input or output of a workflow or another task during the execution.</p>
+<p>Syntax for mapping the values follows the pattern as: </p>
+<p><strong>${SOURCE.input/output.JSONPath}</strong></p>
+<table>
+<thead>
+<tr>
+<th>field</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>SOURCE</td>
+<td>can be either "workflow" or any of the task reference name</td>
+</tr>
+<tr>
+<td>input/output</td>
+<td>refers to either the input or output of the source</td>
+</tr>
+<tr>
+<td>JSONPath</td>
+<td>JSON path expression to extract JSON fragment from source's input/output</td>
+</tr>
+</tbody>
+</table>
+<div class="admonition note">
+<p class="admonition-title">JSON Path Support</p>
+<p>Conductor supports <a href="http://goessner.net/articles/JsonPath/">JSONPath</a> specification and uses Java implementation from <a href="https://github.com/jayway/JsonPath">here</a>.</p>
+</div>
+<p><strong>Example</strong></p>
+<p>Consider a task with input configured to use input/output parameters from workflow and a task named <strong>loc_task</strong>.</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.movieId}&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.fileLocation}&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;lang&quot;</span><span class="p">:</span> <span class="s2">&quot;${loc_task.output.languages[0]}&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;http://example.com/${loc_task.output.fileId}/encode&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;body&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;recipe&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.recipe}&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;width&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+          <span class="nt">&quot;height&quot;</span><span class="p">:</span> <span class="mi">100</span>
+        <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;headers&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;Accept&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Consider the following as the <em>workflow input</em></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;movie_123&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;fileLocation&quot;</span><span class="p">:</span><span class="s2">&quot;s3://moviebucket/file123&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;recipe&quot;</span><span class="p">:</span><span class="s2">&quot;png&quot;</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>And the output of the <em>loc_task</em> as the following;</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;fileId&quot;</span><span class="p">:</span> <span class="s2">&quot;file_xxx_yyy_zzz&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;languages&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;en&quot;</span><span class="p">,</span><span class="s2">&quot;ja&quot;</span><span class="p">,</span><span class="s2">&quot;es&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>When scheduling the task, Conductor will merge the values from workflow input and loc_task's output and create the input to the task as follows:</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;movie_123&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;s3://moviebucket/file123&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;lang&quot;</span><span class="p">:</span> <span class="s2">&quot;en&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;http://example.com/file_xxx_yyy_zzz/encode&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;body&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;recipe&quot;</span><span class="p">:</span> <span class="s2">&quot;png&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;width&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="nt">&quot;height&quot;</span><span class="p">:</span> <span class="mi">100</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;headers&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;Accept&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<h3 id="workflow-notifications">Workflow notifications<a class="headerlink" href="#workflow-notifications" title="Permanent link">&para;</a></h3>
+<p>Conductor can be configured to publish notifications to external systems upon completion/termination of workflows. See <a href="/extend/#workflow-status-listener">extending conductor</a> for details.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../systask/" class="btn btn-neutral float-right" title="System Tasks">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../taskdef/" class="btn btn-neutral" title="Task Definition"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../taskdef/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../systask/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '../..';</script>
+    <script src="../../js/theme.js" defer></script>
+      <script src="../../search/main.js" defer></script>
+
+</body>
+</html>
