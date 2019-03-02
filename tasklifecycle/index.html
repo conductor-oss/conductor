@@ -235,11 +235,11 @@
               
                 <h2 id="task-state-transitions">Task state transitions<a class="headerlink" href="#task-state-transitions" title="Permanent link">&para;</a></h2>
 <p>The figure below depicts the state transitions that a task can go through within a workflow execution.</p>
-<p><img alt="Task_States" src="/img/task_states.png" /></p>
+<p><img alt="Task_States" src="../img/task_states.png" /></p>
 <h2 id="retries-and-failure-scenarios">Retries and Failure Scenarios<a class="headerlink" href="#retries-and-failure-scenarios" title="Permanent link">&para;</a></h2>
 <h3 id="task-failure-and-retries">Task failure and retries<a class="headerlink" href="#task-failure-and-retries" title="Permanent link">&para;</a></h3>
 <p>Retries for failed task executions of each task can be configured independently. retryCount, retryDelaySeconds and retryLogic can be used to configure the retry mechanism.</p>
-<p><img alt="Task Failure" src="/img/TaskFailure.png" /></p>
+<p><img alt="Task Failure" src="../img/TaskFailure.png" /></p>
 <ol>
 <li>Worker (W1) polls for task T1 from the Conductor server and receives the task.</li>
 <li>Upon processing this task, the worker determines that the task execution is a failure and reports this to the server with FAILED status after 10 seconds.</li>
@@ -247,7 +247,7 @@
 </ol>
 <h3 id="timeout-seconds">Timeout seconds<a class="headerlink" href="#timeout-seconds" title="Permanent link">&para;</a></h3>
 <p>Timeout is the maximum amount of time that the task must reach a terminal state in, else the task will be marked as TIMED_OUT.</p>
-<p><img alt="Task Timeout" src="/img/TimeoutSeconds.png" /></p>
+<p><img alt="Task Timeout" src="../img/TimeoutSeconds.png" /></p>
 <p><strong>0 seconds</strong> -&gt; Worker polls for task T1 fom the Conductor server and receives the task. T1 is put into IN_PROGRESS status by the server.<br />
 Worker starts processing the task but is unable to process the task at this time. Worker updates the server with T1 set to IN_PROGRESS status and a callback of 9 seconds.<br />
 Server puts T1 back in the queue but makes it invisible and the worker continues to poll for the task but does not receive T1 for 9 seconds.  </p>
@@ -257,7 +257,7 @@ Server puts T1 back in the queue but makes it invisible and the worker continues
 <p><strong>32 seconds</strong> -&gt; Worker completes processing of T1 and updates the server with COMPLETED status. Server will ignore this update since T1 has already been moved to a terminal status (TIMED_OUT).</p>
 <h3 id="response-timeout-seconds">Response timeout seconds<a class="headerlink" href="#response-timeout-seconds" title="Permanent link">&para;</a></h3>
 <p>Response timeout is the time within which the worker must respond to the server with an update for the task, else the task will be marked as TIMED_OUT.</p>
-<p><img alt="Response Timeout" src="/img/ResponseTimeoutSeconds.png" /></p>
+<p><img alt="Response Timeout" src="../img/ResponseTimeoutSeconds.png" /></p>
 <p><strong>0 seconds</strong> -&gt; Worker polls for the task T1 from the Conductor server and receives the task. T1 is put into IN_PROGRESS status by the server.</p>
 <p>Worker starts processing the task but the worker instance dies during this execution.</p>
 <p><strong>20 seconds</strong> (T1 responseTimeout) -&gt; Server marks T1 as TIMED_OUT since the task has not been updated by the worker within the configured responseTimeoutSeconds (20). A new instance of task T1 is scheduled as per the retry configuration.</p>
