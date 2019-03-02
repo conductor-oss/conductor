@@ -329,10 +329,10 @@ Actions are executed only when the condition evaluates to <code>true</code>.</p>
 <div class="codehilite"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;complete_task&quot;</span><span class="p">,</span>
     <span class="nt">&quot;complete_task&quot;</span><span class="p">:</span> <span class="p">{</span>
-      <span class="nt">&quot;workflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${source.externalId.workflowId}&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;workflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflowId}&quot;</span><span class="p">,</span>
       <span class="nt">&quot;taskRefName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
       <span class="nt">&quot;output&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;response&quot;</span><span class="p">:</span> <span class="s2">&quot;${source.result}&quot;</span>
+        <span class="nt">&quot;response&quot;</span><span class="p">:</span> <span class="s2">&quot;${result}&quot;</span>
       <span class="p">}</span>
     <span class="p">},</span>
     <span class="nt">&quot;expandInlineJSON&quot;</span><span class="p">:</span> <span class="kc">true</span>
@@ -344,10 +344,10 @@ Actions are executed only when the condition evaluates to <code>true</code>.</p>
 <div class="codehilite"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;fail_task&quot;</span><span class="p">,</span>
     <span class="nt">&quot;fail_task&quot;</span><span class="p">:</span> <span class="p">{</span>
-      <span class="nt">&quot;workflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${source.externalId.workflowId}&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;workflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflowId}&quot;</span><span class="p">,</span>
       <span class="nt">&quot;taskRefName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
       <span class="nt">&quot;output&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;response&quot;</span><span class="p">:</span> <span class="s2">&quot;${source.result}&quot;</span>
+        <span class="nt">&quot;response&quot;</span><span class="p">:</span> <span class="s2">&quot;${result}&quot;</span>
       <span class="p">}</span>
     <span class="p">},</span>
     <span class="nt">&quot;expandInlineJSON&quot;</span><span class="p">:</span> <span class="kc">true</span>
