@@ -322,6 +322,44 @@ Join task is used to wait for completion of one or more tasks spawned by fork ta
 **Join Task Output**
 Fork task's output will be a JSON object with key being the task reference name and value as the output of the fork task.
 
+## Exclusive Join
+Exclusive Join task helps capture Task output from Decision Task's flow.
+
+For example, If we have a Workflow with T1 -> [Decision: T2/T3] -> EJ, then based on the decision, Exclusive Join (EJ) will produce the output from T2 or T3. I.e What ever is the output of one of T2/T3 will be available to downstream tasks through Exclusive Join task.
+
+If Decision Task takes True/False as cases, then:
+
+- True: T1 -> T2 -> EJ; EJ will have T2's output.
+- False: T1 -> T3 -> EJ; EJ will have T3's output.
+- Undefined: T1 -> EJ; EJ will have T1's output.
+
+
+
+**Parameters:**
+
+|name|description|
+|---|---|
+| joinOn |List of task reference names, which the EXCLUSIVE_JOIN will lookout for to capture output. From above example, this could be ["T2", "T3"]|
+|defaultExclusiveJoinTask|Task reference name, whose output should be used incase the decision case is undefined. From above example, this could be ["T1"]|
+
+
+**Example**
+
+``` json
+{
+  "name": "exclusive_join",
+  "taskReferenceName": "exclusiveJoin",
+  "type": "EXCLUSIVE_JOIN",
+  "joinOn": [
+    "task2",
+    "task3"
+  ],
+  "defaultExclusiveJoinTask": [
+    "task1"
+  ]
+}
+```
+
 
 ## Wait
 A wait task is implemented as a gate that remains in ```IN_PROGRESS``` state unless marked as ```COMPLETED``` or ```FAILED``` by an external trigger.
