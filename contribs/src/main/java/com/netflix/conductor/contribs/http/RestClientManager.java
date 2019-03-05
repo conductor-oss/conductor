@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.contribs.http;
 
+import com.netflix.conductor.core.config.Configuration;
 import javax.inject.Singleton;
 
 import com.netflix.conductor.contribs.http.HttpTask.Input;
@@ -30,9 +31,27 @@ import com.sun.jersey.api.client.Client;
 @Singleton
 public class RestClientManager {
 
-	private Client defaultClient = Client.create();
-	
-	public Client getClient(Input input) {
-		return defaultClient;
+	static final int DEFAULT_READ_TIMEOUT = 150;
+	static final int DEFAULT_CONNECT_TIMEOUT = 100;
+	static final String HTTP_TASK_READ_TIMEOUT = "http.task.read.timeout";
+	static final String HTTP_TASK_CONNECT_TIMEOUT = "http.task.connect.timeout";
+
+
+	private final ThreadLocal<Client> threadLocalClient;
+	private final int defaultReadTimeout;
+	private final int defaultConnectTimeout;
+
+	public RestClientManager(Configuration config) {
+		this.threadLocalClient = ThreadLocal.withInitial(()->Client.create());
+		this.defaultReadTimeout =config.getIntProperty(HTTP_TASK_READ_TIMEOUT, DEFAULT_READ_TIMEOUT);
+		this.defaultConnectTimeout = config.getIntProperty(HTTP_TASK_CONNECT_TIMEOUT, DEFAULT_CONNECT_TIMEOUT);
 	}
+
+	public Client getClient() {
+		Client client = threadLocalClient.get();
+		client.setReadTimeout(defaultReadTimeout);
+		client.setConnectTimeout(defaultConnectTimeout);
+		return client;
+	}
+
 }
