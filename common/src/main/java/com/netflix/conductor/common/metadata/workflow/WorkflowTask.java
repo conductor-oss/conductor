@@ -95,6 +95,9 @@ public class WorkflowTask {
 	@ProtoField(id = 8)
 	private String caseExpression;
 
+	@ProtoField(id = 9)
+	private String scriptExpression;
+
 	@ProtoMessage(wrapper = true)
 	public static class WorkflowTaskList {
 		public List<WorkflowTask> getTasks() {
@@ -352,6 +355,15 @@ public class WorkflowTask {
 	 */
 	public void setCaseExpression(String caseExpression) {
 		this.caseExpression = caseExpression;
+	}
+
+
+	public String getScriptExpression() {
+		return scriptExpression;
+	}
+
+	public void setScriptExpression(String expression) {
+		this.scriptExpression = expression;
 	}
 
 	
