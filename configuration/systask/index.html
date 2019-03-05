@@ -116,6 +116,9 @@
     <li class="toctree-l3"><a href="#join">Join</a></li>
     
 
+    <li class="toctree-l3"><a href="#exclusive-join">Exclusive Join</a></li>
+    
+
     <li class="toctree-l3"><a href="#wait">Wait</a></li>
     
 
@@ -275,54 +278,53 @@ The task takes 3 parameters:</p>
 </tbody>
 </table>
 <p><strong>Example</strong></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;decide_task&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;decide1&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;case_value_param&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.movieType}&quot;</span>
-  <span class="p">},</span>
-  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;DECISION&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;caseValueParam&quot;</span><span class="p">:</span> <span class="s2">&quot;case_value_param&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;decisionCases&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;Show&quot;</span><span class="p">:</span> <span class="p">[</span>
-      <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;setup_episodes&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;se1&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-          <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.movieId}&quot;</span>
-        <span class="p">},</span>
-        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-      <span class="p">},</span>
-      <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;generate_episode_artwork&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;ga&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-          <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.movieId}&quot;</span>
-        <span class="p">},</span>
-        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-      <span class="p">}</span>
-    <span class="p">],</span>
-    <span class="nt">&quot;Movie&quot;</span><span class="p">:</span> <span class="p">[</span>
-      <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;setup_movie&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;sm&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-          <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.movieId}&quot;</span>
-        <span class="p">},</span>
-        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-      <span class="p">},</span>
-      <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;generate_movie_artwork&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;gma&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-          <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.movieId}&quot;</span>
-        <span class="p">},</span>
-        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-      <span class="p">}</span>
-    <span class="p">]</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;decide_task&quot;,
+  &quot;taskReferenceName&quot;: &quot;decide1&quot;,
+  &quot;inputParameters&quot;: {
+    &quot;case_value_param&quot;: &quot;${workflow.input.movieType}&quot;
+  },
+  &quot;type&quot;: &quot;DECISION&quot;,
+  &quot;caseValueParam&quot;: &quot;case_value_param&quot;,
+  &quot;decisionCases&quot;: {
+    &quot;Show&quot;: [
+      {
+        &quot;name&quot;: &quot;setup_episodes&quot;,
+        &quot;taskReferenceName&quot;: &quot;se1&quot;,
+        &quot;inputParameters&quot;: {
+          &quot;movieId&quot;: &quot;${workflow.input.movieId}&quot;
+        },
+        &quot;type&quot;: &quot;SIMPLE&quot;
+      },
+      {
+        &quot;name&quot;: &quot;generate_episode_artwork&quot;,
+        &quot;taskReferenceName&quot;: &quot;ga&quot;,
+        &quot;inputParameters&quot;: {
+          &quot;movieId&quot;: &quot;${workflow.input.movieId}&quot;
+        },
+        &quot;type&quot;: &quot;SIMPLE&quot;
+      }
+    ],
+    &quot;Movie&quot;: [
+      {
+        &quot;name&quot;: &quot;setup_movie&quot;,
+        &quot;taskReferenceName&quot;: &quot;sm&quot;,
+        &quot;inputParameters&quot;: {
+          &quot;movieId&quot;: &quot;${workflow.input.movieId}&quot;
+        },
+        &quot;type&quot;: &quot;SIMPLE&quot;
+      },
+      {
+        &quot;name&quot;: &quot;generate_movie_artwork&quot;,
+        &quot;taskReferenceName&quot;: &quot;gma&quot;,
+        &quot;inputParameters&quot;: {
+          &quot;movieId&quot;: &quot;${workflow.input.movieId}&quot;
+        },
+        &quot;type&quot;: &quot;SIMPLE&quot;
+      }
+    ]
+  }
+}</code></pre>
 
 
 <h2 id="event">Event<a class="headerlink" href="#event" title="Permanent link">&para;</a></h2>
@@ -343,10 +345,9 @@ The task takes 3 parameters:</p>
 </tbody>
 </table>
 <p><strong>Example</strong></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;sink&quot;</span><span class="p">:</span> <span class="s2">&quot;sqs:example_sqs_queue_name&quot;</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+    &quot;sink&quot;: &quot;sqs:example_sqs_queue_name&quot;
+}</code></pre>
 
 
 <p>When producing an event with Conductor as sink, the event name follows the structure:
@@ -432,26 +433,24 @@ The input given to the event task is made available to the published message as 
 </table>
 <p><strong>Example</strong></p>
 <p>Task Input payload using vipAddress</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;vipAddress&quot;</span><span class="p">:</span> <span class="s2">&quot;examplevip-prod&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;GET&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;accept&quot;</span><span class="p">:</span> <span class="s2">&quot;text/plain&quot;</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;http_request&quot;: {
+    &quot;vipAddress&quot;: &quot;examplevip-prod&quot;,
+    &quot;uri&quot;: &quot;/&quot;,
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;accept&quot;: &quot;text/plain&quot;
+  }
+}</code></pre>
 
 
 <p>Task Input using an absolute URL</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;http://example.com/&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;GET&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;accept&quot;</span><span class="p">:</span> <span class="s2">&quot;text/plain&quot;</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;http_request&quot;: {
+    &quot;uri&quot;: &quot;http://example.com/&quot;,
+    &quot;method&quot;: &quot;GET&quot;,
+    &quot;accept&quot;: &quot;text/plain&quot;
+  }
+}</code></pre>
 
 
 <p>The task is marked as <code>FAILED</code> if the request cannot be completed or the remote server returns non successful status code. </p>
@@ -477,20 +476,19 @@ The input given to the event task is made available to the published message as 
 </tbody>
 </table>
 <p><strong>Example</strong></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sub_workflow_task&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;sub1&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;requestId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.requestId}&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;file&quot;</span><span class="p">:</span> <span class="s2">&quot;${encode.output.location}&quot;</span>
-  <span class="p">},</span>
-  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SUB_WORKFLOW&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;deployment_workflow&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;sub_workflow_task&quot;,
+  &quot;taskReferenceName&quot;: &quot;sub1&quot;,
+  &quot;inputParameters&quot;: {
+    &quot;requestId&quot;: &quot;${workflow.input.requestId}&quot;,
+    &quot;file&quot;: &quot;${encode.output.location}&quot;
+  },
+  &quot;type&quot;: &quot;SUB_WORKFLOW&quot;,
+  &quot;subWorkflowParam&quot;: {
+    &quot;name&quot;: &quot;deployment_workflow&quot;,
+    &quot;version&quot;: 1
+  }
+}</code></pre>
 
 
 <p>When executed, a <code>deployment_workflow</code> is executed with two input parameters requestId and <em>file</em>.  The task is marked as completed upon the completion of the spawned workflow.  If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. </p>
@@ -512,31 +510,30 @@ The input given to the event task is made available to the published message as 
 </tbody>
 </table>
 <p><strong>Example</strong></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;forkTasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">[</span>
-      <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task11&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t11&quot;</span>
-      <span class="p">},</span>
-      <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task12&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t12&quot;</span>
-      <span class="p">}</span>
-    <span class="p">],</span>
-    <span class="p">[</span>
-      <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task21&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t21&quot;</span>
-      <span class="p">},</span>
-      <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task22&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t22&quot;</span>
-      <span class="p">}</span>
-    <span class="p">]</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;forkTasks&quot;: [
+    [
+      {
+        &quot;name&quot;: &quot;task11&quot;,
+        &quot;taskReferenceName&quot;: &quot;t11&quot;
+      },
+      {
+        &quot;name&quot;: &quot;task12&quot;,
+        &quot;taskReferenceName&quot;: &quot;t12&quot;
+      }
+    ],
+    [
+      {
+        &quot;name&quot;: &quot;task21&quot;,
+        &quot;taskReferenceName&quot;: &quot;t21&quot;
+      },
+      {
+        &quot;name&quot;: &quot;task22&quot;,
+        &quot;taskReferenceName&quot;: &quot;t22&quot;
+      }
+    ]
+  ]
+}</code></pre>
 
 
 <p>When executed, <em>task11</em> and <em>task21</em> are scheduled to be executed at the same time.</p>
@@ -561,50 +558,48 @@ The input given to the event task is made available to the published message as 
 </tbody>
 </table>
 <p><strong>Example</strong></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-     <span class="nt">&quot;dynamicTasks&quot;</span><span class="p">:</span> <span class="s2">&quot;${taskA.output.dynamicTasksJSON}&quot;</span><span class="p">,</span>
-     <span class="nt">&quot;dynamicTasksInput&quot;</span><span class="p">:</span> <span class="s2">&quot;${taskA.output.dynamicTasksInputJSON}&quot;</span>
-  <span class="p">},</span>
-  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;FORK_JOIN_DYNAMIC&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;dynamicForkTasksParam&quot;</span><span class="p">:</span> <span class="s2">&quot;dynamicTasks&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;dynamicForkTasksInputParamName&quot;</span><span class="p">:</span> <span class="s2">&quot;dynamicTasksInput&quot;</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;inputParameters&quot;: {
+     &quot;dynamicTasks&quot;: &quot;${taskA.output.dynamicTasksJSON}&quot;,
+     &quot;dynamicTasksInput&quot;: &quot;${taskA.output.dynamicTasksInputJSON}&quot;
+  },
+  &quot;type&quot;: &quot;FORK_JOIN_DYNAMIC&quot;,
+  &quot;dynamicForkTasksParam&quot;: &quot;dynamicTasks&quot;,
+  &quot;dynamicForkTasksInputParamName&quot;: &quot;dynamicTasksInput&quot;
+}</code></pre>
 
 
 <p>Consider <strong>taskA</strong>'s output as:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;dynamicTasksInputJSON&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;forkedTask1&quot;</span><span class="p">:</span> <span class="p">{</span>
-      <span class="nt">&quot;width&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
-      <span class="nt">&quot;height&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
-      <span class="nt">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;recipe&quot;</span><span class="p">:</span> <span class="s2">&quot;jpg&quot;</span>
-      <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="nt">&quot;forkedTask2&quot;</span><span class="p">:</span> <span class="p">{</span>
-      <span class="nt">&quot;width&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
-      <span class="nt">&quot;height&quot;</span><span class="p">:</span> <span class="mi">200</span><span class="p">,</span>
-      <span class="nt">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;recipe&quot;</span><span class="p">:</span> <span class="s2">&quot;jpg&quot;</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">},</span>
-  <span class="nt">&quot;dynamicTasksJSON&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_task&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;forkedTask1&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_task&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;forkedTask2&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;dynamicTasksInputJSON&quot;: {
+    &quot;forkedTask1&quot;: {
+      &quot;width&quot;: 100,
+      &quot;height&quot;: 100,
+      &quot;params&quot;: {
+        &quot;recipe&quot;: &quot;jpg&quot;
+      }
+    },
+    &quot;forkedTask2&quot;: {
+      &quot;width&quot;: 200,
+      &quot;height&quot;: 200,
+      &quot;params&quot;: {
+        &quot;recipe&quot;: &quot;jpg&quot;
+      }
+    }
+  },
+  &quot;dynamicTasksJSON&quot;: [
+    {
+      &quot;name&quot;: &quot;encode_task&quot;,
+      &quot;taskReferenceName&quot;: &quot;forkedTask1&quot;,
+      &quot;type&quot;: &quot;SIMPLE&quot;
+    },
+    {
+      &quot;name&quot;: &quot;encode_task&quot;,
+      &quot;taskReferenceName&quot;: &quot;forkedTask2&quot;,
+      &quot;type&quot;: &quot;SIMPLE&quot;
+    }
+  ]
+}</code></pre>
 
 
 <p>When executed, the dynamic fork task will schedule two parallel task of type "encode_task" with reference names "forkedTask1" and "forkedTask2" and inputs as specified by _ dynamicTasksInputJSON_</p>
@@ -632,14 +627,56 @@ The input given to the event task is made available to the published message as 
 </tbody>
 </table>
 <p><strong>Example</strong></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;joinOn&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;taskRef1&quot;</span><span class="p">,</span> <span class="s2">&quot;taskRef3&quot;</span><span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+    &quot;joinOn&quot;: [&quot;taskRef1&quot;, &quot;taskRef3&quot;]
+}</code></pre>
 
 
 <p><strong>Join Task Output</strong>
 Fork task's output will be a JSON object with key being the task reference name and value as the output of the fork task.</p>
+<h2 id="exclusive-join">Exclusive Join<a class="headerlink" href="#exclusive-join" title="Permanent link">&para;</a></h2>
+<p>Exclusive Join task helps capture Task output from Decision Task's flow.</p>
+<p>For example, If we have a Workflow with T1 -&gt; [Decision: T2/T3] -&gt; EJ, then based on the decision, Exclusive Join (EJ) will produce the output from T2 or T3. I.e What ever is the output of one of T2/T3 will be available to downstream tasks through Exclusive Join task.</p>
+<p>If Decision Task takes True/False as cases, then:</p>
+<ul>
+<li>True: T1 -&gt; T2 -&gt; EJ; EJ will have T2's output.</li>
+<li>False: T1 -&gt; T3 -&gt; EJ; EJ will have T3's output.</li>
+<li>Undefined: T1 -&gt; EJ; EJ will have T1's output.</li>
+</ul>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>joinOn</td>
+<td>List of task reference names, which the EXCLUSIVE_JOIN will lookout for to capture output. From above example, this could be ["T2", "T3"]</td>
+</tr>
+<tr>
+<td>defaultExclusiveJoinTask</td>
+<td>Task reference name, whose output should be used incase the decision case is undefined. From above example, this could be ["T1"]</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;exclusive_join&quot;,
+  &quot;taskReferenceName&quot;: &quot;exclusiveJoin&quot;,
+  &quot;type&quot;: &quot;EXCLUSIVE_JOIN&quot;,
+  &quot;joinOn&quot;: [
+    &quot;task2&quot;,
+    &quot;task3&quot;
+  ],
+  &quot;defaultExclusiveJoinTask&quot;: [
+    &quot;task1&quot;
+  ]
+}</code></pre>
+
+
 <h2 id="wait">Wait<a class="headerlink" href="#wait" title="Permanent link">&para;</a></h2>
 <p>A wait task is implemented as a gate that remains in <code>IN_PROGRESS</code> state unless marked as <code>COMPLETED</code> or <code>FAILED</code> by an external trigger.
 To use a wait task, set the task type as <code>WAIT</code></p>
@@ -652,8 +689,7 @@ None required.</p>
 <ul>
 <li>SQS queues used by the server to update the task status can be retrieve using the following API:</li>
 </ul>
-<div class="codehilite"><pre><span></span><span class="err">GET /queue</span>
-</pre></div>
+<pre class="codehilite"><code>GET /queue</code></pre>
 
 
 <ul>
@@ -670,11 +706,10 @@ None required.</p>
 </li>
 </ul>
 <p><strong>Example SQS Payload:</strong></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;some_key&quot;</span><span class="p">:</span> <span class="s2">&quot;valuex&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;externalId&quot;</span><span class="p">:</span> <span class="s2">&quot;{\&quot;taskRefName\&quot;:\&quot;TASK_REFERENCE_NAME\&quot;,\&quot;workflowId\&quot;:\&quot;WORKFLOW_ID\&quot;}&quot;</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;some_key&quot;: &quot;valuex&quot;,
+  &quot;externalId&quot;: &quot;{\&quot;taskRefName\&quot;:\&quot;TASK_REFERENCE_NAME\&quot;,\&quot;workflowId\&quot;:\&quot;WORKFLOW_ID\&quot;}&quot;
+}</code></pre>
 
 
 <h2 id="dynamic-task">Dynamic Task<a class="headerlink" href="#dynamic-task" title="Permanent link">&para;</a></h2>
@@ -695,17 +730,16 @@ None required.</p>
 </tbody>
 </table>
 <p><strong>Example</strong></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;user_task&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t1&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;files&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.files}&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;taskToExecute&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.user_supplied_task}&quot;</span>
-  <span class="p">},</span>
-  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;DYNAMIC&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;dynamicTaskNameParam&quot;</span><span class="p">:</span> <span class="s2">&quot;taskToExecute&quot;</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;user_task&quot;,
+  &quot;taskReferenceName&quot;: &quot;t1&quot;,
+  &quot;inputParameters&quot;: {
+    &quot;files&quot;: &quot;${workflow.input.files}&quot;,
+    &quot;taskToExecute&quot;: &quot;${workflow.input.user_supplied_task}&quot;
+  },
+  &quot;type&quot;: &quot;DYNAMIC&quot;,
+  &quot;dynamicTaskNameParam&quot;: &quot;taskToExecute&quot;
+}</code></pre>
 
 
 <p>If the workflow is started with input parameter user_supplied_task's value as <strong>user_task_2</strong>, Conductor will schedule <strong>user_task_2</strong> when scheduling this dynamic task.</p>

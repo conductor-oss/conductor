@@ -277,16 +277,15 @@
 </table>
 <p><strong>Example:</strong></p>
 <p>Send a <code>POST</code> request to <code>/workflow</code> with payload like:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_and_deploy&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="nt">&quot;correlationId&quot;</span><span class="p">:</span> <span class="s2">&quot;my_unique_correlation_id&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;param1&quot;</span><span class="p">:</span> <span class="s2">&quot;value1&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;param2&quot;</span><span class="p">:</span> <span class="s2">&quot;value2&quot;</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+    &quot;name&quot;: &quot;encode_and_deploy&quot;,
+    &quot;version&quot;: 1,
+    &quot;correlationId&quot;: &quot;my_unique_correlation_id&quot;,
+    &quot;input&quot;: {
+        &quot;param1&quot;: &quot;value1&quot;,
+        &quot;param2&quot;: &quot;value2&quot;
+    }
+}</code></pre>
 
 
 <h2 id="dynamic-workflows">Dynamic Workflows<a class="headerlink" href="#dynamic-workflows" title="Permanent link">&para;</a></h2>
@@ -294,41 +293,40 @@
 <p>This enables you to provide a workflow definition embedded with the required task definitions to the Start Workflow Request in the <code>workflowDef</code> parameter, avoiding the need to register the blueprints before execution.</p>
 <p><strong>Example:</strong></p>
 <p>Send a <code>POST</code> request to <code>/workflow</code> with payload like:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_adhoc_workflow_notregistered&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;workflowDef&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;ownerApp&quot;</span><span class="p">:</span> <span class="s2">&quot;my_owner_app&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;createdBy&quot;</span><span class="p">:</span> <span class="s2">&quot;my_username&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_adhoc_http_test_notregistered&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Test Http Task Workflow&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="p">{</span>
-            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_http_task&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;my_test_http_task_registered&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.http_request}&quot;</span>
-            <span class="p">},</span>
-            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;HTTP&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;startDelay&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="nt">&quot;optional&quot;</span><span class="p">:</span> <span class="kc">false</span>
-            <span class="p">}</span>
-        <span class="p">],</span>
-        <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="nt">&quot;restartable&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-        <span class="nt">&quot;workflowStatusListenerEnabled&quot;</span><span class="p">:</span> <span class="kc">false</span>
-    <span class="p">},</span>
-    <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;/health&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;vipAddress&quot;</span><span class="p">:</span> <span class="s2">&quot;cpeworkflow-devint:7004&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;GET&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;contentType&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;appName&quot;</span><span class="p">:</span> <span class="s2">&quot;cpeworkflow&quot;</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+    &quot;name&quot;: &quot;my_adhoc_workflow_notregistered&quot;,
+    &quot;workflowDef&quot;: {
+        &quot;ownerApp&quot;: &quot;my_owner_app&quot;,
+        &quot;createdBy&quot;: &quot;my_username&quot;,
+        &quot;name&quot;: &quot;my_adhoc_http_test_notregistered&quot;,
+        &quot;description&quot;: &quot;Test Http Task Workflow&quot;,
+        &quot;version&quot;: 1,
+        &quot;tasks&quot;: [
+            {
+            &quot;name&quot;: &quot;test_http_task&quot;,
+            &quot;taskReferenceName&quot;: &quot;my_test_http_task_registered&quot;,
+            &quot;inputParameters&quot;: {
+                &quot;http_request&quot;: &quot;${workflow.input.http_request}&quot;
+            },
+            &quot;type&quot;: &quot;HTTP&quot;,
+            &quot;startDelay&quot;: 0,
+            &quot;optional&quot;: false
+            }
+        ],
+        &quot;schemaVersion&quot;: 2,
+        &quot;restartable&quot;: true,
+        &quot;workflowStatusListenerEnabled&quot;: false
+    },
+    &quot;input&quot;: {
+        &quot;http_request&quot;: {
+            &quot;uri&quot;: &quot;/health&quot;,
+            &quot;vipAddress&quot;: &quot;cpeworkflow-devint:7004&quot;,
+            &quot;method&quot;: &quot;GET&quot;,
+            &quot;contentType&quot;: &quot;application/json&quot;,
+            &quot;appName&quot;: &quot;cpeworkflow&quot;
+        }
+    }
+}</code></pre>
               
             </div>
           </div>

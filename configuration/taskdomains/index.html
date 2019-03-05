@@ -244,8 +244,7 @@
 <p>The poll call must now specify the domain. </p>
 <h4 id="java-client">Java Client<a class="headerlink" href="#java-client" title="Permanent link">&para;</a></h4>
 <p>If you are using the java client then a simple property change will force  WorkflowTaskCoordinator to pass the domain to the poller.</p>
-<div class="codehilite"><pre><span></span>    conductor.worker.T2.domain=mydomain //Task T2 needs to poll for domain &quot;mydomain&quot;
-</pre></div>
+<pre class="codehilite"><code>    conductor.worker.T2.domain=mydomain //Task T2 needs to poll for domain &quot;mydomain&quot;</code></pre>
 
 
 <h4 id="rest-call">REST call<a class="headerlink" href="#rest-call" title="Permanent link">&para;</a></h4>
@@ -254,7 +253,7 @@
 <h3 id="change-the-start-workflow-call">Change the start workflow call<a class="headerlink" href="#change-the-start-workflow-call" title="Permanent link">&para;</a></h3>
 <p>When starting the workflow, make sure the task to domain mapping is passes</p>
 <h4 id="java-client_1">Java Client<a class="headerlink" href="#java-client_1" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre><span></span>    Map&lt;String, Object&gt; input = new HashMap&lt;&gt;();
+<pre class="codehilite"><code>    Map&lt;String, Object&gt; input = new HashMap&lt;&gt;();
     input.put(&quot;wf_input1&quot;, &quot;one”);
 
     Map&lt;String, String&gt; taskToDomain = new HashMap&lt;&gt;();
@@ -272,24 +271,22 @@
         .withInput(input)
         .withTaskToDomain(taskToDomain);
 
-    wfclient.startWorkflow(swr);
-</pre></div>
+    wfclient.startWorkflow(swr);</code></pre>
 
 
 <h4 id="rest-call_1">REST call<a class="headerlink" href="#rest-call_1" title="Permanent link">&para;</a></h4>
 <p><code>POST /workflow</code></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;myWorkflow&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-  <span class="nt">&quot;correlatonId&quot;</span><span class="p">:</span> <span class="s2">&quot;corr1&quot;</span>
-  <span class="s2">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;wf_input1&quot;</span><span class="p">:</span> <span class="s2">&quot;one&quot;</span>
-  <span class="p">},</span>
-  <span class="nt">&quot;taskToDomain&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;T2&quot;</span><span class="p">:</span> <span class="s2">&quot;mydomain&quot;</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;myWorkflow&quot;,
+  &quot;version&quot;: 1,
+  &quot;correlatonId&quot;: &quot;corr1&quot;
+  &quot;input&quot;: {
+    &quot;wf_input1&quot;: &quot;one&quot;
+  },
+  &quot;taskToDomain&quot;: {
+    &quot;T2&quot;: &quot;mydomain&quot;
+  }
+}</code></pre>
               
             </div>
           </div>
