@@ -4026,26 +4026,33 @@ public abstract class AbstractWorkflowServiceTest {
         workflowDef.setName("test_lambda_wf");
         workflowDef.setSchemaVersion(2);
 
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("input", "${workflow.input}");
+        inputParams.put("scriptExpression", "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false} }");
+        WorkflowTask lambdaWorkflowTask = new WorkflowTask();
+        lambdaWorkflowTask.setWorkflowTaskType(TaskType.LAMBDA);
+        lambdaWorkflowTask.setName("lambda");
+        lambdaWorkflowTask.setInputParameters(inputParams);
+        lambdaWorkflowTask.setTaskReferenceName("lambda0");
+
+        workflowDef.getTasks().add(lambdaWorkflowTask);
+
+        assertNotNull(workflowDef);
         metadataService.registerWorkflowDef(workflowDef);
 
         Map inputs =  new HashMap<>();
         inputs.put("a",1);
         String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", inputs, null, null);
         Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
+
         assertNotNull(workflow);
         assertEquals(1, workflow.getTasks().size());
-        assertEquals(RUNNING, workflow.getStatus());
-
-        Task lambda_task = workflow.getTasks().get(0);
-        assertEquals(TaskType.LAMBDA.name(), lambda_task.getTaskType());
-        assertEquals(IN_PROGRESS, lambda_task.getStatus());
 
         workflowExecutor.decide(workflowId);
-
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
-        lambda_task = workflow.getTasks().get(0);
+        Task lambda_task = workflow.getTasks().get(0);
 
-        assertEquals(lambda_task.getOutputData().toString(), "{result={testvalue=false}}");
+        assertEquals(lambda_task.getOutputData().toString(), "{result={testvalue=true}}");
         assertNotNull(workflow);
         assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
     }

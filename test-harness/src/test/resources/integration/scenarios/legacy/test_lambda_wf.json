@@ -10,10 +10,10 @@
       "taskType": "LAMBDA",
       "status": "SCHEDULED",
       "inputData": {
-        "input": "${workflow.input}",
+        "input": {"a":1},
         "scriptExpression": "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false} }"
       },
-      "referenceTaskName": "lambda-1",
+      "referenceTaskName": "lambda0",
       "retryCount": 0,
       "seq": 1,
       "pollCount": 0,
@@ -33,9 +33,12 @@
       "callbackAfterSeconds": 0,
       "workflowTask": {
         "name": "lambda",
-        "taskReferenceName": "lambda-1",
+        "taskReferenceName": "lambda0",
         "type": "LAMBDA",
         "startDelay": 0,
+        "inputParameters": {
+          "input": "${workflow.input}"
+        },
         "optional": false
       },
       "rateLimitPerSecond": 0,

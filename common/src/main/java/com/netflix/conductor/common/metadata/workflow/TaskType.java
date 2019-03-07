@@ -16,7 +16,7 @@ public enum TaskType {
     WAIT(true),
     USER_DEFINED(false),
     HTTP(true),
-    LAMBDA(true);
+    LAMBDA(true),
     EXCLUSIVE_JOIN(true);
 
     /**
