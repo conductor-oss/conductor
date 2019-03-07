@@ -80,7 +80,12 @@ task server(type: JavaExec) {
     systemProperty 'workflow.elasticsearch.url', 'localhost:9300'
     // Switch between Elasticsearch versions 2 & 5 with major version number.
     systemProperty 'loadSample', 'true'
+    // Unlink Jetty logger to reduce clutter in local server.
+    systemProperty 'org.eclipse.jetty.util.log.class', 'org.eclipse.jetty.util.log.StdErrLog'
+    // Set Jetty logger level to INFO.
+    systemProperty 'org.eclipse.jetty.LEVEL', 'INFO'
     systemProperties System.properties
     main = 'com.netflix.conductor.bootstrap.Main'
+    args  'src/main/resources/server.properties', 'src/main/resources/log4j.properties'
     classpath = sourceSets.test.runtimeClasspath
 }

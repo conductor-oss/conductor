@@ -93,15 +93,17 @@ public class DeciderService {
     //QQ public method validation of the input params
     public DeciderOutcome decide(Workflow workflow) throws TerminateWorkflowException {
 
-        //In case of a new workflow the list of tasks will be empty
+        //In case of a new workflow the list of tasks will be empty.
         final List<Task> tasks = workflow.getTasks();
-        //In case of a new workflow the list of executedTasks will also be empty
-        List<Task> executedTasks = tasks.stream()
+        // Filter the list of tasks and include only tasks that are not executed,
+        // not marked to be skipped and not ready for rerun.
+        // For a new workflow, the list of unprocessedTasks will be empty
+        List<Task> unprocessedTasks = tasks.stream()
                 .filter(t -> !t.getStatus().equals(SKIPPED) && !t.getStatus().equals(READY_FOR_RERUN) && !t.isExecuted())
                 .collect(Collectors.toList());
 
         List<Task> tasksToBeScheduled = new LinkedList<>();
-        if (executedTasks.isEmpty()) {
+        if (unprocessedTasks.isEmpty()) {
             //this is the flow that the new workflow will go through
             tasksToBeScheduled = startWorkflow(workflow);
             if (tasksToBeScheduled == null) {
