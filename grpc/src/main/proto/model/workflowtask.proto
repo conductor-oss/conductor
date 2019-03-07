@@ -33,4 +33,5 @@ message WorkflowTask {
     bool optional = 18;
     TaskDef task_definition = 19;
     bool rate_limited = 20;
+    repeated string default_exclusive_join_task = 21;
 }

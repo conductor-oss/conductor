@@ -6,7 +6,7 @@ import {getWorkflowDetails} from '../../../actions/WorkflowActions';
 import WorkflowAction from './WorkflowAction';
 import WorkflowMetaDia from '../WorkflowMetaDia';
 import moment from 'moment';
-import http from '../../../core/HttpClient';
+import http from '../../../core/HttpClientClientSide';
 import Clipboard from 'clipboard';
 import map from "lodash/fp/map";
 import Tab from "../../common/Tab";

@@ -36,7 +36,7 @@ import com.netflix.conductor.dao.QueueDAO;
 
 import static com.netflix.conductor.common.metadata.workflow.TaskType.*;
 import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
-
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_EXLCUSIVE_JOIN;
 /**
  * @author Viren
  */
@@ -172,6 +172,14 @@ public class CoreModule extends AbstractModule {
     @Named(TASK_MAPPERS_QUALIFIER)
     public TaskMapper getLambdaTaskMapper(ParametersUtils parametersUtils) {
         return new LambdaTaskMapper(parametersUtils);
+    }
+    
+    @ProvidesIntoMap
+    @StringMapKey(TASK_TYPE_EXLCUSIVE_JOIN)
+    @Singleton
+    @Named(TASK_MAPPERS_QUALIFIER)
+    public TaskMapper getExclusiveJoinTaskMapper() {
+        return new ExclusiveJoinTaskMapper();
     }
 
 }

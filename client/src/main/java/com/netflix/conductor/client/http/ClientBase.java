@@ -255,7 +255,7 @@ public abstract class ClientBase {
                 return;
             }
             String errorMessage = clientResponse.getEntity(String.class);
-            logger.error("Unable to invoke Conductor API with uri: {}, unexpected response from server: {}", uri, clientResponseToString(exception.getResponse()), exception);
+            logger.error("Unable to invoke Conductor API with uri: {}, unexpected response from server: statusCode={}, responseBody='{}'.", uri, clientResponse.getStatus(), errorMessage);
             ErrorResponse errorResponse;
             try {
                 errorResponse = objectMapper.readValue(errorMessage, ErrorResponse.class);

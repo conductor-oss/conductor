@@ -47,10 +47,6 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     @Service
     public BulkResponse pauseWorkflow(List<String> workflowIds){
 
-        for (String workflowId : workflowIds) {
-            workflowExecutor.pauseWorkflow(workflowId);
-        }
-
         BulkResponse bulkResponse = new BulkResponse();
         for (String workflowId : workflowIds) {
             try {
@@ -74,7 +70,6 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     public BulkResponse resumeWorkflow(List<String> workflowIds) {
     BulkResponse bulkResponse = new BulkResponse();
         for (String workflowId : workflowIds) {
-            workflowExecutor.resumeWorkflow(workflowId);
             try {
                 workflowExecutor.resumeWorkflow(workflowId);
                 bulkResponse.appendSuccessResponse(workflowId);
@@ -97,7 +92,6 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     public BulkResponse restart(List<String> workflowIds, boolean useLatestDefinitions) {
     BulkResponse bulkResponse = new BulkResponse();
         for (String workflowId : workflowIds) {
-            workflowExecutor.rewind(workflowId, useLatestDefinitions);
             try {
                 workflowExecutor.rewind(workflowId, useLatestDefinitions);
                 bulkResponse.appendSuccessResponse(workflowId);
@@ -118,7 +112,6 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     public BulkResponse retry(List<String> workflowIds) {
     BulkResponse bulkResponse = new BulkResponse();
         for (String workflowId : workflowIds) {
-            workflowExecutor.retry(workflowId);
             try {
                 workflowExecutor.retry(workflowId);
                 bulkResponse.appendSuccessResponse(workflowId);
@@ -140,7 +133,6 @@ public class WorkflowBulkServiceImpl implements WorkflowBulkService {
     public BulkResponse terminate(List<String> workflowIds, String reason) {
      BulkResponse bulkResponse = new BulkResponse();
         for (String workflowId : workflowIds) {
-            workflowExecutor.terminateWorkflow(workflowId, reason);
             try {
                 workflowExecutor.terminateWorkflow(workflowId, reason);
                 bulkResponse.appendSuccessResponse(workflowId);

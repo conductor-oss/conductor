@@ -1,6 +1,7 @@
 package com.netflix.conductor.common.validation;
 
 import com.netflix.conductor.common.validation.ErrorResponse;
+import java.util.StringJoiner;
 
 /**
  * Captures a validation error that can be returned in {@link ErrorResponse}.
@@ -41,6 +42,15 @@ public class ValidationError {
 
     public void setInvalidValue(String invalidValue) {
         this.invalidValue = invalidValue;
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", ValidationError.class.getSimpleName() + "[", "]")
+            .add("path='" + path + "'")
+            .add("message='" + message + "'")
+            .add("invalidValue='" + invalidValue + "'")
+            .toString();
     }
 }
 

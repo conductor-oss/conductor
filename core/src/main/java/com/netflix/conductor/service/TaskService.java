@@ -87,8 +87,7 @@ public interface TaskService {
      * @param workerId Id of the worker
      * @return `true|false` if task if received or not
      */
-    String ackTaskReceived(@NotEmpty(message = "TaskId cannot be null or empty.") String taskId,
-                           @NotEmpty(message = "WorkerID cannot be null or empty.") String workerId);
+    String ackTaskReceived(@NotEmpty(message = "TaskId cannot be null or empty.") String taskId, String workerId);
 
     /**
      * Ack Task is received.
@@ -144,7 +143,7 @@ public interface TaskService {
      * @param taskTypes List of task types.
      * @return map of task type as Key and queue size as value.
      */
-    Map<String, Integer> getTaskQueueSizes(@NotEmpty(message = "List of taskType cannot be null or empty") List<@NotEmpty String> taskTypes);
+    Map<String, Integer> getTaskQueueSizes(List<String> taskTypes);
 
     /**
      * Get the details about each queue.

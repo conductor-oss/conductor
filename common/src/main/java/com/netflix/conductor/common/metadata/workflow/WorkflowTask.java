@@ -153,7 +153,9 @@ public class WorkflowTask {
 
 	@ProtoField(id = 20)
 	private Boolean rateLimited;
-
+	
+	@ProtoField(id = 21)
+	private List<String> defaultExclusiveJoinTask = new LinkedList<>();
 	/**
 	 * @return the name
 	 */
@@ -454,6 +456,14 @@ public class WorkflowTask {
 		return rateLimited != null && rateLimited;
 	}
 
+	public List<String> getDefaultExclusiveJoinTask() {
+		return defaultExclusiveJoinTask;
+	}
+
+	public void setDefaultExclusiveJoinTask(List<String> defaultExclusiveJoinTask) {
+		this.defaultExclusiveJoinTask = defaultExclusiveJoinTask;
+	}
+
 	private Collection<List<WorkflowTask>> children() {
 		Collection<List<WorkflowTask>> workflowTaskLists = new LinkedList<>();
 		TaskType taskType = TaskType.USER_DEFINED;
@@ -623,7 +633,8 @@ public class WorkflowTask {
                 Objects.equals(getForkTasks(), that.getForkTasks()) &&
                 Objects.equals(getSubWorkflowParam(), that.getSubWorkflowParam()) &&
                 Objects.equals(getJoinOn(), that.getJoinOn()) &&
-                Objects.equals(getSink(), that.getSink());
+                Objects.equals(getSink(), that.getSink()) &&
+                Objects.equals(getDefaultExclusiveJoinTask(), that.getDefaultExclusiveJoinTask());
     }
 
     @Override
@@ -648,7 +659,8 @@ public class WorkflowTask {
                 getSubWorkflowParam(),
                 getJoinOn(),
                 getSink(),
-                isOptional()
+                isOptional(),
+                getDefaultExclusiveJoinTask()
         );
     }
 }

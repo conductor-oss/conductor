@@ -47,5 +47,5 @@ public interface AdminService {
      * @return list of pending {@link Task}
      */
     List<Task> getListOfPendingTask(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType,
-                                    @NotNull Integer start, @NotNull Integer count);
+                                    Integer start, Integer count);
 }

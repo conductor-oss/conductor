@@ -2,6 +2,7 @@ package com.netflix.conductor.client.exceptions;
 
 import java.util.List;
 import com.netflix.conductor.common.validation.ValidationError;
+import java.util.StringJoiner;
 
 
 //TODO: Use one from common
@@ -52,5 +53,16 @@ public class ErrorResponse {
 
     public void setInstance(String instance) {
         this.instance = instance;
+    }
+
+    @Override
+    public String toString() {
+        return new StringJoiner(", ", ErrorResponse.class.getSimpleName() + "[", "]")
+            .add("code='" + code + "'")
+            .add("message='" + message + "'")
+            .add("instance='" + instance + "'")
+            .add("retryable=" + retryable)
+            .add("validationErrors=" + validationErrors)
+            .toString();
     }
 }

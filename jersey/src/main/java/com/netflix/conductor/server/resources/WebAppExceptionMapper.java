@@ -67,7 +67,7 @@ public class WebAppExceptionMapper implements ExceptionMapper<WebApplicationExce
         this.code = Code.forValue(response.getStatus());
         Map<String, Object> entityMap = new LinkedHashMap<>();
         entityMap.put("instance", host);
-        entityMap.put("code", Optional.of(code.toString()).orElse(null));
+        entityMap.put("code", Optional.ofNullable(code).map(Code::name).orElse(null));
         entityMap.put("message", exception.getCause());
         entityMap.put("retryable", false);
 

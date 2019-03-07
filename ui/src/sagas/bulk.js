@@ -1,7 +1,7 @@
 import {call, put, takeLatest} from 'redux-saga/effects';
 import {PERFORM_BULK_OPERATION} from '../actions/bulk';
 import {failBulkOperation, receiveBulkOperationResponse} from '../actions/bulk';
-import http from '../core/HttpClient';
+import http from '../core/HttpClientClientSide';
 
 
 function* sendBulkRequest(action) {
@@ -17,7 +17,11 @@ function* sendBulkRequest(action) {
     switch (operation) {
       case "retry":
       case "restart":
+      case "restart_with_current_definition":
         response = yield call(http.post, url, workflows);
+        break;
+      case "restart_with_latest_definition":
+        response = yield call(http.post, url + "?useLatestDefinitions=true", workflows);
         break;
       case "pause":
       case "resume":

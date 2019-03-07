@@ -9,7 +9,7 @@ ext {
     revCassandraUnit = '3.5.0.1'
     revCommonsLang3 = '3.0'
     revCommonsIo = '2.4'
-    revDynoQueues = '2.0.0-rc4'
+    revDynoQueues = '2.0.0-rc5'
     revElasticSearch5 = '5.6.8'
     revElasticSearch5Client = '5.6.8'
     revElasticSearch6 = '6.5.1'

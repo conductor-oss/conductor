@@ -19,7 +19,7 @@ const statusList = ['RUNNING', 'COMPLETED', 'FAILED', 'TIMED_OUT', 'TERMINATED',
 
 export function getSearchQuery(query) {
   const searchQuery = get(query, "q", "");
-  const entirely = toString(get(query, "f", "false")) === "true";
+  const entirely = toString(get(query, "f", "true")) === "true";
   const types = filter(split(get(query, "workflowTypes", ""), ","), negate(isEmpty));
   const states = filter(split(get(query, "status", ""), ","), negate(isEmpty));
   const cutoff = get(query, "h", "");
