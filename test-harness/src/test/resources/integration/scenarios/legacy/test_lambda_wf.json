@@ -1,0 +1,53 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1534988907130,
+  "updateTime": 1534988907297,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "LAMBDA",
+      "status": "SCHEDULED",
+      "inputData": {
+        "input": {"a":1},
+        "scriptExpression": "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false} }"
+      },
+      "referenceTaskName": "lambda0",
+      "retryCount": 0,
+      "seq": 1,
+      "pollCount": 0,
+      "taskDefName": "lambda",
+      "scheduledTime": 1534988907192,
+      "startTime": 1534988907200,
+      "endTime": 1534988907186,
+      "updateTime": 1534988907200,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "test_lambda_wf",
+      "taskId": "22052711-1039-4888-935a-5d0efa8bcccc",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "lambda",
+        "taskReferenceName": "lambda0",
+        "type": "LAMBDA",
+        "startDelay": 0,
+        "inputParameters": {
+          "input": "${workflow.input}"
+        },
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "IN_PROGRESS",
+      "queueWaitTime": 8
+    }
+  ],
+  "workflowType": "test_lambda_wf",
+  "version": 1,
+  "schemaVersion": 2,
+  "startTime": 1534988907130
+}

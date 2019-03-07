@@ -40,6 +40,7 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.WorkflowSweeper;
+import com.netflix.conductor.core.execution.tasks.Lambda;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.dao.QueueDAO;
@@ -4014,6 +4015,44 @@ public abstract class AbstractWorkflowServiceTest {
         workflowExecutionService.updateTask(task);
 
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
+
+    @Test
+    public void testLambda() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test_lambda_wf");
+        workflowDef.setSchemaVersion(2);
+
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("input", "${workflow.input}");
+        inputParams.put("scriptExpression", "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false} }");
+        WorkflowTask lambdaWorkflowTask = new WorkflowTask();
+        lambdaWorkflowTask.setWorkflowTaskType(TaskType.LAMBDA);
+        lambdaWorkflowTask.setName("lambda");
+        lambdaWorkflowTask.setInputParameters(inputParams);
+        lambdaWorkflowTask.setTaskReferenceName("lambda0");
+
+        workflowDef.getTasks().add(lambdaWorkflowTask);
+
+        assertNotNull(workflowDef);
+        metadataService.registerWorkflowDef(workflowDef);
+
+        Map inputs =  new HashMap<>();
+        inputs.put("a",1);
+        String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", inputs, null, null);
+        Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
+
+        assertNotNull(workflow);
+        assertEquals(1, workflow.getTasks().size());
+
+        workflowExecutor.decide(workflowId);
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        Task lambda_task = workflow.getTasks().get(0);
+
+        assertEquals(lambda_task.getOutputData().toString(), "{result={testvalue=true}}");
         assertNotNull(workflow);
         assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
     }

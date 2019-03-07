@@ -16,6 +16,7 @@ public enum TaskType {
     WAIT(true),
     USER_DEFINED(false),
     HTTP(true),
+    LAMBDA(true),
     EXCLUSIVE_JOIN(true);
 
     /**
@@ -34,6 +35,7 @@ public enum TaskType {
     public static final String TASK_TYPE_USER_DEFINED = "USER_DEFINED";
     public static final String TASK_TYPE_SIMPLE = "SIMPLE";
     public static final String TASK_TYPE_HTTP = "HTTP";
+    public static final String TASK_TYPE_LAMBDA= "LAMBDA";
     public static final String TASK_TYPE_EXLCUSIVE_JOIN = "EXCLUSIVE_JOIN";
     
     private boolean isSystemTask;
