@@ -32,7 +32,9 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.util.Collections;
 
-
+/**
+ * Publishes a @see Message containing a @see WorkflowSummary to a DynoQueue on a workflow completion or termination event.
+ */
 public class DynoQueueStatusPublisher implements WorkflowStatusListener {
 
     private static final Logger LOG = LoggerFactory.getLogger(DynoQueueStatusPublisher.class);
@@ -42,9 +44,6 @@ public class DynoQueueStatusPublisher implements WorkflowStatusListener {
     private final String successStatusQueue;
     private final String failureStatusQueue;
 
-    /**
-     * Publishes a message containing a WorkflowSummary on a configured DynoQueue on workflow completion or termination.
-     */
     @Inject
     public DynoQueueStatusPublisher(QueueDAO queueDAO, ObjectMapper objectMapper, Configuration config) {
         this.queueDAO = queueDAO;
