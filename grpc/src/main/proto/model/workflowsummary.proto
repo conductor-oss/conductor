@@ -22,4 +22,6 @@ message WorkflowSummary {
     int64 execution_time = 12;
     string event = 13;
     string failed_reference_task_names = 14;
+    string external_input_payload_storage_path = 15;
+    string external_output_payload_storage_path = 16;
 }
