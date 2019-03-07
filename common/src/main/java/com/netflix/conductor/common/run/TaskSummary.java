@@ -25,6 +25,7 @@ import java.util.TimeZone;
 import com.github.vmg.protogen.annotations.*;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author Viren
@@ -86,6 +87,12 @@ public class TaskSummary {
 	@ProtoField(id = 16)
 	private String taskId;
 
+	@ProtoField(id = 17)
+	private String externalInputPayloadStoragePath;
+
+	@ProtoField(id = 18)
+	private String externalOutputPayloadStoragePath;
+
     public TaskSummary() {
     }
 
@@ -118,6 +125,13 @@ public class TaskSummary {
 		
 		if(task.getEndTime() > 0){
 			this.executionTime = task.getEndTime() - task.getStartTime();
+		}
+
+		if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
+			this.externalInputPayloadStoragePath = task.getExternalInputPayloadStoragePath();
+		}
+		if (StringUtils.isNotBlank(task.getExternalOutputPayloadStoragePath())) {
+			this.externalOutputPayloadStoragePath = task.getExternalOutputPayloadStoragePath();
 		}
 	}
 
@@ -348,6 +362,32 @@ public class TaskSummary {
 	public void setTaskId(String taskId) {
 		this.taskId = taskId;
 	}
-	
-	
+
+	/**
+	 * @return the external storage path for the task input payload
+	 */
+	public String getExternalInputPayloadStoragePath() {
+		return externalInputPayloadStoragePath;
+	}
+
+	/**
+	 * @param externalInputPayloadStoragePath the external storage path where the task input payload is stored
+	 */
+	public void setExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
+		this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
+	}
+
+	/**
+	 * @return the external storage path for the task output payload
+	 */
+	public String getExternalOutputPayloadStoragePath() {
+		return externalOutputPayloadStoragePath;
+	}
+
+	/**
+	 * @param externalOutputPayloadStoragePath the external storage path where the task output payload is stored
+	 */
+	public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
+		this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
+	}
 }
