@@ -538,7 +538,7 @@ public class WorkflowExecutor {
         Monitors.recordWorkflowCompletion(workflow.getWorkflowName(), workflow.getEndTime() - workflow.getStartTime(), wf.getOwnerApp());
         queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
 
-        if (wf.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
+        if (workflow.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
             workflowStatusListener.onWorkflowCompleted(workflow);
         }
     }
@@ -659,7 +659,8 @@ public class WorkflowExecutor {
             workflowInstance = metadataMapperService.populateWorkflowWithDefinitions(workflowInstance);
         }
 
-        Task task = executionDAOFacade.getTaskById(taskResult.getTaskId());
+        Task task = Optional.ofNullable(executionDAOFacade.getTaskById(taskResult.getTaskId()))
+                .orElseThrow(() -> new ApplicationException(Code.NOT_FOUND, "No such task found by id: " + taskResult.getTaskId()));
 
         LOGGER.debug("Task: {} belonging to Workflow {} being updated", task, workflowInstance);
 
@@ -831,8 +832,6 @@ public class WorkflowExecutor {
                 }
             }
 
-            stateChanged = scheduleTask(workflow, tasksToBeScheduled) || stateChanged;
-
             if (!outcome.tasksToBeUpdated.isEmpty()) {
                 for (Task task : tasksToBeUpdated) {
                     if (task.getStatus() != null && (!task.getStatus().equals(Task.Status.IN_PROGRESS)
@@ -847,6 +846,8 @@ public class WorkflowExecutor {
                 executionDAOFacade.updateWorkflow(workflow);
                 queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), config.getSweepFrequency());
             }
+
+            stateChanged = scheduleTask(workflow, tasksToBeScheduled) || stateChanged;
 
             if (stateChanged) {
                 decide(workflowId);
@@ -978,6 +979,10 @@ public class WorkflowExecutor {
     public void executeSystemTask(WorkflowSystemTask systemTask, String taskId, int unackTimeout) {
         try {
             Task task = executionDAOFacade.getTaskById(taskId);
+            if (task == null){
+                LOGGER.error("TaskId: {} could not be found while executing SystemTask", taskId);
+                return;
+            }
             LOGGER.info("Task: {} fetched from execution DAO for taskId: {}", task, taskId);
             if (task.getStatus().isTerminal()) {
                 //Tune the SystemTaskWorkerCoordinator's queues - if the queue size is very big this can happen!

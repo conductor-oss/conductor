@@ -582,6 +582,8 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         QueryBuilder q = QueryBuilders.boolQuery()
             .should(QueryBuilders.termQuery("status", "COMPLETED"))
             .should(QueryBuilders.termQuery("status", "FAILED"))
+            .should(QueryBuilders.termQuery("status", "TIMED_OUT"))
+            .should(QueryBuilders.termQuery("status", "TERMINATED"))
             .mustNot(QueryBuilders.existsQuery("archived"))
             .minimumShouldMatch(1);
         SearchRequestBuilder s = elasticSearchClient.prepareSearch(indexName)

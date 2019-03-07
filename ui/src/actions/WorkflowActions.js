@@ -1,4 +1,4 @@
-import http from '../core/HttpClient';
+import http from '../core/HttpClientClientSide';
 
 
 export function getWorkflowDetails(workflowId){
@@ -45,15 +45,16 @@ export function terminateWorkflow(workflowId){
   }
 }
 
-export function restartWorfklow(workflowId){
+export function restartWorfklow(workflowId, withLatestVersion){
   return function (dispatch) {
     dispatch({
       type: 'REQUESTED_RESTART_WORKFLOW',
-      workflowId
+      workflowId,
+      withLatestVersion: withLatestVersion || false
     });
 
 
-    return http.post('/api/wfe/restart/' + workflowId).then((data) => {
+    return http.post('/api/wfe/restart/' + workflowId + "?useLatestDefinitions=" + (withLatestVersion || false)).then((data) => {
       dispatch({
         type: 'RECEIVED_RESTART_WORKFLOW',
         workflowId

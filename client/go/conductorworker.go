@@ -49,12 +49,13 @@ func (c *ConductorWorker) Execute(t *task.Task, executeFunction func(t *task.Tas
 	taskResult, err := executeFunction(t)
 	if err != nil {
 		log.Println("Error Executing task:", err.Error())
-		return
+		taskResult.Status = task.FAILED
+    taskResult.ReasonForIncompletion = err.Error()
 	}
 
 	taskResultJsonString, err := taskResult.ToJSONString()
 	if err != nil {
-		log.Println(err)
+		log.Println(err.Error())
 		log.Println("Error Forming TaskResult JSON body")
 		return
 	}

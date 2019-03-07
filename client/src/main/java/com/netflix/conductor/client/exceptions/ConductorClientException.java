@@ -77,6 +77,10 @@ public class ConductorClientException extends RuntimeException {
             builder.append(", instance: ").append(instance);
         }
 
+        if (this.validationErrors != null) {
+            builder.append(", validationErrors: ").append(validationErrors.toString());
+        }
+
         builder.append("}");
         return builder.toString();
     }

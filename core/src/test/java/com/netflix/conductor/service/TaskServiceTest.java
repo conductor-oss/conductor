@@ -21,6 +21,7 @@ import java.util.Set;
 
 import static com.netflix.conductor.utility.TestUtils.getConstraintViolationMessages;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class TaskServiceTest {
@@ -126,17 +127,22 @@ public class TaskServiceTest {
         }
     }
 
+
     @Test(expected = ConstraintViolationException.class)
     public void testAckTaskReceived() {
         try{
             taskService.ackTaskReceived(null, null);
         } catch (ConstraintViolationException ex){
-            assertEquals(2, ex.getConstraintViolations().size());
+            assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("TaskId cannot be null or empty."));
-            assertTrue(messages.contains("WorkerID cannot be null or empty."));
             throw ex;
         }
+    }
+    @Test
+    public void testAckTaskReceivedMissingWorkerId() {
+        String ack = taskService.ackTaskReceived("abc", null);
+        assertNotNull(ack);
     }
 
     @Test(expected = ConstraintViolationException.class)
@@ -184,19 +190,6 @@ public class TaskServiceTest {
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("TaskId cannot be null or empty."));
             assertTrue(messages.contains("TaskType cannot be null or empty."));
-            throw ex;
-        }
-    }
-
-    @Test(expected = ConstraintViolationException.class)
-    public void testGetTaskQueueSizes(){
-        try{
-            List<String> list = new ArrayList<>();
-            taskService.getTaskQueueSizes(list);
-        } catch (ConstraintViolationException ex){
-            assertEquals(1, ex.getConstraintViolations().size());
-            Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
-            assertTrue(messages.contains("List of taskType cannot be null or empty"));
             throw ex;
         }
     }

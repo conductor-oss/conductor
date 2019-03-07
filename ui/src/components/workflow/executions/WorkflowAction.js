@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, ButtonGroup, OverlayTrigger, Popover } from 'react-bootstrap';
+import { Button, ButtonGroup, OverlayTrigger, Popover, Checkbox } from 'react-bootstrap';
 import { connect } from 'react-redux';
 import {
   terminateWorkflow,
@@ -18,6 +18,10 @@ class WorkflowAction extends React.Component {
     this.props.dispatch(restartWorfklow(this.props.workflowId));
   };
 
+  restartWithLatestDefinition = () => {
+    this.props.dispatch(restartWorfklow(this.props.workflowId, true))
+  }
+
   retry = () => {
     this.props.dispatch(retryWorfklow(this.props.workflowId));
   };
@@ -31,6 +35,8 @@ class WorkflowAction extends React.Component {
   };
 
   render() {
+    const { terminating, restarting, retrying, pausing, resuming } = this.props;
+
     const ttTerm = (
       <Popover id="popover-trigger-hover-focus" title="Terminate Workflow">
         Terminate workflow execution. All running tasks will be cancelled.
@@ -39,7 +45,17 @@ class WorkflowAction extends React.Component {
 
     const ttRestart = (
       <Popover id="popover-trigger-hover-focus" title="Restart Workflow">
-        Restart the workflow from the begining (First Task)
+        <p>
+        Restart the workflow from the begining (First Task).</p>
+        <div>
+          <Button bsStyle="default" bsSize="xsmall" disabled={restarting} onClick={!restarting ? this.restart : null}>
+            {restarting ? <i className="fa fa-spinner fa-spin" /> : 'Restart With Current Definition'}
+          </Button>
+          &nbsp;
+          <Button bsStyle="default" bsSize="xsmall" disabled={restarting} onClick={!restarting ? this.restartWithLatestDefinition : null}>
+            {restarting ? <i className="fa fa-spinner fa-spin" /> : 'Restart With Latest Definition'}
+          </Button>
+        </div>
       </Popover>
     );
 
@@ -61,12 +77,11 @@ class WorkflowAction extends React.Component {
       </Popover>
     );
 
-    const { terminating, restarting, retrying, pausing, resuming } = this.props;
 
     if (this.props.workflowStatus === 'RUNNING') {
       return (
         <ButtonGroup>
-          <OverlayTrigger placement="bottom" overlay={ttTerm}>
+          <OverlayTrigger placement="bottom" rootClose="true" overlay={ttTerm}>
             <Button
               bsStyle="danger"
               bsSize="xsmall"
@@ -86,8 +101,8 @@ class WorkflowAction extends React.Component {
     }
     if (this.props.workflowStatus === 'COMPLETED') {
       return (
-        <OverlayTrigger placement="bottom" overlay={ttRestart}>
-          <Button bsStyle="default" bsSize="xsmall" disabled={restarting} onClick={!restarting ? this.restart : null}>
+        <OverlayTrigger placement="bottom" trigger="focus" overlay={ttRestart}>
+          <Button bsStyle="default" bsSize="xsmall" disabled={restarting}>
             {restarting ? <i className="fa fa-spinner fa-spin" /> : 'Restart'}
           </Button>
         </OverlayTrigger>
@@ -95,8 +110,8 @@ class WorkflowAction extends React.Component {
     } else if (this.props.workflowStatus === 'FAILED' || this.props.workflowStatus === 'TERMINATED') {
       return (
         <ButtonGroup>
-          <OverlayTrigger placement="bottom" overlay={ttRestart}>
-            <Button bsStyle="default" bsSize="xsmall" disabled={restarting} onClick={!restarting ? this.restart : null}>
+          <OverlayTrigger placement="bottom" trigger="focus" overlay={ttRestart}>
+            <Button bsStyle="default" bsSize="xsmall" disabled={restarting}>
               {restarting ? <i className="fa fa-spinner fa-spin" /> : 'Restart'}
             </Button>
           </OverlayTrigger>
@@ -120,8 +135,8 @@ class WorkflowAction extends React.Component {
     }
     return (
       <ButtonGroup>
-        <OverlayTrigger placement="bottom" overlay={ttRestart}>
-          <Button bsStyle="default" bsSize="xsmall" disabled={restarting} onClick={!restarting ? this.restart : null}>
+        <OverlayTrigger placement="bottom" trigger="focus" overlay={ttRestart}>
+          <Button bsStyle="default" bsSize="xsmall" disabled={restarting}>
             {restarting ? <i className="fa fa-spinner fa-spin" /> : 'Restart'}
           </Button>
         </OverlayTrigger>

@@ -700,6 +700,8 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
                 .must(QueryBuilders.rangeQuery("endTime").lt(LocalDate.now().minusDays(archiveTtlDays).toString()))
                 .should(QueryBuilders.termQuery("status", "COMPLETED"))
                 .should(QueryBuilders.termQuery("status", "FAILED"))
+                .should(QueryBuilders.termQuery("status", "TIMED_OUT"))
+                .should(QueryBuilders.termQuery("status", "TERMINATED"))
                 .mustNot(QueryBuilders.existsQuery("archived"))
                 .minimumShouldMatch(1);
 
