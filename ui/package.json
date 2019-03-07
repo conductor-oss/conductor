@@ -69,6 +69,7 @@
     "babel-preset-react-hmre": "^1.0.1",
     "babel-preset-stage-0": "^6.3.13",
     "babel-preset-stage-2": "^6.3.13",
+    "babel-register": "^6.26.0",
     "babelify": "^7.2.0",
     "browser-sync": "^2.9.1",
     "browserify": "^12.0.1",
