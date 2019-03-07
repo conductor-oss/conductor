@@ -371,44 +371,4 @@ public class TaskSummary {
 		this.taskId = taskId;
 	}
 
-
-	public String getWorkerId() {
-		return workerId;
-	}
-
-	public void setWorkerId(String workerId) {
-		this.workerId = workerId;
-	}
-
-	public int getRetryCount() {
-		return retryCount;
-	}
-
-	public void setRetryCount(int retryCount) {
-		this.retryCount = retryCount;
-	}
-
-	public int getPollCount() {
-		return pollCount;
-	}
-
-	public void setPollCount(int pollCount) {
-		this.pollCount = pollCount;
-	}
-
-	public String getReferenceTaskName() {
-		return referenceTaskName;
-	}
-
-	public void setReferenceTaskName(String referenceTaskName) {
-		this.referenceTaskName = referenceTaskName;
-	}
-
-	public int getSeq() {
-		return seq;
-	}
-
-	public void setSeq(int seq) {
-		this.seq = seq;
-	}
 }
