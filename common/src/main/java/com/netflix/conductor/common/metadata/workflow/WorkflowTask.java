@@ -95,7 +95,7 @@ public class WorkflowTask {
 	@ProtoField(id = 8)
 	private String caseExpression;
 
-	@ProtoField(id = 9)
+	@ProtoField(id = 22)
 	private String scriptExpression;
 
 	@ProtoMessage(wrapper = true)
