@@ -86,22 +86,6 @@ public class TaskSummary {
 	@ProtoField(id = 16)
 	private String taskId;
 
-	@ProtoField(id = 17)
-	private int seq;
-
-	@ProtoField(id = 18)
-	private String workerId;
-
-	@ProtoField(id = 19)
-	private int retryCount;
-
-	@ProtoField(id = 20)
-	private int pollCount;
-
-	@ProtoField(id = 21)
-	private String referenceTaskName;
-
-
     public TaskSummary() {
     }
 
@@ -123,12 +107,6 @@ public class TaskSummary {
 		this.status = task.getStatus();
 		this.reasonForIncompletion = task.getReasonForIncompletion();
 		this.queueWaitTime = task.getQueueWaitTime();
-		this.workerId = task.getWorkerId();
-		this.retryCount = task.getRetryCount();
-		this.pollCount = task.getPollCount();
-		this.referenceTaskName = task.getReferenceTaskName();
-		this.seq = task.getSeq();
-
 		if (task.getInputData() != null) {
 			this.input = task.getInputData().toString();
 		}
@@ -370,5 +348,6 @@ public class TaskSummary {
 	public void setTaskId(String taskId) {
 		this.taskId = taskId;
 	}
-
+	
+	
 }
