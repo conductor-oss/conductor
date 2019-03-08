@@ -37,7 +37,7 @@ import java.util.Collections;
  */
 public class DynoQueueStatusPublisher implements WorkflowStatusListener {
 
-    private static final Logger LOG = LoggerFactory.getLogger(DynoQueueStatusPublisher.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DynoQueueStatusPublisher.class);
     private final QueueDAO queueDAO;
     private final ObjectMapper objectMapper;
     private final Configuration config;
@@ -49,19 +49,19 @@ public class DynoQueueStatusPublisher implements WorkflowStatusListener {
         this.queueDAO = queueDAO;
         this.objectMapper = objectMapper;
         this.config = config;
-        this.successStatusQueue = config.getProperty("status.publisher.success.queue", "_callbackSuccessQueue");
-        this.failureStatusQueue = config.getProperty("status.publisher.failure.queue", "_callbackFailureQueue");
+        this.successStatusQueue = config.getProperty("workflowstatuslistener.publisher.success.queue", "_callbackSuccessQueue");
+        this.failureStatusQueue = config.getProperty("workflowstatuslistener.publisher.failure.queue", "_callbackFailureQueue");
     }
 
     @Override
     public void onWorkflowCompleted(Workflow workflow) {
-        LOG.info("Publishing callback of workflow {} on completion ", workflow.getWorkflowId());
+        LOGGER.info("Publishing callback of workflow {} on completion ", workflow.getWorkflowId());
         queueDAO.push(successStatusQueue, Collections.singletonList(workflowToMessage(workflow)));
     }
 
     @Override
     public void onWorkflowTerminated(Workflow workflow) {
-        LOG.info("Publishing callback of workflow {} on termination", workflow.getWorkflowId());
+        LOGGER.info("Publishing callback of workflow {} on termination", workflow.getWorkflowId());
         queueDAO.push(failureStatusQueue, Collections.singletonList(workflowToMessage(workflow)));
     }
 
@@ -71,7 +71,7 @@ public class DynoQueueStatusPublisher implements WorkflowStatusListener {
         try {
             jsonWfSummary = objectMapper.writeValueAsString(summary);
         } catch (JsonProcessingException e) {
-            LOG.error("Failed to convert WorkflowSummary: {} to String. Exception: {}", summary, e);
+            LOGGER.error("Failed to convert WorkflowSummary: {} to String. Exception: {}", summary, e);
             throw new RuntimeException(e);
         }
         return new Message(workflow.getWorkflowId(), jsonWfSummary, null);
