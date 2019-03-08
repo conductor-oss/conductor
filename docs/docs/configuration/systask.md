@@ -421,3 +421,32 @@ Dynamic Task allows to execute one of the registered Tasks dynamically at run-ti
 }
 ```
 If the workflow is started with input parameter user_supplied_task's value as __user_task_2__, Conductor will schedule __user_task_2__ when scheduling this dynamic task.
+
+
+## Lambda Task
+
+Lambda Task helps execute ad-hoc logic at Workflow run-time, using javax & `Nashorn` Javascript evaluator engine.
+
+This is particularly helpful in running simple evaluations in Conductor server, over creating Workers.
+
+**Parameters:**
+
+|name|description|Notes|
+|---|---|---|
+|scriptExpression|Javascript (`Nashorn`) evaluation expression defined as a string. Must return a value.|Must be non-empty String.|
+
+**Example**
+``` json
+{
+  "name": "LAMBDA_TASK",
+  "taskReferenceName": "lambda_test",
+  "type": "LAMBDA",
+  "inputParameters": {
+      "lambdaValue": "${workflow.input.lambdaValue}",
+      "scriptExpression": "if ($.lambdaValue == 1){ return {testvalue: true} } else { return {testvalue: false} }"
+  }
+}
+```
+
+The task output can then be referenced in downstream tasks like:
+```"${lambda_test.output.result.testvalue}"```
