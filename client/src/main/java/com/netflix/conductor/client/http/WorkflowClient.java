@@ -22,7 +22,6 @@ import com.netflix.conductor.client.exceptions.ConductorClientException;
 import com.netflix.conductor.client.task.WorkflowTaskMetrics;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
-import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
@@ -39,16 +38,12 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
-import java.util.Map;
 
 
 /**
  * @author Viren
  */
 public class WorkflowClient extends ClientBase {
-
-    private static GenericType<List<WorkflowDef>> workflowDefList = new GenericType<List<WorkflowDef>>() {
-    };
 
     private static GenericType<SearchResult<WorkflowSummary>> searchResultWorkflowSummary = new GenericType<SearchResult<WorkflowSummary>>() {
     };
@@ -99,63 +94,6 @@ public class WorkflowClient extends ClientBase {
         }
     }
 
-
-    //Metadata Operations
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link MetadataClient#getAllWorkflowDefs()} instead
-     */
-    @Deprecated
-    public List<WorkflowDef> getAllWorkflowDefs() {
-        return getForEntity("metadata/workflow", null, workflowDefList);
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link MetadataClient#registerWorkflowDef(WorkflowDef)} instead
-     */
-    @Deprecated
-    public void registerWorkflow(WorkflowDef workflowDef) {
-        Preconditions.checkNotNull(workflowDef, "Worfklow definition cannot be null");
-        postForEntityWithRequestOnly("metadata/workflow", workflowDef);
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link MetadataClient#getWorkflowDef(String, Integer)} instead
-     */
-    @Deprecated
-    public WorkflowDef getWorkflowDef(String name, Integer version) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "name cannot be blank");
-        return getForEntity("metadata/workflow/{name}", new Object[]{"version", version}, WorkflowDef.class, name);
-    }
-
-
-    //Runtime Operations
-
-    /**
-     * Starts a workflow identified by the name and version
-     *
-     * @param name          the name of the workflow
-     * @param version       the version of the workflow def
-     * @param correlationId the correlation id
-     * @param input         the input to set in the workflow
-     * @return the id of the workflow instance that can be used for tracking
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link #startWorkflow(StartWorkflowRequest)} instead
-     */
-    @Deprecated
-    public String startWorkflow(String name, Integer version, String correlationId, Map<String, Object> input) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "name cannot be blank");
-        StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest();
-        startWorkflowRequest.setName(name);
-        startWorkflowRequest.setVersion(version);
-        startWorkflowRequest.setCorrelationId(correlationId);
-        startWorkflowRequest.setInput(input);
-        return startWorkflow(startWorkflowRequest);
-    }
-
     /**
      * Starts a workflow.
      * If the size of the workflow input payload is bigger than {@link ConductorClientConfiguration#getWorkflowInputPayloadThresholdKB()},
@@ -194,16 +132,6 @@ public class WorkflowClient extends ClientBase {
             throw new ConductorClientException(errorMsg, e);
         }
         return postForEntity("workflow", startWorkflowRequest, null, String.class, startWorkflowRequest.getName());
-    }
-
-    /**
-     * @deprecated This API is deprecated and will be removed in the next version
-     * use {@link #getWorkflow(String, boolean)} instead
-     */
-    @Deprecated
-    public Workflow getExecutionStatus(String workflowId, boolean includeTasks) {
-        Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
-        return getWorkflow(workflowId, includeTasks);
     }
 
     /**
@@ -247,7 +175,7 @@ public class WorkflowClient extends ClientBase {
      */
     private void populateWorkflowOutput(Workflow workflow) {
         if (StringUtils.isNotBlank(workflow.getExternalOutputPayloadStoragePath())) {
-            WorkflowTaskMetrics.incrementExternalPayloadUsedCount(workflow.getWorkflowType(), ExternalPayloadStorage.Operation.READ.name(), ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT.name());
+            WorkflowTaskMetrics.incrementExternalPayloadUsedCount(workflow.getWorkflowName(), ExternalPayloadStorage.Operation.READ.name(), ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT.name());
             workflow.setOutput(downloadFromExternalStorage(ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT, workflow.getExternalOutputPayloadStoragePath()));
         }
     }

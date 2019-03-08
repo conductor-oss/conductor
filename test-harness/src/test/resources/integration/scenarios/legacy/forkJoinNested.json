@@ -1,0 +1,628 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1535070652209,
+  "updateTime": 1535070652424,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "FORK",
+      "status": "COMPLETED",
+      "referenceTaskName": "fork1",
+      "retryCount": 0,
+      "seq": 1,
+      "correlationId": "fork_join_nested_test",
+      "pollCount": 0,
+      "taskDefName": "FORK",
+      "scheduledTime": 1535070652273,
+      "startTime": 1535070652282,
+      "endTime": 1535070652416,
+      "updateTime": 1535070652416,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "FanInOutNestedTest",
+      "taskId": "7154b7b6-cf9e-45b4-a81f-f9faa349845c",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "taskReferenceName": "fork1",
+        "type": "FORK_JOIN",
+        "forkTasks": [
+          [
+            {
+              "name": "junit_task_11",
+              "taskReferenceName": "t11",
+              "inputParameters": {
+                "p1": "workflow.input.param1",
+                "p2": "workflow.input.param2",
+                "case": "workflow.input.case"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0,
+              "optional": false
+            }
+          ],
+          [
+            {
+              "name": "fork2",
+              "taskReferenceName": "fork2",
+              "type": "FORK_JOIN",
+              "forkTasks": [
+                [
+                  {
+                    "name": "junit_task_12",
+                    "taskReferenceName": "t12",
+                    "inputParameters": {
+                      "p1": "workflow.input.param1",
+                      "p2": "workflow.input.param2",
+                      "case": "workflow.input.case"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0,
+                    "optional": false
+                  },
+                  {
+                    "name": "junit_task_14",
+                    "taskReferenceName": "t14",
+                    "inputParameters": {
+                      "p1": "workflow.input.param1",
+                      "p2": "workflow.input.param2",
+                      "case": "workflow.input.case"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0,
+                    "optional": false
+                  }
+                ],
+                [
+                  {
+                    "name": "junit_task_13",
+                    "taskReferenceName": "t13",
+                    "inputParameters": {
+                      "p1": "workflow.input.param1",
+                      "p2": "workflow.input.param2",
+                      "case": "workflow.input.case"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0,
+                    "optional": false
+                  },
+                  {
+                    "name": "Decision",
+                    "taskReferenceName": "d1",
+                    "inputParameters": {
+                      "p1": "workflow.input.param1",
+                      "p2": "workflow.input.param2",
+                      "case": "workflow.input.case"
+                    },
+                    "type": "DECISION",
+                    "caseValueParam": "case",
+                    "decisionCases": {
+                      "a": [
+                        {
+                          "name": "junit_task_16",
+                          "taskReferenceName": "t16",
+                          "inputParameters": {
+                            "p1": "workflow.input.param1",
+                            "p2": "workflow.input.param2",
+                            "case": "workflow.input.case"
+                          },
+                          "type": "SIMPLE",
+                          "startDelay": 0,
+                          "optional": false
+                        },
+                        {
+                          "name": "junit_task_19",
+                          "taskReferenceName": "t19",
+                          "inputParameters": {
+                            "p1": "workflow.input.param1",
+                            "p2": "workflow.input.param2",
+                            "case": "workflow.input.case"
+                          },
+                          "type": "SIMPLE",
+                          "startDelay": 0,
+                          "optional": false
+                        },
+                        {
+                          "name": "junit_task_20",
+                          "taskReferenceName": "t20",
+                          "inputParameters": {
+                            "p1": "workflow.input.param1",
+                            "p2": "workflow.input.param2",
+                            "case": "workflow.input.case"
+                          },
+                          "type": "SIMPLE",
+                          "startDelay": 0,
+                          "optional": false
+                        }
+                      ],
+                      "b": [
+                        {
+                          "name": "junit_task_17",
+                          "taskReferenceName": "t17",
+                          "inputParameters": {
+                            "p1": "workflow.input.param1",
+                            "p2": "workflow.input.param2",
+                            "case": "workflow.input.case"
+                          },
+                          "type": "SIMPLE",
+                          "startDelay": 0,
+                          "optional": false
+                        },
+                        {
+                          "name": "junit_task_20",
+                          "taskReferenceName": "t20",
+                          "inputParameters": {
+                            "p1": "workflow.input.param1",
+                            "p2": "workflow.input.param2",
+                            "case": "workflow.input.case"
+                          },
+                          "type": "SIMPLE",
+                          "startDelay": 0,
+                          "optional": false
+                        }
+                      ]
+                    },
+                    "defaultCase": [
+                      {
+                        "name": "junit_task_18",
+                        "taskReferenceName": "t18",
+                        "inputParameters": {
+                          "p1": "workflow.input.param1",
+                          "p2": "workflow.input.param2",
+                          "case": "workflow.input.case"
+                        },
+                        "type": "SIMPLE",
+                        "startDelay": 0,
+                        "optional": false
+                      },
+                      {
+                        "name": "junit_task_20",
+                        "taskReferenceName": "t20",
+                        "inputParameters": {
+                          "p1": "workflow.input.param1",
+                          "p2": "workflow.input.param2",
+                          "case": "workflow.input.case"
+                        },
+                        "type": "SIMPLE",
+                        "startDelay": 0,
+                        "optional": false
+                      }
+                    ],
+                    "startDelay": 0,
+                    "optional": false
+                  }
+                ]
+              ],
+              "startDelay": 0,
+              "optional": false
+            },
+            {
+              "taskReferenceName": "join2",
+              "type": "JOIN",
+              "startDelay": 0,
+              "joinOn": [
+                "t14",
+                "t20"
+              ],
+              "optional": false
+            }
+          ]
+        ],
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "COMPLETED",
+      "queueWaitTime": 9
+    },
+    {
+      "taskType": "junit_task_11",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": null,
+        "p2": null,
+        "case": "a"
+      },
+      "referenceTaskName": "t11",
+      "retryCount": 0,
+      "seq": 2,
+      "correlationId": "fork_join_nested_test",
+      "pollCount": 0,
+      "taskDefName": "junit_task_11",
+      "scheduledTime": 1535070652279,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1535070652279,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "FanInOutNestedTest",
+      "taskId": "f56e4de5-1331-478b-bee5-055703cd47c8",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "junit_task_11",
+        "taskReferenceName": "t11",
+        "inputParameters": {
+          "p1": "workflow.input.param1",
+          "p2": "workflow.input.param2",
+          "case": "workflow.input.case"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    },
+    {
+      "taskType": "FORK",
+      "status": "COMPLETED",
+      "referenceTaskName": "fork2",
+      "retryCount": 0,
+      "seq": 3,
+      "correlationId": "fork_join_nested_test",
+      "pollCount": 0,
+      "taskDefName": "FORK",
+      "scheduledTime": 1535070652280,
+      "startTime": 1535070652283,
+      "endTime": 1535070652417,
+      "updateTime": 1535070652417,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "FanInOutNestedTest",
+      "taskId": "dada5cfc-e8ab-4b14-97d6-5115af8fdb4c",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "fork2",
+        "taskReferenceName": "fork2",
+        "type": "FORK_JOIN",
+        "forkTasks": [
+          [
+            {
+              "name": "junit_task_12",
+              "taskReferenceName": "t12",
+              "inputParameters": {
+                "p1": "workflow.input.param1",
+                "p2": "workflow.input.param2",
+                "case": "workflow.input.case"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0,
+              "optional": false
+            },
+            {
+              "name": "junit_task_14",
+              "taskReferenceName": "t14",
+              "inputParameters": {
+                "p1": "workflow.input.param1",
+                "p2": "workflow.input.param2",
+                "case": "workflow.input.case"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0,
+              "optional": false
+            }
+          ],
+          [
+            {
+              "name": "junit_task_13",
+              "taskReferenceName": "t13",
+              "inputParameters": {
+                "p1": "workflow.input.param1",
+                "p2": "workflow.input.param2",
+                "case": "workflow.input.case"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0,
+              "optional": false
+            },
+            {
+              "name": "Decision",
+              "taskReferenceName": "d1",
+              "inputParameters": {
+                "p1": "workflow.input.param1",
+                "p2": "workflow.input.param2",
+                "case": "workflow.input.case"
+              },
+              "type": "DECISION",
+              "caseValueParam": "case",
+              "decisionCases": {
+                "a": [
+                  {
+                    "name": "junit_task_16",
+                    "taskReferenceName": "t16",
+                    "inputParameters": {
+                      "p1": "workflow.input.param1",
+                      "p2": "workflow.input.param2",
+                      "case": "workflow.input.case"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0,
+                    "optional": false
+                  },
+                  {
+                    "name": "junit_task_19",
+                    "taskReferenceName": "t19",
+                    "inputParameters": {
+                      "p1": "workflow.input.param1",
+                      "p2": "workflow.input.param2",
+                      "case": "workflow.input.case"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0,
+                    "optional": false
+                  },
+                  {
+                    "name": "junit_task_20",
+                    "taskReferenceName": "t20",
+                    "inputParameters": {
+                      "p1": "workflow.input.param1",
+                      "p2": "workflow.input.param2",
+                      "case": "workflow.input.case"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0,
+                    "optional": false
+                  }
+                ],
+                "b": [
+                  {
+                    "name": "junit_task_17",
+                    "taskReferenceName": "t17",
+                    "inputParameters": {
+                      "p1": "workflow.input.param1",
+                      "p2": "workflow.input.param2",
+                      "case": "workflow.input.case"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0,
+                    "optional": false
+                  },
+                  {
+                    "name": "junit_task_20",
+                    "taskReferenceName": "t20",
+                    "inputParameters": {
+                      "p1": "workflow.input.param1",
+                      "p2": "workflow.input.param2",
+                      "case": "workflow.input.case"
+                    },
+                    "type": "SIMPLE",
+                    "startDelay": 0,
+                    "optional": false
+                  }
+                ]
+              },
+              "defaultCase": [
+                {
+                  "name": "junit_task_18",
+                  "taskReferenceName": "t18",
+                  "inputParameters": {
+                    "p1": "workflow.input.param1",
+                    "p2": "workflow.input.param2",
+                    "case": "workflow.input.case"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0,
+                  "optional": false
+                },
+                {
+                  "name": "junit_task_20",
+                  "taskReferenceName": "t20",
+                  "inputParameters": {
+                    "p1": "workflow.input.param1",
+                    "p2": "workflow.input.param2",
+                    "case": "workflow.input.case"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0,
+                  "optional": false
+                }
+              ],
+              "startDelay": 0,
+              "optional": false
+            }
+          ]
+        ],
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "COMPLETED",
+      "queueWaitTime": 3
+    },
+    {
+      "taskType": "junit_task_12",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": null,
+        "p2": null,
+        "case": "a"
+      },
+      "referenceTaskName": "t12",
+      "retryCount": 0,
+      "seq": 4,
+      "correlationId": "fork_join_nested_test",
+      "pollCount": 0,
+      "taskDefName": "junit_task_12",
+      "scheduledTime": 1535070652280,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1535070652280,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "FanInOutNestedTest",
+      "taskId": "72262faf-8ce6-4d2d-9bff-d7c4a549db54",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "junit_task_12",
+        "taskReferenceName": "t12",
+        "inputParameters": {
+          "p1": "workflow.input.param1",
+          "p2": "workflow.input.param2",
+          "case": "workflow.input.case"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    },
+    {
+      "taskType": "junit_task_13",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": null,
+        "p2": null,
+        "case": "a"
+      },
+      "referenceTaskName": "t13",
+      "retryCount": 0,
+      "seq": 5,
+      "correlationId": "fork_join_nested_test",
+      "pollCount": 0,
+      "taskDefName": "junit_task_13",
+      "scheduledTime": 1535070652280,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1535070652281,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "FanInOutNestedTest",
+      "taskId": "53163269-212d-4670-9586-8cd9dfd096db",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "junit_task_13",
+        "taskReferenceName": "t13",
+        "inputParameters": {
+          "p1": "workflow.input.param1",
+          "p2": "workflow.input.param2",
+          "case": "workflow.input.case"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    },
+    {
+      "taskType": "JOIN",
+      "status": "IN_PROGRESS",
+      "inputData": {
+        "joinOn": [
+          "t11",
+          "join2"
+        ]
+      },
+      "referenceTaskName": "join1",
+      "retryCount": 0,
+      "seq": 7,
+      "correlationId": "fork_join_nested_test",
+      "pollCount": 0,
+      "taskDefName": "JOIN",
+      "scheduledTime": 1535070652415,
+      "startTime": 1535070652416,
+      "endTime": 1535070652415,
+      "updateTime": 1535070652416,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "FanInOutNestedTest",
+      "taskId": "d39443cc-d531-4612-9eb0-f1b4c2c1aa29",
+      "callbackAfterSeconds": 0,
+      "outputData": {
+        "t11": {}
+      },
+      "workflowTask": {
+        "taskReferenceName": "join1",
+        "type": "JOIN",
+        "startDelay": 0,
+        "joinOn": [
+          "t11",
+          "join2"
+        ],
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "IN_PROGRESS",
+      "queueWaitTime": 1
+    },
+    {
+      "taskType": "JOIN",
+      "status": "IN_PROGRESS",
+      "inputData": {
+        "joinOn": [
+          "t14",
+          "t20"
+        ]
+      },
+      "referenceTaskName": "join2",
+      "retryCount": 0,
+      "seq": 8,
+      "correlationId": "fork_join_nested_test",
+      "pollCount": 0,
+      "taskDefName": "JOIN",
+      "scheduledTime": 1535070652416,
+      "startTime": 1535070652416,
+      "endTime": 1535070652415,
+      "updateTime": 1535070652416,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "FanInOutNestedTest",
+      "taskId": "7696c0e4-5112-497f-a61f-6a24317a4d8a",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "taskReferenceName": "join2",
+        "type": "JOIN",
+        "startDelay": 0,
+        "joinOn": [
+          "t14",
+          "t20"
+        ],
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "IN_PROGRESS",
+      "queueWaitTime": 0
+    }
+  ],
+  "input": {
+    "case": "a"
+  },
+  "workflowType": "FanInOutNestedTest",
+  "version": 1,
+  "correlationId": "fork_join_nested_test",
+  "schemaVersion": 1,
+  "startTime": 1535070652209
+}

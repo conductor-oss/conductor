@@ -1,0 +1,17 @@
+dependencies {
+    compile project(':conductor-core')
+
+    compile "commons-io:commons-io:${revCommonsIo}"
+
+    compile "org.elasticsearch:elasticsearch:${revElasticSearch6}"
+    compile "org.elasticsearch.client:transport:${revElasticSearch6}"
+    compile "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch6}"
+    compile "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch6}"
+
+    //ES6 Dependency
+    compile "org.apache.logging.log4j:log4j-api:${revLog4jApi}"
+    compile "org.apache.logging.log4j:log4j-core:${revLog4jCore}"
+
+    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
+    testCompile "org.awaitility:awaitility:${revAwaitility}"
+}

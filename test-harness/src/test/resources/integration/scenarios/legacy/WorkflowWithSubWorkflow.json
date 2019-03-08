@@ -1,0 +1,61 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1534989930597,
+  "updateTime": 1534989930779,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "junit_task_5",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": "param 1 value",
+        "p2": null
+      },
+      "referenceTaskName": "a1",
+      "retryCount": 0,
+      "seq": 1,
+      "correlationId": "test",
+      "pollCount": 0,
+      "taskDefName": "junit_task_5",
+      "scheduledTime": 1534989930669,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1534989930669,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "WorkflowWithSubWorkflow",
+      "taskId": "9d704f3e-3814-4e60-8592-a4e2aec81e50",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "junit_task_5",
+        "taskReferenceName": "a1",
+        "inputParameters": {
+          "p1": "${workflow.input.param1}",
+          "p2": "${workflow.input.param2}"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    }
+  ],
+  "input": {
+    "wfName": "junit_test_wf",
+    "param3": "param 2 value",
+    "param1": "param 1 value"
+  },
+  "workflowType": "WorkflowWithSubWorkflow",
+  "version": 1,
+  "correlationId": "test",
+  "schemaVersion": 2,
+  "startTime": 1534989930597
+}

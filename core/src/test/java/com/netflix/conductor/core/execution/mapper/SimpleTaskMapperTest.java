@@ -8,7 +8,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
-import com.netflix.conductor.dao.MetadataDAO;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -17,17 +16,14 @@ import org.junit.rules.ExpectedException;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class SimpleTaskMapperTest {
 
-    ParametersUtils parametersUtils;
-    MetadataDAO metadataDAO;
-
-    //subject
-    SimpleTaskMapper simpleTaskMapper;
+    private ParametersUtils parametersUtils;
+    private SimpleTaskMapper simpleTaskMapper;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
@@ -35,8 +31,7 @@ public class SimpleTaskMapperTest {
     @Before
     public void setUp() throws Exception {
         parametersUtils = mock(ParametersUtils.class);
-        metadataDAO = mock(MetadataDAO.class);
-        simpleTaskMapper = new SimpleTaskMapper(parametersUtils, metadataDAO);
+        simpleTaskMapper = new SimpleTaskMapper(parametersUtils);
     }
 
     @Test
@@ -44,14 +39,18 @@ public class SimpleTaskMapperTest {
 
         WorkflowTask  taskToSchedule = new WorkflowTask();
         taskToSchedule.setName("simple_task");
+        taskToSchedule.setTaskDefinition(new TaskDef("simple_task"));
 
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
 
-        when(metadataDAO.getTaskDef("simple_task")).thenReturn(new TaskDef());
+        WorkflowDef  wd = new WorkflowDef();
+        Workflow w = new Workflow();
+        w.setWorkflowDefinition(wd);
+
         TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-                .withWorkflowDefinition(new WorkflowDef())
-                .withWorkflowInstance(new Workflow())
+                .withWorkflowDefinition(wd)
+                .withWorkflowInstance(w)
                 .withTaskDefinition(new TaskDef())
                 .withTaskToSchedule(taskToSchedule)
                 .withTaskInput(new HashMap<>())
@@ -74,9 +73,13 @@ public class SimpleTaskMapperTest {
         String taskId = IDGenerator.generate();
         String retriedTaskId = IDGenerator.generate();
 
+        WorkflowDef  wd = new WorkflowDef();
+        Workflow w = new Workflow();
+        w.setWorkflowDefinition(wd);
+
         TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-                .withWorkflowDefinition(new WorkflowDef())
-                .withWorkflowInstance(new Workflow())
+                .withWorkflowDefinition(wd)
+                .withWorkflowInstance(w)
                 .withTaskDefinition(new TaskDef())
                 .withTaskToSchedule(taskToSchedule)
                 .withTaskInput(new HashMap<>())
@@ -85,10 +88,9 @@ public class SimpleTaskMapperTest {
                 .withTaskId(taskId)
                 .build();
 
-        when(metadataDAO.getTaskDef("simple_task")).thenReturn(null);
         //then
         expectedException.expect(TerminateWorkflowException.class);
-        expectedException.expectMessage(String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName()));
+        expectedException.expectMessage(String.format("Invalid task. Task %s does not have a definition", taskToSchedule.getName()));
 
         //when
         simpleTaskMapper.getMappedTasks(taskMapperContext);

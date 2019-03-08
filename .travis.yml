@@ -1,6 +1,9 @@
 language: java
 jdk:
 - oraclejdk8
+
+after_success:
+  - bash <(curl -s https://codecov.io/bash)
 install: true
 script: "./buildViaTravis.sh"
 git:

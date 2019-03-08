@@ -1,0 +1,19 @@
+{
+  "taskDefs": [
+    {
+      "name": "TASK_1"
+    },
+    {
+      "name": "TASK_2"
+    },
+    {
+      "name": "TASK_3"
+    },
+    {
+      "name": "TASK_4"
+    },
+    {
+      "name": "TASK_5"
+    }
+  ]
+}

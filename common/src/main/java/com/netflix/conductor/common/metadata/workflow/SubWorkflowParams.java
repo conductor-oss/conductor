@@ -18,16 +18,25 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.github.vmg.protogen.annotations.*;
+
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+
 /**
  * @author Viren
  *
  */
+@ProtoMessage
 public class SubWorkflowParams {
 
+    @ProtoField(id = 1)
+    @NotNull(message = "SubWorkflowParams name cannot be null")
+    @NotEmpty(message = "SubWorkflowParams name cannot be empty")
     private String name;
 
-    //QQ why is this an object ??
-    private Object version;
+    @ProtoField(id = 2)
+    private Integer version;
 
     /**
      * @return the name
@@ -46,14 +55,14 @@ public class SubWorkflowParams {
     /**
      * @return the version
      */
-    public Object getVersion() {
+    public Integer getVersion() {
         return version;
     }
 
     /**
      * @param version the version to set
      */
-    public void setVersion(Object version) {
+    public void setVersion(Integer version) {
         this.version = version;
     }
 

@@ -2,6 +2,7 @@ package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -43,9 +44,9 @@ public class DecisionTaskMapperTest {
         parametersUtils = new ParametersUtils();
 
         ip1 = new HashMap<>();
-        ip1.put("p1", "workflow.input.param1");
-        ip1.put("p2", "workflow.input.param2");
-        ip1.put("case", "workflow.input.case");
+        ip1.put("p1", "${workflow.input.param1}");
+        ip1.put("p2", "${workflow.input.param2}");
+        ip1.put("case", "${workflow.input.case}");
 
         task1 = new WorkflowTask();
         task1.setName("Test1");
@@ -78,7 +79,7 @@ public class DecisionTaskMapperTest {
 
         //Decision task instance
         WorkflowTask decisionTask = new WorkflowTask();
-        decisionTask.setType(WorkflowTask.Type.DECISION.name());
+        decisionTask.setType(TaskType.DECISION.name());
         decisionTask.setName("Decision");
         decisionTask.setTaskReferenceName("decisionTask");
         decisionTask.setDefaultCase(Arrays.asList(task1));
@@ -90,11 +91,14 @@ public class DecisionTaskMapperTest {
         decisionCases.put("odd", Arrays.asList(task3));
         decisionTask.setDecisionCases(decisionCases);
         //Workflow instance
+        WorkflowDef  workflowDef = new WorkflowDef();
+        workflowDef.setSchemaVersion(2);
+
         Workflow workflowInstance = new Workflow();
+        workflowInstance.setWorkflowDefinition(workflowDef);
         Map<String, Object> workflowInput = new HashMap<>();
         workflowInput.put("Id", "22");
         workflowInstance.setInput(workflowInput);
-        workflowInstance.setSchemaVersion(2);
 
         Map<String, Object> body = new HashMap<>();
         body.put("input", taskDefinitionInput);
@@ -104,12 +108,11 @@ public class DecisionTaskMapperTest {
                 workflowInstance, null, null);
 
 
-        WorkflowDef  workflowDef = new WorkflowDef();
         Task theTask = new Task();
         theTask.setReferenceTaskName("Foo");
         theTask.setTaskId(IDGenerator.generate());
 
-        when(deciderService.getTasksToBeScheduled(workflowDef, workflowInstance, task2, 0, null))
+        when(deciderService.getTasksToBeScheduled(workflowInstance, task2, 0, null))
                 .thenReturn(Arrays.asList(theTask));
 
         TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
@@ -134,9 +137,8 @@ public class DecisionTaskMapperTest {
 
     @Test
     public void getEvaluatedCaseValue() {
-
         WorkflowTask decisionTask = new WorkflowTask();
-        decisionTask.setType(WorkflowTask.Type.DECISION.name());
+        decisionTask.setType(TaskType.DECISION.name());
         decisionTask.setName("Decision");
         decisionTask.setTaskReferenceName("decisionTask");
         decisionTask.setInputParameters(ip1);
@@ -148,17 +150,17 @@ public class DecisionTaskMapperTest {
         decisionTask.setDecisionCases(decisionCases);
 
         Workflow workflowInstance = new Workflow();
+        workflowInstance.setWorkflowDefinition(new WorkflowDef());
         Map<String, Object> workflowInput = new HashMap<>();
-        workflowInput.put("p1", "workflow.input.param1");
-        workflowInput.put("p2", "workflow.input.param2");
+        workflowInput.put("param1", "test1");
+        workflowInput.put("param2", "test2");
         workflowInput.put("case", "0");
         workflowInstance.setInput(workflowInput);
 
         Map<String, Object> input = parametersUtils.getTaskInput(decisionTask.getInputParameters(),
                 workflowInstance, null, null);
 
-        assertEquals("0",decisionTaskMapper.getEvaluatedCaseValue(decisionTask, input));
-
+        assertEquals("0", decisionTaskMapper.getEvaluatedCaseValue(decisionTask, input));
     }
 
     @Test
@@ -173,7 +175,7 @@ public class DecisionTaskMapperTest {
 
         //Decision task instance
         WorkflowTask decisionTask = new WorkflowTask();
-        decisionTask.setType(WorkflowTask.Type.DECISION.name());
+        decisionTask.setType(TaskType.DECISION.name());
         decisionTask.setName("Decision");
         decisionTask.setTaskReferenceName("decisionTask");
         decisionTask.setDefaultCase(Arrays.asList(task1));
@@ -184,12 +186,16 @@ public class DecisionTaskMapperTest {
         decisionCases.put("even", Arrays.asList(task2));
         decisionCases.put("odd", Arrays.asList(task3));
         decisionTask.setDecisionCases(decisionCases);
+
         //Workflow instance
+        WorkflowDef def = new WorkflowDef();
+        def.setSchemaVersion(2);
+
         Workflow workflowInstance = new Workflow();
+        workflowInstance.setWorkflowDefinition(def);
         Map<String, Object> workflowInput = new HashMap<>();
         workflowInput.put("Id", "22");
         workflowInstance.setInput(workflowInput);
-        workflowInstance.setSchemaVersion(2);
 
         Map<String, Object> body = new HashMap<>();
         body.put("input", taskDefinitionInput);
@@ -215,7 +221,7 @@ public class DecisionTaskMapperTest {
 
         //Decision task instance
         WorkflowTask decisionTask = new WorkflowTask();
-        decisionTask.setType(WorkflowTask.Type.DECISION.name());
+        decisionTask.setType(TaskType.DECISION.name());
         decisionTask.setName("Decision");
         decisionTask.setTaskReferenceName("decisionTask");
         decisionTask.setDefaultCase(Arrays.asList(task1));
@@ -226,12 +232,16 @@ public class DecisionTaskMapperTest {
         decisionCases.put("even", Arrays.asList(task2));
         decisionCases.put("odd", Arrays.asList(task3));
         decisionTask.setDecisionCases(decisionCases);
+
         //Workflow instance
+        WorkflowDef def = new WorkflowDef();
+        def.setSchemaVersion(2);
+
         Workflow workflowInstance = new Workflow();
+        workflowInstance.setWorkflowDefinition(def);
         Map<String, Object> workflowInput = new HashMap<>();
         workflowInput.put(".Id", "22");
         workflowInstance.setInput(workflowInput);
-        workflowInstance.setSchemaVersion(2);
 
         Map<String, Object> body = new HashMap<>();
         body.put("input", taskDefinitionInput);

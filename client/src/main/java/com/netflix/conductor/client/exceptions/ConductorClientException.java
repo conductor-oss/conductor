@@ -1,5 +1,9 @@
 package com.netflix.conductor.client.exceptions;
 
+import com.netflix.conductor.common.validation.ValidationError;
+
+import java.util.List;
+
 /**
  * Client exception thrown from Conductor api clients.
  */
@@ -10,6 +14,16 @@ public class ConductorClientException extends RuntimeException {
     private String instance;
     private String code;
     private boolean retryable;
+
+    public List<ValidationError> getValidationErrors() {
+        return validationErrors;
+    }
+
+    public void setValidationErrors(List<ValidationError> validationErrors) {
+        this.validationErrors = validationErrors;
+    }
+
+    private List<ValidationError> validationErrors;
 
     public ConductorClientException() {
         super();
@@ -37,6 +51,7 @@ public class ConductorClientException extends RuntimeException {
         this.message = errorResponse.getMessage();
         this.code = errorResponse.getCode();
         this.instance = errorResponse.getInstance();
+        this.validationErrors = errorResponse.getValidationErrors();
     }
 
     @Override
@@ -60,6 +75,10 @@ public class ConductorClientException extends RuntimeException {
 
         if (this.instance != null) {
             builder.append(", instance: ").append(instance);
+        }
+
+        if (this.validationErrors != null) {
+            builder.append(", validationErrors: ").append(validationErrors.toString());
         }
 
         builder.append("}");

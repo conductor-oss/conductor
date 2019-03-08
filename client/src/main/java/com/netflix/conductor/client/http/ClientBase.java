@@ -16,8 +16,6 @@
 
 package com.netflix.conductor.client.http;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.google.common.base.Preconditions;
@@ -27,6 +25,7 @@ import com.netflix.conductor.client.exceptions.ConductorClientException;
 import com.netflix.conductor.client.exceptions.ErrorResponse;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.ClientHandlerException;
@@ -80,12 +79,7 @@ public abstract class ClientBase {
     }
 
     protected ClientBase(ClientConfig config, ConductorClientConfiguration clientConfiguration, ClientHandler handler) {
-        objectMapper = new ObjectMapper();
-        objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-        objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-        objectMapper.setSerializationInclusion(Include.NON_NULL);
-        objectMapper.setSerializationInclusion(Include.NON_EMPTY);
+        objectMapper = new JsonMapperProvider().get();
 
         JacksonJsonProvider provider = new JacksonJsonProvider(objectMapper);
         config.getSingletons().add(provider);
@@ -113,8 +107,10 @@ public abstract class ClientBase {
         try {
             uri = getURIBuilder(root + url, queryParams).build(uriVariables);
             client.resource(uri).delete();
+        } catch (UniformInterfaceException e) {
+            handleUniformInterfaceException(e, uri);
         } catch (RuntimeException e) {
-            handleException(uri, e);
+            handleRuntimeException(e, uri);
         }
     }
 
@@ -259,7 +255,7 @@ public abstract class ClientBase {
                 return;
             }
             String errorMessage = clientResponse.getEntity(String.class);
-            logger.error("Unable to invoke Conductor API with uri: {}, unexpected response from server: {}", uri, clientResponseToString(exception.getResponse()), exception);
+            logger.error("Unable to invoke Conductor API with uri: {}, unexpected response from server: statusCode={}, responseBody='{}'.", uri, clientResponse.getStatus(), errorMessage);
             ErrorResponse errorResponse;
             try {
                 errorResponse = objectMapper.readValue(errorMessage, ErrorResponse.class);

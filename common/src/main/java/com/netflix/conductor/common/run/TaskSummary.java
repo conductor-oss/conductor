@@ -22,55 +22,83 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
+import com.github.vmg.protogen.annotations.*;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author Viren
  *
  */
+@ProtoMessage(fromProto = false)
 public class TaskSummary {
 
 	/**
 	 * The time should be stored as GMT
 	 */
 	private static final TimeZone gmt = TimeZone.getTimeZone("GMT");
-	
+
+	@ProtoField(id = 1)
 	private String workflowId;
 
+	@ProtoField(id = 2)
 	private String workflowType;
-	
+
+	@ProtoField(id = 3)
 	private String correlationId;
-	
+
+	@ProtoField(id = 4)
 	private String scheduledTime;
-	
+
+	@ProtoField(id = 5)
 	private String startTime;
-	
+
+	@ProtoField(id = 6)
 	private String updateTime;
-	
+
+	@ProtoField(id = 7)
 	private String endTime;
-	
+
+	@ProtoField(id = 8)
 	private Status status;
-	
+
+	@ProtoField(id = 9)
 	private String reasonForIncompletion;
-	
+
+	@ProtoField(id = 10)
 	private long executionTime;
-	
+
+	@ProtoField(id = 11)
 	private long queueWaitTime;
-	
+
+	@ProtoField(id = 12)
 	private String taskDefName;
-	
+
+	@ProtoField(id = 13)
 	private String taskType;
-	
+
+	@ProtoField(id = 14)
 	private String input;
-	
+
+	@ProtoField(id = 15)
 	private String output;
-	
+
+	@ProtoField(id = 16)
 	private String taskId;
-	
+
+	@ProtoField(id = 17)
+	private String externalInputPayloadStoragePath;
+
+	@ProtoField(id = 18)
+	private String externalOutputPayloadStoragePath;
+
+    public TaskSummary() {
+    }
+
 	public TaskSummary(Task task) {
-		
-		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+
+		SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
     	sdf.setTimeZone(gmt);
     	
     	this.taskId = task.getTaskId();
@@ -97,6 +125,13 @@ public class TaskSummary {
 		
 		if(task.getEndTime() > 0){
 			this.executionTime = task.getEndTime() - task.getStartTime();
+		}
+
+		if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
+			this.externalInputPayloadStoragePath = task.getExternalInputPayloadStoragePath();
+		}
+		if (StringUtils.isNotBlank(task.getExternalOutputPayloadStoragePath())) {
+			this.externalOutputPayloadStoragePath = task.getExternalOutputPayloadStoragePath();
 		}
 	}
 
@@ -327,6 +362,32 @@ public class TaskSummary {
 	public void setTaskId(String taskId) {
 		this.taskId = taskId;
 	}
-	
-	
+
+	/**
+	 * @return the external storage path for the task input payload
+	 */
+	public String getExternalInputPayloadStoragePath() {
+		return externalInputPayloadStoragePath;
+	}
+
+	/**
+	 * @param externalInputPayloadStoragePath the external storage path where the task input payload is stored
+	 */
+	public void setExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
+		this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
+	}
+
+	/**
+	 * @return the external storage path for the task output payload
+	 */
+	public String getExternalOutputPayloadStoragePath() {
+		return externalOutputPayloadStoragePath;
+	}
+
+	/**
+	 * @param externalOutputPayloadStoragePath the external storage path where the task output payload is stored
+	 */
+	public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
+		this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
+	}
 }

@@ -11,17 +11,19 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import javax.sql.DataSource;
 import java.sql.Connection;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-
-/**
- * @author mustafa
- */
+@Singleton
 public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     public static final String PROP_TASKDEF_CACHE_REFRESH = "conductor.taskdef.cache.refresh.time.seconds";
     public static final int DEFAULT_TASKDEF_CACHE_REFRESH_SECONDS = 60;
@@ -33,7 +35,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
 
         int cacheRefreshTime = config.getIntProperty(PROP_TASKDEF_CACHE_REFRESH, DEFAULT_TASKDEF_CACHE_REFRESH_SECONDS);
         Executors.newSingleThreadScheduledExecutor()
-                 .scheduleWithFixedDelay(this::refreshTaskDefs, cacheRefreshTime, cacheRefreshTime, TimeUnit.SECONDS);
+                .scheduleWithFixedDelay(this::refreshTaskDefs, cacheRefreshTime, cacheRefreshTime, TimeUnit.SECONDS);
     }
 
     @Override
@@ -95,7 +97,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
         withTransaction(tx -> {
             if (workflowExists(tx, def)) {
                 throw new ApplicationException(ApplicationException.Code.CONFLICT,
-                                               "Workflow with " + def.key() + " already exists!");
+                        "Workflow with " + def.key() + " already exists!");
             }
 
             insertOrUpdateWorkflowDef(tx, def);
@@ -111,20 +113,24 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
 
 
     @Override
-    public WorkflowDef getLatest(String name) {
+    public Optional<WorkflowDef> getLatest(String name) {
         final String GET_LATEST_WORKFLOW_DEF_QUERY = "SELECT json_data FROM meta_workflow_def WHERE NAME = ? AND " +
-                                                     "version = latest_version";
+                "version = latest_version";
 
-        return queryWithTransaction(GET_LATEST_WORKFLOW_DEF_QUERY,
-                                    q -> q.addParameter(name).executeAndFetchFirst(WorkflowDef.class));
+        return Optional.ofNullable(
+                queryWithTransaction(GET_LATEST_WORKFLOW_DEF_QUERY,
+                        q -> q.addParameter(name).executeAndFetchFirst(WorkflowDef.class))
+        );
     }
 
     @Override
-    public WorkflowDef get(String name, int version) {
+    public Optional<WorkflowDef> get(String name, int version) {
         final String GET_WORKFLOW_DEF_QUERY = "SELECT json_data FROM meta_workflow_def WHERE NAME = ? AND version = ?";
-        return queryWithTransaction(GET_WORKFLOW_DEF_QUERY, q -> q.addParameter(name)
-                                                                  .addParameter(version)
-                                                                  .executeAndFetchFirst(WorkflowDef.class));
+        return Optional.ofNullable(
+                queryWithTransaction(GET_WORKFLOW_DEF_QUERY, q -> q.addParameter(name)
+                        .addParameter(version)
+                        .executeAndFetchFirst(WorkflowDef.class))
+        );
     }
 
     @Override
@@ -154,7 +160,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
 
     public List<WorkflowDef> getAllLatest() {
         final String GET_ALL_LATEST_WORKFLOW_DEF_QUERY = "SELECT json_data FROM meta_workflow_def WHERE version = " +
-                                                         "latest_version";
+                "latest_version";
 
         return queryWithTransaction(GET_ALL_LATEST_WORKFLOW_DEF_QUERY, q -> q.executeAndFetch(WorkflowDef.class));
     }
@@ -162,10 +168,10 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     @Override
     public List<WorkflowDef> getAllVersions(String name) {
         final String GET_ALL_VERSIONS_WORKFLOW_DEF_QUERY = "SELECT json_data FROM meta_workflow_def WHERE name = ? " +
-                                                           "ORDER BY version";
+                "ORDER BY version";
 
         return queryWithTransaction(GET_ALL_VERSIONS_WORKFLOW_DEF_QUERY,
-                                    q -> q.addParameter(name).executeAndFetch(WorkflowDef.class));
+                q -> q.addParameter(name).executeAndFetch(WorkflowDef.class));
     }
 
     @Override
@@ -173,19 +179,19 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
         Preconditions.checkNotNull(eventHandler.getName(), "EventHandler name cannot be null");
 
         final String INSERT_EVENT_HANDLER_QUERY = "INSERT INTO meta_event_handler (name, event, active, json_data) " +
-                                                  "VALUES (?, ?, ?, ?)";
+                "VALUES (?, ?, ?, ?)";
 
         withTransaction(tx -> {
             if (getEventHandler(tx, eventHandler.getName()) != null) {
                 throw new ApplicationException(ApplicationException.Code.CONFLICT,
-                                               "EventHandler with name " + eventHandler.getName() + " already exists!");
+                        "EventHandler with name " + eventHandler.getName() + " already exists!");
             }
 
             execute(tx, INSERT_EVENT_HANDLER_QUERY, q -> q.addParameter(eventHandler.getName())
-                                                          .addParameter(eventHandler.getEvent())
-                                                          .addParameter(eventHandler.isActive())
-                                                          .addJsonParameter(eventHandler)
-                                                          .executeUpdate());
+                    .addParameter(eventHandler.getEvent())
+                    .addParameter(eventHandler.isActive())
+                    .addJsonParameter(eventHandler)
+                    .executeUpdate());
         });
     }
 
@@ -195,22 +201,22 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
 
         //@formatter:off
         final String UPDATE_EVENT_HANDLER_QUERY = "UPDATE meta_event_handler SET " +
-                                                  "event = ?, active = ?, json_data = ?, " +
-                                                  "modified_on = CURRENT_TIMESTAMP WHERE name = ?";
+                "event = ?, active = ?, json_data = ?, " +
+                "modified_on = CURRENT_TIMESTAMP WHERE name = ?";
         //@formatter:on
 
         withTransaction(tx -> {
             EventHandler existing = getEventHandler(tx, eventHandler.getName());
             if (existing == null) {
                 throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                                               "EventHandler with name " + eventHandler.getName() + " not found!");
+                        "EventHandler with name " + eventHandler.getName() + " not found!");
             }
 
             execute(tx, UPDATE_EVENT_HANDLER_QUERY, q -> q.addParameter(eventHandler.getEvent())
-                                                          .addParameter(eventHandler.isActive())
-                                                          .addJsonParameter(eventHandler)
-                                                          .addParameter(eventHandler.getName())
-                                                          .executeUpdate());
+                    .addParameter(eventHandler.isActive())
+                    .addJsonParameter(eventHandler)
+                    .addParameter(eventHandler.getName())
+                    .executeUpdate());
         });
     }
 
@@ -222,7 +228,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
             EventHandler existing = getEventHandler(tx, name);
             if (existing == null) {
                 throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                                               "EventHandler with name " + name + " not found!");
+                        "EventHandler with name " + name + " not found!");
             }
 
             execute(tx, DELETE_EVENT_HANDLER_QUERY, q -> q.addParameter(name).executeDelete());
@@ -255,8 +261,8 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     }
 
     /**
-     * Use {@link Preconditions} to check for required {@link TaskDef} fields, throwing a Runtime exception
-     * if validations fail.
+     * Use {@link Preconditions} to check for required {@link TaskDef} fields, throwing a Runtime exception if
+     * validations fail.
      *
      * @param taskDef The {@code TaskDef} to check.
      */
@@ -266,8 +272,8 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     }
 
     /**
-     * Use {@link Preconditions} to check for required {@link WorkflowDef} fields, throwing a Runtime exception
-     * if validations fail.
+     * Use {@link Preconditions} to check for required {@link WorkflowDef} fields, throwing a Runtime exception if
+     * validations fail.
      *
      * @param def The {@code WorkflowDef} to check.
      */
@@ -287,7 +293,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
         final String READ_ONE_EVENT_HANDLER_QUERY = "SELECT json_data FROM meta_event_handler WHERE name = ?";
 
         return query(connection, READ_ONE_EVENT_HANDLER_QUERY,
-                     q -> q.addParameter(name).executeAndFetchFirst(EventHandler.class));
+                q -> q.addParameter(name).executeAndFetchFirst(EventHandler.class));
     }
 
     /**
@@ -299,10 +305,10 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
      */
     private Boolean workflowExists(Connection connection, WorkflowDef def) {
         final String CHECK_WORKFLOW_DEF_EXISTS_QUERY = "SELECT COUNT(*) FROM meta_workflow_def WHERE name = ? AND " +
-                                                       "version = ?";
+                "version = ?";
 
         return query(connection, CHECK_WORKFLOW_DEF_EXISTS_QUERY,
-                     q -> q.addParameter(def.getName()).addParameter(def.getVersion()).exists());
+                q -> q.addParameter(def.getName()).addParameter(def.getVersion()).exists());
     }
 
     /**
@@ -314,7 +320,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
      */
     private Optional<Integer> getLatestVersion(Connection tx, WorkflowDef def) {
         final String GET_LATEST_WORKFLOW_DEF_VERSION = "SELECT max(version) AS version FROM meta_workflow_def WHERE " +
-                                                       "name = ?";
+                "name = ?";
 
         Integer val = query(tx, GET_LATEST_WORKFLOW_DEF_VERSION, q -> {
             q.addParameter(def.getName());
@@ -338,7 +344,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
      */
     private void updateLatestVersion(Connection tx, WorkflowDef def) {
         final String UPDATE_WORKFLOW_DEF_LATEST_VERSION_QUERY = "UPDATE meta_workflow_def SET latest_version = ? " +
-                                                                "WHERE name = ?";
+                "WHERE name = ?";
 
         execute(tx, UPDATE_WORKFLOW_DEF_LATEST_VERSION_QUERY,
                 q -> q.addParameter(def.getVersion()).addParameter(def.getName()).executeUpdate());
@@ -346,26 +352,26 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
 
     private void insertOrUpdateWorkflowDef(Connection tx, WorkflowDef def) {
         final String INSERT_WORKFLOW_DEF_QUERY = "INSERT INTO meta_workflow_def (name, version, json_data) VALUES (?," +
-                                                 " ?, ?)";
+                " ?, ?)";
 
         Optional<Integer> version = getLatestVersion(tx, def);
         if (!version.isPresent() || version.get() < def.getVersion()) {
             execute(tx, INSERT_WORKFLOW_DEF_QUERY, q -> q.addParameter(def.getName())
-                                                         .addParameter(def.getVersion())
-                                                         .addJsonParameter(def)
-                                                         .executeUpdate());
+                    .addParameter(def.getVersion())
+                    .addJsonParameter(def)
+                    .executeUpdate());
         } else {
             //@formatter:off
             final String UPDATE_WORKFLOW_DEF_QUERY =
-                "UPDATE meta_workflow_def " +
-                "SET json_data = ?, modified_on = CURRENT_TIMESTAMP " +
-                "WHERE name = ? AND version = ?";
+                    "UPDATE meta_workflow_def " +
+                            "SET json_data = ?, modified_on = CURRENT_TIMESTAMP " +
+                            "WHERE name = ? AND version = ?";
             //@formatter:on
 
             execute(tx, UPDATE_WORKFLOW_DEF_QUERY, q -> q.addJsonParameter(def)
-                                                         .addParameter(def.getName())
-                                                         .addParameter(def.getVersion())
-                                                         .executeUpdate());
+                    .addParameter(def.getName())
+                    .addParameter(def.getVersion())
+                    .executeUpdate());
         }
 
         updateLatestVersion(tx, def);
@@ -417,7 +423,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
         final String READ_ONE_TASKDEF_QUERY = "SELECT json_data FROM meta_task_def WHERE name = ?";
 
         return queryWithTransaction(READ_ONE_TASKDEF_QUERY,
-                                    q -> q.addParameter(name).executeAndFetchFirst(TaskDef.class));
+                q -> q.addParameter(name).executeAndFetchFirst(TaskDef.class));
     }
 
     private String insertOrUpdateTaskDef(TaskDef taskDef) {

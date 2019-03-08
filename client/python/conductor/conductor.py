@@ -18,6 +18,7 @@ import requests
 import json
 import sys
 import socket
+import warnings
 
 
 hostname = socket.gethostname()
@@ -118,7 +119,7 @@ class MetadataClient(BaseClient):
     def __init__(self, baseURL):
         BaseClient.__init__(self, baseURL, self.BASE_RESOURCE)
 
-    def getWorkflowDef(self, wfname, version=1):
+    def getWorkflowDef(self, wfname, version=None):
         url = self.makeUrl('workflow/{}', wfname)
         return self.get(url, self.makeParams(version=version))
 
@@ -147,6 +148,15 @@ class MetadataClient(BaseClient):
         return self.post(url, None, listOfTaskDefObj)
 
     def registerTaskDef(self, taskDefObj):
+        """registerTaskDef is deprecated since PUT /metadata/taskdefs does not
+        register but updates a task definition. Use updateTaskDef function 
+        instead.
+        """
+        warnings.warn(self.registerTaskDef.__doc__, DeprecationWarning)
+        url = self.makeUrl('taskdefs')
+        self.put(url, None, taskDefObj)
+
+    def updateTaskDef(self, taskDefObj):
         url = self.makeUrl('taskdefs')
         self.put(url, None, taskDefObj)
 
@@ -171,7 +181,8 @@ class TaskClient(BaseClient):
 
     def updateTask(self, taskObj):
         url = self.makeUrl('')
-        self.post(url, None, taskObj)
+        headers = {'Accept': 'text/plain'}
+        self.post(url, None, taskObj, headers)
 
     def pollForTask(self, taskType, workerid, domain=None):
         url = self.makeUrl('poll/{}', taskType)
@@ -208,7 +219,7 @@ class TaskClient(BaseClient):
         params['workerid'] = workerid
         headers = {'Accept': 'application/json'}
         value = self.post(url, params, None, headers)
-        return value == 'true'
+        return value in ['true', True]
 
     def getTasksInQueue(self, taskName):
         url = self.makeUrl('queue/{}', taskName)
@@ -237,7 +248,7 @@ class WorkflowClient(BaseClient):
         params['includeTasks'] = includeTasks
         return self.get(url, params)
 
-    def getRunningWorkflows(self, wfName, version=1, startTime=None, endTime=None):
+    def getRunningWorkflows(self, wfName, version=None, startTime=None, endTime=None):
         url = self.makeUrl('running/{}', wfName)
         params = {}
         params['version'] = version
@@ -245,7 +256,7 @@ class WorkflowClient(BaseClient):
         params['endTime'] = endTime
         return self.get(url, params)
 
-    def startWorkflow(self, wfName, inputjson, version=1, correlationId=None):
+    def startWorkflow(self, wfName, inputjson, version=None, correlationId=None):
         url = self.makeUrl('{}', wfName)
         params = {}
         params['version'] = version
@@ -360,10 +371,11 @@ def main():
             print('python conductor server_url terminate workflow_id')
             return None
         wfId = sys.argv[3]
-        wfjson = wfc.terminateWorkflow(wfId)
+        wfc.terminateWorkflow(wfId)
         print('OK')
         return wfId
 
 
 if __name__ == '__main__':
     main()
+

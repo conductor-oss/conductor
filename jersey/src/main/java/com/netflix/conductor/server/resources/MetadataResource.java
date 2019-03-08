@@ -37,14 +37,12 @@ import java.util.List;
 
 /**
  * @author Viren
- *
  */
-@Api(value="/metadata", produces=MediaType.APPLICATION_JSON, consumes=MediaType.APPLICATION_JSON, tags="Metadata Management")
+@Api(value = "/metadata", produces = MediaType.APPLICATION_JSON, consumes = MediaType.APPLICATION_JSON, tags = "Metadata Management")
 @Path("/metadata")
 @Produces({MediaType.APPLICATION_JSON})
 @Consumes({MediaType.APPLICATION_JSON})
 public class MetadataResource {
-
 	private final MetadataService metadataService;
 	
 	@Inject

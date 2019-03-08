@@ -17,6 +17,7 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
@@ -30,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link WorkflowTask.Type#JOIN}
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#JOIN}
  * to a {@link Task} of type {@link SystemTaskType#JOIN}
  */
 public class JoinTaskMapper implements TaskMapper {
@@ -38,7 +39,7 @@ public class JoinTaskMapper implements TaskMapper {
     public static final Logger logger = LoggerFactory.getLogger(JoinTaskMapper.class);
 
     /**
-     * This method maps {@link TaskMapper} to map a {@link WorkflowTask} of type {@link WorkflowTask.Type#JOIN} to a {@link Task} of type {@link SystemTaskType#JOIN}
+     * This method maps {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#JOIN} to a {@link Task} of type {@link SystemTaskType#JOIN}
      * with a status of {@link Task.Status#IN_PROGRESS}
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId
@@ -62,9 +63,8 @@ public class JoinTaskMapper implements TaskMapper {
         joinTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         joinTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
         joinTask.setCorrelationId(workflowInstance.getCorrelationId());
-        joinTask.setWorkflowType(workflowInstance.getWorkflowType());
+        joinTask.setWorkflowType(workflowInstance.getWorkflowName());
         joinTask.setScheduledTime(System.currentTimeMillis());
-        joinTask.setEndTime(System.currentTimeMillis());
         joinTask.setInputData(joinInput);
         joinTask.setTaskId(taskId);
         joinTask.setStatus(Task.Status.IN_PROGRESS);

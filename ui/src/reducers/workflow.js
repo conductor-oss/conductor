@@ -14,8 +14,6 @@ const initialState = {
 };
 
 export default function workflows(state = initialState, action) {
-
-  let data = state.data;
   switch (action.type) {
     case 'GET_WORKFLOWS':
       return {
@@ -70,6 +68,8 @@ export default function workflows(state = initialState, action) {
       };
     case 'RECEIVED_BULK_TERMINATE_WORKFLOW':
     case 'RECEIVED_BULK_RESTART_WORKFLOW':
+    case 'RECEIVED_BULK_RESTART_WITH_LATEST_DEFINITION_WORKFLOW':
+    case 'RECEIVED_BULK_RESTART_WITH_CURRENT_DEFINITION_WORKFLOW':
     case 'RECEIVED_BULK_RETRY_WORKFLOW':
     case 'RECEIVED_BULK_PAUSE_WORKFLOW':
     case 'RECEIVED_BULK_RESUME_WORKFLOW':
@@ -86,6 +86,8 @@ export default function workflows(state = initialState, action) {
       };
     case 'REQUESTED_BULK_TERMINATE_WORKFLOW':
     case 'REQUESTED_BULK_RESTART_WORKFLOW':
+    case 'REQUESTED_BULK_RESTART_WITH_LATEST_DEFINITION_WORKFLOW':
+    case 'REQUESTED_BULK_RESTART_WITH_CURRENT_DEFINITION_WORKFLOW':
     case 'REQUESTED_BULK_RETRY_WORKFLOW':
     case 'REQUESTED_BULK_PAUSE_WORKFLOW':
     case 'REQUESTED_BULK_RESUME_WORKFLOW':

@@ -1,42 +1,50 @@
 package com.netflix.conductor.dao.mysql;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.execution.ApplicationException;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestName;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
+
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 @SuppressWarnings("Duplicates")
 @RunWith(JUnit4.class)
-public class MySQLMetadataDAOTest extends MySQLBaseDAOTest {
+public class MySQLMetadataDAOTest {
 
+    private MySQLDAOTestUtil testUtil;
     private MySQLMetadataDAO dao;
+
+    @Rule
+    public TestName name = new TestName();
 
     @Before
     public void setup() throws Exception {
-        dao = new MySQLMetadataDAO(objectMapper, dataSource, testConfiguration);
-        resetAllData();
+        testUtil = new MySQLDAOTestUtil(name.getMethodName());
+        dao = new MySQLMetadataDAO(testUtil.getObjectMapper(), testUtil.getDataSource(), testUtil.getTestConfiguration());
     }
 
-    @Test(expected=NullPointerException.class)
-    public void testMissingName() throws Exception {
-        WorkflowDef def = new WorkflowDef();
-        dao.create(def);
+    @After
+    public void teardown() throws Exception {
+        testUtil.resetAllData();
+        testUtil.getDataSource().close();
     }
 
     @Test(expected=ApplicationException.class)
@@ -69,7 +77,7 @@ public class MySQLMetadataDAOTest extends MySQLBaseDAOTest {
         assertEquals("test", all.get(0).getName());
         assertEquals(1, all.get(0).getVersion());
 
-        WorkflowDef found = dao.get("test", 1);
+        WorkflowDef found = dao.get("test", 1).get();
         assertTrue(EqualsBuilder.reflectionEquals(def, found));
 
         def.setVersion(2);
@@ -81,7 +89,7 @@ public class MySQLMetadataDAOTest extends MySQLBaseDAOTest {
         assertEquals("test", all.get(0).getName());
         assertEquals(1, all.get(0).getVersion());
 
-        found = dao.getLatest(def.getName());
+        found = dao.getLatest(def.getName()).get();
         assertEquals(def.getName(), found.getName());
         assertEquals(def.getVersion(), found.getVersion());
         assertEquals(2, found.getVersion());
@@ -102,7 +110,7 @@ public class MySQLMetadataDAOTest extends MySQLBaseDAOTest {
 
         def.setDescription("updated");
         dao.update(def);
-        found = dao.get(def.getName(), def.getVersion());
+        found = dao.get(def.getName(), def.getVersion()).get();
         assertEquals(def.getDescription(), found.getDescription());
 
         List<String> allnames = dao.findAll();
@@ -111,8 +119,8 @@ public class MySQLMetadataDAOTest extends MySQLBaseDAOTest {
         assertEquals(def.getName(), allnames.get(0));
 
         dao.removeWorkflowDef("test", 1);
-        WorkflowDef deleted = dao.get("test", 1);
-        assertNull(deleted);
+        Optional<WorkflowDef> deleted = dao.get("test", 1);
+        assertFalse(deleted.isPresent());
     }
 
     @Test

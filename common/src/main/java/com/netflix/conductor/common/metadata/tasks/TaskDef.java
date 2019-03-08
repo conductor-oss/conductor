@@ -18,58 +18,90 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import com.github.vmg.protogen.annotations.ProtoEnum;
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.netflix.conductor.common.constraints.TaskTimeoutConstraint;
+import com.netflix.conductor.common.metadata.Auditable;
+
+import javax.validation.Valid;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import com.netflix.conductor.common.metadata.Auditable;
-
 /**
  * @author Viren
  * Defines a workflow task definition 
  */
+@ProtoMessage
+@TaskTimeoutConstraint
+@Valid
 public class TaskDef extends Auditable {
+	@ProtoEnum
+	public static enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY}
 
+	@ProtoEnum
+	public static enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF}
 
-
-	public enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY;}
-
-
-	public enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF;}
 	private static final int ONE_HOUR = 60 * 60;
 
 	/**
 	 * Unique name identifying the task.  The name is unique across
 	 */
+	@NotEmpty(message = "TaskDef name cannot be null or empty")
+	@ProtoField(id = 1)
 	private String name;
 
+	@ProtoField(id = 2)
 	private String description;
 
+	@ProtoField(id = 3)
+	@Min(value = 0, message = "TaskDef retryCount: {value} must be >= 0")
 	private int retryCount = 3; // Default
 
+	@ProtoField(id = 4)
+	@NotNull
 	private long timeoutSeconds;
 
+	@ProtoField(id = 5)
 	private List<String> inputKeys = new ArrayList<String>();
 
+	@ProtoField(id = 6)
 	private List<String> outputKeys = new ArrayList<String>();
 
+	@ProtoField(id = 7)
 	private TimeoutPolicy timeoutPolicy = TimeoutPolicy.TIME_OUT_WF;
 
+	@ProtoField(id = 8)
 	private RetryLogic retryLogic = RetryLogic.FIXED;
 
+	@ProtoField(id = 9)
 	private int retryDelaySeconds = 60;
 
-	private int responseTimeoutSeconds = ONE_HOUR;
+	@ProtoField(id = 10)
+	@Min(value = 1, message = "TaskDef responseTimeoutSeconds: ${validatedValue} should be minimum {value} second")
+	private long responseTimeoutSeconds = ONE_HOUR;
 
+	@ProtoField(id = 11)
 	private Integer concurrentExecLimit;
 
+	@ProtoField(id = 12)
+	private Map<String, Object> inputTemplate = new HashMap<>();
+
+	// This field is deprecated, do not use id 13.
+//	@ProtoField(id = 13)
+//	private Integer rateLimitPerSecond;
+
+	@ProtoField(id = 14)
 	private Integer rateLimitPerFrequency;
 
+	@ProtoField(id = 15)
 	private Integer rateLimitFrequencyInSeconds;
-
-	private Map<String, Object> inputTemplate = new HashMap<>();
 
 	public TaskDef() {
 	}
@@ -215,7 +247,7 @@ public class TaskDef extends Auditable {
 	 *
 	 * @return the timeout for task to send response.  After this timeout, the task will be re-queued
 	 */
-	public int getResponseTimeoutSeconds() {
+	public long getResponseTimeoutSeconds() {
 		return responseTimeoutSeconds;
 	}
 
@@ -223,7 +255,7 @@ public class TaskDef extends Auditable {
 	 *
 	 * @param responseTimeoutSeconds - timeout for task to send response.  After this timeout, the task will be re-queued
 	 */
-	public void setResponseTimeoutSeconds(int responseTimeoutSeconds) {
+	public void setResponseTimeoutSeconds(long responseTimeoutSeconds) {
 		this.responseTimeoutSeconds = responseTimeoutSeconds;
 	}
 
@@ -338,4 +370,5 @@ public class TaskDef extends Auditable {
 				getOutputKeys(), getTimeoutPolicy(), getRetryLogic(), getRetryDelaySeconds(),
 				getResponseTimeoutSeconds(), getConcurrentExecLimit(), getRateLimitPerFrequency(), getInputTemplate());
 	}
+
 }

@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author Viren
@@ -66,7 +67,7 @@ public class WebAppExceptionMapper implements ExceptionMapper<WebApplicationExce
         this.code = Code.forValue(response.getStatus());
         Map<String, Object> entityMap = new LinkedHashMap<>();
         entityMap.put("instance", host);
-        entityMap.put("code", code.toString());
+        entityMap.put("code", Optional.ofNullable(code).map(Code::name).orElse(null));
         entityMap.put("message", exception.getCause());
         entityMap.put("retryable", false);
 

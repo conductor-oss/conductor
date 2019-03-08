@@ -1,0 +1,27 @@
+{
+  "order": 0,
+  "template": "*conductor_task*log*",
+  "settings": {
+    "index": {
+      "refresh_interval": "1s"
+    }
+  },
+  "mappings": {
+    "task_log": {
+      "properties": {
+        "createdTime": {
+          "type": "long"
+        },
+        "log": {
+          "type": "keyword",
+          "index": true
+        },
+        "taskId": {
+          "type": "keyword",
+          "index": true
+        }
+      }
+    }
+  },
+  "aliases": {}
+}

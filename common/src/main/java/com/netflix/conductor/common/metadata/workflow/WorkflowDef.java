@@ -18,40 +18,74 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.google.common.base.MoreObjects;
+import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
+import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
+import com.netflix.conductor.common.metadata.Auditable;
+
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
-import com.netflix.conductor.common.metadata.Auditable;
+import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
+
 
 /**
  * @author Viren
  *
  */
+@ProtoMessage
+@TaskReferenceNameUniqueConstraint
 public class WorkflowDef extends Auditable {
 
+    @NotEmpty(message = "WorkflowDef name cannot be null or empty")
+    @ProtoField(id = 1)
+	@NoSemiColonConstraint(message = "Workflow name cannot contain the following set of characters: ':'")
 	private String name;
-	
+
+	@ProtoField(id = 2)
 	private String description;
-	
+
+	@ProtoField(id = 3)
 	private int version = 1;
-	
-	private LinkedList<WorkflowTask> tasks = new LinkedList<WorkflowTask>();
-	
-	private List<String> inputParameters = new LinkedList<String>();
-	
+
+	@ProtoField(id = 4)
+    @NotNull
+    @NotEmpty(message = "WorkflowTask list cannot be empty")
+	private List<@Valid WorkflowTask> tasks = new LinkedList<>();
+
+	@ProtoField(id = 5)
+	private List<String> inputParameters = new LinkedList<>();
+
+	@ProtoField(id = 6)
 	private Map<String, Object> outputParameters = new HashMap<>();
 
+	@ProtoField(id = 7)
 	private String failureWorkflow;
 
+	@ProtoField(id = 8)
+    @Min(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
+	@Max(value = 2, message = "workflowDef schemaVersion: {value} is only supported")
+    private int schemaVersion = 2;
+
 	//By default a workflow is restartable
+	@ProtoField(id = 9)
 	private boolean restartable = true;
-	
-	private int schemaVersion = 1;
-	
+
+	@ProtoField(id = 10)
+	private boolean workflowStatusListenerEnabled = false;
+
 	/**
 	 * @return the name
 	 */
@@ -83,14 +117,14 @@ public class WorkflowDef extends Auditable {
 	/**
 	 * @return the tasks
 	 */
-	public LinkedList<WorkflowTask> getTasks() {
+	public List<WorkflowTask> getTasks() {
 		return tasks;
 	}
 
 	/**
 	 * @param tasks the tasks to set
 	 */
-	public void setTasks(LinkedList<WorkflowTask> tasks) {
+	public void setTasks(List<@Valid WorkflowTask> tasks) {
 		this.tasks = tasks;
 	}
 
@@ -107,7 +141,6 @@ public class WorkflowDef extends Auditable {
 	public void setInputParameters(List<String> inputParameters) {
 		this.inputParameters = inputParameters;
 	}
-
 	
 	/**
 	 * @return the outputParameters
@@ -152,7 +185,6 @@ public class WorkflowDef extends Auditable {
 		this.version = version;
 	}
 
-
 	/**
 	 * This method determines if the workflow is restartable or not
 	 *
@@ -187,6 +219,22 @@ public class WorkflowDef extends Auditable {
 		this.schemaVersion = schemaVersion;
 	}
 
+	/**
+	 *
+	 * @return true is workflow listener will be invoked when workflow gets into a terminal state
+	 */
+	public boolean isWorkflowStatusListenerEnabled() {
+		return workflowStatusListenerEnabled;
+	}
+
+	/**
+	 * Specify if workflow listener is enabled to invoke a callback for completed or terminated workflows
+	 * @param workflowStatusListenerEnabled
+	 */
+	public void setWorkflowStatusListenerEnabled(boolean workflowStatusListenerEnabled) {
+		this.workflowStatusListenerEnabled = workflowStatusListenerEnabled;
+	}
+
 	public String key(){
 		return getKey(name, version);
 	}
@@ -215,20 +263,65 @@ public class WorkflowDef extends Auditable {
 	}
 	
 	public WorkflowTask getTaskByRefName(String taskReferenceName){
-		Optional<WorkflowTask> found = all().stream()
-				.filter(wft -> wft.getTaskReferenceName().equals(taskReferenceName))
+		Optional<WorkflowTask> found = collectTasks().stream()
+				.filter(workflowTask -> workflowTask.getTaskReferenceName().equals(taskReferenceName))
 				.findFirst();
 		if(found.isPresent()){
 			return found.get();
 		}
 		return null;
 	}
-	
-	public List<WorkflowTask> all(){
-		List<WorkflowTask> all = new LinkedList<>();
-		for(WorkflowTask wft : tasks){
-			all.addAll(wft.all());
+
+	public List<WorkflowTask> collectTasks() {
+		List<WorkflowTask> tasks = new LinkedList<>();
+		for (WorkflowTask workflowTask : this.tasks) {
+			tasks.addAll(workflowTask.collectTasks());
 		}
-		return all;
+		return tasks;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		WorkflowDef that = (WorkflowDef) o;
+		return getVersion() == that.getVersion() &&
+				getSchemaVersion() == that.getSchemaVersion() &&
+				Objects.equals(getName(), that.getName()) &&
+				Objects.equals(getDescription(), that.getDescription()) &&
+				Objects.equals(getTasks(), that.getTasks()) &&
+				Objects.equals(getInputParameters(), that.getInputParameters()) &&
+				Objects.equals(getOutputParameters(), that.getOutputParameters()) &&
+				Objects.equals(getFailureWorkflow(), that.getFailureWorkflow());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(
+				getName(),
+				getDescription(),
+				getVersion(),
+				getTasks(),
+				getInputParameters(),
+				getOutputParameters(),
+				getFailureWorkflow(),
+				getSchemaVersion()
+		);
+	}
+
+	@Override
+	public String toString() {
+		return MoreObjects.toStringHelper(getClass())
+				.add("name", name)
+				.add("description", description)
+				.add("version", version)
+				.add("tasks", tasks)
+				.add("inputParameters", inputParameters)
+				.add("outputParameters", outputParameters)
+				.add("failureWorkflow", failureWorkflow)
+				.add("schemaVersion", schemaVersion)
+				.add("restartable", restartable)
+				.add("workflowStatusListenerEnabled", workflowStatusListenerEnabled)
+				.toString();
 	}
 }

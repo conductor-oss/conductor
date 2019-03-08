@@ -9,8 +9,8 @@
     <appender-ref ref="STDOUT"/>
   </root>
   
-  <logger name="com.netflix.conductor.dao.jdbc" level="TRACE"/>
-  <logger name="com.netflix.conductor.dao.mysql" level="DEBUG"/>
+  <logger name="com.netflix.conductor.dao.jdbc" level="INFO"/>
+  <logger name="com.netflix.conductor.dao.mysql" level="INFO"/>
   <logger name="org.flywaydb" level="WARN"/>
   <logger name="com.zaxxer.hikari" level="WARN"/>
   <logger name="ch.vorburger" level="WARN"/>

@@ -85,7 +85,9 @@ class PayloadStorage implements ExternalPayloadStorage {
             connection.setRequestMethod("PUT");
 
             try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(connection.getOutputStream())) {
-                IOUtils.copy(payload, bufferedOutputStream);
+                long count = IOUtils.copy(payload, bufferedOutputStream);
+                bufferedOutputStream.flush();
+                logger.debug("Uploaded {} bytes to uri: {}", count, uri);
 
                 // Check the HTTP response code
                 int responseCode = connection.getResponseCode();
@@ -102,6 +104,13 @@ class PayloadStorage implements ExternalPayloadStorage {
         } finally {
             if (connection != null) {
                 connection.disconnect();
+            }
+            try {
+                if (payload != null) {
+                    payload.close();
+                }
+            } catch (IOException e) {
+                logger.warn("Unable to close inputstream when uploading to uri: {}", uri);
             }
         }
     }

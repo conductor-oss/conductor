@@ -16,6 +16,10 @@
 
 package com.netflix.conductor.common.metadata.tasks;
 
+import com.google.protobuf.Any;
+import com.github.vmg.protogen.annotations.*;
+
+import javax.validation.constraints.NotEmpty;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,25 +30,39 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * Result of the task execution.
  *
  */
+@ProtoMessage
 public class TaskResult {
 
+    @ProtoEnum
     public enum Status {
         IN_PROGRESS, FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED, SCHEDULED;        //SCHEDULED is added for the backward compatibility and should NOT be used when updating the task result
     }
 
+    @NotEmpty(message = "Workflow Id cannot be null or empty")
+    @ProtoField(id = 1)
     private String workflowInstanceId;
 
+    @NotEmpty(message = "Task ID cannot be null or empty")
+    @ProtoField(id = 2)
     private String taskId;
 
+    @ProtoField(id = 3)
     private String reasonForIncompletion;
 
+    @ProtoField(id = 4)
     private long callbackAfterSeconds;
 
+    @ProtoField(id = 5)
     private String workerId;
 
+    @ProtoField(id = 6)
     private Status status;
 
+    @ProtoField(id = 7)
     private Map<String, Object> outputData = new HashMap<>();
+
+    @ProtoField(id = 8)
+    private Any outputMessage;
 
     private List<TaskExecLog> logs = new CopyOnWriteArrayList<>();
 
@@ -165,6 +183,14 @@ public class TaskResult {
         return this;
     }
 
+    public Any getOutputMessage() {
+        return outputMessage;
+    }
+
+    public void setOutputMessage(Any outputMessage) {
+        this.outputMessage = outputMessage;
+    }
+
     /**
      *
      * @return Task execution logs
@@ -218,6 +244,7 @@ public class TaskResult {
                 ", workerId='" + workerId + '\'' +
                 ", status=" + status +
                 ", outputData=" + outputData +
+                ", outputMessage=" + outputMessage +
                 ", logs=" + logs +
                 ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
                 '}';

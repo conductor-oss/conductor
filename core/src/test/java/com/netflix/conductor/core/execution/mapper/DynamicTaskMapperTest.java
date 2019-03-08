@@ -1,3 +1,18 @@
+/*
+ * Copyright 2018 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -18,7 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyMap;
 import static org.mockito.Matchers.anyString;
@@ -27,45 +42,54 @@ import static org.mockito.Mockito.when;
 
 public class DynamicTaskMapperTest {
 
-    MetadataDAO metadataDAO;
-    ParametersUtils parametersUtils;
-    DynamicTaskMapper dynamicTaskMapper;
+    private ParametersUtils parametersUtils;
+    private MetadataDAO metadataDAO;
+    private DynamicTaskMapper dynamicTaskMapper;
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
     @Before
-    public void setUp() throws Exception {
-        metadataDAO = mock(MetadataDAO.class);
+    public void setUp() {
         parametersUtils = mock(ParametersUtils.class);
+        metadataDAO = mock(MetadataDAO.class);
+
         dynamicTaskMapper = new DynamicTaskMapper(parametersUtils, metadataDAO);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
-    public void getMappedTasks() throws Exception {
+    public void getMappedTasks() {
 
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("DynoTask");
         workflowTask.setDynamicTaskNameParam("dynamicTaskName");
         TaskDef taskDef = new TaskDef();
         taskDef.setName("DynoTask");
+        workflowTask.setTaskDefinition(taskDef);
 
         Map<String, Object> taskInput = new HashMap<>();
         taskInput.put("dynamicTaskName", "DynoTask");
 
-        when(metadataDAO.getTaskDef("DynoTask")).thenReturn(taskDef);
         when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(TaskDef.class), anyString())).thenReturn(taskInput);
 
         String taskId = IDGenerator.generate();
+
+        Workflow workflow = new Workflow();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflow.setWorkflowDefinition(workflowDef);
+
         TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
-                .withWorkflowDefinition(new WorkflowDef())
-                .withWorkflowInstance(new Workflow())
-                .withTaskDefinition(new TaskDef())
+                .withWorkflowInstance(workflow)
+                .withWorkflowDefinition(workflowDef)
+                .withTaskDefinition(workflowTask.getTaskDefinition())
                 .withTaskToSchedule(workflowTask)
                 .withTaskInput(taskInput)
                 .withRetryCount(0)
                 .withTaskId(taskId)
                 .build();
+
+        when(metadataDAO.getTaskDef("DynoTask")).thenReturn(new TaskDef());
 
         List<Task> mappedTasks = dynamicTaskMapper.getMappedTasks(taskMapperContext);
 
@@ -76,7 +100,7 @@ public class DynamicTaskMapperTest {
     }
 
     @Test
-    public void getDynamicTaskName() throws Exception {
+    public void getDynamicTaskName() {
         Map<String, Object> taskInput = new HashMap<>();
         taskInput.put("dynamicTaskName", "DynoTask");
 
@@ -86,7 +110,7 @@ public class DynamicTaskMapperTest {
     }
 
     @Test
-    public void getDynamicTaskNameNotAvailable() throws Exception {
+    public void getDynamicTaskNameNotAvailable() {
         Map<String, Object> taskInput = new HashMap<>();
 
         expectedException.expect(TerminateWorkflowException.class);
@@ -94,17 +118,18 @@ public class DynamicTaskMapperTest {
                 "Parameter= %s, input= %s", "dynamicTaskName", taskInput));
 
         dynamicTaskMapper.getDynamicTaskName(taskInput, "dynamicTaskName");
-
     }
 
     @Test
-    public void getDynamicTaskDefinition() throws Exception {
+    public void getDynamicTaskDefinition() {
         //Given
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("Foo");
         TaskDef taskDef = new TaskDef();
         taskDef.setName("Foo");
-        when(metadataDAO.getTaskDef("Foo")).thenReturn(taskDef);
+        workflowTask.setTaskDefinition(taskDef);
+
+        when(metadataDAO.getTaskDef(any())).thenReturn(new TaskDef());
 
         //when
         TaskDef dynamicTaskDefinition = dynamicTaskMapper.getDynamicTaskDefinition(workflowTask);
@@ -119,14 +144,10 @@ public class DynamicTaskMapperTest {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.setName("Foo");
 
-        when(metadataDAO.getTaskDef("Foo")).thenReturn(null);
-
         expectedException.expect(TerminateWorkflowException.class);
         expectedException.expectMessage(String.format("Invalid task specified.  Cannot find task by name %s in the task definitions",
                 workflowTask.getName()));
 
         dynamicTaskMapper.getDynamicTaskDefinition(workflowTask);
-
     }
-
 }

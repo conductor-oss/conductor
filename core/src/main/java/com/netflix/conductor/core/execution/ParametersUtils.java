@@ -25,6 +25,7 @@ import com.jayway.jsonpath.Option;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.EnvUtils;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -44,12 +45,6 @@ public class ParametersUtils {
 
     private TypeReference<Map<String, Object>> map = new TypeReference<Map<String, Object>>() {
     };
-
-    public enum SystemParameters {
-        CPEWF_TASK_ID,
-        NETFLIX_ENV,
-        NETFLIX_STACK
-    }
 
     public ParametersUtils() {
     }
@@ -84,8 +79,8 @@ public class ParametersUtils {
         workflowParams.put("workflowId", workflow.getWorkflowId());
         workflowParams.put("parentWorkflowId", workflow.getParentWorkflowId());
         workflowParams.put("parentWorkflowTaskId", workflow.getParentWorkflowTaskId());
-        workflowParams.put("workflowType", workflow.getWorkflowType());
-        workflowParams.put("version", workflow.getVersion());
+        workflowParams.put("workflowType", workflow.getWorkflowName());
+        workflowParams.put("version", workflow.getWorkflowVersion());
         workflowParams.put("correlationId", workflow.getCorrelationId());
         workflowParams.put("reasonForIncompletion", workflow.getReasonForIncompletion());
         workflowParams.put("schemaVersion", workflow.getSchemaVersion());
@@ -159,7 +154,7 @@ public class ParametersUtils {
     private Map<String, Object> replace(Map<String, Object> input, DocumentContext documentContext, String taskId) {
         for (Entry<String, Object> e : input.entrySet()) {
             Object value = e.getValue();
-            if (value instanceof String || value instanceof Number) {
+            if (value instanceof String) {
                 Object replaced = replaceVariables(value.toString(), documentContext, taskId);
                 e.setValue(replaced);
             } else if (value instanceof Map) {
@@ -203,8 +198,8 @@ public class ParametersUtils {
             convertedValues[i] = values[i];
             if (values[i].startsWith("${") && values[i].endsWith("}")) {
                 String paramPath = values[i].substring(2, values[i].length() - 1);
-                if (contains(paramPath)) {
-                    String sysValue = getSystemParametersValue(paramPath, taskId);
+                if (EnvUtils.isEnvironmentVariable(paramPath)) {
+                    String sysValue = EnvUtils.getSystemParametersValue(paramPath, taskId);
                     if (sysValue != null) {
                         convertedValues[i] = sysValue;
                     }
@@ -235,26 +230,7 @@ public class ParametersUtils {
         return retObj;
     }
 
-    private String getSystemParametersValue(String sysParam, String taskId) {
-        if ("CPEWF_TASK_ID".equals(sysParam)) {
-            return taskId;
-        }
-        String value = System.getenv(sysParam);
-        if (value == null) {
-            value = System.getProperty(sysParam);
-        }
-        return value;
-    }
 
-    private boolean contains(String test) {
-        for (SystemParameters c : SystemParameters.values()) {
-            if (c.name().equals(test)) {
-                return true;
-            }
-        }
-        String value = Optional.ofNullable(System.getProperty(test)).orElse(Optional.ofNullable(System.getenv(test)).orElse(null));
-        return value != null;
-    }
 
     @Deprecated
     //Workflow schema version 1 is deprecated and new workflows should be using version 2
