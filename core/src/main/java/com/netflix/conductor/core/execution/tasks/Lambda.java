@@ -4,6 +4,7 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,27 +58,27 @@ public class Lambda extends WorkflowSystemTask {
         Map<String, Object> taskInput = task.getInputData();
         Map<String, Object> taskOutput = task.getOutputData();
 
-        String scriptExpression = (String) taskInput.get(QUERY_EXPRESSION_PARAMETER);
-
-        if(scriptExpression == null) {
-            task.setReasonForIncompletion("Missing '" + QUERY_EXPRESSION_PARAMETER + "' in input parameters");
-            task.setStatus(Task.Status.FAILED);
-            return true;
-        }
-
-        String scriptExpressionBuilder = "function scriptFun(){" +
-                scriptExpression +
-                "} scriptFun();";
-
-        logger.info("scriptExpressionBuilder: {}" , scriptExpressionBuilder);
+        String scriptExpression;
 
         try {
-            Object returnValue = null;
-            returnValue = ScriptEvaluator.eval(scriptExpressionBuilder, taskInput);
-            taskOutput.put("result", returnValue);
-            task.setStatus(Task.Status.COMPLETED);
-        } catch (ScriptException e) {
-            logger.error("Failed to execute  Lambda: {}", scriptExpression, e);
+            scriptExpression = (String) taskInput.get(QUERY_EXPRESSION_PARAMETER);
+            if (StringUtils.isNotBlank(scriptExpression)) {
+                String scriptExpressionBuilder = "function scriptFun(){" +
+                        scriptExpression +
+                        "} scriptFun();";
+
+                logger.info("scriptExpressionBuilder: {}" , scriptExpressionBuilder);
+                Object returnValue = ScriptEvaluator.eval(scriptExpressionBuilder, taskInput);
+                taskOutput.put("result", returnValue);
+                task.setStatus(Task.Status.COMPLETED);
+            }
+            else {
+                logger.error("Empty {} in Lambda task. ", QUERY_EXPRESSION_PARAMETER);
+                task.setReasonForIncompletion("Empty '" + QUERY_EXPRESSION_PARAMETER + "' in Lambda task's input parameters. A non-empty String value must be provided.");
+                task.setStatus(Task.Status.FAILED);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to execute Lambda Task: {}", e);
             task.setStatus(Task.Status.FAILED);
             task.setReasonForIncompletion(e.getMessage());
             taskOutput.put("error", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());
