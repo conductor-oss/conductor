@@ -125,6 +125,9 @@
     <li class="toctree-l3"><a href="#dynamic-task">Dynamic Task</a></li>
     
 
+    <li class="toctree-l3"><a href="#lambda-task">Lambda Task</a></li>
+    
+
     </ul>
                 </li>
                 <li class="">
@@ -743,6 +746,40 @@ None required.</p>
 
 
 <p>If the workflow is started with input parameter user_supplied_task's value as <strong>user_task_2</strong>, Conductor will schedule <strong>user_task_2</strong> when scheduling this dynamic task.</p>
+<h2 id="lambda-task">Lambda Task<a class="headerlink" href="#lambda-task" title="Permanent link">&para;</a></h2>
+<p>Lambda Task helps execute ad-hoc logic at Workflow run-time, using javax &amp; <code>Nashorn</code> Javascript evaluator engine.</p>
+<p>This is particularly helpful in running simple evaluations in Conductor server, over creating Workers.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>scriptExpression</td>
+<td>Javascript (<code>Nashorn</code>) evaluation expression defined as a string. Must return a value.</td>
+<td>Must be non-empty String.</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;LAMBDA_TASK&quot;,
+  &quot;taskReferenceName&quot;: &quot;lambda_test&quot;,
+  &quot;type&quot;: &quot;LAMBDA&quot;,
+  &quot;inputParameters&quot;: {
+      &quot;lambdaValue&quot;: &quot;${workflow.input.lambdaValue}&quot;,
+      &quot;scriptExpression&quot;: &quot;if ($.lambdaValue == 1){ return {testvalue: true} } else { return {testvalue: false} }&quot;
+  }
+}</code></pre>
+
+
+<p>The task output can then be referenced in downstream tasks like:
+<code>"${lambda_test.output.result.testvalue}"</code></p>
               
             </div>
           </div>
