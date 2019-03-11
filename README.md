@@ -11,6 +11,9 @@ Conductor is an _orchestration_ engine that runs in the cloud.
 [![Issues](https://img.shields.io/github/issues/Netflix/conductor.svg)](https://github.com/Netflix/conductor/issues)
 [![NetflixOSS Lifecycle](https://img.shields.io/osslifecycle/Netflix/conductor.svg)]()
 
+## Community
+[![Gitter](https://badges.gitter.im/netflix-conductor/community.svg)](https://gitter.im/netflix-conductor/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) Please feel free to join our Gitter for questions and interacting with the community.
+
 ## Builds
 Conductor builds are run on Travis CI [here](https://travis-ci.org/Netflix/conductor).
 
