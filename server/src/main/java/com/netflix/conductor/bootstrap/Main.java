@@ -105,7 +105,7 @@ public class Main {
 
     private static void loadConfigFile(String propertyFile) throws IOException {
         if (propertyFile == null) return;
-        System.out.println("Using config file" + propertyFile);
+        System.out.println("Using config file: " + propertyFile);
         Properties props = new Properties(System.getProperties());
         props.load(new FileInputStream(propertyFile));
         System.setProperties(props);

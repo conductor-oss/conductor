@@ -21,6 +21,7 @@ message WorkflowTask {
     string dynamic_task_name_param = 6;
     string case_value_param = 7;
     string case_expression = 8;
+    string script_expression = 22;
     map<string, WorkflowTask.WorkflowTaskList> decision_cases = 9;
     string dynamic_fork_tasks_param = 10;
     string dynamic_fork_tasks_input_param_name = 11;
@@ -33,4 +34,5 @@ message WorkflowTask {
     bool optional = 18;
     TaskDef task_definition = 19;
     bool rate_limited = 20;
+    repeated string default_exclusive_join_task = 21;
 }
