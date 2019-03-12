@@ -10,11 +10,7 @@
         "taskReferenceName": "task_1",
         "inputParameters": {
           "mod": "${workflow.input.mod}",
-          "oddEven": "${workflow.input.oddEven}",
-          "env": {
-            "taskId": "${CPEWF_TASK_ID}",
-            "workflowId": "${HOSTNAME}"
-          }
+          "oddEven": "${workflow.input.oddEven}"
         },
         "type": "SIMPLE"
       },
