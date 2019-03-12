@@ -111,11 +111,12 @@ public class WorkflowSweeper {
 						queueDAO.setUnackTimeout(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency() * 1000);
 					} else {
 						queueDAO.remove(WorkflowExecutor.DECIDER_QUEUE, workflowId);
+						logger.debug("Removed Workflow from Decider queue: {}", workflowId);
 					}
 
 				} catch (ApplicationException e) {
 					if(e.getCode().equals(Code.NOT_FOUND)) {
-						logger.error("Workflow NOT found for id: " + workflowId, e);
+						logger.error("Workflow NOT found for id: {}, removing from Decider queue." + workflowId, e);
 						queueDAO.remove(WorkflowExecutor.DECIDER_QUEUE, workflowId);
 					}
 

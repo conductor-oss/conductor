@@ -487,7 +487,7 @@ public class WorkflowExecutor {
      */
     @VisibleForTesting
     void completeWorkflow(Workflow wf) {
-        LOGGER.debug("Completing workflow execution for {}", wf.getWorkflowId());
+        LOGGER.info("Completing workflow execution for {}", wf.getWorkflowId());
         Workflow workflow = executionDAOFacade.getWorkflowById(wf.getWorkflowId(), false);
 
         if (workflow.getStatus().equals(WorkflowStatus.COMPLETED)) {
@@ -514,7 +514,6 @@ public class WorkflowExecutor {
         workflow.setExternalOutputPayloadStoragePath(wf.getExternalOutputPayloadStoragePath());
         executionDAOFacade.updateWorkflow(workflow);
         executionDAOFacade.updateTasks(wf.getTasks());
-        LOGGER.debug("Completed workflow execution for {}", wf.getWorkflowId());
 
         // If the following task, for some reason fails, the sweep will take care of this again!
         if (workflow.getParentWorkflowId() != null) {
@@ -523,7 +522,7 @@ public class WorkflowExecutor {
                     .orElseGet(() -> metadataDAO.get(parent.getWorkflowName(), parent.getWorkflowVersion())
                             .orElseThrow(() -> new ApplicationException(NOT_FOUND, String.format("Unable to find parent workflow definition for %s", wf.getWorkflowId())))
                     );
-            LOGGER.debug("Completed sub-workflow {}, deciding parent workflow {}", wf.getWorkflowId(), wf.getParentWorkflowId());
+            LOGGER.info("Completed sub-workflow {}, deciding parent workflow {}", wf.getWorkflowId(), wf.getParentWorkflowId());
 
             Task parentWorkflowTask = executionDAOFacade.getTaskById(workflow.getParentWorkflowTaskId());
             // If parent is FAILED and the sub workflow task in parent is FAILED, we want to resume them
@@ -537,6 +536,7 @@ public class WorkflowExecutor {
         }
         Monitors.recordWorkflowCompletion(workflow.getWorkflowName(), workflow.getEndTime() - workflow.getStartTime(), wf.getOwnerApp());
         queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
+        LOGGER.info("Completed workflow execution for {}", wf.getWorkflowId());
 
         if (workflow.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
             workflowStatusListener.onWorkflowCompleted(workflow);
@@ -631,6 +631,7 @@ public class WorkflowExecutor {
 
         queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
         executionDAOFacade.removeFromPendingWorkflow(workflow.getWorkflowName(), workflow.getWorkflowId());
+        LOGGER.info("Terminated Workflow: {}", workflow.getWorkflowId());
 
         // Send to atlas
         Monitors.recordWorkflowTermination(workflow.getWorkflowName(), workflow.getStatus(), workflow.getOwnerApp());
@@ -662,13 +663,13 @@ public class WorkflowExecutor {
         Task task = Optional.ofNullable(executionDAOFacade.getTaskById(taskResult.getTaskId()))
                 .orElseThrow(() -> new ApplicationException(Code.NOT_FOUND, "No such task found by id: " + taskResult.getTaskId()));
 
-        LOGGER.debug("Task: {} belonging to Workflow {} being updated", task, workflowInstance);
+        LOGGER.info("Task: {} belonging to Workflow {} being updated", task, workflowInstance);
 
         String taskQueueName = QueueUtils.getQueueName(task);
         if (workflowInstance.getStatus().isTerminal()) {
             // Workflow is in terminal state
             queueDAO.remove(taskQueueName, taskResult.getTaskId());
-            LOGGER.debug("Workflow: {} is in terminal state Task: {} removed from Queue: {} during update task", workflowInstance, task, taskQueueName);
+            LOGGER.info("Workflow: {} is in terminal state Task: {} removed from Queue: {} during update task", workflowInstance, task, taskQueueName);
             if (!task.getStatus().isTerminal()) {
                 task.setStatus(COMPLETED);
             }
@@ -688,7 +689,7 @@ public class WorkflowExecutor {
         if (task.getStatus().isTerminal()) {
             // Task was already updated....
             queueDAO.remove(taskQueueName, taskResult.getTaskId());
-            LOGGER.debug("Task: {} is in terminal state and is removed from the queue {} ", task, taskQueueName);
+            LOGGER.info("Task: {} is in terminal state and is removed from the queue {} ", task, taskQueueName);
             String msg = String.format("Task is already completed as %s@%d, workflow status=%s, workflowId=%s, taskId=%s",
                     task.getStatus(), task.getEndTime(), workflowInstance.getStatus(), workflowInstance.getWorkflowId(), task.getTaskId());
             LOGGER.info(msg);
@@ -715,7 +716,7 @@ public class WorkflowExecutor {
         if (FAILED.equals(task.getStatus()) || FAILED_WITH_TERMINAL_ERROR.equals(task.getStatus())) {
             workflowInstance.getFailedReferenceTaskNames().add(task.getReferenceTaskName());
             executionDAOFacade.updateWorkflow(workflowInstance);
-            LOGGER.debug("Task: {} has a {} status and the Workflow has been updated with failed task reference", task, task.getStatus());
+            LOGGER.info("Task: {} has a {} status and the Workflow has been updated with failed task reference", task, task.getStatus());
         }
 
         taskResult.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
@@ -728,15 +729,15 @@ public class WorkflowExecutor {
             case FAILED_WITH_TERMINAL_ERROR:
             case TIMED_OUT:
                 queueDAO.remove(taskQueueName, taskResult.getTaskId());
-                LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
+                LOGGER.info("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
                 break;
             case IN_PROGRESS:
                 // put it back in queue based on callbackAfterSeconds
                 long callBack = taskResult.getCallbackAfterSeconds();
                 queueDAO.remove(taskQueueName, task.getTaskId());
-                LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
+                LOGGER.info("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
                 queueDAO.push(taskQueueName, task.getTaskId(), callBack); // Milliseconds
-                LOGGER.debug("Task: {} pushed back to taskQueue: {} since the task status is {} with callbackAfterSeconds: {}", task, taskQueueName, task.getStatus().name(), callBack);
+                LOGGER.info("Task: {} pushed back to taskQueue: {} since the task status is {} with callbackAfterSeconds: {}", task, taskQueueName, task.getStatus().name(), callBack);
                 break;
             default:
                 break;
@@ -786,6 +787,8 @@ public class WorkflowExecutor {
      * @throws ApplicationException If there was an error - caller should retry in this case.
      */
     public boolean decide(String workflowId) {
+
+        LOGGER.info("Deciding Workflow: {}", workflowId);
 
         // If it is a new workflow, the tasks will be still empty even though include tasks is true
         Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, true);
@@ -845,6 +848,8 @@ public class WorkflowExecutor {
                 executionDAOFacade.updateTasks(tasksToBeUpdated);
                 executionDAOFacade.updateWorkflow(workflow);
                 queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), config.getSweepFrequency());
+                LOGGER.info("Adding workflow to decider queue: {}, tasksToBeUpdated: {}, tasksToBeScheduled: {}",
+                        workflow.getWorkflowId(), outcome.tasksToBeUpdated, tasksToBeScheduled);
             }
 
             stateChanged = scheduleTask(workflow, tasksToBeScheduled) || stateChanged;
@@ -972,7 +977,7 @@ public class WorkflowExecutor {
         } else {
             queueDAO.push(taskQueueName, task.getTaskId(), 0);
         }
-        LOGGER.debug("Added task {} to queue {} with call back seconds {}", task, taskQueueName, task.getCallbackAfterSeconds());
+        LOGGER.info("Added task {} to queue {} with call back seconds {}", task, taskQueueName, task.getCallbackAfterSeconds());
     }
 
     //Executes the async system task
