@@ -47,7 +47,7 @@ public class RestClientManager {
 		this.defaultConnectTimeout = config.getIntProperty(HTTP_TASK_CONNECT_TIMEOUT, DEFAULT_CONNECT_TIMEOUT);
 	}
 
-	public Client getClient() {
+	public Client getClient(Input input) {
 		Client client = threadLocalClient.get();
 		client.setReadTimeout(defaultReadTimeout);
 		client.setConnectTimeout(defaultConnectTimeout);

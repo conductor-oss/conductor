@@ -146,15 +146,15 @@ public class HttpTask extends WorkflowSystemTask {
 	 * Note: protected access is so that tasks extended from this task can re-use this to make http calls
 	 */
 	protected HttpResponse httpCall(Input input) throws Exception {
-		Client client = rcm.getClient();
+		Client client = rcm.getClient(input);
 
 		if(input.connectionTimeOut != null ) {
 			client.setConnectTimeout(input.connectionTimeOut);
 		}
+
 		if(input.readTimeOut != null ) {
 			client.setReadTimeout(input.readTimeOut);
 		}
-
 		if(input.oauthConsumerKey != null) {
 			logger.info("Configuring OAuth filter");
 			OAuthParameters params = new OAuthParameters().consumerKey(input.oauthConsumerKey).signatureMethod("HMAC-SHA1").version("1.0");
