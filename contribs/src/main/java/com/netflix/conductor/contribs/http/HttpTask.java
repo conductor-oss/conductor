@@ -148,6 +148,13 @@ public class HttpTask extends WorkflowSystemTask {
 	protected HttpResponse httpCall(Input input) throws Exception {
 		Client client = rcm.getClient(input);
 
+		if(input.connectionTimeOut != null ) {
+			client.setConnectTimeout(input.connectionTimeOut);
+		}
+
+		if(input.readTimeOut != null ) {
+			client.setReadTimeout(input.readTimeOut);
+		}
 		if(input.oauthConsumerKey != null) {
 			logger.info("Configuring OAuth filter");
 			OAuthParameters params = new OAuthParameters().consumerKey(input.oauthConsumerKey).signatureMethod("HMAC-SHA1").version("1.0");
@@ -296,6 +303,12 @@ public class HttpTask extends WorkflowSystemTask {
 
 		private String oauthConsumerSecret;
 
+		private  Integer connectionTimeOut;
+
+		private Integer  readTimeOut;
+
+
+
 		/**
 		 * @return the method
 		 */
@@ -431,5 +444,29 @@ public class HttpTask extends WorkflowSystemTask {
 		public void setAppName(String appName) {
 			this.appName = appName;
 		}
+
+
+		/**
+		 * @return the connectionTimeOut
+		 */
+		public Integer getConnectionTimeOut() {
+			return connectionTimeOut;
+		}
+
+		/**
+		 * @return the readTimeOut
+		 */
+		public Integer getReadTimeOut() {
+			return readTimeOut;
+		}
+
+		public void setConnectionTimeOut(Integer connectionTimeOut) {
+			this.connectionTimeOut = connectionTimeOut;
+		}
+
+		public void setReadTimeOut(Integer readTimeOut) {
+			this.readTimeOut = readTimeOut;
+		}
+
 	}
 }

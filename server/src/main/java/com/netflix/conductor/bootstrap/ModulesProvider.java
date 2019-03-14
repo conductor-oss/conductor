@@ -126,7 +126,7 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
             });
         }
 
-        new HttpTask(new RestClientManager(), configuration);
+        new HttpTask(new RestClientManager(configuration), configuration);
         new JsonJqTransform();
         modules.add(new ServerModule());
 
