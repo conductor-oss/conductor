@@ -209,14 +209,24 @@ public class WorkflowClient extends ClientBase {
     }
 
     /**
+     * This API has been marked as deprecated and will be removed in a future release.
+     * Please use {@link #restart(String, boolean)} instead.
+     */
+    @Deprecated
+    public void restart(String workflowId) {
+        restart(workflowId, false);
+    }
+
+    /**
      * Restart a completed workflow
      *
      * @param workflowId the workflow id of the workflow to be restarted
      */
-    public void restart(String workflowId) {
+    public void restart(String workflowId, boolean useLatestDefinitions) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
         stub.restartWorkflow(WorkflowServicePb.RestartWorkflowRequest.newBuilder()
                 .setWorkflowId(workflowId)
+                .setUseLatestDefinitions(useLatestDefinitions)
                 .build()
         );
     }

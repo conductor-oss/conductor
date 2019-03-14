@@ -189,7 +189,7 @@ public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {
         assertNotNull(wf);
         assertEquals(WorkflowStatus.TERMINATED, wf.getStatus());
 
-        workflowClient.restart(workflowId);
+        workflowClient.restart(workflowId, false);
         wf = workflowClient.getWorkflow(workflowId, true);
         assertNotNull(wf);
         assertEquals(WorkflowStatus.RUNNING, wf.getStatus());
