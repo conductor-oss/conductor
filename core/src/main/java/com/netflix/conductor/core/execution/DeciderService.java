@@ -201,14 +201,14 @@ public class DeciderService {
                 .filter(task -> !executedTaskRefNames.contains(task.getReferenceTaskName()))
                 .collect(Collectors.toList());
         if (!unScheduledTasks.isEmpty()) {
-            LOGGER.debug("Scheduling Tasks {} for workflow: {}", unScheduledTasks.stream()
+            LOGGER.debug("Scheduling Tasks: {} for workflow: {}", unScheduledTasks.stream()
                     .map(Task::getTaskDefName)
                     .collect(Collectors.toList()),
                     workflow.getWorkflowId());
             outcome.tasksToBeScheduled.addAll(unScheduledTasks);
         }
         if (outcome.tasksToBeScheduled.isEmpty() && checkForWorkflowCompletion(workflow)) {
-            LOGGER.debug("Marking workflow as complete.  workflow=" + workflow.getWorkflowId() + ", tasks=" + workflow.getTasks());
+            LOGGER.debug("Marking workflow: {} as complete.", workflow);
             outcome.isComplete = true;
         }
 
@@ -218,7 +218,7 @@ public class DeciderService {
     private List<Task> startWorkflow(Workflow workflow) throws TerminateWorkflowException {
         final WorkflowDef workflowDef = workflow.getWorkflowDefinition();
 
-        LOGGER.debug("Starting workflow {}, version{}, id {}", workflowDef.getName(), workflowDef.getVersion(), workflow.getWorkflowId());
+        LOGGER.debug("Starting workflow: {}", workflow);
 
         //The tasks will be empty in case of new workflow
         List<Task> tasks = workflow.getTasks();

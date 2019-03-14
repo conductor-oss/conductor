@@ -17,7 +17,6 @@ package com.netflix.conductor.core.execution;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Uninterruptibles;
-import com.google.inject.matcher.Matchers;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -26,7 +25,19 @@ import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.execution.mapper.*;
+import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
+import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
+import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
+import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.HTTPTaskMapper;
+import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
+import com.netflix.conductor.core.execution.mapper.LambdaTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
+import com.netflix.conductor.core.execution.mapper.TaskMapper;
+import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
+import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
@@ -35,12 +46,9 @@ import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
-import com.sun.corba.se.spi.orbutil.threadpool.Work;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.ArgumentMatcher;
-import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,7 +68,10 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.*;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyBoolean;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -79,7 +90,6 @@ public class TestWorkflowExecutor {
     private MetadataDAO metadataDAO;
     private QueueDAO queueDAO;
     private WorkflowStatusListener workflowStatusListener;
-    private DeciderService deciderService;
 
     @Before
     public void init() {
@@ -105,9 +115,9 @@ public class TestWorkflowExecutor {
         taskMappers.put("HTTP", new HTTPTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put("LAMBDA", new LambdaTaskMapper(parametersUtils));
 
-        deciderService = new DeciderService(parametersUtils, queueDAO, metadataDAO, externalPayloadStorageUtils, taskMappers);
+        DeciderService deciderService = new DeciderService(parametersUtils, queueDAO, metadataDAO, externalPayloadStorageUtils, taskMappers);
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
-        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService, workflowStatusListener, executionDAOFacade, config);
+        workflowExecutor = new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService, workflowStatusListener, executionDAOFacade, externalPayloadStorageUtils, config);
     }
 
     @Test
