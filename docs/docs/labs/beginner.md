@@ -87,7 +87,7 @@ Similarly, create another task definition: `add_idents`.
   "retryDelaySeconds": 10,
   "timeoutSeconds": 300,
   "timeoutPolicy": "TIME_OUT_WF",
-  "responseTimeoutSeconds": 500
+  "responseTimeoutSeconds": 180
 }
 ```
 

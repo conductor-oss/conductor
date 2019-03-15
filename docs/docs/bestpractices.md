@@ -1,6 +1,6 @@
 ## Response Timeout
 - Configure the responseTimeoutSeconds of each task to be > 0.
-- This value should at least be equal to or greater than the value of timeoutSeconds.
+- Should be less than or equal to timeoutSeconds.
 
 ## Payload sizes
 - Configure your workflows such that conductor is not used as a persistence store.
