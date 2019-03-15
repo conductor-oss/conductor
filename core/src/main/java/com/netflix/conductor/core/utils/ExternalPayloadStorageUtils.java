@@ -141,12 +141,12 @@ public class ExternalPayloadStorageUtils {
                     case WORKFLOW_INPUT:
                         ((Workflow) entity).setInput(null);
                         ((Workflow) entity).setExternalInputPayloadStoragePath(uploadHelper(payloadBytes, payloadSize, PayloadType.WORKFLOW_INPUT));
-                        Monitors.recordExternalPayloadStorageUsage(((Workflow) entity).getWorkflowType(), ExternalPayloadStorage.Operation.WRITE.toString(), PayloadType.WORKFLOW_INPUT.toString());
+                        Monitors.recordExternalPayloadStorageUsage(((Workflow) entity).getWorkflowName(), ExternalPayloadStorage.Operation.WRITE.toString(), PayloadType.WORKFLOW_INPUT.toString());
                         break;
                     case WORKFLOW_OUTPUT:
                         ((Workflow) entity).setOutput(null);
                         ((Workflow) entity).setExternalOutputPayloadStoragePath(uploadHelper(payloadBytes, payloadSize, PayloadType.WORKFLOW_OUTPUT));
-                        Monitors.recordExternalPayloadStorageUsage(((Workflow) entity).getWorkflowType(), ExternalPayloadStorage.Operation.WRITE.toString(), PayloadType.WORKFLOW_OUTPUT.toString());
+                        Monitors.recordExternalPayloadStorageUsage(((Workflow) entity).getWorkflowName(), ExternalPayloadStorage.Operation.WRITE.toString(), PayloadType.WORKFLOW_OUTPUT.toString());
                         break;
                 }
             }
