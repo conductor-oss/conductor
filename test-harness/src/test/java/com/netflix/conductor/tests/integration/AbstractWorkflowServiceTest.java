@@ -3176,7 +3176,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals("task1.Done", workflow.getOutput().get("o3"));
 
         expectedException.expect(ApplicationException.class);
-        expectedException.expectMessage(String.format("is an instance of WorkflowDef: %s and version: %d and is non restartable", JUNIT_TEST_WF_NON_RESTARTABLE, 1));
+        expectedException.expectMessage(String.format("%s is non-restartable", workflow));
         workflowExecutor.rewind(workflow.getWorkflowId(), false);
     }
 

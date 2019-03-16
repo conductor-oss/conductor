@@ -14,7 +14,6 @@ message TaskResult {
         FAILED = 1;
         FAILED_WITH_TERMINAL_ERROR = 2;
         COMPLETED = 3;
-        SCHEDULED = 4;
     }
     string workflow_instance_id = 1;
     string task_id = 2;
