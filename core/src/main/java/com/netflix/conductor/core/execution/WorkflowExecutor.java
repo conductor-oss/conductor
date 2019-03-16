@@ -90,6 +90,7 @@ public class WorkflowExecutor {
 
     private int activeWorkerLastPollInSecs;
     public static final String DECIDER_QUEUE = "_deciderQueue";
+    private static final String className = WorkflowExecutor.class.getSimpleName();
 
     @Inject
     public WorkflowExecutor(
@@ -360,7 +361,9 @@ public class WorkflowExecutor {
     public void rewind(String workflowId, boolean useLatestDefinitions) {
         Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, true);
         if (!workflow.getStatus().isTerminal()) {
-            throw new ApplicationException(CONFLICT, "Workflow is still running.  status=" + workflow.getStatus());
+            String errorMsg = String.format("Workflow: %s is not in terminal state, unable to restart.", workflow);
+            LOGGER.error(errorMsg);
+            throw new ApplicationException(CONFLICT, errorMsg);
         }
 
         WorkflowDef workflowDef;
@@ -377,8 +380,7 @@ public class WorkflowExecutor {
         }
 
         if (!workflowDef.isRestartable() && workflow.getStatus().equals(WorkflowStatus.COMPLETED)) { // Can only restart non-completed workflows when the configuration is set to false
-            throw new ApplicationException(CONFLICT, String.format("WorkflowId: %s is an instance of WorkflowDef: %s and version: %d and is non restartable",
-                    workflowId, workflowDef.getName(), workflowDef.getVersion()));
+            throw new ApplicationException(CONFLICT, String.format("Workflow: %s is non-restartable", workflow));
         }
 
         // Remove all the tasks...
@@ -1117,62 +1119,68 @@ public class WorkflowExecutor {
     @VisibleForTesting
     boolean scheduleTask(Workflow workflow, List<Task> tasks) {
 
-        if (tasks == null || tasks.isEmpty()) {
-            return false;
-        }
-
-        // Get the highest seq number
-        int count = workflow.getTasks().stream()
-                .mapToInt(Task::getSeq)
-                .max()
-                .orElse(0);
-
-        for (Task task : tasks) {
-            if (task.getSeq() == 0) { // Set only if the seq was not set
-                task.setSeq(++count);
+        try {
+            if (tasks == null || tasks.isEmpty()) {
+                return false;
             }
-        }
 
-        // Save the tasks in the DAO
-        List<Task> created = executionDAOFacade.createTasks(tasks);
+            // Get the highest seq number
+            int count = workflow.getTasks().stream()
+                    .mapToInt(Task::getSeq)
+                    .max()
+                    .orElse(0);
 
-        List<Task> createdSystemTasks = created.stream()
-                .filter(isSystemTask)
-                .collect(Collectors.toList());
-
-        List<Task> tasksToBeQueued = created.stream()
-                .filter(isSystemTask.negate())
-                .collect(Collectors.toList());
-
-        boolean startedSystemTasks = false;
-
-        // Traverse through all the system tasks, start the sync tasks, in case of async queue the tasks
-        for (Task task : createdSystemTasks) {
-            WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
-            if (workflowSystemTask == null) {
-                throw new ApplicationException(NOT_FOUND, "No system task found by name " + task.getTaskType());
-            }
-            task.setStartTime(System.currentTimeMillis());
-            if (!workflowSystemTask.isAsync()) {
-                try {
-                    workflowSystemTask.start(workflow, task, this);
-                } catch (Exception e) {
-                    String message = String.format(
-                            "Unable to start task {id: %s, name: %s}",
-                            task.getTaskId(),
-                            task.getTaskDefName()
-                    );
-                    throw new ApplicationException(Code.INTERNAL_ERROR, message, e);
+            for (Task task : tasks) {
+                if (task.getSeq() == 0) { // Set only if the seq was not set
+                    task.setSeq(++count);
                 }
-                startedSystemTasks = true;
-                executionDAOFacade.updateTask(task);
-            } else {
-                tasksToBeQueued.add(task);
             }
-        }
 
-        addTaskToQueue(tasksToBeQueued);
-        return startedSystemTasks;
+            // Save the tasks in the DAO
+            List<Task> created = executionDAOFacade.createTasks(tasks);
+
+            List<Task> createdSystemTasks = created.stream()
+                    .filter(isSystemTask)
+                    .collect(Collectors.toList());
+
+            List<Task> tasksToBeQueued = created.stream()
+                    .filter(isSystemTask.negate())
+                    .collect(Collectors.toList());
+
+            boolean startedSystemTasks = false;
+
+            // Traverse through all the system tasks, start the sync tasks, in case of async queue the tasks
+            for (Task task : createdSystemTasks) {
+                WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
+                if (workflowSystemTask == null) {
+                    throw new ApplicationException(NOT_FOUND, "No system task found by name " + task.getTaskType());
+                }
+                task.setStartTime(System.currentTimeMillis());
+                if (!workflowSystemTask.isAsync()) {
+                    try {
+                        workflowSystemTask.start(workflow, task, this);
+                    } catch (Exception e) {
+                        String message = String.format(
+                                "Unable to start task {id: %s, name: %s}",
+                                task.getTaskId(),
+                                task.getTaskDefName()
+                        );
+                        throw new ApplicationException(Code.INTERNAL_ERROR, message, e);
+                    }
+                    startedSystemTasks = true;
+                    executionDAOFacade.updateTask(task);
+                } else {
+                    tasksToBeQueued.add(task);
+                }
+            }
+
+            addTaskToQueue(tasksToBeQueued);
+            return startedSystemTasks;
+        } catch (Exception e) {
+            LOGGER.error("Error scheduling tasks: {}, for workflow: {}", tasks.size(), workflow.getWorkflowId(), e);
+            Monitors.error(className, "scheduleTask");
+        }
+        return false;
     }
 
     private void addTaskToQueue(final List<Task> tasks) {

@@ -397,6 +397,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	@Override
 	public void removeFromPendingWorkflow(String workflowType, String workflowId) {
 		recordRedisDaoRequests("removePendingWorkflow");
+		dynoClient.del(nsKey(SCHEDULED_TASKS, workflowId));
 		dynoClient.srem(nsKey(PENDING_WORKFLOWS, workflowType), workflowId);
 	}
 
