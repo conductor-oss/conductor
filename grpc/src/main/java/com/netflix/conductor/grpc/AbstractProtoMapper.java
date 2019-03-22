@@ -1174,6 +1174,9 @@ public abstract class AbstractProtoMapper {
             to.setRateLimited( from.isRateLimited() );
         }
         to.addAllDefaultExclusiveJoinTask( from.getDefaultExclusiveJoinTask() );
+        if (from.getTerminationStatus() != null) {
+            to.setTerminationStatus( from.getTerminationStatus() );
+        }
         return to.build();
     }
 
@@ -1213,6 +1216,7 @@ public abstract class AbstractProtoMapper {
         }
         to.setRateLimited( from.getRateLimited() );
         to.setDefaultExclusiveJoinTask( from.getDefaultExclusiveJoinTaskList().stream().collect(Collectors.toCollection(ArrayList::new)) );
+        to.setTerminationStatus( from.getTerminationStatus() );
         return to;
     }
 
