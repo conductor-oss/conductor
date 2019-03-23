@@ -257,15 +257,14 @@ class Workflow2Graph {
 
       } else {
         vertices[t1.taskReferenceName] = {name: t1.name, ref: t1.taskReferenceName, type: 'simple', style: '', shape: 'rect', description: t1.description};
-    }
 
-      let style = defstyle;
-      if(this.executedTasks[t2.taskReferenceName] != null && this.executedTasks[t1.taskReferenceName] != null){
-        style = executed;
-      } else {
-        isExecuting = false;
-      }
-      nodes.push({type: 'simple', from: t1.taskReferenceName, to: t2.taskReferenceName, label: '', style: style});
+        let style = defstyle;
+        if(this.executedTasks[t2.taskReferenceName] != null && this.executedTasks[t1.taskReferenceName] != null){
+          style = executed;
+        } else {
+          isExecuting = false;
+        }
+        nodes.push({type: 'simple', from: t1.taskReferenceName, to: t2.taskReferenceName, label: '', style: style});
     }
     return nodes;
 
