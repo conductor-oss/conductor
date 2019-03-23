@@ -266,44 +266,42 @@
 <li><code>test_workflow_startedBy_eventHandler</code> which will have an <code>Event</code> task to generate an event to complete <code>WAIT</code> task in the above workflow.</li>
 </ul>
 <p>Send <code>POST</code> requests to <code>/metadata/workflow</code> endpoint with below payloads:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_workflow_for_eventHandler&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;A test workflow to start another workflow with EventHandler&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-  <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_start_workflow_event&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;start_workflow_with_event&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;EVENT&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;sink&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_task_tobe_completed_by_eventHandler&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;test_task_tobe_completed_by_eventHandler&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;WAIT&quot;</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_workflow_for_eventHandler&quot;,
+  &quot;description&quot;: &quot;A test workflow to start another workflow with EventHandler&quot;,
+  &quot;version&quot;: 1,
+  &quot;tasks&quot;: [
+    {
+      &quot;name&quot;: &quot;test_start_workflow_event&quot;,
+      &quot;taskReferenceName&quot;: &quot;start_workflow_with_event&quot;,
+      &quot;type&quot;: &quot;EVENT&quot;,
+      &quot;sink&quot;: &quot;conductor&quot;
+    },
+    {
+      &quot;name&quot;: &quot;test_task_tobe_completed_by_eventHandler&quot;,
+      &quot;taskReferenceName&quot;: &quot;test_task_tobe_completed_by_eventHandler&quot;,
+      &quot;type&quot;: &quot;WAIT&quot;
+    }
+  ]
+}</code></pre>
 
 
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_workflow_startedBy_eventHandler&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;A test workflow which is started by EventHandler, and then goes on to complete task in another workflow.&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-  <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_complete_task_event&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;complete_task_with_event&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;sourceWorkflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.sourceWorkflowId}&quot;</span>
-      <span class="p">},</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;EVENT&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;sink&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor&quot;</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_workflow_startedBy_eventHandler&quot;,
+  &quot;description&quot;: &quot;A test workflow which is started by EventHandler, and then goes on to complete task in another workflow.&quot;,
+  &quot;version&quot;: 1,
+  &quot;tasks&quot;: [
+    {
+      &quot;name&quot;: &quot;test_complete_task_event&quot;,
+      &quot;taskReferenceName&quot;: &quot;complete_task_with_event&quot;,
+      &quot;inputParameters&quot;: {
+        &quot;sourceWorkflowId&quot;: &quot;${workflow.input.sourceWorkflowId}&quot;
+      },
+      &quot;type&quot;: &quot;EVENT&quot;,
+      &quot;sink&quot;: &quot;conductor&quot;
+    }
+  ]
+}</code></pre>
 
 
 <h3 id="event-tasks-in-workflow">Event Tasks in Workflow<a class="headerlink" href="#event-tasks-in-workflow" title="Permanent link">&para;</a></h3>
@@ -313,10 +311,9 @@ Hence, we will not be registering any tasks for these workflows.</p>
 <p>Once you try to start <code>test_workflow_for_eventHandler</code> workflow, you would notice that the event is sent successfully, but the second worflow <code>test_workflow_startedBy_eventHandler</code> is not started. We have sent the Events, but we also need to define <code>Event Handlers</code> for Conductor to take any <code>actions</code> based on the Event. Let's create <code>Event Handlers</code>.</p>
 <h2 id="create-event-handlers">Create Event Handlers<a class="headerlink" href="#create-event-handlers" title="Permanent link">&para;</a></h2>
 <p>Event Handler definitions are pretty much like Task or Workflow definitions. We start by name:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_start_workflow&quot;</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_start_workflow&quot;
+}</code></pre>
 
 
 <p>Event Handler should know the Queue it has to listen to. This should be defined in <code>event</code> parameter.</p>
@@ -324,74 +321,69 @@ Hence, we will not be registering any tasks for these workflows.</p>
 <p><code>conductor:{workflow_name}:{taskReferenceName}</code></p>
 <p>And when using SQS, define with format: </p>
 <p><code>sqs:{my_sqs_queue_name}</code></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_start_workflow&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor:test_workflow_for_eventHandler:start_workflow_with_event&quot;</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_start_workflow&quot;,
+  &quot;event&quot;: &quot;conductor:test_workflow_for_eventHandler:start_workflow_with_event&quot;
+}</code></pre>
 
 
 <p>Event Handler can perform a list of actions defined in <code>actions</code> array parameter, for this particular <code>event</code> queue.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_start_workflow&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor:test_workflow_for_eventHandler:start_workflow_with_event&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;actions&quot;</span><span class="p">:</span> <span class="p">[</span>
-      <span class="s2">&quot;&lt;insert-actions-here&gt;&quot;</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;active&quot;</span><span class="p">:</span> <span class="kc">true</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_start_workflow&quot;,
+  &quot;event&quot;: &quot;conductor:test_workflow_for_eventHandler:start_workflow_with_event&quot;,
+  &quot;actions&quot;: [
+      &quot;&lt;insert-actions-here&gt;&quot;
+  ],
+  &quot;active&quot;: true
+}</code></pre>
 
 
 <p>Let's define <code>start_workflow</code> action. We shall pass the name of workflow we would like to start. The <code>start_workflow</code> parameter can use any of the values from the general <a href="/gettingstarted/startworkflow/">Start Workflow Request</a>. Here we are passing in the workflowId, so that the Complete Task Event Handler can use it.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;start_workflow&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;start_workflow&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_workflow_startedBy_eventHandler&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="nt">&quot;sourceWorkflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflowInstanceId}&quot;</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+    &quot;action&quot;: &quot;start_workflow&quot;,
+    &quot;start_workflow&quot;: {
+        &quot;name&quot;: &quot;test_workflow_startedBy_eventHandler&quot;,
+        &quot;input&quot;: {
+            &quot;sourceWorkflowId&quot;: &quot;${workflowInstanceId}&quot;
+        }
+    }
+}</code></pre>
 
 
 <p>Send a <code>POST</code> request to <code>/event</code> endpoint:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_start_workflow&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor:test_workflow_for_eventHandler:start_workflow_with_event&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;actions&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;start_workflow&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;start_workflow&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_workflow_startedBy_eventHandler&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
-          <span class="nt">&quot;sourceWorkflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflowInstanceId}&quot;</span>
-        <span class="p">}</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;active&quot;</span><span class="p">:</span> <span class="kc">true</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_start_workflow&quot;,
+  &quot;event&quot;: &quot;conductor:test_workflow_for_eventHandler:start_workflow_with_event&quot;,
+  &quot;actions&quot;: [
+    {
+      &quot;action&quot;: &quot;start_workflow&quot;,
+      &quot;start_workflow&quot;: {
+        &quot;name&quot;: &quot;test_workflow_startedBy_eventHandler&quot;,
+        &quot;input&quot;: {
+          &quot;sourceWorkflowId&quot;: &quot;${workflowInstanceId}&quot;
+        }
+      }
+    }
+  ],
+  &quot;active&quot;: true
+}</code></pre>
 
 
 <p>Similarly, create another Event Handler to complete task.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_complete_task_event&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;conductor:test_workflow_startedBy_eventHandler:complete_task_with_event&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;actions&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-        <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;complete_task&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;complete_task&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="nt">&quot;workflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${sourceWorkflowId}&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskRefName&quot;</span><span class="p">:</span> <span class="s2">&quot;test_task_tobe_completed_by_eventHandler&quot;</span>
-         <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;active&quot;</span><span class="p">:</span> <span class="kc">true</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;test_complete_task_event&quot;,
+  &quot;event&quot;: &quot;conductor:test_workflow_startedBy_eventHandler:complete_task_with_event&quot;,
+  &quot;actions&quot;: [
+    {
+        &quot;action&quot;: &quot;complete_task&quot;,
+        &quot;complete_task&quot;: {
+            &quot;workflowId&quot;: &quot;${sourceWorkflowId}&quot;,
+            &quot;taskRefName&quot;: &quot;test_task_tobe_completed_by_eventHandler&quot;
+         }
+    }
+  ],
+  &quot;active&quot;: true
+}</code></pre>
 
 
 <h2 id="final-flow-of-workflow">Final flow of Workflow<a class="headerlink" href="#final-flow-of-workflow" title="Permanent link">&para;</a></h2>
