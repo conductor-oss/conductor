@@ -4068,7 +4068,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         Map<String, Object> terminateTaskInputParams = new HashMap<>();
         terminateTaskInputParams.put(Terminate.getTerminationStatusParameter(), "COMPLETED");
-        terminateTaskInputParams.put("input", "${lambda0.output}");
+        terminateTaskInputParams.put(Terminate.getTerminationWorkflowOutputParameter(), "${lambda0.output}");
 
         WorkflowTask terminateWorkflowTask = new WorkflowTask();
         terminateWorkflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
@@ -4126,7 +4126,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         Map<String, Object> terminateTaskInputParams = new HashMap<>();
         terminateTaskInputParams.put(Terminate.getTerminationStatusParameter(), "FAILED");
-        terminateTaskInputParams.put("input", "${lambda0.output}");
+        terminateTaskInputParams.put(Terminate.getTerminationWorkflowOutputParameter(), "${lambda0.output}");
 
         WorkflowTask terminateWorkflowTask = new WorkflowTask();
         terminateWorkflowTask.setType(TaskType.TASK_TYPE_TERMINATE);

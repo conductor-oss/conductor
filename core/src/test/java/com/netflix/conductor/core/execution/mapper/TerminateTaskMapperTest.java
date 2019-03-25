@@ -31,7 +31,6 @@ public class TerminateTaskMapperTest {
 
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setType(TaskType.TASK_TYPE_TERMINATE);
-        taskToSchedule.setTerminationStatus("COMPLETED");
 
         String taskId = IDGenerator.generate();
 

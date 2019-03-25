@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.netflix.conductor.core.execution.tasks.Terminate.getTerminationStatusParameter;
+import static com.netflix.conductor.core.execution.tasks.Terminate.getTerminationWorkflowOutputParameter;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -74,7 +75,7 @@ public class TestTerminateTask {
 
         Map<String, Object> input = new HashMap<>();
         input.put(getTerminationStatusParameter(), "COMPLETED");
-        input.put("input", "${task0.output.value}");
+        input.put(getTerminationWorkflowOutputParameter(), "${task0.output.value}");
 
         Task task = new Task();
         task.getInputData().putAll(input);
@@ -95,7 +96,7 @@ public class TestTerminateTask {
 
         Map<String, Object> input = new HashMap<>();
         input.put(getTerminationStatusParameter(), "FAILED");
-        input.put("input", "${task0.output.value}");
+        input.put(getTerminationWorkflowOutputParameter(), "${task0.output.value}");
 
         Task task = new Task();
         task.getInputData().putAll(input);
@@ -132,7 +133,7 @@ public class TestTerminateTask {
 
         Map<String, Object> input = new HashMap<>();
         input.put(getTerminationStatusParameter(), "FAILED");
-        input.put("input", expectedOutput);
+        input.put(getTerminationWorkflowOutputParameter(), expectedOutput);
 
         Task task = new Task();
         task.getInputData().putAll(input);

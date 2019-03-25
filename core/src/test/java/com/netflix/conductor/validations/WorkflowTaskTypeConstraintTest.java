@@ -443,7 +443,7 @@ public class WorkflowTaskTypeConstraintTest {
         workflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
         workflowTask.setName("terminate_task");
 
-        workflowTask.setInputParameters(Collections.singletonMap("input", "blah"));
+        workflowTask.setInputParameters(Collections.singletonMap(Terminate.getTerminationWorkflowOutputParameter(), "blah"));
         List<String> validationErrors = getErrorMessages(workflowTask);
 
         Assert.assertEquals(1, validationErrors.size());
@@ -456,7 +456,7 @@ public class WorkflowTaskTypeConstraintTest {
         workflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
         workflowTask.setName("terminate_task");
 
-        workflowTask.setInputParameters(Collections.singletonMap("terminationStatus", "blah"));
+        workflowTask.setInputParameters(Collections.singletonMap(Terminate.getTerminationStatusParameter(), "blah"));
 
         List<String> validationErrors = getErrorMessages(workflowTask);
 
@@ -470,7 +470,7 @@ public class WorkflowTaskTypeConstraintTest {
         workflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
         workflowTask.setName("terminate_task");
 
-        workflowTask.setInputParameters(Collections.singletonMap("terminationStatus", "COMPLETED"));
+        workflowTask.setInputParameters(Collections.singletonMap(Terminate.getTerminationStatusParameter(), "COMPLETED"));
         workflowTask.setOptional(true);
 
         List<String> validationErrors = getErrorMessages(workflowTask);
@@ -485,7 +485,7 @@ public class WorkflowTaskTypeConstraintTest {
         workflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
         workflowTask.setName("terminate_task");
 
-        workflowTask.setInputParameters(Collections.singletonMap("terminationStatus", "COMPLETED"));
+        workflowTask.setInputParameters(Collections.singletonMap(Terminate.getTerminationStatusParameter(), "COMPLETED"));
 
         List<String> validationErrors = getErrorMessages(workflowTask);
 

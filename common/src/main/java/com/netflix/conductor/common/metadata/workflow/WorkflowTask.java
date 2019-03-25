@@ -157,9 +157,6 @@ public class WorkflowTask {
 	@ProtoField(id = 21)
 	private List<String> defaultExclusiveJoinTask = new LinkedList<>();
 
-	@ProtoField(id = 23)
-	private String terminationStatus;
-
 	/**
 	 * @return the name
 	 */
@@ -446,14 +443,6 @@ public class WorkflowTask {
 	 */
 	public void setOptional(boolean optional) {
 		this.optional = optional;
-	}
-
-	public String getTerminationStatus() {
-		return terminationStatus;
-	}
-
-	public void setTerminationStatus(String terminationStatus) {
-		this.terminationStatus = terminationStatus;
 	}
 
 	public Boolean getRateLimited() {

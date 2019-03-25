@@ -16,7 +16,7 @@ public class Terminate extends WorkflowSystemTask {
 
     private static final Logger logger = LoggerFactory.getLogger(Lambda.class);
     private static final String TERMINATION_STATUS_PARAMETER = "terminationStatus";
-    private static final String INPUT_PARAMETER = "input";
+    private static final String TERMINATION_WORKFLOW_OUTPUT = "workflowOutput";
     public static final String TASK_NAME = "TERMINATE";
 
     public Terminate() {
@@ -44,6 +44,10 @@ public class Terminate extends WorkflowSystemTask {
         return TERMINATION_STATUS_PARAMETER;
     }
 
+    public static String getTerminationWorkflowOutputParameter() {
+        return TERMINATION_WORKFLOW_OUTPUT;
+    }
+
     public static Boolean validateInputStatus(String status) {
         return COMPLETED.name().equals(status) || FAILED.name().equals(status);
     }
@@ -56,14 +60,14 @@ public class Terminate extends WorkflowSystemTask {
 
     private Map<String, Object> getInputFromParam(Map<String, Object> taskInput) {
         HashMap<String, Object> output = new HashMap<>();
-        if(taskInput.get(INPUT_PARAMETER) == null) {
+        if(taskInput.get(TERMINATION_WORKFLOW_OUTPUT) == null) {
             return output;
         }
-        if(taskInput.get(INPUT_PARAMETER) instanceof HashMap) {
-            output.putAll((HashMap<String, Object>) taskInput.get(INPUT_PARAMETER));
+        if(taskInput.get(TERMINATION_WORKFLOW_OUTPUT) instanceof HashMap) {
+            output.putAll((HashMap<String, Object>) taskInput.get(TERMINATION_WORKFLOW_OUTPUT));
             return output;
         }
-        output.put("output", taskInput.get(INPUT_PARAMETER));
+        output.put("output", taskInput.get(TERMINATION_WORKFLOW_OUTPUT));
         return output;
     }
 }
