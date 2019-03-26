@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -379,6 +380,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
 
                 if (workflow != null) {
                     recordCassandraDaoRequests("getWorkflow", "n/a", workflow.getWorkflowName());
+                    tasks.sort(Comparator.comparingInt(Task::getSeq));
                     workflow.setTasks(tasks);
                 }
             } else {

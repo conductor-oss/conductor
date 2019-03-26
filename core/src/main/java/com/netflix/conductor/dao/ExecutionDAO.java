@@ -173,7 +173,7 @@ public interface ExecutionDAO {
 	/**
 	 * 
 	 * @param workflowId workflow instance id
-	 * @param includeTasks if set, includes the tasks (pending and completed)
+	 * @param includeTasks if set, includes the tasks (pending and completed) sorted by Task Sequence number in Workflow.
 	 * @return Workflow instance details
 	 *  
 	 */
