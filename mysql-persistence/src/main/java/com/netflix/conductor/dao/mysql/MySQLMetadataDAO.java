@@ -312,7 +312,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     }
 
     /**
-     * Terminate the latest version that exists for the provided {@link WorkflowDef}.
+     * Return the latest version that exists for the provided {@link WorkflowDef}.
      *
      * @param tx  The {@link Connection} to use for queries.
      * @param def The {@code WorkflowDef} to check for.
