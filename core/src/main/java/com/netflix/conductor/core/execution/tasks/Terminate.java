@@ -14,7 +14,7 @@ import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.FAILED;
 
 public class Terminate extends WorkflowSystemTask {
 
-    private static final Logger logger = LoggerFactory.getLogger(Lambda.class);
+    private static final Logger logger = LoggerFactory.getLogger(Terminate.class);
     private static final String TERMINATION_STATUS_PARAMETER = "terminationStatus";
     private static final String TERMINATION_WORKFLOW_OUTPUT = "workflowOutput";
     public static final String TASK_NAME = "TERMINATE";
