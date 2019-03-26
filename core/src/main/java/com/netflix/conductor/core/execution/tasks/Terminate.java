@@ -25,7 +25,7 @@ import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.FAILED;
          "taskReferenceName": "terminate0",
          "inputParameters": {
              "terminationStatus": "COMPLETED",
-             "workflowOutput": "${workflow.input}"
+             "workflowOutput": "${task0.output}"
          },
          "type": "TERMINATE",
          "startDelay": 0,
