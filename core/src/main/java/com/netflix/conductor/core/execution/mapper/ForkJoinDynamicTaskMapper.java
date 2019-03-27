@@ -193,6 +193,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         forkDynamicTask.setTaskId(taskId);
         forkDynamicTask.setStatus(Task.Status.COMPLETED);
         forkDynamicTask.setWorkflowTask(taskToSchedule);
+        forkDynamicTask.setWorkflowPriority(workflowInstance.getPriority());
         return forkDynamicTask;
     }
 
@@ -219,6 +220,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         joinTask.setTaskId(IDGenerator.generate());
         joinTask.setStatus(Task.Status.IN_PROGRESS);
         joinTask.setWorkflowTask(joinWorkflowTask);
+        joinTask.setWorkflowPriority(workflowInstance.getPriority());
         return joinTask;
     }
 

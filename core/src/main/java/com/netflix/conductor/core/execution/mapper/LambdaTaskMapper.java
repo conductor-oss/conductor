@@ -68,6 +68,8 @@ public class LambdaTaskMapper implements TaskMapper {
         task.setTaskId(taskId);
         task.setStatus(Task.Status.IN_PROGRESS);
         task.setWorkflowTask(taskToSchedule);
+        task.setWorkflowPriority(workflowInstance.getPriority());
+
         return Arrays.asList(task);
     }
 }

@@ -93,6 +93,9 @@ public class TaskSummary {
 	@ProtoField(id = 18)
 	private String externalOutputPayloadStoragePath;
 
+	@ProtoField(id = 19)
+	private int workflowPriority;
+
     public TaskSummary() {
     }
 
@@ -106,6 +109,7 @@ public class TaskSummary {
     	this.taskType = task.getTaskType();
 		this.workflowId = task.getWorkflowInstanceId();
 		this.workflowType = task.getWorkflowType();
+		this.workflowPriority = task.getWorkflowPriority();
 		this.correlationId = task.getCorrelationId();
 		this.scheduledTime = sdf.format(new Date(task.getScheduledTime()));
 		this.startTime = sdf.format(new Date(task.getStartTime()));
@@ -389,5 +393,19 @@ public class TaskSummary {
 	 */
 	public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
 		this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
+	}
+
+	/**
+	 * @return the priority defined on workflow
+	 */
+	public int getWorkflowPriority() {
+		return workflowPriority;
+	}
+
+	/**
+	 * @param workflowPriority Priority defined for workflow
+	 */
+	public void setWorkflowPriority(int workflowPriority) {
+		this.workflowPriority = workflowPriority;
 	}
 }

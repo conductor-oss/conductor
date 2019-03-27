@@ -61,6 +61,7 @@ public class ExclusiveJoinTaskMapper implements TaskMapper {
 		joinTask.setInputData(joinInput);
 		joinTask.setTaskId(taskId);
 		joinTask.setStatus(Task.Status.IN_PROGRESS);
+		joinTask.setWorkflowPriority(workflowInstance.getPriority());
 		joinTask.setWorkflowTask(taskToSchedule);
 
 		return Arrays.asList(joinTask);

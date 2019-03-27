@@ -949,6 +949,7 @@ public class WorkflowExecutor {
         theTask.setTaskId(IDGenerator.generate());
         theTask.setReferenceTaskName(taskReferenceName);
         theTask.setWorkflowInstanceId(workflowId);
+        theTask.setWorkflowPriority(wf.getPriority());
         theTask.setStatus(SKIPPED);
         theTask.setTaskType(wft.getName());
         theTask.setCorrelationId(wf.getCorrelationId());
@@ -971,11 +972,11 @@ public class WorkflowExecutor {
         String taskQueueName = QueueUtils.getQueueName(task);
         queueDAO.remove(taskQueueName, task.getTaskId());
         if (task.getCallbackAfterSeconds() > 0) {
-            queueDAO.push(taskQueueName, task.getTaskId(), task.getCallbackAfterSeconds());
+            queueDAO.push(taskQueueName, task.getTaskId(), task.getWorkflowPriority(), task.getCallbackAfterSeconds());
         } else {
-            queueDAO.push(taskQueueName, task.getTaskId(), 0);
+            queueDAO.push(taskQueueName, task.getTaskId(), task.getWorkflowPriority(), 0);
         }
-        LOGGER.debug("Added task {} to queue {} with call back seconds {}", task, taskQueueName, task.getCallbackAfterSeconds());
+        LOGGER.debug("Added task {} with priority {} to queue {} with call back seconds {}", task, task.getWorkflowPriority(), taskQueueName, task.getCallbackAfterSeconds());
     }
 
     //Executes the async system task

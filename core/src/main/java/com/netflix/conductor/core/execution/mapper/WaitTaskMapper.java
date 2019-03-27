@@ -25,7 +25,6 @@ import com.netflix.conductor.core.execution.tasks.Wait;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -69,6 +68,7 @@ public class WaitTaskMapper implements TaskMapper {
         waitTask.setTaskId(taskId);
         waitTask.setStatus(Task.Status.IN_PROGRESS);
         waitTask.setWorkflowTask(taskToSchedule);
+        waitTask.setWorkflowPriority(workflowInstance.getPriority());
         return Collections.singletonList(waitTask);
     }
 }

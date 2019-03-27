@@ -123,26 +123,48 @@ public class DynoQueueDAO implements QueueDAO {
 
     @Override
     public void push(String queueName, String id, long offsetTimeInSecond) {
+        push(queueName, id, -1, offsetTimeInSecond);
+    }
+
+    @Override
+    public void push(String queueName, String id, int priority, long offsetTimeInSecond) {
         Message msg = new Message(id, null);
         msg.setTimeout(offsetTimeInSecond, TimeUnit.SECONDS);
+        if (priority >= 0 && priority <= 99) {
+            msg.setPriority(priority);
+        }
         queues.get(queueName).push(Collections.singletonList(msg));
     }
 
     @Override
     public void push(String queueName, List<com.netflix.conductor.core.events.queue.Message> messages) {
         List<Message> msgs = messages.stream()
-				.map(msg -> new Message(msg.getId(), msg.getPayload()))
+				.map(msg -> {
+				    Message m = new Message(msg.getId(), msg.getPayload());
+				    if (msg.getPriority() > 0) {
+                        m.setPriority(msg.getPriority());
+                    }
+				    return m;
+				})
 				.collect(Collectors.toList());
         queues.get(queueName).push(msgs);
     }
 
     @Override
     public boolean pushIfNotExists(String queueName, String id, long offsetTimeInSecond) {
+        return pushIfNotExists(queueName, id, -1, offsetTimeInSecond);
+    }
+
+    @Override
+    public boolean pushIfNotExists(String queueName, String id, int priority, long offsetTimeInSecond) {
         DynoQueue queue = queues.get(queueName);
         if (queue.get(id) != null) {
             return false;
         }
         Message msg = new Message(id, null);
+        if (priority >= 0 && priority <= 99) {
+            msg.setPriority(priority);
+        }
         msg.setTimeout(offsetTimeInSecond, TimeUnit.SECONDS);
         queue.push(Collections.singletonList(msg));
         return true;
@@ -160,7 +182,7 @@ public class DynoQueueDAO implements QueueDAO {
     public List<com.netflix.conductor.core.events.queue.Message> pollMessages(String queueName, int count, int timeout) {
         List<Message> msgs = queues.get(queueName).pop(count, timeout, TimeUnit.MILLISECONDS);
         return msgs.stream()
-				.map(msg -> new com.netflix.conductor.core.events.queue.Message(msg.getId(), msg.getPayload(), null))
+				.map(msg -> new com.netflix.conductor.core.events.queue.Message(msg.getId(), msg.getPayload(), null, msg.getPriority()))
 				.collect(Collectors.toList());
     }
 
