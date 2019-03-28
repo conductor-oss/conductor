@@ -4063,8 +4063,16 @@ public abstract class AbstractWorkflowServiceTest {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("test_terminate_task_wf");
         workflowDef.setSchemaVersion(2);
-        Map<String, Object> workflowOutput = Collections.singletonMap("result", "${lambda0.output}");
-        workflowDef.setOutputParameters(workflowOutput);
+
+        Map<String, Object> lambdaTaskInputParams = new HashMap<>();
+        lambdaTaskInputParams.put("input", "${workflow.input}");
+        lambdaTaskInputParams.put("scriptExpression", "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false}}");
+
+        WorkflowTask lambdaWorkflowTask = new WorkflowTask();
+        lambdaWorkflowTask.setWorkflowTaskType(TaskType.LAMBDA);
+        lambdaWorkflowTask.setName("lambda");
+        lambdaWorkflowTask.setInputParameters(lambdaTaskInputParams);
+        lambdaWorkflowTask.setTaskReferenceName("lambda0");
 
         Map<String, Object> terminateTaskInputParams = new HashMap<>();
         terminateTaskInputParams.put(Terminate.getTerminationStatusParameter(), "COMPLETED");
@@ -4079,17 +4087,6 @@ public abstract class AbstractWorkflowServiceTest {
         WorkflowTask workflowTask2 = new WorkflowTask();
         workflowTask2.setName("junit_task_2");
         workflowTask2.setTaskReferenceName("t2");
-
-        Map<String, Object> lambdaTaskInputParams = new HashMap<>();
-        lambdaTaskInputParams.put("input", "${workflow.input}");
-        lambdaTaskInputParams.put("scriptExpression", "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false}}");
-
-        WorkflowTask lambdaWorkflowTask = new WorkflowTask();
-        lambdaWorkflowTask.setWorkflowTaskType(TaskType.LAMBDA);
-        lambdaWorkflowTask.setName("lambda");
-        lambdaWorkflowTask.setInputParameters(lambdaTaskInputParams);
-        lambdaWorkflowTask.setTaskReferenceName("lambda0");
-
 
         workflowDef.getTasks().addAll(Arrays.asList(lambdaWorkflowTask, terminateWorkflowTask, workflowTask2));
 
@@ -4110,8 +4107,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
         assertEquals(TaskType.TASK_TYPE_LAMBDA, workflow.getTasks().get(0).getTaskType());
         assertEquals(TaskType.TASK_TYPE_TERMINATE, workflow.getTasks().get(1).getTaskType());
-        assertEquals(workflow.getOutput(), workflow.getTasks().get(1).getOutputData());
-        assertEquals(workflow.getOutput(), workflow.getTasks().get(0).getOutputData());
+        assertEquals(workflow.getTasks().get(1).getOutputData(), workflow.getOutput());
 
         metadataService.unregisterWorkflowDef("test_terminate_task_wf", 1);
     }
@@ -4121,8 +4117,16 @@ public abstract class AbstractWorkflowServiceTest {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("test_terminate_task_wf");
         workflowDef.setSchemaVersion(2);
-        Map<String, Object> workflowOutput = Collections.singletonMap("result", "${lambda0.output}");
-        workflowDef.setOutputParameters(workflowOutput);
+
+        Map<String, Object> lambdaTaskInputParams = new HashMap<>();
+        lambdaTaskInputParams.put("input", "${workflow.input}");
+        lambdaTaskInputParams.put("scriptExpression", "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false}}");
+
+        WorkflowTask lambdaWorkflowTask = new WorkflowTask();
+        lambdaWorkflowTask.setWorkflowTaskType(TaskType.LAMBDA);
+        lambdaWorkflowTask.setName("lambda");
+        lambdaWorkflowTask.setInputParameters(lambdaTaskInputParams);
+        lambdaWorkflowTask.setTaskReferenceName("lambda0");
 
         Map<String, Object> terminateTaskInputParams = new HashMap<>();
         terminateTaskInputParams.put(Terminate.getTerminationStatusParameter(), "FAILED");
@@ -4137,17 +4141,6 @@ public abstract class AbstractWorkflowServiceTest {
         WorkflowTask workflowTask2 = new WorkflowTask();
         workflowTask2.setName("junit_task_2");
         workflowTask2.setTaskReferenceName("t2");
-
-        Map<String, Object> lambdaTaskInputParams = new HashMap<>();
-        lambdaTaskInputParams.put("input", "${workflow.input}");
-        lambdaTaskInputParams.put("scriptExpression", "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false}}");
-
-        WorkflowTask lambdaWorkflowTask = new WorkflowTask();
-        lambdaWorkflowTask.setWorkflowTaskType(TaskType.LAMBDA);
-        lambdaWorkflowTask.setName("lambda");
-        lambdaWorkflowTask.setInputParameters(lambdaTaskInputParams);
-        lambdaWorkflowTask.setTaskReferenceName("lambda0");
-
 
         workflowDef.getTasks().addAll(Arrays.asList(lambdaWorkflowTask, terminateWorkflowTask, workflowTask2));
 
@@ -4168,8 +4161,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.FAILED, workflow.getStatus());
         assertEquals(TaskType.TASK_TYPE_LAMBDA, workflow.getTasks().get(0).getTaskType());
         assertEquals(TaskType.TASK_TYPE_TERMINATE, workflow.getTasks().get(1).getTaskType());
-        assertEquals(workflow.getOutput(), workflow.getTasks().get(1).getOutputData());
-        assertEquals(workflow.getOutput(), workflow.getTasks().get(0).getOutputData());
+        assertEquals(workflow.getTasks().get(1).getOutputData(), workflow.getOutput());
 
         metadataService.unregisterWorkflowDef("test_terminate_task_wf", 1);
     }

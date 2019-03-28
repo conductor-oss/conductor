@@ -438,7 +438,7 @@ public class WorkflowTaskTypeConstraintTest {
     }
 
     @Test
-    public void testWorkflowTaskTypeTerminateWithInvalidInput() {
+    public void testWorkflowTaskTypeTerminateWithoutTerminationStatus() {
         WorkflowTask workflowTask = createSampleWorkflowTask();
         workflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
         workflowTask.setName("terminate_task");
@@ -480,7 +480,7 @@ public class WorkflowTaskTypeConstraintTest {
     }
 
     @Test
-    public void testWorkflowTaskTypeTerminate() {
+    public void testWorkflowTaskTypeTerminateValid() {
         WorkflowTask workflowTask = createSampleWorkflowTask();
         workflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
         workflowTask.setName("terminate_task");

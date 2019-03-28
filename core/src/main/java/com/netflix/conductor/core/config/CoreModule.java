@@ -187,7 +187,7 @@ public class CoreModule extends AbstractModule {
     @StringMapKey(TASK_TYPE_TERMINATE)
     @Singleton
     @Named(TASK_MAPPERS_QUALIFIER)
-    public TaskMapper getReturnTaskMapper(ParametersUtils parametersUtils) {
+    public TaskMapper getTerminateTaskMapper(ParametersUtils parametersUtils) {
         return new TerminateTaskMapper(parametersUtils);
     }
 

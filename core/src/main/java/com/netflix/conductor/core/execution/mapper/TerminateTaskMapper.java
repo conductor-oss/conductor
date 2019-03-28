@@ -41,6 +41,7 @@ public class TerminateTaskMapper implements TaskMapper {
         task.setWorkflowType(workflowInstance.getWorkflowName());
         task.setCorrelationId(workflowInstance.getCorrelationId());
         task.setScheduledTime(System.currentTimeMillis());
+        task.setStartTime(System.currentTimeMillis());
         task.setInputData(taskInput);
         task.setTaskId(taskId);
         task.setStatus(Task.Status.IN_PROGRESS);
