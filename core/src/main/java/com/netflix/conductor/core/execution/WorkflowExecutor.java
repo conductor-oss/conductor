@@ -416,20 +416,15 @@ public class WorkflowExecutor {
         // Throw an exception if there are no FAILED tasks.
         // Handle JOIN task CANCELED status as special case.
         Map<String, Task> retriableMap = new HashMap<>();
-        List<Task> cancelledJoinTasks = new ArrayList<>();
-        boolean hasFailedTask = false;
-        // Sanity check sort.
-        workflow.getTasks().sort(Comparator.comparingInt(Task::getSeq));
         for (Task task: workflow.getTasks()) {
             switch (task.getStatus()) {
                 case FAILED:
                     retriableMap.put(task.getReferenceTaskName(), task);
-                    hasFailedTask = true;
                     break;
                 case CANCELED:
                     if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())) {
                         task.setStatus(IN_PROGRESS);
-                        cancelledJoinTasks.add(task);
+                        // Task doesn't have to updated yet. Will be updated along with other Workflow tasks downstream.
                     } else {
                         retriableMap.put(task.getReferenceTaskName(), task);
                     }
@@ -440,9 +435,9 @@ public class WorkflowExecutor {
             }
         }
 
-        if(!hasFailedTask) {
+        if(retriableMap.values().size() == 0) {
             throw new ApplicationException(CONFLICT,
-                    "There are no failed tasks! Use restart if you want to attempt entire workflow execution again.");
+                    "There are no retriable tasks! Use restart if you want to attempt entire workflow execution again.");
         }
 
         // Update Workflow with new status.
@@ -459,7 +454,6 @@ public class WorkflowExecutor {
         dedupAndAddTasks(workflow, retriableTasks);
         // Note: updateTasks before updateWorkflow might fail when Workflow is archived and doesn't exist in primary store.
         executionDAOFacade.updateTasks(workflow.getTasks());
-        executionDAOFacade.updateTasks(cancelledJoinTasks);
         scheduleTask(workflow, retriableTasks);
 
         decide(workflowId);
