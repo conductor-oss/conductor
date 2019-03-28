@@ -19,6 +19,8 @@ import com.netflix.conductor.common.metadata.Auditable;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -116,6 +118,8 @@ public class Workflow extends Auditable{
 	private String externalOutputPayloadStoragePath;
 
 	@ProtoField(id = 22)
+	@Min(value = 0, message = "workflow priority: ${validatedValue} should be minimum {value}")
+	@Max(value = 99, message = "workflow priority: ${validatedValue} should be maximum {value}")
 	private int priority;
 
 	public Workflow(){

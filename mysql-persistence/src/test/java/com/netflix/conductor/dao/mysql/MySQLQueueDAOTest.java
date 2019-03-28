@@ -131,7 +131,12 @@ public class MySQLQueueDAOTest {
 
 		for(int i = 0; i < totalSize; i++) {
 			String payload = "{\"id\": " + i + ", \"msg\":\"test " + i + "\"}";
-			messages.add(new Message("testmsg-" + i, payload, ""));
+			Message m = new Message("testmsg-" + i, payload, "");
+			if (i % 2 == 0) {
+				// Set priority on message with pair id
+				m.setPriority(99-i);
+			}
+			messages.add(m);
 		}
 
 		// Populate the queue with our test message batch

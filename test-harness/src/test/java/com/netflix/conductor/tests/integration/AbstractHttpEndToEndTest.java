@@ -108,6 +108,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         StartWorkflowRequest startWorkflowRequest = new StartWorkflowRequest()
                 .withName(def.getName())
                 .withCorrelationId(correlationId)
+                .withPriority(50)
                 .withInput(new HashMap<>());
         String workflowId = workflowClient.startWorkflow(startWorkflowRequest);
         assertNotNull(workflowId);

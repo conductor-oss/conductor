@@ -31,6 +31,8 @@ import io.swagger.annotations.ApiOperation;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.DefaultValue;
@@ -77,8 +79,9 @@ public class WorkflowResource {
     public String startWorkflow(@PathParam("name") String name,
                                 @QueryParam("version") Integer version,
                                 @QueryParam("correlationId") String correlationId,
+                                @QueryParam("priority") @DefaultValue("0") Integer priority,
                                 Map<String, Object> input) {
-        return workflowService.startWorkflow(name, version, correlationId, input);
+        return workflowService.startWorkflow(name, version, correlationId, priority, input);
     }
 
     @GET
