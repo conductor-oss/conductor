@@ -46,6 +46,7 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -66,9 +67,6 @@ import static com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadT
 import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.INVALID_INPUT;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.NOT_FOUND;
-import static java.util.Comparator.comparingInt;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.maxBy;
 
 /**
  * @author Viren Workflow services provider interface
@@ -413,57 +411,52 @@ public class WorkflowExecutor {
             throw new ApplicationException(CONFLICT, "Workflow has not started yet");
         }
 
-        List<Task> failedTasks = getFailedTasksToRetry(workflow);
-
-        List<Task> cancelledTasks = workflow.getTasks().stream()
-                .filter(t -> CANCELED.equals(t.getStatus()))
-                .collect(Collectors.toList());
-
-        if (failedTasks.isEmpty()) {
-            throw new ApplicationException(CONFLICT,
-                    "There are no failed tasks! Use restart if you want to attempt entire workflow execution again.");
+        // Get all FAILED or CANCELED tasks that are not COMPLETED (or reach other terminal states) on further executions.
+        // // Eg: for Seq of tasks task1.CANCELED, task1.COMPLETED, task1 shouldn't be retried.
+        // Throw an exception if there are no FAILED tasks.
+        // Handle JOIN task CANCELED status as special case.
+        Map<String, Task> retriableMap = new HashMap<>();
+        for (Task task: workflow.getTasks()) {
+            switch (task.getStatus()) {
+                case FAILED:
+                    retriableMap.put(task.getReferenceTaskName(), task);
+                    break;
+                case CANCELED:
+                    if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())) {
+                        task.setStatus(IN_PROGRESS);
+                        // Task doesn't have to updated yet. Will be updated along with other Workflow tasks downstream.
+                    } else {
+                        retriableMap.put(task.getReferenceTaskName(), task);
+                    }
+                    break;
+                default:
+                    retriableMap.remove(task.getReferenceTaskName());
+                    break;
+            }
         }
 
-        // set workflow to RUNNING status
+        if(retriableMap.values().size() == 0) {
+            throw new ApplicationException(CONFLICT,
+                    "There are no retriable tasks! Use restart if you want to attempt entire workflow execution again.");
+        }
+
+        // Update Workflow with new status.
+        // This should load Workflow from archive, if archived.
         workflow.setStatus(WorkflowStatus.RUNNING);
         executionDAOFacade.updateWorkflow(workflow);
 
-        List<Task> rescheduledTasks = new ArrayList<>();
-        failedTasks.forEach(failedTask -> rescheduledTasks.add(taskToBeRescheduled(failedTask)));
+        // taskToBeRescheduled would set task `retried` to true, and hence it's important to updateTasks after obtaining task copy from taskToBeRescheduled.
+        List<Task> retriableTasks = retriableMap.values().stream()
+                .sorted(Comparator.comparingInt(Task::getSeq))
+                .map(task -> taskToBeRescheduled(task))
+                .collect(Collectors.toList());
 
-        // Reschedule the cancelled task but if the join is cancelled set that to in progress
-        cancelledTasks.forEach(task -> {
-            if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())) {
-                task.setStatus(IN_PROGRESS);
-                executionDAOFacade.updateTask(task);
-            } else {
-                rescheduledTasks.add(taskToBeRescheduled(task));
-            }
-        });
-
-        dedupAndAddTasks(workflow, rescheduledTasks);
+        dedupAndAddTasks(workflow, retriableTasks);
+        // Note: updateTasks before updateWorkflow might fail when Workflow is archived and doesn't exist in primary store.
         executionDAOFacade.updateTasks(workflow.getTasks());
-        scheduleTask(workflow, rescheduledTasks);
+        scheduleTask(workflow, retriableTasks);
 
         decide(workflowId);
-    }
-
-    /**
-     * Get all failed and cancelled tasks.
-     * for failed tasks - get one for each task reference name(latest failed using seq id)
-     *
-     * @param workflow
-     * @return list of latest failed tasks, one for each task reference reference type.
-     */
-    @VisibleForTesting
-    List<Task> getFailedTasksToRetry(Workflow workflow) {
-        return workflow.getTasks().stream()
-                .filter(x -> FAILED.equals(x.getStatus()))
-                .collect(groupingBy(Task::getReferenceTaskName, maxBy(comparingInt(Task::getSeq))))
-                .values().stream()
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .collect(Collectors.toList());
     }
 
     /**
