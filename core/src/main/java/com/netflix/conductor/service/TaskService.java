@@ -92,7 +92,7 @@ public interface TaskService {
     /**
      * Ack Task is received.
      *
-     * @param taskId   Id of the task
+     * @param taskId Id of the task
      * @return `true|false` if task if received or not
      */
     boolean ackTaskReceived(@NotEmpty(message = "TaskId cannot be null or empty.") String taskId);
@@ -133,7 +133,7 @@ public interface TaskService {
     /**
      * Remove Task from a Task type queue.
      *
-     * @param taskId   ID of the task
+     * @param taskId ID of the task
      */
     void removeTaskFromQueue(@NotEmpty(message = "TaskId cannot be null or empty.") String taskId);
 
@@ -205,8 +205,10 @@ public interface TaskService {
     /**
      * Get the external storage location where the task output payload is stored/to be stored
      *
-     * @param path the path for which the external storage location is to be populated
+     * @param path        the path for which the external storage location is to be populated
+     * @param operation   the operation to be performed (read or write)
+     * @param payloadType the type of payload (input or output)
      * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external storage
      */
-    ExternalStorageLocation getExternalStorageLocation(String path);
+    ExternalStorageLocation getExternalStorageLocation(String path, String operation, String payloadType);
 }

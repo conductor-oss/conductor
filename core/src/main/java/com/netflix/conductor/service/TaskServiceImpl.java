@@ -28,6 +28,7 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -152,7 +153,7 @@ public class TaskServiceImpl implements TaskService {
     /**
      * Ack Task is received.
      *
-     * @param taskId   Id of the task
+     * @param taskId Id of the task
      * @return `true|false` if task if received or not
      */
     @Service
@@ -217,7 +218,7 @@ public class TaskServiceImpl implements TaskService {
     /**
      * Remove Task from a Task type queue.
      *
-     * @param taskId   ID of the task
+     * @param taskId ID of the task
      */
     @Service
     public void removeTaskFromQueue(String taskId) {
@@ -314,10 +315,20 @@ public class TaskServiceImpl implements TaskService {
     /**
      * Get the external storage location where the task output payload is stored/to be stored
      *
-     * @param path the path for which the external storage location is to be populated
+     * @param path      the path for which the external storage location is to be populated
+     * @param operation the operation to be performed (read or write)
+     * @param type      the type of payload (input or output)
      * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external storage
      */
-    public ExternalStorageLocation getExternalStorageLocation(String path) {
-        return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.TASK_OUTPUT, path);
+    public ExternalStorageLocation getExternalStorageLocation(String path, String operation, String type) {
+        try {
+            ExternalPayloadStorage.Operation payloadOperation = ExternalPayloadStorage.Operation.valueOf(StringUtils.upperCase(operation));
+            ExternalPayloadStorage.PayloadType payloadType = ExternalPayloadStorage.PayloadType.valueOf(StringUtils.upperCase(type));
+            return executionService.getExternalStorageLocation(payloadOperation, payloadType, path);
+        } catch (Exception e) {
+            // FIXME: for backwards compatibility
+            LOGGER.error("Invalid input - Operation: {}, PayloadType: {}, defaulting to WRITE/TASK_OUTPUT", operation, type);
+            return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.TASK_OUTPUT, path);
+        }
     }
 }
