@@ -14,6 +14,7 @@ dependencies {
     compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:${revJaxrsJackson}"
     compile "com.netflix.archaius:archaius-core:${revArchaius}"
     compile "com.amazonaws:aws-java-sdk-core:${revAwsSdk}"
+    compile "commons-io:commons-io:${revApacheCommons}"
 
     testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
 }

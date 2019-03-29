@@ -135,7 +135,7 @@ class PayloadStorage implements ExternalPayloadStorage {
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 logger.debug("Download completed with HTTP response code: {}", connection.getResponseCode());
-                return connection.getInputStream();
+                return org.apache.commons.io.IOUtils.toBufferedInputStream(connection.getInputStream());
             }
             errorMsg = String.format("Unable to download. Response code: %d", responseCode);
             logger.error(errorMsg);
