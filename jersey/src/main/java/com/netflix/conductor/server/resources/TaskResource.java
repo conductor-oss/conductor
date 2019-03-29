@@ -219,10 +219,10 @@ public class TaskResource {
 	}
 
 	@GET
-	@ApiOperation("Get the external uri where the task output payload is to be stored")
+	@ApiOperation("Get the external uri where the task payload is to be stored")
 	@Consumes(MediaType.WILDCARD)
 	@Path("/externalstoragelocation")
-	public ExternalStorageLocation getExternalStorageLocation(@QueryParam("path") String path) {
-		return taskService.getExternalStorageLocation(path);
+	public ExternalStorageLocation getExternalStorageLocation(@QueryParam("path") String path, @QueryParam("operation") String operation, @QueryParam("payloadType") String payloadType) {
+		return taskService.getExternalStorageLocation(path, operation, payloadType);
 	}
 }
