@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.core.execution.tasks;
 
@@ -55,7 +55,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 			wfInput = input;
 		}
 		String correlationId = workflow.getCorrelationId();
-		
+
 		try {
 			String subWorkflowId = provider.startWorkflow(name, version, wfInput, null, correlationId, workflow.getWorkflowId(), task.getTaskId(), null, workflow.getTaskToDomain());
 			task.getOutputData().put(SUB_WORKFLOW_ID, subWorkflowId);
@@ -64,21 +64,21 @@ public class SubWorkflow extends WorkflowSystemTask {
 		} catch (Exception e) {
 			task.setStatus(Status.FAILED);
 			task.setReasonForIncompletion(e.getMessage());
-			logger.error(e.getMessage(), e);
+			logger.error("Error starting sub workflow: {} from workflow: {}", name, workflow.getWorkflowId(), e);
 		}
 	}
-	
+
 	@Override
 	public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) {
 		String workflowId = (String) task.getOutputData().get(SUB_WORKFLOW_ID);
 		if (workflowId == null) {
 			workflowId = (String) task.getInputData().get(SUB_WORKFLOW_ID);	//Backward compatibility
 		}
-		
+
 		if(StringUtils.isEmpty(workflowId)) {
 			return false;
 		}
-		
+
 		Workflow subWorkflow = provider.getWorkflow(workflowId, false);
 		WorkflowStatus subWorkflowStatus = subWorkflow.getStatus();
 		if(!subWorkflowStatus.isTerminal()){
@@ -93,14 +93,14 @@ public class SubWorkflow extends WorkflowSystemTask {
 		}
 		return true;
 	}
-	
+
 	@Override
 	public void cancel(Workflow workflow, Task task, WorkflowExecutor provider) {
 		String workflowId = (String) task.getOutputData().get(SUB_WORKFLOW_ID);
 		if(workflowId == null) {
 			workflowId = (String) task.getInputData().get(SUB_WORKFLOW_ID);	//Backward compatibility
 		}
-		
+
 		if(StringUtils.isEmpty(workflowId)) {
 			return;
 		}
@@ -108,7 +108,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 		subWorkflow.setStatus(WorkflowStatus.TERMINATED);
 		provider.terminateWorkflow(subWorkflow, "Parent workflow has been terminated with status " + workflow.getStatus(), null);
 	}
-	
+
 	@Override
 	public boolean isAsync() {
 		return false;
