@@ -302,8 +302,8 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             List<Task> tasks = workflow.getTasks();
             workflow.setTasks(new LinkedList<>());
             String payload = toJson(workflow);
-            recordCassandraDaoRequests("createWorkflow", "n/a", workflow.getWorkflowName());
-            recordCassandraDaoPayloadSize("createWorkflow", payload.length(), "n/a", workflow.getWorkflowName());
+            recordCassandraDaoRequests("updateWorkflow", "n/a", workflow.getWorkflowName());
+            recordCassandraDaoPayloadSize("updateWorkflow", payload.length(), "n/a", workflow.getWorkflowName());
             session.execute(updateWorkflowStatement.bind(payload, UUID.fromString(workflow.getWorkflowId())));
             workflow.setTasks(tasks);
             return workflow.getWorkflowId();
@@ -324,9 +324,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             try {
                 recordCassandraDaoRequests("removeWorkflow", "n/a", workflow.getWorkflowName());
                 ResultSet resultSet = session.execute(deleteWorkflowStatement.bind(UUID.fromString(workflowId), DEFAULT_SHARD_ID));
-                if (resultSet.wasApplied()) {
-                    removed = true;
-                }
+                removed = resultSet.wasApplied();
             } catch (Exception e) {
                 Monitors.error(CLASS_NAME, "removeWorkflow");
                 String errorMsg = String.format("Failed to remove workflow: %s", workflowId);

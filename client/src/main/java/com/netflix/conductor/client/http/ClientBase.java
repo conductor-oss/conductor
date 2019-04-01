@@ -223,7 +223,7 @@ public abstract class ClientBase {
         try (InputStream inputStream = payloadStorage.download(externalStorageLocation.getUri())) {
             return objectMapper.readValue(inputStream, Map.class);
         } catch (IOException e) {
-            String errorMsg = String.format("Unable to download payload frome external storage location: %s", path);
+            String errorMsg = String.format("Unable to download payload from external storage location: %s", path);
             logger.error(errorMsg, e);
             throw new ConductorClientException(errorMsg, e);
         }

@@ -65,6 +65,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
+import static com.netflix.conductor.core.execution.tasks.SubWorkflow.SUB_WORKFLOW_ID;
 import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.maxBy;
@@ -631,7 +632,6 @@ public class TestWorkflowExecutor {
     }
 
 
-
     @Test
     public void testRetryWorkflowMultipleRetries() {
         //setup
@@ -838,5 +838,67 @@ public class TestWorkflowExecutor {
         assertEquals(1, taskList.size());
         assertEquals(newTask, taskList.get(0));
         assertEquals(3, workflow.getTasks().size());
+    }
+
+    @Test
+    public void testRollbackTasks() {
+        String workflowId = "workflow-id";
+
+        Task task1 = new Task();
+        task1.setTaskType(TaskType.SIMPLE.name());
+        task1.setTaskDefName("simpleTask");
+        task1.setReferenceTaskName("simpleTask");
+        task1.setWorkflowInstanceId(workflowId);
+        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setTaskId(IDGenerator.generate());
+        task1.setStatus(Status.SCHEDULED);
+
+        WorkflowTask waitTask = new WorkflowTask();
+        waitTask.setWorkflowTaskType(TaskType.WAIT);
+        waitTask.setType(TaskType.WAIT.name());
+        waitTask.setTaskReferenceName("wait");
+        Task task2 = new Task();
+        task2.setTaskType(waitTask.getType());
+        task2.setTaskDefName(waitTask.getName());
+        task2.setReferenceTaskName(waitTask.getTaskReferenceName());
+        task2.setWorkflowInstanceId(workflowId);
+        task2.setScheduledTime(System.currentTimeMillis());
+        task2.setTaskId(IDGenerator.generate());
+        task2.setStatus(Status.IN_PROGRESS);
+        task2.setRetryCount(0);
+        task2.setWorkflowTask(waitTask);
+
+        WorkflowTask subWorkflowTask = new WorkflowTask();
+        subWorkflowTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        subWorkflowTask.setType(TaskType.SUB_WORKFLOW.name());
+        subWorkflowTask.setTaskReferenceName("sub-workflow");
+        Task task3 = new Task();
+        task3.setTaskType(subWorkflowTask.getType());
+        task3.setTaskDefName(subWorkflowTask.getName());
+        task3.setReferenceTaskName(subWorkflowTask.getTaskReferenceName());
+        task3.setWorkflowInstanceId(workflowId);
+        task3.setScheduledTime(System.currentTimeMillis());
+        task3.setTaskId(IDGenerator.generate());
+        task3.setStatus(Status.IN_PROGRESS);
+        task3.setRetryCount(0);
+        task3.setWorkflowTask(subWorkflowTask);
+        task3.setOutputData(new HashMap<>());
+        task3.getOutputData().put(SUB_WORKFLOW_ID, IDGenerator.generate());
+
+        AtomicInteger removeWorkflowCalledCounter = new AtomicInteger(0);
+        doAnswer(invocation -> {
+            removeWorkflowCalledCounter.incrementAndGet();
+            return null;
+        }).when(executionDAOFacade).removeWorkflow(anyString(), anyBoolean());
+
+        AtomicInteger removeTaskCalledCounter = new AtomicInteger(0);
+        doAnswer(invocation -> {
+            removeTaskCalledCounter.incrementAndGet();
+            return null;
+        }).when(executionDAOFacade).removeTask(anyString());
+
+        workflowExecutor.rollbackTasks(workflowId, Arrays.asList(task1, task2, task3));
+        assertEquals(1, removeWorkflowCalledCounter.get());
+        assertEquals(3, removeTaskCalledCounter.get());
     }
 }

@@ -235,7 +235,7 @@ public class DeciderService {
                 taskToSchedule = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());
             }
 
-            //In case of a new workflow a the first non-skippable task will be scheduled
+            //In case of a new workflow, the first non-skippable task will be scheduled
             return getTasksToBeScheduled(workflow, taskToSchedule, 0);
         }
 
