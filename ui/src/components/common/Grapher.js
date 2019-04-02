@@ -190,7 +190,9 @@ class Grapher extends Component {
                     p.propsDivElem.style.display = "block"
                     p.setState({selectedTask: data.task, showSideBar: true, subGraph: null, showSubGraph: false});
                 }
-            });
+            })
+            .append("svg:title")
+            .text(function(v) { return vertices[v].description; });
 
         return (
             <div className="graph-ui-content" id="graph-ui-content">
