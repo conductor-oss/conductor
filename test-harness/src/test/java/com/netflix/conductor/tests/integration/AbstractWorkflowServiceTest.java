@@ -41,6 +41,7 @@ import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.WorkflowSweeper;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
+import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
@@ -4047,6 +4048,114 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals(lambda_task.getOutputData().toString(), "{result={testvalue=true}}");
         assertNotNull(workflow);
         assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
+    @Test
+    public void testTerminateTaskWithCompletedStatus() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test_terminate_task_wf");
+        workflowDef.setSchemaVersion(2);
+
+        Map<String, Object> lambdaTaskInputParams = new HashMap<>();
+        lambdaTaskInputParams.put("input", "${workflow.input}");
+        lambdaTaskInputParams.put("scriptExpression", "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false}}");
+
+        WorkflowTask lambdaWorkflowTask = new WorkflowTask();
+        lambdaWorkflowTask.setWorkflowTaskType(TaskType.LAMBDA);
+        lambdaWorkflowTask.setName("lambda");
+        lambdaWorkflowTask.setInputParameters(lambdaTaskInputParams);
+        lambdaWorkflowTask.setTaskReferenceName("lambda0");
+
+        Map<String, Object> terminateTaskInputParams = new HashMap<>();
+        terminateTaskInputParams.put(Terminate.getTerminationStatusParameter(), "COMPLETED");
+        terminateTaskInputParams.put(Terminate.getTerminationWorkflowOutputParameter(), "${lambda0.output}");
+
+        WorkflowTask terminateWorkflowTask = new WorkflowTask();
+        terminateWorkflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
+        terminateWorkflowTask.setName("terminate");
+        terminateWorkflowTask.setInputParameters(terminateTaskInputParams);
+        terminateWorkflowTask.setTaskReferenceName("terminate0");
+
+        WorkflowTask workflowTask2 = new WorkflowTask();
+        workflowTask2.setName("junit_task_2");
+        workflowTask2.setTaskReferenceName("t2");
+
+        workflowDef.getTasks().addAll(Arrays.asList(lambdaWorkflowTask, terminateWorkflowTask, workflowTask2));
+
+        assertNotNull(workflowDef);
+        metadataService.registerWorkflowDef(workflowDef);
+
+        Map wfInput = Collections.singletonMap("a", 1);
+        String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", wfInput, null, null);
+        Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
+
+        assertNotNull(workflow);
+        assertEquals(2, workflow.getTasks().size());
+
+        workflowExecutor.decide(workflowId);
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+
+        assertNotNull(workflow);
+        assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals(TaskType.TASK_TYPE_LAMBDA, workflow.getTasks().get(0).getTaskType());
+        assertEquals(TaskType.TASK_TYPE_TERMINATE, workflow.getTasks().get(1).getTaskType());
+        assertEquals(workflow.getTasks().get(1).getOutputData(), workflow.getOutput());
+
+        metadataService.unregisterWorkflowDef("test_terminate_task_wf", 1);
+    }
+
+    @Test
+    public void testTerminateTaskWithFailedStatus() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test_terminate_task_wf");
+        workflowDef.setSchemaVersion(2);
+
+        Map<String, Object> lambdaTaskInputParams = new HashMap<>();
+        lambdaTaskInputParams.put("input", "${workflow.input}");
+        lambdaTaskInputParams.put("scriptExpression", "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false}}");
+
+        WorkflowTask lambdaWorkflowTask = new WorkflowTask();
+        lambdaWorkflowTask.setWorkflowTaskType(TaskType.LAMBDA);
+        lambdaWorkflowTask.setName("lambda");
+        lambdaWorkflowTask.setInputParameters(lambdaTaskInputParams);
+        lambdaWorkflowTask.setTaskReferenceName("lambda0");
+
+        Map<String, Object> terminateTaskInputParams = new HashMap<>();
+        terminateTaskInputParams.put(Terminate.getTerminationStatusParameter(), "FAILED");
+        terminateTaskInputParams.put(Terminate.getTerminationWorkflowOutputParameter(), "${lambda0.output}");
+
+        WorkflowTask terminateWorkflowTask = new WorkflowTask();
+        terminateWorkflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
+        terminateWorkflowTask.setName("terminate");
+        terminateWorkflowTask.setInputParameters(terminateTaskInputParams);
+        terminateWorkflowTask.setTaskReferenceName("terminate0");
+
+        WorkflowTask workflowTask2 = new WorkflowTask();
+        workflowTask2.setName("junit_task_2");
+        workflowTask2.setTaskReferenceName("t2");
+
+        workflowDef.getTasks().addAll(Arrays.asList(lambdaWorkflowTask, terminateWorkflowTask, workflowTask2));
+
+        assertNotNull(workflowDef);
+        metadataService.registerWorkflowDef(workflowDef);
+
+        Map wfInput = Collections.singletonMap("a", 1);
+        String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", wfInput, null, null);
+        Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
+
+        assertNotNull(workflow);
+        assertEquals(2, workflow.getTasks().size());
+
+        workflowExecutor.decide(workflowId);
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+
+        assertNotNull(workflow);
+        assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.FAILED, workflow.getStatus());
+        assertEquals(TaskType.TASK_TYPE_LAMBDA, workflow.getTasks().get(0).getTaskType());
+        assertEquals(TaskType.TASK_TYPE_TERMINATE, workflow.getTasks().get(1).getTaskType());
+        assertEquals(workflow.getTasks().get(1).getOutputData(), workflow.getOutput());
+
+        metadataService.unregisterWorkflowDef("test_terminate_task_wf", 1);
     }
 
     @Test

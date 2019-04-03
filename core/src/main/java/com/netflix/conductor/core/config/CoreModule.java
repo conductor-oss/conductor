@@ -36,7 +36,7 @@ import com.netflix.conductor.dao.QueueDAO;
 
 import static com.netflix.conductor.common.metadata.workflow.TaskType.*;
 import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
-import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_EXLCUSIVE_JOIN;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_EXCLUSIVE_JOIN;
 /**
  * @author Viren
  */
@@ -55,6 +55,7 @@ public class CoreModule extends AbstractModule {
         bind(Wait.class).asEagerSingleton();
         bind(Event.class).asEagerSingleton();
         bind(Lambda.class).asEagerSingleton();
+        bind(Terminate.class).asEagerSingleton();
     }
 
     @Provides
@@ -175,11 +176,19 @@ public class CoreModule extends AbstractModule {
     }
     
     @ProvidesIntoMap
-    @StringMapKey(TASK_TYPE_EXLCUSIVE_JOIN)
+    @StringMapKey(TASK_TYPE_EXCLUSIVE_JOIN)
     @Singleton
     @Named(TASK_MAPPERS_QUALIFIER)
     public TaskMapper getExclusiveJoinTaskMapper() {
         return new ExclusiveJoinTaskMapper();
+    }
+
+    @ProvidesIntoMap
+    @StringMapKey(TASK_TYPE_TERMINATE)
+    @Singleton
+    @Named(TASK_MAPPERS_QUALIFIER)
+    public TaskMapper getTerminateTaskMapper(ParametersUtils parametersUtils) {
+        return new TerminateTaskMapper(parametersUtils);
     }
 
 }

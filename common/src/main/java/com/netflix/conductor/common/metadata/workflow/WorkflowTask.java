@@ -156,6 +156,7 @@ public class WorkflowTask {
 	
 	@ProtoField(id = 21)
 	private List<String> defaultExclusiveJoinTask = new LinkedList<>();
+
 	/**
 	 * @return the name
 	 */
@@ -437,7 +438,7 @@ public class WorkflowTask {
 	}
 
 	/**
-	 * 
+	 *
 	 * @param optional when set to true, the task is marked as optional
 	 */
 	public void setOptional(boolean optional) {

@@ -3,6 +3,8 @@ package com.netflix.conductor.validations;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.execution.tasks.Terminate;
 
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
@@ -14,6 +16,10 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Optional;
 
+import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.COMPLETED;
+import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.FAILED;
+import static com.netflix.conductor.core.execution.tasks.Terminate.getTerminationStatusParameter;
+import static com.netflix.conductor.core.execution.tasks.Terminate.validateInputStatus;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;
 import static java.lang.annotation.ElementType.TYPE;
 
@@ -65,6 +71,9 @@ public @interface WorkflowTaskTypeConstraint {
                     break;
                 case TaskType.TASK_TYPE_FORK_JOIN:
                     valid = isForkJoinTaskValid(workflowTask, context);
+                    break;
+                case TaskType.TASK_TYPE_TERMINATE:
+                    valid = isTerminateTaskValid(workflowTask, context);
                     break;
             }
 
@@ -180,5 +189,22 @@ public @interface WorkflowTaskTypeConstraint {
 
             return valid;
         }
+
+        private boolean isTerminateTaskValid(WorkflowTask workflowTask, ConstraintValidatorContext context) {
+            boolean valid = true;
+            Object inputStatusParam = workflowTask.getInputParameters().get(getTerminationStatusParameter());
+            if(workflowTask.isOptional()) {
+                String message = String.format("terminate task cannot be optional, taskName: %s",  workflowTask.getName());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                valid = false;
+            }
+            if(inputStatusParam == null || !validateInputStatus(inputStatusParam.toString())) {
+                String message = String.format("terminate task must have an %s parameter and must be set to COMPLETED or FAILED, taskName: %s", getTerminationStatusParameter(),  workflowTask.getName());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                valid = false;
+            }
+            return valid;
+        }
+
     }
 }
