@@ -128,6 +128,9 @@
     <li class="toctree-l3"><a href="#lambda-task">Lambda Task</a></li>
     
 
+    <li class="toctree-l3"><a href="#terminate-task">Terminate Task</a></li>
+    
+
     </ul>
                 </li>
                 <li class="">
@@ -780,6 +783,42 @@ None required.</p>
 
 <p>The task output can then be referenced in downstream tasks like:
 <code>"${lambda_test.output.result.testvalue}"</code></p>
+<h2 id="terminate-task">Terminate Task<a class="headerlink" href="#terminate-task" title="Permanent link">&para;</a></h2>
+<p>Task that can terminate a workflow with a given status and modify the workflow's output with a given parameter. It can act as a "return" statement for conditions where you simply want to terminate your workflow.</p>
+<p>For example, if you have a decision where the first condition is met, you want to execute some tasks, otherwise you want to finish your workflow.</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+<th>Notes</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>terminationStatus</td>
+<td>can only accept "COMPLETED" or "FAILED"</td>
+<td>task cannot be optional</td>
+</tr>
+<tr>
+<td>workflowOutput</td>
+<td>Expected workflow output</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;terminate&quot;,
+  &quot;taskReferenceName&quot;: &quot;terminate0&quot;,
+  &quot;inputParameters&quot;: {
+      &quot;terminationStatus&quot;: &quot;COMPLETED&quot;,
+      &quot;workflowOutput&quot;: &quot;${task0.output}&quot;
+  },
+  &quot;type&quot;: &quot;TERMINATE&quot;,
+  &quot;startDelay&quot;: 0,
+  &quot;optional&quot;: false
+}</code></pre>
               
             </div>
           </div>
