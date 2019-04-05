@@ -450,3 +450,31 @@ This is particularly helpful in running simple evaluations in Conductor server, 
 
 The task output can then be referenced in downstream tasks like:
 ```"${lambda_test.output.result.testvalue}"```
+
+
+## Terminate Task
+
+Task that can terminate a workflow with a given status and modify the workflow's output with a given parameter. It can act as a "return" statement for conditions where you simply want to terminate your workflow.
+
+For example, if you have a decision where the first condition is met, you want to execute some tasks, otherwise you want to finish your workflow.
+
+**Parameters:**
+
+|name|description|Notes|
+|---|---|---|
+|terminationStatus|can only accept "COMPLETED" or "FAILED"|task cannot be optional|
+|workflowOutput|Expected workflow output||
+
+```json
+{
+  "name": "terminate",
+  "taskReferenceName": "terminate0",
+  "inputParameters": {
+      "terminationStatus": "COMPLETED",
+      "workflowOutput": "${task0.output}"
+  },
+  "type": "TERMINATE",
+  "startDelay": 0,
+  "optional": false
+}
+```
