@@ -218,9 +218,13 @@ public class TaskClient extends ClientBase {
      * it is uploaded to {@link ExternalPayloadStorage}, if enabled, else the task is marked as FAILED_WITH_TERMINAL_ERROR.
      *
      * @param taskResult the {@link TaskResult} of the executed task to be updated.
-     * @param taskType   the type of the task
      */
-    public void updateTask(TaskResult taskResult, String taskType) {
+    public void updateTask(TaskResult taskResult) {
+        Preconditions.checkNotNull(taskResult, "Task result cannot be null");
+        postForEntityWithRequestOnly("tasks", taskResult);
+    }
+
+    public void evaluateAndUploadLargePayload(TaskResult taskResult, String taskType) {
         Preconditions.checkNotNull(taskResult, "Task result cannot be null");
         Preconditions.checkArgument(StringUtils.isBlank(taskResult.getExternalOutputPayloadStoragePath()), "External Storage Path must not be set");
 
@@ -249,7 +253,6 @@ public class TaskClient extends ClientBase {
             logger.error(errorMsg, e);
             throw new ConductorClientException(errorMsg, e);
         }
-        postForEntityWithRequestOnly("tasks", taskResult);
     }
 
     /**

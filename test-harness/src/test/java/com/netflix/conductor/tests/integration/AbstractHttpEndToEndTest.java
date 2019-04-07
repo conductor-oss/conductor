@@ -155,7 +155,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
 
         task.getOutputData().put("key1", "value1");
         task.setStatus(Status.COMPLETED);
-        taskClient.updateTask(new TaskResult(task), task.getTaskType());
+        taskClient.updateTask(new TaskResult(task));
 
         polled = taskClient.batchPollTasksByTaskType(t0.getName(), "test", 1, 100);
         assertNotNull(polled);
@@ -310,7 +310,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
     public void testUpdateTask() {
         TaskResult taskResult = new TaskResult();
         try {
-            taskClient.updateTask(taskResult, "taskTest");
+            taskClient.updateTask(taskResult);
         } catch (ConductorClientException e) {
             assertEquals(400, e.getStatus());
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
