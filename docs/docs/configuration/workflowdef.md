@@ -1,51 +1,4 @@
-# Task Definition
-Conductor maintains a registry of worker task types.  A task type MUST be registered before using in a workflow.
-
-**Example**
-``` json
-{
-  "name": "encode_task",
-  "retryCount": 3,
-  "timeoutSeconds": 1200,
-  "inputKeys": [
-    "sourceRequestId",
-    "qcElementType"
-  ],
-  "outputKeys": [
-    "state",
-    "skipped",
-    "result"
-  ],
-  "timeoutPolicy": "TIME_OUT_WF",
-  "retryLogic": "FIXED",
-  "retryDelaySeconds": 600,
-  "responseTimeoutSeconds": 3600
-}
-```
-
-|field|description|Notes|
-|---|---|---|
-|name|Task Type|Unique|
-|retryCount|No. of retries to attempt when a task is marked as failure||
-|retryLogic|Mechanism for the retries|see possible values below|
-|timeoutSeconds|Time in milliseconds, after which the task is marked as TIMED_OUT if not completed after transitioning to ```IN_PROGRESS``` status for the first time|No timeouts if set to 0|
-|timeoutPolicy|Task's timeout policy|see possible values below|
-|responseTimeoutSeconds|If greater than 0, the task is rescheduled if not updated with a status after this time (heartbeat mechanism). Useful when the worker polls for the task but fails to complete due to errors/network failure.
-||
-|outputKeys|Set of keys of task's output.  Used for documenting task's output||
-
-**Retry Logic**
-
-* FIXED : Reschedule the task after the ```retryDelaySeconds```
-* EXPONENTIAL_BACKOFF : reschedule after ```retryDelaySeconds  * attempNo```
- 
-**Timeout Policy**
-
-* RETRY : Retries the task again
-* TIME_OUT_WF : Workflow is marked as TIMED_OUT and terminated
-* ALERT_ONLY : Registers a counter (task_timeout)
-
-# Workflow Definition
+## Workflow Definition
 Workflows are defined using a JSON based DSL.
 
 **Example**
@@ -70,12 +23,14 @@ Workflows are defined using a JSON based DSL.
       "inputParameters": {
         "fileLocation": "${encode.output.encodeLocation}"
       }
-
     }
   ],
   "outputParameters": {
     "cdn_url": "${d1.output.location}"
   },
+  "failureWorkflow": "cleanup_encode_resources",
+  "restartable": true,
+  "workflowStatusListenerEnabled": true,
   "schemaVersion": 2
 }
 ```
@@ -83,28 +38,32 @@ Workflows are defined using a JSON based DSL.
 |field|description|Notes|
 |:-----|:---|:---|
 |name|Name of the workflow||
-|description|Descriptive name of the workflow||
+|description|Description of the workflow|optional|
 |version|Numeric field used to identify the version of the schema.  Use incrementing numbers|When starting a workflow execution, if not specified, the definition with highest version is used|
 |tasks|An array of task definitions as described below.||
+|inputParameters|List of input parameters. Used for documenting the required inputs to workflow|optional|
 |outputParameters|JSON template used to generate the output of the workflow|If not specified, the output is defined as the output of the _last_ executed task|
-|inputParameters|List of input parameters.  Used for documenting the required inputs to workflow|optional|
+|failureWorkflow|String; Workflow to be run on current Workflow failure. Useful for cleanup or post actions on failure.|optional|
+|schemaVersion|Current Conductor Schema version. schemaVersion 1 is discontinued.|Must be 2|
+|restartable|Boolean flag to allow Workflow restarts|defaults to true|
+|workflowStatusListenerEnabled|If true, every workflow that gets terminated or completed will send a notification. See [below](#workflow-notifications)|optional (false by default)|
 
-## Tasks within Workflow
-```tasks``` property in a workflow defines an array of tasks to be executed in that order.
-Below are the mandatory minimum parameters required for each task:
+### Tasks within Workflow
+```tasks``` property in a workflow execution defines an array of tasks to be executed in that order.
 
 |field|description|Notes|
 |:-----|:---|:---|
-|name|Name of the task.  MUST be registered as a task type with Conductor before starting workflow||
-|taskReferenceName|Alias used to refer the task within the workflow.  MUST be unique.||
+|name|Name of the task. MUST be registered as a task with Conductor before starting the workflow||
+|taskReferenceName|Alias used to refer the task within the workflow.  MUST be unique within workflow.||
 |type|Type of task. SIMPLE for tasks executed by remote workers, or one of the system task types||
 |description|Description of the task|optional|
 |optional|true  or false.  When set to true - workflow continues even if the task fails.  The status of the task is reflected as `COMPLETED_WITH_ERRORS`|Defaults to `false`|
-|inputParameters|JSON template that defines the input given to the task|See "wiring inputs and outputs" for details|
+|inputParameters|JSON template that defines the input given to the task|See [Wiring Inputs and Outputs](#wiring-inputs-and-outputs) for details|
+|domain|See [Task Domains](/configuration/taskdomains) for more information.|optional|
 
-In addition to these parameters, additional parameters specific to the task type are required as documented [here](/metadata/systask/)
+In addition to these parameters, System Tasks have their own parameters. Checkout [System Tasks](/configuration/systask) for more information.
 
-# Wiring Inputs and Outputs
+### Wiring Inputs and Outputs
 
 Workflows are supplied inputs by client when a new execution is triggered. 
 Workflow input is a JSON payload that is available via ```${workflow.input...}``` expressions.
@@ -115,9 +74,9 @@ Syntax for mapping the values follows the pattern as:
 
 __${SOURCE.input/output.JSONPath}__
 
-|-|-|
+|field|description|
 |------|---|
-|SOURCE|can be either "workflow" or reference name of any of the task|
+|SOURCE|can be either "workflow" or any of the task reference name |
 |input/output|refers to either the input or output of the source|
 |JSONPath|JSON path expression to extract JSON fragment from source's input/output|
 
@@ -197,5 +156,6 @@ When scheduling the task, Conductor will merge the values from workflow input an
 }
 ```
 
+### Workflow notifications
 
-
+Conductor can be configured to publish notifications to external systems upon completion/termination of workflows. See [extending conductor](/extend/#workflow-status-listener) for details.

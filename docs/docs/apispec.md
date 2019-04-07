@@ -3,31 +3,19 @@
 | ------------- |:-------------|---|
 | `GET /metadata/taskdefs` | Get all the task definitions| n/a|
 | `GET /metadata/taskdefs/{taskType}` | Retrieve task definition| Task Name|
-| `POST /metadata/taskdefs` | Register new task definitions| List of [Task Definitions](/metadata/#task-definition)|
-| `PUT /metadata/taskdefs` | Update a task definition| A [Task Definition](/metadata/#task-definition)|
+| `POST /metadata/taskdefs` | Register new task definitions| List of [Task Definitions](/configuration/taskdef)|
+| `PUT /metadata/taskdefs` | Update a task definition| A [Task Definition](/configuration/taskdef)|
 | `DELETE /metadata/taskdefs/{taskType}` | Delete a task definition| Task Name|
 |||
 | `GET /metadata/workflow` | Get all the workflow definitions| n/a|
-| `POST /metadata/workflow` | Register new workflow| [Workflow Definition](/metadata/#workflow-definition)|
-| `PUT /metadata/workflow` | Register/Update new workflows| List of [Workflow Definition](/metadata/#workflow-definition)|
+| `POST /metadata/workflow` | Register new workflow| [Workflow Definition](/configuration/workflowdef)|
+| `PUT /metadata/workflow` | Register/Update new workflows| List of [Workflow Definition](/configuration/workflowdef)|
 | `GET /metadata/workflow/{name}?version=` | Get the workflow definitions| workflow name, version (optional)|
 |||
  
 ## Start A Workflow
 ### With Input only
-```
-POST /workflow/{name}?version=&correlationId=
-{
-   //JSON payload for workflow
-}
-```
-|Parameter|Description|
-|---|---|
-|version|Optional.  If not specified uses the latest version of the workflow|
-|correlationId|User supplied Id that can be used to retrieve workflows|
-
-#### Input
-JSON Payload to start the workflow.  Mandatory.  If workflow does not expect any input MUST pass an empty JSON like `{}`
+See [Start Workflow Request](/gettingstarted/startworkflow/#start-workflow-request).
 
 #### Output
 Id of the workflow (GUID)
@@ -66,7 +54,6 @@ Id of the workflow (GUID)
 |`GET /workflow/running/{name}`|Get all the running workflows of a given type|
 |`GET /workflow/running/{name}/correlated/{correlationId}?includeClosed=true|false&includeTasks=true|false`|Get all the running workflows filtered by correlation Id.  If includeClosed is set, also includes workflows that have completed running.|
 |`GET /workflow/search`|Search for workflows.  See Below.|
-|||
 
 
 ## Search for Workflows
@@ -178,5 +165,5 @@ These are critical endpoints used to poll for task, send ack (after polling) and
     
 }
 ```
-!!!info "Acknowledging tasks after poll"
+!!!Info "Acknowledging tasks after poll"
 	If the worker fails to ack the task after polling, the task is re-queued and put back in queue and is made available during subsequent poll.
