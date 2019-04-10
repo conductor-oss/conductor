@@ -741,6 +741,7 @@ public class WorkflowExecutor {
                 long callBack = taskResult.getCallbackAfterSeconds();
                 queueDAO.remove(taskQueueName, task.getTaskId());
                 LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
+
                 queueDAO.push(taskQueueName, task.getTaskId(), callBack); // Milliseconds
                 LOGGER.debug("Task: {} pushed back to taskQueue: {} since the task status is {} with callbackAfterSeconds: {}", task, taskQueueName, task.getStatus().name(), callBack);
                 break;
@@ -1053,10 +1054,11 @@ public class WorkflowExecutor {
         }
     }
 
-    private void setTaskDomains(List<Task> tasks, Workflow wf) {
+    @VisibleForTesting
+    void setTaskDomains(List<Task> tasks, Workflow wf) {
         Map<String, String> taskToDomain = wf.getTaskToDomain();
         if (taskToDomain != null) {
-            // Check if all tasks have the same domain "*"
+            // Step 1: Apply * mapping to all tasks, if present.
             String domainstr = taskToDomain.get("*");
             if (domainstr != null) {
                 String[] domains = domainstr.split(",");
@@ -1069,16 +1071,16 @@ public class WorkflowExecutor {
                     }
                 });
 
-            } else {
-                tasks.forEach(task -> {
-                    if (!TaskType.isSystemTask(task.getTaskType())) {
-                        String taskDomainstr = taskToDomain.get(task.getTaskType());
-                        if (taskDomainstr != null) {
-                            task.setDomain(getActiveDomain(task.getTaskType(), taskDomainstr.split(",")));
-                        }
-                    }
-                });
             }
+            // Step 2: Override additional mappings.
+            tasks.forEach(task -> {
+                if (!TaskType.isSystemTask(task.getTaskType())) {
+                    String taskDomainstr = taskToDomain.get(task.getTaskType());
+                    if (taskDomainstr != null) {
+                        task.setDomain(getActiveDomain(task.getTaskType(), taskDomainstr.split(",")));
+                    }
+                }
+            });
         }
     }
 
@@ -1086,6 +1088,9 @@ public class WorkflowExecutor {
      * Gets the active domain from the list of domains where the task is to be queued.
      * The domain list must be ordered.
      * In sequence, check if any worker has polled for last `activeWorkerLastPollInSecs` seconds, if so that is the Active domain.
+     * When no active domains are found:
+     *   <li> If NO_DOMAIN token is provided, return null.
+     *   <li> Else, return last domain from list.
      *
      * @param taskType the taskType of the task for which active domain is to be found
      * @param domains  the array of domains for the task. (Must contain atleast one element).
@@ -1098,12 +1103,13 @@ public class WorkflowExecutor {
         }
 
         return Arrays.stream(domains)
+                .filter(domain -> !domain.equalsIgnoreCase("NO_DOMAIN"))
                 .map(domain -> executionDAOFacade.getTaskPollDataByDomain(taskType, domain.trim()))
                 .filter(Objects::nonNull)
                 .filter(validateLastPolledTime)
                 .findFirst()
                 .map(PollData::getDomain)
-                .orElse(domains[domains.length - 1].trim());
+                .orElse(domains[domains.length - 1].trim().equalsIgnoreCase("NO_DOMAIN") ? null : domains[domains.length - 1].trim());
     }
 
     private long getTaskDuration(long s, Task task) {
