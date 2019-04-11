@@ -17,6 +17,7 @@ package com.netflix.conductor.client.task;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.netflix.conductor.client.exceptions.ConductorClientException;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -33,6 +34,7 @@ import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -105,10 +107,10 @@ public class WorkflowTaskCoordinatorTests {
 				latch.countDown();
 				return null;
 			}
-		).when(client).updateTask(any(), anyString());
+		).when(client).updateTask(any());
 		coordinator.init();
 		Uninterruptibles.awaitUninterruptibly(latch);
-		Mockito.verify(client).updateTask(any(), anyString());
+		Mockito.verify(client).updateTask(any());
 	}
 
 	@Test
@@ -138,7 +140,7 @@ public class WorkflowTaskCoordinatorTests {
 
 		// then worker.execute must not be called and task must be updated with IN_PROGRESS status
 		verify(worker, never()).execute(any());
-		verify(client, never()).updateTask(any(), any());
+		verify(client, never()).updateTask(any());
 	}
 
 	@Test
@@ -168,7 +170,7 @@ public class WorkflowTaskCoordinatorTests {
 
 		// then worker.execute must not be called and task must be updated with IN_PROGRESS status
 		verify(worker, never()).execute(any());
-		verify(client, never()).updateTask(any(), any());
+		verify(client, never()).updateTask(any());
 	}
 
 	@Test
@@ -207,7 +209,7 @@ public class WorkflowTaskCoordinatorTests {
 					latch.countDown();
 					return null;
 				}
-		).when(client).updateTask(any(), anyString());
+		).when(client).updateTask(any());
 		coordinator.init();
 		Uninterruptibles.awaitUninterruptibly(latch);
 
@@ -217,6 +219,53 @@ public class WorkflowTaskCoordinatorTests {
 
 		// task must be updated with IN_PROGRESS status three times, two from worker.execute() and
 		// one from returnTask caused by RejectedExecutionException.
-		verify(client, times(3)).updateTask(any(), anyString());
+		verify(client, times(3)).updateTask(any());
+	}
+
+	@Test
+	public void testLargePayloadCanFailUpdateWithRetry() {
+		Task testTask = new Task();
+		testTask.setStatus(Task.Status.COMPLETED);
+
+		Worker worker = mock(Worker.class);
+		when(worker.getPollingInterval()).thenReturn(3000);
+		when(worker.getPollCount()).thenReturn(1);
+		when(worker.getTaskDefName()).thenReturn("test");
+		when(worker.preAck(any())).thenReturn(true);
+		when(worker.execute(any())).thenAnswer(invocation -> {
+			// Sleep for 2 seconds to trigger RejectedExecutionException
+			Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
+			return new TaskResult(testTask);
+		});
+
+		TaskClient taskClient = Mockito.mock(TaskClient.class);
+		WorkflowTaskCoordinator coordinator = new WorkflowTaskCoordinator.Builder()
+				.withWorkers(worker)
+				.withThreadCount(1)
+				.withWorkerQueueSize(1)
+				.withSleepWhenRetry(100000)
+				.withUpdateRetryCount(3)
+				.withTaskClient(taskClient)
+				.withWorkerNamePrefix("test-worker-")
+				.build();
+
+		when(taskClient.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask));
+		when(taskClient.ack(anyString(), anyString())).thenReturn(true);
+
+		doThrow(ConductorClientException.class).when(taskClient).evaluateAndUploadLargePayload(any(TaskResult.class), anyString());
+
+		CountDownLatch latch = new CountDownLatch(1);
+
+		doAnswer(invocation -> {
+					latch.countDown();
+					return null;
+				}
+		).when(worker).onErrorUpdate(any());
+
+		coordinator.init();
+		Uninterruptibles.awaitUninterruptibly(latch);
+
+		// When evaluateAndUploadLargePayload fails indefinitely, task update shouldn't be called.
+		verify(taskClient, times(0)).updateTask(any());
 	}
 }
