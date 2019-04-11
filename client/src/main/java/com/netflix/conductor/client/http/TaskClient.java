@@ -213,6 +213,16 @@ public class TaskClient extends ClientBase {
     }
 
     /**
+     * Use updateTask(TaskResult taskResult) instead.
+     * @param taskResult
+     * @param taskType
+     */
+    @Deprecated
+    public void updateTask(TaskResult taskResult, String taskType) {
+        updateTask(taskResult);
+    }
+
+    /**
      * Updates the result of a task execution.
      * If the size of the task output payload is bigger than {@link ConductorClientConfiguration#getTaskOutputPayloadThresholdKB()},
      * it is uploaded to {@link ExternalPayloadStorage}, if enabled, else the task is marked as FAILED_WITH_TERMINAL_ERROR.
