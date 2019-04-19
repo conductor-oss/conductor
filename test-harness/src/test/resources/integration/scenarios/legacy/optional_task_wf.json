@@ -1,0 +1,60 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1535063868376,
+  "updateTime": 1535063868556,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "045ec0b9-5f79-446b-9832-82918ec047aa",
+  "tasks": [
+    {
+      "taskType": "task_optional",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": "p1 value",
+        "p2": "p2 value"
+      },
+      "referenceTaskName": "task_optional_t1",
+      "retryCount": 0,
+      "seq": 1,
+      "correlationId": "unit_test_1d2488fa6-a508-49d5-9a88-82335a7d43fa",
+      "pollCount": 0,
+      "taskDefName": "task_optional",
+      "scheduledTime": 1535063868452,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1535063868452,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "045ec0b9-5f79-446b-9832-82918ec047aa",
+      "workflowType": "optional_task_wf",
+      "taskId": "80362582-3e22-4b5d-8635-6cc9c2824adf",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "task_optional",
+        "taskReferenceName": "task_optional_t1",
+        "inputParameters": {
+          "p1": "${workflow.input.param1}",
+          "p2": "${workflow.input.param2}"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": true
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    }
+  ],
+  "input": {
+    "param1": "p1 value",
+    "param2": "p2 value"
+  },
+  "workflowType": "optional_task_wf",
+  "version": 1,
+  "correlationId": "unit_test_1d2488fa6-a508-49d5-9a88-82335a7d43fa",
+  "schemaVersion": 2,
+  "startTime": 1535063868376
+}

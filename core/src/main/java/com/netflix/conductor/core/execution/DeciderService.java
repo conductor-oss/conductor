@@ -173,13 +173,14 @@ public class DeciderService {
                 if (workflowTask == null) {
                     workflowTask = workflow.getWorkflowDefinition().getTaskByRefName(pendingTask.getReferenceTaskName());
                 }
-                if (workflowTask != null && workflowTask.isOptional()) {
-                    pendingTask.setStatus(COMPLETED_WITH_ERRORS);
-                } else {
-                    Task retryTask = retry(taskDefinition.orElse(null), workflowTask, pendingTask, workflow);
-                    tasksToBeScheduled.put(retryTask.getReferenceTaskName(), retryTask);
-                    executedTaskRefNames.remove(retryTask.getReferenceTaskName());
+
+                Optional<Task> retryTask = retry(taskDefinition.orElse(null), workflowTask, pendingTask, workflow);
+                if (retryTask.isPresent()) {
+                    tasksToBeScheduled.put(retryTask.get().getReferenceTaskName(), retryTask.get());
+                    executedTaskRefNames.remove(retryTask.get().getReferenceTaskName());
                     outcome.tasksToBeUpdated.add(pendingTask);
+                } else {
+                    pendingTask.setStatus(COMPLETED_WITH_ERRORS);
                 }
             }
 
@@ -352,7 +353,7 @@ public class DeciderService {
     }
 
     @VisibleForTesting
-    Task retry(TaskDef taskDefinition, WorkflowTask workflowTask, Task task, Workflow workflow) throws TerminateWorkflowException {
+    Optional<Task> retry(TaskDef taskDefinition, WorkflowTask workflowTask, Task task, Workflow workflow) throws TerminateWorkflowException {
 
         int retryCount = task.getRetryCount();
 
@@ -361,6 +362,9 @@ public class DeciderService {
         }
 
         if (!task.getStatus().isRetriable() || SystemTaskType.isBuiltIn(task.getTaskType()) || taskDefinition == null || taskDefinition.getRetryCount() <= retryCount) {
+            if (workflowTask != null && workflowTask.isOptional()) {
+                return Optional.empty();
+            }
             WorkflowStatus status = task.getStatus().equals(TIMED_OUT) ? WorkflowStatus.TIMED_OUT : WorkflowStatus.FAILED;
             updateWorkflowOutput(workflow, task);
             throw new TerminateWorkflowException(task.getReasonForIncompletion(), status, task);
@@ -404,7 +408,7 @@ public class DeciderService {
         }
         externalPayloadStorageUtils.verifyAndUpload(rescheduled, ExternalPayloadStorage.PayloadType.TASK_INPUT);
         //for the schema version 1, we do not have to recompute the inputs
-        return rescheduled;
+        return Optional.of(rescheduled);
     }
 
     /**
