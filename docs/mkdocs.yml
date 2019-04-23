@@ -1,11 +1,12 @@
 site_name: Conductor
 repo_url: https://github.com/Netflix/conductor
+edit_uri: edit/dev/docs/docs/
 strict: true
 
 nav:
     - Introduction: index.md
     - Architecture: architecture.md
-    - Getting Started: 
+    - Getting Started:
         - Basic Concepts: gettingstarted/basicconcepts.md
         - Using the Client: gettingstarted/client.md
         - Start a Workflow: gettingstarted/startworkflow.md
