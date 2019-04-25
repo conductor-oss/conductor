@@ -52,6 +52,7 @@ public class Event extends WorkflowSystemTask {
 	private final ObjectMapper objectMapper = new ObjectMapper();
 	private final ParametersUtils parametersUtils;
 	private final EventQueues eventQueues;
+	private boolean isAsync=false;
 
 	@Inject
 	public Event(EventQueues eventQueues, ParametersUtils parametersUtils) {
@@ -81,7 +82,11 @@ public class Event extends WorkflowSystemTask {
 		if(queue != null) {
 			queue.publish(Collections.singletonList(message));
 			task.getOutputData().putAll(payload);
-			task.setStatus(Status.COMPLETED);
+			if (isAsyncComplete(task)) {
+				task.setStatus(Status.IN_PROGRESS);
+			} else {
+				task.setStatus(Status.COMPLETED);
+			}
 		} else {
 			task.setReasonForIncompletion("No queue found to publish.");
 			task.setStatus(Status.FAILED);
@@ -140,6 +145,6 @@ public class Event extends WorkflowSystemTask {
 
 	@Override
 	public boolean isAsync() {
-		return false;
+		return this.isAsync;
 	}
 }

@@ -118,7 +118,11 @@ public class HttpTask extends WorkflowSystemTask {
 			HttpResponse response = httpCall(input);
 			logger.info("response {}, {}", response.statusCode, response.body);
 			if(response.statusCode > 199 && response.statusCode < 300) {
-				task.setStatus(Status.COMPLETED);
+				if (isAsyncComplete(task)) {
+					task.setStatus(Status.IN_PROGRESS);
+				} else {
+					task.setStatus(Status.COMPLETED);
+				}
 			} else {
 				if(response.body != null) {
 					task.setReasonForIncompletion(response.body.toString());
