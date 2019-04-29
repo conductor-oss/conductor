@@ -283,4 +283,51 @@ public class TestEvent {
 
     }
 
+    @Test
+    public void testAsyncComplete() throws Exception {
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(testWorkflowDefinition);
+
+        Task task = new Task();
+        task.getInputData().put("sink", "conductor");
+        task.getInputData().put("asyncComplete", true);
+        task.setReferenceTaskName("task0");
+        task.setTaskId("task_id_0");
+
+        QueueDAO dao = mock(QueueDAO.class);
+        String[] publishedQueue = new String[1];
+        List<Message> publishedMessages = new LinkedList<>();
+
+        doAnswer((Answer<Void>) invocation -> {
+            String queueName = invocation.getArgumentAt(0, String.class);
+            System.out.println(queueName);
+            publishedQueue[0] = queueName;
+            List<Message> messages = invocation.getArgumentAt(1, List.class);
+            publishedMessages.addAll(messages);
+            return null;
+        }).when(dao).push(any(), any());
+
+        doAnswer((Answer<List<String>>) invocation -> {
+            String messageId = invocation.getArgumentAt(1, String.class);
+            if(publishedMessages.get(0).getId().equals(messageId)) {
+                publishedMessages.remove(0);
+                return Collections.singletonList(messageId);
+            }
+            return null;
+        }).when(dao).remove(any(), any());
+
+        Map<String, EventQueueProvider> providers = new HashMap<>();
+        providers.put("conductor", new DynoEventQueueProvider(dao, new TestConfiguration()));
+        eventQueues = new EventQueues(providers, parametersUtils);
+        Event event = new Event(eventQueues, parametersUtils);
+        event.start(workflow, task, null);
+
+        assertEquals(Status.IN_PROGRESS, task.getStatus());
+        assertNotNull(task.getOutputData());
+        assertEquals("conductor:" + workflow.getWorkflowName() + ":" + task.getReferenceTaskName(), task.getOutputData().get("event_produced"));
+        assertEquals(task.getOutputData().get("event_produced"), "conductor:" + publishedQueue[0]);
+        assertEquals(1, publishedMessages.size());
+        assertEquals(task.getTaskId(), publishedMessages.get(0).getId());
+        assertNotNull(publishedMessages.get(0).getPayload());
+    }
 }

@@ -18,13 +18,13 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Viren
@@ -78,6 +78,19 @@ public class WorkflowSystemTask {
 	 */
 	public boolean isAsync() {
 		return false;
+	}
+
+	/**
+	 *
+	 * @return True to keep task in 'IN_PROGRESS' state, and 'COMPLETE' later by an external message.
+	 */
+	public boolean isAsyncComplete(Task task) {
+		if (task.getInputData().containsKey("asyncComplete")) {
+			Object result = task.getInputData().get("asyncComplete");
+			return (result == null)?false:(Boolean)result;
+		} else {
+			return false;
+		}
 	}
 	
 	/**

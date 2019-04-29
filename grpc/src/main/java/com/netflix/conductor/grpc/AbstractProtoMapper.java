@@ -1172,6 +1172,9 @@ public abstract class AbstractProtoMapper {
             to.setRateLimited( from.isRateLimited() );
         }
         to.addAllDefaultExclusiveJoinTask( from.getDefaultExclusiveJoinTask() );
+        if (from.isAsyncComplete() != null) {
+            to.setAsyncComplete( from.isAsyncComplete() );
+        }
         return to.build();
     }
 
@@ -1211,6 +1214,7 @@ public abstract class AbstractProtoMapper {
         }
         to.setRateLimited( from.getRateLimited() );
         to.setDefaultExclusiveJoinTask( from.getDefaultExclusiveJoinTaskList().stream().collect(Collectors.toCollection(ArrayList::new)) );
+        to.setAsyncComplete( from.getAsyncComplete() );
         return to;
     }
 

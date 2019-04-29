@@ -71,6 +71,7 @@ Event task provides ability to publish an event (message) to either Conductor or
 |name|description|
 |---|---|
 | sink |Qualified name of the event that is produced.  e.g. conductor or sqs:sqs_queue_name|
+| asyncComplete |```false``` to mark status COMPLETED upon execution ; ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it.
 
 
 **Example**
@@ -78,6 +79,7 @@ Event task provides ability to publish an event (message) to either Conductor or
 ``` json
 {
 	"sink": "sqs:example_sqs_queue_name"
+	"asyncComplete": false
 }
 ```
 
@@ -121,6 +123,7 @@ The task expects an input parameter named ```http_request``` as part of the task
 |headers|A map of additional http headers to be sent along with the request.|
 |body|Request body|
 |vipAddress|When using discovery based service URLs.|
+| asyncComplete |```false``` to mark status COMPLETED upon execution ; ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it.
 
 **HTTP Task Output**
 

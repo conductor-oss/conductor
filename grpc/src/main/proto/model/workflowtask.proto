@@ -35,4 +35,5 @@ message WorkflowTask {
     TaskDef task_definition = 19;
     bool rate_limited = 20;
     repeated string default_exclusive_join_task = 21;
+    bool async_complete = 23;
 }
