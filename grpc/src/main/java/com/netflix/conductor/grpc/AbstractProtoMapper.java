@@ -459,6 +459,7 @@ public abstract class AbstractProtoMapper {
         if (from.getVersion() != null) {
             to.setVersion( from.getVersion() );
         }
+        to.putAllTaskToDomain( from.getTaskToDomain() );
         return to.build();
     }
 
@@ -466,6 +467,7 @@ public abstract class AbstractProtoMapper {
         SubWorkflowParams to = new SubWorkflowParams();
         to.setName( from.getName() );
         to.setVersion( from.getVersion() );
+        to.setTaskToDomain( from.getTaskToDomainMap() );
         return to;
     }
 

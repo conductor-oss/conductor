@@ -50,6 +50,10 @@ public class SubWorkflow extends WorkflowSystemTask {
 		Map<String, Object> input = task.getInputData();
 		String name = input.get("subWorkflowName").toString();
 		int version = (int) input.get("subWorkflowVersion");
+		Map taskToDomain = workflow.getTaskToDomain();
+		if (input.get("subWorkflowTaskToDomain") instanceof Map) {
+			taskToDomain = (Map) input.get("subWorkflowTaskToDomain");
+		}
 		Map<String, Object> wfInput = (Map<String, Object>) input.get("workflowInput");
 		if (wfInput == null || wfInput.isEmpty()) {
 			wfInput = input;
@@ -57,7 +61,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 		String correlationId = workflow.getCorrelationId();
 
 		try {
-			String subWorkflowId = provider.startWorkflow(name, version, wfInput, null, correlationId, workflow.getWorkflowId(), task.getTaskId(), null, workflow.getTaskToDomain());
+			String subWorkflowId = provider.startWorkflow(name, version, wfInput, null, correlationId, workflow.getWorkflowId(), task.getTaskId(), null, taskToDomain);
 			task.getOutputData().put(SUB_WORKFLOW_ID, subWorkflowId);
 			task.getInputData().put(SUB_WORKFLOW_ID, subWorkflowId);
 			task.setStatus(Status.IN_PROGRESS);

@@ -7,9 +7,7 @@ import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -30,5 +28,14 @@ public class SubWorkflowParamsTest {
 
         assertTrue(validationErrors.contains("SubWorkflowParams name cannot be null"));
         assertTrue(validationErrors.contains("SubWorkflowParams name cannot be empty"));
+    }
+
+    @Test
+    public void testWorkflowSetTaskToDomain() {
+        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();//name is null
+        Map<String, String> taskToDomain = new HashMap<>();
+        taskToDomain.put("unit", "test");
+        subWorkflowParams.setTaskToDomain(taskToDomain);
+        assertEquals(taskToDomain, subWorkflowParams.getTaskToDomain());
     }
 }
