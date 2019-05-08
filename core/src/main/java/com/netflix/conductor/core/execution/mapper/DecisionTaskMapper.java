@@ -87,6 +87,7 @@ public class DecisionTaskMapper implements TaskMapper {
         decisionTask.getInputData().put("case", caseValue);
         decisionTask.getOutputData().put("caseOutput", Collections.singletonList(caseValue));
         decisionTask.setTaskId(taskId);
+        decisionTask.setStartTime(System.currentTimeMillis());
         decisionTask.setStatus(Task.Status.IN_PROGRESS);
         decisionTask.setWorkflowTask(taskToSchedule);
         tasksToBeScheduled.add(decisionTask);
