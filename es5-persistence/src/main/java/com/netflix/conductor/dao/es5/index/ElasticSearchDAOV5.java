@@ -136,11 +136,12 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         int corePoolSize = 6;
         int maximumPoolSize = 12;
         long keepAliveTime = 1L;
+        int workerQueueSize = config.getAsyncWorkerQueueSize();
         this.executorService = new ThreadPoolExecutor(corePoolSize,
             maximumPoolSize,
             keepAliveTime,
             TimeUnit.MINUTES,
-            new LinkedBlockingQueue<>());
+            new LinkedBlockingQueue<>(workerQueueSize));
     }
 
     @Override
