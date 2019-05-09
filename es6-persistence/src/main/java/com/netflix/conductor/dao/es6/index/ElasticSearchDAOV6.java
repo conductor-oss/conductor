@@ -151,7 +151,9 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
         this.logIndexPrefix = this.indexPrefix + "_" + LOG_DOC_TYPE;
         this.messageIndexPrefix = this.indexPrefix + "_" + MSG_DOC_TYPE;
         this.eventIndexPrefix = this.indexPrefix + "_" + EVENT_DOC_TYPE;
-        this.executorService = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.MINUTES, new LinkedBlockingQueue<>());
+        int workerQueueSize = config.getAsyncWorkerQueueSize();
+
+        this.executorService = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.MINUTES, new LinkedBlockingQueue<>(workerQueueSize));
     }
 
     @Override

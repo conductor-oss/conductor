@@ -150,9 +150,10 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
         this.logIndexPrefix = this.indexPrefix + "_" + LOG_DOC_TYPE;
         this.messageIndexPrefix = this.indexPrefix + "_" + MSG_DOC_TYPE;
         this.eventIndexPrefix = this.indexPrefix + "_" + EVENT_DOC_TYPE;
+        int workerQueueSize = config.getAsyncWorkerQueueSize();
 
         // Set up a workerpool for performing async operations.
-        this.executorService = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.MINUTES, new LinkedBlockingQueue<>());
+        this.executorService = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.MINUTES, new LinkedBlockingQueue<>(workerQueueSize));
     }
 
     @Override

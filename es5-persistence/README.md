@@ -17,6 +17,8 @@ If using the `http` or `https`, then conductor will use the REST transport proto
 Defaults to `conductor`
 * `workflow.elasticsearch.tasklog.index.name` - The name of the task log index.
 Defaults to `task_log`
+* `workflow.elasticsearch.async.dao.worker.queue.size=100` - Worker Queue size used in executor service for async methods in IndexDao 
+Defaults to `100`
 
 ### Embedded Configuration
 

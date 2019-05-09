@@ -44,10 +44,9 @@ public interface ElasticSearchConfiguration extends Configuration {
     String EMBEDDED_SETTINGS_FILE_DEFAULT_VALUE = "embedded-es.yml";
 
     String ELASTIC_SEARCH_ARCHIVE_SEARCH_BATCH_SIZE_PROPERTY_NAME = "workflow.elasticsearch.archive.search.batchSize";
+    int ELASTIC_SEARCH_ARCHIVE_SEARCH_BATCH_SIZE_DEFAULT_VALUE = 5000;
 
     String ELASTIC_SEARCH_ASYNC_DAO_WORKER_QUEUE_SIZE = "workflow.elasticsearch.async.dao.worker.queue.size";
-
-    int ELASTIC_SEARCH_ARCHIVE_SEARCH_BATCH_SIZE_DEFAULT_VALUE = 5000;
     int DEFAULT_ASYNC_WORKER_QUEUE_SIZE = 100;
 
     default String getURL() {
@@ -111,10 +110,6 @@ public interface ElasticSearchConfiguration extends Configuration {
         return elasticSearchInstanceType;
     }
 
-    default int getAsyncWorkerQueueSize() {
-       return  getIntProperty(ELASTIC_SEARCH_ASYNC_DAO_WORKER_QUEUE_SIZE, DEFAULT_ASYNC_WORKER_QUEUE_SIZE);
-    }
-    
     enum ElasticSearchInstanceType {
         MEMORY, EXTERNAL
     }
@@ -122,5 +117,9 @@ public interface ElasticSearchConfiguration extends Configuration {
     default int getArchiveSearchBatchSize() {
         return getIntProperty(ELASTIC_SEARCH_ARCHIVE_SEARCH_BATCH_SIZE_PROPERTY_NAME,
             ELASTIC_SEARCH_ARCHIVE_SEARCH_BATCH_SIZE_DEFAULT_VALUE);
+    }
+
+    default int getAsyncWorkerQueueSize() {
+        return  getIntProperty(ELASTIC_SEARCH_ASYNC_DAO_WORKER_QUEUE_SIZE, DEFAULT_ASYNC_WORKER_QUEUE_SIZE);
     }
 }
