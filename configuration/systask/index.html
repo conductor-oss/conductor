@@ -247,7 +247,7 @@
     <li>System Tasks</li>
     <li class="wy-breadcrumbs-aside">
       
-        <a href="https://github.com/Netflix/conductor/edit/master/docs/configuration/systask.md"
+        <a href="https://github.com/Netflix/conductor/edit/dev/docs/docs/configuration/systask.md"
           class="icon icon-github"> Edit on GitHub</a>
       
     </li>
@@ -348,11 +348,16 @@ The task takes 3 parameters:</p>
 <td>sink</td>
 <td>Qualified name of the event that is produced.  e.g. conductor or sqs:sqs_queue_name</td>
 </tr>
+<tr>
+<td>asyncComplete</td>
+<td><code>false</code> to mark status COMPLETED upon execution ; <code>true</code> to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it.</td>
+</tr>
 </tbody>
 </table>
 <p><strong>Example</strong></p>
 <pre class="codehilite"><code class="language-json">{
     &quot;sink&quot;: &quot;sqs:example_sqs_queue_name&quot;
+    &quot;asyncComplete&quot;: false
 }</code></pre>
 
 
@@ -411,6 +416,10 @@ The input given to the event task is made available to the published message as 
 <tr>
 <td>vipAddress</td>
 <td>When using discovery based service URLs.</td>
+</tr>
+<tr>
+<td>asyncComplete</td>
+<td><code>false</code> to mark status COMPLETED upon execution ; <code>true</code> to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it.</td>
 </tr>
 </tbody>
 </table>
