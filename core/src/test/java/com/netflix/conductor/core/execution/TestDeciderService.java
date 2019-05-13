@@ -593,16 +593,16 @@ public class TestDeciderService {
         workflowTask.getInputParameters().put("task_id", "${CPEWF_TASK_ID}");
         workflowTask.getInputParameters().put("env", env);
 
-        Task task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        Optional<Task> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
         System.out.println(task.getTaskId() + ":\n" + task.getInputData());
-        System.out.println(task2.getTaskId() + ":\n" + task2.getInputData());
+        System.out.println(task2.get().getTaskId() + ":\n" + task2.get().getInputData());
 
         assertEquals("t1", task.getInputData().get("task_id"));
         assertEquals("t1", ((Map<String, Object>) task.getInputData().get("env")).get("env_task_id"));
 
-        assertNotSame(task.getTaskId(), task2.getTaskId());
-        assertEquals(task2.getTaskId(), task2.getInputData().get("task_id"));
-        assertEquals(task2.getTaskId(), ((Map<String, Object>) task2.getInputData().get("env")).get("env_task_id"));
+        assertNotSame(task.getTaskId(), task2.get().getTaskId());
+        assertEquals(task2.get().getTaskId(), task2.get().getInputData().get("task_id"));
+        assertEquals(task2.get().getTaskId(), ((Map<String, Object>) task2.get().getInputData().get("env")).get("env_task_id"));
 
         Task task3 = new Task();
         task3.getInputData().putAll(taskInput);

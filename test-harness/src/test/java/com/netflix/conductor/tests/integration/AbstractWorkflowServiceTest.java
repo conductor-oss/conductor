@@ -72,10 +72,10 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED_WITH_ERRORS;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
@@ -105,6 +105,7 @@ public abstract class AbstractWorkflowServiceTest {
     private static final int RETRY_COUNT = 1;
     private static final String JUNIT_TEST_WF_NON_RESTARTABLE = "junit_test_wf_non_restartable";
     private static final String WF_WITH_SUB_WF = "WorkflowWithSubWorkflow";
+    private static final String WORKFLOW_WITH_OPTIONAL_TASK = "optional_task_wf";
 
     @Rule
     public final ExpectedException expectedException = ExpectedException.none();
@@ -4600,6 +4601,137 @@ public abstract class AbstractWorkflowServiceTest {
             assertTrue(!eventTask.getOutputData().isEmpty());
             assertNotNull(eventTask.getOutputData().get("event_produced"));
         }
+    }
+
+    @Test
+    public void testSimpleWorkflowWithOptionalTask() throws Exception {
+        createOptionalTaskWorkflow();
+
+        metadataService.getWorkflowDef(WORKFLOW_WITH_OPTIONAL_TASK, 1);
+
+        String correlationId = "unit_test_1";
+        Map<String, Object> workflowInput = new HashMap<>();
+        String inputParam1 = "p1 value";
+        workflowInput.put("param1", inputParam1);
+        workflowInput.put("param2", "p2 value");
+        String workflowId = startOrLoadWorkflowExecution(WORKFLOW_WITH_OPTIONAL_TASK, 1, correlationId, workflowInput, null, null);
+        logger.debug("testSimpleWorkflowWithOptionalTask.wfid=" + workflowId);
+        assertNotNull(workflowId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(1, workflow.getTasks().size());        //The very first task is the one that should be scheduled.
+        assertEquals(1, queueDAO.getSize("task_optional"));
+
+        // Polling for the first task should return the first task
+        Task task = workflowExecutionService.poll("task_optional", "task1.junit.worker.optional");
+        assertNotNull(task);
+        assertEquals("task_optional", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(workflowId, task.getWorkflowInstanceId());
+
+        // As the task_optional is out of the queue, the next poll should not get it
+        Task nullTask = workflowExecutionService.poll("task_optional", "task1.junit.worker.optional");
+        assertNull(nullTask);
+
+        TaskResult taskResult = new TaskResult(task);
+        taskResult.setReasonForIncompletion("NETWORK ERROR");
+        taskResult.setStatus(TaskResult.Status.FAILED);
+
+        workflowExecutionService.updateTask(taskResult);
+
+        workflowExecutor.decide(workflowId);
+        assertEquals(1, queueDAO.getSize("task_optional"));
+
+        // The first task would be failed and a new task will be scheduled
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+        assertTrue(workflow.getTasks().stream().allMatch(t -> t.getReferenceTaskName().equals("task_optional_t1")));
+        assertEquals(FAILED, workflow.getTasks().get(0).getStatus());
+        assertEquals(SCHEDULED, workflow.getTasks().get(1).getStatus());
+
+        // Polling now should get the same task back because it should have been put back in the queue
+        Task taskAgain = workflowExecutionService.poll("task_optional", "task1.junit.worker");
+        assertNotNull(taskAgain);
+
+        Thread.sleep(5000);
+
+        // The second task would be timed-out and completed with errors
+        workflowExecutor.decide(workflowId);
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+
+        assertEquals(0, queueDAO.getSize("task_optional"));
+        assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
+        System.out.println(workflow.getTasks());
+        System.out.println(workflow.getTasks().get(1));
+        System.out.println(workflow.getTasks().get(2));
+        assertEquals(3, workflow.getTasks().size());
+        assertEquals(COMPLETED_WITH_ERRORS, workflow.getTasks().get(1).getStatus());
+
+        // poll for next task
+        task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker.testTimeout");
+        assertNotNull(task);
+        assertEquals("junit_task_2", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        task.setReasonForIncompletion("unit test failure");
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
+    private void createOptionalTaskWorkflow() {
+        TaskDef task = new TaskDef();
+        task.setName("task_optional");
+        task.setTimeoutSeconds(5);
+        task.setRetryCount(RETRY_COUNT);
+        task.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        task.setRetryDelaySeconds(0);
+
+        metadataService.registerTaskDef(Collections.singletonList(task));
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName(WORKFLOW_WITH_OPTIONAL_TASK);
+        def.setDescription(def.getName());
+        def.setVersion(1);
+        def.setInputParameters(Arrays.asList("param1", "param2"));
+        Map<String, Object> outputParameters = new HashMap<>();
+        outputParameters.put("o1", "${workflow.input.param1}");
+        outputParameters.put("o2", "${t2.output.uuid}");
+        outputParameters.put("o3", "${t1.output.op}");
+        def.setOutputParameters(outputParameters);
+        def.setSchemaVersion(2);
+        LinkedList<WorkflowTask> wftasks = new LinkedList<>();
+
+        WorkflowTask wft1 = new WorkflowTask();
+        wft1.setName("task_optional");
+        Map<String, Object> ip1 = new HashMap<>();
+        ip1.put("p1", "${workflow.input.param1}");
+        ip1.put("p2", "${workflow.input.param2}");
+        wft1.setInputParameters(ip1);
+        wft1.setOptional(true);
+        wft1.setTaskReferenceName("task_optional_t1");
+
+        WorkflowTask wft2 = new WorkflowTask();
+        wft2.setName("junit_task_2");
+        Map<String, Object> ip2 = new HashMap<>();
+        ip2.put("tp1", "${workflow.input.param1}");
+        ip2.put("tp2", "${t1.output.op}");
+        wft2.setInputParameters(ip2);
+        wft2.setTaskReferenceName("t2");
+
+        wftasks.add(wft1);
+        wftasks.add(wft2);
+        def.setTasks(wftasks);
+
+        metadataService.updateWorkflowDef(def);
     }
 
     @Test
