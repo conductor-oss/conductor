@@ -1,4 +1,5 @@
 import clone from "lodash/fp/clone";
+import isEmpty from "lodash/fp/isEmpty";
 
 class Workflow2Graph {
 
@@ -17,28 +18,45 @@ class Workflow2Graph {
 
     const forks = [];
     const tasks = wfe.tasks || [];
+    this.executedTasks = {};
     tasks.forEach(tt=>{
-      if(tt.taskType === 'FORK'){
+      this.executedTasks[tt.referenceTaskName] = {
+        status: tt.status,
+        input: tt.inputData,
+        output: tt.outputData,
+        taskType: tt.taskType,
+        reasonForIncompletion:
+        tt.reasonForIncompletion,
+        task: tt
+      };
+
+      if(tt.type === 'FORK'){
         let wfts = [];
         let forkedTasks = tt.inputData && tt.inputData.forkedTasks || [];
         forkedTasks.forEach(ft =>{
-          wfts.push({name: ft, referenceTaskName: ft, type: 'SIMPLE'});
+          wfts.push({name: ft, taskReferenceName: ft, type: 'SIMPLE'});
         });
-        forks[tt.referenceTaskName] = wfts;
+        forks[tt.taskReferenceName] = wfts;
       }
-    });
+    }, this);
 
     let nodes = [];
     let vertices = {};
 
-    this.executedTasks = {};
-    let joins = {};
-    wfe.tasks.forEach(t => {
-      this.executedTasks[t.referenceTaskName] = {status: t.status, input: t.inputData, output: t.outputData, taskType: t.taskType, reasonForIncompletion: t.reasonForIncompletion, task: t};
-      if(t.taskType === 'JOIN' ){
-        joins[t.referenceTaskName] = t.inputData.joinOn;
+    // Go through each JOIN in the workflow and build up a mapping to their joinOn data
+    this.joinOnTaskMapping = {};
+    metaTasks.forEach(t => {
+      if(t.type === 'JOIN' && !isEmpty(t.joinOn)) {
+        t.joinOn.forEach(jot => {
+          let allJots = this.joinOnTaskMapping[jot];
+          if (isEmpty(allJots)) {
+            allJots = new Set();
+          }
+          allJots.add(t.taskReferenceName);
+          this.joinOnTaskMapping[jot] = allJots;
+        });
       }
-    });
+    }, this);
 
     this.executedTasks['final'] = {status: '', input: '', output: wfe.output, taskType: 'final', reasonForIncompletion: wfe.reasonForIncompletion, task: {}};
     this.executedTasks['start'] = {status: 'STARTED', input: wfe.input, output: '', taskType: 'final', reasonForIncompletion: '', task: {}};
@@ -264,7 +282,15 @@ class Workflow2Graph {
         } else {
           isExecuting = false;
         }
-        nodes.push({type: 'simple', from: t1.taskReferenceName, to: t2.taskReferenceName, label: '', style: style});
+
+        // See if this is referenced by a joinOn, and point the node/edge "to" those joins
+        if (this.joinOnTaskMapping[t1.taskReferenceName]) {
+          this.joinOnTaskMapping[t1.taskReferenceName].forEach(joinRefName => {
+            nodes.push({type: 'simple', from: t1.taskReferenceName, to: joinRefName, label: '', style: style});
+          }, this);
+        } else {
+          nodes.push({type: 'simple', from: t1.taskReferenceName, to: t2.taskReferenceName, label: '', style: style});
+        }
     }
     return nodes;
 
