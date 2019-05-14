@@ -24,15 +24,21 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.google.inject.name.Named;
 import com.netflix.conductor.core.events.ActionProcessor;
+import com.netflix.conductor.core.events.ActionProcessorImpl;
 import com.netflix.conductor.core.events.EventProcessor;
+import com.netflix.conductor.core.events.EventProcessorImpl;
 import com.netflix.conductor.core.events.EventQueueProvider;
+import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.queue.dyno.DynoEventQueueProvider;
 import com.netflix.conductor.core.execution.ParametersUtils;
+import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.mapper.*;
 import com.netflix.conductor.core.execution.tasks.*;
 import com.netflix.conductor.core.utils.JsonUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.service.ExecutionService;
+import com.netflix.conductor.service.MetadataService;
 
 import static com.netflix.conductor.common.metadata.workflow.TaskType.*;
 import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
@@ -48,8 +54,6 @@ public class CoreModule extends AbstractModule {
     @Override
     protected void configure() {
         install(MultibindingsScanner.asModule());
-        bind(ActionProcessor.class).asEagerSingleton();
-        bind(EventProcessor.class).asEagerSingleton();
         bind(SystemTaskWorkerCoordinator.class).asEagerSingleton();
         bind(SubWorkflow.class).asEagerSingleton();
         bind(Wait.class).asEagerSingleton();
@@ -68,6 +72,19 @@ public class CoreModule extends AbstractModule {
     @Singleton
     public JsonUtils getJsonUtils() {
         return new JsonUtils();
+    }
+
+    @Provides
+    @Singleton
+    public ActionProcessor getActionProcessor(WorkflowExecutor executor, ParametersUtils parametersUtils, JsonUtils jsonUtils) {
+        return new ActionProcessorImpl(executor, parametersUtils, jsonUtils);
+    }
+
+    @Provides
+    @Singleton
+    public EventProcessor getEventProcessor(ExecutionService executionService, MetadataService metadataService,
+                                            ActionProcessor actionProcessor, EventQueues eventQueues, JsonUtils jsonUtils, Configuration configuration) {
+        return new EventProcessorImpl(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, configuration);
     }
 
     @ProvidesIntoMap

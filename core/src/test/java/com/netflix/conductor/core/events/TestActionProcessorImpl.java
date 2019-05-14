@@ -45,15 +45,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-public class TestActionProcessor {
+public class TestActionProcessorImpl {
     private WorkflowExecutor workflowExecutor;
-    private ActionProcessor actionProcessor;
+    private ActionProcessorImpl actionProcessor;
 
     @Before
     public void setup() {
         workflowExecutor = mock(WorkflowExecutor.class);
 
-        actionProcessor = new ActionProcessor(workflowExecutor, new ParametersUtils(), new JsonUtils());
+        actionProcessor = new ActionProcessorImpl(workflowExecutor, new ParametersUtils(), new JsonUtils());
     }
 
     @SuppressWarnings("unchecked")
