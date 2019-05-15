@@ -158,4 +158,4 @@ When scheduling the task, Conductor will merge the values from workflow input an
 
 ### Workflow notifications
 
-Conductor can be configured to publish notifications to external systems upon completion/termination of workflows. See [extending conductor](/extend/#workflow-status-listener) for details.
+Conductor can be configured to publish notifications to external systems upon completion/termination of workflows. See [extending conductor](../../extend/#workflow-status-listener) for details.

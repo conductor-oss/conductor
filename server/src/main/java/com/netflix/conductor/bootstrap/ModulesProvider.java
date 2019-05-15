@@ -71,12 +71,12 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
 
             case MYSQL:
                 modules.add(new MySQLWorkflowModule());
-                logger.info("Starting conductor server using MySQL data store", database);
+                logger.info("Starting conductor server using MySQL data store.");
                 break;
             case MEMORY:
                 modules.add(new LocalRedisModule());
                 modules.add(new RedisWorkflowModule());
-                logger.info("Starting conductor server using in memory data store");
+                logger.info("Starting conductor server using in memory data store.");
                 break;
             case REDIS_CLUSTER:
                 modules.add(new RedisClusterModule());

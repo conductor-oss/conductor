@@ -18,18 +18,18 @@ Ensure all the tasks are registered via `/metadata/taskdefs` APIs.  Add any miss
 ### Where does my worker run?  How does conductor run my tasks?
 
 Conductor does not run the workers.  When a task is scheduled, it is put into the queue maintained by Conductor.  Workers are required to poll for tasks using `/tasks/poll` API at periodic interval, execute the business logic for the task and report back the results using `POST /tasks` API call. 
-Conductor, however will run [system tasks](/configuration/systask/) on the Conductor server.
+Conductor, however will run [system tasks](../configuration/systask/) on the Conductor server.
 
 
 ### How can I schedule workflows to run at a specific time?
 
 Conductor does not provide any scheduling mechanism.  But you can use any of the available scheduling systems to make REST calls to Conductor to start a workflow.  Alternatively, publish a message to a supported eventing system like SQS to trigger a workflow.  
-More details about [eventing](/events).
+More details about [eventing](../configuration/eventhandlers/).
 
 
 ### How do I setup Dynomite cluster?
 
-Visit Dynomite's github page.  [https://github.com/Netflix/dynomite](https://github.com/Netflix/dynomite) to find details on setup and support mechanism.
+Visit Dynomite's [Github page](https://github.com/Netflix/dynomite) to find details on setup and support mechanism.
 
 
 ### Can I use conductor with Ruby / Go / Python?
@@ -43,7 +43,7 @@ Conductor provides frameworks for Java and Python to simplify the task of pollin
 
 ### How can I get help with Dynomite?
 
-Visit Dynomite's github page.  [https://github.com/Netflix/dynomite](https://github.com/Netflix/dynomite) to find details on setup and support mechanism.
+Visit Dynomite's [Github page](https://github.com/Netflix/dynomite) to find details on setup and support mechanism.
 
 
 ### My workflow is running and the task is SCHEDULED but it is not being processed.
@@ -53,4 +53,4 @@ Make sure that the worker is actively polling for this task. Navigate to the `Po
 
 ### How do I configure a notification when my workflow completes or fails?
 
-Refer this [documentation](./configuration/workflowdef/#workflow-notifications) to extend conductor to send out events/notifications upon workflow completion/failure.
+Refer this [documentation](../configuration/workflowdef/#workflow-notifications) to extend conductor to send out events/notifications upon workflow completion/failure.

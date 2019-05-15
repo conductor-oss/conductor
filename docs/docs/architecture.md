@@ -6,7 +6,7 @@ The API and storage layers are pluggable and provide ability to work with differ
 ## Installing and Running
 
 !!! hint "Running in production"
-	For a detailed configuration guide on installing and running Conductor server in production visit [Conductor Server](/server) documentation.
+	For a detailed configuration guide on installing and running Conductor server in production visit [Conductor Server](../server) documentation.
 
 ### Running In-Memory Server
 
@@ -43,8 +43,8 @@ docker-compose up
 
 If you ran it locally, launch UI at [http://localhost:3000/](http://localhost:3000/) OR if you ran it using docker-compose launch the UI at [http://localhost:5000/](http://localhost:5000/)
 
-!!!Note:
-	The server will load a sample kitchensink workflow definition by default.  See [here](/metadata/kitchensink/) for details.
+!!! Note
+	The server will load a sample kitchensink workflow definition by default.  See [here](/labs/kitchensink/) for details.
 
 ## Runtime Model
 Conductor follows RPC based communication model where workers are running on a separate machine from the server. Workers communicate with server over HTTP based endpoints and employs polling model for managing work queues.
@@ -86,7 +86,7 @@ GET /tasks/poll/batch/{taskType}
 	
 **Update task status**
 	
-```json
+```
 POST /tasks
 {
 	"outputData": {

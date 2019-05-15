@@ -65,7 +65,7 @@ public class AdminServiceImpl implements AdminService {
             this.version = prop.getProperty("Implementation-Version");
             this.buildDate = prop.getProperty("Build-Date");
         } catch (Exception e) {
-            LOGGER.error(e.getMessage(), e);
+            LOGGER.error("Error loading properties", e);
         }
     }
 

@@ -78,7 +78,7 @@ public class JettyServer implements Lifecycle {
                 createKitchenSink(port);
             }
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("Error loading sample!", e);
         }
 
         if (join) {

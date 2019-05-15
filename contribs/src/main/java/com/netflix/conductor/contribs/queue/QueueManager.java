@@ -19,6 +19,7 @@
 package com.netflix.conductor.contribs.queue;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -87,7 +88,7 @@ public class QueueManager {
 				String externalId = getValue("externalId", payloadJSON);
 				if(externalId == null || "".equals(externalId)) {
 					logger.error("No external Id found in the payload {}", payload);
-					queue.ack(Arrays.asList(msg));
+					queue.ack(Collections.singletonList(msg));
 					return;
 				}
 				
@@ -98,7 +99,7 @@ public class QueueManager {
 				if(workflowId == null || "".equals(workflowId)) {
 					//This is a bad message, we cannot process it
 					logger.error("No workflow id found in the message. {}", payload);
-					queue.ack(Arrays.asList(msg));
+					queue.ack(Collections.singletonList(msg));
 					return;
 				}
 				Workflow workflow = executionService.getExecutionStatus(workflowId, true);
@@ -113,8 +114,8 @@ public class QueueManager {
 				}
 				
 				if(!taskOptional.isPresent()) {
-					logger.error("No matching tasks to be found to be marked as completed for workflow {}, taskRefName {}, taskId {}", workflowId, taskRefName, taskId);
-					queue.ack(Arrays.asList(msg));
+					logger.error("No matching tasks found to be marked as completed for workflow {}, taskRefName {}, taskId {}", workflowId, taskRefName, taskId);
+					queue.ack(Collections.singletonList(msg));
 					return;
 				}
 				
@@ -123,23 +124,23 @@ public class QueueManager {
 				task.getOutputData().putAll(objectMapper.convertValue(payloadJSON, _mapType));
 				executionService.updateTask(task);
 				
-				List<String> failures = queue.ack(Arrays.asList(msg));
+				List<String> failures = queue.ack(Collections.singletonList(msg));
 				if(!failures.isEmpty()) {
 					logger.error("Not able to ack the messages {}", failures.toString());
 				}
 				
 			} catch(JsonParseException e) {
-				logger.error("Bad mesage? " + e.getMessage(), e);
-				queue.ack(Arrays.asList(msg));
+				logger.error("Bad message? : {} ", msg, e);
+				queue.ack(Collections.singletonList(msg));
 				
 			} catch(ApplicationException e) {
 				if(e.getCode().equals(Code.NOT_FOUND)) {
-					logger.error("Workflow ID specified is not valid for this environment: " + e.getMessage());
-					queue.ack(Arrays.asList(msg));
+					logger.error("Workflow ID specified is not valid for this environment");
+					queue.ack(Collections.singletonList(msg));
 				}
-				logger.error(e.getMessage(), e);
+				logger.error("Error processing message: {}", msg, e);
 			} catch(Exception e) {
-				logger.error(e.getMessage(), e);
+				logger.error("Error processing message: {}", msg, e);
 			}
 			
 		}, (Throwable t) -> {

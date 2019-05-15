@@ -6,11 +6,11 @@ When starting a Workflow execution with a registered definition, Workflow accept
 |:-----|:---|:---|
 | name | Name of the Workflow. MUST be registered with Conductor before starting workflow | |
 | version | Workflow version | defaults to latest available version |
-| input | JSON object with key value params, that can be used by downstream tasks | See [Wiring Inputs and Outputs](/conductor/metadata/workflowdef/#wiring-inputs-and-outputs) for details |
+| input | JSON object with key value params, that can be used by downstream tasks | See [Wiring Inputs and Outputs](../../configuration/workflowdef/#wiring-inputs-and-outputs) for details |
 | correlationId | Unique Id that correlates multiple Workflow executions | optional |
-| taskToDomain | See [Task Domains](/conductor/domains/#task-domains) for more information. | optional |
+| taskToDomain | See [Task Domains](../../configuration/taskdomains/#task-domains) for more information. | optional |
 | workflowDef | Provide adhoc Workflow definition to run, without registering. See Dynamic Workflows below. | optional |
-| externalInputPayloadStoragePath | This is taken care of by Java client. See [External Payload Storage](/conductor/externalpayloadstorage/) for more info. | optional |
+| externalInputPayloadStoragePath | This is taken care of by Java client. See [External Payload Storage](../../externalpayloadstorage/) for more info. | optional |
 
 **Example:**
 

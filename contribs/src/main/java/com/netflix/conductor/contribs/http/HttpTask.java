@@ -223,7 +223,7 @@ public class HttpTask extends WorkflowSystemTask {
 			}
 
 		} catch (IOException jpe) {
-			logger.error(jpe.getMessage(), jpe);
+			logger.error("Error extracting response body", jpe);
 			return json;
 		}
 	}
