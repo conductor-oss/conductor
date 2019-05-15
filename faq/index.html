@@ -256,22 +256,22 @@
 <p>Ensure all the tasks are registered via <code>/metadata/taskdefs</code> APIs.  Add any missing task definition (as reported in the error) and try again.</p>
 <h3 id="where-does-my-worker-run-how-does-conductor-run-my-tasks">Where does my worker run?  How does conductor run my tasks?<a class="headerlink" href="#where-does-my-worker-run-how-does-conductor-run-my-tasks" title="Permanent link">&para;</a></h3>
 <p>Conductor does not run the workers.  When a task is scheduled, it is put into the queue maintained by Conductor.  Workers are required to poll for tasks using <code>/tasks/poll</code> API at periodic interval, execute the business logic for the task and report back the results using <code>POST /tasks</code> API call. 
-Conductor, however will run <a href="/configuration/systask/">system tasks</a> on the Conductor server.</p>
+Conductor, however will run <a href="../configuration/systask/">system tasks</a> on the Conductor server.</p>
 <h3 id="how-can-i-schedule-workflows-to-run-at-a-specific-time">How can I schedule workflows to run at a specific time?<a class="headerlink" href="#how-can-i-schedule-workflows-to-run-at-a-specific-time" title="Permanent link">&para;</a></h3>
 <p>Conductor does not provide any scheduling mechanism.  But you can use any of the available scheduling systems to make REST calls to Conductor to start a workflow.  Alternatively, publish a message to a supported eventing system like SQS to trigger a workflow.<br />
-More details about <a href="/events">eventing</a>.</p>
+More details about <a href="../configuration/eventhandlers/">eventing</a>.</p>
 <h3 id="how-do-i-setup-dynomite-cluster">How do I setup Dynomite cluster?<a class="headerlink" href="#how-do-i-setup-dynomite-cluster" title="Permanent link">&para;</a></h3>
-<p>Visit Dynomite's github page.  <a href="https://github.com/Netflix/dynomite">https://github.com/Netflix/dynomite</a> to find details on setup and support mechanism.</p>
+<p>Visit Dynomite's <a href="https://github.com/Netflix/dynomite">Github page</a> to find details on setup and support mechanism.</p>
 <h3 id="can-i-use-conductor-with-ruby-go-python">Can I use conductor with Ruby / Go / Python?<a class="headerlink" href="#can-i-use-conductor-with-ruby-go-python" title="Permanent link">&para;</a></h3>
 <p>Yes.  Workers can be written any language as long as they can poll and update the task results via HTTP endpoints.</p>
 <p>Conductor provides frameworks for Java and Python to simplify the task of polling and updating the status back to Conductor server.</p>
 <p><strong>Note:</strong> Python and Go clients have been contributed by the community.</p>
 <h3 id="how-can-i-get-help-with-dynomite">How can I get help with Dynomite?<a class="headerlink" href="#how-can-i-get-help-with-dynomite" title="Permanent link">&para;</a></h3>
-<p>Visit Dynomite's github page.  <a href="https://github.com/Netflix/dynomite">https://github.com/Netflix/dynomite</a> to find details on setup and support mechanism.</p>
+<p>Visit Dynomite's <a href="https://github.com/Netflix/dynomite">Github page</a> to find details on setup and support mechanism.</p>
 <h3 id="my-workflow-is-running-and-the-task-is-scheduled-but-it-is-not-being-processed">My workflow is running and the task is SCHEDULED but it is not being processed.<a class="headerlink" href="#my-workflow-is-running-and-the-task-is-scheduled-but-it-is-not-being-processed" title="Permanent link">&para;</a></h3>
 <p>Make sure that the worker is actively polling for this task. Navigate to the <code>Poll Data</code> tab on the Condictor UI and search for your task name in the search box on the top right corner. Ensure that <code>Last Poll Time</code> for this task is current and the <code>Last Polled By</code> is an active instance. The <code>Size</code> column shows the number of scheduled tasks for this task name.</p>
 <h3 id="how-do-i-configure-a-notification-when-my-workflow-completes-or-fails">How do I configure a notification when my workflow completes or fails?<a class="headerlink" href="#how-do-i-configure-a-notification-when-my-workflow-completes-or-fails" title="Permanent link">&para;</a></h3>
-<p>Refer this <a href="./configuration/workflowdef/#workflow-notifications">documentation</a> to extend conductor to send out events/notifications upon workflow completion/failure.</p>
+<p>Refer this <a href="../configuration/workflowdef/#workflow-notifications">documentation</a> to extend conductor to send out events/notifications upon workflow completion/failure.</p>
               
             </div>
           </div>

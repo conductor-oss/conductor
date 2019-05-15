@@ -241,36 +241,42 @@
 <h2 id="installing-and-running">Installing and Running<a class="headerlink" href="#installing-and-running" title="Permanent link">&para;</a></h2>
 <div class="admonition hint">
 <p class="admonition-title">Running in production</p>
-<p>For a detailed configuration guide on installing and running Conductor server in production visit <a href="/server">Conductor Server</a> documentation.</p>
+<p>For a detailed configuration guide on installing and running Conductor server in production visit <a href="../server">Conductor Server</a> documentation.</p>
 </div>
 <h3 id="running-in-memory-server">Running In-Memory Server<a class="headerlink" href="#running-in-memory-server" title="Permanent link">&para;</a></h3>
 <p>Follow the steps below to quickly bring up a local Conductor instance backed by an in-memory database with a simple kitchen sink workflow that demonstrate all the capabilities of Conductor.</p>
 <p>!!!warning:
     In-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies.</p>
 <h4 id="checkout-the-source-from-github">Checkout the source from github<a class="headerlink" href="#checkout-the-source-from-github" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code>git clone git@github.com:Netflix/conductor.git</code></pre>
+<div class="codehilite"><pre><span></span>git clone git@github.com:Netflix/conductor.git
+</pre></div>
 
 
 <h4 id="start-local-server">Start Local Server<a class="headerlink" href="#start-local-server" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-shell">cd server
+<div class="codehilite"><pre><span></span><span class="nb">cd</span> server
 ../gradlew server
-# wait for the server to come online</code></pre>
+<span class="c1"># wait for the server to come online</span>
+</pre></div>
 
 
 <p>Swagger APIs can be accessed at <a href="http://localhost:8080/">http://localhost:8080/</a></p>
 <h4 id="start-ui-server">Start UI Server<a class="headerlink" href="#start-ui-server" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-shell">cd ui
-gulp watch</code></pre>
+<div class="codehilite"><pre><span></span><span class="nb">cd</span> ui
+gulp watch
+</pre></div>
 
 
 <h4 id="or-start-all-the-services-using-docker-compose">Or Start all the services using <a href="https://github.com/Netflix/conductor/blob/master/docker/docker-compose.yaml">docker-compose</a><a class="headerlink" href="#or-start-all-the-services-using-docker-compose" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-shell">cd docker
-docker-compose up</code></pre>
+<div class="codehilite"><pre><span></span><span class="nb">cd</span> docker
+docker-compose up
+</pre></div>
 
 
 <p>If you ran it locally, launch UI at <a href="http://localhost:3000/">http://localhost:3000/</a> OR if you ran it using docker-compose launch the UI at <a href="http://localhost:5000/">http://localhost:5000/</a></p>
-<p>!!!Note:
-    The server will load a sample kitchensink workflow definition by default.  See <a href="/metadata/kitchensink/">here</a> for details.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The server will load a sample kitchensink workflow definition by default.  See <a href="/labs/kitchensink/">here</a> for details.</p>
+</div>
 <h2 id="runtime-model">Runtime Model<a class="headerlink" href="#runtime-model" title="Permanent link">&para;</a></h2>
 <p>Conductor follows RPC based communication model where workers are running on a separate machine from the server. Workers communicate with server over HTTP based endpoints and employs polling model for managing work queues.</p>
 <p><img alt="name_for_alt" src="../img/overview.png" /></p>
@@ -289,26 +295,29 @@ docker-compose up</code></pre>
 <li>Create task worker(s) that polls for scheduled tasks at regular interval</li>
 </ol>
 <p><strong>Trigger Workflow Execution</strong></p>
-<pre class="codehilite"><code>POST /workflow/{name}
-{
-    ... //json payload as workflow input
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="err">POST /workflow/{name}</span>
+<span class="err">{</span>
+<span class="err">    ... //json payload as workflow input</span>
+<span class="err">}</span>
+</pre></div>
 
 
 <p><strong>Polling for a task</strong></p>
-<pre class="codehilite"><code>GET /tasks/poll/batch/{taskType}</code></pre>
+<div class="codehilite"><pre><span></span><span class="err">GET /tasks/poll/batch/{taskType}</span>
+</pre></div>
 
 
 <p><strong>Update task status</strong></p>
-<pre class="codehilite"><code class="language-json">POST /tasks
-{
-    &quot;outputData&quot;: {
-        &quot;encodeResult&quot;:&quot;success&quot;,
-        &quot;location&quot;: &quot;http://cdn.example.com/file/location.png&quot;
-        //any task specific output
-     },
-     &quot;status&quot;: &quot;COMPLETED&quot;
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="err">POST /tasks</span>
+<span class="err">{</span>
+<span class="err">    &quot;outputData&quot;: {</span>
+<span class="err">        &quot;encodeResult&quot;:&quot;success&quot;,</span>
+<span class="err">        &quot;location&quot;: &quot;http://cdn.example.com/file/location.png&quot;</span>
+<span class="err">        //any task specific output</span>
+<span class="err">     },</span>
+<span class="err">     &quot;status&quot;: &quot;COMPLETED&quot;</span>
+<span class="err">}</span>
+</pre></div>
               
             </div>
           </div>
