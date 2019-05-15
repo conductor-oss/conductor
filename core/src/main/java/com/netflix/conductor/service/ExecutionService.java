@@ -181,7 +181,7 @@ public class ExecutionService {
 					allPollData.addAll(getPollData(QueueUtils.getQueueNameWithoutDomain(k)));
 				}
 			} catch (Exception e) {
-				logger.error(e.getMessage(), e);
+				logger.error("Unable to fetch all poll data!", e);
 			}
 		});
 		return allPollData;
@@ -383,11 +383,13 @@ public class ExecutionService {
 		SearchResult<String> result = executionDAOFacade.searchTasks(query, freeText, start, size, sortOptions);
 		List<TaskSummary> workflows = result.getResults().stream()
 				.parallel()
-				.map(taskId -> {
+				.map(executionDAOFacade::getTaskById)
+				.filter(Objects::nonNull)
+				.map(task -> {
 					try {
-						return new TaskSummary(executionDAOFacade.getTaskById(taskId));
+						return new TaskSummary(task);
 					} catch(Exception e) {
-						logger.error(e.getMessage(), e);
+						logger.error("Error fetching task by id: {}", task.getTaskId(), e);
 						return null;
 					}
 				})

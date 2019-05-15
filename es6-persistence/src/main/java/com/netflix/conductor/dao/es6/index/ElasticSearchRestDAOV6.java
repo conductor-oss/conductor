@@ -173,7 +173,7 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
             updateIndexesNames();
             Executors.newScheduledThreadPool(1).scheduleAtFixedRate(this::updateIndexesNames, 0, 1, TimeUnit.HOURS);
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("Error creating index templates!", e);
         }
     }
 
