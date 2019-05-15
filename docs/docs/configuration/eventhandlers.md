@@ -11,7 +11,7 @@ Conductor provides SUB_WORKFLOW task that can be used to embed a workflow inside
 ## Event Task
 Event task provides ability to publish an event (message) to either Conductor or an external eventing system like SQS. Event tasks are useful for creating event based dependencies for workflows and tasks.
 
-See [Event Task](/configuration/systask/#event) for documentation.
+See [Event Task](../systask/#event) for documentation.
 
 ## Event Handler
 Event handlers are listeners registered that executes an action when a matching event occurs.  The supported actions are:

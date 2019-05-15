@@ -3,19 +3,19 @@
 | ------------- |:-------------|---|
 | `GET /metadata/taskdefs` | Get all the task definitions| n/a|
 | `GET /metadata/taskdefs/{taskType}` | Retrieve task definition| Task Name|
-| `POST /metadata/taskdefs` | Register new task definitions| List of [Task Definitions](/configuration/taskdef)|
-| `PUT /metadata/taskdefs` | Update a task definition| A [Task Definition](/configuration/taskdef)|
+| `POST /metadata/taskdefs` | Register new task definitions| List of [Task Definitions](../configuration/taskdef)|
+| `PUT /metadata/taskdefs` | Update a task definition| A [Task Definition](../configuration/taskdef)|
 | `DELETE /metadata/taskdefs/{taskType}` | Delete a task definition| Task Name|
 |||
 | `GET /metadata/workflow` | Get all the workflow definitions| n/a|
-| `POST /metadata/workflow` | Register new workflow| [Workflow Definition](/configuration/workflowdef)|
-| `PUT /metadata/workflow` | Register/Update new workflows| List of [Workflow Definition](/configuration/workflowdef)|
+| `POST /metadata/workflow` | Register new workflow| [Workflow Definition](../configuration/workflowdef)|
+| `PUT /metadata/workflow` | Register/Update new workflows| List of [Workflow Definition](../configuration/workflowdef)|
 | `GET /metadata/workflow/{name}?version=` | Get the workflow definitions| workflow name, version (optional)|
 |||
  
 ## Start A Workflow
 ### With Input only
-See [Start Workflow Request](/gettingstarted/startworkflow/#start-workflow-request).
+See [Start Workflow Request](../gettingstarted/startworkflow/#start-workflow-request).
 
 #### Output
 Id of the workflow (GUID)
