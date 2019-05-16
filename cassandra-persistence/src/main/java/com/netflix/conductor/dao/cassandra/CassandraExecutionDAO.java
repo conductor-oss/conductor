@@ -167,10 +167,6 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public void updateTask(Task task) {
         try {
-            task.setUpdateTime(System.currentTimeMillis());
-            if (task.getStatus().isTerminal() && task.getEndTime() == 0) {
-                task.setEndTime(System.currentTimeMillis());
-            }
             // TODO: calculate the shard number the task belongs to
             String taskPayload = toJson(task);
             recordCassandraDaoRequests("updateTask", task.getTaskType(), task.getWorkflowType());
@@ -200,11 +196,6 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public boolean exceedsRateLimitPerFrequency(Task task) {
         throw new UnsupportedOperationException("This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
-    }
-
-    @Override
-    public void updateTasks(List<Task> tasks) {
-        tasks.forEach(this::updateTask);
     }
 
     @Override
@@ -273,7 +264,6 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public String createWorkflow(Workflow workflow) {
         try {
-            workflow.setCreateTime(System.currentTimeMillis());
             List<Task> tasks = workflow.getTasks();
             workflow.setTasks(new LinkedList<>());
             String payload = toJson(workflow);
@@ -295,10 +285,6 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     @Override
     public String updateWorkflow(Workflow workflow) {
         try {
-            workflow.setUpdateTime(System.currentTimeMillis());
-            if (workflow.getStatus().isTerminal()) {
-                workflow.setEndTime(System.currentTimeMillis());
-            }
             List<Task> tasks = workflow.getTasks();
             workflow.setTasks(new LinkedList<>());
             String payload = toJson(workflow);
