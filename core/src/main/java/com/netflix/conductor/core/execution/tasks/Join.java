@@ -68,17 +68,18 @@ public class Join extends WorkflowSystemTask {
 				break;
 			}
 		}
-		if(allDone || hasFailures) {
+		if(done && (allDone || hasFailures)) {
 			if (hasFailures) {
 				task.setReasonForIncompletion(failureReason.toString());
 				task.setStatus(Status.FAILED);
 			} else {
 				task.setStatus(Status.COMPLETED);
 			}
+			done = false;
+			task.setSeq(task.getSeq() + joinOn.size());
 			return true;
 		}
 		 else {
-//			task.setStatus(Status.COMPLETED);
 			joinOn = (List<String>) task.getInputData().get("joinOn");
 			List<Task> taskToBeScheduled = new ArrayList<>();
 			for(String joinOnRef : joinOn){
@@ -101,7 +102,7 @@ public class Join extends WorkflowSystemTask {
 			provider.scheduleTask(workflow, taskToBeScheduled);
 			done = true;
 		}
-		return true;
+		return false;
 	}
 
 }
