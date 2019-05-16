@@ -472,7 +472,7 @@ public class WorkflowExecutor {
      * @param task failed or cancelled task
      * @return new instance of a task with "SCHEDULED" status
      */
-    private Task taskToBeRescheduled(Task task) {
+    public Task taskToBeRescheduled(Task task) {
         Task taskToBeRetried = task.copy();
         taskToBeRetried.setTaskId(IDGenerator.generate());
         taskToBeRetried.setRetriedTaskId(task.getTaskId());
@@ -1117,7 +1117,7 @@ public class WorkflowExecutor {
     }
 
     @VisibleForTesting
-    boolean scheduleTask(Workflow workflow, List<Task> tasks) {
+    public boolean scheduleTask(Workflow workflow, List<Task> tasks) {
 
         try {
             if (tasks == null || tasks.isEmpty()) {

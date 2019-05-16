@@ -141,7 +141,7 @@ public class SystemTaskWorkerCoordinator {
 
 			List<String> polledTaskIds = queueDAO.pop(taskName, realPollCount, 200);
 			Monitors.recordTaskPoll(taskName);
-			logger.debug("Polling for {}, got {} tasks", taskName, polledTaskIds.size());
+//			logger.debug("Polling for {}, got {} tasks", taskName, polledTaskIds.size());
 			for(String taskId : polledTaskIds) {
 				logger.debug("Task: {} of type: {} being sent to the workflow executor", taskId, taskName);
 				try {
