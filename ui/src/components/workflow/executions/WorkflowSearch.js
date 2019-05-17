@@ -67,7 +67,12 @@ class WorkflowSearch extends Component {
   handleTypesChange(value) {
     const {search, changeSearch} = this.props;
 
-    changeSearch({...search, types: value});
+    changeSearch({...search, types: value.map((v) => {
+      if(v.customOption){
+        return v.label;
+      }
+      return v;
+    })});
   }
 
   handleStatesChange(value) {
@@ -121,7 +126,7 @@ class WorkflowSearch extends Component {
             </Col>
             <Col md={4}>
               <Typeahead onChange={this.handleTypesChange} options={workflows}
-                         placeholder="Filter by workflow type" multiple selected={types}/>
+                         placeholder="Filter by workflow type" allowNew="true" multiple selected={types}/>
               &nbsp;<i className="fa fa-angle-up fa-1x" />&nbsp;&nbsp;
               <label className="small nobold">
               Filter by Workflow Type
