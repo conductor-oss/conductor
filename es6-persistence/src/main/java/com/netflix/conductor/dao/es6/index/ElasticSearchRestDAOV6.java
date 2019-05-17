@@ -141,7 +141,7 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
 
         this.objectMapper = objectMapper;
         this.elasticSearchAdminClient = restClientBuilder.build();
-        this.elasticSearchClient = new RestHighLevelClient(restClientBuilder);
+        this.elasticSearchClient = new RestHighLevelClient(restClientBuilder.build());
         this.clusterHealthColor = config.getClusterHealthColor();
 
         this.indexPrefix = config.getIndexName();
@@ -151,9 +151,13 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
         this.messageIndexPrefix = this.indexPrefix + "_" + MSG_DOC_TYPE;
         this.eventIndexPrefix = this.indexPrefix + "_" + EVENT_DOC_TYPE;
         int workerQueueSize = config.getAsyncWorkerQueueSize();
+        int maximumPoolSize = config.getAsyncMaxPoolSize();
 
         // Set up a workerpool for performing async operations.
-        this.executorService = new ThreadPoolExecutor(CORE_POOL_SIZE, MAXIMUM_POOL_SIZE, KEEP_ALIVE_TIME, TimeUnit.MINUTES, new LinkedBlockingQueue<>(workerQueueSize));
+        this.executorService = new ThreadPoolExecutor(CORE_POOL_SIZE, maximumPoolSize, KEEP_ALIVE_TIME, TimeUnit.MINUTES, new LinkedBlockingQueue<>(workerQueueSize),
+                (runnable, executor) -> {
+                    logger.warn("Request  {} to async dao discarded in executor {}", runnable, executor);
+                });
     }
 
     @Override

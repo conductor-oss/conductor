@@ -48,6 +48,8 @@ Defaults to `conductor`
 Defaults to `task_log`
 * `workflow.elasticsearch.async.dao.worker.queue.size` - Worker Queue size used in executor service for async methods in IndexDao 
 Defaults to `100`
+* `workflow.elasticsearch.async.dao.max.pool.size` - Maximum thread pool size in executor service for async methods in IndexDao        
+Defaults to `12`
 
 ### Embedded Configuration
 

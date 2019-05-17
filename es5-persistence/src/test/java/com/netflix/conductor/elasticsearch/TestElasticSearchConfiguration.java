@@ -11,4 +11,11 @@ public class TestElasticSearchConfiguration {
 		int workerQueueSize = es.getAsyncWorkerQueueSize();
 		Assert.assertEquals(workerQueueSize, 100);
 	}
+
+	@Test
+	public void testAsyncMaxPoolSize() {
+		ElasticSearchConfiguration es = new SystemPropertiesElasticSearchConfiguration();
+		int poolSize = es.getAsyncMaxPoolSize();
+		Assert.assertEquals(poolSize, 12);
+	}
 }

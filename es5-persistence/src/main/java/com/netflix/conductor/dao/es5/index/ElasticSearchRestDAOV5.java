@@ -18,7 +18,6 @@ import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.es5.index.query.parser.Expression;
-import com.netflix.conductor.elasticsearch.query.parser.ParserException;
 import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.metrics.Monitors;
 import org.apache.commons.io.IOUtils;
@@ -122,14 +121,17 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
 
         // Set up a workerpool for performing async operations.
         int corePoolSize = 6;
-        int maximumPoolSize = 12;
+        int maximumPoolSize = config.getAsyncMaxPoolSize();
         long keepAliveTime = 1L;
         int workerQueueSize = config.getAsyncWorkerQueueSize();
         this.executorService = new ThreadPoolExecutor(corePoolSize,
                 maximumPoolSize,
                 keepAliveTime,
                 TimeUnit.MINUTES,
-                new LinkedBlockingQueue<>(workerQueueSize));
+                new LinkedBlockingQueue<>(workerQueueSize),
+                (runnable, executor) -> {
+                    logger.warn("Request  {} to async dao discarded in executor {}", runnable, executor);
+                });
 
     }
 
