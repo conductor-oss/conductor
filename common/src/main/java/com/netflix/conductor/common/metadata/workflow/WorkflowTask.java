@@ -156,6 +156,12 @@ public class WorkflowTask {
 	
 	@ProtoField(id = 21)
 	private List<String> defaultExclusiveJoinTask = new LinkedList<>();
+
+	@ProtoField(id = 21)
+	private String expression;
+
+	@ProtoField(id = 21)
+	private List<String> loopOver = new LinkedList<>();
 	/**
 	 * @return the name
 	 */
@@ -395,6 +401,34 @@ public class WorkflowTask {
 	 */
 	public void setJoinOn(List<String> joinOn) {
 		this.joinOn = joinOn;
+	}
+
+	/**
+	 * @return the expression
+	 */
+	public String getExpression() {
+		return expression;
+	}
+
+	/**
+	 * @param expression the expression to set
+	 */
+	public void setExpression(String expression) {
+		this.expression = expression;
+	}
+
+	/**
+	 * @return the loopOver
+	 */
+	public List<String> getLoopOver() {
+		return loopOver;
+	}
+
+	/**
+	 * @param loopOver the loopOver to set
+	 */
+	public void setLoopOver(List<String> loopOver) {
+		this.loopOver = loopOver;
 	}
 
 	/**
