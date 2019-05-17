@@ -412,7 +412,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
             List<EventExecution> executions = Lists.newLinkedList();
             withTransaction(tx -> {
                 for (int i = 0; i < max; i++) {
-                    String executionId = messageId + "_" + i; // see EventProcessorImpl.handle to understand how the
+                    String executionId = messageId + "_" + i; // see SimpleEventProcessor.handle to understand how the
                     // execution id is set
                     EventExecution ee = readEventExecution(tx, eventHandlerName, eventName, messageId, executionId);
                     if (ee == null) {

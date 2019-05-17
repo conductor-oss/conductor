@@ -24,9 +24,9 @@ import com.google.inject.multibindings.ProvidesIntoMap;
 import com.google.inject.multibindings.StringMapKey;
 import com.google.inject.name.Named;
 import com.netflix.conductor.core.events.ActionProcessor;
-import com.netflix.conductor.core.events.ActionProcessorImpl;
+import com.netflix.conductor.core.events.SimpleActionProcessor;
 import com.netflix.conductor.core.events.EventProcessor;
-import com.netflix.conductor.core.events.EventProcessorImpl;
+import com.netflix.conductor.core.events.SimpleEventProcessor;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.queue.dyno.DynoEventQueueProvider;
@@ -77,14 +77,14 @@ public class CoreModule extends AbstractModule {
     @Provides
     @Singleton
     public ActionProcessor getActionProcessor(WorkflowExecutor executor, ParametersUtils parametersUtils, JsonUtils jsonUtils) {
-        return new ActionProcessorImpl(executor, parametersUtils, jsonUtils);
+        return new SimpleActionProcessor(executor, parametersUtils, jsonUtils);
     }
 
     @Provides
     @Singleton
     public EventProcessor getEventProcessor(ExecutionService executionService, MetadataService metadataService,
                                             ActionProcessor actionProcessor, EventQueues eventQueues, JsonUtils jsonUtils, Configuration configuration) {
-        return new EventProcessorImpl(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, configuration);
+        return new SimpleEventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, configuration);
     }
 
     @ProvidesIntoMap

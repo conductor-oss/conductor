@@ -63,7 +63,7 @@ import static org.mockito.Mockito.when;
 /**
  * @author Viren
  */
-public class TestEventProcessorImpl {
+public class TestSimpleEventProcessor {
 
     private String event;
     private String queueURI;
@@ -72,7 +72,7 @@ public class TestEventProcessorImpl {
     private MetadataService metadataService;
     private ExecutionService executionService;
     private WorkflowExecutor workflowExecutor;
-    private ActionProcessorImpl actionProcessor;
+    private SimpleActionProcessor actionProcessor;
     private EventQueues eventQueues;
     private ParametersUtils parametersUtils;
     private JsonUtils jsonUtils;
@@ -85,7 +85,7 @@ public class TestEventProcessorImpl {
         metadataService = mock(MetadataService.class);
         executionService = mock(ExecutionService.class);
         workflowExecutor = mock(WorkflowExecutor.class);
-        actionProcessor = mock(ActionProcessorImpl.class);
+        actionProcessor = mock(SimpleActionProcessor.class);
         parametersUtils = new ParametersUtils();
         jsonUtils = new JsonUtils();
 
@@ -163,9 +163,9 @@ public class TestEventProcessorImpl {
         workflowDef.setName(startWorkflowAction.getStart_workflow().getName());
         when(metadataService.getWorkflowDef(any(), any())).thenReturn(workflowDef);
 
-        ActionProcessorImpl actionProcessor = new ActionProcessorImpl(workflowExecutor, parametersUtils, jsonUtils);
+        SimpleActionProcessor actionProcessor = new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
 
-        EventProcessorImpl eventProcessor = new EventProcessorImpl(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
+        SimpleEventProcessor eventProcessor = new SimpleEventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         assertNotNull(eventProcessor.getQueues());
         assertEquals(1, eventProcessor.getQueues().size());
 
@@ -222,9 +222,9 @@ public class TestEventProcessorImpl {
         workflowDef.setName(startWorkflowAction.getStart_workflow().getName());
         when(metadataService.getWorkflowDef(any(), any())).thenReturn(workflowDef);
 
-        ActionProcessorImpl actionProcessor = new ActionProcessorImpl(workflowExecutor, parametersUtils, jsonUtils);
+        SimpleActionProcessor actionProcessor = new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
 
-        EventProcessorImpl eventProcessor = new EventProcessorImpl(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
+        SimpleEventProcessor eventProcessor = new SimpleEventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         assertNotNull(eventProcessor.getQueues());
         assertEquals(1, eventProcessor.getQueues().size());
 
@@ -253,7 +253,7 @@ public class TestEventProcessorImpl {
         when(executionService.addEventExecution(any())).thenReturn(true);
         when(actionProcessor.execute(any(), any(), any(), any())).thenThrow(new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "some retriable error"));
 
-        EventProcessorImpl eventProcessor = new EventProcessorImpl(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
+        SimpleEventProcessor eventProcessor = new SimpleEventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         assertNotNull(eventProcessor.getQueues());
         assertEquals(1, eventProcessor.getQueues().size());
 
@@ -284,7 +284,7 @@ public class TestEventProcessorImpl {
 
         when(actionProcessor.execute(any(), any(), any(), any())).thenThrow(new ApplicationException(ApplicationException.Code.INVALID_INPUT, "some non-retriable error"));
 
-        EventProcessorImpl eventProcessor = new EventProcessorImpl(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
+        SimpleEventProcessor eventProcessor = new SimpleEventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         assertNotNull(eventProcessor.getQueues());
         assertEquals(1, eventProcessor.getQueues().size());
 
@@ -303,7 +303,7 @@ public class TestEventProcessorImpl {
             throw new UnsupportedOperationException("error");
         }).when(actionProcessor).execute(any(), any(), any(), any());
 
-        EventProcessorImpl eventProcessor = new EventProcessorImpl(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
+        SimpleEventProcessor eventProcessor = new SimpleEventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         EventExecution eventExecution = new EventExecution("id", "messageId");
         eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
         eventExecution.setEvent("event");
@@ -323,7 +323,7 @@ public class TestEventProcessorImpl {
             throw new ApplicationException(ApplicationException.Code.INVALID_INPUT, "some non-retriable error");
         }).when(actionProcessor).execute(any(), any(), any(), any());
 
-        EventProcessorImpl eventProcessor = new EventProcessorImpl(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
+        SimpleEventProcessor eventProcessor = new SimpleEventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         EventExecution eventExecution = new EventExecution("id", "messageId");
         eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
         eventExecution.setEvent("event");
@@ -344,7 +344,7 @@ public class TestEventProcessorImpl {
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "some retriable error");
         }).when(actionProcessor).execute(any(), any(), any(), any());
 
-        EventProcessorImpl eventProcessor = new EventProcessorImpl(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
+        SimpleEventProcessor eventProcessor = new SimpleEventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, new TestConfiguration());
         EventExecution eventExecution = new EventExecution("id", "messageId");
         eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
         eventExecution.setEvent("event");
