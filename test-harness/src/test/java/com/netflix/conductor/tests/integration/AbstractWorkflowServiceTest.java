@@ -3528,8 +3528,8 @@ public abstract class AbstractWorkflowServiceTest {
         // Check the tasks, at this time there should be 3 task
         assertEquals(2, es.getTasks().size());
 
-        assertEquals(SCHEDULED, es.getTasks().stream().filter( task -> "t1".equals(task.getReferenceTaskName())).findFirst().orElse(null).getStatus());
-        assertEquals(Status.SKIPPED, es.getTasks().stream().filter( task -> "t2".equals(task.getReferenceTaskName())).findFirst().orElse(null).getStatus());
+        assertEquals(SCHEDULED, es.getTasks().stream().filter(task -> "t1".equals(task.getReferenceTaskName())).findFirst().orElse(null).getStatus());
+        assertEquals(Status.SKIPPED, es.getTasks().stream().filter(task -> "t2".equals(task.getReferenceTaskName())).findFirst().orElse(null).getStatus());
 
         Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
         assertNotNull(task);
@@ -3714,7 +3714,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull("Output: " + task.getOutputData().toString() + ", status: " + task.getStatus(), task.getOutputData().get("subWorkflowId"));
         assertNotNull(task.getInputData());
         assertTrue(task.getInputData().containsKey("workflowInput"));
-        assertEquals(42, ((Map<String, Object>)task.getInputData().get("workflowInput")).get("param2"));
+        assertEquals(42, ((Map<String, Object>) task.getInputData().get("workflowInput")).get("param2"));
         String subWorkflowId = task.getOutputData().get("subWorkflowId").toString();
 
         es = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
@@ -4036,8 +4036,8 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull(workflowDef);
         metadataService.registerWorkflowDef(workflowDef);
 
-        Map<String, Object> inputs =  new HashMap<>();
-        inputs.put("a",1);
+        Map<String, Object> inputs = new HashMap<>();
+        inputs.put("a", 1);
         String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", inputs, null, null);
         Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
 
@@ -4143,6 +4143,7 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.registerWorkflowDef(workflowDef);
 
         Map wfInput = Collections.singletonMap("a", 1);
+        //noinspection unchecked
         String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", wfInput, null, null);
         Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
 
@@ -4360,11 +4361,11 @@ public abstract class AbstractWorkflowServiceTest {
     }
 
     @Test
-    public void testExecutionTimes(){
+    public void testExecutionTimes() {
 
         String taskName = "junit_task_1";
         TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
-        taskDef.setTimeoutSeconds(1);
+        taskDef.setTimeoutSeconds(10);
         metadataService.updateTaskDef(taskDef);
 
         metadataService.registerTaskDef(Collections.singletonList(taskDef));
@@ -4419,6 +4420,7 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.registerWorkflowDef(workflowDef);
 
         Map workflowInput = Collections.emptyMap();
+        //noinspection unchecked
         String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "test", workflowInput, null, null);
         Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
 
@@ -4440,7 +4442,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull(workflow);
         assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
 
-        workflow.getTasks().forEach( workflowTask -> {
+        workflow.getTasks().forEach(workflowTask -> {
             assertTrue(workflowTask.getScheduledTime() <= workflowTask.getStartTime());
             assertTrue(workflowTask.getStartTime() < workflowTask.getEndTime());
         });
@@ -4768,7 +4770,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull("Output: " + task.getOutputData().toString() + ", status: " + task.getStatus(), task.getOutputData().get("subWorkflowId"));
         assertNotNull(task.getInputData());
         assertTrue(task.getInputData().containsKey("workflowInput"));
-        assertEquals(42, ((Map<String, Object>)task.getInputData().get("workflowInput")).get("param2"));
+        assertEquals(42, ((Map<String, Object>) task.getInputData().get("workflowInput")).get("param2"));
         String subWorkflowId = task.getOutputData().get("subWorkflowId").toString();
 
         es = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
@@ -4841,7 +4843,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull("Output: " + task.getOutputData().toString() + ", status: " + task.getStatus(), task.getOutputData().get("subWorkflowId"));
         assertNotNull(task.getInputData());
         assertTrue(task.getInputData().containsKey("workflowInput"));
-        assertEquals(42, ((Map<String, Object>)task.getInputData().get("workflowInput")).get("param2"));
+        assertEquals(42, ((Map<String, Object>) task.getInputData().get("workflowInput")).get("param2"));
         String subWorkflowId = task.getOutputData().get("subWorkflowId").toString();
 
         es = workflowExecutionService.getExecutionStatus(subWorkflowId, true);

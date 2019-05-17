@@ -391,8 +391,8 @@ public class WorkflowExecutor {
             throw new ApplicationException(CONFLICT, String.format("Workflow: %s is non-restartable", workflow));
         }
 
-        // Remove all the tasks...
-        workflow.getTasks().forEach(task -> executionDAOFacade.removeTask(task.getTaskId()));
+        // Remove the workflow from the primary datastore (archive in indexer) and re-create it
+        executionDAOFacade.removeWorkflow(workflowId, true);
         workflow.getTasks().clear();
         workflow.setReasonForIncompletion(null);
         workflow.setStartTime(System.currentTimeMillis());
@@ -401,7 +401,7 @@ public class WorkflowExecutor {
         workflow.setStatus(WorkflowStatus.RUNNING);
         workflow.setOutput(null);
         workflow.setExternalOutputPayloadStoragePath(null);
-        executionDAOFacade.updateWorkflow(workflow);
+        executionDAOFacade.createWorkflow(workflow);
         decide(workflowId);
     }
 

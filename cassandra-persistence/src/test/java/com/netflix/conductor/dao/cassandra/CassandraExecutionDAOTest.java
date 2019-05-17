@@ -98,6 +98,7 @@ public class CassandraExecutionDAOTest {
         workflow.setWorkflowId(workflowId);
         workflow.setInput(new HashMap<>());
         workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        workflow.setCreateTime(System.currentTimeMillis());
 
         // create a new workflow in the datastore
         String id = executionDAO.createWorkflow(workflow);
@@ -130,6 +131,7 @@ public class CassandraExecutionDAOTest {
         workflow.setWorkflowId(workflowId);
         workflow.setInput(new HashMap<>());
         workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        workflow.setCreateTime(System.currentTimeMillis());
 
         // add it to the datastore
         executionDAO.createWorkflow(workflow);
@@ -200,18 +202,19 @@ public class CassandraExecutionDAOTest {
         assertEquals(task2, found.getTaskByRefName("task2"));
         assertEquals(task3, found.getTaskByRefName("task3"));
 
-        // update a task
+        // update tasks
         task1.setStatus(Task.Status.IN_PROGRESS);
         executionDAO.updateTask(task1);
         task = executionDAO.getTask(task1Id);
         assertEquals(task1, task);
 
-        // update multiple tasks
         task2.setStatus(Task.Status.COMPLETED);
-        task3.setStatus(Task.Status.FAILED);
-        executionDAO.updateTasks(Arrays.asList(task2, task3));
+        executionDAO.updateTask(task2);
         task = executionDAO.getTask(task2Id);
         assertEquals(task2, task);
+
+        task3.setStatus(Task.Status.FAILED);
+        executionDAO.updateTask(task3);
         task = executionDAO.getTask(task3Id);
         assertEquals(task3, task);
 

@@ -386,9 +386,9 @@ public class TestWorkflowExecutor {
         verify(metadataDAO, never()).getLatest(any());
 
         ArgumentCaptor<Workflow> argumentCaptor = ArgumentCaptor.forClass(Workflow.class);
-        verify(executionDAOFacade, times(2)).updateWorkflow(argumentCaptor.capture());
-        assertEquals(workflow.getWorkflowId(), argumentCaptor.getAllValues().get(1).getWorkflowId());
-        assertEquals(workflow.getWorkflowDefinition(), argumentCaptor.getAllValues().get(1).getWorkflowDefinition());
+        verify(executionDAOFacade, times(1)).createWorkflow(argumentCaptor.capture());
+        assertEquals(workflow.getWorkflowId(), argumentCaptor.getAllValues().get(0).getWorkflowId());
+        assertEquals(workflow.getWorkflowDefinition(), argumentCaptor.getAllValues().get(0).getWorkflowDefinition());
 
         // add a new version of the workflow definition and restart with latest
         workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
@@ -404,9 +404,9 @@ public class TestWorkflowExecutor {
         verify(metadataDAO, times(1)).getLatest(anyString());
 
         argumentCaptor = ArgumentCaptor.forClass(Workflow.class);
-        verify(executionDAOFacade, times(4)).updateWorkflow(argumentCaptor.capture());
-        assertEquals(workflow.getWorkflowId(), argumentCaptor.getAllValues().get(3).getWorkflowId());
-        assertEquals(workflowDef, argumentCaptor.getAllValues().get(3).getWorkflowDefinition());
+        verify(executionDAOFacade, times(2)).createWorkflow(argumentCaptor.capture());
+        assertEquals(workflow.getWorkflowId(), argumentCaptor.getAllValues().get(1).getWorkflowId());
+        assertEquals(workflowDef, argumentCaptor.getAllValues().get(1).getWorkflowDefinition());
     }
 
 

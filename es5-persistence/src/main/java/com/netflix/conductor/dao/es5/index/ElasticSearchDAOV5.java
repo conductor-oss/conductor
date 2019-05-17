@@ -345,7 +345,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             List<String> taskIds = taskExecLogs.stream()
                 .map(TaskExecLog::getTaskId)
                 .collect(Collectors.toList());
-            logger.error("Failed to index task execution logs for tasks: ", taskIds, e);
+            logger.error("Failed to index task execution logs for tasks: {}", taskIds, e);
         }
     }
 

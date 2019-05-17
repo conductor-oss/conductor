@@ -142,6 +142,7 @@ public class ExecutionDAOFacade {
      * @return the id of the created workflow
      */
     public String createWorkflow(Workflow workflow) {
+        workflow.setCreateTime(System.currentTimeMillis());
         executionDAO.createWorkflow(workflow);
         indexDAO.indexWorkflow(workflow);
         return workflow.getWorkflowId();
@@ -154,6 +155,10 @@ public class ExecutionDAOFacade {
      * @return the id of the updated workflow
      */
     public String updateWorkflow(Workflow workflow) {
+        workflow.setUpdateTime(System.currentTimeMillis());
+        if (workflow.getStatus().isTerminal()) {
+            workflow.setEndTime(System.currentTimeMillis());
+        }
         executionDAO.updateWorkflow(workflow);
         indexDAO.indexWorkflow(workflow);
         return workflow.getWorkflowId();
@@ -231,6 +236,14 @@ public class ExecutionDAOFacade {
      */
     public void updateTask(Task task) {
         try {
+            if (task.getStatus() != null) {
+                if (!task.getStatus().isTerminal() || (task.getStatus().isTerminal() && task.getUpdateTime() == 0)) {
+                    task.setUpdateTime(System.currentTimeMillis());
+                }
+                if (task.getStatus().isTerminal() && task.getEndTime() == 0) {
+                    task.setEndTime(System.currentTimeMillis());
+                }
+            }
             executionDAO.updateTask(task);
             indexDAO.indexTask(task);
         } catch (Exception e) {
