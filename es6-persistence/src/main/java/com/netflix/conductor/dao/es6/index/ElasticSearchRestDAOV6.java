@@ -141,7 +141,7 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
 
         this.objectMapper = objectMapper;
         this.elasticSearchAdminClient = restClientBuilder.build();
-        this.elasticSearchClient = new RestHighLevelClient(restClientBuilder.build());
+        this.elasticSearchClient = new RestHighLevelClient(restClientBuilder);
         this.clusterHealthColor = config.getClusterHealthColor();
 
         this.indexPrefix = config.getIndexName();
