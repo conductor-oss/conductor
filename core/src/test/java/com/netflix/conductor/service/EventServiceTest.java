@@ -7,7 +7,7 @@ import com.google.inject.matcher.Matchers;
 import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.core.config.ValidationModule;
 import com.netflix.conductor.core.events.EventProcessor;
-import com.netflix.conductor.core.events.EventProcessorImpl;
+import com.netflix.conductor.core.events.SimpleEventProcessor;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.interceptors.ServiceInterceptor;
 import org.junit.Before;
@@ -33,7 +33,7 @@ public class EventServiceTest {
     @Before
     public void before() {
         metadataService = Mockito.mock(MetadataService.class);
-        eventProcessor = Mockito.mock(EventProcessorImpl.class);
+        eventProcessor = Mockito.mock(SimpleEventProcessor.class);
         eventQueues = Mockito.mock(EventQueues.class);
 
         Injector injector =

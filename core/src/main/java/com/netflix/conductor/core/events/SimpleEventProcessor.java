@@ -55,10 +55,10 @@ import java.util.stream.Collectors;
  * @author Viren
  * Event Processor is used to dispatch actions based on the incoming events to execution queue.
  */
-public class EventProcessorImpl implements EventProcessor{
+public class SimpleEventProcessor implements EventProcessor{
 
-    private static final Logger logger = LoggerFactory.getLogger(EventProcessorImpl.class);
-    private static final String className = EventProcessorImpl.class.getSimpleName();
+    private static final Logger logger = LoggerFactory.getLogger(SimpleEventProcessor.class);
+    private static final String className = SimpleEventProcessor.class.getSimpleName();
     private static final int RETRY_COUNT = 3;
 
 
@@ -73,8 +73,8 @@ public class EventProcessorImpl implements EventProcessor{
     private final JsonUtils jsonUtils;
 
     @Inject
-    public EventProcessorImpl(ExecutionService executionService, MetadataService metadataService,
-                              ActionProcessor actionProcessor, EventQueues eventQueues, JsonUtils jsonUtils, Configuration config) {
+    public SimpleEventProcessor(ExecutionService executionService, MetadataService metadataService,
+                                ActionProcessor actionProcessor, EventQueues eventQueues, JsonUtils jsonUtils, Configuration config) {
         this.executionService = executionService;
         this.metadataService = metadataService;
         this.actionProcessor = actionProcessor;
