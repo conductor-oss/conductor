@@ -108,7 +108,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 		if(StringUtils.isEmpty(workflowId)) {
 			return;
 		}
-		Workflow subWorkflow = provider.getWorkflow(workflowId, false);
+		Workflow subWorkflow = provider.getWorkflow(workflowId, true);
 		subWorkflow.setStatus(WorkflowStatus.TERMINATED);
 		provider.terminateWorkflow(subWorkflow, "Parent workflow has been terminated with status " + workflow.getStatus(), null);
 	}
