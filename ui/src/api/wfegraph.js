@@ -29,20 +29,22 @@ class Workflow2Graph {
         tt.reasonForIncompletion,
         task: tt
       };
-
-      if(tt.type === 'FORK'){
+      if(tt.taskType === 'FORK'){
         let wfts = [];
         let forkedTasks = tt.inputData && tt.inputData.forkedTasks || [];
         forkedTasks.forEach(ft =>{
-          wfts.push({name: ft, taskReferenceName: ft, type: 'SIMPLE'});
+          wfts.push({name: ft, referenceTaskName: ft, type: 'SIMPLE'});
         });
-        forks[tt.taskReferenceName] = wfts;
+        forks[tt.referenceTaskName] = wfts;
       }
+
     }, this);
 
     let nodes = [];
     let vertices = {};
-
+    wfe.tasks.forEach(t => {
+      this.executedTasks[t.referenceTaskName] = {status: t.status, input: t.inputData, output: t.outputData, taskType: t.taskType, reasonForIncompletion: t.reasonForIncompletion, task: t};
+    })
     // Go through each JOIN in the workflow and build up a mapping to their joinOn data
     this.joinOnTaskMapping = {};
     metaTasks.forEach(t => {
