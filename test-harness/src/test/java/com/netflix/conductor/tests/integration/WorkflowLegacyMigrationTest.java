@@ -126,12 +126,18 @@ public class WorkflowLegacyMigrationTest extends AbstractWorkflowServiceTest {
     @Ignore
     @Test
     @Override
-    public void testTerminateTaskWithFailedStatus() {}
+    public void testTerminateTaskWithFailedStatus() {
+    }
 
     @Ignore
     @Test
     @Override
-    public void testTerminateTaskWithCompletedStatus() {}
+    public void testTerminateTaskWithCompletedStatus() {
+    }
 
-
+    @Ignore
+    @Test
+    @Override
+    public void testTerminateMultiLevelWorkflow() {
+    }
 }
