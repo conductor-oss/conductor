@@ -55,6 +55,11 @@ public class SystemPropertiesConfiguration implements Configuration {
     }
 
     @Override
+    public boolean enableWorkflowExecutionLock() {
+        return getBooleanProperty(WORKFLOW_EXECUTION_LOCK_ENABLED_PROPERTY_NAME, WORKFLOW_EXECUTION_LOCK_ENABLED_DEFAULT_VALUE);
+    }
+
+    @Override
     public String getServerId() {
         try {
             return InetAddress.getLocalHost().getHostName();

@@ -55,6 +55,9 @@ public interface Configuration {
 
     String ADDITIONAL_MODULES_PROPERTY_NAME = "conductor.additional.modules";
 
+    String WORKFLOW_EXECUTION_LOCK_ENABLED_PROPERTY_NAME = "decider.locking.enabled";
+    boolean WORKFLOW_EXECUTION_LOCK_ENABLED_DEFAULT_VALUE = true;
+
     //TODO add constants for input/output external payload related properties.
 
     default DB getDB() {
@@ -80,6 +83,11 @@ public interface Configuration {
      * @return when set to true, the background task workers executing async system tasks (eg HTTP) are disabled
      */
     boolean disableAsyncWorkers();
+
+    /**
+     * @return when set to true(default), locking is enabled for workflow execution
+     */
+    boolean enableWorkflowExecutionLock();
 
     /**
      * @return ID of the server.  Can be host name, IP address or any other meaningful identifier.  Used for logging
