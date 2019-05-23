@@ -279,4 +279,8 @@ public class Monitors {
 	public static void recordDiscardedIndexingCount() {
 		getCounter(Monitors.classQualifier, "discarded_index_count").increment();
 	}
+
+	public static void recordAcquireLockUnsuccessful(String lockId) {
+		counter(classQualifier, "acquire_lock_unsuccessful", "lockId", lockId);
+	}
 }

@@ -138,4 +138,7 @@ public class TestConfiguration implements Configuration {
 	public Map<String, Object> getAll() {
 		return null;
 	}
+
+	@Override
+	public boolean enableWorkflowExecutionLock(){return true;}
 }
