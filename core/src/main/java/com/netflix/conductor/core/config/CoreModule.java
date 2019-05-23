@@ -53,6 +53,8 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.utils.JsonUtils;
+import com.netflix.conductor.core.utils.Lock;
+import com.netflix.conductor.core.utils.NoopLock;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 
@@ -93,6 +95,7 @@ public class CoreModule extends AbstractModule {
         // start processing events when instance starts
         bind(ActionProcessor.class).to(SimpleActionProcessor.class);
         bind(EventProcessor.class).to(SimpleEventProcessor.class).asEagerSingleton();
+        bind(Lock.class).to(NoopLock.class).asEagerSingleton();
     }
 
     @Provides
@@ -211,7 +214,7 @@ public class CoreModule extends AbstractModule {
     public TaskMapper getLambdaTaskMapper(ParametersUtils parametersUtils) {
         return new LambdaTaskMapper(parametersUtils);
     }
-    
+
     @ProvidesIntoMap
     @StringMapKey(TASK_TYPE_EXCLUSIVE_JOIN)
     @Singleton

@@ -157,6 +157,7 @@ public class ExecutionDAOFacade {
      * @param workflow the workflow tp be updated
      * @return the id of the updated workflow
      */
+    //TODO: include version in workflow object
     public String updateWorkflow(Workflow workflow) {
         workflow.setUpdateTime(System.currentTimeMillis());
         if (workflow.getStatus().isTerminal()) {
