@@ -1300,9 +1300,17 @@ public class WorkflowExecutor {
                     executionDAOFacade.removeTask(task.getTaskId());
                 }
             }
+            //reset fields before restarting the task
+            rerunFromTask.setScheduledTime(System.currentTimeMillis());
+            rerunFromTask.setStartTime(0);
+            rerunFromTask.setUpdateTime(0);
+            rerunFromTask.setEndTime(0);
+            rerunFromTask.setOutputData(null);
+            rerunFromTask.setExternalOutputPayloadStoragePath(null);
             if (rerunFromTask.getTaskType().equalsIgnoreCase(SubWorkflow.NAME)) {
-                // if task is sub workflow set task as IN_PROGRESS
+                // if task is sub workflow set task as IN_PROGRESS and reset start time
                 rerunFromTask.setStatus(IN_PROGRESS);
+                rerunFromTask.setStartTime(System.currentTimeMillis());
             } else {
                 // Set the task to rerun as SCHEDULED
                 rerunFromTask.setStatus(SCHEDULED);
