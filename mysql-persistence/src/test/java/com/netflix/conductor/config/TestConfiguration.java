@@ -178,5 +178,8 @@ public class TestConfiguration implements MySQLConfiguration {
 	public Long getMaxTaskOutputPayloadSizeThresholdKB() {
 		return 10240L;
 	}
+
+	@Override
+	public boolean enableWorkflowExecutionLock(){return true;}
 }
 

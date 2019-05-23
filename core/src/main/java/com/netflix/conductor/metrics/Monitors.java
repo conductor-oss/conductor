@@ -263,4 +263,8 @@ public class Monitors {
 	public static void recordDaoError(String dao, String action) {
 		counter(classQualifier, "dao_errors", "dao", dao, "action", action);
 	}
+
+	public static void recordAcquireLockUnsuccessful(String lockId) {
+		counter(classQualifier, "acquire_lock_unsuccessful", "lockId", lockId);
+	}
 }
