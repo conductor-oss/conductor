@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- *
+ * 
  */
 package com.netflix.conductor.core.execution.tasks;
 
@@ -34,11 +34,11 @@ public class Join extends WorkflowSystemTask {
 	public Join() {
 		super("JOIN");
 	}
-
+	
 	@Override
 	@SuppressWarnings("unchecked")
 	public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) {
-
+		
 		boolean allDone = true;
 		boolean hasFailures = false;
 		StringBuilder failureReason = new StringBuilder();
@@ -66,10 +66,10 @@ public class Join extends WorkflowSystemTask {
 				task.setReasonForIncompletion(failureReason.toString());
 				task.setStatus(Status.FAILED);
 			}else{
-				task.setStatus(Status.COMPLETED);
-			}
+				task.setStatus(Status.COMPLETED);	
+			}	
 			return true;
-		}
+		}	
 		return false;
 	}
 
