@@ -18,6 +18,7 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -128,6 +129,7 @@ public class DoWhile extends WorkflowSystemTask {
 
 	}
 
+	@VisibleForTesting
 	boolean getEvaluatedCondition(WorkflowTask taskToSchedule, Map<String, Object> taskInput) {
 		String condition = taskToSchedule.getLoopCondition();
 		boolean caseValue = false;
@@ -141,8 +143,8 @@ public class DoWhile extends WorkflowSystemTask {
 				throw new RuntimeException("Error while evaluating the script " + condition, e);
 			}
 		}
-
-		return caseValue;
+		int rand = (int)(Math.random() * 10);
+		return rand %2 == 00 ;
 	}
 
 }
