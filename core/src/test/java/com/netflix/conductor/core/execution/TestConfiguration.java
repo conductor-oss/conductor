@@ -134,4 +134,7 @@ public class TestConfiguration implements Configuration {
 	public long getLongProperty(String name, long defaultValue) {
 		return 1000000L;
 	}
+
+	@Override
+	public boolean enableWorkflowExecutionLock() {return true;}
 }
