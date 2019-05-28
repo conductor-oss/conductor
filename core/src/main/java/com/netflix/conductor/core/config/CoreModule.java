@@ -86,6 +86,14 @@ public class CoreModule extends AbstractModule {
     }
 
     @ProvidesIntoMap
+    @StringMapKey(TASK_TYPE_DO_WHILE)
+    @Singleton
+    @Named(TASK_MAPPERS_QUALIFIER)
+    public TaskMapper getDoWhileTaskMapper() {
+        return new DoWhileTaskMapper();
+    }
+
+    @ProvidesIntoMap
     @StringMapKey(TASK_TYPE_DYNAMIC)
     @Singleton
     @Named(TASK_MAPPERS_QUALIFIER)

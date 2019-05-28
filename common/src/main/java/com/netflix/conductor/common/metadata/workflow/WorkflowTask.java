@@ -157,10 +157,10 @@ public class WorkflowTask {
 	@ProtoField(id = 21)
 	private List<String> defaultExclusiveJoinTask = new LinkedList<>();
 
-	@ProtoField(id = 21)
-	private String expression;
+	@ProtoField(id = 23)
+	private String loopCondition;
 
-	@ProtoField(id = 21)
+	@ProtoField(id = 24)
 	private List<String> loopOver = new LinkedList<>();
 	/**
 	 * @return the name
@@ -404,17 +404,17 @@ public class WorkflowTask {
 	}
 
 	/**
-	 * @return the expression
+	 * @return the loopCondition
 	 */
-	public String getExpression() {
-		return expression;
+	public String getLoopCondition() {
+		return loopCondition;
 	}
 
 	/**
-	 * @param expression the expression to set
+	 * @param loopCondition the expression to set
 	 */
-	public void setExpression(String expression) {
-		this.expression = expression;
+	public void setLoopCondition(String loopCondition) {
+		this.loopCondition = loopCondition;
 	}
 
 	/**

@@ -35,4 +35,6 @@ message WorkflowTask {
     TaskDef task_definition = 19;
     bool rate_limited = 20;
     repeated string default_exclusive_join_task = 21;
+    string loop_condition = 23;
+    repeated string loop_over = 24;
 }

@@ -1172,6 +1172,10 @@ public abstract class AbstractProtoMapper {
             to.setRateLimited( from.isRateLimited() );
         }
         to.addAllDefaultExclusiveJoinTask( from.getDefaultExclusiveJoinTask() );
+        if (from.getLoopCondition() != null) {
+            to.setLoopCondition( from.getLoopCondition() );
+        }
+        to.addAllLoopOver( from.getLoopOver() );
         return to.build();
     }
 
@@ -1211,6 +1215,8 @@ public abstract class AbstractProtoMapper {
         }
         to.setRateLimited( from.getRateLimited() );
         to.setDefaultExclusiveJoinTask( from.getDefaultExclusiveJoinTaskList().stream().collect(Collectors.toCollection(ArrayList::new)) );
+        to.setLoopCondition( from.getLoopCondition() );
+        to.setLoopOver( from.getLoopOverList().stream().collect(Collectors.toCollection(ArrayList::new)) );
         return to;
     }
 

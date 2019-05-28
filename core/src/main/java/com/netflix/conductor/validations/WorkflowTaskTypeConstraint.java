@@ -54,6 +54,9 @@ public @interface WorkflowTaskTypeConstraint {
                 case TaskType.TASK_TYPE_DECISION:
                     valid = isDecisionTaskValid(workflowTask, context);
                     break;
+                case TaskType.TASK_TYPE_DO_WHILE:
+                    valid = isDoWhileTaskValid(workflowTask, context);
+                    break;
                 case TaskType.TASK_TYPE_DYNAMIC:
                     valid = isDynamicTaskValid(workflowTask, context);
                     break;
@@ -97,6 +100,22 @@ public @interface WorkflowTaskTypeConstraint {
             else if ((workflowTask.getDecisionCases() != null || workflowTask.getCaseExpression() != null) &&
                 (workflowTask.getDecisionCases().size() == 0)){
                 String message = String.format("decisionCases should have atleast one task for taskType: %s taskName: %s", TaskType.DECISION, workflowTask.getName());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                valid = false;
+            }
+            return valid;
+        }
+
+        private boolean isDoWhileTaskValid(WorkflowTask workflowTask, ConstraintValidatorContext context) {
+            boolean valid = true;
+            if (workflowTask.getLoopCondition() == null){
+                String message = String.format(PARAM_REQUIRED_STRING_FORMAT, "loopExpression", TaskType.DO_WHILE,
+                        workflowTask.getName());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                valid = false;
+            }
+            if (workflowTask.getLoopOver() == null || workflowTask.getLoopOver().size() == 0) {
+                String message = String.format(PARAM_REQUIRED_STRING_FORMAT, "loopover", TaskType.DO_WHILE, workflowTask.getName());
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             }
