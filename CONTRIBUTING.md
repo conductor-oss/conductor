@@ -17,8 +17,12 @@ Contributions will be accepted to the [dev](https://github.com/Netflix/conductor
 
     c. Push to your branch (git push origin my_branch)
 
-    d. Initiate a pull request on github ( http://help.github.com/send-pull-requests/ )
+    d. Initiate a pull request on github ( http://help.github.com/en/articles/creating-a-pull-request/ )
 
     e. Done :)
 
 For minor fixes just open a pull request to the [dev]( https://github.com/Netflix/conductor/tree/dev ) branch on Github.
+
+## Questions
+
+If you have questions or want to report a bug please create an [Issue]( https://github.com/Netflix/conductor/issues ) or chat with us on [![Dev chat at https://gitter.im/Netflix/dynomite](https://badges.gitter.im/netflix-conductor/community.svg)](https://gitter.im/netflix-conductor/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
