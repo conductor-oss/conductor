@@ -39,7 +39,7 @@ import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
-import com.netflix.conductor.service.LockService;
+import com.netflix.conductor.service.ExecutionLockService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -93,7 +93,7 @@ public class WorkflowExecutor {
     private int activeWorkerLastPollInSecs;
     public static final String DECIDER_QUEUE = "_deciderQueue";
     private static final String className = WorkflowExecutor.class.getSimpleName();
-    private final LockService lockSerivce;
+    private final ExecutionLockService executionLockService;
 
     @Inject
     public WorkflowExecutor(
@@ -105,7 +105,7 @@ public class WorkflowExecutor {
             ExecutionDAOFacade executionDAOFacade,
             ExternalPayloadStorageUtils externalPayloadStorageUtils,
             Configuration config,
-            LockService lockService
+            ExecutionLockService executionLockService
     ) {
         this.deciderService = deciderService;
         this.metadataDAO = metadataDAO;
@@ -116,7 +116,7 @@ public class WorkflowExecutor {
         this.activeWorkerLastPollInSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
         this.workflowStatusListener = workflowStatusListener;
         this.externalPayloadStorageUtils = externalPayloadStorageUtils;
-        this.lockSerivce = lockService;
+        this.executionLockService = executionLockService;
     }
 
     /**
@@ -675,7 +675,7 @@ public class WorkflowExecutor {
      */
     public void terminateWorkflow(Workflow workflow, String reason, String failureWorkflow) {
         try {
-            lockSerivce.waitForLock(workflow.getWorkflowId());
+            executionLockService.waitForLock(workflow.getWorkflowId());
 
             if (!workflow.getStatus().isTerminal()) {
                 workflow.setStatus(WorkflowStatus.TERMINATED);
@@ -761,7 +761,7 @@ public class WorkflowExecutor {
                 workflowStatusListener.onWorkflowTerminated(workflow);
             }
         } finally {
-            lockSerivce.releaseLock(workflow.getCorrelationId());
+            executionLockService.releaseLock(workflow.getCorrelationId());
         }
     }
 
@@ -931,7 +931,7 @@ public class WorkflowExecutor {
      * @throws ApplicationException If there was an error - caller should retry in this case.
      */
     public boolean decide(String workflowId) {
-        if (!lockSerivce.acquireLock(workflowId)) {
+        if (!executionLockService.acquireLock(workflowId)) {
             return false;
         }
 
@@ -1005,7 +1005,7 @@ public class WorkflowExecutor {
             LOGGER.error("Error deciding workflow: {}", workflowId, e);
             throw e;
         } finally {
-            lockSerivce.releaseLock(workflowId);
+            executionLockService.releaseLock(workflowId);
         }
         return false;
     }
@@ -1029,7 +1029,7 @@ public class WorkflowExecutor {
      */
     public void pauseWorkflow(String workflowId) {
         try {
-            lockSerivce.waitForLock(workflowId);
+            executionLockService.waitForLock(workflowId);
             WorkflowStatus status = WorkflowStatus.PAUSED;
             Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, false);
             if (workflow.getStatus().isTerminal()) {
@@ -1041,7 +1041,7 @@ public class WorkflowExecutor {
             workflow.setStatus(status);
             executionDAOFacade.updateWorkflow(workflow);
         } finally {
-            lockSerivce.releaseLock(workflowId);
+            executionLockService.releaseLock(workflowId);
         }
     }
 
@@ -1051,7 +1051,7 @@ public class WorkflowExecutor {
      */
     public void resumeWorkflow(String workflowId) {
         try {
-            lockSerivce.waitForLock(workflowId);
+            executionLockService.waitForLock(workflowId);
             Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, false);
             if (!workflow.getStatus().equals(WorkflowStatus.PAUSED)) {
                 throw new IllegalStateException("The workflow " + workflowId + " is not PAUSED so cannot resume. " +
@@ -1061,7 +1061,7 @@ public class WorkflowExecutor {
             executionDAOFacade.updateWorkflow(workflow);
             decide(workflowId);
         } finally {
-            lockSerivce.releaseLock(workflowId);
+            executionLockService.releaseLock(workflowId);
         }
     }
 
