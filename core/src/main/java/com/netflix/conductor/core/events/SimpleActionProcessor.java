@@ -114,6 +114,7 @@ public class SimpleActionProcessor implements ActionProcessor {
 
         try {
             executor.updateTask(new TaskResult(task));
+            logger.debug("Updated task: {} in workflow:{} with status: {} for event: {} for message:{}", taskId, workflowId, status, event, messageId);
         } catch (RuntimeException e) {
             logger.error("Error updating task: {} in workflow: {} in action: {} for event: {} for message: {}", taskDetails.getTaskRefName(), taskDetails.getWorkflowId(), action.getAction(), event, messageId, e);
             replaced.put("error", e.getMessage());
@@ -137,11 +138,12 @@ public class SimpleActionProcessor implements ActionProcessor {
             workflowInput.put("conductor.event.messageId", messageId);
             workflowInput.put("conductor.event.name", event);
 
-            String id = executor.startWorkflow(params.getName(), params.getVersion(),
+            String workflowId = executor.startWorkflow(params.getName(), params.getVersion(),
                     Optional.ofNullable(replaced.get("correlationId")).map(Object::toString)
                             .orElse(params.getCorrelationId()),
                     workflowInput, null, event, params.getTaskToDomain());
-            output.put("workflowId", id);
+            output.put("workflowId", workflowId);
+            logger.debug("Started workflow: {}/{}/{} for event: {} for message:{}", params.getName(), params.getVersion(), workflowId, event, messageId);
 
         } catch (RuntimeException e) {
             logger.error("Error starting workflow: {}, version: {}, for event: {} for message: {}", params.getName(), params.getVersion(), event, messageId, e);
