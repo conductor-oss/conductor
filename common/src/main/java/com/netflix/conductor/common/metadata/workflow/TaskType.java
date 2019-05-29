@@ -18,7 +18,8 @@ public enum TaskType {
     HTTP(true),
     LAMBDA(true),
     EXCLUSIVE_JOIN(true),
-    TERMINATE(true);
+    TERMINATE(true),
+    KAFKA_PUBLISH(true);
 
     /**
      * TaskType constants representing each of the possible enumeration values.
@@ -39,6 +40,8 @@ public enum TaskType {
     public static final String TASK_TYPE_LAMBDA= "LAMBDA";
     public static final String TASK_TYPE_EXCLUSIVE_JOIN = "EXCLUSIVE_JOIN";
     public static final String TASK_TYPE_TERMINATE = "TERMINATE";
+    public static final String TASK_TYPE_EXLCUSIVE_JOIN = "EXCLUSIVE_JOIN";
+    public static final String TASK_TYPE_KAFKA_PUBLISH = "KAFKA_PUBLISH";
     
     private boolean isSystemTask;
 

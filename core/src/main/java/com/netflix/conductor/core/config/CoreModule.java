@@ -208,4 +208,12 @@ public class CoreModule extends AbstractModule {
         return new TerminateTaskMapper(parametersUtils);
     }
 
+    @ProvidesIntoMap
+    @StringMapKey(TASK_TYPE_KAFKA_PUBLISH)
+    @Singleton
+    @Named(TASK_MAPPERS_QUALIFIER)
+    public TaskMapper getKafkaPublishTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+        return new KafkaPublishTaskMapper(parametersUtils, metadataDAO);
+    }
+
 }
