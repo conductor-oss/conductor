@@ -55,8 +55,8 @@ public interface Configuration {
 
     String ADDITIONAL_MODULES_PROPERTY_NAME = "conductor.additional.modules";
 
-    String WORKFLOW_EXECUTION_LOCK_ENABLED_PROPERTY_NAME = "decider.locking.enabled";
-    boolean WORKFLOW_EXECUTION_LOCK_ENABLED_DEFAULT_VALUE = true;
+    String EXECUTION_LOCK_ENABLED_PROPERTY_NAME = "decider.locking.enabled";
+    boolean EXECUTION_LOCK_ENABLED_DEFAULT_VALUE = false;
 
     //TODO add constants for input/output external payload related properties.
 

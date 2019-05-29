@@ -53,8 +53,6 @@ import com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.utils.JsonUtils;
-import com.netflix.conductor.core.utils.Lock;
-import com.netflix.conductor.core.utils.NoopLock;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 
@@ -91,11 +89,9 @@ public class CoreModule extends AbstractModule {
         bind(Event.class).asEagerSingleton();
         bind(Lambda.class).asEagerSingleton();
         bind(Terminate.class).asEagerSingleton();
-
         // start processing events when instance starts
         bind(ActionProcessor.class).to(SimpleActionProcessor.class);
         bind(EventProcessor.class).to(SimpleEventProcessor.class).asEagerSingleton();
-        bind(Lock.class).to(NoopLock.class).asEagerSingleton();
     }
 
     @Provides
