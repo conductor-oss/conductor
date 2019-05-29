@@ -31,15 +31,8 @@ public interface Lock {
      * @param unit time unit
      * @return
      */
-    Boolean acquireLock(String lockId, long timeToTry, TimeUnit unit);
+    boolean acquireLock(String lockId, long timeToTry, TimeUnit unit);
 
     void releaseLock(String lockId);
-
-    /**
-     *
-     * @param lockId
-     * @return true if current Thread holds the lock for resource lockId
-     */
-    Boolean hasLock(String lockId);
 
 }
