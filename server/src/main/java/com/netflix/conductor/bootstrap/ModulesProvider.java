@@ -11,13 +11,21 @@ import com.netflix.conductor.contribs.json.JsonJqTransform;
 import com.netflix.conductor.contribs.kafka.KafkaProducerManager;
 import com.netflix.conductor.contribs.kafka.KafkaPublishTask;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.config.NoopLockModule;
 import com.netflix.conductor.core.execution.WorkflowExecutorModule;
 import com.netflix.conductor.core.utils.DummyPayloadStorage;
 import com.netflix.conductor.core.utils.S3PayloadStorage;
 import com.netflix.conductor.dao.RedisWorkflowModule;
 import com.netflix.conductor.elasticsearch.ElasticSearchModule;
 import com.netflix.conductor.mysql.MySQLWorkflowModule;
-import com.netflix.conductor.server.*;
+import com.netflix.conductor.server.DynomiteClusterModule;
+import com.netflix.conductor.server.JerseyModule;
+import com.netflix.conductor.server.LocalRedisModule;
+import com.netflix.conductor.server.RedisClusterModule;
+import com.netflix.conductor.server.RedisSentinelModule;
+import com.netflix.conductor.server.ServerModule;
+import com.netflix.conductor.server.SwaggerModule;
+import com.netflix.conductor.zookeeper.config.ZookeeperModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -102,6 +110,12 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
         if (configuration.getJerseyEnabled()) {
             modules.add(new JerseyModule());
             modules.add(new SwaggerModule());
+        }
+
+        if (configuration.enableWorkflowExecutionLock()) {
+            modules.add(new ZookeeperModule());
+        } else {
+            modules.add(new NoopLockModule());
         }
 
         ExternalPayloadStorageType externalPayloadStorageType = null;
