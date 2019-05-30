@@ -20,7 +20,6 @@ public interface Lock {
     /**
      * acquires a re-entrant lock on lockId, blocks indefinitely on lockId until it succeeds
      * @param lockId resource to lock on
-     * @return
      */
     void acquireLock(String lockId);
 
