@@ -441,13 +441,21 @@ public class WorkflowTaskCoordinator {
 
 	private void updateWithRetry(int count, Task task, TaskResult result, Worker worker) {
 		try {
-			String description = String.format("Retry updating task result: %s for task: %s in worker: %s", result.toString(), task.getTaskDefName(), worker.getIdentity());
-			String methodName = "updateWithRetry";
+            String updateTaskDesc = String.format("Retry updating task result: %s for task: %s in worker: %s", result.toString(), task.getTaskDefName(), worker.getIdentity());
+            String evaluatePayloadDesc = String.format("Evaluate Task payload for task: %s in worker: %s", task.getTaskDefName(), worker.getIdentity());
+            String methodName = "updateWithRetry";
+
             new RetryUtil<>().retryOnException(() ->
             {
-                taskClient.updateTask(result, task.getTaskType());
+                taskClient.evaluateAndUploadLargePayload(result, task.getTaskType());
                 return null;
-            }, null, null, count, description, methodName);
+            }, null, null, count, evaluatePayloadDesc, methodName);
+
+            new RetryUtil<>().retryOnException(() ->
+            {
+                taskClient.updateTask(result);
+                return null;
+            }, null, null, count, updateTaskDesc, methodName);
 		} catch (Exception e) {
 			worker.onErrorUpdate(task);
 			WorkflowTaskMetrics.incrementTaskUpdateErrorCount(worker.getTaskDefName(), e);

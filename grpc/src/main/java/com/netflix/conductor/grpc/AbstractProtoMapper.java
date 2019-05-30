@@ -459,6 +459,7 @@ public abstract class AbstractProtoMapper {
         if (from.getVersion() != null) {
             to.setVersion( from.getVersion() );
         }
+        to.putAllTaskToDomain( from.getTaskToDomain() );
         return to.build();
     }
 
@@ -466,6 +467,7 @@ public abstract class AbstractProtoMapper {
         SubWorkflowParams to = new SubWorkflowParams();
         to.setName( from.getName() );
         to.setVersion( from.getVersion() );
+        to.setTaskToDomain( from.getTaskToDomainMap() );
         return to;
     }
 
@@ -1176,6 +1178,9 @@ public abstract class AbstractProtoMapper {
             to.setLoopCondition( from.getLoopCondition() );
         }
         to.addAllLoopOver( from.getLoopOver() );
+        if (from.isAsyncComplete() != null) {
+            to.setAsyncComplete( from.isAsyncComplete() );
+        }
         return to.build();
     }
 
@@ -1217,6 +1222,7 @@ public abstract class AbstractProtoMapper {
         to.setDefaultExclusiveJoinTask( from.getDefaultExclusiveJoinTaskList().stream().collect(Collectors.toCollection(ArrayList::new)) );
         to.setLoopCondition( from.getLoopCondition() );
         to.setLoopOver( from.getLoopOverList().stream().collect(Collectors.toCollection(ArrayList::new)) );
+        to.setAsyncComplete( from.getAsyncComplete() );
         return to;
     }
 

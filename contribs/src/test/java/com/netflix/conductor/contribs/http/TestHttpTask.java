@@ -33,24 +33,28 @@ import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
-import java.time.Instant;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.mockito.Mockito;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -185,6 +189,33 @@ public class TestHttpTask {
         httpTask.start(workflow, task, workflowExecutor);
         assertEquals(Task.Status.FAILED, task.getStatus());
         assertEquals(HttpTask.MISSING_REQUEST, task.getReasonForIncompletion());
+    }
+
+    @Test
+    public void testPostAsyncComplete() {
+
+        Task task = new Task();
+        Input input = new Input();
+        input.setUri("http://localhost:7009/post");
+        Map<String, Object> body = new HashMap<>();
+        body.put("input_key1", "value1");
+        body.put("input_key2", 45.3d);
+        input.setBody(body);
+        input.setMethod("POST");
+        task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);
+        task.getInputData().put("asyncComplete", true);
+
+        httpTask.start(workflow, task, workflowExecutor);
+        assertEquals(task.getReasonForIncompletion(), Status.IN_PROGRESS, task.getStatus());
+        Map<String, Object> hr = (Map<String, Object>) task.getOutputData().get("response");
+        Object response = hr.get("body");
+        assertEquals(Status.IN_PROGRESS, task.getStatus());
+        assertTrue("response is: " + response, response instanceof Map);
+        Map<String, Object> map = (Map<String, Object>) response;
+        Set<String> inputKeys = body.keySet();
+        Set<String> responseKeys = map.keySet();
+        inputKeys.containsAll(responseKeys);
+        responseKeys.containsAll(inputKeys);
     }
 
     @Test

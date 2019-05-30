@@ -23,6 +23,7 @@ import com.google.common.io.Resources;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.tests.utils.TestRunner;
@@ -52,6 +53,9 @@ public class WorkflowLegacyMigrationTest extends AbstractWorkflowServiceTest {
     @Inject
     private Configuration configuration;
 
+    @Inject
+    ExecutionDAOFacade executionDAOFacade;
+
     @Override
     public String startOrLoadWorkflowExecution(String snapshotResourceName, String workflowName,
                                                int version, String correlationId, Map<String, Object> input,
@@ -77,8 +81,8 @@ public class WorkflowLegacyMigrationTest extends AbstractWorkflowServiceTest {
             task.setCorrelationId(correlationId);
         });
 
-        executionDAO.createTasks(workflow.getTasks());
-        executionDAO.createWorkflow(workflow);
+        executionDAOFacade.createWorkflow(workflow);
+        executionDAOFacade.createTasks(workflow.getTasks());
 
         /*
          * Apart from loading a workflow snapshot,
@@ -117,5 +121,29 @@ public class WorkflowLegacyMigrationTest extends AbstractWorkflowServiceTest {
      * ForkJoins are also tested on testForkJoin()
      */
     public void testForkJoinNestedWithSubWorkflow() {
+    }
+
+    @Ignore
+    @Test
+    @Override
+    public void testTerminateTaskWithFailedStatus() {
+    }
+
+    @Ignore
+    @Test
+    @Override
+    public void testTerminateTaskWithCompletedStatus() {
+    }
+
+    @Ignore
+    @Test
+    @Override
+    public void testTerminateMultiLevelWorkflow() {
+    }
+
+    @Ignore
+    @Test
+    @Override
+    public void testForkJoinWithOptionalSubworkflows() {
     }
 }

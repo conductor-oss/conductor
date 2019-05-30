@@ -65,6 +65,7 @@ public class JoinTaskMapper implements TaskMapper {
         joinTask.setCorrelationId(workflowInstance.getCorrelationId());
         joinTask.setWorkflowType(workflowInstance.getWorkflowName());
         joinTask.setScheduledTime(System.currentTimeMillis());
+        joinTask.setStartTime(System.currentTimeMillis());
         joinTask.setInputData(joinInput);
         joinTask.setTaskId(taskId);
         joinTask.setStatus(Task.Status.IN_PROGRESS);

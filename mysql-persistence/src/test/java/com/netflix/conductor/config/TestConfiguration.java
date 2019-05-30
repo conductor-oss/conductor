@@ -111,30 +111,26 @@ public class TestConfiguration implements MySQLConfiguration {
 	}
 
 	@SuppressWarnings("Duplicates")
-	@Override
-	public String getProperty(String key, String defaultValue) {
-		String val = null;
-		if (testProperties.containsKey(key)) {
-			return testProperties.get(key);
-		}
+    @Override
+    public String getProperty(String key, String defaultValue) {
+        String val;
+        if (testProperties.containsKey(key)) {
+            return testProperties.get(key);
+        }
 
-		try {
-			val = System.getenv(key.replace('.', '_'));
-			if (val == null || val.isEmpty()) {
-				val = Optional.ofNullable(System.getProperty(key)).orElse(defaultValue);
-			}
-		} catch (Exception e) {
-			logger.error(e.getMessage(), e);
-		}
-
-		return val;
-	}
+        val = System.getenv(key.replace('.', '_'));
+        if (val == null || val.isEmpty()) {
+            val = Optional.ofNullable(System.getProperty(key))
+                    .orElse(defaultValue);
+        }
+        return val;
+    }
 
 	@Override
 	public Map<String, Object> getAll() {
 		Map<String, Object> map = new HashMap<>();
 		Properties props = System.getProperties();
-		props.entrySet().forEach(entry -> map.put(entry.getKey().toString(), entry.getValue()));
+		props.forEach((key, value) -> map.put(key.toString(), value));
 		map.putAll(testProperties);
 		return map;
 	}

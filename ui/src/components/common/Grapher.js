@@ -159,9 +159,9 @@ class Grapher extends Component {
             .on("click", function (v) {
                 if (innerGraph[v] != null) {
                     let data = vertices[v].data;
-
-                    let n = innerGraph[v].edges;
-                    let vx = innerGraph[v].vertices;
+                    let renderedInnerGraph = innerGraph[v]();
+                    let n = renderedInnerGraph.edges;
+                    let vx = renderedInnerGraph.vertices;
                     let subg = {n: n, vx: vx, layout: layout};
 
                     p.propsDivElem.style.left = (window.innerWidth/2 + 100) + 'px';
@@ -176,7 +176,7 @@ class Grapher extends Component {
                         showSubGraph: true,
                         showSideBar: true,
                         subGraph: subg,
-                        subGraphId: innerGraph[v].id
+                        subGraphId: renderedInnerGraph.id
                     });
                     p.setState({showSubGraph: true});
 
@@ -190,7 +190,9 @@ class Grapher extends Component {
                     p.propsDivElem.style.display = "block"
                     p.setState({selectedTask: data.task, showSideBar: true, subGraph: null, showSubGraph: false});
                 }
-            });
+            })
+            .append("svg:title")
+            .text(function(v) { return vertices[v].description; });
 
         return (
             <div className="graph-ui-content" id="graph-ui-content">

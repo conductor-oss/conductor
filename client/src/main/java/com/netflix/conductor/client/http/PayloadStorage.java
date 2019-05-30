@@ -63,7 +63,7 @@ class PayloadStorage implements ExternalPayloadStorage {
             default:
                 throw new ConductorClientException(String.format("Invalid payload type: %s for operation: %s", payloadType.toString(), operation.toString()));
         }
-        return clientBase.getForEntity(String.format("%s/externalstoragelocation", uri), new Object[]{"path", path}, ExternalStorageLocation.class);
+        return clientBase.getForEntity(String.format("%s/externalstoragelocation", uri), new Object[]{"path", path, "operation", operation.toString(), "payloadType", payloadType.toString()}, ExternalStorageLocation.class);
     }
 
     /**
@@ -135,7 +135,7 @@ class PayloadStorage implements ExternalPayloadStorage {
             int responseCode = connection.getResponseCode();
             if (responseCode == HttpURLConnection.HTTP_OK) {
                 logger.debug("Download completed with HTTP response code: {}", connection.getResponseCode());
-                return connection.getInputStream();
+                return org.apache.commons.io.IOUtils.toBufferedInputStream(connection.getInputStream());
             }
             errorMsg = String.format("Unable to download. Response code: %d", responseCode);
             logger.error(errorMsg);

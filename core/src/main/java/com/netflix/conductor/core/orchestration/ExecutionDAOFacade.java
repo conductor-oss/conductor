@@ -30,8 +30,9 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Service that acts as a facade for accessing execution data from the {@link ExecutionDAO} and {@link IndexDAO} storage layers
@@ -103,18 +104,20 @@ public class ExecutionDAOFacade {
      */
     public List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks) {
         if (!executionDAO.canSearchAcrossWorkflows()) {
-            List<Workflow> workflows = new LinkedList<>();
-            SearchResult<String> result = indexDAO.searchWorkflows("correlationId='" + correlationId + "'", "*", 0, 10000, null);
-            result.getResults().forEach(workflowId -> {
-                try {
-                    Workflow workflow = getWorkflowById(workflowId, includeTasks);
-                    workflows.add(workflow);
-                } catch (ApplicationException e) {
-                    //This might happen when the workflow archival failed and the workflow was removed from dynomite
-                    LOGGER.error("Error getting the workflowId: {}  for correlationId: {} from Dynomite/Archival", workflowId, correlationId, e);
-                }
-            });
-            return workflows;
+            SearchResult<String> result = indexDAO.searchWorkflows("correlationId='" + correlationId + "'", "*", 0, 1000, null);
+            return result.getResults().stream()
+                    .parallel()
+                    .map(workflowId -> {
+                        try {
+                            return getWorkflowById(workflowId, includeTasks);
+                        } catch (ApplicationException e) {
+                            // This might happen when the workflow archival failed and the workflow was removed from primary datastore
+                            LOGGER.error("Error getting the workflow: {}  for correlationId: {} from datastore/index", workflowId, correlationId, e);
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
         }
         return executionDAO.getWorkflowsByCorrelationId(correlationId, includeTasks);
     }
@@ -142,6 +145,7 @@ public class ExecutionDAOFacade {
      * @return the id of the created workflow
      */
     public String createWorkflow(Workflow workflow) {
+        workflow.setCreateTime(System.currentTimeMillis());
         executionDAO.createWorkflow(workflow);
         indexDAO.indexWorkflow(workflow);
         return workflow.getWorkflowId();
@@ -154,6 +158,10 @@ public class ExecutionDAOFacade {
      * @return the id of the updated workflow
      */
     public String updateWorkflow(Workflow workflow) {
+        workflow.setUpdateTime(System.currentTimeMillis());
+        if (workflow.getStatus().isTerminal()) {
+            workflow.setEndTime(System.currentTimeMillis());
+        }
         executionDAO.updateWorkflow(workflow);
         indexDAO.indexWorkflow(workflow);
         return workflow.getWorkflowId();
@@ -231,6 +239,14 @@ public class ExecutionDAOFacade {
      */
     public void updateTask(Task task) {
         try {
+            if (task.getStatus() != null) {
+                if (!task.getStatus().isTerminal() || (task.getStatus().isTerminal() && task.getUpdateTime() == 0)) {
+                    task.setUpdateTime(System.currentTimeMillis());
+                }
+                if (task.getStatus().isTerminal() && task.getEndTime() == 0) {
+                    task.setEndTime(System.currentTimeMillis());
+                }
+            }
             executionDAO.updateTask(task);
             indexDAO.indexTask(task);
         } catch (Exception e) {

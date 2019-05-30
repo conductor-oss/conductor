@@ -243,15 +243,13 @@ public abstract class ExecutionDAOTest {
         Task matching = pending.stream().filter(task -> task.getTaskId().equals(tasks.get(0).getTaskId())).findAny().get();
         assertTrue(EqualsBuilder.reflectionEquals(matching, tasks.get(0)));
 
-        List<Task> update = new LinkedList<>();
         for (int i = 0; i < 3; i++) {
             Task found = getExecutionDAO().getTask(workflowId + "_t" + i);
             assertNotNull(found);
             found.getOutputData().put("updated", true);
             found.setStatus(Task.Status.COMPLETED);
-            update.add(found);
+            getExecutionDAO().updateTask(found);
         }
-        getExecutionDAO().updateTasks(update);
 
         List<String> taskIds = tasks.stream().map(Task::getTaskId).collect(Collectors.toList());
         List<Task> found = getExecutionDAO().getTasks(taskIds);

@@ -297,9 +297,33 @@ public class TestDeciderOutcomes {
         assertEquals(1, outcome.tasksToBeScheduled.size());
         assertEquals(task1.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
         System.out.println("TaskId of the scheduled task in input: " + outcome.tasksToBeScheduled.get(0).getInputData());
-        String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
-        assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
 
+        for (int i = 0; i < 3; i++) {
+            String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
+            assertEquals(task1Id, outcome.tasksToBeScheduled.get(0).getInputData().get("taskId"));
+
+            workflow.getTasks().clear();
+            workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+            workflow.getTasks().get(0).setStatus(Status.FAILED);
+
+            outcome = deciderService.decide(workflow);
+
+            assertNotNull(outcome);
+            System.out.println("Schedule: " + outcome.tasksToBeScheduled);
+            System.out.println("Update: " + outcome.tasksToBeUpdated);
+
+            assertEquals(1, outcome.tasksToBeUpdated.size());
+            assertEquals(1, outcome.tasksToBeScheduled.size());
+
+            assertEquals(Task.Status.FAILED, workflow.getTasks().get(0).getStatus());
+            assertEquals(task1Id, outcome.tasksToBeUpdated.get(0).getTaskId());
+            assertEquals(task1.getTaskReferenceName(), outcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+            assertEquals(i + 1, outcome.tasksToBeScheduled.get(0).getRetryCount());
+        }
+
+        String task1Id = outcome.tasksToBeScheduled.get(0).getTaskId();
+
+        workflow.getTasks().clear();
         workflow.getTasks().addAll(outcome.tasksToBeScheduled);
         workflow.getTasks().get(0).setStatus(Status.FAILED);
 
@@ -370,26 +394,33 @@ public class TestDeciderOutcomes {
 
         assertEquals(SystemTaskType.FORK.name(), outcome.tasksToBeScheduled.get(0).getTaskType());
         assertEquals(Task.Status.COMPLETED, outcome.tasksToBeScheduled.get(0).getStatus());
-        for (int i = 1; i < 4; i++) {
-            assertEquals(Task.Status.SCHEDULED, outcome.tasksToBeScheduled.get(i).getStatus());
-            assertEquals("f" + (i - 1), outcome.tasksToBeScheduled.get(i).getTaskDefName());
-            outcome.tasksToBeScheduled.get(i).setStatus(Status.FAILED);        //let's mark them as failure
-        }
-        assertEquals(Task.Status.IN_PROGRESS, outcome.tasksToBeScheduled.get(4).getStatus());
-        workflow.getTasks().clear();
-        workflow.getTasks().addAll(outcome.tasksToBeScheduled);
 
-        for(Task taskToBeScheduled : outcome.tasksToBeScheduled) {
-            taskToBeScheduled.setUpdateTime(System.currentTimeMillis());
+        for (int retryCount = 0; retryCount < 4; retryCount++) {
+
+            for (Task taskToBeScheduled : outcome.tasksToBeScheduled) {
+                if (taskToBeScheduled.getTaskDefName().equals("join0")) {
+                    assertEquals(Task.Status.IN_PROGRESS, taskToBeScheduled.getStatus());
+                } else if (taskToBeScheduled.getTaskType().matches("(f0|f1|f2)")) {
+                    assertEquals(Task.Status.SCHEDULED, taskToBeScheduled.getStatus());
+                    taskToBeScheduled.setStatus(Status.FAILED);
+                }
+
+                taskToBeScheduled.setUpdateTime(System.currentTimeMillis());
+            }
+            workflow.getTasks().addAll(outcome.tasksToBeScheduled);
+
+
+            outcome = deciderService.decide(workflow);
+            assertNotNull(outcome);
         }
 
-        outcome = deciderService.decide(workflow);
-        assertNotNull(outcome);
         assertEquals(SystemTaskType.JOIN.name(), outcome.tasksToBeScheduled.get(0).getTaskType());
-        for (int i = 1; i < 4; i++) {
+
+        for (int i = 0; i < 3; i++) {
             assertEquals(Task.Status.COMPLETED_WITH_ERRORS, outcome.tasksToBeUpdated.get(i).getStatus());
-            assertEquals("f" + (i - 1), outcome.tasksToBeUpdated.get(i).getTaskDefName());
+            assertEquals("f" + (i), outcome.tasksToBeUpdated.get(i).getTaskDefName());
         }
+
         assertEquals(Task.Status.IN_PROGRESS, outcome.tasksToBeScheduled.get(0).getStatus());
         new Join().execute(workflow, outcome.tasksToBeScheduled.get(0), null);
         assertEquals(Task.Status.COMPLETED, outcome.tasksToBeScheduled.get(0).getStatus());

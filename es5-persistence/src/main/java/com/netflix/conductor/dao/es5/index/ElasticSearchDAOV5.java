@@ -134,13 +134,17 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         this.archiveSearchBatchSize = config.getArchiveSearchBatchSize();
 
         int corePoolSize = 6;
-        int maximumPoolSize = 12;
+        int maximumPoolSize = config.getAsyncMaxPoolSize();
         long keepAliveTime = 1L;
+        int workerQueueSize = config.getAsyncWorkerQueueSize();
         this.executorService = new ThreadPoolExecutor(corePoolSize,
             maximumPoolSize,
             keepAliveTime,
             TimeUnit.MINUTES,
-            new LinkedBlockingQueue<>());
+            new LinkedBlockingQueue<>(workerQueueSize),
+                (runnable, executor) -> {
+                    logger.warn("Request  {} to async dao discarded in executor {}", runnable, executor);
+                });
     }
 
     @Override
@@ -158,7 +162,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             Executors.newScheduledThreadPool(1)
                 .scheduleAtFixedRate(() -> updateLogIndexName(), 0, 1, TimeUnit.HOURS);
         } catch (Exception e) {
-            logger.error(e.getMessage(), e);
+            logger.error("Error creating index templates", e);
         }
 
         //1. Create the required index
@@ -344,7 +348,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             List<String> taskIds = taskExecLogs.stream()
                 .map(TaskExecLog::getTaskId)
                 .collect(Collectors.toList());
-            logger.error("Failed to index task execution logs for tasks: ", taskIds, e);
+            logger.error("Failed to index task execution logs for tasks: {}", taskIds, e);
         }
     }
 

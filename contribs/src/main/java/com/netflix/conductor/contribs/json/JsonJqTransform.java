@@ -80,7 +80,7 @@ public class JsonJqTransform extends WorkflowSystemTask {
 				taskOutput.put("resultList", result);
 			}
 		} catch(Exception e) {
-			logger.error(e.getMessage(), e);
+			logger.error("Error executing task: {} in workflow: {}", task.getTaskId(), workflow.getWorkflowId(), e);
 			task.setStatus(Task.Status.FAILED);
 			task.setReasonForIncompletion(e.getMessage());
 			taskOutput.put("error", e.getCause() != null ? e.getCause().getMessage() : e.getMessage());

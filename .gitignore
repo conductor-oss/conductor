@@ -20,4 +20,4 @@ out/
 bin/
 target/
 .DS_Store
-target/
+.vscode/

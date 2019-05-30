@@ -190,11 +190,6 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     }
 
     @Override
-    public void updateTasks(List<Task> tasks) {
-        withTransaction(connection -> tasks.forEach(task -> updateTask(connection, task)));
-    }
-
-    @Override
     public boolean removeTask(String taskId) {
         Task task = getTask(taskId);
 
@@ -251,13 +246,11 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
     @Override
     public String createWorkflow(Workflow workflow) {
-        workflow.setCreateTime(System.currentTimeMillis());
         return insertOrUpdateWorkflow(workflow, false);
     }
 
     @Override
     public String updateWorkflow(Workflow workflow) {
-        workflow.setUpdateTime(System.currentTimeMillis());
         return insertOrUpdateWorkflow(workflow, true);
     }
 
@@ -419,7 +412,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
             List<EventExecution> executions = Lists.newLinkedList();
             withTransaction(tx -> {
                 for (int i = 0; i < max; i++) {
-                    String executionId = messageId + "_" + i; // see EventProcessor.handle to understand how the
+                    String executionId = messageId + "_" + i; // see SimpleEventProcessor.handle to understand how the
                     // execution id is set
                     EventExecution ee = readEventExecution(tx, eventHandlerName, eventName, messageId, executionId);
                     if (ee == null) {
@@ -477,10 +470,6 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
         boolean terminal = workflow.getStatus().isTerminal();
 
-        if (terminal) {
-            workflow.setEndTime(System.currentTimeMillis());
-        }
-
         List<Task> tasks = workflow.getTasks();
         workflow.setTasks(Lists.newLinkedList());
 
@@ -504,11 +493,6 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     }
 
     private void updateTask(Connection connection, Task task) {
-        task.setUpdateTime(System.currentTimeMillis());
-        if (task.getStatus() != null && task.getStatus().isTerminal() && task.getEndTime() == 0) {
-            task.setEndTime(System.currentTimeMillis());
-        }
-
         Optional<TaskDef> taskDefinition = task.getTaskDefinition();
 
         if (taskDefinition.isPresent() && taskDefinition.get().concurrencyLimit() > 0) {

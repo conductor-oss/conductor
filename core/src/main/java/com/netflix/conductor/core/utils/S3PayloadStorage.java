@@ -42,7 +42,7 @@ import java.util.Date;
 /**
  * An implementation of {@link ExternalPayloadStorage} using AWS S3 for storing large JSON payload data.
  * The S3 client assumes that access to S3 is configured on the instance.
- * see <a href="https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/index.html?com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html">DefaultAWSCredentialsProviderChain</a>
+ * @see <a href="https://docs.aws.amazon.com/AWSJavaSDK/latest/javadoc/index.html?com/amazonaws/auth/DefaultAWSCredentialsProviderChain.html">DefaultAWSCredentialsProviderChain</a>
  */
 @Singleton
 public class S3PayloadStorage implements ExternalPayloadStorage {

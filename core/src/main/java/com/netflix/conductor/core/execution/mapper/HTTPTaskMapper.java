@@ -62,6 +62,7 @@
          logger.debug("TaskMapperContext {} in HTTPTaskMapper", taskMapperContext);
 
          WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
+         taskToSchedule.getInputParameters().put("asyncComplete", taskToSchedule.isAsyncComplete());
          Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
          String taskId = taskMapperContext.getTaskId();
          int retryCount = taskMapperContext.getRetryCount();
@@ -74,6 +75,7 @@
                          }));
 
          Map<String, Object> input = parametersUtils.getTaskInputV2(taskToSchedule.getInputParameters(), workflowInstance, taskId, taskDefinition);
+         Boolean asynComplete = (Boolean)input.get("asyncComplete");
 
          Task httpTask = new Task();
          httpTask.setTaskType(taskToSchedule.getType());
@@ -85,6 +87,7 @@
          httpTask.setScheduledTime(System.currentTimeMillis());
          httpTask.setTaskId(taskId);
          httpTask.setInputData(input);
+         httpTask.getInputData().put("asyncComplete", asynComplete);
          httpTask.setStatus(Task.Status.SCHEDULED);
          httpTask.setRetryCount(retryCount);
          httpTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());

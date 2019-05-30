@@ -284,7 +284,7 @@ public class WorkflowDefTest {
 
 
 	@Test
-	public void testWorkflowTaskInputParamValueInvalid() {
+	public void testWorkflowTaskEmptyStringInputParamValue() {
 		WorkflowDef workflowDef = new WorkflowDef();//name is null
 		workflowDef.setSchemaVersion(2);
 		workflowDef.setName("test_env");
@@ -304,12 +304,32 @@ public class WorkflowDefTest {
 		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 		Validator validator = factory.getValidator();
 		Set<ConstraintViolation<Object>> result = validator.validate(workflowDef);
-		assertEquals(1, result.size());
+		assertEquals(0, result.size());
+	}
 
-		List<String> validationErrors = new ArrayList<>();
-		result.forEach(e -> validationErrors.add(e.getMessage()));
+	@Test
+	public void testWorkflowTasklistInputParamWithEmptyString() {
+		WorkflowDef workflowDef = new WorkflowDef();//name is null
+		workflowDef.setSchemaVersion(2);
+		workflowDef.setName("test_env");
 
-		assertTrue(validationErrors.contains("key: blabla input parameter value: is null or empty"));
+		WorkflowTask workflowTask = new WorkflowTask();//name is null
+
+		workflowTask.setName("t1");
+		workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
+		workflowTask.setTaskReferenceName("t1");
+
+		Map<String, Object> map = new HashMap<>();
+		map.put("blabla", "");
+		map.put("foo", new String[]{""});
+		workflowTask.setInputParameters(map);
+
+		workflowDef.getTasks().add(workflowTask);
+
+		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+		Validator validator = factory.getValidator();
+		Set<ConstraintViolation<Object>> result = validator.validate(workflowDef);
+		assertEquals(0, result.size());
 	}
 
 	@Test
@@ -333,7 +353,7 @@ public class WorkflowDefTest {
 		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
 		Validator validator = factory.getValidator();
 		Set<ConstraintViolation<Object>> result = validator.validate(workflowDef);
-		assertEquals(2, result.size());
+		assertEquals(1, result.size());
 
 		List<String> validationErrors = new ArrayList<>();
 		result.forEach(e -> validationErrors.add(e.getMessage()));

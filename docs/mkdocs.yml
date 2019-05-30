@@ -1,30 +1,41 @@
 site_name: Conductor
-theme_dir: docs/theme
 repo_url: https://github.com/Netflix/conductor
-strict: True
+edit_uri: edit/dev/docs/docs/
+strict: true
 
-pages:
-- 'Introduction' : index.md
-- 'Getting Started': intro/index.md
-- 'Basic Concepts': intro/concepts.md
-- 'Metadata Definitions': metadata/index.md
-- 'System Tasks': metadata/systask.md
-- 'Event Handlers': events/index.md
-- 'Kitchensink Example': metadata/kitchensink.md
-- 'Conductor Server': server/index.md
-- 'Conductor Task Workers': worker/index.md
-- 'Task Domains': domains/index.md
-- 'Extending Conductor': extend/index.md
-- 'APIs': runtime/index.md
-- 'Workflow Metrics':
-   - 'Server Metrics': metrics/index.md
-   - 'Worker Metrics': metrics/client.md
-- 'FAQ': faq.md
-- License: 'license.md'
+nav:
+    - Introduction: index.md
+    - Architecture: architecture.md
+    - Getting Started:
+        - Basic Concepts: gettingstarted/basicconcepts.md
+        - Using the Client: gettingstarted/client.md
+        - Start a Workflow: gettingstarted/startworkflow.md
+    - Configuration:
+        - Task Definition: configuration/taskdef.md
+        - Workflow Definition: configuration/workflowdef.md
+        - System Tasks: configuration/systask.md
+        - Event Handlers: configuration/eventhandlers.md
+        - Task Domains: configuration/taskdomains.md
+    - Conductor Server: server.md
+    - API Specification: apispec.md
+    - Conductor Metrics:
+        - Server Metrics: metrics/server.md
+        - Client Metrics: metrics/client.md
+    - Extending Conductor: extend.md
+    - Task Lifecycle: tasklifecycle.md
+    - External Payload Storage: externalpayloadstorage.md
+    - Developer Labs:
+        - Beginner: labs/beginner.md
+        - Events and Event Handlers: labs/eventhandlers.md
+        - Kitchensink: labs/kitchensink.md
+    - Best Practices: bestpractices.md
+    - FAQ: faq.md
+    - License: license.md
 theme: readthedocs
 extra_css:
     - css/custom.css
 markdown_extensions:
-- admonition
 - toc:
-    permalink: True    
+    permalink: true
+- admonition
+- codehilite

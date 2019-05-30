@@ -1,0 +1,281 @@
+{
+  "ownerApp": "junit_app",
+  "status": "RUNNING",
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "DECISION",
+      "status": "COMPLETED",
+      "inputData": {
+        "case": "a"
+      },
+      "referenceTaskName": "decision1",
+      "retryCount": 0,
+      "seq": 1,
+      "pollCount": 0,
+      "taskDefName": "decision1",
+      "startDelayInSeconds": 0,
+      "scheduledTime": 1534990536269,
+      "startTime": 1534990536275,
+      "endTime": 1534990536389,
+      "updateTime": 1534990536389,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "test_execution_times_wf",
+      "taskId": "8f65b5f2-da29-417f-a211-c86a9031d63a",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "decision1",
+        "taskReferenceName": "decision1",
+        "inputParameters": {
+          "case": "a"
+        },
+        "type": "DECISION",
+        "caseValueParam": "case",
+        "decisionCases": {
+          "a": [
+            {
+              "name": "forktask1",
+              "taskReferenceName": "forktask1",
+              "inputParameters": { },
+              "type": "FORK_JOIN",
+              "forkTasks":[
+                [
+                  {
+                    "name":"junit_task_1",
+                    "taskReferenceName":"task2",
+                    "inputParameters":{
+                      "http_request":{
+                        "uri":"https://httpstat.us/200?sleep=300",
+                        "method":"GET"
+                      }
+                    },
+                    "type":"SIMPLE"
+                  }
+                ],
+                [
+                  {
+                    "name":"junit_task_1",
+                    "taskReferenceName":"task3",
+                    "inputParameters":{
+                      "http_request":{
+                        "uri":"https://httpstat.us/200?sleep=300",
+                        "method":"GET"
+                      }
+                    },
+                    "type":"SIMPLE"
+                  }
+                ]
+              ],
+              "startDelay": 0,
+              "optional": false
+            },
+            {
+              "name":"jointask",
+              "taskReferenceName":"jointask",
+              "inputParameters":{ },
+              "type":"JOIN",
+              "joinOn":[
+                "task2",
+                "task3"
+              ]
+            }
+          ]
+        },
+        "defaultCase": [
+          {
+            "name":"junit_task_1",
+            "taskReferenceName":"task1",
+            "inputParameters":{
+              "http_request":{
+                "uri":"https://httpstat.us/200?sleep=300",
+                "method":"GET"
+              }
+            },
+            "type":"SIMPLE"
+          }
+        ],
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "COMPLETED",
+      "queueWaitTime": 6
+    },
+    {
+      "taskType": "FORK",
+      "status": "COMPLETED",
+      "referenceTaskName": "forktask1",
+      "retryCount": 0,
+      "seq": 2,
+      "pollCount": 0,
+      "taskDefName": "forktask1",
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "scheduledTime": 1534990536289,
+      "startTime": 1534990536295,
+      "endTime": 1534990536409,
+      "updateTime": 1534990536409,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "test_execution_times_wf",
+      "taskId": "0d9eaabb-23a2-4942-a130-65448f40d34d",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "taskReferenceName": "forktask1",
+        "type": "FORK_JOIN",
+        "forkTasks": [
+          [
+            {
+              "name":"junit_task_1",
+              "taskReferenceName":"task2",
+              "inputParameters":{
+                "http_request":{
+                  "uri":"https://httpstat.us/200?sleep=300",
+                  "method":"GET"
+                }
+              },
+              "type":"SIMPLE"
+            }
+          ],
+          [
+            {
+              "name":"junit_task_1",
+              "taskReferenceName":"task3",
+              "inputParameters":{
+                "http_request":{
+                  "uri":"https://httpstat.us/200?sleep=300",
+                  "method":"GET"
+                }
+              },
+              "type":"SIMPLE"
+            }
+          ]
+        ],
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "COMPLETED",
+      "queueWaitTime": 0
+    },
+    {
+      "taskType": "junit_task_1",
+      "status": "SCHEDULED",
+      "inputData": { },
+      "referenceTaskName": "task2",
+      "retryCount": 0,
+      "seq": 1,
+      "pollCount": 0,
+      "taskDefName": "junit_task_1",
+      "startDelayInSeconds": 0,
+      "scheduledTime": 1534990536309,
+      "startTime": 1534990536315,
+      "endTime": 1534990536429,
+      "updateTime": 1534990536429,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "test_execution_times_wf",
+      "taskId": "06e596e1-dc12-4bd0-937c-dfde77bacaaa",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "junit_task_1",
+        "taskReferenceName": "task2",
+        "inputParameters": { },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    },
+    {
+      "taskType": "junit_task_1",
+      "status": "SCHEDULED",
+      "inputData": { },
+      "referenceTaskName": "task3",
+      "retryCount": 0,
+      "seq": 1,
+      "pollCount": 0,
+      "taskDefName": "junit_task_1",
+      "startDelayInSeconds": 0,
+      "scheduledTime": 1534990536329,
+      "startTime": 1534990536335,
+      "endTime": 1534990536449,
+      "updateTime": 1534990536449,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "test_execution_times_wf",
+      "taskId": "06e596e1-dc12-4bd0-937c-dfde77bacbcf",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "junit_task_2",
+        "taskReferenceName": "task3",
+        "inputParameters": { },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    },
+    {
+      "taskType": "JOIN",
+      "status": "COMPLETED",
+      "inputData": {
+        "joinOn": [
+          "task2",
+          "task3"
+        ]
+      },
+      "referenceTaskName": "jointask",
+      "retryCount": 0,
+      "seq": 7,
+      "pollCount": 0,
+      "taskDefName": "jointask",
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "scheduledTime": 1534990536349,
+      "startTime": 1534990536355,
+      "endTime": 1534990536469,
+      "updateTime": 1534990536469,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "test_execution_times_wf",
+      "taskId": "d39443cc-d531-4612-9eb0-f1b4c2c1aa29",
+      "callbackAfterSeconds": 0,
+      "outputData": { },
+      "workflowTask": {
+        "taskReferenceName": "jointask",
+        "type": "JOIN",
+        "startDelay": 0,
+        "joinOn": [
+          "task2",
+          "task3"
+        ],
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "IN_PROGRESS",
+      "queueWaitTime": 1
+    }
+  ],
+  "workflowType": "test_execution_times_wf",
+  "version": 1,
+  "schemaVersion": 2
+}

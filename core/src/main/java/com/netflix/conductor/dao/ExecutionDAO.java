@@ -85,13 +85,6 @@ public interface ExecutionDAO {
 	 * 		false: If the {@link Task} is not rateLimited
 	 */
 	boolean exceedsRateLimitPerFrequency(Task task);
-
-	/**
-	 *
-	 * @param tasks Multiple tasks to be updated
-	 *
-	 */
-	void updateTasks(List<Task> tasks);
 	
 	/**
 	 * 

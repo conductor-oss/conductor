@@ -31,6 +31,9 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.service.utils.ServiceUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -43,6 +46,7 @@ import java.util.Optional;
 @Singleton
 @Trace
 public class WorkflowServiceImpl implements WorkflowService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowServiceImpl.class);
 
     private final WorkflowExecutor workflowExecutor;
 
@@ -75,13 +79,14 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Start a new workflow with StartWorkflowRequest, which allows task to be executed in a domain.
-     * @param name          Name of the workflow you want to start.
-     * @param version       Version of the workflow you want to start.
-     * @param correlationId CorrelationID of the workflow you want to start.
-     * @param input         Input to the workflow you want to start.
+     *
+     * @param name                            Name of the workflow you want to start.
+     * @param version                         Version of the workflow you want to start.
+     * @param correlationId                   CorrelationID of the workflow you want to start.
+     * @param input                           Input to the workflow you want to start.
      * @param externalInputPayloadStoragePath
      * @param taskToDomain
-     * @param workflowDef - workflow definition
+     * @param workflowDef                     - workflow definition
      * @return the id of the workflow instance that can be use for tracking.
      */
     @Service
@@ -92,8 +97,8 @@ public class WorkflowServiceImpl implements WorkflowService {
             workflowDef = metadataService.getWorkflowDef(name, version);
             if (workflowDef == null) {
                 throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                String.format("No such workflow found by name: %s, version: %d", name,
-                        version));
+                        String.format("No such workflow found by name: %s, version: %d", name,
+                                version));
             }
 
             return workflowExecutor.startWorkflow(
@@ -128,17 +133,17 @@ public class WorkflowServiceImpl implements WorkflowService {
      */
     @Service
     public String startWorkflow(String name, Integer version, String correlationId, Map<String, Object> input) {
-        WorkflowDef workflowDef = metadataService.getWorkflowDef( name, version );
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(name, version);
         if (workflowDef == null) {
-            throw new ApplicationException( ApplicationException.Code.NOT_FOUND, String.format( "No such workflow found by name: %s, version: %d", name, version ) );
+            throw new ApplicationException(ApplicationException.Code.NOT_FOUND, String.format("No such workflow found by name: %s, version: %d", name, version));
         }
-        return workflowExecutor.startWorkflow( workflowDef.getName(), workflowDef.getVersion(), correlationId, input, null );
+        return workflowExecutor.startWorkflow(workflowDef.getName(), workflowDef.getVersion(), correlationId, input, null);
     }
 
     /**
      * Lists workflows for the given correlation id.
      *
-     * @param name Name of the workflow.
+     * @param name          Name of the workflow.
      * @param correlationId CorrelationID of the workflow you want to start.
      * @param includeClosed IncludeClosed workflow which are not running.
      * @param includeTasks  Includes tasks associated with workflows.
@@ -154,9 +159,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Lists workflows for the given correlation id.
-     * @param name Name of the workflow.
-     * @param includeClosed CorrelationID of the workflow you want to start.
-     * @param includeTasks  IncludeClosed workflow which are not running.
+     *
+     * @param name           Name of the workflow.
+     * @param includeClosed  CorrelationID of the workflow you want to start.
+     * @param includeTasks   IncludeClosed workflow which are not running.
      * @param correlationIds Includes tasks associated with workflows.
      * @return a {@link Map} of {@link String} as key and a list of {@link Workflow} as value
      */
@@ -165,7 +171,7 @@ public class WorkflowServiceImpl implements WorkflowService {
                                                     boolean includeClosed,
                                                     boolean includeTasks,
                                                     List<String> correlationIds) {
-       Map<String, List<Workflow>> workflowMap = new HashMap<>();
+        Map<String, List<Workflow>> workflowMap = new HashMap<>();
         for (String correlationId : correlationIds) {
             List<Workflow> workflows = executionService.getWorkflowInstances(name, correlationId, includeClosed, includeTasks);
             workflowMap.put(correlationId, workflows);
@@ -175,7 +181,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Gets the workflow by workflow Id.
-     * @param workflowId Id of the workflow.
+     *
+     * @param workflowId   Id of the workflow.
      * @param includeTasks Includes tasks associated with workflow.
      * @return an instance of {@link Workflow}
      */
@@ -191,7 +198,8 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Removes the workflow from the system.
-     * @param workflowId WorkflowID of the workflow you want to remove from system.
+     *
+     * @param workflowId      WorkflowID of the workflow you want to remove from system.
      * @param archiveWorkflow Archives the workflow.
      */
     @Service
@@ -201,10 +209,11 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Retrieves all the running workflows.
+     *
      * @param workflowName Name of the workflow.
-     * @param version Version of the workflow.
-     * @param startTime Starttime of the workflow.
-     * @param endTime EndTime of the workflow
+     * @param version      Version of the workflow.
+     * @param startTime    Starttime of the workflow.
+     * @param endTime      EndTime of the workflow
      * @return a list of workflow Ids.
      */
     @Service
@@ -219,6 +228,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Starts the decision task for a workflow.
+     *
      * @param workflowId WorkflowId of the workflow.
      */
     @Service
@@ -228,6 +238,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Pauses the workflow given a worklfowId.
+     *
      * @param workflowId WorkflowId of the workflow.
      */
     @Service
@@ -237,6 +248,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Resumes the workflow.
+     *
      * @param workflowId WorkflowId of the workflow.
      */
     @Service
@@ -246,9 +258,10 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Skips a given task from a current running workflow.
-     * @param workflowId WorkflowId of the workflow.
+     *
+     * @param workflowId        WorkflowId of the workflow.
      * @param taskReferenceName The task reference name.
-     * @param skipTaskRequest {@link SkipTaskRequest} for task you want to skip.
+     * @param skipTaskRequest   {@link SkipTaskRequest} for task you want to skip.
      */
     @Service
     public void skipTaskFromWorkflow(String workflowId, String taskReferenceName,
@@ -258,8 +271,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Reruns the workflow from a specific task.
+     *
      * @param workflowId WorkflowId of the workflow you want to rerun.
-     * @param request (@link RerunWorkflowRequest) for the workflow.
+     * @param request    (@link RerunWorkflowRequest) for the workflow.
      * @return WorkflowId of the rerun workflow.
      */
     @Service
@@ -281,6 +295,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Retries the last failed task.
+     *
      * @param workflowId WorkflowId of the workflow.
      */
     @Service
@@ -290,6 +305,7 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Resets callback times of all in_progress tasks to 0.
+     *
      * @param workflowId WorkflowId of the workflow.
      */
     @Service
@@ -299,8 +315,9 @@ public class WorkflowServiceImpl implements WorkflowService {
 
     /**
      * Terminate workflow execution.
+     *
      * @param workflowId WorkflowId of the workflow.
-     * @param reason Reason for terminating the workflow.
+     * @param reason     Reason for terminating the workflow.
      */
     @Service
     public void terminateWorkflow(String workflowId, String reason) {
@@ -310,11 +327,12 @@ public class WorkflowServiceImpl implements WorkflowService {
     /**
      * Search for workflows based on payload and given parameters. Use sort options as sort ASCor DESC
      * e.g. sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
-     * @param start Start index of pagination
-     * @param size  Number of entries
-     * @param sort Sorting type ASC|DESC
+     *
+     * @param start    Start index of pagination
+     * @param size     Number of entries
+     * @param sort     Sorting type ASC|DESC
      * @param freeText Text you want to search
-     * @param query Query you want to search
+     * @param query    Query you want to search
      * @return instance of {@link SearchResult}
      */
     @Service
@@ -325,11 +343,12 @@ public class WorkflowServiceImpl implements WorkflowService {
     /**
      * Search for workflows based on payload and given parameters. Use sort options as sort ASCor DESC
      * e.g. sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
-     * @param start Start index of pagination
-     * @param size  Number of entries
-     * @param sort list of sorting options, separated by "|" delimiter
+     *
+     * @param start    Start index of pagination
+     * @param size     Number of entries
+     * @param sort     list of sorting options, separated by "|" delimiter
      * @param freeText Text you want to search
-     * @param query Query you want to search
+     * @param query    Query you want to search
      * @return instance of {@link SearchResult}
      */
     @Service
@@ -338,15 +357,15 @@ public class WorkflowServiceImpl implements WorkflowService {
     }
 
 
-
     /**
      * Search for workflows based on task parameters. Use sort options as sort ASC or DESC e.g.
      * sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
-     * @param start Start index of pagination
-     * @param size  Number of entries
-     * @param sort Sorting type ASC|DESC
+     *
+     * @param start    Start index of pagination
+     * @param size     Number of entries
+     * @param sort     Sorting type ASC|DESC
      * @param freeText Text you want to search
-     * @param query Query you want to search
+     * @param query    Query you want to search
      * @return instance of {@link SearchResult}
      */
     public SearchResult<WorkflowSummary> searchWorkflowsByTasks(int start, int size, String sort, String freeText, String query) {
@@ -356,11 +375,12 @@ public class WorkflowServiceImpl implements WorkflowService {
     /**
      * Search for workflows based on task parameters. Use sort options as sort ASC or DESC e.g.
      * sort=name or sort=workflowId:DESC. If order is not specified, defaults to ASC.
-     * @param start Start index of pagination
-     * @param size  Number of entries
-     * @param sort list of sorting options, separated by "|" delimiter
+     *
+     * @param start    Start index of pagination
+     * @param size     Number of entries
+     * @param sort     list of sorting options, separated by "|" delimiter
      * @param freeText Text you want to search
-     * @param query Query you want to search
+     * @param query    Query you want to search
      * @return instance of {@link SearchResult}
      */
     public SearchResult<WorkflowSummary> searchWorkflowsByTasks(int start, int size, List<String> sort, String freeText, String query) {
@@ -370,10 +390,20 @@ public class WorkflowServiceImpl implements WorkflowService {
     /**
      * Get the external storage location where the workflow input payload is stored/to be stored
      *
-     * @param path the path for which the external storage location is to be populated
+     * @param path      the path for which the external storage location is to be populated
+     * @param operation the operation to be performed (read or write)
+     * @param type      the type of payload (input or output)
      * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external storage
      */
-    public ExternalStorageLocation getExternalStorageLocation(String path) {
-        return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT, path);
+    public ExternalStorageLocation getExternalStorageLocation(String path, String operation, String type) {
+        try {
+            ExternalPayloadStorage.Operation payloadOperation = ExternalPayloadStorage.Operation.valueOf(StringUtils.upperCase(operation));
+            ExternalPayloadStorage.PayloadType payloadType = ExternalPayloadStorage.PayloadType.valueOf(StringUtils.upperCase(type));
+            return executionService.getExternalStorageLocation(payloadOperation, payloadType, path);
+        } catch (Exception e) {
+            // FIXME: for backwards compatibility
+            LOGGER.error("Invalid input - Operation: {}, PayloadType: {}, defaulting to WRITE/WORKFLOW_INPUT", operation, type);
+            return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT, path);
+        }
     }
 }
