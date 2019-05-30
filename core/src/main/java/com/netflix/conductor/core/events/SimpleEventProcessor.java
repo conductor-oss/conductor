@@ -55,7 +55,7 @@ import java.util.stream.Collectors;
  * @author Viren
  * Event Processor is used to dispatch actions based on the incoming events to execution queue.
  */
-public class SimpleEventProcessor implements EventProcessor{
+public class SimpleEventProcessor implements EventProcessor {
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleEventProcessor.class);
     private static final String className = SimpleEventProcessor.class.getSimpleName();
@@ -151,10 +151,12 @@ public class SimpleEventProcessor implements EventProcessor{
 
             if (transientFailures.isEmpty()) {
                 queue.ack(Collections.singletonList(msg));
+                logger.debug("Message: {} acked on queue: {}", msg.getId(), queue.getName());
             } else if (queue.rePublishIfNoAck()) {
                 // re-submit this message to the queue, to be retried later
                 // This is needed for queues with no unack timeout, since messages are removed from the queue
                 queue.publish(Collections.singletonList(msg));
+                logger.debug("Message: {} published to queue: {}", msg.getId(), queue.getName());
             }
         } catch (Exception e) {
             logger.error("Error handling message: {} on queue:{}", msg, queue.getName(), e);
@@ -235,11 +237,10 @@ public class SimpleEventProcessor implements EventProcessor{
     /**
      * @param eventExecution the instance of {@link EventExecution}
      * @param action         the {@link Action} to be executed for the event
-     * @param payload        the {@link Message#payload}
+     * @param payload        the {@link Message#getPayload()}
      * @return the event execution updated with execution output, if the execution is completed/failed with non-transient error
      * the input event execution, if the execution failed due to transient error
      */
-    @SuppressWarnings("Guava")
     @VisibleForTesting
     EventExecution execute(EventExecution eventExecution, Action action, Object payload) {
         try {
