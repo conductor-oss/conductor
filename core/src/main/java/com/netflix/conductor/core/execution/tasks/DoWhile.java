@@ -103,7 +103,7 @@ public class DoWhile extends WorkflowSystemTask {
 				refName += "_" + (iteration);
 			}
 			Task temp = workflow.getTaskByRefName(refName);
-			map.put(taskName, temp.getOutputData());
+			map.putAll(temp.getOutputData());
 			logger.debug("Taskname {} output {}", temp.getReferenceTaskName(), temp.getOutputData());
 		}
 		return map;

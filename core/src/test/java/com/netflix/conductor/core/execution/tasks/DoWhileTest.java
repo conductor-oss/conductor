@@ -5,7 +5,6 @@ import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.WorkflowStatusListener;
@@ -14,24 +13,15 @@ import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Matchers;
-import org.mockito.Mock;
 import org.mockito.Mockito;
 
-import javax.script.ScriptException;
-import javax.validation.constraints.AssertTrue;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyObject;
 import static org.mockito.Mockito.spy;
 
 /**
@@ -94,10 +84,12 @@ public class DoWhileTest {
 
     @Test
     public void testSingleSuccessfulIteration() {
-        Map<String, Object> output = new HashMap<>();
-        output.put("body", 7);
-        task1.setOutputData(output);
-        task2.setOutputData(output);
+        Map<String, Object> output1 = new HashMap<>();
+        output1.put("task1", 7);
+        task1.setOutputData(output1);
+        Map<String, Object> output2 = new HashMap<>();
+        output1.put("task2", 7);
+        task2.setOutputData(output2);
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertTrue(success);
         Assert.assertEquals(loopTask.getStatus(), Task.Status.COMPLETED);
@@ -123,11 +115,13 @@ public class DoWhileTest {
 
     @Test
     public void testSingleIteration() {
-        Map<String, Object> output = new HashMap<>();
-        output.put("body", 3);
+        Map<String, Object> output1 = new HashMap<>();
+        output1.put("task1", 2);
+        task1.setOutputData(output1);
+        Map<String, Object> output2 = new HashMap<>();
+        output1.put("task2", 2);
+        task2.setOutputData(output2);
         loopTask.setTaskId("1");
-        task1.setOutputData(output);
-        task2.setOutputData(output);
         List<Task> list = Arrays.asList(task1, task2);
         Mockito.doReturn(false).when(provider).scheduleTask(workflow, list);
         boolean success = doWhile.execute(workflow, loopTask, provider);
