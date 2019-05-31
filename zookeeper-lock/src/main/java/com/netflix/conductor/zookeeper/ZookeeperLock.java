@@ -17,17 +17,17 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
 
-public class ZkLock implements Lock {
+public class ZookeeperLock implements Lock {
     public static final int CACHE_MAXSIZE = 20000;
     public static final int CACHE_EXPIRY_TIME = 10;
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ZkLock.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ZookeeperLock.class);
     private CuratorFramework client;
     private LoadingCache<String, InterProcessMutex> zkLocks;
     private String zkPath;
 
     @Inject
-    public ZkLock(ZookeeperConfiguration config, String namespace) {
+    public ZookeeperLock(ZookeeperConfiguration config, String namespace) {
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
         client = CuratorFrameworkFactory.newClient(config.getZkConnection(), retryPolicy);
         client.start();
