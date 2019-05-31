@@ -740,7 +740,7 @@ public class TestDeciderService {
     }
 
     @Test
-    public void testIsResponsedTimeOut() {
+    public void testIsResponseTimedOut() {
         TaskDef taskDef = new TaskDef();
         taskDef.setName("test_rt");
         taskDef.setResponseTimeoutSeconds(10);
@@ -792,7 +792,7 @@ public class TestDeciderService {
         assertNull(workflowInstance.getTasks().get(0).getExternalInputPayloadStoragePath());
         assertNull(workflowInstance.getTasks().get(0).getExternalOutputPayloadStoragePath());
     }
-    @SuppressWarnings("unchecked")
+
     @Test
     public void testUpdateWorkflowOutput() {
         Workflow workflow = new Workflow();
