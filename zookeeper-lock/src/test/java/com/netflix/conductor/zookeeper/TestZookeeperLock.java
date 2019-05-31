@@ -12,7 +12,7 @@ import org.mockito.Mockito;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-public class TestZkLock {
+public class TestZookeeperLock {
     TestingServer zkServer;
     ZookeeperConfiguration mockConfig;
 
@@ -31,7 +31,7 @@ public class TestZkLock {
 
     @Test
     public void testLockReentrance() {
-        Lock zkLock = new ZkLock(mockConfig, "wfexecution");
+        Lock zkLock = new ZookeeperLock(mockConfig, "wfexecution");
         Boolean hasLock = zkLock.acquireLock("reentrantLock1", 50, TimeUnit.MILLISECONDS);
         Assert.assertTrue(hasLock);
 
@@ -43,7 +43,7 @@ public class TestZkLock {
 
     @Test
     public void testZkLock() throws InterruptedException {
-        Lock zkLock = new ZkLock(mockConfig, "wfexecution");
+        Lock zkLock = new ZookeeperLock(mockConfig, "wfexecution");
         String lock1 = "lock1";
         String lock2 = "lock2";
 

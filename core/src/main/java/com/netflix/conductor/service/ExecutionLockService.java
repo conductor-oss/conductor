@@ -7,7 +7,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
-import javax.inject.Named;
 import javax.inject.Provider;
 import java.util.concurrent.TimeUnit;
 
@@ -19,7 +18,7 @@ public class ExecutionLockService {
     private final Provider<Lock> lockProvider;
 
     @Inject
-    public ExecutionLockService(Configuration config, @Named("executionLock")Provider<Lock> lockProvider) {
+    public ExecutionLockService(Configuration config, Provider<Lock> lockProvider) {
         this.config = config;
         this.lockProvider = lockProvider;
     }
