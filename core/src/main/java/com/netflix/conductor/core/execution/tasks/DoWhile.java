@@ -24,7 +24,6 @@ import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,8 +42,10 @@ public class DoWhile extends WorkflowSystemTask {
 	public DoWhile() {
 		super("DO_WHILE");
 	}
+	final String TASK_REF_NAME_SEPARATOR = "_";
 
-	Logger logger = LoggerFactory.getLogger(DecisionTaskMapper.class);
+
+	Logger logger = LoggerFactory.getLogger(DoWhile.class);
 	Map<String, Integer> iterations = new HashMap<>();
 
 	@Override
@@ -58,23 +59,20 @@ public class DoWhile extends WorkflowSystemTask {
 
 		int iteration = iterations.get(task.getTaskId()) == null ? 0 : iterations.get(task.getTaskId());
 
-		for(String loopOverRef : loopOver){
-			String refName = loopOverRef;
-			if (iteration > 0) {
-				refName += "_" + (iteration);
-			}
-			Task forkedTask = workflow.getTaskByRefName(refName);
-			if(forkedTask == null){
+		for(String workflowTask : loopOver){
+			String refName = getRefNameForIteration(workflowTask, iteration);
+			Task loopOverTask = workflow.getTaskByRefName(refName);
+			if(loopOverTask == null){
 				//Task is not even scheduled yet
 				allDone = false;
 				break;
 			}
-			Status taskStatus = forkedTask.getStatus();
+			Status taskStatus = loopOverTask.getStatus();
 			hasFailures = !taskStatus.isSuccessful();
 			if(hasFailures){
-				failureReason.append(forkedTask.getReasonForIncompletion()).append(" ");
+				failureReason.append(loopOverTask.getReasonForIncompletion()).append(" ");
 			}
-			task.getOutputData().put(loopOverRef, forkedTask.getOutputData());
+			task.getOutputData().put(workflowTask, loopOverTask.getOutputData());
 			allDone = taskStatus.isTerminal();
 			if(!allDone || hasFailures){
 				break;
@@ -97,16 +95,21 @@ public class DoWhile extends WorkflowSystemTask {
 	Map<String, Object> getConditionInput(Task task, int iteration, Workflow workflow) {
 		Map<String, Object> map = new HashMap<>();
 		List<String> loopOverTask = task.getWorkflowTask().getLoopOver();
-		for (String taskName : loopOverTask) {
-			String refName = taskName;
-			if (iteration > 0) {
-				refName += "_" + (iteration);
-			}
+		for (String workflowTask : loopOverTask) {
+			String refName = getRefNameForIteration(workflowTask, iteration);
 			Task temp = workflow.getTaskByRefName(refName);
 			map.putAll(temp.getOutputData());
 			logger.debug("Taskname {} output {}", temp.getReferenceTaskName(), temp.getOutputData());
 		}
 		return map;
+	}
+
+	String getRefNameForIteration(String workflowTask, int iteration) {
+		String refName = workflowTask;
+		if (iteration > 0) {
+			refName += "_" + (iteration);
+		}
+		return refName;
 	}
 
 	boolean scheduleLoopTasks(Task task, Map<String, Integer> iterations, Workflow workflow, WorkflowExecutor provider) {
@@ -118,7 +121,7 @@ public class DoWhile extends WorkflowSystemTask {
 			existingTask.setRetried(true);
 			Task newTask = provider.taskToBeRescheduled(existingTask);
 			newTask.setSeq(existingTask.getSeq());
-			newTask.setReferenceTaskName(existingTask.getReferenceTaskName() + "_" + iteration);
+			newTask.setReferenceTaskName(existingTask.getReferenceTaskName() + TASK_REF_NAME_SEPARATOR + iteration);
 			newTask.setRetryCount(existingTask.getRetryCount());
 			newTask.setScheduledTime(System.currentTimeMillis());
 			taskToBeScheduled.add(newTask);
@@ -149,12 +152,12 @@ public class DoWhile extends WorkflowSystemTask {
 		String condition = task.getWorkflowTask().getLoopCondition();
 		boolean shouldContinue = false;
 		if (condition != null) {
-			logger.debug("Case being evaluated using decision expression: {}", condition);
+			logger.debug("Case being evaluated using loop expression: {}", condition);
 			try {
 				//Evaluate the expression by using the Nashhorn based script evaluator
 				shouldContinue = ScriptEvaluator.evalBool(condition, taskInput);
 			} catch (ScriptException e) {
-				logger.error(e.getMessage(), e);
+				logger.error("Unable to evaluate condition " + condition + " Exception ", e);
 				throw new RuntimeException("Error while evaluating the script " + condition, e);
 			}
 		}

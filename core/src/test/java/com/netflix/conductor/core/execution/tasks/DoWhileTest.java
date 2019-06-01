@@ -88,7 +88,7 @@ public class DoWhileTest {
         output1.put("task1", 7);
         task1.setOutputData(output1);
         Map<String, Object> output2 = new HashMap<>();
-        output1.put("task2", 7);
+        output2.put("task2", 7);
         task2.setOutputData(output2);
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertTrue(success);

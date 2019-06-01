@@ -31,31 +31,31 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#JOIN}
- * to a {@link Task} of type {@link SystemTaskType#JOIN}
+ * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DO_WHILE}
+ * to a {@link Task} of type {@link SystemTaskType#DO_WHILE}
  */
 public class DoWhileTaskMapper implements TaskMapper {
 
     public static final Logger logger = LoggerFactory.getLogger(DoWhileTaskMapper.class);
 
     /**
-     * This method maps {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#JOIN} to a {@link Task} of type {@link SystemTaskType#JOIN}
+     * This method maps {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DO_WHILE} to a {@link Task} of type {@link SystemTaskType#DO_WHILE}
      * with a status of {@link Task.Status#IN_PROGRESS}
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId
-     * @return: A {@link Task} of type {@link SystemTaskType#JOIN} in a List
+     * @return: A {@link Task} of type {@link SystemTaskType#DO_WHILE} in a List
      */
     @Override
     public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) {
 
-        logger.debug("TaskMapperContext {} in JoinTaskMapper", taskMapperContext);
+        logger.debug("TaskMapperContext {} in DoWhileTaskMapper", taskMapperContext);
 
         WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
         Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
         String taskId = taskMapperContext.getTaskId();
 
-        Map<String, Object> joinInput = new HashMap<>();
-        joinInput.put("loopOver", taskToSchedule.getLoopOver());
+        Map<String, Object> doWhileInput = new HashMap<>();
+        doWhileInput.put("loopOver", taskToSchedule.getLoopOver());
 
         Task loopTask = new Task();
         loopTask.setTaskType(SystemTaskType.DO_WHILE.name());
@@ -65,7 +65,7 @@ public class DoWhileTaskMapper implements TaskMapper {
         loopTask.setCorrelationId(workflowInstance.getCorrelationId());
         loopTask.setWorkflowType(workflowInstance.getWorkflowName());
         loopTask.setScheduledTime(System.currentTimeMillis());
-        loopTask.setInputData(joinInput);
+        loopTask.setInputData(doWhileInput);
         loopTask.setTaskId(taskId);
         loopTask.setStatus(Task.Status.IN_PROGRESS);
         loopTask.setWorkflowTask(taskToSchedule);
