@@ -481,3 +481,50 @@ For example, if you have a decision where the first condition is met, you want t
   "optional": false
 }
 ```
+
+## Do While Task
+
+Do While Task allows tasks to be executed in loop until given condition become false.
+
+**Parameters:**
+
+|name|description|
+|---|---|
+|loopCondition|condition to be evaluated after every iteration|
+|loopOver|List of tasks that needs to be executed in loop.|
+
+**Example**
+
+```json
+{
+            "name": "Loop Task",
+            "taskReferenceName": "Loop Task",
+            "type": "DO_WHILE",
+            "loopCondition": "if ($.second_task['response']['body'] + $.first_task['response']['body'] > 10) { false; } else { true; }",
+            "loopOver": [
+                {
+                    "name": "first_task",
+                    "taskReferenceName": "first_task",
+                    "inputParameters": {
+                        "http_request": {
+                            "uri": "http://localhost:8082",
+                            "method": "POST"
+                        }
+                    },
+                    "type": "HTTP"
+                },{
+                    "name": "second_task",
+                    "taskReferenceName": "second_task",
+                    "inputParameters": {
+                        "http_request": {
+                            "uri": "http://localhost:8082",
+                            "method": "POST"
+                        }
+                    },
+                    "type": "HTTP"
+                }
+            ],
+            "startDelay": 0,
+            "optional": false
+        }
+```
