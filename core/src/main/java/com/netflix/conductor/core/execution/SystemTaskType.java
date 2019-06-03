@@ -21,7 +21,12 @@ package com.netflix.conductor.core.execution;
 import java.util.HashSet;
 import java.util.Set;
 
-import com.netflix.conductor.core.execution.tasks.*;
+import com.netflix.conductor.core.execution.tasks.Decision;
+import com.netflix.conductor.core.execution.tasks.Fork;
+import com.netflix.conductor.core.execution.tasks.Join;
+import com.netflix.conductor.core.execution.tasks.ExclusiveJoin;
+import com.netflix.conductor.core.execution.tasks.DoWhile;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 
 /**
  * Defines a system task type
