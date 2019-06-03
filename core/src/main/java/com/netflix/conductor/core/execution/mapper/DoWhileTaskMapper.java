@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -50,6 +51,13 @@ public class DoWhileTaskMapper implements TaskMapper {
 
         WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
         Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
+
+        Task task = workflowInstance.getTaskByRefName(taskToSchedule.getTaskReferenceName());
+        if (task != null && task.getStatus().isTerminal()) {
+            //Since loopTask is already completed no need to schedule task again.
+            return Collections.emptyList();
+        }
+
         String taskId = taskMapperContext.getTaskId();
         List<Task> tasksToBeScheduled = new ArrayList<>();
         int retryCount = taskMapperContext.getRetryCount();

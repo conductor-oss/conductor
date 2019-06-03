@@ -9,6 +9,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.utils.IDGenerator;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -20,18 +21,27 @@ import static org.junit.Assert.assertNotNull;
 
 public class DoWhileTaskMapperTest {
 
-    @Test
-    public void getMappedTasks() {
+    private Task task1;
+    private Task task2;
+    private DeciderService deciderService;
+    private Workflow w;
+    private WorkflowTask workflowTask1;
+    private WorkflowTask workflowTask2;
+    private TaskMapperContext taskMapperContext;
+    private WorkflowTask taskToSchedule;
 
-        WorkflowTask taskToSchedule = new WorkflowTask();
+    @Before
+    public void setup() {
+        taskToSchedule = new WorkflowTask();
         taskToSchedule.setType(TaskType.DO_WHILE.name());
-        Task task1 = new Task();
+        taskToSchedule.setTaskReferenceName("Test");
+        task1 = new Task();
         task1.setReferenceTaskName("task1");
-        Task task2 = new Task();
+        task2 = new Task();
         task2.setReferenceTaskName("task2");
-        WorkflowTask workflowTask1 = new WorkflowTask();
+        workflowTask1 = new WorkflowTask();
         workflowTask1.setTaskReferenceName("task1");
-        WorkflowTask workflowTask2= new WorkflowTask();
+        workflowTask2= new WorkflowTask();
         workflowTask2.setTaskReferenceName("task2");
         task1.setWorkflowTask(workflowTask1);
         task2.setWorkflowTask(workflowTask2);
@@ -41,12 +51,12 @@ public class DoWhileTaskMapperTest {
         String taskId = IDGenerator.generate();
 
         WorkflowDef  wd = new WorkflowDef();
-        Workflow w = new Workflow();
+        w = new Workflow();
         w.setWorkflowDefinition(wd);
 
-        DeciderService deciderService = Mockito.mock(DeciderService.class);
+        deciderService = Mockito.mock(DeciderService.class);
 
-        TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
+        taskMapperContext = TaskMapperContext.newBuilder()
                 .withWorkflowDefinition(wd)
                 .withDeciderService(deciderService)
                 .withWorkflowInstance(w)
@@ -55,6 +65,10 @@ public class DoWhileTaskMapperTest {
                 .withRetryCount(0)
                 .withTaskId(taskId)
                 .build();
+    }
+
+    @Test
+    public void getMappedTasks() {
 
         Mockito.doReturn(Arrays.asList(task1)).when(deciderService).getTasksToBeScheduled(w, workflowTask1, 0);
         Mockito.doReturn(Arrays.asList(task2)).when(deciderService).getTasksToBeScheduled(w, workflowTask2, 0);
@@ -66,6 +80,22 @@ public class DoWhileTaskMapperTest {
         assertEquals(task1, mappedTasks.get(0));
         assertEquals(task2, mappedTasks.get(1));
         assertEquals(SystemTaskType.DO_WHILE.name(), mappedTasks.get(2).getTaskType());
+    }
+
+    @Test
+    public void shouldNotScheduleCompletedTask() {
+
+        taskToSchedule = new WorkflowTask();
+        taskToSchedule.setType(TaskType.DO_WHILE.name());
+        Task task = new Task();
+        task.setReferenceTaskName("Test");
+        task.setStatus(Task.Status.COMPLETED);
+        w.setTasks(Arrays.asList(task));
+
+        List<Task> mappedTasks = new DoWhileTaskMapper().getMappedTasks(taskMapperContext);
+
+        assertNotNull(mappedTasks);
+        assertEquals(mappedTasks.size(), 0);
     }
 
 }
