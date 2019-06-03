@@ -85,11 +85,11 @@ public class DoWhile extends WorkflowSystemTask {
 			return false;
 		}
 		boolean shouldContinue = getEvaluatedCondition(task, workflow);
-		logger.debug("workflowid {} shouldcontinue {}",workflow.getWorkflowId(), shouldContinue);
+		logger.debug("taskid {} condition evaluated to {}",task.getTaskId(), shouldContinue);
 		if (shouldContinue){
 			return scheduleLoopTasks(task, workflow, provider);
 		} else {
-			return markLoopTaskSuccess(task, workflow);
+			return markLoopTaskSuccess(task);
 		}
 	}
 
@@ -113,6 +113,8 @@ public class DoWhile extends WorkflowSystemTask {
 	}
 
 	boolean scheduleLoopTasks(Task task, Workflow workflow, WorkflowExecutor provider) {
+		logger.debug("Scheduling loop tasks for taskid {} as condition {} evaluated to true",
+				task.getTaskId(), task.getWorkflowTask().getLoopCondition());
 		List<WorkflowTask> loopOver = task.getWorkflowTask().getLoopOver();
 		List<Task> taskToBeScheduled = new ArrayList<>();
 		int iteration = task.getIteration() + 1;
@@ -135,12 +137,12 @@ public class DoWhile extends WorkflowSystemTask {
 	boolean markLoopTaskFailed(Task task, String failureReason) {
 		task.setReasonForIncompletion(failureReason);
 		task.setStatus(Status.FAILED);
-		logger.debug("taskid {} took {} iterations to failed",task.getTaskId(), task.getIteration() + 1);
+		logger.debug("taskid {} failed in {} iteration",task.getTaskId(), task.getIteration() + 1);
 		return true;
 	}
 
-	boolean markLoopTaskSuccess(Task task, Workflow workflow) {
-		logger.debug("workflowid {} took {} iterations to complete",workflow.getWorkflowId(), task.getIteration() + 1);
+	boolean markLoopTaskSuccess(Task task) {
+		logger.debug("taskid {} took {} iterations to complete",task.getTaskId(), task.getIteration() + 1);
 		task.setStatus(Status.COMPLETED);
 		return true;
 	}
@@ -151,7 +153,7 @@ public class DoWhile extends WorkflowSystemTask {
 		String condition = task.getWorkflowTask().getLoopCondition();
 		boolean shouldContinue = false;
 		if (condition != null) {
-			logger.debug("Case being evaluated using loop expression: {}", condition);
+			logger.debug("Condition {} is being evaluated{}", condition);
 			try {
 				//Evaluate the expression by using the Nashhorn based script evaluator
 				shouldContinue = ScriptEvaluator.evalBool(condition, taskInput);
