@@ -81,7 +81,7 @@ public class DoWhileTest {
         loopTask.setTaskType(TaskType.DO_WHILE.name());
         loopWorkflowTask = new WorkflowTask();
         loopWorkflowTask.setTaskReferenceName("loopWorkflowTask");
-        loopWorkflowTask.setLoopCondition("if ($.task1 + $.task2 > 10) { false; } else { true; }");
+        loopWorkflowTask.setLoopCondition("if ($.task1['task1'] + $.task2['task2'] > 10) { false; } else { true; }");
         loopWorkflowTask.setLoopOver(Arrays.asList(task1.getWorkflowTask(), task2.getWorkflowTask()));
         loopTask.setWorkflowTask(loopWorkflowTask);
         doWhile = new DoWhile();
