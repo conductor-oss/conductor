@@ -36,6 +36,4 @@ message WorkflowTask {
     bool rate_limited = 20;
     repeated string default_exclusive_join_task = 21;
     bool async_complete = 23;
-    string loop_condition = 24;
-    repeated string loop_over = 25;
 }
