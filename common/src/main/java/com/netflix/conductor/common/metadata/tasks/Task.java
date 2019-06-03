@@ -187,6 +187,9 @@ public class Task {
     @ProtoField(id = 35)
     private String externalOutputPayloadStoragePath;
 
+    @ProtoField(id = 36)
+    private int iteration;
+
     public Task() {
     }
 
@@ -664,6 +667,20 @@ public class Task {
      */
     public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
         this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
+    }
+
+    /**
+     * @return the iteration
+     */
+    public int getIteration() {
+        return iteration;
+    }
+
+    /**
+     * @param iteration iteration
+     */
+    public void setIteration(int iteration) {
+        this.iteration = iteration;
     }
 
     public Task copy() {

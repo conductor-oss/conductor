@@ -33,6 +33,8 @@ public class DoWhileTest {
     private Workflow workflow;
     private Task loopTask;
     private WorkflowTask loopWorkflowTask;
+    private WorkflowTask loopWorkflowTask1;
+    private WorkflowTask loopWorkflowTask2;
     private Task task1;
     private Task task2;
     private WorkflowExecutor provider;
@@ -60,25 +62,30 @@ public class DoWhileTest {
         config = Mockito.mock(Configuration.class);
         provider = spy(new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService,
                 workflowStatusListener, executionDAOFacade, externalPayloadStorageUtils, config));
-        loopTask = new Task();
-        loopTask.setReferenceTaskName("loopTask");
-        Map<String, Object> map = new HashMap<>();
-        map.put("loopOver", Arrays.asList("task1", "task2"));
-        loopTask.setInputData(map);
-        loopTask.setTaskType(TaskType.DO_WHILE.name());
-        loopWorkflowTask = new WorkflowTask();
-        loopWorkflowTask.setLoopCondition("if ($.task1 + $.task2 > 10) { false; } else { true; }");
-        loopWorkflowTask.setLoopOver(Arrays.asList("task1", "task2"));
-        loopTask.setWorkflowTask(loopWorkflowTask);
+        loopWorkflowTask1 = new WorkflowTask();
+        loopWorkflowTask1.setTaskReferenceName("task1");
+        loopWorkflowTask2 = new WorkflowTask();
+        loopWorkflowTask2.setTaskReferenceName("task2");
         task1 = new Task();
+        task1.setWorkflowTask(loopWorkflowTask1);
         task1.setReferenceTaskName("task1");
         task1.setStatus(Task.Status.COMPLETED);
         task1.setTaskType(TaskType.HTTP.name());
         task2 = new Task();
+        task2.setWorkflowTask(loopWorkflowTask2);
         task2.setReferenceTaskName("task2");
         task2.setStatus(Task.Status.COMPLETED);
-        task2.setTaskType(TaskType.HTTP.name());workflow.setTasks(Arrays.asList(task1, task2, loopTask));
+        task2.setTaskType(TaskType.HTTP.name());
+        loopTask = new Task();
+        loopTask.setReferenceTaskName("loopTask");
+        loopTask.setTaskType(TaskType.DO_WHILE.name());
+        loopWorkflowTask = new WorkflowTask();
+        loopWorkflowTask.setTaskReferenceName("loopWorkflowTask");
+        loopWorkflowTask.setLoopCondition("if ($.task1 + $.task2 > 10) { false; } else { true; }");
+        loopWorkflowTask.setLoopOver(Arrays.asList(task1.getWorkflowTask(), task2.getWorkflowTask()));
+        loopTask.setWorkflowTask(loopWorkflowTask);
         doWhile = new DoWhile();
+        workflow.setTasks(Arrays.asList(task1, task2, loopTask));
     }
 
 
@@ -125,7 +132,7 @@ public class DoWhileTest {
         List<Task> list = Arrays.asList(task1, task2);
         Mockito.doReturn(false).when(provider).scheduleTask(workflow, list);
         boolean success = doWhile.execute(workflow, loopTask, provider);
-        Assert.assertFalse(success);
+        Assert.assertTrue(success);
     }
 
     @Test(expected=RuntimeException.class)

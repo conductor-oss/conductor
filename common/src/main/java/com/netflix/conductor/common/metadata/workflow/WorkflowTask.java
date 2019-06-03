@@ -164,7 +164,7 @@ public class WorkflowTask {
 	private String loopCondition;
 
 	@ProtoField(id = 25)
-	private List<String> loopOver = new LinkedList<>();
+	private List<WorkflowTask> loopOver = new LinkedList<>();
 
 	/**
 	 * @return the name
@@ -424,14 +424,14 @@ public class WorkflowTask {
 	/**
 	 * @return the loopOver
 	 */
-	public List<String> getLoopOver() {
+	public List<WorkflowTask> getLoopOver() {
 		return loopOver;
 	}
 
 	/**
 	 * @param loopOver the loopOver to set
 	 */
-	public void setLoopOver(List<String> loopOver) {
+	public void setLoopOver(List<WorkflowTask> loopOver) {
 		this.loopOver = loopOver;
 	}
 

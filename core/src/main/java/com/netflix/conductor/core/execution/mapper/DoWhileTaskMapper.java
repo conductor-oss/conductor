@@ -25,10 +25,8 @@ import com.netflix.conductor.core.execution.SystemTaskType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DO_WHILE}
@@ -53,9 +51,8 @@ public class DoWhileTaskMapper implements TaskMapper {
         WorkflowTask taskToSchedule = taskMapperContext.getTaskToSchedule();
         Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
         String taskId = taskMapperContext.getTaskId();
-
-        Map<String, Object> doWhileInput = new HashMap<>();
-        doWhileInput.put("loopOver", taskToSchedule.getLoopOver());
+        List<Task> tasksToBeScheduled = new ArrayList<>();
+        int retryCount = taskMapperContext.getRetryCount();
 
         Task loopTask = new Task();
         loopTask.setTaskType(SystemTaskType.DO_WHILE.name());
@@ -65,11 +62,18 @@ public class DoWhileTaskMapper implements TaskMapper {
         loopTask.setCorrelationId(workflowInstance.getCorrelationId());
         loopTask.setWorkflowType(workflowInstance.getWorkflowName());
         loopTask.setScheduledTime(System.currentTimeMillis());
-        loopTask.setInputData(doWhileInput);
         loopTask.setTaskId(taskId);
         loopTask.setStatus(Task.Status.IN_PROGRESS);
         loopTask.setWorkflowTask(taskToSchedule);
 
-        return Arrays.asList(loopTask);
+        List<WorkflowTask>forkTasks = taskToSchedule.getLoopOver();
+        for (WorkflowTask wft : forkTasks) {
+            List<Task> tasks2 = taskMapperContext.getDeciderService()
+                    .getTasksToBeScheduled(workflowInstance, wft, retryCount);
+            tasksToBeScheduled.addAll(tasks2);
+        }
+        tasksToBeScheduled.add(loopTask);
+
+        return tasksToBeScheduled;
     }
 }
