@@ -83,5 +83,4 @@ Send a `POST` request to `/workflow` with payload like:
 ```
 
 !!! Note
-    If the `taskDefinition` is defined with Metadata API, it doesn't have to be added in above dynamic
-    workflow definition.
+    If the `taskDefinition` is defined with Metadata API, it doesn't have to be added in above dynamic workflow definition.
