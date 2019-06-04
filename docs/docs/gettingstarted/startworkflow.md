@@ -38,37 +38,49 @@ This enables you to provide a workflow definition embedded with the required tas
 Send a `POST` request to `/workflow` with payload like:
 ```json
 {
-    "name": "my_adhoc_workflow_notregistered",
-    "workflowDef": {
-        "ownerApp": "my_owner_app",
-        "createdBy": "my_username",
-        "name": "my_adhoc_http_test_notregistered",
-        "description": "Test Http Task Workflow",
-        "version": 1,
-        "tasks": [
-            {
-            "name": "test_http_task",
-            "taskReferenceName": "my_test_http_task_registered",
-            "inputParameters": {
-                "http_request": "${workflow.input.http_request}"
-            },
-            "type": "HTTP",
-            "startDelay": 0,
-            "optional": false
-            }
-        ],
-        "schemaVersion": 2,
-        "restartable": true,
-        "workflowStatusListenerEnabled": false
-    },
-    "input": {
-        "http_request": {
-            "uri": "/health",
-            "vipAddress": "cpeworkflow-devint:7004",
-            "method": "GET",
-            "contentType": "application/json",
-            "appName": "cpeworkflow"
-        }
+  "name": "my_adhoc_unregistered_workflow",
+  "workflowDef": {
+    "ownerApp": "my_owner_app",
+    "createdBy": "my_username",
+    "name": "my_adhoc_unregistered_workflow",
+    "description": "Test Workflow setup",
+    "version": 1,
+    "tasks": [
+    	{
+	        "name": "fetch_data",
+	        "type": "HTTP",
+	        "taskReferenceName": "fetch_data",
+	        "inputParameters": {
+	          "http_request": {
+	            "connectionTimeOut": "3600",
+	            "readTimeOut": "3600",
+	            "uri": "${workflow.input.uri}",
+	            "method": "GET",
+	            "accept": "application/json",
+	            "content-Type": "application/json",
+	            "headers": {
+	            }
+	          }
+	        },
+	        "taskDefinition": {
+	            "name": "fetch_data",
+			    "retryCount": 0,
+			    "timeoutSeconds": 3600,
+			    "timeoutPolicy": "TIME_OUT_WF",
+			    "retryLogic": "FIXED",
+			    "retryDelaySeconds": 0,
+			    "responseTimeoutSeconds": 3000
+	        }
+	    }
+    ],
+    "outputParameters": {
     }
+  },
+  "input": {
+    "uri": "http://www.google.com"
+  }
 }
 ```
+
+!!! Note
+    If the `taskDefinition` is defined with Metadata API, it doesn't have to be added in above dynamic workflow definition.

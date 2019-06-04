@@ -188,17 +188,22 @@ Sub Workflow task allows for nesting a workflow within another workflow.
   "type": "SUB_WORKFLOW",
   "subWorkflowParam": {
     "name": "deployment_workflow",
-    "version": 1
+    "version": 1,
+    "taskToDomain": {
+      "*": "mydomain"
+     }
   }
 }
 ```
+
 When executed, a ```deployment_workflow``` is executed with two input parameters requestId and _file_.  The task is marked as completed upon the completion of the spawned workflow.  If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. 
 
+`subWorkflowParam` can optionally accept `taskToDomain` map, which would schedule the sub workflow's tasks per given mappings. See [Task Domains](configuration/taskdomains/) for instructions to configure taskDomains.
 
 
 ## Fork
 
-Fork is used to schedule parallel set of tasks.
+Fork is used to schedule parallel set of tasks, specified by ```"type":"FORK_JOIN"```.
 
 **Parameters:**
 
@@ -208,33 +213,58 @@ Fork is used to schedule parallel set of tasks.
 
 **Example**
 
-``` json
-{
-  "forkTasks": [
-    [
-      {
-        "name": "task11",
-        "taskReferenceName": "t11"
-      },
-      {
-        "name": "task12",
-        "taskReferenceName": "t12"
-      }
-    ],
-    [
-      {
-        "name": "task21",
-        "taskReferenceName": "t21"
-      },
-      {
-        "name": "task22",
-        "taskReferenceName": "t22"
-      }
-    ]
-  ]
-}
+```json
+[
+    {
+        "name": "fork_join",
+        "taskReferenceName": "forkx",
+        "type": "FORK_JOIN",
+        "forkTasks": [
+          [
+            {
+              "name": "task_10",
+              "taskReferenceName": "task_A",
+              "type": "SIMPLE"
+            },
+            {
+              "name": "task_11",
+              "taskReferenceName": "task_B",
+              "type": "SIMPLE"
+            }
+          ],
+          [
+            {
+              "name": "task_21",
+              "taskReferenceName": "task_Y",
+              "type": "SIMPLE"
+            },
+            {
+              "name": "task_22",
+              "taskReferenceName": "task_Z",
+              "type": "SIMPLE"
+            }
+          ]
+        ]
+    },
+    {
+        "name": "join",
+        "taskReferenceName": "join2",
+        "type": "JOIN",
+        "joinOn": [
+          "task_B",
+          "task_Z"
+        ]
+    }
+]
+
 ```
-When executed, _task11_ and _task21_ are scheduled to be executed at the same time.
+
+When executed, _task_A_ and _task_Y_ are scheduled to be executed at the same time.
+
+!!! Note "Fork and Join"
+	**A Join task MUST follow FORK_JOIN**
+	
+	Workflow definition MUST include a Join task definition followed by FORK_JOIN task. Forked task can be a Sub Workflow, allowing for more complex execution flows.
 
 
 
@@ -295,7 +325,7 @@ Consider **taskA**'s output as:
 ```
 When executed, the dynamic fork task will schedule two parallel task of type "encode_task" with reference names "forkedTask1" and "forkedTask2" and inputs as specified by _ dynamicTasksInputJSON_
 
-!!!warning "Dynamic Fork and Join"
+!!! Note "Dynamic Fork and Join"
 	**A Join task MUST follow FORK_JOIN_DYNAMIC**
 	
 	Workflow definition MUST include a Join task definition followed by FORK_JOIN_DYNAMIC task.  However, given the dynamic nature of the task, no joinOn parameters are required for this Join.  The join will wait for ALL the forked branches to complete before completing.
