@@ -24,7 +24,7 @@ public class DoWhileTaskMapperTest {
     private Task task1;
     private Task task2;
     private DeciderService deciderService;
-    private Workflow w;
+    private Workflow workflow;
     private WorkflowTask workflowTask1;
     private WorkflowTask workflowTask2;
     private TaskMapperContext taskMapperContext;
@@ -50,16 +50,16 @@ public class DoWhileTaskMapperTest {
 
         String taskId = IDGenerator.generate();
 
-        WorkflowDef  wd = new WorkflowDef();
-        w = new Workflow();
-        w.setWorkflowDefinition(wd);
+        WorkflowDef  workflowDef = new WorkflowDef();
+        workflow = new Workflow();
+        workflow.setWorkflowDefinition(workflowDef);
 
         deciderService = Mockito.mock(DeciderService.class);
 
         taskMapperContext = TaskMapperContext.newBuilder()
-                .withWorkflowDefinition(wd)
+                .withWorkflowDefinition(workflowDef)
                 .withDeciderService(deciderService)
-                .withWorkflowInstance(w)
+                .withWorkflowInstance(workflow)
                 .withTaskDefinition(new TaskDef())
                 .withTaskToSchedule(taskToSchedule)
                 .withRetryCount(0)
@@ -70,8 +70,8 @@ public class DoWhileTaskMapperTest {
     @Test
     public void getMappedTasks() {
 
-        Mockito.doReturn(Arrays.asList(task1)).when(deciderService).getTasksToBeScheduled(w, workflowTask1, 0);
-        Mockito.doReturn(Arrays.asList(task2)).when(deciderService).getTasksToBeScheduled(w, workflowTask2, 0);
+        Mockito.doReturn(Arrays.asList(task1)).when(deciderService).getTasksToBeScheduled(workflow, workflowTask1, 0);
+        Mockito.doReturn(Arrays.asList(task2)).when(deciderService).getTasksToBeScheduled(workflow, workflowTask2, 0);
 
         List<Task> mappedTasks = new DoWhileTaskMapper().getMappedTasks(taskMapperContext);
 
@@ -90,7 +90,7 @@ public class DoWhileTaskMapperTest {
         Task task = new Task();
         task.setReferenceTaskName("Test");
         task.setStatus(Task.Status.COMPLETED);
-        w.setTasks(Arrays.asList(task));
+        workflow.setTasks(Arrays.asList(task));
 
         List<Task> mappedTasks = new DoWhileTaskMapper().getMappedTasks(taskMapperContext);
 

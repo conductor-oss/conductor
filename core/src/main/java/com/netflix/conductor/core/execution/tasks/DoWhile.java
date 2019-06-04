@@ -21,6 +21,7 @@ package com.netflix.conductor.core.execution.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.ScriptEvaluator;
@@ -29,10 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.script.ScriptException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * @author Manan
@@ -57,25 +55,27 @@ public class DoWhile extends WorkflowSystemTask {
 		
 		boolean allDone = true;
 		boolean hasFailures = false;
+		boolean willBeRetried = false;
 		StringBuilder failureReason = new StringBuilder();
 		List<WorkflowTask> loopOver = task.getWorkflowTask().getLoopOver();
 
-		for(WorkflowTask workflowTask : loopOver){
+		for (WorkflowTask workflowTask : loopOver){
 			String refName = getTaskRefName(workflowTask, task);
 			Task loopOverTask = workflow.getTaskByRefName(refName);
-			if(loopOverTask == null){
+			if (loopOverTask == null){
 				//Task is not even scheduled yet
 				allDone = false;
 				break;
 			}
 			Status taskStatus = loopOverTask.getStatus();
 			hasFailures = !taskStatus.isSuccessful();
-			if(hasFailures){
+			if (hasFailures){
 				failureReason.append(loopOverTask.getReasonForIncompletion()).append(" ");
 			}
 			task.getOutputData().put(workflowTask.getTaskReferenceName(), loopOverTask.getOutputData());
-			allDone = taskStatus.isTerminal();
-			if(!allDone || hasFailures){
+			willBeRetried = getTaskRetried(loopOverTask);
+			allDone = taskStatus.isTerminal() && !willBeRetried;
+			if (!allDone || hasFailures){
 				break;
 			}
 		}
@@ -84,13 +84,29 @@ public class DoWhile extends WorkflowSystemTask {
 		} else if (!allDone) {
 			return false;
 		}
-		boolean shouldContinue = getEvaluatedCondition(task, workflow);
-		logger.debug("taskid {} condition evaluated to {}",task.getTaskId(), shouldContinue);
-		if (shouldContinue){
-			return scheduleLoopTasks(task, workflow, provider);
-		} else {
-			return markLoopTaskSuccess(task);
+		try {
+			boolean shouldContinue = getEvaluatedCondition(task, workflow);
+			logger.debug("taskid {} condition evaluated to {}", task.getTaskId(), shouldContinue);
+			if (shouldContinue) {
+				return scheduleLoopTasks(task, workflow, provider);
+			} else {
+				return markLoopTaskSuccess(task);
+			}
+		} catch (ScriptException e) {
+			String message = String.format("Unable to evaluate condition {} ", task.getWorkflowTask().getLoopCondition());
+			logger.error(message);
+			logger.error("Marking task {} failed.", task.getTaskId());
+			return markLoopTaskFailed(task, message);
 		}
+	}
+
+	private boolean getTaskRetried(Task task) {
+		Optional<TaskDef> taskDef = task.getTaskDefinition();
+		boolean retry = false;
+		if (taskDef.isPresent() && task.getRetryCount() < taskDef.get().getRetryCount()) {
+			retry = true;
+		}
+		return retry;
 	}
 
 	private String getTaskRefName(WorkflowTask workflowTask, Task task) {
@@ -118,12 +134,11 @@ public class DoWhile extends WorkflowSystemTask {
 		List<WorkflowTask> loopOver = task.getWorkflowTask().getLoopOver();
 		List<Task> taskToBeScheduled = new ArrayList<>();
 		int iteration = task.getIteration() + 1;
-		for(WorkflowTask loopOverRef : loopOver){
+		for (WorkflowTask loopOverRef : loopOver){
 			String refName = getTaskRefName(loopOverRef, task);
 			Task existingTask = workflow.getTaskByRefName(refName);
 			existingTask.setRetried(true);
 			Task newTask = provider.taskToBeRescheduled(existingTask);
-			newTask.setSeq(existingTask.getSeq());
 			newTask.setReferenceTaskName(loopOverRef.getTaskReferenceName() + "_" + iteration);
 			newTask.setRetryCount(existingTask.getRetryCount());
 			newTask.setScheduledTime(System.currentTimeMillis());
@@ -131,7 +146,7 @@ public class DoWhile extends WorkflowSystemTask {
 		}
 		task.setIteration(iteration);
 		provider.scheduleTask(workflow, taskToBeScheduled);
-		return true;
+		return true; // Return true even though status not changed. Iteration has to be updated in execution DAO.
 	}
 
 	boolean markLoopTaskFailed(Task task, String failureReason) {
@@ -148,19 +163,14 @@ public class DoWhile extends WorkflowSystemTask {
 	}
 
 	@VisibleForTesting
-	boolean getEvaluatedCondition(Task task, Workflow workflow) {
+	boolean getEvaluatedCondition(Task task, Workflow workflow) throws ScriptException {
 		Map<String, Object> taskInput = getConditionInput(task, workflow);
 		String condition = task.getWorkflowTask().getLoopCondition();
 		boolean shouldContinue = false;
 		if (condition != null) {
 			logger.debug("Condition {} is being evaluated{}", condition);
-			try {
-				//Evaluate the expression by using the Nashhorn based script evaluator
-				shouldContinue = ScriptEvaluator.evalBool(condition, taskInput);
-			} catch (ScriptException e) {
-				logger.error("Unable to evaluate condition " + condition + " Exception ", e);
-				throw new RuntimeException("Error while evaluating the script " + condition, e);
-			}
+			//Evaluate the expression by using the Nashhorn based script evaluator
+			shouldContinue = ScriptEvaluator.evalBool(condition, taskInput);
 		}
 		return shouldContinue;
 	}

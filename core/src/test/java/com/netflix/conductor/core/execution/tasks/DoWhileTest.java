@@ -115,13 +115,16 @@ public class DoWhileTest {
 
     @Test
     public void testInProgress() {
+        loopTask.setStatus(Task.Status.IN_PROGRESS);
         task1.setStatus(Task.Status.IN_PROGRESS);
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertFalse(success);
+        Assert.assertTrue(loopTask.getStatus() == Task.Status.IN_PROGRESS);
     }
 
     @Test
     public void testSingleIteration() {
+        loopTask.setStatus(Task.Status.IN_PROGRESS);
         Map<String, Object> output1 = new HashMap<>();
         output1.put("task1", 2);
         task1.setOutputData(output1);
@@ -133,16 +136,18 @@ public class DoWhileTest {
         Mockito.doReturn(false).when(provider).scheduleTask(workflow, list);
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertTrue(success);
+        Assert.assertTrue(loopTask.getStatus() == Task.Status.IN_PROGRESS);
     }
 
-    @Test(expected=RuntimeException.class)
+    @Test
     public void testConditionException() {
         loopTask.setTaskId("1");
         loopWorkflowTask.setLoopCondition("this will give exception");
         List<Task> list = Arrays.asList(task1, task2);
         Mockito.doReturn(false).when(provider).scheduleTask(workflow, list);
         boolean success = doWhile.execute(workflow, loopTask, provider);
-        Assert.assertFalse(success);
+        Assert.assertTrue(success);
+        Assert.assertTrue(loopTask.getStatus() == Task.Status.FAILED);
     }
 
 
