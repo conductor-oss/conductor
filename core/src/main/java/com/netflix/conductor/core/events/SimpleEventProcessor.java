@@ -140,7 +140,6 @@ public class SimpleEventProcessor implements EventProcessor {
         queue.observe().subscribe((Message msg) -> handle(queue, msg));
     }
 
-    @SuppressWarnings({"unchecked"})
     private void handle(ObservableQueue queue, Message msg) {
         try {
             executionService.addMessage(queue.getName(), msg);
