@@ -100,7 +100,6 @@ For SQS, use the **name** of the queue and NOT the URI.  Conductor looks up the 
 **Event Task Input**
 The input given to the event task is made available to the published message as payload.  e.g. if a message is put into SQS queue (sink is sqs) then the message payload will be the input to the task.
 
-**Example**
 **Event Task Output**
 
 `event_produced` Name of the event produced.
