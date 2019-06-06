@@ -100,7 +100,7 @@ For SQS, use the **name** of the queue and NOT the URI.  Conductor looks up the 
 **Event Task Input**
 The input given to the event task is made available to the published message as payload.  e.g. if a message is put into SQS queue (sink is sqs) then the message payload will be the input to the task.
 
-
+**Example**
 **Event Task Output**
 
 `event_produced` Name of the event produced.
@@ -481,3 +481,44 @@ For example, if you have a decision where the first condition is met, you want t
   "optional": false
 }
 ```
+## Kafka Publish Task
+
+A kafka Publish task is used to push messages to another microservice via kafka
+
+**Parameters:**
+
+The task expects an input parameter named ```kafka_request``` as part of the task's input with the following details:
+
+|name|description|
+|---|---|
+| bootStrapServers |bootStrapServers for connecting to given kafka.|
+|key| Serializer used for serializing the key published to kafka.  One of the following can be set : <br/> 1. org.apache.kafka.common.serialization.IntegerSerializer<br/>2. org.apache.kafka.common.serialization.LongSerializer<br/>3. org.apache.kafka.common.serialization.StringSerializer. <br/>Default is String serializer  |
+|value| Value published to kafka|
+|requestTimeoutMs| Request timeout while publishing to kafka. If this value is not given the value is read from the property `kafka.publish.request.timeout.ms`. If the property is not set the value defaults to 100 |
+|headers|A map of additional kafka headers to be sent along with the request.|
+|topic|Topic to publish|
+
+
+**Kafka Task Output**
+
+Task status transitions to COMPLETED
+
+**Example**
+
+Task Input payload sample
+
+```json
+"kafka_request": {
+            "topic": "userTopic",
+            "value": "Message to publish",
+            "bootStrapServers":"localhost:9092",
+             "headers" :{
+              "x-Auth":"Auth-key"
+             },
+             "key":"123",
+             "keySerializer":"org.apache.kafka.common.serialization.IntegerSerializer"
+          }
+}
+```
+
+The task is marked as ```FAILED``` if the message could not be published to the Kafka queue. 

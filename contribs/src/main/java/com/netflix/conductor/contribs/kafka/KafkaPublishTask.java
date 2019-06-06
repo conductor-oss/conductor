@@ -35,18 +35,20 @@ import java.util.stream.Collectors;
 @Singleton
 public class KafkaPublishTask extends WorkflowSystemTask {
 
-	public static final String REQUEST_PARAMETER_NAME = "kafka_request";
-	public static final String NAME = "KAFKA_PUBLISH";
-	static final String MISSING_REQUEST = "Missing Kafka request. Task input MUST have a '" + REQUEST_PARAMETER_NAME + "' key with KafkaTask.Input as value. See documentation for KafkaTask for required input parameters";
-	private static final Logger logger = LoggerFactory.getLogger(KafkaPublishTask.class);
-	public static final String MISSING_BOOT_STRAP_SERVERS = "No boot strap servers specified";
-	public static final String MISSING_KAFKA_TOPIC = "Missing Kafka topic. See documentation for KafkaTask for required input parameters";
-	public static final String MISSING_KAFKA_BODY = "Missing Kafka body.  See documentation for KafkaTask for required input parameters";
-	public static final String FAILED_TO_INVOKE = "Failed to invoke kafka task due to: ";
-	protected ObjectMapper om = objectMapper();
-	protected Configuration config;
+	static final String REQUEST_PARAMETER_NAME = "kafka_request";
+	private static final String NAME = "KAFKA_PUBLISH";
+	private static final String MISSING_REQUEST = "Missing Kafka request. Task input MUST have a '" + REQUEST_PARAMETER_NAME + "' key with KafkaTask.Input as value. See documentation for KafkaTask for required input parameters";
+	private static final String MISSING_BOOT_STRAP_SERVERS = "No boot strap servers specified";
+	private static final String MISSING_KAFKA_TOPIC = "Missing Kafka topic. See documentation for KafkaTask for required input parameters";
+	private static final String MISSING_KAFKA_VALUE = "Missing Kafka value.  See documentation for KafkaTask for required input parameters";
+	private static final String FAILED_TO_INVOKE = "Failed to invoke kafka task due to: ";
+
+	private ObjectMapper om = objectMapper();
+	private Configuration config;
 	private String requestParameter;
 	KafkaProducerManager producerManager;
+
+	private static final Logger logger = LoggerFactory.getLogger(KafkaPublishTask.class);
 
 
 	@Inject
@@ -76,28 +78,24 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 		Object request = task.getInputData().get(requestParameter);
 
 		if (Objects.isNull(request)) {
-			task.setReasonForIncompletion(MISSING_REQUEST);
-			task.setStatus(Task.Status.FAILED);
+			markTaskAsFailed(task, MISSING_REQUEST);
 			return;
 		}
 
 		KafkaPublishTask.Input input = om.convertValue(request, KafkaPublishTask.Input.class);
 
 		if (StringUtils.isBlank(input.getBootStrapServers())) {
-			task.setReasonForIncompletion(MISSING_BOOT_STRAP_SERVERS);
-			task.setStatus(Task.Status.FAILED);
+			markTaskAsFailed(task, MISSING_BOOT_STRAP_SERVERS);
 			return;
 		}
 
 		if (StringUtils.isBlank(input.getTopic())) {
-			task.setReasonForIncompletion(MISSING_KAFKA_TOPIC);
-			task.setStatus(Task.Status.FAILED);
+			markTaskAsFailed(task, MISSING_KAFKA_TOPIC);
 			return;
 		}
 
 		if (Objects.isNull(input.getValue())) {
-			task.setReasonForIncompletion(MISSING_KAFKA_BODY);
-			task.setStatus(Task.Status.FAILED);
+			markTaskAsFailed(task, MISSING_KAFKA_VALUE);
 			return;
 		}
 
@@ -111,14 +109,17 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 
 			} catch (ExecutionException ec) {
 				logger.error("Failed to invoke kafka task - execution exception {}", ec);
-				task.setStatus(Task.Status.FAILED);
-				task.setReasonForIncompletion(FAILED_TO_INVOKE + ec.getMessage());
+				markTaskAsFailed(task, FAILED_TO_INVOKE + ec.getMessage());
 			}
 		} catch (Exception e) {
 			logger.error(String.format("Failed to invoke kafka task for input {} - unknown exception: {}", input), e);
-			task.setStatus(Task.Status.FAILED);
-			task.setReasonForIncompletion(FAILED_TO_INVOKE + e.getMessage());
+			markTaskAsFailed(task, FAILED_TO_INVOKE + e.getMessage());
 		}
+	}
+
+	private void markTaskAsFailed(Task task, String missingBootStrapServers) {
+		task.setReasonForIncompletion(missingBootStrapServers);
+		task.setStatus(Task.Status.FAILED);
 	}
 
 	/**
@@ -133,7 +134,7 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 
 		long timeTakenToCreateProducer = Instant.now().toEpochMilli() - startPublishingEpochMillis;
 
-		logger.info("Time taken getting producer {}", timeTakenToCreateProducer);
+		logger.debug("Time taken getting producer {}", timeTakenToCreateProducer);
 
 		Object key = getKey(input);
 
@@ -147,7 +148,8 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 		producer.close();
 
 		long timeTakenToPublish = Instant.now().toEpochMilli() - startPublishingEpochMillis;
-		logger.info("Time taken publishing {}", timeTakenToPublish);
+
+		logger.debug("Time taken publishing {}", timeTakenToPublish);
 
 		return send;
 	}
