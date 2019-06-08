@@ -26,6 +26,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.utils.IDGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -137,8 +138,9 @@ public class DoWhile extends WorkflowSystemTask {
 		for (WorkflowTask loopOverRef : loopOver){
 			String refName = getTaskRefName(loopOverRef, task);
 			Task existingTask = workflow.getTaskByRefName(refName);
-			existingTask.setRetried(true);
-			Task newTask = provider.taskToBeRescheduled(existingTask);
+			Task newTask = existingTask.copy();
+			newTask.setTaskId(IDGenerator.generate());
+			newTask.setStatus(Status.SCHEDULED);
 			newTask.setReferenceTaskName(loopOverRef.getTaskReferenceName() + "_" + iteration);
 			newTask.setRetryCount(existingTask.getRetryCount());
 			newTask.setScheduledTime(System.currentTimeMillis());

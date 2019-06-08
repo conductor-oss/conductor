@@ -64,7 +64,7 @@ public class DoWhileTaskMapper implements TaskMapper {
 
         Task loopTask = new Task();
         loopTask.setTaskType(SystemTaskType.DO_WHILE.name());
-        loopTask.setTaskDefName(SystemTaskType.DO_WHILE.name());
+        loopTask.setTaskDefName(taskToSchedule.getName());
         loopTask.setReferenceTaskName(taskToSchedule.getTaskReferenceName());
         loopTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());
         loopTask.setCorrelationId(workflowInstance.getCorrelationId());
