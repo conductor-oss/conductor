@@ -14,4 +14,6 @@ public class NoopLock implements Lock {
     @Override
     public void releaseLock(String lockId) {}
 
+    @Override
+    public void deleteLock(String lockId) {}
 }

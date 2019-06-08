@@ -80,7 +80,7 @@
     "eslint-plugin-import": "^2.8.0",
     "eslint-plugin-jsx-a11y": "^6.0.3",
     "eslint-plugin-react": "^7.5.1",
-    "gulp": "^3.9.0",
+    "gulp": "^3.9.1",
     "gulp-babel": "^6.1.1",
     "gulp-eslint": "^5.0.0",
     "gulp-gh-pages": "^0.5.4",
