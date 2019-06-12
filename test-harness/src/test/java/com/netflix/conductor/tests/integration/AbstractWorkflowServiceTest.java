@@ -99,6 +99,8 @@ public abstract class AbstractWorkflowServiceTest {
 
     private static final String FORK_JOIN_WF = "FanInOutTest";
 
+    private static final String DO_WHILE_WF = "DoWhileTest";
+
     private static final String DYNAMIC_FORK_JOIN_WF = "DynamicFanInOutTest";
 
     private static final String DYNAMIC_FORK_JOIN_WF_LEGACY = "DynamicFanInOutTestLegacy";
@@ -465,6 +467,63 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull(t4);
         t4.setStatus(COMPLETED);
         workflowExecutionService.updateTask(t4);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("Found " + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+        printTaskStatuses(workflow, "All completed");
+    }
+
+    @Test
+    public void testDoWhile() throws Exception {
+        try {
+            createDoWhileWorkflow();
+        } catch (Exception e) {
+        }
+        String taskName = "junit_task_1";
+        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
+        taskDef.setRetryCount(0);
+        taskDef.setTimeoutSeconds(0);
+        metadataService.updateTaskDef(taskDef);
+
+        taskName = "junit_task_2";
+        taskDef = notFoundSafeGetTaskDef(taskName);
+        taskDef.setRetryCount(0);
+        taskDef.setTimeoutSeconds(0);
+        metadataService.updateTaskDef(taskDef);
+
+        Map<String, Object> input = new HashMap<>();
+        String workflowId = startOrLoadWorkflowExecution(DO_WHILE_WF, 1, "looptest", input, null, null);
+        System.out.println("testDoWhile.wfid=" + workflowId);
+        printTaskStatuses(workflowId, "initiated");
+
+        Task task1 = workflowExecutionService.poll("junit_task_1", "test");
+        assertNotNull(task1);
+        assertTrue(workflowExecutionService.ackTaskReceived(task1.getTaskId()));
+
+        Task task2 = workflowExecutionService.poll("junit_task_2", "test");
+        assertNotNull(task2);
+        assertTrue(workflowExecutionService.ackTaskReceived(task2.getTaskId()));
+
+        task1.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task1);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("Found " + workflow.getTasks(), RUNNING, workflow.getStatus());
+        printTaskStatuses(workflow, "T1 completed");
+
+        task2.setStatus(COMPLETED);
+
+        ExecutorService executorService = Executors.newFixedThreadPool(2);
+        Future<?> future1 = executorService.submit(() -> {
+            try {
+                workflowExecutionService.updateTask(task2);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        });
+        future1.get();
 
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
@@ -1060,6 +1119,38 @@ public abstract class AbstractWorkflowServiceTest {
 
         workflowDef.getTasks().add(joinTask);
         workflowDef.getTasks().add(workflowTask4);
+        metadataService.updateWorkflowDef(workflowDef);
+    }
+
+    private void createDoWhileWorkflow() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName(DO_WHILE_WF);
+        workflowDef.setDescription(workflowDef.getName());
+        workflowDef.setVersion(1);
+        workflowDef.setInputParameters(Arrays.asList("param1", "param2"));
+
+        WorkflowTask loopTask = new WorkflowTask();
+        loopTask.setType(TaskType.DO_WHILE.name());
+        loopTask.setTaskReferenceName("loopTask");
+
+        WorkflowTask workflowTask1 = new WorkflowTask();
+        workflowTask1.setName("junit_task_1");
+        Map<String, Object> inputParams1 = new HashMap<>();
+        inputParams1.put("p1", "workflow.input.param1");
+        inputParams1.put("p2", "workflow.input.param2");
+        workflowTask1.setInputParameters(inputParams1);
+        workflowTask1.setTaskReferenceName("t1");
+
+        WorkflowTask workflowTask2 = new WorkflowTask();
+        workflowTask2.setName("junit_task_2");
+        workflowTask2.setInputParameters(inputParams1);
+        workflowTask2.setTaskReferenceName("t2");
+
+        loopTask.getLoopOver().add(workflowTask1);
+        loopTask.getLoopOver().add(workflowTask2);
+        loopTask.setLoopCondition("if (loopTask['iteration'] > 0 ) { false;} else {true;} ");
+
+        workflowDef.getTasks().add(loopTask);
         metadataService.updateWorkflowDef(workflowDef);
     }
 
@@ -3145,6 +3236,43 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull(t4);
         t4.setStatus(COMPLETED);
         workflowExecutionService.updateTask(t4);
+
+        printTaskStatuses(workflowId, "After complete");
+    }
+
+    @Test
+    public void testRetryWithDoWhile() throws Exception {
+        String workflowId = this.runAFailedDoWhileWF();
+        workflowExecutor.retry(workflowId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(workflow.getStatus(), RUNNING);
+
+        printTaskStatuses(workflow, "After retry called");
+
+        Task t2 = workflowExecutionService.poll("junit_task_0_RT_2", "test");
+        assertNotNull(t2);
+        assertTrue(workflowExecutionService.ackTaskReceived(t2.getTaskId()));
+
+        t2.setStatus(COMPLETED);
+
+        ExecutorService es = Executors.newFixedThreadPool(2);
+        Future<?> future1 = es.submit(() -> {
+            try {
+                workflowExecutionService.updateTask(t2);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+
+        });
+        future1.get();
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+
+        printTaskStatuses(workflow, "T2, T3 complete");
+        workflowExecutor.decide(workflowId);
 
         printTaskStatuses(workflowId, "After complete");
     }
@@ -5461,6 +5589,41 @@ public abstract class AbstractWorkflowServiceTest {
 
         });
         future1.get();
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.FAILED, workflow.getStatus());
+
+        return workflowId;
+    }
+
+    private String runAFailedDoWhileWF() throws Exception {
+        try {
+            this.createForkJoinWorkflowWithZeroRetry();
+        } catch (Exception e) {
+        }
+
+        Map<String, Object> input = new HashMap<>();
+        String workflowId = startOrLoadWorkflowExecution(FORK_JOIN_WF + "_2", 1, "fanouttest", input, null, null);
+        System.out.println("testForkJoin.wfid=" + workflowId);
+        Task t1 = workflowExecutionService.poll("junit_task_0_RT_1", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t1.getTaskId()));
+
+        Task t2 = workflowExecutionService.poll("junit_task_0_RT_2", "test");
+        assertTrue(workflowExecutionService.ackTaskReceived(t2.getTaskId()));
+        assertNotNull(t1);
+        assertNotNull(t2);
+
+        t1.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(t1);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("Found " + workflow.getTasks(), RUNNING, workflow.getStatus());
+        printTaskStatuses(workflow, "Initial");
+
+        t2.setStatus(FAILED);
+        workflowExecutionService.updateTask(t2);
 
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);

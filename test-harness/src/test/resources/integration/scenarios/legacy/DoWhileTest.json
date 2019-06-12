@@ -1,0 +1,151 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1534983505157,
+  "updateTime": 1534983505166,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "DO_WHILE",
+      "status": "COMPLETED",
+      "referenceTaskName": "loopTask",
+      "retryCount": 0,
+      "seq": 1,
+      "correlationId": "looptest",
+      "pollCount": 0,
+      "taskDefName": "DOWHILE",
+      "scheduledTime": 1534983505159,
+      "startTime": 1534983505161,
+      "endTime": 1534983505164,
+      "updateTime": 1534983505164,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": true,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "DoWhileTest",
+      "taskId": "3e66a03d-08ef-4e71-8588-49d6c82bc75d",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "taskReferenceName": "loopTask",
+        "type": "DO_WHILE",
+        "loopCondition": "if (loopTask['iteration'] > 0 ) { false;} else {true;} ",
+        "loopOver": [
+            {
+              "name": "junit_task_1",
+              "taskReferenceName": "t1",
+              "inputParameters": {
+                "p1": "workflow.input.param1",
+                "p2": "workflow.input.param2"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0,
+              "optional": false
+            },
+            {
+              "name": "junit_task_2",
+              "taskReferenceName": "t2",
+              "inputParameters": {
+                "tp1": "workflow.input.param1"
+              },
+              "type": "SIMPLE",
+              "startDelay": 0,
+              "optional": false
+            }
+        ],
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "COMPLETED",
+      "queueWaitTime": 2
+    },
+    {
+      "taskType": "junit_task_1",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": null,
+        "p2": null
+      },
+      "referenceTaskName": "t1",
+      "retryCount": 0,
+      "seq": 2,
+      "correlationId": "looptest",
+      "pollCount": 0,
+      "taskDefName": "junit_task_1",
+      "scheduledTime": 1534983505160,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1534983505160,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "DoWhileTest",
+      "taskId": "9f9d5bc3-0be7-43ad-868f-9291cc7dd76d",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "junit_task_1",
+        "taskReferenceName": "t1",
+        "inputParameters": {
+          "p1": "workflow.input.param1",
+          "p2": "workflow.input.param2"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    },
+    {
+      "taskType": "junit_task_2",
+      "status": "SCHEDULED",
+      "inputData": {
+        "tp1": null
+      },
+      "referenceTaskName": "t2",
+      "retryCount": 0,
+      "seq": 3,
+      "correlationId": "looptest",
+      "pollCount": 0,
+      "taskDefName": "junit_task_2",
+      "scheduledTime": 1534983505160,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1534983505160,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "DoWhileTest",
+      "taskId": "cd4de120-4415-43c8-9d83-f2c92987e903",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "junit_task_2",
+        "taskReferenceName": "t2",
+        "inputParameters": {
+          "tp1": "workflow.input.param1"
+        },
+        "type": "SIMPLE",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    }
+  ],
+  "workflowType": "DoWhileTest",
+  "version": 1,
+  "correlationId": "looptask",
+  "schemaVersion": 1,
+  "startTime": 1534983505157
+}
