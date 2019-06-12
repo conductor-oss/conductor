@@ -19,9 +19,7 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import static org.mockito.Mockito.spy;
 
 /**
@@ -80,8 +78,8 @@ public class DoWhileTest {
         loopTask.setReferenceTaskName("loopTask");
         loopTask.setTaskType(TaskType.DO_WHILE.name());
         loopWorkflowTask = new WorkflowTask();
-        loopWorkflowTask.setTaskReferenceName("loopWorkflowTask");
-        loopWorkflowTask.setLoopCondition("if ($.task1['task1'] + $.task2['task2'] > 10) { false; } else { true; }");
+        loopWorkflowTask.setTaskReferenceName("loopTask");
+        loopWorkflowTask.setLoopCondition("if ($.loopTask['iteration'] < 1) { false; } else { true; }");
         loopWorkflowTask.setLoopOver(Arrays.asList(task1.getWorkflowTask(), task2.getWorkflowTask()));
         loopTask.setWorkflowTask(loopWorkflowTask);
         doWhile = new DoWhile();
@@ -91,12 +89,7 @@ public class DoWhileTest {
 
     @Test
     public void testSingleSuccessfulIteration() {
-        Map<String, Object> output1 = new HashMap<>();
-        output1.put("task1", 7);
-        task1.setOutputData(output1);
-        Map<String, Object> output2 = new HashMap<>();
-        output2.put("task2", 7);
-        task2.setOutputData(output2);
+        loopWorkflowTask.setLoopCondition("if ($.loopTask['iteration'] < 1) { false; } else { true; }");
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertTrue(success);
         Assert.assertEquals(loopTask.getStatus(), Task.Status.COMPLETED);
@@ -125,13 +118,7 @@ public class DoWhileTest {
     @Test
     public void testSingleIteration() {
         loopTask.setStatus(Task.Status.IN_PROGRESS);
-        Map<String, Object> output1 = new HashMap<>();
-        output1.put("task1", 2);
-        task1.setOutputData(output1);
-        Map<String, Object> output2 = new HashMap<>();
-        output1.put("task2", 2);
-        task2.setOutputData(output2);
-        loopTask.setTaskId("1");
+        loopWorkflowTask.setLoopCondition("if ($.loopTask['iteration'] > 1) { false; } else { true; }");
         List<Task> list = Arrays.asList(task1, task2);
         Mockito.doReturn(false).when(provider).scheduleTask(workflow, list);
         boolean success = doWhile.execute(workflow, loopTask, provider);
