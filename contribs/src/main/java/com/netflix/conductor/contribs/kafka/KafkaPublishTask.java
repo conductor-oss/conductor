@@ -117,8 +117,8 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 		}
 	}
 
-	private void markTaskAsFailed(Task task, String missingBootStrapServers) {
-		task.setReasonForIncompletion(missingBootStrapServers);
+	private void markTaskAsFailed(Task task, String reasonForIncompletion) {
+		task.setReasonForIncompletion(reasonForIncompletion);
 		task.setStatus(Task.Status.FAILED);
 	}
 

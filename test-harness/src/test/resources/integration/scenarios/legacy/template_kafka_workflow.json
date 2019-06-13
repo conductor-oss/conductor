@@ -7,7 +7,7 @@
   "workflowId": "WORKFLOW_INSTANCE_ID",
   "tasks": [
     {
-      "taskType": "templated_kafka_task",
+      "taskType": "KAFKA_PUBLISH",
       "status": "SCHEDULED",
       "inputData": {
         "kafka_request": {
@@ -42,13 +42,13 @@
       "callbackFromWorker": true,
       "responseTimeoutSeconds": 3600,
       "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
-      "workflowType": "template_workflow",
+      "workflowType": "template_kafka_workflow",
       "taskId": "9dea4567-0240-4eab-bde8-99f4535ea3fd",
       "callbackAfterSeconds": 0,
       "workflowTask": {
         "name": "templated_kafka_task",
         "taskReferenceName": "t0",
-        "type": "SIMPLE",
+        "type": "KAFKA_PUBLISH",
         "startDelay": 0,
         "optional": false
       },
@@ -66,7 +66,7 @@
     },
     "outputPath": "s3://bucket/outputPath"
   },
-  "workflowType": "template_workflow",
+  "workflowType": "template_kafka_workflow",
   "version": 1,
   "correlationId": "testTaskDefTemplate",
   "schemaVersion": 2,

@@ -491,7 +491,8 @@ The task expects an input parameter named ```kafka_request``` as part of the tas
 |name|description|
 |---|---|
 | bootStrapServers |bootStrapServers for connecting to given kafka.|
-|key| Serializer used for serializing the key published to kafka.  One of the following can be set : <br/> 1. org.apache.kafka.common.serialization.IntegerSerializer<br/>2. org.apache.kafka.common.serialization.LongSerializer<br/>3. org.apache.kafka.common.serialization.StringSerializer. <br/>Default is String serializer  |
+|key|Key to be published|
+|keySerializer | Serializer used for serializing the key published to kafka.  One of the following can be set : <br/> 1. org.apache.kafka.common.serialization.IntegerSerializer<br/>2. org.apache.kafka.common.serialization.LongSerializer<br/>3. org.apache.kafka.common.serialization.StringSerializer. <br/>Default is String serializer  |
 |value| Value published to kafka|
 |requestTimeoutMs| Request timeout while publishing to kafka. If this value is not given the value is read from the property `kafka.publish.request.timeout.ms`. If the property is not set the value defaults to 100 |
 |headers|A map of additional kafka headers to be sent along with the request.|
