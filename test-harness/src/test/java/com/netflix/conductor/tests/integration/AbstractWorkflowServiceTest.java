@@ -259,7 +259,6 @@ public abstract class AbstractWorkflowServiceTest {
         }
 
         taskDefs = metadataService.getTaskDefs();
-
         registered = true;
     }
 
@@ -346,6 +345,156 @@ public abstract class AbstractWorkflowServiceTest {
         //System.out.println(om.writeValueAsString(om.writeValueAsString(taskInput)));
         String expected = "{\"http_request\":{\"method\":\"GET\",\"vipStack\":\"test_stack\",\"body\":{\"requestDetails\":{\"key1\":\"value1\",\"key2\":42},\"outputPath\":\"s3://bucket/outputPath\",\"inputPaths\":[\"file://path1\",\"file://path2\"]},\"uri\":\"/get/something\"}}";
         assertEquals(expected, om.writeValueAsString(taskInput));
+    }
+
+    @Test
+    public void testKafkaTaskDefTemplateSuccess() throws Exception {
+
+        try {
+            registerKafkaWorkflow();
+        } catch (ApplicationException e) {
+
+        }
+
+        Map<String, Object> input = getKafkaInput();
+        String workflowInstanceId = startOrLoadWorkflowExecution("template_kafka_workflow", 1, "testTaskDefTemplate", input, null, null);
+
+        assertNotNull(workflowInstanceId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
+
+        assertNotNull(workflow);
+        assertTrue(workflow.getReasonForIncompletion(), !workflow.getStatus().isTerminal());
+        assertEquals(1, workflow.getTasks().size());
+
+        Task task = workflow.getTasks().get(0);
+        Map<String, Object> taskInput = task.getInputData();
+
+        assertNotNull(taskInput);
+        assertTrue(taskInput.containsKey("kafka_request"));
+        assertTrue(taskInput.get("kafka_request") instanceof Map);
+
+        ObjectMapper om = new ObjectMapper();
+        String expected = "{\"kafka_request\":{\"topic\":\"test_kafka_topic\",\"bootStrapServers\":\"localhost:9092\",\"value\":{\"requestDetails\":{\"key1\":\"value1\",\"key2\":42},\"outputPath\":\"s3://bucket/outputPath\",\"inputPaths\":[\"file://path1\",\"file://path2\"]}}}";
+
+        assertEquals(expected, om.writeValueAsString(taskInput));
+
+        TaskResult taskResult = new TaskResult(task);
+
+        taskResult.setStatus(TaskResult.Status.COMPLETED);
+
+
+
+        // Polling for the first task
+        Task task1 = workflowExecutionService.poll("KAFKA_PUBLISH", "test");
+        assertNotNull(task1);
+
+        assertTrue(workflowExecutionService.ackTaskReceived(task1.getTaskId()));
+        assertEquals(workflowInstanceId, task1.getWorkflowInstanceId());
+
+        workflowExecutionService.updateTask(taskResult);
+
+        workflowExecutor.decide(workflowInstanceId);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
+    @Test
+    public void testKafkaTaskDefTemplateFailure() throws Exception {
+
+        try {
+            registerKafkaWorkflow();
+        } catch (ApplicationException e) {
+
+        }
+        Map<String, Object> input = getKafkaInput();
+        String workflowInstanceId = startOrLoadWorkflowExecution("template_kafka_workflow", 1, "testTaskDefTemplate", input, null, null);
+
+        assertNotNull(workflowInstanceId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
+
+        assertNotNull(workflow);
+        assertTrue(workflow.getReasonForIncompletion(), !workflow.getStatus().isTerminal());
+        assertEquals(1, workflow.getTasks().size());
+
+        Task task = workflow.getTasks().get(0);
+        Map<String, Object> taskInput = task.getInputData();
+
+        assertNotNull(taskInput);
+        assertTrue(taskInput.containsKey("kafka_request"));
+        assertTrue(taskInput.get("kafka_request") instanceof Map);
+
+        ObjectMapper om = new ObjectMapper();
+        String expected = "{\"kafka_request\":{\"topic\":\"test_kafka_topic\",\"bootStrapServers\":\"localhost:9092\",\"value\":{\"requestDetails\":{\"key1\":\"value1\",\"key2\":42},\"outputPath\":\"s3://bucket/outputPath\",\"inputPaths\":[\"file://path1\",\"file://path2\"]}}}";
+
+        assertEquals(expected, om.writeValueAsString(taskInput));
+
+        TaskResult taskResult = new TaskResult(task);
+        taskResult.setReasonForIncompletion("NON TRANSIENT ERROR OCCURRED: An integration point required to complete the task is down");
+        taskResult.setStatus(TaskResult.Status.FAILED);
+        taskResult.addOutputData("TERMINAL_ERROR", "Integration endpoint down: FOOBAR");
+        taskResult.addOutputData("ErrorMessage", "There was a terminal error");
+
+
+        // Polling for the first task
+        Task task1 = workflowExecutionService.poll("KAFKA_PUBLISH", "test");
+        assertNotNull(task1);
+
+        assertTrue(workflowExecutionService.ackTaskReceived(task1.getTaskId()));
+        assertEquals(workflowInstanceId, task1.getWorkflowInstanceId());
+
+        workflowExecutionService.updateTask(taskResult);
+
+        workflowExecutor.decide(workflowInstanceId);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.FAILED, workflow.getStatus());
+    }
+
+    private Map<String, Object> getKafkaInput() {
+        Map<String, Object> requestDetails = new HashMap<>();
+        requestDetails.put("key1", "value1");
+        requestDetails.put("key2", 42);
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("path1", "file://path1");
+        input.put("path2", "file://path2");
+        input.put("outputPath", "s3://bucket/outputPath");
+        input.put("requestDetails", requestDetails);
+        return input;
+    }
+
+    private void registerKafkaWorkflow() {
+        System.setProperty("STACK_KAFKA", "test_kafka_topic");
+        TaskDef templatedTask = new TaskDef();
+        templatedTask.setName("templated_kafka_task");
+        templatedTask.setRetryCount(0);
+        Map<String, Object> kafkaRequest = new HashMap<>();
+        kafkaRequest.put("topic", "${STACK_KAFKA}");
+        kafkaRequest.put("bootStrapServers", "localhost:9092");
+
+        Map<String, Object> value = new HashMap<>();
+        value.put("inputPaths", Arrays.asList("${workflow.input.path1}", "${workflow.input.path2}"));
+        value.put("requestDetails", "${workflow.input.requestDetails}");
+        value.put("outputPath", "${workflow.input.outputPath}");
+        kafkaRequest.put("value", value);
+        templatedTask.getInputTemplate().put("kafka_request", kafkaRequest);
+        metadataService.registerTaskDef(Arrays.asList(templatedTask));
+
+        WorkflowDef templateWf = new WorkflowDef();
+
+        templateWf.setName("template_kafka_workflow");
+        WorkflowTask wft = new WorkflowTask();
+        wft.setName(templatedTask.getName());
+        wft.setWorkflowTaskType(TaskType.KAFKA_PUBLISH);
+        wft.setTaskReferenceName("t0");
+        templateWf.getTasks().add(wft);
+        templateWf.setSchemaVersion(2);
+        metadataService.registerWorkflowDef(templateWf);
     }
 
     @Test

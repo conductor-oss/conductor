@@ -1,0 +1,74 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1534983505050,
+  "updateTime": 1534983505131,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "KAFKA_PUBLISH",
+      "status": "SCHEDULED",
+      "inputData": {
+        "kafka_request": {
+          "topic": "test_kafka_topic",
+          "bootStrapServers": "localhost:9092",
+          "value": {
+            "requestDetails": {
+              "key1": "value1",
+              "key2": 42
+            },
+            "outputPath": "s3://bucket/outputPath",
+            "inputPaths": [
+              "file://path1",
+              "file://path2"
+            ]
+          }
+        }
+      },
+      "referenceTaskName": "t0",
+      "retryCount": 0,
+      "seq": 1,
+      "correlationId": "testTaskDefTemplate",
+      "pollCount": 0,
+      "taskDefName": "templated_kafka_task",
+      "scheduledTime": 1534983505121,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1534983505121,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "template_kafka_workflow",
+      "taskId": "9dea4567-0240-4eab-bde8-99f4535ea3fd",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "templated_kafka_task",
+        "taskReferenceName": "t0",
+        "type": "KAFKA_PUBLISH",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    }
+  ],
+  "input": {
+    "path1": "file://path1",
+    "path2": "file://path2",
+    "requestDetails": {
+      "key1": "value1",
+      "key2": 42
+    },
+    "outputPath": "s3://bucket/outputPath"
+  },
+  "workflowType": "template_kafka_workflow",
+  "version": 1,
+  "correlationId": "testTaskDefTemplate",
+  "schemaVersion": 2,
+  "startTime": 1534983505050
+}
