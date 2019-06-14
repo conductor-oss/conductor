@@ -761,7 +761,12 @@ public class WorkflowExecutor {
 
     public Task getTask(String taskId) {
         return Optional.ofNullable(executionDAOFacade.getTaskById(taskId))
-                .map(metadataMapperService::populateTaskWithDefinition)
+                .map(task -> {
+                    if (task.getWorkflowTask() != null) {
+                        return metadataMapperService.populateTaskWithDefinition(task);
+                    }
+                    return task;
+                })
                 .orElse(null);
     }
 

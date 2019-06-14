@@ -371,12 +371,11 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals(2, found1.getSchemaVersion());
     }
 
+    @SuppressWarnings("ConstantConditions")
     @Test
     public void testForkJoin() throws Exception {
-        try {
-            createForkJoinWorkflow();
-        } catch (Exception e) {
-        }
+        createForkJoinWorkflow();
+
         String taskName = "junit_task_1";
         TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(0);
@@ -403,8 +402,13 @@ public abstract class AbstractWorkflowServiceTest {
 
         Map<String, Object> input = new HashMap<>();
         String workflowId = startOrLoadWorkflowExecution(FORK_JOIN_WF, 1, "fanouttest", input, null, null);
-        System.out.println("testForkJoin.wfid=" + workflowId);
+        assertNotNull(workflowId);
         printTaskStatuses(workflowId, "initiated");
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(4, workflow.getTasks().size());
 
         Task task1 = workflowExecutionService.poll("junit_task_1", "test");
         assertNotNull(task1);
@@ -420,7 +424,7 @@ public abstract class AbstractWorkflowServiceTest {
         task1.setStatus(COMPLETED);
         workflowExecutionService.updateTask(task1);
 
-        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals("Found " + workflow.getTasks(), RUNNING, workflow.getStatus());
         printTaskStatuses(workflow, "T1 completed");
@@ -448,7 +452,6 @@ public abstract class AbstractWorkflowServiceTest {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-
         });
         future2.get();
 
@@ -1071,15 +1074,18 @@ public abstract class AbstractWorkflowServiceTest {
         workflowDef.setVersion(1);
         workflowDef.setInputParameters(Arrays.asList("param1", "param2"));
 
+        // fork task
         WorkflowTask fanoutTask = new WorkflowTask();
         fanoutTask.setType(TaskType.FORK_JOIN.name());
         fanoutTask.setTaskReferenceName("fanouttask");
 
-        WorkflowTask workflowTask1 = new WorkflowTask();
-        workflowTask1.setName("junit_task_1");
         Map<String, Object> inputParams1 = new HashMap<>();
         inputParams1.put("p1", "workflow.input.param1");
         inputParams1.put("p2", "workflow.input.param2");
+
+        // left fork
+        WorkflowTask workflowTask1 = new WorkflowTask();
+        workflowTask1.setName("junit_task_1");
         workflowTask1.setInputParameters(inputParams1);
         workflowTask1.setTaskReferenceName("t1");
 
@@ -1088,6 +1094,7 @@ public abstract class AbstractWorkflowServiceTest {
         workflowTask3.setInputParameters(inputParams1);
         workflowTask3.setTaskReferenceName("t3");
 
+        // right fork
         WorkflowTask workflowTask2 = new WorkflowTask();
         workflowTask2.setName("junit_task_2");
         Map<String, Object> inputParams2 = new HashMap<>();
@@ -1095,22 +1102,24 @@ public abstract class AbstractWorkflowServiceTest {
         workflowTask2.setInputParameters(inputParams2);
         workflowTask2.setTaskReferenceName("t2");
 
-        WorkflowTask workflowTask4 = new WorkflowTask();
-        workflowTask4.setName("junit_task_4");
-        workflowTask4.setInputParameters(inputParams2);
-        workflowTask4.setTaskReferenceName("t4");
-
         fanoutTask.getForkTasks().add(Arrays.asList(workflowTask1, workflowTask3));
         fanoutTask.getForkTasks().add(Collections.singletonList(workflowTask2));
-
         workflowDef.getTasks().add(fanoutTask);
 
+        // join task
         WorkflowTask joinTask = new WorkflowTask();
         joinTask.setType(TaskType.JOIN.name());
         joinTask.setTaskReferenceName("fanouttask_join");
         joinTask.setJoinOn(Arrays.asList("t3", "t2"));
 
         workflowDef.getTasks().add(joinTask);
+
+        // simple task
+        WorkflowTask workflowTask4 = new WorkflowTask();
+        workflowTask4.setName("junit_task_4");
+        workflowTask4.setInputParameters(inputParams2);
+        workflowTask4.setTaskReferenceName("t4");
+
         workflowDef.getTasks().add(workflowTask4);
         metadataService.updateWorkflowDef(workflowDef);
     }
@@ -1542,6 +1551,7 @@ public abstract class AbstractWorkflowServiceTest {
         Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals(RUNNING, workflow.getStatus());
+        assertEquals("found " + workflow.getTasks().stream().map(Task::toString).collect(Collectors.toList()), 4, workflow.getTasks().size());
 
         String subWorkflowId1 = workflow.getTasks().get(1).getOutputData().get(SubWorkflow.SUB_WORKFLOW_ID).toString();
         Workflow subWorkflow1 = workflowExecutionService.getExecutionStatus(subWorkflowId1, true);
@@ -1610,6 +1620,7 @@ public abstract class AbstractWorkflowServiceTest {
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals(4, workflow.getTasks().size());
         assertEquals(COMPLETED_WITH_ERRORS, workflow.getTasks().get(1).getStatus());
         assertEquals(COMPLETED_WITH_ERRORS, workflow.getTasks().get(2).getStatus());
     }
@@ -3287,7 +3298,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull(workflowDef.getFailureWorkflow());
         assertFalse(StringUtils.isBlank(workflowDef.getFailureWorkflow()));
 
-        String correlationId = "unit_test_1" + UUID.randomUUID().toString();
+        String correlationId = "retry_test_" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<>();
         input.put("param1", "p1 value");
         input.put("param2", "p2 value");
@@ -3295,14 +3306,19 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull(workflowId);
         printTaskStatuses(workflowId, "initial");
 
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(1, workflow.getTasks().size());
+
         Task task = getTask("junit_task_1");
         assertNotNull(task);
         task.setStatus(FAILED);
         workflowExecutionService.updateTask(task);
 
-        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
 
         task = getTask("junit_task_1");
         assertNotNull(task);
@@ -3312,6 +3328,7 @@ public abstract class AbstractWorkflowServiceTest {
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals(WorkflowStatus.FAILED, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
 
         printTaskStatuses(workflowId, "before retry");
 
@@ -3321,6 +3338,7 @@ public abstract class AbstractWorkflowServiceTest {
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(3, workflow.getTasks().size());
 
         task = getTask("junit_task_1");
         assertNotNull(task);
@@ -3331,6 +3349,7 @@ public abstract class AbstractWorkflowServiceTest {
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(4, workflow.getTasks().size());
 
         task = getTask("junit_task_2");
         assertNotNull(task);
@@ -3341,7 +3360,7 @@ public abstract class AbstractWorkflowServiceTest {
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
-
+        assertEquals(4, workflow.getTasks().size());
         assertEquals(3, workflow.getTasks().stream().filter(t -> t.getTaskType().equals("junit_task_1")).count());
 
         taskDef.setRetryCount(retryCount);
@@ -3349,7 +3368,6 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.updateTaskDef(taskDef);
 
         printTaskStatuses(workflowId, "final");
-
     }
 
     @Test
@@ -3593,7 +3611,7 @@ public abstract class AbstractWorkflowServiceTest {
         workflowSweeper.sweep(Collections.singletonList(workflowId), workflowExecutor);
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
-        assertEquals("fond: " + workflow.getTasks().stream().map(Task::toString).collect(Collectors.toList()), 2, workflow.getTasks().size());
+        assertEquals("found: " + workflow.getTasks().stream().map(Task::toString).collect(Collectors.toList()), 2, workflow.getTasks().size());
 
         Task task1 = workflow.getTasks().get(0);
         assertEquals(TIMED_OUT, task1.getStatus());
@@ -4705,7 +4723,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         workflow.getTasks().forEach(workflowTask -> {
             assertTrue(workflowTask.getScheduledTime() <= workflowTask.getStartTime());
-            assertTrue(workflowTask.getStartTime() < workflowTask.getEndTime());
+            assertTrue("" + (workflowTask.getStartTime() - workflowTask.getEndTime()), workflowTask.getStartTime() <= workflowTask.getEndTime());
         });
 
         assertEquals("decision1", workflow.getTasks().get(0).getReferenceTaskName());

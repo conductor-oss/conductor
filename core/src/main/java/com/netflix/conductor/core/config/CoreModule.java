@@ -60,6 +60,10 @@ public class CoreModule extends AbstractModule {
         bind(Event.class).asEagerSingleton();
         bind(Lambda.class).asEagerSingleton();
         bind(Terminate.class).asEagerSingleton();
+
+        // start processing events when instance starts
+        bind(ActionProcessor.class).to(SimpleActionProcessor.class);
+        bind(EventProcessor.class).to(SimpleEventProcessor.class).asEagerSingleton();
     }
 
     @Provides
@@ -72,19 +76,6 @@ public class CoreModule extends AbstractModule {
     @Singleton
     public JsonUtils getJsonUtils() {
         return new JsonUtils();
-    }
-
-    @Provides
-    @Singleton
-    public ActionProcessor getActionProcessor(WorkflowExecutor executor, ParametersUtils parametersUtils, JsonUtils jsonUtils) {
-        return new SimpleActionProcessor(executor, parametersUtils, jsonUtils);
-    }
-
-    @Provides
-    @Singleton
-    public EventProcessor getEventProcessor(ExecutionService executionService, MetadataService metadataService,
-                                            ActionProcessor actionProcessor, EventQueues eventQueues, JsonUtils jsonUtils, Configuration configuration) {
-        return new SimpleEventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils, configuration);
     }
 
     @ProvidesIntoMap
