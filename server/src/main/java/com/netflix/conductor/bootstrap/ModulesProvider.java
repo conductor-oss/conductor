@@ -8,6 +8,8 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.contribs.http.HttpTask;
 import com.netflix.conductor.contribs.http.RestClientManager;
 import com.netflix.conductor.contribs.json.JsonJqTransform;
+import com.netflix.conductor.contribs.kafka.KafkaProducerManager;
+import com.netflix.conductor.contribs.kafka.KafkaPublishTask;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.WorkflowExecutorModule;
 import com.netflix.conductor.core.utils.DummyPayloadStorage;
@@ -127,6 +129,7 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
         }
 
         new HttpTask(new RestClientManager(configuration), configuration);
+        new KafkaPublishTask(configuration, new KafkaProducerManager(configuration));
         new JsonJqTransform();
         modules.add(new ServerModule());
 

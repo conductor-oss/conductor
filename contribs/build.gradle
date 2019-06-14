@@ -16,6 +16,8 @@ dependencies {
 	compileOnly "javax.ws.rs:jsr311-api:${revJsr311Api}"
 	compile "io.swagger:swagger-jaxrs:${revSwagger}"
 
+	compile "org.apache.kafka:kafka-clients:2.2.0"
+
 	testCompile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
 	testCompile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
 }
