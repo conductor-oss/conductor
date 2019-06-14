@@ -485,28 +485,30 @@ public abstract class AbstractWorkflowServiceTest {
         taskDef.setRetryCount(0);
         taskDef.setTimeoutSeconds(0);
         metadataService.updateTaskDef(taskDef);
+        metadataService.registerTaskDef(Arrays.asList(taskDef));
 
         taskName = "junit_task_2";
         taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(0);
         taskDef.setTimeoutSeconds(0);
         metadataService.updateTaskDef(taskDef);
+        metadataService.registerTaskDef(Arrays.asList(taskDef));
 
         Map<String, Object> input = new HashMap<>();
         String workflowId = startOrLoadWorkflowExecution(DO_WHILE_WF, 1, "looptest", input, null, null);
         System.out.println("testDoWhile.wfid=" + workflowId);
         printTaskStatuses(workflowId, "initiated");
 
-        Task task1 = workflowExecutionService.poll("junit_task_1", "test");
+        Task task1 = workflowExecutionService.poll("HTTP", "test");
         assertNotNull(task1);
         assertTrue(workflowExecutionService.ackTaskReceived(task1.getTaskId()));
 
-        Task task2 = workflowExecutionService.poll("junit_task_2", "test");
-        assertNotNull(task2);
-        assertTrue(workflowExecutionService.ackTaskReceived(task2.getTaskId()));
-
         task1.setStatus(COMPLETED);
         workflowExecutionService.updateTask(task1);
+
+        Task task2 = workflowExecutionService.poll("HTTP", "test");
+        assertNotNull(task2);
+        assertTrue(workflowExecutionService.ackTaskReceived(task2.getTaskId()));
 
         Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
@@ -514,16 +516,7 @@ public abstract class AbstractWorkflowServiceTest {
         printTaskStatuses(workflow, "T1 completed");
 
         task2.setStatus(COMPLETED);
-
-        ExecutorService executorService = Executors.newFixedThreadPool(2);
-        Future<?> future1 = executorService.submit(() -> {
-            try {
-                workflowExecutionService.updateTask(task2);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-        future1.get();
+        workflowExecutionService.updateTask(task2);
 
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
@@ -1140,18 +1133,21 @@ public abstract class AbstractWorkflowServiceTest {
         inputParams1.put("p2", "workflow.input.param2");
         workflowTask1.setInputParameters(inputParams1);
         workflowTask1.setTaskReferenceName("t1");
+        workflowTask1.setWorkflowTaskType(TaskType.HTTP);
 
         WorkflowTask workflowTask2 = new WorkflowTask();
         workflowTask2.setName("junit_task_2");
         workflowTask2.setInputParameters(inputParams1);
         workflowTask2.setTaskReferenceName("t2");
+        workflowTask2.setWorkflowTaskType(TaskType.HTTP);
 
         loopTask.getLoopOver().add(workflowTask1);
         loopTask.getLoopOver().add(workflowTask2);
-        loopTask.setLoopCondition("if (loopTask['iteration'] > 0 ) { false;} else {true;} ");
+        loopTask.setLoopCondition("if ($.loopTask['iteration'] < 1 ) { false;} else {true;} ");
 
         workflowDef.getTasks().add(loopTask);
         metadataService.updateWorkflowDef(workflowDef);
+        metadataService.registerWorkflowDef(workflowDef);
     }
 
 
