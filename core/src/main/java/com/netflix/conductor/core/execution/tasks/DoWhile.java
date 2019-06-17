@@ -21,12 +21,10 @@ package com.netflix.conductor.core.execution.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.utils.IDGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,8 +58,7 @@ public class DoWhile extends WorkflowSystemTask {
 		List<WorkflowTask> loopOver = task.getWorkflowTask().getLoopOver();
 
 		for (WorkflowTask workflowTask : loopOver){
-			String refName = getTaskRefName(workflowTask, task);
-			Task loopOverTask = workflow.getTaskByRefName(refName);
+			Task loopOverTask = workflow.getTaskByRefName(workflowTask.getTaskReferenceName());
 			if (loopOverTask == null){
 				//Task is not even scheduled yet
 				allDone = false;
@@ -100,33 +97,13 @@ public class DoWhile extends WorkflowSystemTask {
 		}
 	}
 
-	private String getTaskRefName(WorkflowTask workflowTask, Task task) {
-		String refName = workflowTask.getTaskReferenceName();
-		if (task.getIteration()>0) {
-			refName +=  "_" + task.getIteration();
-		}
-		return refName;
-	}
-
 	boolean scheduleLoopTasks(Task task, Workflow workflow, WorkflowExecutor provider) {
 		logger.debug("Scheduling loop tasks for taskid {} as condition {} evaluated to true",
 				task.getTaskId(), task.getWorkflowTask().getLoopCondition());
-		List<WorkflowTask> loopOver = task.getWorkflowTask().getLoopOver();
-		List<Task> taskToBeScheduled = new ArrayList<>();
-		int iteration = task.getIteration() + 1;
-		for (WorkflowTask loopOverRef : loopOver){
-			String refName = getTaskRefName(loopOverRef, task);
-			Task existingTask = workflow.getTaskByRefName(refName);
-			Task newTask = existingTask.copy();
-			newTask.setTaskId(IDGenerator.generate());
-			newTask.setStatus(Status.SCHEDULED);
-			newTask.setReferenceTaskName(loopOverRef.getTaskReferenceName() + "_" + iteration);
-			newTask.setRetryCount(existingTask.getRetryCount());
-			newTask.setScheduledTime(System.currentTimeMillis());
-			taskToBeScheduled.add(newTask);
-		}
-		task.setIteration(iteration);
-		provider.scheduleTask(workflow, taskToBeScheduled);
+		provider.removeLoopOverTasks(task, workflow);
+		task.setIteration(task.getIteration() + 1);
+		List<Task> tasks = provider.getDeciderService().getTasksToBeScheduled(workflow, task.getWorkflowTask(), task.getRetryCount());
+		provider.scheduleTask(workflow, tasks);
 		return true; // Return true even though status not changed. Iteration has to be updated in execution DAO.
 	}
 

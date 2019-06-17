@@ -77,9 +77,9 @@ public class DoWhileTaskMapperTest {
 
         assertNotNull(mappedTasks);
         assertEquals(mappedTasks.size(), 3);
-        assertEquals(task1, mappedTasks.get(0));
-        assertEquals(task2, mappedTasks.get(1));
-        assertEquals(SystemTaskType.DO_WHILE.name(), mappedTasks.get(2).getTaskType());
+        assertEquals(task1, mappedTasks.get(1));
+        assertEquals(task2, mappedTasks.get(2));
+        assertEquals(SystemTaskType.DO_WHILE.name(), mappedTasks.get(0).getTaskType());
     }
 
     @Test

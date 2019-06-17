@@ -529,6 +529,9 @@ public class WorkflowTask {
 			case FORK_JOIN:
 				workflowTaskLists.addAll(forkTasks);
 				break;
+			case DO_WHILE:
+				workflowTaskLists.add(loopOver);
+				break;
 			default:
 				break;
 		}
@@ -554,6 +557,7 @@ public class WorkflowTask {
 		}
 
 		switch (taskType) {
+			case DO_WHILE:
 			case DECISION:
 				for (List<WorkflowTask> wfts : children()) {
 					Iterator<WorkflowTask> it = wfts.iterator();
@@ -621,6 +625,7 @@ public class WorkflowTask {
 		switch(tt){
 			
 			case DECISION:
+			case DO_WHILE:
 			case FORK_JOIN:	
 				for(List<WorkflowTask> childx : children()){
 					for(WorkflowTask child : childx){
