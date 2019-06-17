@@ -115,10 +115,6 @@ public class WorkflowExecutor {
         this.externalPayloadStorageUtils = externalPayloadStorageUtils;
     }
 
-    public DeciderService getDeciderService() {
-        return deciderService;
-    }
-
     /**
      * @throws ApplicationException
      */
@@ -1348,5 +1344,11 @@ public class WorkflowExecutor {
                 .filter(x -> (x.getSeq() <= loopTask.getSeq()))
                 .collect(Collectors.toCollection(ArrayList::new)));
         executionDAOFacade.updateWorkflow(workflow);
+    }
+
+    public void scheduleLoopTasks(Task loopTask, Workflow workflow) {
+        //Get all the loopOver tasks and schedule it.
+        List<Task> tasks = deciderService.getTasksToBeScheduled(workflow, loopTask.getWorkflowTask(), loopTask.getRetryCount());
+        scheduleTask(workflow, tasks);
     }
 }

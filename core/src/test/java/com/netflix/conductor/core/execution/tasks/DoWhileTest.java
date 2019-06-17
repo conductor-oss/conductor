@@ -119,8 +119,7 @@ public class DoWhileTest {
     public void testSingleIteration() {
         loopTask.setStatus(Task.Status.IN_PROGRESS);
         loopWorkflowTask.setLoopCondition("if ($.loopTask['iteration'] > 1) { false; } else { true; }");
-        List<Task> list = Arrays.asList(task1, task2);
-        Mockito.doReturn(false).when(provider).scheduleTask(workflow, list);
+        Mockito.doNothing().when(provider).scheduleLoopTasks(loopTask, workflow);
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertTrue(success);
         Assert.assertTrue(loopTask.getStatus() == Task.Status.IN_PROGRESS);
@@ -130,8 +129,7 @@ public class DoWhileTest {
     public void testConditionException() {
         loopTask.setTaskId("1");
         loopWorkflowTask.setLoopCondition("this will give exception");
-        List<Task> list = Arrays.asList(task1, task2);
-        Mockito.doReturn(false).when(provider).scheduleTask(workflow, list);
+        Mockito.doNothing().when(provider).scheduleLoopTasks(loopTask, workflow);
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertTrue(success);
         Assert.assertTrue(loopTask.getStatus() == Task.Status.FAILED);
