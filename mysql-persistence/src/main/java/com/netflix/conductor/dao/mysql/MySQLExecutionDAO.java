@@ -299,8 +299,14 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
         return workflow;
     }
 
+    /**
+     * @param workflowName name of the workflow
+     * @param version the workflow version
+     * @return list of workflow ids that are in RUNNING state
+     * <em>returns workflows of all versions for the given workflow name</em>
+     */
     @Override
-    public List<String> getRunningWorkflowIds(String workflowName) {
+    public List<String> getRunningWorkflowIds(String workflowName, int version) {
         Preconditions.checkNotNull(workflowName, "workflowName cannot be null");
         String GET_PENDING_WORKFLOW_IDS = "SELECT workflow_id FROM workflow_pending WHERE workflow_type = ?";
 
@@ -308,10 +314,18 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
                 q -> q.addParameter(workflowName).executeScalarList(String.class));
     }
 
+    /**
+     * @param workflowName Name of the workflow
+     * @param version the workflow version
+     * @return list of workflows that are in RUNNING state
+     */
     @Override
-    public List<Workflow> getPendingWorkflowsByType(String workflowName) {
+    public List<Workflow> getPendingWorkflowsByType(String workflowName, int version) {
         Preconditions.checkNotNull(workflowName, "workflowName cannot be null");
-        return getRunningWorkflowIds(workflowName).stream().map(this::getWorkflow).collect(Collectors.toList());
+        return getRunningWorkflowIds(workflowName, version).stream()
+                .map(this::getWorkflow)
+                .filter(workflow -> workflow.getWorkflowVersion() == version)
+                .collect(Collectors.toList());
     }
 
     @Override

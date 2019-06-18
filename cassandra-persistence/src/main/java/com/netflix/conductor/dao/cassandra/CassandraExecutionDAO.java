@@ -393,7 +393,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
      * for Cassandra backed Conductor
      */
     @Override
-    public List<String> getRunningWorkflowIds(String workflowName) {
+    public List<String> getRunningWorkflowIds(String workflowName, int version) {
         throw new UnsupportedOperationException("This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 
@@ -402,7 +402,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
      * for Cassandra backed Conductor
      */
     @Override
-    public List<Workflow> getPendingWorkflowsByType(String workflowName) {
+    public List<Workflow> getPendingWorkflowsByType(String workflowName, int version) {
         throw new UnsupportedOperationException("This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 

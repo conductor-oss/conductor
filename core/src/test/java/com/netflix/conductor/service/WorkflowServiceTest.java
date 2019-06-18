@@ -327,7 +327,7 @@ public class WorkflowServiceTest {
     @Test
     public void testGetRunningWorkflows() {
         workflowService.getRunningWorkflows("test", 1, null, null);
-        verify(mockWorkflowExecutor, times(1)).getRunningWorkflowIds(anyString());
+        verify(mockWorkflowExecutor, times(1)).getRunningWorkflowIds(anyString(), anyInt());
     }
 
     @Test

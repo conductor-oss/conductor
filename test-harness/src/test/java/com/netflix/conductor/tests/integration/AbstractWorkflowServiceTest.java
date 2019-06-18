@@ -46,7 +46,7 @@ import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
@@ -382,7 +382,6 @@ public abstract class AbstractWorkflowServiceTest {
         TaskResult taskResult = new TaskResult(task);
 
         taskResult.setStatus(TaskResult.Status.COMPLETED);
-
 
 
         // Polling for the first task
@@ -2313,11 +2312,13 @@ public abstract class AbstractWorkflowServiceTest {
 
     @After
     public void clearWorkflows() {
-        List<String> workflows = metadataService.getWorkflowDefs().stream()
-                .map(WorkflowDef::getName)
+        List<String> workflowsWithVersion = metadataService.getWorkflowDefs().stream()
+                .map(def -> def.getName() + ":" + def.getVersion())
                 .collect(Collectors.toList());
-        for (String wfName : workflows) {
-            List<String> running = workflowExecutionService.getRunningWorkflows(wfName);
+        for (String workflowWithVersion : workflowsWithVersion) {
+            String workflowName = StringUtils.substringBefore(workflowWithVersion, ":");
+            int version = Integer.parseInt(StringUtils.substringAfter(workflowWithVersion, ":"));
+            List<String> running = workflowExecutionService.getRunningWorkflows(workflowName, version);
             for (String wfid : running) {
                 workflowExecutor.terminateWorkflow(wfid, "cleanup");
             }
@@ -2333,7 +2334,7 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.getWorkflowDef(LONG_RUNNING, 1);
 
         String correlationId = "unit_test_1";
-        Map<String, Object> input = new HashMap<String, Object>();
+        Map<String, Object> input = new HashMap<>();
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
@@ -2369,7 +2370,7 @@ public abstract class AbstractWorkflowServiceTest {
         String taskId = task.getTaskId();
 
         // Check the queue
-        assertEquals(Integer.valueOf(1), workflowExecutionService.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
+        assertEquals(Integer.valueOf(1), workflowExecutionService.getTaskQueueSizes(Collections.singletonList("junit_task_1")).get("junit_task_1"));
 
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
@@ -2554,7 +2555,7 @@ public abstract class AbstractWorkflowServiceTest {
             System.out.println("testConcurrentWorkflowExecutions.wfid=" + wfid);
             assertNotNull(wfid);
 
-            List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
+            List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2, 1);
             assertNotNull(ids);
             assertTrue("found no ids: " + ids, ids.size() > 0);        //if there are concurrent tests running, this would be more than 1
             boolean foundId = false;
@@ -2808,7 +2809,7 @@ public abstract class AbstractWorkflowServiceTest {
         System.out.println("testRetries.wfid=" + wfid);
         assertNotNull(wfid);
 
-        List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
+        List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2, 1);
         assertNotNull(ids);
         assertTrue("found no ids: " + ids, ids.size() > 0);        //if there are concurrent tests running, this would be more than 1
         boolean foundId = false;
@@ -2874,7 +2875,7 @@ public abstract class AbstractWorkflowServiceTest {
         String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
         assertNotNull(wfid);
 
-        List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
+        List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2, 1);
         assertNotNull(ids);
         assertTrue("found no ids: " + ids, ids.size() > 0);        //if there are concurrent tests running, this would be more than 1
         boolean foundId = false;
@@ -3088,7 +3089,7 @@ public abstract class AbstractWorkflowServiceTest {
         String wfid = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
         assertNotNull(wfid);
 
-        List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
+        List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2, 1);
         assertNotNull(ids);
         assertTrue("found no ids: " + ids, ids.size() > 0);        //if there are concurrent tests running, this would be more than 1
         boolean foundId = false;
@@ -3885,7 +3886,7 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
 
         String correlationId = "unit_test_1" + System.nanoTime();
-        Map<String, Object> input = new HashMap<String, Object>();
+        Map<String, Object> input = new HashMap<>();
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
@@ -3893,7 +3894,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         assertNotNull(wfid);
 
-        List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2);
+        List<String> ids = workflowExecutionService.getRunningWorkflows(LINEAR_WORKFLOW_T1_T2, 1);
         assertNotNull(ids);
         assertTrue("found no ids: " + ids, ids.size() > 0);        //if there are concurrent tests running, this would be more than 1
         boolean foundId = false;

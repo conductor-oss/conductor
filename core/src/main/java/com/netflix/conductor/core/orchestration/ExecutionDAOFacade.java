@@ -126,12 +126,12 @@ public class ExecutionDAOFacade {
         return executionDAO.getWorkflowsByType(workflowName, startTime, endTime);
     }
 
-    public List<Workflow> getPendingWorkflowsByName(String workflowName) {
-        return executionDAO.getPendingWorkflowsByType(workflowName);
+    public List<Workflow> getPendingWorkflowsByName(String workflowName, int version) {
+        return executionDAO.getPendingWorkflowsByType(workflowName, version);
     }
 
-    public List<String> getRunningWorkflowIdsByName(String workflowName) {
-        return executionDAO.getRunningWorkflowIds(workflowName);
+    public List<String> getRunningWorkflowIds(String workflowName, int version) {
+        return executionDAO.getRunningWorkflowIds(workflowName, version);
     }
 
     public long getPendingWorkflowCount(String workflowName) {

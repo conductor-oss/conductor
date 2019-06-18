@@ -219,10 +219,15 @@ public class WorkflowServiceImpl implements WorkflowService {
     @Service
     public List<String> getRunningWorkflows(String workflowName, Integer version,
                                             Long startTime, Long endTime) {
-        if (Optional.ofNullable(startTime).orElse(0l) != 0 && Optional.ofNullable(endTime).orElse(0l) != 0) {
+        if (Optional.ofNullable(startTime).orElse(0L) != 0 && Optional.ofNullable(endTime).orElse(0L) != 0) {
             return workflowExecutor.getWorkflows(workflowName, version, startTime, endTime);
         } else {
-            return workflowExecutor.getRunningWorkflowIds(workflowName);
+            version = Optional.ofNullable(version)
+                    .orElseGet(() -> {
+                        WorkflowDef workflowDef = metadataService.getWorkflowDef(workflowName, null);
+                        return workflowDef.getVersion();
+                    });
+            return workflowExecutor.getRunningWorkflowIds(workflowName, version);
         }
     }
 

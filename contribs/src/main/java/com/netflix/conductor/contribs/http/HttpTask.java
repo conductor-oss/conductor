@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-/**
- * 
  */
 package com.netflix.conductor.contribs.http;
 
@@ -131,12 +128,13 @@ public class HttpTask extends WorkflowSystemTask {
 				}
 				task.setStatus(Status.FAILED);
 			}
+			//noinspection ConstantConditions
 			if(response != null) {
 				task.getOutputData().put("response", response.asMap());
 			}
 			
 		}catch(Exception e) {
-			logger.error(String.format("Failed to invoke http task - uri: %s, vipAddress: %s", input.getUri(), input.getVipAddress()), e);
+			logger.error("Failed to invoke http task: {} - uri: {}, vipAddress: {} in workflow: {}", task.getTaskId(), input.getUri(), input.getVipAddress(), task.getWorkflowInstanceId(), e);
 			task.setStatus(Status.FAILED);
 			task.setReasonForIncompletion("Failed to invoke http task due to: " + e.toString());
 			task.getOutputData().put("response", e.toString());
