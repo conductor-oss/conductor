@@ -34,4 +34,5 @@ public interface Lock {
 
     void releaseLock(String lockId);
 
+    void deleteLock(String lockId);
 }

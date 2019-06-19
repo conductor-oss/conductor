@@ -19,20 +19,21 @@ import com.netflix.conductor.bootstrap.ModulesProvider;
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.ElasticSearchRestClientProvider;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
 import com.netflix.conductor.elasticsearch.SystemPropertiesElasticSearchConfiguration;
 import com.netflix.conductor.jetty.server.JettyServer;
 import com.netflix.conductor.tests.utils.TestEnvironment;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import org.elasticsearch.client.RestClient;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Viren
@@ -51,6 +52,7 @@ public class ESRestClientHttpEndToEndTest extends AbstractHttpEndToEndTest {
         TestEnvironment.setup();
         System.setProperty(ElasticSearchConfiguration.EMBEDDED_PORT_PROPERTY_NAME, "9203");
         System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_URL_PROPERTY_NAME, "http://localhost:9203");
+        System.setProperty(Configuration.EXECUTION_LOCK_ENABLED_PROPERTY_NAME, "false");
 
         Injector bootInjector = Guice.createInjector(new BootstrapModule());
         Injector serverInjector = Guice.createInjector(bootInjector.getInstance(ModulesProvider.class).get());
