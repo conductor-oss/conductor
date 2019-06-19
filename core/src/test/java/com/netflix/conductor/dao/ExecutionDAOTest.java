@@ -313,19 +313,19 @@ public abstract class ExecutionDAOTest {
         assertTrue(found.getInput().containsKey("updated"));
         assertEquals(true, found.getInput().get("updated"));
 
-        List<String> running = getExecutionDAO().getRunningWorkflowIds(workflow.getWorkflowName());
+        List<String> running = getExecutionDAO().getRunningWorkflowIds(workflow.getWorkflowName(), workflow.getWorkflowVersion());
         assertNotNull(running);
         assertTrue(running.isEmpty());
 
         workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
         getExecutionDAO().updateWorkflow(workflow);
 
-        running = getExecutionDAO().getRunningWorkflowIds(workflow.getWorkflowName());
+        running = getExecutionDAO().getRunningWorkflowIds(workflow.getWorkflowName(), workflow.getWorkflowVersion());
         assertNotNull(running);
         assertEquals(1, running.size());
         assertEquals(workflow.getWorkflowId(), running.get(0));
 
-        List<Workflow> pending = getExecutionDAO().getPendingWorkflowsByType(workflow.getWorkflowName());
+        List<Workflow> pending = getExecutionDAO().getPendingWorkflowsByType(workflow.getWorkflowName(), workflow.getWorkflowVersion());
         assertNotNull(pending);
         assertEquals(1, pending.size());
         assertEquals(3, pending.get(0).getTasks().size());
@@ -334,7 +334,7 @@ public abstract class ExecutionDAOTest {
 
         workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
         getExecutionDAO().updateWorkflow(workflow);
-        running = getExecutionDAO().getRunningWorkflowIds(workflow.getWorkflowName());
+        running = getExecutionDAO().getRunningWorkflowIds(workflow.getWorkflowName(), workflow.getWorkflowVersion());
         assertNotNull(running);
         assertTrue(running.isEmpty());
 
