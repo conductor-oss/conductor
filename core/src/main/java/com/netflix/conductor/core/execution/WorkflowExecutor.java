@@ -1006,7 +1006,7 @@ public class WorkflowExecutor {
             LOGGER.error("Error deciding workflow: {}", workflowId, e);
             throw e;
         } finally {
-            executionLockService.releaseLock(workflowId);
+            executionLockService.releaseLock(workflowId, workflow.getStatus());
         }
         return false;
     }

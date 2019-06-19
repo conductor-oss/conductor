@@ -15,8 +15,6 @@
  */
 package com.netflix.conductor.tests.integration;
 
-import static org.junit.Assert.assertTrue;
-
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.netflix.conductor.bootstrap.BootstrapModule;
@@ -24,6 +22,7 @@ import com.netflix.conductor.bootstrap.ModulesProvider;
 import com.netflix.conductor.client.grpc.MetadataClient;
 import com.netflix.conductor.client.grpc.TaskClient;
 import com.netflix.conductor.client.grpc.WorkflowClient;
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
 import com.netflix.conductor.grpc.server.GRPCServer;
@@ -31,10 +30,13 @@ import com.netflix.conductor.grpc.server.GRPCServerConfiguration;
 import com.netflix.conductor.grpc.server.GRPCServerProvider;
 import com.netflix.conductor.tests.utils.MySQLTestRunner;
 import com.netflix.conductor.tests.utils.TestEnvironment;
-import java.util.Optional;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.runner.RunWith;
+
+import java.util.Optional;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Viren
@@ -51,7 +53,7 @@ public class MySQLGrpcEndToEndTest extends AbstractGrpcEndToEndTest {
         System.setProperty(GRPCServerConfiguration.PORT_PROPERTY_NAME, "8094");
         System.setProperty(ElasticSearchConfiguration.EMBEDDED_PORT_PROPERTY_NAME, "9204");
         System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_URL_PROPERTY_NAME, "localhost:9304");
-        System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_INDEX_BATCH_SIZE_PROPERTY_NAME, "1");
+        System.setProperty(Configuration.EXECUTION_LOCK_ENABLED_PROPERTY_NAME, "false");
 
         Injector bootInjector = Guice.createInjector(new BootstrapModule());
         Injector serverInjector = Guice.createInjector(bootInjector.getInstance(ModulesProvider.class).get());
