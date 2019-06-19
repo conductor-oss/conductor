@@ -295,40 +295,55 @@
 <p><strong>Example:</strong></p>
 <p>Send a <code>POST</code> request to <code>/workflow</code> with payload like:</p>
 <div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_adhoc_workflow_notregistered&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;workflowDef&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;ownerApp&quot;</span><span class="p">:</span> <span class="s2">&quot;my_owner_app&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;createdBy&quot;</span><span class="p">:</span> <span class="s2">&quot;my_username&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_adhoc_http_test_notregistered&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Test Http Task Workflow&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-        <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-            <span class="p">{</span>
-            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;test_http_task&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;my_test_http_task_registered&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.http_request}&quot;</span>
-            <span class="p">},</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_adhoc_unregistered_workflow&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;workflowDef&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;ownerApp&quot;</span><span class="p">:</span> <span class="s2">&quot;my_owner_app&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;createdBy&quot;</span><span class="p">:</span> <span class="s2">&quot;my_username&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_adhoc_unregistered_workflow&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Test Workflow setup&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;fetch_data&quot;</span><span class="p">,</span>
             <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;HTTP&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;startDelay&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="nt">&quot;optional&quot;</span><span class="p">:</span> <span class="kc">false</span>
+            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;fetch_data&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;connectionTimeOut&quot;</span><span class="p">:</span> <span class="s2">&quot;3600&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;readTimeOut&quot;</span><span class="p">:</span> <span class="s2">&quot;3600&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.uri}&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;GET&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;accept&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;headers&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="p">}</span>
+              <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="nt">&quot;taskDefinition&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;fetch_data&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">3600</span><span class="p">,</span>
+                <span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;TIME_OUT_WF&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="nt">&quot;responseTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">3000</span>
             <span class="p">}</span>
-        <span class="p">],</span>
-        <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-        <span class="nt">&quot;restartable&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-        <span class="nt">&quot;workflowStatusListenerEnabled&quot;</span><span class="p">:</span> <span class="kc">false</span>
-    <span class="p">},</span>
-    <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
-            <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;/health&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;vipAddress&quot;</span><span class="p">:</span> <span class="s2">&quot;cpeworkflow-devint:7004&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;GET&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;contentType&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;appName&quot;</span><span class="p">:</span> <span class="s2">&quot;cpeworkflow&quot;</span>
         <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="nt">&quot;outputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
     <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;http://www.google.com&quot;</span>
+  <span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
+
+
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If the <code>taskDefinition</code> is defined with Metadata API, it doesn't have to be added in above dynamic workflow definition.</p>
+</div>
               
             </div>
           </div>

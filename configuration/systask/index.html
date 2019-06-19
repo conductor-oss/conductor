@@ -131,6 +131,9 @@
     <li class="toctree-l3"><a href="#terminate-task">Terminate Task</a></li>
     
 
+    <li class="toctree-l3"><a href="#kafka-publish-task">Kafka Publish Task</a></li>
+    
+
     </ul>
                 </li>
                 <li class="">
@@ -505,15 +508,19 @@ The input given to the event task is made available to the published message as 
   <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SUB_WORKFLOW&quot;</span><span class="p">,</span>
   <span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span> <span class="p">{</span>
     <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;deployment_workflow&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span>
+    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="nt">&quot;taskToDomain&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;*&quot;</span><span class="p">:</span> <span class="s2">&quot;mydomain&quot;</span>
+     <span class="p">}</span>
   <span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 
 
 <p>When executed, a <code>deployment_workflow</code> is executed with two input parameters requestId and <em>file</em>.  The task is marked as completed upon the completion of the spawned workflow.  If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. </p>
+<p><code>subWorkflowParam</code> can optionally accept <code>taskToDomain</code> map, which would schedule the sub workflow's tasks per given mappings. See <a href="configuration/taskdomains/">Task Domains</a> for instructions to configure taskDomains.</p>
 <h2 id="fork">Fork<a class="headerlink" href="#fork" title="Permanent link">&para;</a></h2>
-<p>Fork is used to schedule parallel set of tasks.</p>
+<p>Fork is used to schedule parallel set of tasks, specified by <code>"type":"FORK_JOIN"</code>.</p>
 <p><strong>Parameters:</strong></p>
 <table>
 <thead>
@@ -530,34 +537,57 @@ The input given to the event task is made available to the published message as 
 </tbody>
 </table>
 <p><strong>Example</strong></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;forkTasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">[</span>
-      <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task11&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t11&quot;</span>
-      <span class="p">},</span>
-      <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task12&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t12&quot;</span>
-      <span class="p">}</span>
-    <span class="p">],</span>
-    <span class="p">[</span>
-      <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task21&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t21&quot;</span>
-      <span class="p">},</span>
-      <span class="p">{</span>
-        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task22&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;t22&quot;</span>
-      <span class="p">}</span>
-    <span class="p">]</span>
-  <span class="p">]</span>
-<span class="p">}</span>
+<div class="codehilite"><pre><span></span><span class="p">[</span>
+    <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;fork_join&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;forkx&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;FORK_JOIN&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;forkTasks&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="p">[</span>
+            <span class="p">{</span>
+              <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task_10&quot;</span><span class="p">,</span>
+              <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_A&quot;</span><span class="p">,</span>
+              <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+              <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task_11&quot;</span><span class="p">,</span>
+              <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_B&quot;</span><span class="p">,</span>
+              <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+            <span class="p">}</span>
+          <span class="p">],</span>
+          <span class="p">[</span>
+            <span class="p">{</span>
+              <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task_21&quot;</span><span class="p">,</span>
+              <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_Y&quot;</span><span class="p">,</span>
+              <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+            <span class="p">},</span>
+            <span class="p">{</span>
+              <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;task_22&quot;</span><span class="p">,</span>
+              <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_Z&quot;</span><span class="p">,</span>
+              <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
+            <span class="p">}</span>
+          <span class="p">]</span>
+        <span class="p">]</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;join&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;join2&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;JOIN&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;joinOn&quot;</span><span class="p">:</span> <span class="p">[</span>
+          <span class="s2">&quot;task_B&quot;</span><span class="p">,</span>
+          <span class="s2">&quot;task_Z&quot;</span>
+        <span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">]</span>
 </pre></div>
 
 
-<p>When executed, <em>task11</em> and <em>task21</em> are scheduled to be executed at the same time.</p>
+<p>When executed, <em>task_A</em> and <em>task_Y</em> are scheduled to be executed at the same time.</p>
+<div class="admonition note">
+<p class="admonition-title">Fork and Join</p>
+<p><strong>A Join task MUST follow FORK_JOIN</strong></p>
+<p>Workflow definition MUST include a Join task definition followed by FORK_JOIN task. Forked task can be a Sub Workflow, allowing for more complex execution flows.</p>
+</div>
 <h2 id="dynamic-fork">Dynamic Fork<a class="headerlink" href="#dynamic-fork" title="Permanent link">&para;</a></h2>
 <p>A dynamic fork is same as FORK_JOIN task.  Except that the list of tasks to be forked is provided at runtime using task's input.  Useful when number of tasks to be forked is not fixed and varies based on the input.</p>
 <table>
@@ -626,7 +656,7 @@ The input given to the event task is made available to the published message as 
 
 
 <p>When executed, the dynamic fork task will schedule two parallel task of type "encode_task" with reference names "forkedTask1" and "forkedTask2" and inputs as specified by _ dynamicTasksInputJSON_</p>
-<div class="admonition warning">
+<div class="admonition note">
 <p class="admonition-title">Dynamic Fork and Join</p>
 <p><strong>A Join task MUST follow FORK_JOIN_DYNAMIC</strong></p>
 <p>Workflow definition MUST include a Join task definition followed by FORK_JOIN_DYNAMIC task.  However, given the dynamic nature of the task, no joinOn parameters are required for this Join.  The join will wait for ALL the forked branches to complete before completing.</p>
@@ -843,6 +873,69 @@ None required.</p>
   <span class="nt">&quot;optional&quot;</span><span class="p">:</span> <span class="kc">false</span>
 <span class="p">}</span>
 </pre></div>
+
+
+<h2 id="kafka-publish-task">Kafka Publish Task<a class="headerlink" href="#kafka-publish-task" title="Permanent link">&para;</a></h2>
+<p>A kafka Publish task is used to push messages to another microservice via kafka</p>
+<p><strong>Parameters:</strong></p>
+<p>The task expects an input parameter named <code>kafka_request</code> as part of the task's input with the following details:</p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>bootStrapServers</td>
+<td>bootStrapServers for connecting to given kafka.</td>
+</tr>
+<tr>
+<td>key</td>
+<td>Key to be published</td>
+</tr>
+<tr>
+<td>keySerializer</td>
+<td>Serializer used for serializing the key published to kafka.  One of the following can be set : <br/> 1. org.apache.kafka.common.serialization.IntegerSerializer<br/>2. org.apache.kafka.common.serialization.LongSerializer<br/>3. org.apache.kafka.common.serialization.StringSerializer. <br/>Default is String serializer</td>
+</tr>
+<tr>
+<td>value</td>
+<td>Value published to kafka</td>
+</tr>
+<tr>
+<td>requestTimeoutMs</td>
+<td>Request timeout while publishing to kafka. If this value is not given the value is read from the property <code>kafka.publish.request.timeout.ms</code>. If the property is not set the value defaults to 100</td>
+</tr>
+<tr>
+<td>headers</td>
+<td>A map of additional kafka headers to be sent along with the request.</td>
+</tr>
+<tr>
+<td>topic</td>
+<td>Topic to publish</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Kafka Task Output</strong></p>
+<p>Task status transitions to COMPLETED</p>
+<p><strong>Example</strong></p>
+<p>Task Input payload sample</p>
+<div class="codehilite"><pre><span></span><span class="s2">&quot;kafka_request&quot;</span><span class="err">:</span> <span class="p">{</span>
+            <span class="nt">&quot;topic&quot;</span><span class="p">:</span> <span class="s2">&quot;userTopic&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;Message to publish&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;bootStrapServers&quot;</span><span class="p">:</span><span class="s2">&quot;localhost:9092&quot;</span><span class="p">,</span>
+             <span class="nt">&quot;headers&quot;</span> <span class="p">:{</span>
+              <span class="nt">&quot;x-Auth&quot;</span><span class="p">:</span><span class="s2">&quot;Auth-key&quot;</span>
+             <span class="p">},</span>
+             <span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="s2">&quot;123&quot;</span><span class="p">,</span>
+             <span class="nt">&quot;keySerializer&quot;</span><span class="p">:</span><span class="s2">&quot;org.apache.kafka.common.serialization.IntegerSerializer&quot;</span>
+          <span class="p">}</span>
+<span class="err">}</span>
+</pre></div>
+
+
+<p>The task is marked as <code>FAILED</code> if the message could not be published to the Kafka queue. </p>
               
             </div>
           </div>
