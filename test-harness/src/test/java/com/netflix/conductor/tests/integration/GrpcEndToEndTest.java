@@ -15,8 +15,6 @@
  */
 package com.netflix.conductor.tests.integration;
 
-import static org.junit.Assert.assertTrue;
-
 import com.google.inject.Guice;
 import com.google.inject.Injector;
 import com.netflix.conductor.bootstrap.BootstrapModule;
@@ -30,11 +28,13 @@ import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
 import com.netflix.conductor.grpc.server.GRPCServer;
 import com.netflix.conductor.grpc.server.GRPCServerConfiguration;
 import com.netflix.conductor.grpc.server.GRPCServerProvider;
-import com.netflix.conductor.mysql.MySQLConfiguration;
 import com.netflix.conductor.tests.utils.TestEnvironment;
-import java.util.Optional;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+
+import java.util.Optional;
+
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author Viren
@@ -50,6 +50,7 @@ public class GrpcEndToEndTest extends AbstractGrpcEndToEndTest {
         System.setProperty(GRPCServerConfiguration.PORT_PROPERTY_NAME, "8092");
         System.setProperty(ElasticSearchConfiguration.EMBEDDED_PORT_PROPERTY_NAME, "9202");
         System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_URL_PROPERTY_NAME, "localhost:9302");
+        System.setProperty(Configuration.EXECUTION_LOCK_ENABLED_PROPERTY_NAME, "false");
 
         Injector bootInjector = Guice.createInjector(new BootstrapModule());
         Injector serverInjector = Guice.createInjector(bootInjector.getInstance(ModulesProvider.class).get());
