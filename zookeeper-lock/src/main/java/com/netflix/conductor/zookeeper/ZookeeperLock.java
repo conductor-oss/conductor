@@ -77,9 +77,21 @@ public class ZookeeperLock implements Lock {
             throw new IllegalArgumentException("lockId cannot be NULL or empty: lockId=" + lockId);
         }
         try {
-            zkLocks.get(lockId).release();
+            InterProcessMutex lock = zkLocks.getIfPresent(lockId);
+            if (lock != null) {
+                lock.release();
+            }
         } catch (Exception e) {
             LOGGER.debug("Failed in releaseLock: ", e);
+        }
+    }
+
+    public void deleteLock(String lockId) {
+        try {
+            LOGGER.debug("Deleting lock {}", zkPath.concat(lockId));
+            client.delete().inBackground().forPath(zkPath.concat(lockId));
+        } catch (Exception e) {
+            LOGGER.debug("Failed to removeLock: ", e);
         }
     }
 }
