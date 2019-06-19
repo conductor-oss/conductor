@@ -1,5 +1,6 @@
 package com.netflix.conductor.service;
 
+import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.utils.Lock;
 import com.netflix.conductor.metrics.Monitors;
@@ -25,7 +26,7 @@ public class ExecutionLockService {
 
     public boolean acquireLock(String lockId) {
         if (config.enableWorkflowExecutionLock()) {
-            Lock  lock = (Lock)lockProvider.get();
+            Lock lock = lockProvider.get();
             if (!lock.acquireLock(lockId, 2, TimeUnit.MILLISECONDS)) {
                 LOGGER.info("Thread {} failed to acquire lock to lockId {}.", Thread.currentThread().getId(), lockId);
                 Monitors.recordAcquireLockUnsuccessful(lockId);
@@ -42,7 +43,7 @@ public class ExecutionLockService {
      */
     public void waitForLock(String lockId) {
         if (config.enableWorkflowExecutionLock()) {
-            Lock  lock = (Lock)lockProvider.get();
+            Lock  lock = lockProvider.get();
             lock.acquireLock(lockId);
             LOGGER.debug("Thread {} acquired lock to lockId {}.", Thread.currentThread().getId(), lockId);
         }
@@ -50,9 +51,20 @@ public class ExecutionLockService {
 
     public void releaseLock(String lockId) {
         if (config.enableWorkflowExecutionLock()) {
-            Lock  lock = (Lock)lockProvider.get();
+            Lock  lock = lockProvider.get();
             lock.releaseLock(lockId);
             LOGGER.debug("Thread {} released lock to lockId {}.", Thread.currentThread().getId(), lockId);
+        }
+    }
+
+    public void releaseLock(String lockId, Workflow.WorkflowStatus status) {
+        if (config.enableWorkflowExecutionLock()) {
+            Lock  lock = lockProvider.get();
+            lock.releaseLock(lockId);
+//            if (status.isTerminal()) {
+//                lock.deleteLock(lockId);
+//            }
+//            LOGGER.debug("Thread {} deleted lockId {}.", Thread.currentThread().getId(), lockId);
         }
     }
 }
