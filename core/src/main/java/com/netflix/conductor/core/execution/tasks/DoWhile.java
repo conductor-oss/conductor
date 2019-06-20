@@ -30,7 +30,6 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
 import javax.script.ScriptException;
 import java.util.*;
 
@@ -42,7 +41,6 @@ public class DoWhile extends WorkflowSystemTask {
 
 	private ParametersUtils parametersUtils;
 
-	@Inject
 	public DoWhile() {
 		super("DO_WHILE");
 		this.parametersUtils = new ParametersUtils();
@@ -126,15 +124,18 @@ public class DoWhile extends WorkflowSystemTask {
 	boolean markLoopTaskSuccess(Task task) {
 		logger.debug("taskid {} took {} iterations to complete",task.getTaskId(), task.getIteration() + 1);
 		task.setStatus(Status.COMPLETED);
-		task.setIteration(task.getIteration() + 1);
 		return true;
 	}
 
 	@VisibleForTesting
 	boolean getEvaluatedCondition(Workflow workflow, Task task, WorkflowExecutor workflowExecutor) throws ScriptException {
-		TaskDef taskDefinition = workflowExecutor.getTaskDefination(task);
+		TaskDef taskDefinition = workflowExecutor.getTaskDefinition(task);
 		Map<String, Object> taskInput = parametersUtils.getTaskInputV2(task.getWorkflowTask().getInputParameters(), workflow, task.getTaskId(), taskDefinition);
 		taskInput.put(task.getReferenceTaskName(), task.getOutputData());
+		for (WorkflowTask workflowTask : task.getWorkflowTask().getLoopOver()) {
+			Task loopOverTask = workflow.getTaskByRefName(workflowTask.getTaskReferenceName());
+			taskInput.put(loopOverTask.getReferenceTaskName(), loopOverTask.getOutputData());
+		}
 		String condition = task.getWorkflowTask().getLoopCondition();
 		boolean shouldContinue = false;
 		if (condition != null) {

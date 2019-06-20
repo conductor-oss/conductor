@@ -1452,7 +1452,7 @@ public class WorkflowExecutor {
         scheduleTask(workflow, tasks);
     }
 
-    public TaskDef getTaskDefination(Task task) {
+    public TaskDef getTaskDefinition(Task task) {
         return task.getTaskDefinition()
                 .orElseGet(() -> Optional.ofNullable(metadataDAO.getTaskDef(task.getWorkflowTask().getName()))
                         .orElseThrow(() -> {

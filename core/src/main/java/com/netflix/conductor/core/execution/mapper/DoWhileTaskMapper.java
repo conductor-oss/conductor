@@ -77,7 +77,6 @@ public class DoWhileTaskMapper implements TaskMapper {
                             String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
                             return new TerminateWorkflowException(reason);
                         }));
-        Map<String, Object> input = parametersUtils.getTaskInputV2(taskToSchedule.getInputParameters(), workflowInstance, taskId, taskDefinition);
 
         Task loopTask = new Task();
         loopTask.setTaskType(SystemTaskType.DO_WHILE.name());
@@ -88,7 +87,7 @@ public class DoWhileTaskMapper implements TaskMapper {
         loopTask.setWorkflowType(workflowInstance.getWorkflowName());
         loopTask.setScheduledTime(System.currentTimeMillis());
         loopTask.setTaskId(taskId);
-        loopTask.setInputData(input);
+        loopTask.setIteration(1);
         loopTask.setStatus(Task.Status.IN_PROGRESS);
         loopTask.setWorkflowTask(taskToSchedule);
         loopTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
