@@ -16,7 +16,6 @@ const getTotalHits = data => get(data, 'result.totalHits', 0);
 
 function* doFetchSearchResults() {
   const {query, entirely, types, states, cutoff, start} = yield select(state => state.search);
-
   const queryParts = [];
 
   if (!isEmpty(types)) {
@@ -35,7 +34,7 @@ function* doFetchSearchResults() {
   try {
     // this is possible a task ID
     if (query.match(UUID_RE)) {
-      const taskSearchUrl = `/api/wfe/search-by-task/${query}?q=${fullQuery}&h=${cutoff}&start=${start}`;
+      const taskSearchUrl = `/api/wfe/search-by-task/${query}?q=${fullQuery}&h=${cutoff}&start=${start}&entire=${entirely ? "t" : "f"}`;
 
       const [allResult, byTaskResult] = yield all([
         call(http.get, searchUrl),
