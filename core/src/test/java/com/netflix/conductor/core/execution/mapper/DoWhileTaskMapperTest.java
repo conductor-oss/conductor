@@ -7,8 +7,10 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.DeciderService;
+import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.utils.IDGenerator;
+import com.netflix.conductor.dao.MetadataDAO;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -29,6 +31,8 @@ public class DoWhileTaskMapperTest {
     private WorkflowTask workflowTask2;
     private TaskMapperContext taskMapperContext;
     private WorkflowTask taskToSchedule;
+    private MetadataDAO metadataDAO;
+    private ParametersUtils parametersUtils;
 
     @Before
     public void setup() {
@@ -55,6 +59,8 @@ public class DoWhileTaskMapperTest {
         workflow.setWorkflowDefinition(workflowDef);
 
         deciderService = Mockito.mock(DeciderService.class);
+        parametersUtils = Mockito.mock(ParametersUtils.class);
+        metadataDAO = Mockito.mock(MetadataDAO.class);
 
         taskMapperContext = TaskMapperContext.newBuilder()
                 .withWorkflowDefinition(workflowDef)
@@ -73,7 +79,7 @@ public class DoWhileTaskMapperTest {
         Mockito.doReturn(Arrays.asList(task1)).when(deciderService).getTasksToBeScheduled(workflow, workflowTask1, 0);
         Mockito.doReturn(Arrays.asList(task2)).when(deciderService).getTasksToBeScheduled(workflow, workflowTask2, 0);
 
-        List<Task> mappedTasks = new DoWhileTaskMapper().getMappedTasks(taskMapperContext);
+        List<Task> mappedTasks = new DoWhileTaskMapper(parametersUtils, metadataDAO).getMappedTasks(taskMapperContext);
 
         assertNotNull(mappedTasks);
         assertEquals(mappedTasks.size(), 3);
@@ -92,7 +98,7 @@ public class DoWhileTaskMapperTest {
         task.setStatus(Task.Status.COMPLETED);
         workflow.setTasks(Arrays.asList(task));
 
-        List<Task> mappedTasks = new DoWhileTaskMapper().getMappedTasks(taskMapperContext);
+        List<Task> mappedTasks = new DoWhileTaskMapper(parametersUtils, metadataDAO).getMappedTasks(taskMapperContext);
 
         assertNotNull(mappedTasks);
         assertEquals(mappedTasks.size(), 0);
