@@ -1,11 +1,13 @@
 package com.netflix.conductor.core.execution.tasks;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.DeciderService;
+import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.WorkflowStatusListener;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
@@ -19,7 +21,11 @@ import org.junit.Test;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.spy;
 
 /**
@@ -45,14 +51,16 @@ public class DoWhileTest {
     ExecutionDAOFacade executionDAOFacade;
     ExternalPayloadStorageUtils externalPayloadStorageUtils;
     Configuration config;
+    ParametersUtils parametersUtils;
 
 
     @Before
     public void setup() {
-        workflow = new Workflow();
+        workflow = Mockito.mock(Workflow.class);
         deciderService = Mockito.mock(DeciderService.class);
         metadataDAO = Mockito.mock(MetadataDAO.class);
         queueDAO = Mockito.mock(QueueDAO.class);
+        parametersUtils = Mockito.mock(ParametersUtils.class);
         metadataMapperService = Mockito.mock(MetadataMapperService.class);
         workflowStatusListener = Mockito.mock(WorkflowStatusListener.class);
         executionDAOFacade = Mockito.mock(ExecutionDAOFacade.class);
@@ -62,8 +70,10 @@ public class DoWhileTest {
                 workflowStatusListener, executionDAOFacade, externalPayloadStorageUtils, config));
         loopWorkflowTask1 = new WorkflowTask();
         loopWorkflowTask1.setTaskReferenceName("task1");
+        loopWorkflowTask1.setName("task1");
         loopWorkflowTask2 = new WorkflowTask();
         loopWorkflowTask2.setTaskReferenceName("task2");
+        loopWorkflowTask2.setName("task2");
         task1 = new Task();
         task1.setWorkflowTask(loopWorkflowTask1);
         task1.setReferenceTaskName("task1");
@@ -79,11 +89,16 @@ public class DoWhileTest {
         loopTask.setTaskType(TaskType.DO_WHILE.name());
         loopWorkflowTask = new WorkflowTask();
         loopWorkflowTask.setTaskReferenceName("loopTask");
+        loopWorkflowTask.setName("loopTask");
         loopWorkflowTask.setLoopCondition("if ($.loopTask['iteration'] < 1) { false; } else { true; }");
         loopWorkflowTask.setLoopOver(Arrays.asList(task1.getWorkflowTask(), task2.getWorkflowTask()));
         loopTask.setWorkflowTask(loopWorkflowTask);
         doWhile = new DoWhile();
         workflow.setTasks(Arrays.asList(task1, task2, loopTask));
+        Mockito.doReturn(new TaskDef()).when(provider).getTaskDefinition(loopTask);
+        Mockito.doReturn(task1).when(workflow).getTaskByRefName(task1.getReferenceTaskName());
+        Mockito.doReturn(task2).when(workflow).getTaskByRefName(task2.getReferenceTaskName());
+        Mockito.doReturn(new HashMap<>()).when(parametersUtils).getTaskInputV2(isA(Map.class), isA(Workflow.class), isA(String.class), isA(TaskDef.class));
     }
 
 
