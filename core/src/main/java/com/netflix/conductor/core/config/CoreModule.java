@@ -127,8 +127,8 @@ public class CoreModule extends AbstractModule {
     @StringMapKey(TASK_TYPE_DO_WHILE)
     @Singleton
     @Named(TASK_MAPPERS_QUALIFIER)
-    public TaskMapper getDoWhileTaskMapper() {
-        return new DoWhileTaskMapper();
+    public TaskMapper getDoWhileTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+        return new DoWhileTaskMapper(parametersUtils, metadataDAO);
     }
 
     @ProvidesIntoMap

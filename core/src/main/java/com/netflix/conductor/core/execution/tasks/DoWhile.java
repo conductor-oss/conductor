@@ -21,13 +21,16 @@ package com.netflix.conductor.core.execution.tasks;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.ScriptEvaluator;
+import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import javax.script.ScriptException;
 import java.util.*;
 
@@ -37,8 +40,12 @@ import java.util.*;
  */
 public class DoWhile extends WorkflowSystemTask {
 
+	private ParametersUtils parametersUtils;
+
+	@Inject
 	public DoWhile() {
 		super("DO_WHILE");
+		this.parametersUtils = new ParametersUtils();
 	}
 
 	Logger logger = LoggerFactory.getLogger(DoWhile.class);
@@ -85,7 +92,7 @@ public class DoWhile extends WorkflowSystemTask {
 		}
 		boolean shouldContinue;
 		try {
-			shouldContinue = getEvaluatedCondition(task);
+			shouldContinue = getEvaluatedCondition(workflow, task, workflowExecutor);
 			logger.debug("taskid {} condition evaluated to {}", task.getTaskId(), shouldContinue);
 			if (shouldContinue) {
 				return scheduleLoopTasks(task, workflow, workflowExecutor);
@@ -119,13 +126,14 @@ public class DoWhile extends WorkflowSystemTask {
 	boolean markLoopTaskSuccess(Task task) {
 		logger.debug("taskid {} took {} iterations to complete",task.getTaskId(), task.getIteration() + 1);
 		task.setStatus(Status.COMPLETED);
-
+		task.setIteration(task.getIteration() + 1);
 		return true;
 	}
 
 	@VisibleForTesting
-	boolean getEvaluatedCondition(Task task) throws ScriptException {
-		Map<String, Object> taskInput = new HashMap<>();
+	boolean getEvaluatedCondition(Workflow workflow, Task task, WorkflowExecutor workflowExecutor) throws ScriptException {
+		TaskDef taskDefinition = workflowExecutor.getTaskDefination(task);
+		Map<String, Object> taskInput = parametersUtils.getTaskInputV2(task.getWorkflowTask().getInputParameters(), workflow, task.getTaskId(), taskDefinition);
 		taskInput.put(task.getReferenceTaskName(), task.getOutputData());
 		String condition = task.getWorkflowTask().getLoopCondition();
 		boolean shouldContinue = false;

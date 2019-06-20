@@ -17,17 +17,19 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.SystemTaskType;
+import com.netflix.conductor.core.execution.TerminateWorkflowException;
+import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DO_WHILE}
@@ -36,6 +38,14 @@ import java.util.List;
 public class DoWhileTaskMapper implements TaskMapper {
 
     public static final Logger logger = LoggerFactory.getLogger(DoWhileTaskMapper.class);
+
+    private final MetadataDAO metadataDAO;
+    private final ParametersUtils parametersUtils;
+
+    public DoWhileTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+        this.parametersUtils = parametersUtils;
+        this.metadataDAO = metadataDAO;
+    }
 
     /**
      * This method maps {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DO_WHILE} to a {@link Task} of type {@link SystemTaskType#DO_WHILE}
@@ -61,6 +71,13 @@ public class DoWhileTaskMapper implements TaskMapper {
         String taskId = taskMapperContext.getTaskId();
         List<Task> tasksToBeScheduled = new ArrayList<>();
         int retryCount = taskMapperContext.getRetryCount();
+        TaskDef taskDefinition = Optional.ofNullable(taskMapperContext.getTaskDefinition())
+                .orElseGet(() -> Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
+                        .orElseThrow(() -> {
+                            String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
+                            return new TerminateWorkflowException(reason);
+                        }));
+        Map<String, Object> input = parametersUtils.getTaskInputV2(taskToSchedule.getInputParameters(), workflowInstance, taskId, taskDefinition);
 
         Task loopTask = new Task();
         loopTask.setTaskType(SystemTaskType.DO_WHILE.name());
@@ -71,8 +88,13 @@ public class DoWhileTaskMapper implements TaskMapper {
         loopTask.setWorkflowType(workflowInstance.getWorkflowName());
         loopTask.setScheduledTime(System.currentTimeMillis());
         loopTask.setTaskId(taskId);
+        loopTask.setInputData(input);
         loopTask.setStatus(Task.Status.IN_PROGRESS);
         loopTask.setWorkflowTask(taskToSchedule);
+        loopTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
+        loopTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
+        loopTask.setIsolationGroupId(taskDefinition.getIsolationGroupId());
+        loopTask.setDomain(taskDefinition.getDomain());
 
         tasksToBeScheduled.add(loopTask);
         List<WorkflowTask>loopOverTasks = taskToSchedule.getLoopOver();

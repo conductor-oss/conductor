@@ -17,6 +17,7 @@ import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
@@ -1449,5 +1450,14 @@ public class WorkflowExecutor {
         //Get all the loopOver tasks and schedule it.
         List<Task> tasks = deciderService.getTasksToBeScheduled(workflow, loopTask.getWorkflowTask(), loopTask.getRetryCount());
         scheduleTask(workflow, tasks);
+    }
+
+    public TaskDef getTaskDefination(Task task) {
+        return task.getTaskDefinition()
+                .orElseGet(() -> Optional.ofNullable(metadataDAO.getTaskDef(task.getWorkflowTask().getName()))
+                        .orElseThrow(() -> {
+                            String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", task.getWorkflowTask().getName());
+                            return new TerminateWorkflowException(reason);
+                        }));
     }
 }
