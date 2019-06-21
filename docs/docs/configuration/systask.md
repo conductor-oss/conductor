@@ -556,7 +556,9 @@ The task is marked as ```FAILED``` if the message could not be published to the 
 
 ## Do While Task
 
-Do While Task allows tasks to be executed in loop until given condition become false.
+Do While Task allows tasks to be executed in loop until given condition become false. Condition is evalued using nasshorn javascript engine.
+Task history will be removed from execution once new iteration is scheduled.
+Iteration, loopover task's output or input parameters can be used to form condition.
 
 **Parameters:**
 
@@ -570,9 +572,13 @@ Do While Task allows tasks to be executed in loop until given condition become f
 ```json
 {
             "name": "Loop Task",
-            "taskReferenceName": "Loop Task",
+            "taskReferenceName": "LoopTask",
             "type": "DO_WHILE",
-            "loopCondition": "if ($.second_task['response']['body'] + $.first_task['response']['body'] > 10) { false; } else { true; }",
+            "inputParameters": {
+              "value": "${workflow.input.value}"
+            },
+            "loopCondition": "if ( ($.LoopTask['iteration'] < 5 ) || ( $.first_task['response']['body'] > 10) ||
+                            ($.value < 10)) { false; } else { true; }",
             "loopOver": [
                 {
                     "name": "first_task",
