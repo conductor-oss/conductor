@@ -161,11 +161,11 @@ public abstract class ClientBase {
         return null;
     }
 
-    <T> T getForEntity(String url, Object[] queryParams, Class<T> responseType, Object... uriVariables) {
+    protected <T> T getForEntity(String url, Object[] queryParams, Class<T> responseType, Object... uriVariables) {
         return getForEntity(url, queryParams, response -> response.getEntity(responseType), uriVariables);
     }
 
-    <T> T getForEntity(String url, Object[] queryParams, GenericType<T> responseType, Object... uriVariables) {
+    protected <T> T getForEntity(String url, Object[] queryParams, GenericType<T> responseType, Object... uriVariables) {
         return getForEntity(url, queryParams, response -> response.getEntity(responseType), uriVariables);
     }
 
