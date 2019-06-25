@@ -557,7 +557,9 @@ The task is marked as ```FAILED``` if the message could not be published to the 
 ## Do While Task
 
 Do While Task allows tasks to be executed in loop until given condition become false. Condition is evalued using nasshorn javascript engine.
-Task history will be removed from execution once new iteration is scheduled.
+LoopOver Task history will be removed from execution once new iteration is scheduled.
+Taskname which contains arithmetic operator must not be used in loopCondition.
+Do while task does NOT support domain or isolation group execution
 Iteration, loopover task's output or input parameters can be used to form condition.
 
 **Parameters:**
