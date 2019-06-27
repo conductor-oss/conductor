@@ -3,8 +3,8 @@ export const FETCH_SEARCH_RESULTS = "FETCH_SEARCH_RESULTS";
 export const RECEIVE_SEARCH_RESULTS = "RECEIVE_SEARCH_RESULTS";
 export const FAIL_SEARCH_RESULTS = "FAIL_SEARCH_RESULTS";
 
-export function changeSearch({query, entirely, types, states, cutoff, start}) {
-  return {type: CHANGE_SEARCH, query, entirely, types, states, cutoff, start};
+export function changeSearch({query, entirely, types, states, cutoff, start, version}) {
+  return {type: CHANGE_SEARCH, query, entirely, types, states, cutoff, start, version};
 }
 
 export function fetchSearchResults() {
