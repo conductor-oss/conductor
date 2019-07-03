@@ -16,9 +16,9 @@ const initialState = {
 export default function search(state = initialState, action) {
   switch (action.type) {
     case CHANGE_SEARCH: {
-      const {query = '', entirely = false, types = [], states = [], cutoff = '', start = 0} = action;
+      const {query = '', entirely = false, types = [], states = [], cutoff = '', start = 0, version = ''} = action;
 
-      return {...state, query, entirely, types, states, cutoff, start: Math.max(0, start)};
+      return {...state, query, entirely, types, states, cutoff, version, start: Math.max(0, start)};
     }
 
     case FETCH_SEARCH_RESULTS:

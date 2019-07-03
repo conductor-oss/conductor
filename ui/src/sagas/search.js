@@ -15,7 +15,7 @@ const getHits = data => get(data, 'result.hits', []);
 const getTotalHits = data => get(data, 'result.totalHits', 0);
 
 function* doFetchSearchResults() {
-  const {query, entirely, types, states, cutoff, start} = yield select(state => state.search);
+  const {query, entirely, types, states, cutoff, start, version} = yield select(state => state.search);
 
   const queryParts = [];
 
@@ -26,6 +26,10 @@ function* doFetchSearchResults() {
   if (!isEmpty(states)) {
     queryParts.push(`status IN (${toString(states)})`);
   }
+
+  if(!isEmpty(version)){
+    queryParts.push(`version=${toString(version)}`)
+  } 
 
   const fullQuery = join(queryParts, ' AND ');
   const freeText = (!isEmpty(query) && entirely) ? `"${query}"` : query;

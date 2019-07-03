@@ -22,10 +22,11 @@ export function getSearchQuery(query) {
   const entirely = toString(get(query, "f", "true")) === "true";
   const types = filter(split(get(query, "workflowTypes", ""), ","), negate(isEmpty));
   const states = filter(split(get(query, "status", ""), ","), negate(isEmpty));
+  const version = filter(split(get(query, "version", ""), ","), negate(isEmpty));
   const cutoff = get(query, "h", "");
   const start = parseInt(get(query, "start", "0"));
 
-  return {query: searchQuery, entirely, types, states, cutoff, start};
+  return {query: searchQuery, entirely, types, states, cutoff, start, version};
 }
 
 class WorkflowSearch extends Component {
@@ -38,6 +39,7 @@ class WorkflowSearch extends Component {
     this.handleStatesChange = this.handleStatesChange.bind(this);
     this.handleCutoffChange = this.handleCutoffChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.handleVersionChange = this.handleVersionChange.bind(this);
 
     // pull out variables from the location onLoad
     const {location: {query}, changeSearch, getWorkflowDefs, fetchSearchResults} = props;
@@ -87,6 +89,16 @@ class WorkflowSearch extends Component {
     changeSearch({...search, cutoff: value});
   }
 
+  handleVersionChange({target: {value}}){
+    const {search, changeSearch} = this.props;
+    var versionRegex = /^[0-9]*$/
+    if(versionRegex.test(value || "")){
+      changeSearch({...search, version: value});
+    } else {
+      changeSearch({...search, version: ""});
+    }
+  }
+
   handleSubmit(e)  {
     const {history, search, changeSearch, fetchSearchResults} = this.props;
 
@@ -94,26 +106,26 @@ class WorkflowSearch extends Component {
 
     const types = encodeURIComponent(toString(search.types));
     const states = toString(search.states);
+    const version = toString(search.version);
 
     // always reset start to 0 for a new search
-
     changeSearch({...search, start: 0});
 
     const newUrl = `/workflow?q=${search.query}&f=${search.entirely}` +
-        `&h=${search.cutoff}&workflowTypes=${types}&status=${states}&start=0`;
+        `&h=${search.cutoff}&workflowTypes=${types}&status=${states}&start=0&version=${version}`;
 
     history.pushState(null, newUrl);
     fetchSearchResults();
   }
 
   render() {
-    const {search: {query, entirely, types, states, cutoff, isFetching}, workflows} = this.props;
+    const {search: {query, entirely, types, states, cutoff, isFetching, version}, workflows} = this.props;
 
     return <Panel header="Filter Workflows (Press Enter to search)">
         <Grid fluid>
           <form className="commentForm" onSubmit={this.handleSubmit}>
           <Row className="show-grid">
-            <Col md={4}>
+            <Col md={3}>
               <Input type="input" placeholder="Search"
                   value={query} onChange={this.handleQueryChange}
               />
@@ -132,9 +144,16 @@ class WorkflowSearch extends Component {
               Filter by Workflow Type
             </label>
             </Col>
+            <Col md={1}>
+              <Input type="input" placeholder="Version"
+                  value={version} onChange={this.handleVersionChange}
+              />
+              &nbsp;<i className="fa fa-angle-up fa-1x" />&nbsp;&nbsp;
+              <label className="small nobold">Filter by Version</label>
+            </Col>
             <Col md={2}>
               <Typeahead ref="status" onChange={this.handleStatesChange} options={statusList}
-                         placeholder="Filter by status" selected={states} multiple/>
+                         placeholder="Status" selected={states} multiple/>
               &nbsp;<i className="fa fa-angle-up fa-1x" />&nbsp;&nbsp;
               <label className="small nobold">Filter by Workflow Status</label>
             </Col>
@@ -167,6 +186,7 @@ WorkflowSearch.propTypes = {
   search: PropTypes.shape({
     isFetching: PropTypes.bool.isRequired,
     query: PropTypes.string.isRequired,
+    version: PropTypes.string.isRequired,
     entirely: PropTypes.bool.isRequired,
     types: PropTypes.arrayOf(PropTypes.string).isRequired,
     states: PropTypes.arrayOf(PropTypes.string).isRequired,
