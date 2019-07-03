@@ -84,7 +84,8 @@ public class DoWhile extends WorkflowSystemTask {
 		}
 		task.getOutputData().put(String.valueOf(task.getIteration()), output);
 		if (hasFailures) {
-			return markLoopTaskFailed(task, failureReason.toString());
+			logger.debug("taskid {} failed in {} iteration",task.getTaskId(), task.getIteration() + 1);
+			return updateLoopTask(task, Status.FAILED, failureReason.toString());
 		} else if (!allDone) {
 			return false;
 		}
@@ -95,13 +96,14 @@ public class DoWhile extends WorkflowSystemTask {
 			if (shouldContinue) {
 				return scheduleLoopTasks(task, workflow, workflowExecutor);
 			} else {
-				return markLoopTaskSuccess(task);
+				logger.debug("taskid {} took {} iterations to complete",task.getTaskId(), task.getIteration() + 1);
+				return markLoopTaskSuccess(task, workflow, workflowExecutor);
 			}
 		} catch (ScriptException e) {
 			String message = String.format("Unable to evaluate condition %s , exception %s", task.getWorkflowTask().getLoopCondition(), e.getMessage());
 			logger.error(message);
-			logger.error("Marking task {} failed.", task.getTaskId());
-			return markLoopTaskFailed(task, message);
+			logger.error("Marking task {} failed with error.", task.getTaskId());
+			return updateLoopTask(task, Status.FAILED_WITH_TERMINAL_ERROR, message);
 		}
 	}
 
@@ -114,15 +116,15 @@ public class DoWhile extends WorkflowSystemTask {
 		return true; // Return true even though status not changed. Iteration has to be updated in execution DAO.
 	}
 
-	boolean markLoopTaskFailed(Task task, String failureReason) {
+	boolean updateLoopTask(Task task,Status status, String failureReason) {
 		task.setReasonForIncompletion(failureReason);
-		task.setStatus(Status.FAILED);
-		logger.debug("taskid {} failed in {} iteration",task.getTaskId(), task.getIteration() + 1);
+		task.setStatus(status);
 		return true;
 	}
 
-	boolean markLoopTaskSuccess(Task task) {
+	boolean markLoopTaskSuccess(Task task, Workflow workflow, WorkflowExecutor workflowExecutor) {
 		logger.debug("taskid {} took {} iterations to complete",task.getTaskId(), task.getIteration() + 1);
+		workflowExecutor.removeLoopOverTasks(task, workflow);
 		task.setStatus(Status.COMPLETED);
 		return true;
 	}
