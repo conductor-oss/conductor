@@ -187,6 +187,9 @@ public class Task {
     @ProtoField(id = 35)
     private String externalOutputPayloadStoragePath;
 
+    @ProtoField(id = 36)
+    private int workflowPriority;
+
     public Task() {
     }
 
@@ -666,6 +669,20 @@ public class Task {
         this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
     }
 
+    /**
+     * @return the priority defined on workflow
+     */
+    public int getWorkflowPriority() {
+        return workflowPriority;
+    }
+
+    /**
+     * @param workflowPriority Priority defined for workflow
+     */
+    public void setWorkflowPriority(int workflowPriority) {
+        this.workflowPriority = workflowPriority;
+    }
+
     public Task copy() {
         Task copy = new Task();
         copy.setCallbackAfterSeconds(callbackAfterSeconds);
@@ -692,6 +709,7 @@ public class Task {
         copy.setRateLimitFrequencyInSeconds(rateLimitFrequencyInSeconds);
         copy.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
         copy.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
+        copy.setWorkflowPriority(workflowPriority);
 
         return copy;
     }
@@ -732,6 +750,7 @@ public class Task {
                 ", outputMessage='" + outputMessage + '\'' +
                 ", rateLimitPerFrequency=" + rateLimitPerFrequency +
                 ", rateLimitFrequencyInSeconds=" + rateLimitFrequencyInSeconds +
+                ", workflowPriority=" + workflowPriority +
                 ", externalInputPayloadStoragePath='" + externalInputPayloadStoragePath + '\'' +
                 ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
                 '}';
@@ -759,6 +778,7 @@ public class Task {
                 getRateLimitFrequencyInSeconds() == task.getRateLimitFrequencyInSeconds() &&
                 Objects.equals(getTaskType(), task.getTaskType()) &&
                 getStatus() == task.getStatus() &&
+                getWorkflowPriority() == task.getWorkflowPriority() &&
                 Objects.equals(getInputData(), task.getInputData()) &&
                 Objects.equals(getReferenceTaskName(), task.getReferenceTaskName()) &&
                 Objects.equals(getCorrelationId(), task.getCorrelationId()) &&
@@ -780,6 +800,6 @@ public class Task {
 
     @Override
     public int hashCode() {
-        return Objects.hash(getTaskType(), getStatus(), getInputData(), getReferenceTaskName(), getRetryCount(), getSeq(), getCorrelationId(), getPollCount(), getTaskDefName(), getScheduledTime(), getStartTime(), getEndTime(), getUpdateTime(), getStartDelayInSeconds(), getRetriedTaskId(), isRetried(), isExecuted(), isCallbackFromWorker(), getResponseTimeoutSeconds(), getWorkflowInstanceId(), getWorkflowType(), getTaskId(), getReasonForIncompletion(), getCallbackAfterSeconds(), getWorkerId(), getOutputData(), getWorkflowTask(), getDomain(), getInputMessage(), getOutputMessage(), getRateLimitPerFrequency(), getRateLimitFrequencyInSeconds(), getExternalInputPayloadStoragePath(), getExternalOutputPayloadStoragePath());
+        return Objects.hash(getTaskType(), getStatus(), getInputData(), getReferenceTaskName(), getWorkflowPriority(), getRetryCount(), getSeq(), getCorrelationId(), getPollCount(), getTaskDefName(), getScheduledTime(), getStartTime(), getEndTime(), getUpdateTime(), getStartDelayInSeconds(), getRetriedTaskId(), isRetried(), isExecuted(), isCallbackFromWorker(), getResponseTimeoutSeconds(), getWorkflowInstanceId(), getWorkflowType(), getTaskId(), getReasonForIncompletion(), getCallbackAfterSeconds(), getWorkerId(), getOutputData(), getWorkflowTask(), getDomain(), getInputMessage(), getOutputMessage(), getRateLimitPerFrequency(), getRateLimitFrequencyInSeconds(), getExternalInputPayloadStoragePath(), getExternalOutputPayloadStoragePath());
     }
 }

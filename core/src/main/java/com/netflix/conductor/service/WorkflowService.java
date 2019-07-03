@@ -26,6 +26,7 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.List;
@@ -67,6 +68,20 @@ public interface WorkflowService {
      */
     String startWorkflow(@NotEmpty(message = "Workflow name cannot be null or empty") String name, Integer version,
                          String correlationId, Map<String, Object> input);
+
+    /**
+     * Start a new workflow.  Returns the ID of the workflow instance that can be later used for tracking.
+     *
+     * @param name          Name of the workflow you want to start.
+     * @param version       Version of the workflow you want to start.
+     * @param correlationId CorrelationID of the workflow you want to start.
+     * @param priority      Priority of the workflow you want to start.
+     * @param input         Input to the workflow you want to start.
+     * @return the id of the workflow instance that can be use for tracking.
+     */
+    String startWorkflow(@NotEmpty(message = "Workflow name cannot be null or empty") String name, Integer version, String correlationId,
+                         @Min(value = 0, message = "0 is the minimum priority value") @Max(value = 99, message = "99 is the maximum priority value") Integer priority,
+                         Map<String, Object> input);
 
     /**
      * Lists workflows for the given correlation id.

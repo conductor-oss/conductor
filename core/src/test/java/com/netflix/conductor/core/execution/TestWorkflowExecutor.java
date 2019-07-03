@@ -49,6 +49,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
+import org.mockito.stubbing.Answer;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -230,13 +231,14 @@ public class TestWorkflowExecutor {
                 .updateTask(any());
 
         AtomicInteger queuedTaskCount = new AtomicInteger(0);
-        doAnswer(invocation -> {
+        final Answer answer = invocation -> {
             String queueName = invocation.getArgumentAt(0, String.class);
             System.out.println(queueName);
             queuedTaskCount.incrementAndGet();
             return null;
-        }).when(queueDAO)
-                .push(any(), any(), anyInt());
+        };
+        doAnswer(answer).when(queueDAO).push(any(), any(), anyInt());
+        doAnswer(answer).when(queueDAO).push(any(), any(), anyInt(), anyInt());
 
         boolean stateChanged = workflowExecutor.scheduleTask(workflow, tasks);
         assertEquals(2, startedTaskCount.get());

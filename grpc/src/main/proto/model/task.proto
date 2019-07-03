@@ -56,4 +56,5 @@ message Task {
     int32 rate_limit_frequency_in_seconds = 33;
     string external_input_payload_storage_path = 34;
     string external_output_payload_storage_path = 35;
+    int32 workflow_priority = 36;
 }

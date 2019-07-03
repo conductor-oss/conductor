@@ -125,6 +125,13 @@ public class WorkflowExecutor {
     /**
      * @throws ApplicationException
      */
+    public String startWorkflow(String name, Integer version, String correlationId, Integer priority, Map<String, Object> input, String externalInputPayloadStoragePath) {
+        return startWorkflow(name, version, correlationId, priority, input, externalInputPayloadStoragePath, null);
+    }
+
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(String name, Integer version, String correlationId, Map<String, Object> input, String externalInputPayloadStoragePath, String event) {
         return startWorkflow(
                 name,
@@ -141,10 +148,45 @@ public class WorkflowExecutor {
     /**
      * @throws ApplicationException
      */
+    public String startWorkflow(String name, Integer version, String correlationId, Integer priority, Map<String, Object> input, String externalInputPayloadStoragePath, String event) {
+        return startWorkflow(
+                name,
+                version,
+                input,
+                externalInputPayloadStoragePath,
+                correlationId,
+                priority,
+                null,
+                null,
+                event,
+                null
+        );
+    }
+
+    /**
+     * @throws ApplicationException
+     */
     public String startWorkflow(
             String name,
             Integer version,
             String correlationId,
+            Map<String, Object> input,
+            String externalInputPayloadStoragePath,
+            String event,
+            Map<String, String> taskToDomain
+    ) {
+        return startWorkflow(name, version, correlationId, 0, input, externalInputPayloadStoragePath,
+                event, taskToDomain);
+    }
+
+    /**
+     * @throws ApplicationException
+     */
+    public String startWorkflow(
+            String name,
+            Integer version,
+            String correlationId,
+            Integer priority,
             Map<String, Object> input,
             String externalInputPayloadStoragePath,
             String event,
@@ -156,6 +198,7 @@ public class WorkflowExecutor {
                 input,
                 externalInputPayloadStoragePath,
                 correlationId,
+                priority,
                 null,
                 null,
                 event,
@@ -205,6 +248,30 @@ public class WorkflowExecutor {
                 workflowInput,
                 externalInputPayloadStoragePath,
                 correlationId,
+                0,
+                event,
+                taskToDomain
+        );
+    }
+
+    /**
+     * @throws ApplicationException
+     */
+    public String startWorkflow(
+            WorkflowDef workflowDefinition,
+            Map<String, Object> workflowInput,
+            String externalInputPayloadStoragePath,
+            String correlationId,
+            Integer priority,
+            String event,
+            Map<String, String> taskToDomain
+    ) {
+        return startWorkflow(
+                workflowDefinition,
+                workflowInput,
+                externalInputPayloadStoragePath,
+                correlationId,
+                priority,
                 null,
                 null,
                 event,
@@ -226,6 +293,35 @@ public class WorkflowExecutor {
             String event,
             Map<String, String> taskToDomain
     ) {
+        return startWorkflow(
+                name,
+                version,
+                workflowInput,
+                externalInputPayloadStoragePath,
+                correlationId,
+                0,
+                parentWorkflowId,
+                parentWorkflowTaskId,
+                event,
+                taskToDomain
+        );
+    }
+
+    /**
+     * @throws ApplicationException
+     */
+    public String startWorkflow(
+            String name,
+            Integer version,
+            Map<String, Object> workflowInput,
+            String externalInputPayloadStoragePath,
+            String correlationId,
+            Integer priority,
+            String parentWorkflowId,
+            String parentWorkflowTaskId,
+            String event,
+            Map<String, String> taskToDomain
+    ) {
         WorkflowDef workflowDefinition = metadataMapperService.lookupForWorkflowDefinition(name, version);
 
         return startWorkflow(
@@ -233,6 +329,7 @@ public class WorkflowExecutor {
                 workflowInput,
                 externalInputPayloadStoragePath,
                 correlationId,
+                priority,
                 parentWorkflowId,
                 parentWorkflowTaskId,
                 event,
@@ -254,6 +351,7 @@ public class WorkflowExecutor {
             Map<String, Object> workflowInput,
             String externalInputPayloadStoragePath,
             String correlationId,
+            Integer priority,
             String parentWorkflowId,
             String parentWorkflowTaskId,
             String event,
@@ -272,6 +370,7 @@ public class WorkflowExecutor {
         Workflow workflow = new Workflow();
         workflow.setWorkflowId(workflowId);
         workflow.setCorrelationId(correlationId);
+        workflow.setPriority(priority);
         workflow.setWorkflowDefinition(workflowDefinition);
         workflow.setStatus(WorkflowStatus.RUNNING);
         workflow.setParentWorkflowId(parentWorkflowId);
@@ -741,8 +840,7 @@ public class WorkflowExecutor {
                 long callBack = taskResult.getCallbackAfterSeconds();
                 queueDAO.remove(taskQueueName, task.getTaskId());
                 LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
-
-                queueDAO.push(taskQueueName, task.getTaskId(), callBack); // Milliseconds
+                queueDAO.push(taskQueueName, task.getTaskId(), task.getWorkflowPriority(), callBack); // Milliseconds
                 LOGGER.debug("Task: {} pushed back to taskQueue: {} since the task status is {} with callbackAfterSeconds: {}", task, taskQueueName, task.getStatus().name(), callBack);
                 break;
             default:
@@ -852,7 +950,7 @@ public class WorkflowExecutor {
             if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
                 executionDAOFacade.updateTasks(tasksToBeUpdated);
                 executionDAOFacade.updateWorkflow(workflow);
-                queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), config.getSweepFrequency());
+                queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), config.getSweepFrequency());
             }
 
             stateChanged = scheduleTask(workflow, tasksToBeScheduled) || stateChanged;
@@ -954,6 +1052,7 @@ public class WorkflowExecutor {
         theTask.setTaskId(IDGenerator.generate());
         theTask.setReferenceTaskName(taskReferenceName);
         theTask.setWorkflowInstanceId(workflowId);
+        theTask.setWorkflowPriority(wf.getPriority());
         theTask.setStatus(SKIPPED);
         theTask.setTaskType(wft.getName());
         theTask.setCorrelationId(wf.getCorrelationId());
@@ -976,11 +1075,11 @@ public class WorkflowExecutor {
         String taskQueueName = QueueUtils.getQueueName(task);
         queueDAO.remove(taskQueueName, task.getTaskId());
         if (task.getCallbackAfterSeconds() > 0) {
-            queueDAO.push(taskQueueName, task.getTaskId(), task.getCallbackAfterSeconds());
+            queueDAO.push(taskQueueName, task.getTaskId(), task.getWorkflowPriority(), task.getCallbackAfterSeconds());
         } else {
-            queueDAO.push(taskQueueName, task.getTaskId(), 0);
+            queueDAO.push(taskQueueName, task.getTaskId(), task.getWorkflowPriority(), 0);
         }
-        LOGGER.debug("Added task {} to queue {} with call back seconds {}", task, taskQueueName, task.getCallbackAfterSeconds());
+        LOGGER.debug("Added task {} with priority {} to queue {} with call back seconds {}", task, task.getWorkflowPriority(), taskQueueName, task.getCallbackAfterSeconds());
     }
 
     //Executes the async system task
