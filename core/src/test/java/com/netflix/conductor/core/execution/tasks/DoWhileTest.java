@@ -147,7 +147,7 @@ public class DoWhileTest {
         Mockito.doNothing().when(provider).scheduleLoopTasks(loopTask, workflow);
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertTrue(success);
-        Assert.assertTrue(loopTask.getStatus() == Task.Status.FAILED);
+        Assert.assertTrue(loopTask.getStatus() == Task.Status.FAILED_WITH_TERMINAL_ERROR);
     }
 
 
