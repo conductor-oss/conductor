@@ -245,7 +245,8 @@ public class WorkflowDef extends Auditable {
 				 return nextTask;
 			 }
 
-			 if(task.getTaskReferenceName().equals(taskReferenceName) || task.has(taskReferenceName)){
+			 if(task.getTaskReferenceName().equals(taskReferenceName) || (
+			 		task.has(taskReferenceName) && !task.getType().equals(TaskType.TASK_TYPE_DO_WHILE))) {
 				 break;
 			 }
 		}
