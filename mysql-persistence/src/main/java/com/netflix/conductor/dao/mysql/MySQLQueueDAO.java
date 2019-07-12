@@ -36,20 +36,30 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 
     @Override
     public void push(String queueName, String messageId, long offsetTimeInSecond) {
-        withTransaction(tx -> pushMessage(tx, queueName, messageId, null, offsetTimeInSecond));
+        push(queueName, messageId, 0, offsetTimeInSecond);
+    }
+
+    @Override
+    public void push(String queueName, String messageId, int priority, long offsetTimeInSecond) {
+        withTransaction(tx -> pushMessage(tx, queueName, messageId, null, priority, offsetTimeInSecond));
     }
 
     @Override
     public void push(String queueName, List<Message> messages) {
         withTransaction(tx -> messages
-                .forEach(message -> pushMessage(tx, queueName, message.getId(), message.getPayload(), 0)));
+                .forEach(message -> pushMessage(tx, queueName, message.getId(), message.getPayload(), message.getPriority(), 0)));
     }
 
     @Override
     public boolean pushIfNotExists(String queueName, String messageId, long offsetTimeInSecond) {
+        return pushIfNotExists(queueName, messageId, 0, offsetTimeInSecond);
+    }
+
+    @Override
+    public boolean pushIfNotExists(String queueName, String messageId, int priority, long offsetTimeInSecond) {
         return getWithTransaction(tx -> {
             if (!existsMessage(tx, queueName, messageId)) {
-                pushMessage(tx, queueName, messageId, null, offsetTimeInSecond);
+                pushMessage(tx, queueName, messageId, null, priority, offsetTimeInSecond);
                 return true;
             }
             return false;
@@ -179,16 +189,16 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
         return query(connection, EXISTS_MESSAGE, q -> q.addParameter(queueName).addParameter(messageId).exists());
     }
 
-    private void pushMessage(Connection connection, String queueName, String messageId, String payload,
+    private void pushMessage(Connection connection, String queueName, String messageId, String payload, Integer priority,
                              long offsetTimeInSecond) {
 
-        String PUSH_MESSAGE = "INSERT INTO queue_message (deliver_on, queue_name, message_id, offset_time_seconds, payload) VALUES (TIMESTAMPADD(SECOND,?,CURRENT_TIMESTAMP), ?, ?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload), deliver_on=VALUES(deliver_on)";
+        String PUSH_MESSAGE = "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES (TIMESTAMPADD(SECOND,?,CURRENT_TIMESTAMP), ?, ?,?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload), deliver_on=VALUES(deliver_on)";
 
         createQueueIfNotExists(connection, queueName);
 
         execute(connection, PUSH_MESSAGE, q -> q.addParameter(offsetTimeInSecond).addParameter(queueName)
-                .addParameter(messageId).addParameter(offsetTimeInSecond).addParameter(payload).executeUpdate());
-
+                .addParameter(messageId).addParameter(priority).addParameter(offsetTimeInSecond)
+                .addParameter(payload).executeUpdate());
     }
 
     private boolean removeMessage(Connection connection, String queueName, String messageId) {
@@ -201,7 +211,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
         if (count < 1)
             return Collections.emptyList();
 
-        final String PEEK_MESSAGES = "SELECT message_id, payload FROM queue_message use index(combo_queue_message) WHERE queue_name = ? AND popped = false AND deliver_on <= TIMESTAMPADD(MICROSECOND, 1000, CURRENT_TIMESTAMP) ORDER BY deliver_on, created_on LIMIT ?";
+        final String PEEK_MESSAGES = "SELECT message_id, priority, payload FROM queue_message use index(combo_queue_message) WHERE queue_name = ? AND popped = false AND deliver_on <= TIMESTAMPADD(MICROSECOND, 1000, CURRENT_TIMESTAMP) ORDER BY priority DESC, deliver_on, created_on LIMIT ?";
 
         List<Message> messages = query(connection, PEEK_MESSAGES, p -> p.addParameter(queueName)
                 .addParameter(count).executeAndFetch(rs -> {
@@ -209,6 +219,7 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
                     while (rs.next()) {
                         Message m = new Message();
                         m.setId(rs.getString("message_id"));
+                        m.setPriority(rs.getInt("priority"));
                         m.setPayload(rs.getString("payload"));
                         results.add(m);
                     }

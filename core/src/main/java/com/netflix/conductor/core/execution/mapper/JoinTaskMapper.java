@@ -70,6 +70,7 @@ public class JoinTaskMapper implements TaskMapper {
         joinTask.setTaskId(taskId);
         joinTask.setStatus(Task.Status.IN_PROGRESS);
         joinTask.setWorkflowTask(taskToSchedule);
+        joinTask.setWorkflowPriority(workflowInstance.getPriority());
 
         return Arrays.asList(joinTask);
     }

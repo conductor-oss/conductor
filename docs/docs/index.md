@@ -9,7 +9,7 @@ We built Conductor to help us orchestrate microservices based process flows at N
 * A distributed server ecosystem, which stores workflow state information efficiently.
 * Allow creation of process / business flows in which each individual task can be implemented by the same / different microservices.
 * A JSON DSL based blueprint defines the execution flow.
-* Provide visibility and traceability into the these process flows.
+* Provide visibility and traceability into these process flows.
 * Simple interface to connect workers, which execute the tasks in workflows.
 * Full operational control over workflows with the ability to pause, resume, restart, retry and terminate.
 * Allow greater reuse of existing microservices providing an easier path for onboarding.

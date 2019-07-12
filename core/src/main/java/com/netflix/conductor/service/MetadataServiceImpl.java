@@ -140,8 +140,7 @@ public class MetadataServiceImpl implements MetadataService {
             workflowDef =  metadataDAO.get(name, version);
         }
 
-        return workflowDef.orElseThrow(() -> new ApplicationException(Code.NOT_FOUND,
-                String.format("No such workflow found by name: %s, version: %d", name, version)));
+        return workflowDef.orElseThrow(() -> new ApplicationException(Code.NOT_FOUND, String.format("No such workflow found by name: %s, version: %d", name, version)));
     }
 
     /**

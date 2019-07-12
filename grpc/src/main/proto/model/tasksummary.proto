@@ -26,4 +26,5 @@ message TaskSummary {
     string task_id = 16;
     string external_input_payload_storage_path = 17;
     string external_output_payload_storage_path = 18;
+    int32 workflow_priority = 19;
 }

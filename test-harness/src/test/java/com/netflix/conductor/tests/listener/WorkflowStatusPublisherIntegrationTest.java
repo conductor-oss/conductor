@@ -48,6 +48,7 @@ public class WorkflowStatusPublisherIntegrationTest {
 
     private String CALLBACK_QUEUE =  "dummy";
     private static final String LINEAR_WORKFLOW_T1_T2 = "junit_test_wf";
+    private static final int WORKFLOW_VERSION = 1;
     private static final String INCOMPLETION_REASON = "test reason";
 
     @Inject
@@ -78,6 +79,7 @@ public class WorkflowStatusPublisherIntegrationTest {
     public void testListenerOnTerminatedWorkflow() throws IOException {
         WorkflowDef empty = new WorkflowDef();
         empty.setName("empty_workflow");
+        empty.setVersion(WORKFLOW_VERSION);
         empty.setSchemaVersion(2);
         empty.setWorkflowStatusListenerEnabled(true);
         metadataService.registerWorkflowDef(empty);
@@ -104,7 +106,7 @@ public class WorkflowStatusPublisherIntegrationTest {
         WorkflowDef def = new WorkflowDef();
         def.setName(LINEAR_WORKFLOW_T1_T2);
         def.setDescription(def.getName());
-        def.setVersion(1);
+        def.setVersion(WORKFLOW_VERSION);
         def.setSchemaVersion(2);
         def.setWorkflowStatusListenerEnabled(true);
         LinkedList<WorkflowTask> wftasks = new LinkedList<>();
@@ -156,7 +158,7 @@ public class WorkflowStatusPublisherIntegrationTest {
                 .map(WorkflowDef::getName)
                 .collect(Collectors.toList());
         for (String wfName : workflows) {
-            List<String> running = workflowExecutionService.getRunningWorkflows(wfName);
+            List<String> running = workflowExecutionService.getRunningWorkflows(wfName, WORKFLOW_VERSION);
             for (String wfid : running) {
                 workflowExecutor.terminateWorkflow(wfid, "cleanup");
             }

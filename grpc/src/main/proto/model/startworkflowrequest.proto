@@ -16,4 +16,5 @@ message StartWorkflowRequest {
     map<string, string> task_to_domain = 5;
     WorkflowDef workflow_def = 6;
     string external_input_payload_storage_path = 7;
+    int32 priority = 8;
 }

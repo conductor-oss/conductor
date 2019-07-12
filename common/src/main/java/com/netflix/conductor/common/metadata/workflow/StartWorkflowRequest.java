@@ -16,6 +16,8 @@ import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,6 +46,11 @@ public class StartWorkflowRequest {
 
     @ProtoField(id = 7)
     private String externalInputPayloadStoragePath;
+
+	@ProtoField(id = 8)
+	@Min(value = 0, message = "priority: ${validatedValue} should be minimum {value}")
+	@Max(value = 99, message = "priority: ${validatedValue} should be maximum {value}")
+	private Integer priority;
 
     public String getName() {
 		return name;
@@ -86,6 +93,17 @@ public class StartWorkflowRequest {
 	}
 	public StartWorkflowRequest withExternalInputPayloadStoragePath(String externalInputPayloadStoragePath) {
 		this.externalInputPayloadStoragePath = externalInputPayloadStoragePath;
+		return this;
+	}
+
+	public Integer getPriority() {
+		return priority;
+	}
+	public void setPriority(Integer priority) {
+		this.priority = priority;
+	}
+	public StartWorkflowRequest withPriority(Integer priority) {
+		this.priority = priority;
 		return this;
 	}
 

@@ -90,6 +90,7 @@ public class SimpleTaskMapper implements TaskMapper {
         simpleTask.setResponseTimeoutSeconds(taskDefinition.getResponseTimeoutSeconds());
         simpleTask.setWorkflowTask(taskToSchedule);
         simpleTask.setRetriedTaskId(retriedTaskId);
+        simpleTask.setWorkflowPriority(workflowInstance.getPriority());
         return Collections.singletonList(simpleTask);
     }
 }
