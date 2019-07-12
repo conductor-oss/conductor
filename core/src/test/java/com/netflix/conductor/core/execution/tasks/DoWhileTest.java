@@ -22,7 +22,6 @@ import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.mockito.Matchers.isA;
@@ -94,7 +93,6 @@ public class DoWhileTest {
         loopWorkflowTask.setLoopOver(Arrays.asList(task1.getWorkflowTask(), task2.getWorkflowTask()));
         loopTask.setWorkflowTask(loopWorkflowTask);
         doWhile = new DoWhile();
-        workflow.setTasks(Arrays.asList(task1, task2, loopTask));
         Mockito.doReturn(new TaskDef()).when(provider).getTaskDefinition(loopTask);
         Mockito.doReturn(task1).when(workflow).getTaskByRefName(task1.getReferenceTaskName());
         Mockito.doReturn(task2).when(workflow).getTaskByRefName(task2.getReferenceTaskName());
@@ -115,6 +113,7 @@ public class DoWhileTest {
         task1.setStatus(Task.Status.FAILED);
         String reason = "Test";
         task1.setReasonForIncompletion(reason);
+        Mockito.doReturn(Arrays.asList(task1, task2, loopTask)).when(workflow).getTasks();
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertTrue(success);
         Assert.assertEquals(loopTask.getStatus(), Task.Status.FAILED);
@@ -125,6 +124,7 @@ public class DoWhileTest {
     public void testInProgress() {
         loopTask.setStatus(Task.Status.IN_PROGRESS);
         task1.setStatus(Task.Status.IN_PROGRESS);
+        Mockito.doReturn(Arrays.asList(task1, task2, loopTask)).when(workflow).getTasks();
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertFalse(success);
         Assert.assertTrue(loopTask.getStatus() == Task.Status.IN_PROGRESS);

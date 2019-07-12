@@ -60,9 +60,11 @@ public class DoWhile extends WorkflowSystemTask {
 		boolean allDone = true;
 		boolean hasFailures = false;
 		StringBuilder failureReason = new StringBuilder();
-		List<WorkflowTask> loopOver = task.getWorkflowTask().getLoopOver();
 		Map<String, Object> output = new HashMap<>();
+		if (task.getIteration() == 0) { task.setIteration(1);}
 		task.getOutputData().put("iteration", task.getIteration());
+		List<WorkflowTask> childTasks = task.getWorkflowTask().collectTasks();
+		List<WorkflowTask> loopOver = childTasks.subList(1, childTasks.size());
 
 		for (WorkflowTask workflowTask : loopOver){
 			Task loopOverTask = workflow.getTaskByRefName(workflowTask.getTaskReferenceName());
@@ -76,7 +78,7 @@ public class DoWhile extends WorkflowSystemTask {
 			if (hasFailures){
 				failureReason.append(loopOverTask.getReasonForIncompletion()).append(" ");
 			}
-			output.put(workflowTask.getTaskReferenceName(), loopOverTask.getOutputData());
+			output.put(loopOverTask.getReferenceTaskName(), loopOverTask.getOutputData());
 			allDone = taskStatus.isTerminal();
 			if (!allDone || hasFailures){
 				break;
@@ -124,7 +126,6 @@ public class DoWhile extends WorkflowSystemTask {
 
 	boolean markLoopTaskSuccess(Task task, Workflow workflow, WorkflowExecutor workflowExecutor) {
 		logger.debug("taskid {} took {} iterations to complete",task.getTaskId(), task.getIteration() + 1);
-		workflowExecutor.removeLoopOverTasks(task, workflow);
 		task.setStatus(Status.COMPLETED);
 		return true;
 	}

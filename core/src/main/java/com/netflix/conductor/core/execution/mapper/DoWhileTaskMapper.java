@@ -88,20 +88,16 @@ public class DoWhileTaskMapper implements TaskMapper {
         loopTask.setScheduledTime(System.currentTimeMillis());
         loopTask.setTaskId(taskId);
         loopTask.setIteration(1);
-        loopTask.setStatus(Task.Status.IN_PROGRESS);
+        loopTask.setStatus(Task.Status.SCHEDULED);
         loopTask.setWorkflowTask(taskToSchedule);
         loopTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
         loopTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
-        loopTask.setIsolationGroupId(taskDefinition.getIsolationGroupId());
-        loopTask.setDomain(taskDefinition.getDomain());
 
         tasksToBeScheduled.add(loopTask);
-        List<WorkflowTask>loopOverTasks = taskToSchedule.getLoopOver();
-        for (WorkflowTask wft : loopOverTasks) {
-            List<Task> tasks2 = taskMapperContext.getDeciderService()
-                    .getTasksToBeScheduled(workflowInstance, wft, retryCount);
-            tasksToBeScheduled.addAll(tasks2);
-        }
+        List<WorkflowTask> loopOverTasks = taskToSchedule.getLoopOver();
+        List<Task> tasks2 = taskMapperContext.getDeciderService()
+                .getTasksToBeScheduled(workflowInstance, loopOverTasks.get(0), retryCount);
+        tasksToBeScheduled.addAll(tasks2);
 
         return tasksToBeScheduled;
     }

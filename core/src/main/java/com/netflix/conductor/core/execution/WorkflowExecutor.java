@@ -65,6 +65,7 @@ import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_SUB_WORKFLOW;
 import static com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType.TASK_OUTPUT;
 import static com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT;
@@ -1449,7 +1450,7 @@ public class WorkflowExecutor {
     public void scheduleLoopTasks(Task loopTask, Workflow workflow) {
         //Get all the loopOver tasks and schedule it.
         List<Task> tasks = deciderService.getTasksToBeScheduled(workflow, loopTask.getWorkflowTask(), loopTask.getRetryCount());
-        scheduleTask(workflow, tasks);
+        scheduleTask(workflow, tasks.subList(1, tasks.size()));
     }
 
     public TaskDef getTaskDefinition(Task task) {
