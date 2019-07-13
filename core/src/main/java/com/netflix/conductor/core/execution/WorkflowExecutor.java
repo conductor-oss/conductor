@@ -576,7 +576,7 @@ public class WorkflowExecutor {
      * @param task failed or cancelled task
      * @return new instance of a task with "SCHEDULED" status
      */
-    public Task taskToBeRescheduled(Task task) {
+    private Task taskToBeRescheduled(Task task) {
         Task taskToBeRetried = task.copy();
         taskToBeRetried.setTaskId(IDGenerator.generate());
         taskToBeRetried.setRetriedTaskId(task.getTaskId());

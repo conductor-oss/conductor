@@ -61,9 +61,6 @@ public @interface WorkflowTaskTypeConstraint {
                 case TaskType.TASK_TYPE_DECISION:
                     valid = isDecisionTaskValid(workflowTask, context);
                     break;
-                case TaskType.TASK_TYPE_DO_WHILE:
-                    valid = isDoWhileTaskValid(workflowTask, context);
-                    break;
                 case TaskType.TASK_TYPE_DYNAMIC:
                     valid = isDynamicTaskValid(workflowTask, context);
                     break;
@@ -81,6 +78,9 @@ public @interface WorkflowTaskTypeConstraint {
                     break;
                 case TaskType.TASK_TYPE_KAFKA_PUBLISH:
                     valid = isKafkaPublishTaskValid(workflowTask, context);
+                    break;
+                case TaskType.TASK_TYPE_DO_WHILE:
+                    valid = isDoWhileTaskValid(workflowTask, context);
                     break;
             }
 
