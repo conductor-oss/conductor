@@ -27,7 +27,6 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.QueueUtils;
@@ -54,7 +53,6 @@ import java.util.stream.Collectors;
 
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED_WITH_ERRORS;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.READY_FOR_RERUN;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.TIMED_OUT;
@@ -98,7 +96,7 @@ public class DeciderService {
         // not marked to be skipped and not ready for rerun.
         // For a new workflow, the list of unprocessedTasks will be empty
         List<Task> unprocessedTasks = tasks.stream()
-                .filter(t -> !t.getStatus().equals(SKIPPED) && !t.getStatus().equals(READY_FOR_RERUN) && !t.isExecuted())
+                .filter(t -> !t.getStatus().equals(SKIPPED) && !t.isExecuted())
                 .collect(Collectors.toList());
 
         List<Task> tasksToBeScheduled = new LinkedList<>();
@@ -241,7 +239,6 @@ public class DeciderService {
 
         // Get the first task to schedule
         Task rerunFromTask = tasks.stream()
-                .filter(task -> READY_FOR_RERUN.equals(task.getStatus()))
                 .findFirst()
                 .map(task -> {
                     task.setStatus(SCHEDULED);
@@ -256,7 +253,6 @@ public class DeciderService {
                 });
 
         return Collections.singletonList(rerunFromTask);
-
     }
 
     /**
