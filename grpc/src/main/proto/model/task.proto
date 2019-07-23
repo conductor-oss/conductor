@@ -19,8 +19,7 @@ message Task {
         COMPLETED_WITH_ERRORS = 5;
         SCHEDULED = 6;
         TIMED_OUT = 7;
-        READY_FOR_RERUN = 8;
-        SKIPPED = 9;
+        SKIPPED = 8;
     }
     string task_type = 1;
     Task.Status status = 2;

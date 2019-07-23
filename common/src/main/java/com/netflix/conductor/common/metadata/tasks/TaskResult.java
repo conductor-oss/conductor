@@ -85,7 +85,6 @@ public class TaskResult {
                 this.status = Status.FAILED;
                 break;
             case SCHEDULED:
-            case READY_FOR_RERUN:
                 this.status = Status.IN_PROGRESS;
                 break;
             default:

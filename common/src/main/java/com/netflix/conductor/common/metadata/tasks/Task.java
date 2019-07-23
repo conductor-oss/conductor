@@ -41,7 +41,6 @@ public class Task {
         COMPLETED_WITH_ERRORS(true, true, true),
         SCHEDULED(false, true, true),
         TIMED_OUT(true, false, true),
-        READY_FOR_RERUN(false, true, true),
         SKIPPED(true, true, false);
 
         private boolean terminal;

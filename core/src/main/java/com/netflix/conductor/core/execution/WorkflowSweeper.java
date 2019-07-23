@@ -130,7 +130,5 @@ public class WorkflowSweeper {
 		for (Future<?> future : futures) {
 			future.get();
 		}
-
 	}
-
 }
