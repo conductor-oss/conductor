@@ -204,6 +204,9 @@
     <li class="toctree-l2"><a href="#how-do-i-configure-a-notification-when-my-workflow-completes-or-fails">How do I configure a notification when my workflow completes or fails?</a></li>
     
 
+    <li class="toctree-l2"><a href="#i-want-my-worker-to-stop-polling-and-executing-tasks-when-the-process-is-being-terminated-java-client">I want my worker to stop polling and executing tasks when the process is being terminated. (Java client)</a></li>
+    
+
     </ul>
 	    </li>
           
@@ -272,6 +275,8 @@ More details about <a href="../configuration/eventhandlers/">eventing</a>.</p>
 <p>Make sure that the worker is actively polling for this task. Navigate to the <code>Poll Data</code> tab on the Condictor UI and search for your task name in the search box on the top right corner. Ensure that <code>Last Poll Time</code> for this task is current and the <code>Last Polled By</code> is an active instance. The <code>Size</code> column shows the number of scheduled tasks for this task name.</p>
 <h3 id="how-do-i-configure-a-notification-when-my-workflow-completes-or-fails">How do I configure a notification when my workflow completes or fails?<a class="headerlink" href="#how-do-i-configure-a-notification-when-my-workflow-completes-or-fails" title="Permanent link">&para;</a></h3>
 <p>Refer this <a href="../configuration/workflowdef/#workflow-notifications">documentation</a> to extend conductor to send out events/notifications upon workflow completion/failure.</p>
+<h3 id="i-want-my-worker-to-stop-polling-and-executing-tasks-when-the-process-is-being-terminated-java-client">I want my worker to stop polling and executing tasks when the process is being terminated. (Java client)<a class="headerlink" href="#i-want-my-worker-to-stop-polling-and-executing-tasks-when-the-process-is-being-terminated-java-client" title="Permanent link">&para;</a></h3>
+<p>In a <code>PreDestroy</code> block within your application, call the <code>shutdown()</code> method on the <code>WorkflowTaskCoordinator</code> instance that you have created to facilitate a graceful shutdown of your worker in case the process is being terminated.</p>
               
             </div>
           </div>
