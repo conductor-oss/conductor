@@ -557,7 +557,7 @@ public class WorkflowExecutor {
         // taskToBeRescheduled would set task `retried` to true, and hence it's important to updateTasks after obtaining task copy from taskToBeRescheduled.
         List<Task> retriableTasks = retriableMap.values().stream()
                 .sorted(Comparator.comparingInt(Task::getSeq))
-                .map(task -> taskToBeRescheduled(task))
+                .map(this::taskToBeRescheduled)
                 .collect(Collectors.toList());
 
         dedupAndAddTasks(workflow, retriableTasks);

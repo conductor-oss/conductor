@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
+
 package com.netflix.conductor.common.metadata.tasks;
 
 import com.github.vmg.protogen.annotations.ProtoEnum;
@@ -43,10 +41,10 @@ import java.util.Objects;
 @Valid
 public class TaskDef extends Auditable {
 	@ProtoEnum
-	public static enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY}
+	public enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY}
 
 	@ProtoEnum
-	public static enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF}
+	public enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF}
 
 	private static final int ONE_HOUR = 60 * 60;
 

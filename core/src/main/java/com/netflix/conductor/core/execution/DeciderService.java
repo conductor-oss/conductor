@@ -156,6 +156,10 @@ public class DeciderService {
             }
 
             Optional<TaskDef> taskDefinition = pendingTask.getTaskDefinition();
+            if (!taskDefinition.isPresent()) {
+               taskDefinition = Optional.ofNullable(workflow.getWorkflowDefinition().getTaskByRefName(pendingTask.getReferenceTaskName()))
+                       .map(WorkflowTask::getTaskDefinition);
+            }
 
             if (taskDefinition.isPresent()) {
                 checkForTimeout(taskDefinition.get(), pendingTask);
