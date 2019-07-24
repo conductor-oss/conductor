@@ -725,8 +725,7 @@ public class TestWorkflowExecutor {
         forkTask.setSeq(1);
         forkTask.setRetryCount(1);
         forkTask.setStatus(Status.COMPLETED);
-        forkTask.setTaskDefName("task1");
-        forkTask.setReferenceTaskName("task1_ref1");
+        forkTask.setReferenceTaskName("task_fork");
 
         Task task_1_1 = new Task();
         task_1_1.setTaskId(UUID.randomUUID().toString());
@@ -752,8 +751,7 @@ public class TestWorkflowExecutor {
         joinTask.setSeq(25);
         joinTask.setRetryCount(1);
         joinTask.setStatus(Status.CANCELED);
-        joinTask.setTaskDefName("task1");
-        joinTask.setReferenceTaskName("task1_ref1");
+        joinTask.setReferenceTaskName("task_join");
         joinTask.getInputData().put("joinOn", Arrays.asList(task_1_1.getReferenceTaskName(), task_2_1.getReferenceTaskName()));
 
         workflow.getTasks().addAll(Arrays.asList(forkTask, task_1_1, task_2_1, joinTask));
@@ -768,7 +766,6 @@ public class TestWorkflowExecutor {
 
         assertEquals(6, workflow.getTasks().size());
         assertEquals(Workflow.WorkflowStatus.RUNNING, workflow.getStatus());
-
     }
 
     @Test

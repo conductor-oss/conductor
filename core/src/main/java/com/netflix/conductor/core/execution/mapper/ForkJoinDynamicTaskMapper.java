@@ -27,7 +27,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
-import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -230,8 +229,8 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
      * @param taskToSchedule:       The Task of type FORK_JOIN_DYNAMIC that needs to scheduled, which has the input parameters
      * @param workflowInstance:     The instance of the {@link Workflow} which represents the workflow being executed.
      * @param dynamicForkTaskParam: The key representing the dynamic fork join json payload which is available in {@link WorkflowTask#getInputParameters()}
-     * @throws TerminateWorkflowException : In case of input parameters of the dynamic fork tasks not represented as {@link Map}
      * @return a {@link Pair} representing the list of dynamic fork tasks in {@link Pair#getLeft()} and the input for the dynamic fork tasks in {@link Pair#getRight()}
+     * @throws TerminateWorkflowException : In case of input parameters of the dynamic fork tasks not represented as {@link Map}
      */
     @SuppressWarnings("unchecked")
     @VisibleForTesting
@@ -242,7 +241,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         Object dynamicForkTasksJson = input.get(dynamicForkTaskParam);
         List<WorkflowTask> dynamicForkWorkflowTasks = objectMapper.convertValue(dynamicForkTasksJson, ListOfWorkflowTasks);
         for (WorkflowTask workflowTask : dynamicForkWorkflowTasks) {
-            if (MetadataMapperService.shouldPopulateDefinition(workflowTask)) {
+            if (workflowTask.getTaskDefinition() == null) {
                 workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
             }
         }
@@ -260,8 +259,8 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
      *
      * @param taskToSchedule:   The Task of type FORK_JOIN_DYNAMIC that needs to scheduled, which has the input parameters
      * @param workflowInstance: The instance of the {@link Workflow} which represents the workflow being executed.
-     * @throws TerminateWorkflowException : In case of the {@link WorkflowTask#getInputParameters()} does not have a payload that contains the list of the dynamic tasks
      * @return {@link Pair} representing the list of dynamic fork tasks in {@link Pair#getLeft()} and the input for the dynamic fork tasks in {@link Pair#getRight()}
+     * @throws TerminateWorkflowException : In case of the {@link WorkflowTask#getInputParameters()} does not have a payload that contains the list of the dynamic tasks
      */
     @VisibleForTesting
     Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> getDynamicForkJoinTasksAndInput(WorkflowTask taskToSchedule, Workflow workflowInstance) throws TerminateWorkflowException {
@@ -285,9 +284,8 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                     dynamicForkJoinWorkflowTask.setTaskReferenceName(dynamicForkJoinTask.getReferenceName());
                     dynamicForkJoinWorkflowTask.setName(dynamicForkJoinTask.getTaskName());
                     dynamicForkJoinWorkflowTask.setType(dynamicForkJoinTask.getType());
-                    if (MetadataMapperService.shouldPopulateDefinition(dynamicForkJoinWorkflowTask)) {
-                        dynamicForkJoinWorkflowTask.setTaskDefinition(
-                                metadataDAO.getTaskDef(dynamicForkJoinTask.getTaskName()));
+                    if (dynamicForkJoinWorkflowTask.getTaskDefinition() == null) {
+                        dynamicForkJoinWorkflowTask.setTaskDefinition(metadataDAO.getTaskDef(dynamicForkJoinTask.getTaskName()));
                     }
                     return dynamicForkJoinWorkflowTask;
                 })

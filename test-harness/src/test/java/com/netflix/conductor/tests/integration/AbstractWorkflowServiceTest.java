@@ -49,6 +49,7 @@ import com.netflix.conductor.service.MetadataService;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -147,6 +148,11 @@ public abstract class AbstractWorkflowServiceTest {
     private static final String LONG_RUNNING = "longRunningWf";
 
     private static final String TEST_WORKFLOW_NAME_3 = "junit_test_wf3";
+
+    @BeforeClass
+    public static void setup() {
+        registered = false;
+    }
 
     @Before
     public void init() {
@@ -4278,7 +4284,6 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.updateTaskDef(taskDef);
     }
 
-
     @Test
     public void testWait() {
 
@@ -4306,6 +4311,64 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals(RUNNING, workflow.getStatus());
 
         Task waitTask = workflow.getTasks().get(0);
+        assertEquals(TaskType.WAIT.name(), waitTask.getTaskType());
+        waitTask.setStatus(COMPLETED);
+        workflowExecutor.updateTask(new TaskResult(waitTask));
+
+        Task task = workflowExecutionService.poll("junit_task_1", "test");
+        assertNotNull(task);
+        task.setStatus(Status.COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
+    @Test
+    public void testWaitTimeout() throws Exception {
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("waitTimeout");
+        taskDef.setTimeoutSeconds(2);
+        taskDef.setRetryCount(1);
+        taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskDef.setRetryDelaySeconds(10);
+        metadataService.registerTaskDef(Collections.singletonList(taskDef));
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test_wait_timeout");
+        workflowDef.setSchemaVersion(2);
+
+        WorkflowTask waitWorkflowTask = new WorkflowTask();
+        waitWorkflowTask.setWorkflowTaskType(TaskType.WAIT);
+        waitWorkflowTask.setName("waitTimeout");
+        waitWorkflowTask.setTaskReferenceName("wait0");
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setName("junit_task_1");
+        workflowTask.setTaskReferenceName("t1");
+
+        workflowDef.getTasks().add(waitWorkflowTask);
+        workflowDef.getTasks().add(workflowTask);
+        metadataService.registerWorkflowDef(workflowDef);
+
+        String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", new HashMap<>(), null, null);
+        Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(1, workflow.getTasks().size());
+        assertEquals(RUNNING, workflow.getStatus());
+
+        // timeout the wait task and ensure it is retried
+        Thread.sleep(3000);
+        workflowExecutor.decide(workflowId);
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+        assertEquals(TIMED_OUT, workflow.getTasks().get(0).getStatus());
+        assertEquals(IN_PROGRESS, workflow.getTasks().get(1).getStatus());
+
+        Task waitTask = workflow.getTasks().get(1);
         assertEquals(TaskType.WAIT.name(), waitTask.getTaskType());
         waitTask.setStatus(COMPLETED);
         workflowExecutor.updateTask(new TaskResult(waitTask));
