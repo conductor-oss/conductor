@@ -42,6 +42,7 @@ import java.util.Objects;
 @TaskTimeoutConstraint
 @Valid
 public class TaskDef extends Auditable {
+
 	@ProtoEnum
 	public static enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY}
 
@@ -102,6 +103,12 @@ public class TaskDef extends Auditable {
 
 	@ProtoField(id = 15)
 	private Integer rateLimitFrequencyInSeconds;
+
+	@ProtoField(id = 16)
+	private String isolationGroupId;
+
+	@ProtoField(id = 17	)
+	private String executionNameSpace;
 
 	public TaskDef() {
 	}
@@ -338,6 +345,22 @@ public class TaskDef extends Auditable {
 		this.inputTemplate = inputTemplate;
 	}
 
+	public String getIsolationGroupId() {
+		return isolationGroupId;
+	}
+
+	public void setIsolationGroupId(String isolationGroupId) {
+		this.isolationGroupId = isolationGroupId;
+	}
+
+	public String getExecutionNameSpace() {
+		return executionNameSpace;
+	}
+
+	public void setExecutionNameSpace(String executionNameSpace) {
+		this.executionNameSpace = executionNameSpace;
+	}
+
 	@Override
 	public String toString(){
 		return name;
@@ -360,7 +383,9 @@ public class TaskDef extends Auditable {
 				getRetryLogic() == taskDef.getRetryLogic() &&
 				Objects.equals(getConcurrentExecLimit(), taskDef.getConcurrentExecLimit()) &&
 				Objects.equals(getRateLimitPerFrequency(), taskDef.getRateLimitPerFrequency()) &&
-				Objects.equals(getInputTemplate(), taskDef.getInputTemplate());
+				Objects.equals(getInputTemplate(), taskDef.getInputTemplate()) &&
+				Objects.equals(getIsolationGroupId(), taskDef.getIsolationGroupId()) &&
+				Objects.equals(getExecutionNameSpace(), taskDef.getExecutionNameSpace());
 	}
 
 	@Override
@@ -368,7 +393,6 @@ public class TaskDef extends Auditable {
 
 		return Objects.hash(getName(), getDescription(), getRetryCount(), getTimeoutSeconds(), getInputKeys(),
 				getOutputKeys(), getTimeoutPolicy(), getRetryLogic(), getRetryDelaySeconds(),
-				getResponseTimeoutSeconds(), getConcurrentExecLimit(), getRateLimitPerFrequency(), getInputTemplate());
+				getResponseTimeoutSeconds(), getConcurrentExecLimit(), getRateLimitPerFrequency(), getInputTemplate(), getIsolationGroupId(), getExecutionNameSpace());
 	}
-
 }

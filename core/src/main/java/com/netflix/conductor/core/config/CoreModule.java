@@ -47,6 +47,7 @@ import com.netflix.conductor.core.execution.mapper.TerminateTaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Event;
+import com.netflix.conductor.core.execution.tasks.IsolatedTaskQueueProducer;
 import com.netflix.conductor.core.execution.tasks.Lambda;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator;
@@ -89,6 +90,7 @@ public class CoreModule extends AbstractModule {
         bind(Event.class).asEagerSingleton();
         bind(Lambda.class).asEagerSingleton();
         bind(Terminate.class).asEagerSingleton();
+        bind(IsolatedTaskQueueProducer.class).asEagerSingleton();
 
         // start processing events when instance starts
         bind(ActionProcessor.class).to(SimpleActionProcessor.class);
