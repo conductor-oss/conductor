@@ -31,4 +31,6 @@ message TaskDef {
     map<string, google.protobuf.Value> input_template = 12;
     int32 rate_limit_per_frequency = 14;
     int32 rate_limit_frequency_in_seconds = 15;
+    string isolation_group_id = 16;
+    string execution_name_space = 17;
 }

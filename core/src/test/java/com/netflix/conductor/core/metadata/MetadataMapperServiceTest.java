@@ -32,6 +32,7 @@ import java.util.Set;
 
 import static com.netflix.conductor.utility.TestUtils.getConstraintViolationMessages;
 import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
@@ -175,6 +176,7 @@ public class MetadataMapperServiceTest {
         assertEquals(version, params.getVersion());
 
         verify(metadataDAO).getLatest(workflowDefinitionName);
+        verify(metadataDAO).getTaskDef(nameTaskDefinition);
         verifyNoMoreInteractions(metadataDAO);
     }
 
@@ -203,7 +205,8 @@ public class MetadataMapperServiceTest {
         assertEquals(workflowDefinitionName, params.getName());
         assertEquals(version, params.getVersion());
 
-        verifyZeroInteractions(metadataDAO);
+        verify(metadataDAO).getTaskDef(nameTaskDefinition);
+        verifyNoMoreInteractions(metadataDAO);
     }
 
 
@@ -251,6 +254,18 @@ public class MetadataMapperServiceTest {
         assertTrue(optionalWorkflowDef.isPresent());
 
         metadataMapperService.lookupLatestWorkflowDefinition(null);
+    }
+
+    @Test
+    public void testShouldNotPopulateTaskDefinition() {
+        WorkflowTask workflowTask = createWorkflowTask("");
+        assertFalse(metadataMapperService.shouldPopulateTaskDefinition(workflowTask));
+    }
+
+    @Test
+    public void testShouldPopulateTaskDefinition() {
+        WorkflowTask workflowTask = createWorkflowTask("test");
+        assertTrue(metadataMapperService.shouldPopulateTaskDefinition(workflowTask));
     }
 
     private WorkflowDef createWorkflowDefinition(String name) {

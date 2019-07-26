@@ -69,6 +69,7 @@ public class KafkaPublishTaskMapper implements TaskMapper  {
 		kafkaPublishTask.setRetryCount(retryCount);
 		kafkaPublishTask.setCallbackAfterSeconds(taskToSchedule.getStartDelay());
 		kafkaPublishTask.setWorkflowTask(taskToSchedule);
+		kafkaPublishTask.setWorkflowPriority(workflowInstance.getPriority());
 		kafkaPublishTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
 		kafkaPublishTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
 		return Collections.singletonList(kafkaPublishTask);

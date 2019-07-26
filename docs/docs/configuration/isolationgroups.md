@@ -1,6 +1,4 @@
-## Isolation
-
-### Isolation groupId 
+#### Isolation Group Id
 
 Consider an HTTP task where the latency of an API is high, task queue piles up effecting execution of other HTTP tasks which have low latency.
 
@@ -53,7 +51,7 @@ Example Workflow task
           "uri": "http://localhost:9200/conductor/_search?size=10",
           "method": "GET"
         }
-      },
+      }
     }
   ],
   "outputParameters": {
@@ -75,7 +73,7 @@ The property `workflow.isolated.system.task.worker.thread.count`  sets the threa
 
 isolationGroupId is currently supported only in HTTP Task. 
 
-### Execution Name Spaces. 
+#### Execution Name Space
 
 `executionNameSpace` A property of taskdef can be used to provide JVM isolation to task execution and scale executor deployments horizontally.
 
@@ -134,7 +132,7 @@ Example Workflow task
           "uri": "http://localhost:9200/conductor/_search?size=10",
           "method": "GET"
         }
-      },
+      }
     }
   ],
   "outputParameters": {

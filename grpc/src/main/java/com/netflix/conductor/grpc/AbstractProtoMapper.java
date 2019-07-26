@@ -550,6 +550,12 @@ public abstract class AbstractProtoMapper {
             to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
         }
         to.setWorkflowPriority( from.getWorkflowPriority() );
+        if (from.getExecutionNameSpace() != null) {
+            to.setExecutionNameSpace( from.getExecutionNameSpace() );
+        }
+        if (from.getIsolationGroupId() != null) {
+            to.setIsolationGroupId( from.getIsolationGroupId() );
+        }
         return to.build();
     }
 
@@ -604,6 +610,8 @@ public abstract class AbstractProtoMapper {
         to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
         to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
         to.setWorkflowPriority( from.getWorkflowPriority() );
+        to.setExecutionNameSpace( from.getExecutionNameSpace() );
+        to.setIsolationGroupId( from.getIsolationGroupId() );
         return to;
     }
 
@@ -673,6 +681,12 @@ public abstract class AbstractProtoMapper {
         if (from.getRateLimitFrequencyInSeconds() != null) {
             to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
         }
+        if (from.getIsolationGroupId() != null) {
+            to.setIsolationGroupId( from.getIsolationGroupId() );
+        }
+        if (from.getExecutionNameSpace() != null) {
+            to.setExecutionNameSpace( from.getExecutionNameSpace() );
+        }
         return to.build();
     }
 
@@ -696,6 +710,8 @@ public abstract class AbstractProtoMapper {
         to.setInputTemplate(inputTemplateMap);
         to.setRateLimitPerFrequency( from.getRateLimitPerFrequency() );
         to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
+        to.setIsolationGroupId( from.getIsolationGroupId() );
+        to.setExecutionNameSpace( from.getExecutionNameSpace() );
         return to;
     }
 

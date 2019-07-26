@@ -111,10 +111,11 @@ public class MetadataMapperService {
 
     private void populateWorkflowTaskWithDefinition(WorkflowTask workflowTask) {
         Preconditions.checkNotNull(workflowTask, "WorkflowTask cannot be null");
+        if (shouldPopulateTaskDefinition(workflowTask)) {
+            workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
+        }
         if (workflowTask.getType().equals(TaskType.SUB_WORKFLOW.name())) {
             populateVersionForSubWorkflow(workflowTask);
-        } else if (shouldPopulateDefinition(workflowTask)) {
-            workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
         }
     }
 
@@ -143,7 +144,7 @@ public class MetadataMapperService {
         // Obtain the names of the tasks with missing definitions
         Set<String> missingTaskDefinitionNames = workflowDefinition.collectTasks().stream()
                 .filter(workflowTask -> workflowTask.getType().equals(TaskType.SIMPLE.name()))
-                .filter(this::shouldPopulateDefinition)
+                .filter(this::shouldPopulateTaskDefinition)
                 .map(WorkflowTask::getName)
                 .collect(Collectors.toSet());
 
@@ -160,7 +161,8 @@ public class MetadataMapperService {
         return task;
     }
 
-    boolean shouldPopulateDefinition(WorkflowTask workflowTask) {
+    @VisibleForTesting
+    boolean shouldPopulateTaskDefinition(WorkflowTask workflowTask) {
         Preconditions.checkNotNull(workflowTask, "WorkflowTask cannot be null");
         Preconditions.checkNotNull(workflowTask.getType(), "WorkflowTask type cannot be null");
         return workflowTask.getTaskDefinition() == null && StringUtils.isNotBlank(workflowTask.getName());

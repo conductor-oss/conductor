@@ -29,6 +29,7 @@ import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.MetadataDAO;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
@@ -241,7 +242,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         Object dynamicForkTasksJson = input.get(dynamicForkTaskParam);
         List<WorkflowTask> dynamicForkWorkflowTasks = objectMapper.convertValue(dynamicForkTasksJson, ListOfWorkflowTasks);
         for (WorkflowTask workflowTask : dynamicForkWorkflowTasks) {
-            if (workflowTask.getTaskDefinition() == null) {
+            if ((workflowTask.getTaskDefinition() == null) && StringUtils.isNotBlank(workflowTask.getName())) {
                 workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
             }
         }
@@ -284,7 +285,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
                     dynamicForkJoinWorkflowTask.setTaskReferenceName(dynamicForkJoinTask.getReferenceName());
                     dynamicForkJoinWorkflowTask.setName(dynamicForkJoinTask.getTaskName());
                     dynamicForkJoinWorkflowTask.setType(dynamicForkJoinTask.getType());
-                    if (dynamicForkJoinWorkflowTask.getTaskDefinition() == null) {
+                    if (dynamicForkJoinWorkflowTask.getTaskDefinition() == null && StringUtils.isNotBlank(dynamicForkJoinWorkflowTask.getName())) {
                         dynamicForkJoinWorkflowTask.setTaskDefinition(metadataDAO.getTaskDef(dynamicForkJoinTask.getTaskName()));
                     }
                     return dynamicForkJoinWorkflowTask;
