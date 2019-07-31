@@ -183,23 +183,22 @@
     <a class="current" href="./">Technical Details</a>
     <ul class="subnav">
             
-    <li class="toctree-l2"><a href="#technical-details">Technical Details</a></li>
+    <li class="toctree-l2"><a href="#grpc-framework">gRPC Framework</a></li>
     
-        <ul>
-        
-            <li><a class="toctree-l3" href="#grpc-framework">gRPC Framework</a></li>
-        
-            <li><a class="toctree-l3" href="#cassandra-persistence">Cassandra Persistence</a></li>
-        
-            <li><a class="toctree-l3" href="#external-payload-storage">External Payload Storage</a></li>
-        
-            <li><a class="toctree-l3" href="#dynamic-workflow-executions">Dynamic Workflow Executions</a></li>
-        
-            <li><a class="toctree-l3" href="#decoupling-elasticsearch-from-persistence">Decoupling Elasticsearch from Persistence</a></li>
-        
-            <li><a class="toctree-l3" href="#elasticsearch-56-support">Elasticsearch 5/6 Support</a></li>
-        
-        </ul>
+
+    <li class="toctree-l2"><a href="#cassandra-persistence">Cassandra Persistence</a></li>
+    
+
+    <li class="toctree-l2"><a href="#external-payload-storage">External Payload Storage</a></li>
+    
+
+    <li class="toctree-l2"><a href="#dynamic-workflow-executions">Dynamic Workflow Executions</a></li>
+    
+
+    <li class="toctree-l2"><a href="#decoupling-elasticsearch-from-persistence">Decoupling Elasticsearch from Persistence</a></li>
+    
+
+    <li class="toctree-l2"><a href="#elasticsearch-56-support">Elasticsearch 5/6 Support</a></li>
     
 
     </ul>
@@ -245,8 +244,7 @@
           <div role="main">
             <div class="section">
               
-                <h2 id="technical-details">Technical Details<a class="headerlink" href="#technical-details" title="Permanent link">&para;</a></h2>
-<h3 id="grpc-framework">gRPC Framework<a class="headerlink" href="#grpc-framework" title="Permanent link">&para;</a></h3>
+                <h3 id="grpc-framework">gRPC Framework<a class="headerlink" href="#grpc-framework" title="Permanent link">&para;</a></h3>
 <p>As part of this addition, all of the modules and bootstrap code within them were refactored to leverage providers, which facilitated moving  the Jetty server into a separate module and the conformance to Guice guidelines and best practices. 
 This feature constitutes a server-side gRPC implementation along with protobuf RPC schemas for the workflow, metadata and task APIs that can be run concurrently with the Jersey-based HTTP/REST server. The protobuf models for all the types are exposed through the API. gRPC java clients for the workflow, metadata and task APIs are also available for use. Another valuable addition is an idiomatic Go gRPC client implementation for the worker API.
 The proto models are auto-generated at compile time using this ProtoGen library. This custom library adds messageInput and messageOutput fields to all proto tasks and task definitions. The goal of these fields is providing a type-safe way to pass input and input metadata through tasks that use the gRPC API. These fields use the Any protobuf type which can store any arbitrary message type in a type-safe way, without the server needing to know the exact serialization format of the message. In order to expose these Any objects in the REST API, a custom encoding is used that contains the raw data of the serialized message by converting it into a dictionary with '@type' and '@value' keys, where '@type' is identical to the canonical representation and '@value' contains a base64 encoded string with the binary data of the serialized message. The JsonMapperProvider provides the object mapper initialized with this module to enable serialization/deserialization of these JSON objects.</p>
