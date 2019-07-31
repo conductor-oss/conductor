@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  
+  <link rel="shortcut icon" href="../img/favicon.ico">
+  <title>Technical Details - Conductor</title>
+  <link href='https://fonts.googleapis.com/css?family=Lato:400,700|Roboto+Slab:400,700|Inconsolata:400,700' rel='stylesheet' type='text/css'>
+
+  <link rel="stylesheet" href="../css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="../css/theme_extra.css" type="text/css" />
+  <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/styles/github.min.css">
+  <link href="../css/custom.css" rel="stylesheet">
+  
+  <script>
+    // Current page data
+    var mkdocs_page_name = "Technical Details";
+    var mkdocs_page_input_path = "technicaldetails.md";
+    var mkdocs_page_url = null;
+  </script>
+  
+  <script src="../js/jquery-2.1.1.min.js" defer></script>
+  <script src="../js/modernizr-2.8.3.min.js" defer></script>
+  <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/9.12.0/highlight.min.js"></script>
+  <script>hljs.initHighlightingOnLoad();</script> 
+  
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side stickynav">
+      <div class="wy-side-nav-search">
+        <a href=".." class="icon icon-home"> Conductor</a>
+        <div role="search">
+  <form id ="rtd-search-form" class="wy-form" action="../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" title="Type search term here" />
+  </form>
+</div>
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+	<ul class="current">
+	  
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="..">Introduction</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../architecture/">Architecture</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Getting Started</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../gettingstarted/basicconcepts/">Basic Concepts</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../gettingstarted/client/">Using the Client</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../gettingstarted/startworkflow/">Start a Workflow</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Configuration</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../configuration/taskdef/">Task Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/workflowdef/">Workflow Definition</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/systask/">System Tasks</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/eventhandlers/">Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/taskdomains/">Task Domains</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../configuration/isolationgroups/">Isolation Groups</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../server/">Conductor Server</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../apispec/">API Specification</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Conductor Metrics</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../metrics/server/">Server Metrics</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../metrics/client/">Client Metrics</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../extend/">Extending Conductor</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../tasklifecycle/">Task Lifecycle</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../externalpayloadstorage/">External Payload Storage</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <span class="caption-text">Developer Labs</span>
+    <ul class="subnav">
+                <li class="">
+                    
+    <a class="" href="../labs/beginner/">Beginner</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../labs/eventhandlers/">Events and Event Handlers</a>
+                </li>
+                <li class="">
+                    
+    <a class="" href="../labs/kitchensink/">Kitchensink</a>
+                </li>
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../bestpractices/">Best Practices</a>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../faq/">FAQ</a>
+	    </li>
+          
+            <li class="toctree-l1 current">
+		
+    <a class="current" href="./">Technical Details</a>
+    <ul class="subnav">
+            
+    <li class="toctree-l2"><a href="#technical-details">Technical Details</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#grpc-framework">gRPC Framework</a></li>
+        
+            <li><a class="toctree-l3" href="#cassandra-persistence">Cassandra Persistence</a></li>
+        
+            <li><a class="toctree-l3" href="#external-payload-storage">External Payload Storage</a></li>
+        
+            <li><a class="toctree-l3" href="#dynamic-workflow-executions">Dynamic Workflow Executions</a></li>
+        
+            <li><a class="toctree-l3" href="#decoupling-elasticsearch-from-persistence">Decoupling Elasticsearch from Persistence</a></li>
+        
+            <li><a class="toctree-l3" href="#elasticsearch-56-support">Elasticsearch 5/6 Support</a></li>
+        
+        </ul>
+    
+
+    </ul>
+	    </li>
+          
+            <li class="toctree-l1">
+		
+    <a class="" href="../license/">License</a>
+	    </li>
+          
+        </ul>
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="..">Conductor</a>
+      </nav>
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="..">Docs</a> &raquo;</li>
+    
+      
+    
+    <li>Technical Details</li>
+    <li class="wy-breadcrumbs-aside">
+      
+        <a href="https://github.com/Netflix/conductor/edit/dev/docs/docs/technicaldetails.md"
+          class="icon icon-github"> Edit on GitHub</a>
+      
+    </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main">
+            <div class="section">
+              
+                <h2 id="technical-details">Technical Details<a class="headerlink" href="#technical-details" title="Permanent link">&para;</a></h2>
+<h3 id="grpc-framework">gRPC Framework<a class="headerlink" href="#grpc-framework" title="Permanent link">&para;</a></h3>
+<p>As part of this addition, all of the modules and bootstrap code within them were refactored to leverage providers, which facilitated moving  the Jetty server into a separate module and the conformance to Guice guidelines and best practices. 
+This feature constitutes a server-side gRPC implementation along with protobuf RPC schemas for the workflow, metadata and task APIs that can be run concurrently with the Jersey-based HTTP/REST server. The protobuf models for all the types are exposed through the API. gRPC java clients for the workflow, metadata and task APIs are also available for use. Another valuable addition is an idiomatic Go gRPC client implementation for the worker API.
+The proto models are auto-generated at compile time using this ProtoGen library. This custom library adds messageInput and messageOutput fields to all proto tasks and task definitions. The goal of these fields is providing a type-safe way to pass input and input metadata through tasks that use the gRPC API. These fields use the Any protobuf type which can store any arbitrary message type in a type-safe way, without the server needing to know the exact serialization format of the message. In order to expose these Any objects in the REST API, a custom encoding is used that contains the raw data of the serialized message by converting it into a dictionary with '@type' and '@value' keys, where '@type' is identical to the canonical representation and '@value' contains a base64 encoded string with the binary data of the serialized message. The JsonMapperProvider provides the object mapper initialized with this module to enable serialization/deserialization of these JSON objects.</p>
+<h3 id="cassandra-persistence">Cassandra Persistence<a class="headerlink" href="#cassandra-persistence" title="Permanent link">&para;</a></h3>
+<p>The Cassandra persistence layer currently provides a partial implementation of the ExecutionDAO that supports all the CRUD operations for tasks and workflow execution. The data modelling is done in a denormalized manner and stored in two tables. The “workflows” table houses all the information for a workflow execution including all its tasks and is the source of truth for all the information regarding a workflow and its tasks. The “task_lookup” table, as the name suggests stores a lookup of taskIds to workflowId. This table facilitates the fast retrieval of task data given a taskId. 
+All the datastore operations that are used during the critical execution path of a workflow have been implemented currently. Few of the operational abilities of the ExecutionDAO are yet to be implemented. This module also does not provide implementations for QueueDAO and MetadataDAO. We envision using the Cassandra DAO with an external queue implementation, since implementing a queuing recipe on top of Cassandra is an anti-pattern that we want to stay away from.</p>
+<h3 id="external-payload-storage">External Payload Storage<a class="headerlink" href="#external-payload-storage" title="Permanent link">&para;</a></h3>
+<p>The implementation of this feature is such that the externalization of payloads is fully transparent and automated to the user. Conductor operators can configure the usage of this feature and is completely abstracted and hidden from the user, thereby allowing the operators full control over the barrier limits. Currently, only AWS S3 is supported as a storage system, however, as with all other Conductor components, this is pluggable and can be extended to enable any other object store to be used as an external payload storage system.
+The externalization of payloads is enforced using two kinds of <a href="../externalpayloadstorage">barriers</a>. Soft barriers are used when the  payload size is warranted enough to be stored as part of workflow execution. These payloads will be stored in external storage and used during execution. Hard barriers are enforced to safeguard against voluminous data, and such payloads are rejected and the workflow execution is failed.
+The payload size is evaluated in the client before being sent over the wire to the server. If the payload size exceeds the configured soft limit, the client makes a request to the server for the location at which the payload is to be stored. In this case where S3 is being used, the server returns a signed url for the location and the client uploads the payload using this signed url. The relative path to the payload object is then stored in the workflow/task metadata. The server can then download this payload from this path and use as needed during execution. This allows the server to control access to the S3 bucket, thereby making the user applications where the worker processes are run completely agnostic of the permissions needed to access this location.</p>
+<h3 id="dynamic-workflow-executions">Dynamic Workflow Executions<a class="headerlink" href="#dynamic-workflow-executions" title="Permanent link">&para;</a></h3>
+<p>In the earlier version (v1.x), Conductor allowed the execution of workflows referencing the workflow and task definitions stored as metadata in the system. This meant that a workflow execution with 10 custom tasks to run entailed:</p>
+<ul>
+<li>Registration of the 10 task definitions if they don't exist (assuming workflow task type SIMPLE for simplicity)</li>
+<li>Registration of the workflow definition</li>
+<li>Each time a definition needs to be retrieved, a call to the metadata store needed to be performed</li>
+<li>In addition to that, the system allowed current metadata that is in use to be altered, leading to possible inconsistencies/race conditions</li>
+</ul>
+<p>To eliminate these pain points, the execution was changed such that the workflow definition is embedded within the workflow execution and the task definitions are themselves embedded within this workflow definition. This enables the concept of ephemeral/dynamic workflows and tasks. Instead of fetching metadata definitions throughout the execution, the definitions are fetched and embedded into the execution at the start of the workflow execution. This also enabled the StartWorkflowRequest to be extended to provide the complete workflow definition that will be used during execution, thus removing the need for pre-registration. The MetadataMapperService prefetches the workflow and task definitions and embeds these within the workflow data, if not provided in the StartWorkflowRequest.</p>
+<p>Following benefits are seen as a result of these changes:</p>
+<ul>
+<li>Grants immutability of the definition stored within the execution data against modifications to the metadata store</li>
+<li>Better testability of workflows with faster experimental changes to definitions</li>
+<li>Reduced stress on the datastore due to prefetching the metadata only once at the start</li>
+</ul>
+<h3 id="decoupling-elasticsearch-from-persistence">Decoupling Elasticsearch from Persistence<a class="headerlink" href="#decoupling-elasticsearch-from-persistence" title="Permanent link">&para;</a></h3>
+<p>In the earlier version (1.x), the indexing logic was imbibed within the persistence layer, thus creating a tight coupling between the primary datastore and the indexing engine. This meant that the primary datastore determines how we orchestrate between the storage (redis, mysql, etc) and the indexer(elastic search). The main disadvantage of this approach is the lack of flexibility, that is, we cannot run an in-memory database and external elastic search or vice-versa.
+We plan to improve this further by removing the indexing from the critical path of workflow execution, thus reducing possible points of failure during execution.</p>
+<h3 id="elasticsearch-56-support">Elasticsearch 5/6 Support<a class="headerlink" href="#elasticsearch-56-support" title="Permanent link">&para;</a></h3>
+<p>Indexing workflow execution is one of the primary features of Conductor. This enables archival of terminal state workflows from the primary data store, along with providing a clean search capability from the UI. 
+In Conductor 1.x, we supported both versions 2 and 5 of Elasticsearch by shadowing version 5 and all its dependencies. This proved to be rather tedious increasing build times by over 10 minutes. In Conductor 2.x, we have removed active support for ES 2.x, because of valuable community contributions for elasticsearch 5 and elasticsearch 6 modules. Unlike Conductor 1.x, Conductor 2.x supports elasticsearch 5 by default, which can easily be replaced with version 6 by following the simple instructions <a href="https://github.com/Netflix/conductor/tree/master/es6-persistence#build">here</a>.</p>
+              
+            </div>
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+        <a href="../license/" class="btn btn-neutral float-right" title="License">Next <span class="icon icon-circle-arrow-right"></span></a>
+      
+      
+        <a href="../faq/" class="btn btn-neutral" title="FAQ"><span class="icon icon-circle-arrow-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <!-- Copyright etc -->
+    
+  </div>
+
+  Built with <a href="http://www.mkdocs.org">MkDocs</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+</footer>
+      
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+
+  <div class="rst-versions" role="note" style="cursor: pointer">
+    <span class="rst-current-version" data-toggle="rst-current-version">
+      
+          <a href="https://github.com/Netflix/conductor/" class="fa fa-github" style="float: left; color: #fcfcfc"> GitHub</a>
+      
+      
+        <span><a href="../faq/" style="color: #fcfcfc;">&laquo; Previous</a></span>
+      
+      
+        <span style="margin-left: 15px"><a href="../license/" style="color: #fcfcfc">Next &raquo;</a></span>
+      
+    </span>
+</div>
+    <script>var base_url = '..';</script>
+    <script src="../js/theme.js" defer></script>
+      <script src="../search/main.js" defer></script>
+
+</body>
+</html>
