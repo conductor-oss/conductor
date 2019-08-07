@@ -30,6 +30,7 @@ import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
+import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
@@ -1434,23 +1435,12 @@ public class WorkflowExecutor {
         return false;
     }
 
-    public void removeLoopOverTasks(Task loopTask, Workflow workflow) {
-        // Remove all tasks after the "DO_WHILE" task
-        for(Task task: workflow.getTasks()) {
-            if (task.getSeq() > loopTask.getSeq()) {
-                executionDAOFacade.removeTask(task.getTaskId());
-            }
-        }
-        workflow.setTasks(workflow.getTasks().stream()
-                .filter(x -> (x.getSeq() <= loopTask.getSeq()))
-                .collect(Collectors.toCollection(ArrayList::new)));
-        executionDAOFacade.updateWorkflow(workflow);
-    }
-
-    public void scheduleLoopTasks(Task loopTask, Workflow workflow) {
-        //Get all the loopOver tasks and schedule it.
-        List<Task> tasks = deciderService.getTasksToBeScheduled(workflow, loopTask.getWorkflowTask(), loopTask.getRetryCount());
-        scheduleTask(workflow, tasks.subList(1, tasks.size()));
+    public void scheduleNextIteration(Task loopTask, Workflow workflow) {
+        List<Task> scheduledLoopOverTasks = deciderService.getTasksToBeScheduled(workflow, loopTask.getWorkflowTask().getLoopOver().get(0), loopTask.getRetryCount(), null);
+        scheduledLoopOverTasks.stream().forEach(t -> {
+            t.setLoopOverParams(loopTask.getIteration());
+        });
+        scheduleTask(workflow, scheduledLoopOverTasks);
     }
 
     public TaskDef getTaskDefinition(Task task) {

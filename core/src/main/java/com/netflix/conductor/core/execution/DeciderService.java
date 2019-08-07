@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -186,6 +187,9 @@ public class DeciderService {
             if (!pendingTask.isExecuted() && !pendingTask.isRetried() && pendingTask.getStatus().isTerminal()) {
                 pendingTask.setExecuted(true);
                 List<Task> nextTasks = getNextTask(workflow, pendingTask);
+                if (pendingTask.isLoopOverTask() && !nextTasks.isEmpty()) {
+                    nextTasks.forEach(nextTask -> nextTask.setLoopOverParams(pendingTask.getIteration()));
+                }
                 nextTasks.forEach(nextTask -> tasksToBeScheduled.putIfAbsent(nextTask.getReferenceTaskName(), nextTask));
                 outcome.tasksToBeUpdated.add(pendingTask);
                 LOGGER.debug("Scheduling Tasks from {}, next = {} for workflowId: {}", pendingTask.getTaskDefName(),
@@ -331,7 +335,7 @@ public class DeciderService {
             }
         }
 
-        String taskReferenceName = task.getReferenceTaskName();
+        String taskReferenceName = task.isLoopOverTask() ? task.getReferenceTaskName().split(DoWhileTaskMapper.LOOP_TASK_DELIMITER)[0] : task.getReferenceTaskName();
         WorkflowTask taskToSchedule = workflowDef.getNextTask(taskReferenceName);
         while (isTaskSkipped(taskToSchedule, workflow)) {
             taskToSchedule = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());
@@ -547,7 +551,7 @@ public class DeciderService {
 
         // get tasks already scheduled (in progress/terminal) for  this workflow instance
         List<String> tasksInWorkflow = workflow.getTasks().stream()
-                .filter(runningTask -> runningTask.getStatus().equals(Status.IN_PROGRESS) || runningTask.getStatus().isTerminal())
+                .filter(runningTask -> runningTask.getStatus().equals(Status.IN_PROGRESS) || (runningTask.getStatus().isTerminal() && runningTask.isLoopOverTask()))
                 .map(Task::getReferenceTaskName)
                 .collect(Collectors.toList());
 

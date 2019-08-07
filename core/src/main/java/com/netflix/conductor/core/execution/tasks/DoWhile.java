@@ -27,6 +27,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +35,7 @@ import javax.script.ScriptException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * @author Manan
@@ -63,32 +65,24 @@ public class DoWhile extends WorkflowSystemTask {
 		boolean hasFailures = false;
 		StringBuilder failureReason = new StringBuilder();
 		Map<String, Object> output = new HashMap<>();
-		if (task.getIteration() == 0) { task.setIteration(1);}
 		task.getOutputData().put("iteration", task.getIteration());
-		List<WorkflowTask> childTasks = task.getWorkflowTask().collectTasks();
-		List<WorkflowTask> loopOver = childTasks.subList(1, childTasks.size());
+		List<Task> loopOver = workflow.getTasks().stream().filter(t -> (t.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration())) && t.isLoopOverTask()).collect(Collectors.toList());
 
-		for (WorkflowTask workflowTask : loopOver){
-			Task loopOverTask = workflow.getTaskByRefName(workflowTask.getTaskReferenceName());
-			if (loopOverTask == null){
-				//Task is not even scheduled yet
-				allDone = false;
-				break;
-			}
+		for (Task loopOverTask : loopOver) {
 			Status taskStatus = loopOverTask.getStatus();
 			hasFailures = !taskStatus.isSuccessful();
-			if (hasFailures){
+			if (hasFailures) {
 				failureReason.append(loopOverTask.getReasonForIncompletion()).append(" ");
 			}
 			output.put(loopOverTask.getReferenceTaskName(), loopOverTask.getOutputData());
 			allDone = taskStatus.isTerminal();
-			if (!allDone || hasFailures){
+			if (!allDone || hasFailures) {
 				break;
 			}
 		}
 		task.getOutputData().put(String.valueOf(task.getIteration()), output);
 		if (hasFailures) {
-			logger.debug("taskid {} failed in {} iteration",task.getTaskId(), task.getIteration() + 1);
+			logger.debug("taskid {} failed in {} iteration", task.getTaskId(), task.getIteration() + 1);
 			return updateLoopTask(task, Status.FAILED, failureReason.toString());
 		} else if (!allDone) {
 			return false;
@@ -98,9 +92,10 @@ public class DoWhile extends WorkflowSystemTask {
 			shouldContinue = getEvaluatedCondition(workflow, task, workflowExecutor);
 			logger.debug("taskid {} condition evaluated to {}", task.getTaskId(), shouldContinue);
 			if (shouldContinue) {
-				return scheduleLoopTasks(task, workflow, workflowExecutor);
+                task.setIteration(task.getIteration() + 1);
+                return scheduleNextIteration(task, workflow, workflowExecutor);
 			} else {
-				logger.debug("taskid {} took {} iterations to complete",task.getTaskId(), task.getIteration() + 1);
+				logger.debug("taskid {} took {} iterations to complete", task.getTaskId(), task.getIteration() + 1);
 				return markLoopTaskSuccess(task, workflow, workflowExecutor);
 			}
 		} catch (ScriptException e) {
@@ -111,12 +106,10 @@ public class DoWhile extends WorkflowSystemTask {
 		}
 	}
 
-	boolean scheduleLoopTasks(Task task, Workflow workflow, WorkflowExecutor workflowExecutor) {
+	boolean scheduleNextIteration(Task task, Workflow workflow, WorkflowExecutor workflowExecutor) {
 		logger.debug("Scheduling loop tasks for taskid {} as condition {} evaluated to true",
 				task.getTaskId(), task.getWorkflowTask().getLoopCondition());
-		workflowExecutor.removeLoopOverTasks(task, workflow);
-		task.setIteration(task.getIteration() + 1);
-		workflowExecutor.scheduleLoopTasks(task, workflow);
+		workflowExecutor.scheduleNextIteration(task, workflow);
 		return true; // Return true even though status not changed. Iteration has to be updated in execution DAO.
 	}
 
@@ -137,9 +130,10 @@ public class DoWhile extends WorkflowSystemTask {
 		TaskDef taskDefinition = workflowExecutor.getTaskDefinition(task);
 		Map<String, Object> taskInput = parametersUtils.getTaskInputV2(task.getWorkflowTask().getInputParameters(), workflow, task.getTaskId(), taskDefinition);
 		taskInput.put(task.getReferenceTaskName(), task.getOutputData());
-		for (WorkflowTask workflowTask : task.getWorkflowTask().getLoopOver()) {
-			Task loopOverTask = workflow.getTaskByRefName(workflowTask.getTaskReferenceName());
-			taskInput.put(loopOverTask.getReferenceTaskName(), loopOverTask.getOutputData());
+		List<Task> loopOver = workflow.getTasks().stream().filter(t -> (t.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration())) && t.isLoopOverTask()).collect(Collectors.toList());
+
+		for (Task loopOverTask : loopOver) {
+			taskInput.put(loopOverTask.getReferenceTaskName().split(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration())[0], loopOverTask.getOutputData());
 		}
 		String condition = task.getWorkflowTask().getLoopCondition();
 		boolean shouldContinue = false;

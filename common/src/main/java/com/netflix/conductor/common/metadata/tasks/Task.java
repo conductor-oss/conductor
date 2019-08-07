@@ -193,6 +193,9 @@ public class Task {
     @ProtoField(id = 37)
     private int iteration;
 
+    @ProtoField(id = 39)
+    private boolean loopOverTask;
+
     public Task() {
     }
 
@@ -686,6 +689,15 @@ public class Task {
         this.iteration = iteration;
     }
 
+
+    public boolean isLoopOverTask() {
+        return loopOverTask;
+    }
+
+    public void setLoopOverTask(boolean loopOverTask) {
+        this.loopOverTask = loopOverTask;
+    }
+
     /**
      * * @return the priority defined on workflow
      */
@@ -698,6 +710,12 @@ public class Task {
      */
     public void setWorkflowPriority(int workflowPriority) {
         this.workflowPriority = workflowPriority;
+    }
+
+    public void setLoopOverParams(int iteration) {
+        setReferenceTaskName(getReferenceTaskName() + ":__:" + iteration);
+        setLoopOverTask(true);
+        setIteration(iteration);
     }
 
     public Task copy() {
@@ -727,6 +745,7 @@ public class Task {
         copy.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
         copy.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
         copy.setWorkflowPriority(workflowPriority);
+        copy.setIteration(iteration);
 
         return copy;
     }
@@ -795,6 +814,7 @@ public class Task {
                 getRateLimitFrequencyInSeconds() == task.getRateLimitFrequencyInSeconds() &&
                 Objects.equals(getTaskType(), task.getTaskType()) &&
                 getStatus() == task.getStatus() &&
+                getIteration() == task.getIteration() &&
                 getWorkflowPriority() == task.getWorkflowPriority() &&
                 Objects.equals(getInputData(), task.getInputData()) &&
                 Objects.equals(getReferenceTaskName(), task.getReferenceTaskName()) &&
