@@ -41,7 +41,6 @@ public class Task {
         COMPLETED_WITH_ERRORS(true, true, true),
         SCHEDULED(false, true, true),
         TIMED_OUT(true, false, true),
-        READY_FOR_RERUN(false, true, true),
         SKIPPED(true, true, false);
 
         private boolean terminal;
@@ -189,6 +188,12 @@ public class Task {
 
     @ProtoField(id = 36)
     private int workflowPriority;
+    
+    @ProtoField(id = 37)
+    private String  executionNameSpace;
+
+    @ProtoField(id = 38)
+    private String isolationGroupId;
 
     @ProtoField(id = 37)
     private int iteration;
@@ -675,6 +680,23 @@ public class Task {
         this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
     }
 
+
+    public void setIsolationGroupId(String isolationGroupId) {
+        this.isolationGroupId = isolationGroupId;
+    }
+
+    public String getIsolationGroupId() {
+        return isolationGroupId;
+    }
+
+    public String getExecutionNameSpace() {
+        return executionNameSpace;
+    }
+
+    public void setExecutionNameSpace(String executionNameSpace) {
+        this.executionNameSpace = executionNameSpace;
+    }
+
     /**
      * @return the iteration
      */
@@ -746,6 +768,8 @@ public class Task {
         copy.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
         copy.setWorkflowPriority(workflowPriority);
         copy.setIteration(iteration);
+        copy.setExecutionNameSpace(executionNameSpace);
+        copy.setIsolationGroupId(isolationGroupId);
 
         return copy;
     }
@@ -789,6 +813,8 @@ public class Task {
                 ", workflowPriority=" + workflowPriority +
                 ", externalInputPayloadStoragePath='" + externalInputPayloadStoragePath + '\'' +
                 ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
+                ", isolationGroupId='" + isolationGroupId + '\'' +
+                ", executionNameSpace='" + executionNameSpace + '\'' +
                 '}';
     }
 
@@ -832,11 +858,13 @@ public class Task {
                 Objects.equals(getInputMessage(), task.getInputMessage()) &&
                 Objects.equals(getOutputMessage(), task.getOutputMessage()) &&
                 Objects.equals(getExternalInputPayloadStoragePath(), task.getExternalInputPayloadStoragePath()) &&
-                Objects.equals(getExternalOutputPayloadStoragePath(), task.getExternalOutputPayloadStoragePath());
+                Objects.equals(getExternalOutputPayloadStoragePath(), task.getExternalOutputPayloadStoragePath()) &&
+                Objects.equals(getIsolationGroupId(), task.getIsolationGroupId()) &&
+                Objects.equals(getExecutionNameSpace(), task.getExecutionNameSpace());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(getTaskType(), getStatus(), getInputData(), getReferenceTaskName(), getWorkflowPriority(), getRetryCount(), getSeq(), getCorrelationId(), getPollCount(), getTaskDefName(), getScheduledTime(), getStartTime(), getEndTime(), getUpdateTime(), getStartDelayInSeconds(), getRetriedTaskId(), isRetried(), isExecuted(), isCallbackFromWorker(), getResponseTimeoutSeconds(), getWorkflowInstanceId(), getWorkflowType(), getTaskId(), getReasonForIncompletion(), getCallbackAfterSeconds(), getWorkerId(), getOutputData(), getWorkflowTask(), getDomain(), getInputMessage(), getOutputMessage(), getRateLimitPerFrequency(), getRateLimitFrequencyInSeconds(), getExternalInputPayloadStoragePath(), getExternalOutputPayloadStoragePath());
+        return Objects.hash(getTaskType(), getStatus(), getInputData(), getReferenceTaskName(), getWorkflowPriority(), getRetryCount(), getSeq(), getCorrelationId(), getPollCount(), getTaskDefName(), getScheduledTime(), getStartTime(), getEndTime(), getUpdateTime(), getStartDelayInSeconds(), getRetriedTaskId(), isRetried(), isExecuted(), isCallbackFromWorker(), getResponseTimeoutSeconds(), getWorkflowInstanceId(), getWorkflowType(), getTaskId(), getReasonForIncompletion(), getCallbackAfterSeconds(), getWorkerId(), getOutputData(), getWorkflowTask(), getDomain(), getInputMessage(), getOutputMessage(), getRateLimitPerFrequency(), getRateLimitFrequencyInSeconds(), getExternalInputPayloadStoragePath(), getExternalOutputPayloadStoragePath(), getIsolationGroupId(), getExecutionNameSpace());
     }
 }

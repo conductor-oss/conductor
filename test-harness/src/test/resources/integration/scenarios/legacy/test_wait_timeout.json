@@ -1,0 +1,46 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1534988907130,
+  "updateTime": 1534988907297,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "WAIT",
+      "status": "IN_PROGRESS",
+      "referenceTaskName": "wait0",
+      "retryCount": 0,
+      "seq": 1,
+      "pollCount": 0,
+      "taskDefName": "waitTimeout",
+      "scheduledTime": 1534988907192,
+      "startTime": 1534988907200,
+      "endTime": 1534988907186,
+      "updateTime": 1534988907200,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "test_wait",
+      "taskId": "22052711-1039-4888-935a-5d0efa8b5bbf",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "waitTimeout",
+        "taskReferenceName": "wait0",
+        "type": "WAIT",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "IN_PROGRESS",
+      "queueWaitTime": 8
+    }
+  ],
+  "workflowType": "test_wait_timeout",
+  "version": 1,
+  "schemaVersion": 2,
+  "startTime": 1534988907130
+}

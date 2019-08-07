@@ -14,15 +14,12 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ValidationModule;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.interceptors.ServiceInterceptor;
-import com.netflix.conductor.service.WorkflowBulkService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -35,6 +32,7 @@ import java.util.Set;
 
 import static com.netflix.conductor.utility.TestUtils.getConstraintViolationMessages;
 import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
@@ -178,6 +176,7 @@ public class MetadataMapperServiceTest {
         assertEquals(version, params.getVersion());
 
         verify(metadataDAO).getLatest(workflowDefinitionName);
+        verify(metadataDAO).getTaskDef(nameTaskDefinition);
         verifyNoMoreInteractions(metadataDAO);
     }
 
@@ -206,7 +205,8 @@ public class MetadataMapperServiceTest {
         assertEquals(workflowDefinitionName, params.getName());
         assertEquals(version, params.getVersion());
 
-        verifyZeroInteractions(metadataDAO);
+        verify(metadataDAO).getTaskDef(nameTaskDefinition);
+        verifyNoMoreInteractions(metadataDAO);
     }
 
 
@@ -233,13 +233,13 @@ public class MetadataMapperServiceTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testLookupWorkflowDefinition() {
-        try{
+        try {
             String workflowName = "test";
             when(metadataDAO.get(workflowName, 0)).thenReturn(Optional.of(new WorkflowDef()));
             Optional<WorkflowDef> optionalWorkflowDef = metadataMapperService.lookupWorkflowDefinition(workflowName, 0);
             assertTrue(optionalWorkflowDef.isPresent());
             metadataMapperService.lookupWorkflowDefinition(null, 0);
-        } catch (ConstraintViolationException ex){
+        } catch (ConstraintViolationException ex) {
             Assert.assertEquals(1, ex.getConstraintViolations().size());
             Set<String> messages = getConstraintViolationMessages(ex.getConstraintViolations());
             assertTrue(messages.contains("WorkflowIds list cannot be null."));
@@ -254,6 +254,18 @@ public class MetadataMapperServiceTest {
         assertTrue(optionalWorkflowDef.isPresent());
 
         metadataMapperService.lookupLatestWorkflowDefinition(null);
+    }
+
+    @Test
+    public void testShouldNotPopulateTaskDefinition() {
+        WorkflowTask workflowTask = createWorkflowTask("");
+        assertFalse(metadataMapperService.shouldPopulateTaskDefinition(workflowTask));
+    }
+
+    @Test
+    public void testShouldPopulateTaskDefinition() {
+        WorkflowTask workflowTask = createWorkflowTask("test");
+        assertTrue(metadataMapperService.shouldPopulateTaskDefinition(workflowTask));
     }
 
     private WorkflowDef createWorkflowDefinition(String name) {

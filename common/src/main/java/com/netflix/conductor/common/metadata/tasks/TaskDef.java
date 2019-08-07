@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,9 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
+
 package com.netflix.conductor.common.metadata.tasks;
 
 import com.github.vmg.protogen.annotations.ProtoEnum;
@@ -42,11 +40,12 @@ import java.util.Objects;
 @TaskTimeoutConstraint
 @Valid
 public class TaskDef extends Auditable {
-	@ProtoEnum
-	public static enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY}
 
 	@ProtoEnum
-	public static enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF}
+	public enum TimeoutPolicy {RETRY, TIME_OUT_WF, ALERT_ONLY}
+
+	@ProtoEnum
+	public enum RetryLogic {FIXED, EXPONENTIAL_BACKOFF}
 
 	private static final int ONE_HOUR = 60 * 60;
 
@@ -102,6 +101,12 @@ public class TaskDef extends Auditable {
 
 	@ProtoField(id = 15)
 	private Integer rateLimitFrequencyInSeconds;
+
+	@ProtoField(id = 16)
+	private String isolationGroupId;
+
+	@ProtoField(id = 17	)
+	private String executionNameSpace;
 
 	public TaskDef() {
 	}
@@ -338,6 +343,22 @@ public class TaskDef extends Auditable {
 		this.inputTemplate = inputTemplate;
 	}
 
+	public String getIsolationGroupId() {
+		return isolationGroupId;
+	}
+
+	public void setIsolationGroupId(String isolationGroupId) {
+		this.isolationGroupId = isolationGroupId;
+	}
+
+	public String getExecutionNameSpace() {
+		return executionNameSpace;
+	}
+
+	public void setExecutionNameSpace(String executionNameSpace) {
+		this.executionNameSpace = executionNameSpace;
+	}
+
 	@Override
 	public String toString(){
 		return name;
@@ -360,7 +381,9 @@ public class TaskDef extends Auditable {
 				getRetryLogic() == taskDef.getRetryLogic() &&
 				Objects.equals(getConcurrentExecLimit(), taskDef.getConcurrentExecLimit()) &&
 				Objects.equals(getRateLimitPerFrequency(), taskDef.getRateLimitPerFrequency()) &&
-				Objects.equals(getInputTemplate(), taskDef.getInputTemplate());
+				Objects.equals(getInputTemplate(), taskDef.getInputTemplate()) &&
+				Objects.equals(getIsolationGroupId(), taskDef.getIsolationGroupId()) &&
+				Objects.equals(getExecutionNameSpace(), taskDef.getExecutionNameSpace());
 	}
 
 	@Override
@@ -368,7 +391,6 @@ public class TaskDef extends Auditable {
 
 		return Objects.hash(getName(), getDescription(), getRetryCount(), getTimeoutSeconds(), getInputKeys(),
 				getOutputKeys(), getTimeoutPolicy(), getRetryLogic(), getRetryDelaySeconds(),
-				getResponseTimeoutSeconds(), getConcurrentExecLimit(), getRateLimitPerFrequency(), getInputTemplate());
+				getResponseTimeoutSeconds(), getConcurrentExecLimit(), getRateLimitPerFrequency(), getInputTemplate(), getIsolationGroupId(), getExecutionNameSpace());
 	}
-
 }

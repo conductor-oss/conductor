@@ -550,6 +550,12 @@ public abstract class AbstractProtoMapper {
             to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
         }
         to.setWorkflowPriority( from.getWorkflowPriority() );
+        if (from.getExecutionNameSpace() != null) {
+            to.setExecutionNameSpace( from.getExecutionNameSpace() );
+        }
+        if (from.getIsolationGroupId() != null) {
+            to.setIsolationGroupId( from.getIsolationGroupId() );
+        }
         return to.build();
     }
 
@@ -604,6 +610,8 @@ public abstract class AbstractProtoMapper {
         to.setExternalInputPayloadStoragePath( from.getExternalInputPayloadStoragePath() );
         to.setExternalOutputPayloadStoragePath( from.getExternalOutputPayloadStoragePath() );
         to.setWorkflowPriority( from.getWorkflowPriority() );
+        to.setExecutionNameSpace( from.getExecutionNameSpace() );
+        to.setIsolationGroupId( from.getIsolationGroupId() );
         return to;
     }
 
@@ -618,7 +626,6 @@ public abstract class AbstractProtoMapper {
             case COMPLETED_WITH_ERRORS: to = TaskPb.Task.Status.COMPLETED_WITH_ERRORS; break;
             case SCHEDULED: to = TaskPb.Task.Status.SCHEDULED; break;
             case TIMED_OUT: to = TaskPb.Task.Status.TIMED_OUT; break;
-            case READY_FOR_RERUN: to = TaskPb.Task.Status.READY_FOR_RERUN; break;
             case SKIPPED: to = TaskPb.Task.Status.SKIPPED; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
@@ -636,7 +643,6 @@ public abstract class AbstractProtoMapper {
             case COMPLETED_WITH_ERRORS: to = Task.Status.COMPLETED_WITH_ERRORS; break;
             case SCHEDULED: to = Task.Status.SCHEDULED; break;
             case TIMED_OUT: to = Task.Status.TIMED_OUT; break;
-            case READY_FOR_RERUN: to = Task.Status.READY_FOR_RERUN; break;
             case SKIPPED: to = Task.Status.SKIPPED; break;
             default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
         }
@@ -675,6 +681,12 @@ public abstract class AbstractProtoMapper {
         if (from.getRateLimitFrequencyInSeconds() != null) {
             to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
         }
+        if (from.getIsolationGroupId() != null) {
+            to.setIsolationGroupId( from.getIsolationGroupId() );
+        }
+        if (from.getExecutionNameSpace() != null) {
+            to.setExecutionNameSpace( from.getExecutionNameSpace() );
+        }
         return to.build();
     }
 
@@ -698,6 +710,8 @@ public abstract class AbstractProtoMapper {
         to.setInputTemplate(inputTemplateMap);
         to.setRateLimitPerFrequency( from.getRateLimitPerFrequency() );
         to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
+        to.setIsolationGroupId( from.getIsolationGroupId() );
+        to.setExecutionNameSpace( from.getExecutionNameSpace() );
         return to;
     }
 

@@ -16,6 +16,7 @@ nav:
         - System Tasks: configuration/systask.md
         - Event Handlers: configuration/eventhandlers.md
         - Task Domains: configuration/taskdomains.md
+        - Isolation Groups: configuration/isolationgroups.md
     - Conductor Server: server.md
     - API Specification: apispec.md
     - Conductor Metrics:

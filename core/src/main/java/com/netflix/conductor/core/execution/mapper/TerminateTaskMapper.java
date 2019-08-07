@@ -46,6 +46,7 @@ public class TerminateTaskMapper implements TaskMapper {
         task.setTaskId(taskId);
         task.setStatus(Task.Status.IN_PROGRESS);
         task.setWorkflowTask(taskToSchedule);
+        task.setWorkflowPriority(workflowInstance.getPriority());
         return singletonList(task);
     }
 }
