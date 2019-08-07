@@ -1397,7 +1397,8 @@ public class WorkflowExecutor {
                 workflow.setInput(workflowInput);
             }
             executionDAOFacade.updateWorkflow(workflow);
-
+            //update tasks in datastore to update workflow-tasks relationship for archived workflows
+            executionDAOFacade.updateTasks(workflow.getTasks());
             // Remove all tasks after the "rerunFromTask"
             for (Task task : workflow.getTasks()) {
                 if (task.getSeq() > rerunFromTask.getSeq()) {
