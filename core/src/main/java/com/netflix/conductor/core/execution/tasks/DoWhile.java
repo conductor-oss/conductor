@@ -66,7 +66,7 @@ public class DoWhile extends WorkflowSystemTask {
 		StringBuilder failureReason = new StringBuilder();
 		Map<String, Object> output = new HashMap<>();
 		task.getOutputData().put("iteration", task.getIteration());
-		List<Task> loopOver = workflow.getTasks().stream().filter(t -> (t.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration())) && t.isLoopOverTask()).collect(Collectors.toList());
+		List<Task> loopOver = workflow.getTasks().stream().filter(t -> (t.getReferenceTaskName().endsWith(getLoopOverTaskSuffix(t.getIteration()))) && t.isLoopOverTask()).collect(Collectors.toList());
 
 		for (Task loopOverTask : loopOver) {
 			Status taskStatus = loopOverTask.getStatus();
@@ -96,7 +96,7 @@ public class DoWhile extends WorkflowSystemTask {
                 return scheduleNextIteration(task, workflow, workflowExecutor);
 			} else {
 				logger.debug("taskid {} took {} iterations to complete", task.getTaskId(), task.getIteration() + 1);
-				return markLoopTaskSuccess(task, workflow, workflowExecutor);
+				return markLoopTaskSuccess(task);
 			}
 		} catch (ScriptException e) {
 			String message = String.format("Unable to evaluate condition %s , exception %s", task.getWorkflowTask().getLoopCondition(), e.getMessage());
@@ -104,6 +104,10 @@ public class DoWhile extends WorkflowSystemTask {
 			logger.error("Marking task {} failed with error.", task.getTaskId());
 			return updateLoopTask(task, Status.FAILED_WITH_TERMINAL_ERROR, message);
 		}
+	}
+
+	String getLoopOverTaskSuffix(int iteration) {
+		return DoWhileTaskMapper.LOOP_TASK_DELIMITER + iteration;
 	}
 
 	boolean scheduleNextIteration(Task task, Workflow workflow, WorkflowExecutor workflowExecutor) {
@@ -119,7 +123,7 @@ public class DoWhile extends WorkflowSystemTask {
 		return true;
 	}
 
-	boolean markLoopTaskSuccess(Task task, Workflow workflow, WorkflowExecutor workflowExecutor) {
+	boolean markLoopTaskSuccess(Task task) {
 		logger.debug("taskid {} took {} iterations to complete",task.getTaskId(), task.getIteration() + 1);
 		task.setStatus(Status.COMPLETED);
 		return true;
@@ -130,10 +134,10 @@ public class DoWhile extends WorkflowSystemTask {
 		TaskDef taskDefinition = workflowExecutor.getTaskDefinition(task);
 		Map<String, Object> taskInput = parametersUtils.getTaskInputV2(task.getWorkflowTask().getInputParameters(), workflow, task.getTaskId(), taskDefinition);
 		taskInput.put(task.getReferenceTaskName(), task.getOutputData());
-		List<Task> loopOver = workflow.getTasks().stream().filter(t -> (t.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration())) && t.isLoopOverTask()).collect(Collectors.toList());
+		List<Task> loopOver = workflow.getTasks().stream().filter(t -> (t.getReferenceTaskName().endsWith(getLoopOverTaskSuffix(task.getIteration()))) && t.isLoopOverTask()).collect(Collectors.toList());
 
 		for (Task loopOverTask : loopOver) {
-			taskInput.put(loopOverTask.getReferenceTaskName().split(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration())[0], loopOverTask.getOutputData());
+			taskInput.put(loopOverTask.getReferenceTaskName().split(getLoopOverTaskSuffix(task.getIteration()))[0], loopOverTask.getOutputData());
 		}
 		String condition = task.getWorkflowTask().getLoopCondition();
 		boolean shouldContinue = false;

@@ -198,9 +198,6 @@ public class Task {
     @ProtoField(id = 40)
     private int iteration;
 
-    @ProtoField(id = 41)
-    private boolean loopOverTask;
-
     public Task() {
     }
 
@@ -713,11 +710,7 @@ public class Task {
 
 
     public boolean isLoopOverTask() {
-        return loopOverTask;
-    }
-
-    public void setLoopOverTask(boolean loopOverTask) {
-        this.loopOverTask = loopOverTask;
+        return iteration > 0;
     }
 
     /**
@@ -736,7 +729,6 @@ public class Task {
 
     public void setLoopOverParams(int iteration) {
         setReferenceTaskName(getReferenceTaskName() + ":__:" + iteration);
-        setLoopOverTask(true);
         setIteration(iteration);
     }
 
