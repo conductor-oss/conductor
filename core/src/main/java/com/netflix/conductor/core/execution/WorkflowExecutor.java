@@ -1438,7 +1438,8 @@ public class WorkflowExecutor {
     public void scheduleNextIteration(Task loopTask, Workflow workflow) {
         List<Task> scheduledLoopOverTasks = deciderService.getTasksToBeScheduled(workflow, loopTask.getWorkflowTask().getLoopOver().get(0), loopTask.getRetryCount(), null);
         scheduledLoopOverTasks.stream().forEach(t -> {
-            t.setLoopOverParams(loopTask.getIteration());
+            t.setReferenceTaskName(t.getReferenceTaskName() + DoWhileTaskMapper.LOOP_TASK_DELIMITER + loopTask.getIteration());
+            t.setIteration(loopTask.getIteration());
         });
         scheduleTask(workflow, scheduledLoopOverTasks);
     }

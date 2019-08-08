@@ -727,11 +727,6 @@ public class Task {
         this.workflowPriority = workflowPriority;
     }
 
-    public void setLoopOverParams(int iteration) {
-        setReferenceTaskName(getReferenceTaskName() + ":__:" + iteration);
-        setIteration(iteration);
-    }
-
     public Task copy() {
         Task copy = new Task();
         copy.setCallbackAfterSeconds(callbackAfterSeconds);

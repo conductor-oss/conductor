@@ -190,7 +190,9 @@ public class DeciderService {
                 pendingTask.setExecuted(true);
                 List<Task> nextTasks = getNextTask(workflow, pendingTask);
                 if (pendingTask.isLoopOverTask() && !nextTasks.isEmpty()) {
-                    nextTasks.forEach(nextTask -> nextTask.setLoopOverParams(pendingTask.getIteration()));
+                    nextTasks.forEach(nextTask -> {
+                        nextTask.setReferenceTaskName(nextTask.getReferenceTaskName() + DoWhileTaskMapper.LOOP_TASK_DELIMITER + pendingTask.getIteration());
+                        nextTask.setIteration(pendingTask.getIteration());});
                 }
                 nextTasks.forEach(nextTask -> tasksToBeScheduled.putIfAbsent(nextTask.getReferenceTaskName(), nextTask));
                 outcome.tasksToBeUpdated.add(pendingTask);
