@@ -195,10 +195,10 @@ public class Task {
     @ProtoField(id = 38)
     private String isolationGroupId;
 
-    @ProtoField(id = 37)
+    @ProtoField(id = 40)
     private int iteration;
 
-    @ProtoField(id = 39)
+    @ProtoField(id = 41)
     private boolean loopOverTask;
 
     public Task() {

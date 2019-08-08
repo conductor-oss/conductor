@@ -551,7 +551,7 @@ public class DeciderService {
 
         // get tasks already scheduled (in progress/terminal) for  this workflow instance
         List<String> tasksInWorkflow = workflow.getTasks().stream()
-                .filter(runningTask -> runningTask.getStatus().equals(Status.IN_PROGRESS) || (runningTask.getStatus().isTerminal() && runningTask.isLoopOverTask()))
+                .filter(runningTask -> runningTask.getStatus().equals(Status.IN_PROGRESS) || runningTask.getStatus().isTerminal())
                 .map(Task::getReferenceTaskName)
                 .collect(Collectors.toList());
 
