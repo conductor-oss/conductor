@@ -57,14 +57,10 @@ public class ExecutionLockService {
         }
     }
 
-    public void releaseLock(String lockId, Workflow.WorkflowStatus status) {
+    public void deleteLock(String lockId) {
         if (config.enableWorkflowExecutionLock()) {
-            Lock  lock = lockProvider.get();
-            lock.releaseLock(lockId);
-//            if (status.isTerminal()) {
-//                lock.deleteLock(lockId);
-//            }
-//            LOGGER.debug("Thread {} deleted lockId {}.", Thread.currentThread().getId(), lockId);
+            lockProvider.get().deleteLock(lockId);
+            LOGGER.debug("Thread {} deleted lockId {}.", Thread.currentThread().getId(), lockId);
         }
     }
 }
