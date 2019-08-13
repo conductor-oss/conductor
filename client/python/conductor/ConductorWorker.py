@@ -74,6 +74,8 @@ class ConductorWorker:
             task['status'] = resp['status']
             task['outputData'] = resp['output']
             task['logs'] = resp['logs']
+            if 'reasonForIncompletion' in resp:
+                task['reasonForIncompletion'] = resp['reasonForIncompletion']
             self.taskClient.updateTask(task)
         except Exception as err:
             print('Error executing task: ' + str(err))
