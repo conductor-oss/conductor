@@ -2,7 +2,6 @@
 * Common place to define all the version dependencies */
 
 ext {
-    revAmqpClient = '5.6.0'
     revApacheCommons='2.6'
     revAwaitility = '3.1.2'
     revAwsSdk = '1.11.86'
