@@ -191,7 +191,7 @@ public class DeciderService {
                 List<Task> nextTasks = getNextTask(workflow, pendingTask);
                 if (pendingTask.isLoopOverTask() && !nextTasks.isEmpty()) {
                     nextTasks.forEach(nextTask -> {
-                        nextTask.setReferenceTaskName(nextTask.getReferenceTaskName() + DoWhileTaskMapper.LOOP_TASK_DELIMITER + pendingTask.getIteration());
+                        nextTask.setReferenceTaskName(nextTask.getReferenceTaskName() + DoWhileTaskMapper.LOOP_TASK_LEFT_DELIMITER + pendingTask.getIteration());
                         nextTask.setIteration(pendingTask.getIteration());});
                 }
                 nextTasks.forEach(nextTask -> tasksToBeScheduled.putIfAbsent(nextTask.getReferenceTaskName(), nextTask));
@@ -337,7 +337,7 @@ public class DeciderService {
             }
         }
 
-        String taskReferenceName = task.isLoopOverTask() ? task.getReferenceTaskName().split(DoWhileTaskMapper.LOOP_TASK_DELIMITER)[0] : task.getReferenceTaskName();
+        String taskReferenceName = task.isLoopOverTask() ? task.getReferenceTaskName().split( DoWhileTaskMapper.LOOP_TASK_LEFT_DELIMITER)[0] : task.getReferenceTaskName();
         WorkflowTask taskToSchedule = workflowDef.getNextTask(taskReferenceName);
         while (isTaskSkipped(taskToSchedule, workflow)) {
             taskToSchedule = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());
