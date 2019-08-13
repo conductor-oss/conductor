@@ -780,13 +780,6 @@ public class WorkflowExecutor {
         LOGGER.debug("Task: {} belonging to Workflow {} being updated", task, workflowInstance);
 
         String taskQueueName = QueueUtils.getQueueName(task);
-        if (workflowInstance.getStatus().isTerminal()) {
-            // Workflow is in terminal state
-            queueDAO.remove(taskQueueName, taskResult.getTaskId());
-            LOGGER.info("Workflow: {} has already finished execution. Task update for: {} ignored and removed from Queue: {}.", workflowInstance, taskResult.getTaskId(), taskQueueName);
-            Monitors.recordUpdateConflict(task.getTaskType(), workflowInstance.getWorkflowName(), workflowInstance.getStatus());
-            return;
-        }
 
         if (task.getStatus().isTerminal()) {
             // Task was already updated....
@@ -796,13 +789,21 @@ public class WorkflowExecutor {
             return;
         }
 
+        if (workflowInstance.getStatus().isTerminal()) {
+            // Workflow is in terminal state
+            queueDAO.remove(taskQueueName, taskResult.getTaskId());
+            LOGGER.info("Workflow: {} has already finished execution. Task update for: {} ignored and removed from Queue: {}.", workflowInstance, taskResult.getTaskId(), taskQueueName);
+            Monitors.recordUpdateConflict(task.getTaskType(), workflowInstance.getWorkflowName(), workflowInstance.getStatus());
+            return;
+        }
+
         task.setStatus(valueOf(taskResult.getStatus().name()));
         task.setOutputMessage(taskResult.getOutputMessage());
         task.setReasonForIncompletion(taskResult.getReasonForIncompletion());
         task.setWorkerId(taskResult.getWorkerId());
         task.setCallbackAfterSeconds(taskResult.getCallbackAfterSeconds());
-
         task.setOutputData(taskResult.getOutputData());
+
         if (task.getOutputData() != null) {
             externalPayloadStorageUtils.verifyAndUpload(task, TASK_OUTPUT);
         } else {
@@ -813,39 +814,64 @@ public class WorkflowExecutor {
             task.setEndTime(System.currentTimeMillis());
         }
 
-        executionDAOFacade.updateTask(task);
+        // Fails the workflow if any of the below operations fail.
+        // This helps avoid workflow inconsistencies. For example, for the taskResult with status:COMPLETED,
+        // if update task to primary data store is successful, but remove from queue fails,
+        // The decide wouldn't run and next task will not be scheduled.
+        // TODO Try to recover the workflow.
+        try {
+            String updateTaskQueueDesc = "Updating Task queues for taskId: " + task.getTaskId();
+            String taskQueueOperation = "updateTaskQueues";
+            String updateTaskDesc = "Updating Task with taskId: " + task.getTaskId();
+            String updateTaskOperation = "updateTask";
 
-        //If the task has failed update the failed task reference name in the workflow.
-        //This gives the ability to look at workflow and see what tasks have failed at a high level.
-        if (FAILED.equals(task.getStatus()) || FAILED_WITH_TERMINAL_ERROR.equals(task.getStatus())) {
-            workflowInstance.getFailedReferenceTaskNames().add(task.getReferenceTaskName());
-            executionDAOFacade.updateWorkflow(workflowInstance);
-            LOGGER.debug("Task: {} has a {} status and the Workflow has been updated with failed task reference", task, task.getStatus());
+            // Retry each operation twice before failing workflow.
+            new RetryUtil<>().retryOnException(() -> {
+                switch (task.getStatus()) {
+                    case COMPLETED:
+                    case CANCELED:
+                    case FAILED:
+                    case FAILED_WITH_TERMINAL_ERROR:
+                    case TIMED_OUT:
+                        queueDAO.remove(taskQueueName, taskResult.getTaskId());
+                        LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
+                        break;
+                    case IN_PROGRESS:
+                        // put it back in queue based on callbackAfterSeconds
+                        long callBack = taskResult.getCallbackAfterSeconds();
+                        queueDAO.remove(taskQueueName, task.getTaskId());
+                        LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
+                        queueDAO.push(taskQueueName, task.getTaskId(), task.getWorkflowPriority(), callBack); // Milliseconds
+                        LOGGER.debug("Task: {} pushed back to taskQueue: {} since the task status is {} with callbackAfterSeconds: {}", task, taskQueueName, task.getStatus().name(), callBack);
+                        break;
+                    default:
+                        break;
+                };
+                return null;
+            }, null, null, 2, updateTaskQueueDesc, taskQueueOperation);
+
+            new RetryUtil<>().retryOnException(() -> {
+                executionDAOFacade.updateTask(task);
+                return null;
+            }, null, null, 2, updateTaskDesc, updateTaskOperation);
+
+            //If the task has failed update the failed task reference name in the workflow.
+            //This gives the ability to look at workflow and see what tasks have failed at a high level.
+            if (FAILED.equals(task.getStatus()) || FAILED_WITH_TERMINAL_ERROR.equals(task.getStatus())) {
+                workflowInstance.getFailedReferenceTaskNames().add(task.getReferenceTaskName());
+                executionDAOFacade.updateWorkflow(workflowInstance);
+                LOGGER.debug("Task: {} has a {} status and the Workflow has been updated with failed task reference", task, task.getStatus());
+            }
+        } catch (Exception e) {
+            String errorMsg = String.format("Error updating task: %s for workflow: %s, terminating workflow.", task.getTaskId(), workflowId);
+            LOGGER.error(errorMsg, e);
+            Monitors.recordTaskUpdateError(task.getTaskType(), workflowInstance.getWorkflowName());
+            terminateWorkflow(workflowInstance, errorMsg, null);
+            return;
         }
 
         taskResult.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
         executionDAOFacade.addTaskExecLog(taskResult.getLogs());
-
-        switch (task.getStatus()) {
-            case COMPLETED:
-            case CANCELED:
-            case FAILED:
-            case FAILED_WITH_TERMINAL_ERROR:
-            case TIMED_OUT:
-                queueDAO.remove(taskQueueName, taskResult.getTaskId());
-                LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
-                break;
-            case IN_PROGRESS:
-                // put it back in queue based on callbackAfterSeconds
-                long callBack = taskResult.getCallbackAfterSeconds();
-                queueDAO.remove(taskQueueName, task.getTaskId());
-                LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
-                queueDAO.push(taskQueueName, task.getTaskId(), task.getWorkflowPriority(), callBack); // Milliseconds
-                LOGGER.debug("Task: {} pushed back to taskQueue: {} since the task status is {} with callbackAfterSeconds: {}", task, taskQueueName, task.getStatus().name(), callBack);
-                break;
-            default:
-                break;
-        }
 
         decide(workflowId);
 
