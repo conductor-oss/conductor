@@ -660,6 +660,8 @@ public class WorkflowExecutor {
         if (workflow.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
             workflowStatusListener.onWorkflowCompleted(workflow);
         }
+
+        executionLockService.deleteLock(workflow.getWorkflowId());
     }
 
     public void terminateWorkflow(String workflowId, String reason) {
@@ -761,7 +763,8 @@ public class WorkflowExecutor {
                 workflowStatusListener.onWorkflowTerminated(workflow);
             }
         } finally {
-            executionLockService.releaseLock(workflow.getCorrelationId());
+            executionLockService.releaseLock(workflow.getWorkflowId());
+            executionLockService.deleteLock(workflow.getWorkflowId());
         }
     }
 
@@ -1005,7 +1008,7 @@ public class WorkflowExecutor {
             LOGGER.error("Error deciding workflow: {}", workflowId, e);
             throw e;
         } finally {
-            executionLockService.releaseLock(workflowId, workflow.getStatus());
+            executionLockService.releaseLock(workflowId);
         }
         return false;
     }
@@ -1029,7 +1032,7 @@ public class WorkflowExecutor {
      */
     public void pauseWorkflow(String workflowId) {
         try {
-            executionLockService.waitForLock(workflowId);
+            executionLockService.acquireLock(workflowId);
             WorkflowStatus status = WorkflowStatus.PAUSED;
             Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, false);
             if (workflow.getStatus().isTerminal()) {
@@ -1051,7 +1054,7 @@ public class WorkflowExecutor {
      */
     public void resumeWorkflow(String workflowId) {
         try {
-            executionLockService.waitForLock(workflowId);
+            executionLockService.acquireLock(workflowId);
             Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, false);
             if (!workflow.getStatus().equals(WorkflowStatus.PAUSED)) {
                 throw new IllegalStateException("The workflow " + workflowId + " is not PAUSED so cannot resume. " +
