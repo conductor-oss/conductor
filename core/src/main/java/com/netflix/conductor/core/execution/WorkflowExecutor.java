@@ -1285,11 +1285,17 @@ public class WorkflowExecutor {
             addTaskToQueue(tasksToBeQueued);
             return startedSystemTasks;
         } catch (Exception e) {
-            LOGGER.error("Error scheduling tasks: {}, for workflow: {}", tasks.size(), workflow.getWorkflowId(), e);
+            List<String> taskIds = tasks.stream()
+                    .map(Task::getTaskId)
+                    .collect(Collectors.toList());
+            String errorMsg = String.format("Error scheduling tasks: %s, for workflow: %s", taskIds, workflow.getWorkflowId());
+            LOGGER.error(errorMsg, e);
             Monitors.error(className, "scheduleTask");
-            rollbackTasks(workflow.getWorkflowId(), createdTasks);
+            // TODO Provide a better implementation of rollbackTasks considering all the edge cases.
+            // Throwing exception to avoid workflow ending up in irrecoverable state.
+            // rollbackTasks(workflow.getWorkflowId(), createdTasks);
+            throw new TerminateWorkflowException(errorMsg);
         }
-        return false;
     }
 
     /**
