@@ -584,6 +584,7 @@ public class WorkflowExecutor {
         taskToBeRetried.setPollCount(0);
         taskToBeRetried.setCallbackAfterSeconds(0);
         task.setRetried(true);
+        task.setExecuted(true); // since this task is being retried and a retry has been computed, task lifecycle is complete
         return taskToBeRetried;
     }
 

@@ -95,7 +95,7 @@ public class ForkJoinTaskMapper implements TaskMapper {
                 .getNextTask(taskToSchedule.getTaskReferenceName());
 
         if (joinWorkflowTask == null || !joinWorkflowTask.getType().equals(TaskType.JOIN.name())) {
-            throw new TerminateWorkflowException("Dynamic join definition is not followed by a join task.  Check the blueprint");
+            throw new TerminateWorkflowException("Fork task definition is not followed by a join task.  Check the blueprint");
         }
         return tasksToBeScheduled;
     }
