@@ -31,6 +31,7 @@ nav:
         - Kitchensink: labs/kitchensink.md
     - Best Practices: bestpractices.md
     - FAQ: faq.md
+    - Technical Details: technicaldetails.md
     - License: license.md
 theme: readthedocs
 extra_css:
