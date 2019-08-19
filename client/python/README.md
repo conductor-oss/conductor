@@ -6,8 +6,11 @@ Python client for Conductor provides two sets of functions:
 
 ## Install
 
-```shell
-pip install conductor
+```Using virtualenv
+   virtualenv conductorclient
+   source conductorclient/bin/activate
+   cd ../conductor/client/python
+   python setup.py install
 ```
 
 ## Using Workflow Management API
