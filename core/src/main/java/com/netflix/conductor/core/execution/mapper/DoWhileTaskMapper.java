@@ -44,10 +44,8 @@ public class DoWhileTaskMapper implements TaskMapper {
     public static final String LOOP_TASK_LEFT_DELIMITER = "__";
 
     private final MetadataDAO metadataDAO;
-    private final ParametersUtils parametersUtils;
 
-    public DoWhileTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
-        this.parametersUtils = parametersUtils;
+    public DoWhileTaskMapper(MetadataDAO metadataDAO) {
         this.metadataDAO = metadataDAO;
     }
 

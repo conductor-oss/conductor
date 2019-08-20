@@ -24,8 +24,10 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 
 /**
  * @author Manan
@@ -68,24 +70,30 @@ public class DoWhileTest {
         provider = spy(new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService,
                 workflowStatusListener, executionDAOFacade, externalPayloadStorageUtils, config));
         loopWorkflowTask1 = new WorkflowTask();
-        loopWorkflowTask1.setTaskReferenceName("task1");
-        loopWorkflowTask1.setName("task1");
+        loopWorkflowTask1.setTaskReferenceName("task1__1");
+        loopWorkflowTask1.setName("task1__1");
         loopWorkflowTask2 = new WorkflowTask();
-        loopWorkflowTask2.setTaskReferenceName("task2");
-        loopWorkflowTask2.setName("task2");
+        loopWorkflowTask2.setTaskReferenceName("task2__1");
+        loopWorkflowTask2.setName("task2__1");
         task1 = new Task();
         task1.setWorkflowTask(loopWorkflowTask1);
-        task1.setReferenceTaskName("task1");
+        task1.setReferenceTaskName("task1__1");
         task1.setStatus(Task.Status.COMPLETED);
         task1.setTaskType(TaskType.HTTP.name());
+        task1.setInputData(new HashMap<>());
+        task1.setIteration(1);
         task2 = new Task();
         task2.setWorkflowTask(loopWorkflowTask2);
-        task2.setReferenceTaskName("task2");
+        task2.setReferenceTaskName("task2__1");
         task2.setStatus(Task.Status.COMPLETED);
         task2.setTaskType(TaskType.HTTP.name());
+        task2.setInputData(new HashMap<>());
+        task2.setIteration(1);
         loopTask = new Task();
         loopTask.setReferenceTaskName("loopTask");
         loopTask.setTaskType(TaskType.DO_WHILE.name());
+        loopTask.setInputData(new HashMap<>());
+        loopTask.setIteration(1);
         loopWorkflowTask = new WorkflowTask();
         loopWorkflowTask.setTaskReferenceName("loopTask");
         loopWorkflowTask.setName("loopTask");
@@ -102,9 +110,11 @@ public class DoWhileTest {
 
     @Test
     public void testSingleSuccessfulIteration() {
-        loopWorkflowTask.setLoopCondition("if ($.loopTask['iteration'] < 1) { false; } else { true; }");
+        Mockito.doReturn(Arrays.asList(task1, task2)).when(workflow).getTasks();
+        loopWorkflowTask.setLoopCondition("if ($.loopTask['iteration'] < 1) { true; } else { false; }");
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertTrue(success);
+        Mockito.verify(provider, times(0)).scheduleNextIteration(loopTask, workflow);
         Assert.assertEquals(loopTask.getStatus(), Task.Status.COMPLETED);
     }
 
@@ -133,18 +143,21 @@ public class DoWhileTest {
     @Test
     public void testSingleIteration() {
         loopTask.setStatus(Task.Status.IN_PROGRESS);
+        Mockito.doReturn(Arrays.asList(task1, task2)).when(workflow).getTasks();
         loopWorkflowTask.setLoopCondition("if ($.loopTask['iteration'] > 1) { false; } else { true; }");
-        Mockito.doNothing().when(provider).scheduleLoopTasks(loopTask, workflow);
+        Mockito.doNothing().when(provider).scheduleNextIteration(loopTask, workflow);
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertTrue(success);
+        Assert.assertEquals(loopTask.getIteration(), 2);
+        Mockito.verify(provider, times(1)).scheduleNextIteration(loopTask, workflow);
         Assert.assertTrue(loopTask.getStatus() == Task.Status.IN_PROGRESS);
     }
 
     @Test
     public void testConditionException() {
         loopTask.setTaskId("1");
-        loopWorkflowTask.setLoopCondition("this will give exception");
-        Mockito.doNothing().when(provider).scheduleLoopTasks(loopTask, workflow);
+        loopWorkflowTask.setLoopCondition("This will give exception");
+        Mockito.doNothing().when(provider).scheduleNextIteration(loopTask, workflow);
         boolean success = doWhile.execute(workflow, loopTask, provider);
         Assert.assertTrue(success);
         Assert.assertTrue(loopTask.getStatus() == Task.Status.FAILED_WITH_TERMINAL_ERROR);
