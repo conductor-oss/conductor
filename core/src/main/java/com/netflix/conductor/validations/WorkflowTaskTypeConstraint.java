@@ -5,6 +5,7 @@ import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.mapper.KafkaPublishTaskMapper;
+import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 
 import javax.validation.Constraint;
@@ -129,6 +130,11 @@ public @interface WorkflowTaskTypeConstraint {
             }
             if (workflowTask.getLoopOver() == null || workflowTask.getLoopOver().size() == 0) {
                 String message = String.format(PARAM_REQUIRED_STRING_FORMAT, "loopover", TaskType.DO_WHILE, workflowTask.getName());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                valid = false;
+            }
+            if (workflowTask.collectTasks().stream().anyMatch(t -> t.getType().equals(SubWorkflow.NAME))) {
+                String message = String.format("SUB_WORKFLOW task inside loopover task is not supported.");
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             }
