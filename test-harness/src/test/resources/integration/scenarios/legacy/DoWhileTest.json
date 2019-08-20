@@ -10,6 +10,7 @@
       "taskType": "DO_WHILE",
       "status": "IN_PROGRESS",
       "referenceTaskName": "loopTask",
+      "iteration": 1,
       "retryCount": 0,
       "seq": 1,
       "correlationId": "looptest",
@@ -30,12 +31,15 @@
       "callbackAfterSeconds": 0,
       "workflowTask": {
         "taskReferenceName": "loopTask",
+        "iteration": 1,
+        "name": "loopTask",
         "type": "DO_WHILE",
-        "loopCondition": "if ($.loopTask['iteration'] < 1 ) { false;} else {true;} ",
+        "loopCondition": "if ($.loopTask['iteration'] < 1 ) { true;} else {false;} ",
         "loopOver": [
             {
               "name": "junit_task_1",
-              "taskReferenceName": "t1",
+              "taskReferenceName": "t1__1",
+              "iteration": 1,
               "inputParameters": {
                 "p1": "workflow.input.param1",
                 "p2": "workflow.input.param2"
@@ -46,7 +50,8 @@
             },
             {
               "name": "junit_task_2",
-              "taskReferenceName": "t2",
+              "taskReferenceName": "t2__1",
+              "iteration": 1,
               "inputParameters": {
                 "tp1": "workflow.input.param1"
               },
@@ -68,7 +73,8 @@
         "p1": null,
         "p2": null
       },
-      "referenceTaskName": "t1",
+      "referenceTaskName": "t1__1",
+      "iteration": 1,
       "retryCount": 0,
       "seq": 2,
       "correlationId": "looptest",
@@ -89,7 +95,8 @@
       "callbackAfterSeconds": 0,
       "workflowTask": {
         "name": "junit_task_1",
-        "taskReferenceName": "t1",
+        "taskReferenceName": "t1__1",
+        "iteration": 1,
         "inputParameters": {
           "p1": "workflow.input.param1",
           "p2": "workflow.input.param2"
@@ -108,7 +115,8 @@
       "inputData": {
         "tp1": null
       },
-      "referenceTaskName": "t2",
+      "referenceTaskName": "t2__1",
+      "iteration": 1,
       "retryCount": 0,
       "seq": 3,
       "correlationId": "fanouttest",
@@ -129,7 +137,8 @@
       "callbackAfterSeconds": 0,
       "workflowTask": {
         "name": "junit_task_2",
-        "taskReferenceName": "t2",
+        "taskReferenceName": "t2__1",
+        "iteration": 1,
         "inputParameters": {
           "tp1": "workflow.input.param1"
         },

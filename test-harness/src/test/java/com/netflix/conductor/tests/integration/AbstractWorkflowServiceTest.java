@@ -40,6 +40,7 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.WorkflowSweeper;
+import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
@@ -658,6 +659,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         Task task1 = workflowExecutionService.poll("HTTP", "test");
         assertNotNull(task1);
+        assertTrue(task1.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_LEFT_DELIMITER + task1.getIteration()));
         assertTrue(workflowExecutionService.ackTaskReceived(task1.getTaskId()));
 
         task1.setStatus(COMPLETED);
@@ -665,6 +667,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         Task task2 = workflowExecutionService.poll("HTTP", "test");
         assertNotNull(task2);
+        assertTrue(task2.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_LEFT_DELIMITER + task1.getIteration()));
         assertTrue(workflowExecutionService.ackTaskReceived(task2.getTaskId()));
 
         Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
@@ -1288,6 +1291,16 @@ public abstract class AbstractWorkflowServiceTest {
         WorkflowTask loopTask = new WorkflowTask();
         loopTask.setType(TaskType.DO_WHILE.name());
         loopTask.setTaskReferenceName("loopTask");
+        loopTask.setName("loopTask");
+        loopTask.setWorkflowTaskType(TaskType.DO_WHILE);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("loopTask");
+        taskDef.setTimeoutSeconds(2);
+        taskDef.setRetryCount(1);
+        taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskDef.setRetryDelaySeconds(10);
+        metadataService.registerTaskDef(Arrays.asList(taskDef));
 
         WorkflowTask workflowTask1 = new WorkflowTask();
         workflowTask1.setName("junit_task_1");
@@ -1306,7 +1319,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         loopTask.getLoopOver().add(workflowTask1);
         loopTask.getLoopOver().add(workflowTask2);
-        loopTask.setLoopCondition("if ($.loopTask['iteration'] < 1 ) { false;} else {true;} ");
+        loopTask.setLoopCondition("if ($.loopTask['iteration'] <= 1 ) { false;} else {true;} ");
 
         workflowDef.getTasks().add(loopTask);
         metadataService.updateWorkflowDef(workflowDef);
