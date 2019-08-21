@@ -864,7 +864,7 @@ public class WorkflowExecutor {
                 LOGGER.debug("Task: {} has a {} status and the Workflow has been updated with failed task reference", task, task.getStatus());
             }
         } catch (Exception e) {
-            String errorMsg = String.format("Error updating task: %s for workflow: %s, terminating workflow.", task.getTaskId(), workflowId);
+            String errorMsg = String.format("Error updating task: %s for workflow: %s", task.getTaskId(), workflowId);
             LOGGER.error(errorMsg, e);
             Monitors.recordTaskUpdateError(task.getTaskType(), workflowInstance.getWorkflowName());
             throw new ApplicationException(Code.BACKEND_ERROR, e);

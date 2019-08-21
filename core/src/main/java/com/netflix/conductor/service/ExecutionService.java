@@ -191,6 +191,10 @@ public class ExecutionService {
 
 	}
 
+	public void terminateWorkflow(String workflowId, String reason) {
+		workflowExecutor.terminateWorkflow(workflowId, reason);
+	}
+
 	//For backward compatibility - to be removed in the later versions
 	public void updateTask(Task task) {
 		updateTask(new TaskResult(task));

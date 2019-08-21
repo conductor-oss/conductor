@@ -174,30 +174,31 @@ public class TaskServiceImpl implements TaskService {
             // Fail the task and let decide reevaluate the workflow, thereby preventing workflow being stuck from transient ack errors.
             String errorMsg = String.format("Error when trying to ack task %s", taskId);
             LOGGER.error(errorMsg, e);
-            try {
-                Task task = executionService.getTask(taskId);
-                Monitors.recordAckTaskError(task.getTaskType());
-                failTask(task, errorMsg);
-            } catch (Exception failTaskException) {
-                LOGGER.error("Unable to fail task on ack failure, taskId: {}", taskId, failTaskException);
-            }
+            Task task = executionService.getTask(taskId);
+            Monitors.recordAckTaskError(task.getTaskType());
+            failTask(task, errorMsg);
             ackResult.set(false);
         }
         return ackResult.get();
     }
 
     /**
-     * Fail a task.
+     * Updates the task with FAILED status; On exception, fails the workflow.
      * @param task
      * @param errorMsg
      */
     private void failTask(Task task, String errorMsg) {
-        TaskResult taskResult = new TaskResult();
-        taskResult.setStatus(TaskResult.Status.FAILED);
-        taskResult.setTaskId(task.getTaskId());
-        taskResult.setWorkflowInstanceId(task.getWorkflowInstanceId());
-        taskResult.setReasonForIncompletion(errorMsg);
-        executionService.updateTask(taskResult);
+        try {
+            TaskResult taskResult = new TaskResult();
+            taskResult.setStatus(TaskResult.Status.FAILED);
+            taskResult.setTaskId(task.getTaskId());
+            taskResult.setWorkflowInstanceId(task.getWorkflowInstanceId());
+            taskResult.setReasonForIncompletion(errorMsg);
+            executionService.updateTask(taskResult);
+        } catch (Exception e) {
+            LOGGER.error("Unable to fail task: {} in workflow: {}", task.getTaskId(), task.getWorkflowInstanceId(), e);
+            executionService.terminateWorkflow(task.getWorkflowInstanceId(), "Failed to ack task: " + task.getTaskId());
+        }
     }
 
     /**
