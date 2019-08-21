@@ -94,6 +94,7 @@ public class WorkflowExecutor {
 
     private int activeWorkerLastPollInSecs;
     public static final String DECIDER_QUEUE = "_deciderQueue";
+    public static final String LOOP_TASK_LEFT_DELIMITER = "__";
     private static final String className = WorkflowExecutor.class.getSimpleName();
 
     @Inject
