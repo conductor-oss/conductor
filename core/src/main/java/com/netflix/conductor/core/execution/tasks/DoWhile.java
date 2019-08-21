@@ -66,7 +66,7 @@ public class DoWhile extends WorkflowSystemTask {
 		StringBuilder failureReason = new StringBuilder();
 		Map<String, Object> output = new HashMap<>();
 		task.getOutputData().put("iteration", task.getIteration());
-		List<Task> loopOver = workflow.getTasks().stream().filter(t -> (t.getReferenceTaskName().endsWith(getLoopOverTaskSuffix(t.getIteration()))) && t.isLoopOverTask()).collect(Collectors.toList());
+		List<Task> loopOver = workflow.getTasks().stream().filter(t -> (t.getReferenceTaskName().endsWith(getLoopOverTaskSuffix(task.getIteration()))) && t.isLoopOverTask()).collect(Collectors.toList());
 
 		for (Task loopOverTask : loopOver) {
 			Status taskStatus = loopOverTask.getStatus();

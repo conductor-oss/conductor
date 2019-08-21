@@ -32,7 +32,7 @@ public class DoWhileTaskMapperTest {
     private TaskMapperContext taskMapperContext;
     private WorkflowTask taskToSchedule;
     private MetadataDAO metadataDAO;
-    private ParametersUtils parametersUtils;
+    private WorkflowDef  workflowDef;
 
     @Before
     public void setup() {
@@ -54,12 +54,11 @@ public class DoWhileTaskMapperTest {
 
         String taskId = IDGenerator.generate();
 
-        WorkflowDef  workflowDef = new WorkflowDef();
+        workflowDef = new WorkflowDef();
         workflow = new Workflow();
         workflow.setWorkflowDefinition(workflowDef);
 
         deciderService = Mockito.mock(DeciderService.class);
-        parametersUtils = Mockito.mock(ParametersUtils.class);
         metadataDAO = Mockito.mock(MetadataDAO.class);
 
         taskMapperContext = TaskMapperContext.newBuilder()
@@ -90,17 +89,12 @@ public class DoWhileTaskMapperTest {
     @Test
     public void shouldNotScheduleCompletedTask() {
 
-        taskToSchedule = new WorkflowTask();
-        taskToSchedule.setType(TaskType.DO_WHILE.name());
-        Task task = new Task();
-        task.setReferenceTaskName("Test");
-        task.setStatus(Task.Status.COMPLETED);
-        workflow.setTasks(Arrays.asList(task));
+        task1.setStatus(Task.Status.COMPLETED);
 
         List<Task> mappedTasks = new DoWhileTaskMapper(metadataDAO).getMappedTasks(taskMapperContext);
 
         assertNotNull(mappedTasks);
-        assertEquals(mappedTasks.size(), 0);
+        assertEquals(mappedTasks.size(), 1);
     }
 
 }

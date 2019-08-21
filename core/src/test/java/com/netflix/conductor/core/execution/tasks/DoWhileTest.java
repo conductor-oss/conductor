@@ -24,7 +24,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
@@ -37,6 +36,7 @@ public class DoWhileTest {
 
     private Workflow workflow;
     private Task loopTask;
+    private TaskDef loopTaskDef;
     private WorkflowTask loopWorkflowTask;
     private WorkflowTask loopWorkflowTask1;
     private WorkflowTask loopWorkflowTask2;
@@ -101,9 +101,12 @@ public class DoWhileTest {
         loopWorkflowTask.setLoopOver(Arrays.asList(task1.getWorkflowTask(), task2.getWorkflowTask()));
         loopTask.setWorkflowTask(loopWorkflowTask);
         doWhile = new DoWhile();
-        Mockito.doReturn(new TaskDef()).when(provider).getTaskDefinition(loopTask);
+        loopTaskDef = Mockito.mock(TaskDef.class);
+        Mockito.doReturn(loopTaskDef).when(provider).getTaskDefinition(loopTask);
         Mockito.doReturn(task1).when(workflow).getTaskByRefName(task1.getReferenceTaskName());
         Mockito.doReturn(task2).when(workflow).getTaskByRefName(task2.getReferenceTaskName());
+        Mockito.doReturn(task1).when(workflow).getTaskByRefName("task1__2");
+        Mockito.doReturn(task2).when(workflow).getTaskByRefName("task2__2");
         Mockito.doReturn(new HashMap<>()).when(parametersUtils).getTaskInputV2(isA(Map.class), isA(Workflow.class), isA(String.class), isA(TaskDef.class));
     }
 
@@ -152,6 +155,57 @@ public class DoWhileTest {
         Mockito.verify(provider, times(1)).scheduleNextIteration(loopTask, workflow);
         Assert.assertTrue(loopTask.getStatus() == Task.Status.IN_PROGRESS);
     }
+
+    @Test
+    public void testLoopOverTaskOutputInCondition() {
+        loopTask.setStatus(Task.Status.IN_PROGRESS);
+        Map<String, Object> output = new HashMap<>();
+        output.put("value", 1);
+        task1.setOutputData(output);
+        Mockito.doReturn(Arrays.asList(task1, task2)).when(workflow).getTasks();
+        loopWorkflowTask.setLoopCondition("if ($.task1['value'] == 1) { false; } else { true; }");
+        Mockito.doNothing().when(provider).scheduleNextIteration(loopTask, workflow);
+        boolean success = doWhile.execute(workflow, loopTask, provider);
+        Assert.assertTrue(success);
+        Mockito.verify(provider, times(0)).scheduleNextIteration(loopTask, workflow);
+        Assert.assertTrue(loopTask.getStatus() == Task.Status.COMPLETED);
+    }
+
+    @Test
+    public void testInputParameterInCondition() {
+        Map<String, Object> output = new HashMap<>();
+        output.put("value", 1);
+        loopTask.setInputData(output);
+        loopTask.setStatus(Task.Status.IN_PROGRESS);
+        loopWorkflowTask.setInputParameters(output);
+        Mockito.doReturn(output).when(parametersUtils).getTaskInputV2(loopTask.getWorkflowTask().getInputParameters(), workflow, loopTask.getTaskId(), loopTaskDef);
+        Mockito.doReturn(Arrays.asList(task1, task2)).when(workflow).getTasks();
+        loopWorkflowTask.setLoopCondition("if ($.value == 1) { false; } else { true; }");
+        Mockito.doNothing().when(provider).scheduleNextIteration(loopTask, workflow);
+        boolean success = doWhile.execute(workflow, loopTask, provider);
+        Assert.assertTrue(success);
+        Mockito.verify(provider, times(0)).scheduleNextIteration(loopTask, workflow);
+        Assert.assertTrue(loopTask.getStatus() == Task.Status.COMPLETED);
+    }
+
+    @Test
+    public void testSecondIteration() {
+        loopTask.setStatus(Task.Status.IN_PROGRESS);
+        Mockito.doReturn(Arrays.asList(task1, task2)).when(workflow).getTasks();
+        loopWorkflowTask.setLoopCondition("if ($.loopTask['iteration'] > 1) { false; } else { true; }");
+        Mockito.doNothing().when(provider).scheduleNextIteration(loopTask, workflow);
+        boolean success = doWhile.execute(workflow, loopTask, provider);
+        Assert.assertTrue(success);
+        Mockito.doReturn(Arrays.asList(task1, task2)).when(workflow).getTasks();
+        task1.setReferenceTaskName("task1__2");
+        task2.setReferenceTaskName("task1__2");
+        success = doWhile.execute(workflow, loopTask, provider);
+        Assert.assertTrue(success);
+        Mockito.verify(provider, times(1)).scheduleNextIteration(loopTask, workflow);
+        Assert.assertEquals(loopTask.getStatus(), Task.Status.COMPLETED);
+    }
+
+
 
     @Test
     public void testConditionException() {
