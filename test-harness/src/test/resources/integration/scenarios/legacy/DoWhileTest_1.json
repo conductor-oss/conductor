@@ -26,7 +26,7 @@
       "callbackFromWorker": true,
       "responseTimeoutSeconds": 0,
       "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
-      "workflowType": "DoWhileTest",
+      "workflowType": "DoWhileTest_1",
       "taskId": "3e66a03d-08ef-4e71-8588-49d6c82bc75d",
       "callbackAfterSeconds": 0,
       "workflowTask": {
@@ -151,7 +151,7 @@
       "queueWaitTime": 0
     }
   ],
-  "workflowType": "DoWhileTest",
+  "workflowType": "DoWhileTest_1",
   "version": 1,
   "correlationId": "looptask",
   "schemaVersion": 1,
