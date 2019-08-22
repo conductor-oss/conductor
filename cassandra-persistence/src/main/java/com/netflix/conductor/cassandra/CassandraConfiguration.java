@@ -35,7 +35,7 @@ public interface CassandraConfiguration extends Configuration {
     String CASSANDRA_REPLICATION_FACTOR_KEY_PROPERTY_NAME = "workflow.cassandra.replication.factor.key";
     String CASSANDRA_REPLICATION_FACTOR_KEY_DEFAULT_VALUE = "replication_factor";
 
-    String CASSANDRA_REPLICATION_FACTOR_VALUE_PROPERTY_NAME = "workflow.cassandra.replicaton.factor.value";
+    String CASSANDRA_REPLICATION_FACTOR_VALUE_PROPERTY_NAME = "workflow.cassandra.replication.factor.value";
     int CASSANDRA_REPLICATION_FACTOR_VALUE_DEFAULT_VALUE = 3;
 
     String CASSANDRA_SHARD_SIZE_PROPERTY_KEY = "workflow.cassandra.shard.size";

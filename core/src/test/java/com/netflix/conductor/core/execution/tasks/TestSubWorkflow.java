@@ -220,7 +220,7 @@ public class TestSubWorkflow {
 
         when(workflowExecutor.startWorkflow(eq("UnitWorkFlow"), eq(2), eq(inputData), eq(null), any(), any(), any(), eq(null), eq(null)))
                 .thenReturn("workflow_1");
-        when(workflowExecutor.getWorkflow(eq("sub-workflow-id"), eq(false)))
+        when(workflowExecutor.getWorkflow(eq("sub-workflow-id"), eq(true)))
                 .thenReturn(subWorkflowInstance);
 
         workflowInstance.setStatus(Workflow.WorkflowStatus.TIMED_OUT);

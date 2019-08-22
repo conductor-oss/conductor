@@ -16,32 +16,99 @@
 package com.netflix.conductor.core.utils;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import org.apache.commons.lang3.StringUtils;
 
 /**
- *
  * @author visingh
- *
  */
 public class QueueUtils {
 
-    public static final String DOMAIN_SEPARATOR = ":";
+	public static final String DOMAIN_SEPARATOR = ":";
+	public static final String ISOLATION_SEPARATOR = "-";
+	public static final String EXECUTION_NAME_SPACE_SEPRATOR = "@";
 
-    public static String getQueueName(Task task) {
-        return getQueueName(task.getTaskType(), task.getDomain());
-    }
+	//static Pattern pattern = Pattern.compile("(\\w):\\w@\\w-\\w");
 
-    public static String getQueueName(String taskType, String domain) {
-        String queueName = null;
-        if (domain == null) {
-            queueName = taskType;
-        } else {
-            queueName = domain + DOMAIN_SEPARATOR + taskType;
-        }
-        return queueName;
-    }
+	public static String getQueueName(Task task) {
+		return getQueueName(task.getTaskType(), task.getDomain(), task.getIsolationGroupId(), task.getExecutionNameSpace());
+	}
 
-    public static String getQueueNameWithoutDomain(String queueName) {
-        return queueName.substring(queueName.indexOf(DOMAIN_SEPARATOR) + 1);
-    }
+	/**
+	 *
+	 * @param taskType
+	 * @param domain
+	 * @param isolationGroup
+	 * @param executionNameSpace
+	 * @return   //domain:taskType@eexecutionNameSpace-isolationGroup
+	 */
+	public static String getQueueName(
+			String taskType, String domain, String isolationGroup, String executionNameSpace) {
 
+		String queueName = null;
+		if (domain == null) {
+			queueName = taskType;
+		} else {
+			queueName = domain + DOMAIN_SEPARATOR + taskType;
+		}
+
+		if (executionNameSpace != null) {
+			queueName = queueName + EXECUTION_NAME_SPACE_SEPRATOR + executionNameSpace;
+		}
+
+
+		if (isolationGroup != null) {
+			queueName = queueName + ISOLATION_SEPARATOR + isolationGroup;
+		}
+		return queueName;
+	}
+
+	public static String getQueueNameWithoutDomain(String queueName) {
+		return queueName.substring(queueName.indexOf(DOMAIN_SEPARATOR) + 1);
+	}
+
+	public static String getExecutionNameSpace(String queueName) {
+		if (StringUtils.contains(queueName, ISOLATION_SEPARATOR) && StringUtils.contains(queueName, EXECUTION_NAME_SPACE_SEPRATOR)) {
+			return StringUtils.substringBetween(queueName, EXECUTION_NAME_SPACE_SEPRATOR, ISOLATION_SEPARATOR);
+		} else if (StringUtils.contains(queueName, EXECUTION_NAME_SPACE_SEPRATOR)) {
+			return StringUtils.substringAfter(queueName, EXECUTION_NAME_SPACE_SEPRATOR);
+		} else {
+			return StringUtils.EMPTY;
+		}
+	}
+
+
+	public static boolean isIsolatedQueue(String queue) {
+		return StringUtils.isNotBlank(getIsolationGroup(queue));
+	}
+
+	private static String getIsolationGroup(String queue) {
+
+		return StringUtils.substringAfter(queue, QueueUtils.ISOLATION_SEPARATOR);
+
+	}
+
+	public static String getTaskType(String queue) {
+
+		if(StringUtils.isBlank(queue)) {
+			return StringUtils.EMPTY;
+		}
+
+		int domainSeperatorIndex = StringUtils.indexOf(queue, DOMAIN_SEPARATOR);
+		int startIndex = 0;
+		if (domainSeperatorIndex == -1) {
+			startIndex = 0;
+		} else {
+			startIndex = domainSeperatorIndex +1 ;
+		}
+		int endIndex = StringUtils.indexOf(queue, EXECUTION_NAME_SPACE_SEPRATOR);
+
+		if (endIndex == -1) {
+			endIndex = StringUtils.lastIndexOf(queue, ISOLATION_SEPARATOR);
+		}
+		if (endIndex == -1) {
+			endIndex = queue.length();
+		}
+
+		return StringUtils.substring(queue, startIndex, endIndex);
+	}
 }

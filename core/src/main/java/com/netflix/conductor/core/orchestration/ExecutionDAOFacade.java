@@ -30,8 +30,9 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.IOException;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * Service that acts as a facade for accessing execution data from the {@link ExecutionDAO} and {@link IndexDAO} storage layers
@@ -103,18 +104,20 @@ public class ExecutionDAOFacade {
      */
     public List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks) {
         if (!executionDAO.canSearchAcrossWorkflows()) {
-            List<Workflow> workflows = new LinkedList<>();
-            SearchResult<String> result = indexDAO.searchWorkflows("correlationId='" + correlationId + "'", "*", 0, 10000, null);
-            result.getResults().forEach(workflowId -> {
-                try {
-                    Workflow workflow = getWorkflowById(workflowId, includeTasks);
-                    workflows.add(workflow);
-                } catch (ApplicationException e) {
-                    //This might happen when the workflow archival failed and the workflow was removed from dynomite
-                    LOGGER.error("Error getting the workflowId: {}  for correlationId: {} from Dynomite/Archival", workflowId, correlationId, e);
-                }
-            });
-            return workflows;
+            SearchResult<String> result = indexDAO.searchWorkflows("correlationId='" + correlationId + "'", "*", 0, 1000, null);
+            return result.getResults().stream()
+                    .parallel()
+                    .map(workflowId -> {
+                        try {
+                            return getWorkflowById(workflowId, includeTasks);
+                        } catch (ApplicationException e) {
+                            // This might happen when the workflow archival failed and the workflow was removed from primary datastore
+                            LOGGER.error("Error getting the workflow: {}  for correlationId: {} from datastore/index", workflowId, correlationId, e);
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
         }
         return executionDAO.getWorkflowsByCorrelationId(correlationId, includeTasks);
     }
@@ -123,12 +126,12 @@ public class ExecutionDAOFacade {
         return executionDAO.getWorkflowsByType(workflowName, startTime, endTime);
     }
 
-    public List<Workflow> getPendingWorkflowsByName(String workflowName) {
-        return executionDAO.getPendingWorkflowsByType(workflowName);
+    public List<Workflow> getPendingWorkflowsByName(String workflowName, int version) {
+        return executionDAO.getPendingWorkflowsByType(workflowName, version);
     }
 
-    public List<String> getRunningWorkflowIdsByName(String workflowName) {
-        return executionDAO.getRunningWorkflowIds(workflowName);
+    public List<String> getRunningWorkflowIds(String workflowName, int version) {
+        return executionDAO.getRunningWorkflowIds(workflowName, version);
     }
 
     public long getPendingWorkflowCount(String workflowName) {

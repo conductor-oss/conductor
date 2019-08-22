@@ -14,8 +14,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 const getHits = data => get(data, 'result.hits', []);
 const getTotalHits = data => get(data, 'result.totalHits', 0);
 
-function* doFetchSearchResults() {
-  const {query, entirely, types, states, cutoff, start} = yield select(state => state.search);
+function* doFetchSearchResults() {  const {query, entirely, types, states, cutoff, start, version} = yield select(state => state.search);
+
   const queryParts = [];
 
   if (!isEmpty(types)) {
@@ -24,6 +24,10 @@ function* doFetchSearchResults() {
 
   if (!isEmpty(states)) {
     queryParts.push(`status IN (${toString(states)})`);
+  }
+
+  if(!isEmpty(version)){
+    queryParts.push(`version=${toString(version)}`)
   }
 
   const fullQuery = join(queryParts, ' AND ');

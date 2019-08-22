@@ -81,6 +81,7 @@ public class Event extends WorkflowSystemTask {
 		ObservableQueue queue = getQueue(workflow, task);
 		if(queue != null) {
 			queue.publish(Collections.singletonList(message));
+			logger.debug("Published message:{} to queue:{}", message.getId(), queue.getName());
 			task.getOutputData().putAll(payload);
 			if (isAsyncComplete(task)) {
 				task.setStatus(Status.IN_PROGRESS);

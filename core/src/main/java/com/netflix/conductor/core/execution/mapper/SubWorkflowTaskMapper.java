@@ -80,6 +80,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         subWorkflowTask.setTaskId(taskId);
         subWorkflowTask.setStatus(Task.Status.SCHEDULED);
         subWorkflowTask.setWorkflowTask(taskToSchedule);
+        subWorkflowTask.setWorkflowPriority(workflowInstance.getPriority());
         logger.debug("SubWorkflowTask {} created to be Scheduled", subWorkflowTask);
         return Collections.singletonList(subWorkflowTask);
     }

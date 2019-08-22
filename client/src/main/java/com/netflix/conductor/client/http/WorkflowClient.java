@@ -129,9 +129,17 @@ public class WorkflowClient extends ClientBase {
         } catch (IOException e) {
             String errorMsg = String.format("Unable to start workflow:%s, version:%s", startWorkflowRequest.getName(), version);
             logger.error(errorMsg, e);
+            WorkflowTaskMetrics.incrementWorkflowStartErrorCount(startWorkflowRequest.getName(), e);
             throw new ConductorClientException(errorMsg, e);
         }
-        return postForEntity("workflow", startWorkflowRequest, null, String.class, startWorkflowRequest.getName());
+        try {
+            return postForEntity("workflow", startWorkflowRequest, null, String.class, startWorkflowRequest.getName());
+        } catch (ConductorClientException e) {
+            String errorMsg = String.format("Unable to send start workflow request:%s, version:%s", startWorkflowRequest.getName(), version);
+            logger.error(errorMsg, e);
+            WorkflowTaskMetrics.incrementWorkflowStartErrorCount(startWorkflowRequest.getName(), e);
+            throw e;
+        }
     }
 
     /**

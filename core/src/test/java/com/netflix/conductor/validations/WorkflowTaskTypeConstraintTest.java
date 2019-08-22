@@ -492,6 +492,103 @@ public class WorkflowTaskTypeConstraintTest {
         Assert.assertEquals(0, validationErrors.size());
     }
 
+    @Test
+    public void testWorkflowTaskTypeKafkaPublish() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("KAFKA_PUBLISH");
+        workflowTask.getInputParameters().put("kafka_request", "testInput");
+
+        ConstraintMapping mapping = config.createConstraintMapping();
+
+        mapping.type(WorkflowTask.class)
+                .constraint(new WorkflowTaskTypeConstraintDef());
+
+        Validator validator = config.addMapping(mapping)
+                .buildValidatorFactory()
+                .getValidator();
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
+    }
+
+    @Test
+    public void testWorkflowTaskTypeKafkaPublishWithRequestParamMissing() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("KAFKA_PUBLISH");
+
+        ConstraintMapping mapping = config.createConstraintMapping();
+
+        mapping.type(WorkflowTask.class)
+                .constraint(new WorkflowTaskTypeConstraintDef());
+
+        Validator validator = config.addMapping(mapping)
+                .buildValidatorFactory()
+                .getValidator();
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(1, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(validationErrors.contains("inputParameters.kafka_request field is required for taskType: KAFKA_PUBLISH taskName: encode"));
+    }
+
+    @Test
+    public void testWorkflowTaskTypeKafkaPublishWithKafkaParamInTaskDef() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("KAFKA_PUBLISH");
+
+        ConstraintMapping mapping = config.createConstraintMapping();
+
+        mapping.type(WorkflowTask.class)
+                .constraint(new WorkflowTaskTypeConstraintDef());
+
+        Validator validator = config.addMapping(mapping)
+                .buildValidatorFactory()
+                .getValidator();
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("encode");
+        taskDef.getInputTemplate().put("kafka_request", "test_kafka_request");
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(taskDef);
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
+    }
+
+
+    @Test
+    public void testWorkflowTaskTypeKafkaPublioshWithRequestParamInTaskDefAndWorkflowTask() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("KAFKA_PUBLISH");
+        workflowTask.getInputParameters().put("kafka_request", "http://www.netflix.com");
+
+        ConstraintMapping mapping = config.createConstraintMapping();
+
+        mapping.type(WorkflowTask.class)
+                .constraint(new WorkflowTaskTypeConstraintDef());
+
+        Validator validator = config.addMapping(mapping)
+                .buildValidatorFactory()
+                .getValidator();
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("encode");
+        taskDef.getInputTemplate().put("kafka_request", "test Kafka Request");
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(taskDef);
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
+    }
+
     private List<String> getErrorMessages(WorkflowTask workflowTask) {
         Set<ConstraintViolation<WorkflowTask>> result = buildValidator().validate(workflowTask);
         List<String> validationErrors = new ArrayList<>();

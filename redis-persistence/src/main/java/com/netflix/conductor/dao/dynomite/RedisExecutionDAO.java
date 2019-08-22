@@ -412,8 +412,14 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		return workflow;
 	}
 
+	/**
+	 * @param workflowName name of the workflow
+	 * @param version the workflow version
+	 * @return list of workflow ids that are in RUNNING state
+	 * <em>returns workflows of all versions for the given workflow name</em>
+	 */
 	@Override
-	public List<String> getRunningWorkflowIds(String workflowName) {
+	public List<String> getRunningWorkflowIds(String workflowName, int version) {
 		Preconditions.checkNotNull(workflowName, "workflowName cannot be null");
 		List<String> workflowIds;
 		recordRedisDaoRequests("getRunningWorkflowsByName");
@@ -422,15 +428,19 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		return workflowIds;
 	}
 
+	/**
+	 * @param workflowName name of the workflow
+	 * @param version the workflow version
+	 * @return list of workflows that are in RUNNING state
+	 */
 	@Override
-	public List<Workflow> getPendingWorkflowsByType(String workflowName) {
+	public List<Workflow> getPendingWorkflowsByType(String workflowName, int version) {
 		Preconditions.checkNotNull(workflowName, "workflowName cannot be null");
-		List<Workflow> workflows = new LinkedList<>();
-		List<String> wfIds = getRunningWorkflowIds(workflowName);
-		for(String wfId : wfIds) {
-			workflows.add(getWorkflow(wfId));
-		}
-		return workflows;
+		List<String> workflowIds = getRunningWorkflowIds(workflowName, version);
+		return workflowIds.stream()
+				.map(this::getWorkflow)
+				.filter(workflow -> workflow.getWorkflowVersion() == version)
+				.collect(Collectors.toList());
 	}
 
 	@Override

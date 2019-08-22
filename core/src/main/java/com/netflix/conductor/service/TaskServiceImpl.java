@@ -26,6 +26,7 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import org.apache.commons.lang3.StringUtils;
@@ -39,6 +40,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @Audit
@@ -159,16 +161,44 @@ public class TaskServiceImpl implements TaskService {
     @Service
     public boolean ackTaskReceived(String taskId) {
         LOGGER.debug("Ack received for task: {}", taskId);
-        boolean ackResult;
+        String ackTaskDesc = "Ack Task with taskId: " + taskId;
+        String ackTaskOperation = "ackTaskReceived";
+        AtomicBoolean ackResult = new AtomicBoolean(false);
         try {
-            ackResult = executionService.ackTaskReceived(taskId);
+            new RetryUtil<>().retryOnException(() -> {
+                ackResult.set(executionService.ackTaskReceived(taskId));
+                return null;
+            }, null, null, 3, ackTaskDesc, ackTaskOperation);
+
         } catch (Exception e) {
-            // safe to ignore exception here, since the task will not be processed by the worker due to ack failure
-            // The task will eventually be available to be polled again after the unack timeout
-            LOGGER.error("Exception when trying to ack task {}", taskId, e);
-            ackResult = false;
+            // Fail the task and let decide reevaluate the workflow, thereby preventing workflow being stuck from transient ack errors.
+            String errorMsg = String.format("Error when trying to ack task %s", taskId);
+            LOGGER.error(errorMsg, e);
+            Task task = executionService.getTask(taskId);
+            Monitors.recordAckTaskError(task.getTaskType());
+            failTask(task, errorMsg);
+            ackResult.set(false);
         }
-        return ackResult;
+        return ackResult.get();
+    }
+
+    /**
+     * Updates the task with FAILED status; On exception, fails the workflow.
+     * @param task
+     * @param errorMsg
+     */
+    private void failTask(Task task, String errorMsg) {
+        try {
+            TaskResult taskResult = new TaskResult();
+            taskResult.setStatus(TaskResult.Status.FAILED);
+            taskResult.setTaskId(task.getTaskId());
+            taskResult.setWorkflowInstanceId(task.getWorkflowInstanceId());
+            taskResult.setReasonForIncompletion(errorMsg);
+            executionService.updateTask(taskResult);
+        } catch (Exception e) {
+            LOGGER.error("Unable to fail task: {} in workflow: {}", task.getTaskId(), task.getWorkflowInstanceId(), e);
+            executionService.terminateWorkflow(task.getWorkflowInstanceId(), "Failed to ack task: " + task.getTaskId());
+        }
     }
 
     /**

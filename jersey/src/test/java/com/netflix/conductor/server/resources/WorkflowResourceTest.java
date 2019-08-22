@@ -72,8 +72,8 @@ public class WorkflowResourceTest {
         Map<String, Object> input = new HashMap<>();
         input.put("1", "abc");
         String workflowID = "w112";
-        when(mockWorkflowService.startWorkflow(anyString(), anyInt(), anyString(), anyMapOf(String.class, Object.class))).thenReturn(workflowID);
-        assertEquals("w112", workflowResource.startWorkflow("test1", 1, "c123", input));
+        when(mockWorkflowService.startWorkflow(anyString(), anyInt(), anyString(), anyInt(), anyMapOf(String.class, Object.class))).thenReturn(workflowID);
+        assertEquals("w112", workflowResource.startWorkflow("test1", 1, "c123", 0, input));
     }
 
     @Test

@@ -24,7 +24,7 @@ public class JoinTaskMapperTest {
 
         WorkflowTask taskToSchedule = new WorkflowTask();
         taskToSchedule.setType(TaskType.JOIN.name());
-        taskToSchedule.setJoinOn(Arrays.asList("task1, task2"));
+        taskToSchedule.setJoinOn(Arrays.asList("task1", "task2"));
 
         String taskId = IDGenerator.generate();
 

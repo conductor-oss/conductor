@@ -16,6 +16,7 @@ nav:
         - System Tasks: configuration/systask.md
         - Event Handlers: configuration/eventhandlers.md
         - Task Domains: configuration/taskdomains.md
+        - Isolation Groups: configuration/isolationgroups.md
     - Conductor Server: server.md
     - API Specification: apispec.md
     - Conductor Metrics:
@@ -30,6 +31,7 @@ nav:
         - Kitchensink: labs/kitchensink.md
     - Best Practices: bestpractices.md
     - FAQ: faq.md
+    - Technical Details: technicaldetails.md
     - License: license.md
 theme: readthedocs
 extra_css:

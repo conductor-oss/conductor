@@ -19,8 +19,7 @@ message Task {
         COMPLETED_WITH_ERRORS = 5;
         SCHEDULED = 6;
         TIMED_OUT = 7;
-        READY_FOR_RERUN = 8;
-        SKIPPED = 9;
+        SKIPPED = 8;
     }
     string task_type = 1;
     Task.Status status = 2;
@@ -56,4 +55,7 @@ message Task {
     int32 rate_limit_frequency_in_seconds = 33;
     string external_input_payload_storage_path = 34;
     string external_output_payload_storage_path = 35;
+    int32 workflow_priority = 36;
+    string execution_name_space = 37;
+    string isolation_group_id = 38;
 }

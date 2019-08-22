@@ -62,6 +62,7 @@ public class WorkflowTaskMetrics {
 	private static final String TASK_RESULT_SIZE = "task_result_size";
 	private static final String WORKFLOW_INPUT_SIZE = "workflow_input_size";
 	private static final String EXTERNAL_PAYLOAD_USED = "external_payload_used";
+	private static final String WORKFLOW_START_ERROR = "workflow_start_error";
 
 
 	private static Registry registry = Spectator.globalRegistry();
@@ -171,5 +172,9 @@ public class WorkflowTaskMetrics {
 
 	public static void incrementExternalPayloadUsedCount(String name, String operation, String payloadType) {
 		incrementCount(EXTERNAL_PAYLOAD_USED, NAME, name, OPERATION, operation, PAYLOAD_TYPE, payloadType);
+	}
+
+	public static void incrementWorkflowStartErrorCount(String workflowType, Throwable t) {
+		incrementCount(WORKFLOW_START_ERROR, WORFLOW_TYPE, workflowType, EXCEPTION, t.getClass().getSimpleName());
 	}
 }

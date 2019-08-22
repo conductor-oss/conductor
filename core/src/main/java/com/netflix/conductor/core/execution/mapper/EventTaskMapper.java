@@ -67,6 +67,7 @@ public class EventTaskMapper implements TaskMapper {
         eventTask.getInputData().put("asyncComplete", asynComplete);
         eventTask.setTaskId(taskId);
         eventTask.setStatus(Task.Status.SCHEDULED);
+        eventTask.setWorkflowPriority(workflowInstance.getPriority());
         eventTask.setWorkflowTask(taskToSchedule);
 
         return Collections.singletonList(eventTask);

@@ -110,8 +110,10 @@ export default class WorkflowTable extends Component {
                            pagination={false} selectRow={selectRow}
                            options={{sizePerPage: 100}} tableStyle={{backgroundColor: 'red'}}>
         <TableHeaderColumn dataField="workflowType" dataAlign="left" dataSort>Workflow</TableHeaderColumn>
+        <TableHeaderColumn dataField="version" dataAlign="left" dataSort>Version</TableHeaderColumn>
         <TableHeaderColumn dataField="workflowId" isKey dataSort dataFormat={linkMaker}>Workflow ID</TableHeaderColumn>
         <TableHeaderColumn dataField="status" dataSort>Status</TableHeaderColumn>
+        <TableHeaderColumn dataField="priority" dataSort>Priority</TableHeaderColumn>
         <TableHeaderColumn dataField="startTime" dataSort dataAlign="right" dataFormat={formatDate}>Start Time</TableHeaderColumn>
         <TableHeaderColumn dataField="updateTime" dataSort dataAlign="right" dataFormat={formatDate}>Last Updated</TableHeaderColumn>
         <TableHeaderColumn dataField="endTime" dataSort dataAlign="right" dataFormat={formatDate}>End Time</TableHeaderColumn>

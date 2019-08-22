@@ -90,6 +90,7 @@ public class DecisionTaskMapper implements TaskMapper {
         decisionTask.setStartTime(System.currentTimeMillis());
         decisionTask.setStatus(Task.Status.IN_PROGRESS);
         decisionTask.setWorkflowTask(taskToSchedule);
+        decisionTask.setWorkflowPriority(workflowInstance.getPriority());
         tasksToBeScheduled.add(decisionTask);
 
         //get the list of tasks based on the decision

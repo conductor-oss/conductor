@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2018 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -25,7 +25,7 @@ import com.netflix.conductor.core.execution.SystemTaskType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +43,7 @@ public class JoinTaskMapper implements TaskMapper {
      * with a status of {@link Task.Status#IN_PROGRESS}
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId
-     * @return: A {@link Task} of type {@link SystemTaskType#JOIN} in a List
+     * @return A {@link Task} of type {@link SystemTaskType#JOIN} in a List
      */
     @Override
     public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) {
@@ -70,7 +70,8 @@ public class JoinTaskMapper implements TaskMapper {
         joinTask.setTaskId(taskId);
         joinTask.setStatus(Task.Status.IN_PROGRESS);
         joinTask.setWorkflowTask(taskToSchedule);
+        joinTask.setWorkflowPriority(workflowInstance.getPriority());
 
-        return Arrays.asList(joinTask);
+        return Collections.singletonList(joinTask);
     }
 }

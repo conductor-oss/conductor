@@ -91,6 +91,7 @@ public class DynamicTaskMapper implements TaskMapper {
         dynamicTask.setWorkflowTask(taskToSchedule);
         dynamicTask.setTaskType(taskName);
         dynamicTask.setRetriedTaskId(retriedTaskId);
+        dynamicTask.setWorkflowPriority(workflowInstance.getPriority());
         return Collections.singletonList(dynamicTask);
     }
 
