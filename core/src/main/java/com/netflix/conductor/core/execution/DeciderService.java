@@ -190,9 +190,7 @@ public class DeciderService {
                 pendingTask.setExecuted(true);
                 List<Task> nextTasks = getNextTask(workflow, pendingTask);
                 if (pendingTask.isLoopOverTask() && !nextTasks.isEmpty()) {
-                    nextTasks.forEach(nextTask -> {
-                        nextTask.setReferenceTaskName(nextTask.getReferenceTaskName() + DoWhileTaskMapper.LOOP_TASK_LEFT_DELIMITER + pendingTask.getIteration());
-                        nextTask.setIteration(pendingTask.getIteration());});
+                    nextTasks = filterNextLoopOverTasks(nextTasks, pendingTask, workflow);
                 }
                 nextTasks.forEach(nextTask -> tasksToBeScheduled.putIfAbsent(nextTask.getReferenceTaskName(), nextTask));
                 outcome.tasksToBeUpdated.add(pendingTask);
@@ -221,6 +219,22 @@ public class DeciderService {
         }
 
         return outcome;
+    }
+
+
+    List<Task> filterNextLoopOverTasks(List<Task> task, Task pendingTask, Workflow workflow) {
+        task.forEach(nextTask -> {
+            nextTask.setReferenceTaskName(nextTask.getReferenceTaskName() + DoWhileTaskMapper.LOOP_TASK_LEFT_DELIMITER + pendingTask.getIteration());
+            nextTask.setIteration(pendingTask.getIteration());});
+
+        List<String> tasksInWorkflow = workflow.getTasks().stream()
+            .filter(runningTask -> runningTask.getStatus().equals(Status.IN_PROGRESS) || runningTask.getStatus().isTerminal())
+            .map(Task::getReferenceTaskName)
+            .collect(Collectors.toList());
+
+        return task.stream()
+            .filter(runningTask -> !tasksInWorkflow.contains(runningTask.getReferenceTaskName()))
+            .collect(Collectors.toList());
     }
 
     private List<Task> startWorkflow(Workflow workflow) throws TerminateWorkflowException {

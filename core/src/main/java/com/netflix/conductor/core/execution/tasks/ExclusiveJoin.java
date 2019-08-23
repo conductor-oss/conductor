@@ -17,6 +17,7 @@
 package com.netflix.conductor.core.execution.tasks;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,6 +44,9 @@ public class ExclusiveJoin extends WorkflowSystemTask {
 		StringBuilder failureReason = new StringBuilder();
 		Task.Status taskStatus = null;
 		List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
+		if (task.isLoopOverTask()) {
+			joinOn = joinOn.stream().map(name -> name + WorkflowExecutor.LOOP_TASK_LEFT_DELIMITER + task.getIteration()).collect(Collectors.toList());
+		}
 		Task exclusiveTask = null;
 		for (String joinOnRef : joinOn) {
 			logger.info(" Exclusive Join On Task {} ", joinOnRef);

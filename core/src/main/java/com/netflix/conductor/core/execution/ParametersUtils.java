@@ -114,7 +114,7 @@ public class ParametersUtils {
                     taskParams.put("reasonForIncompletion", task.getReasonForIncompletion());
                     taskParams.put("callbackAfterSeconds", task.getCallbackAfterSeconds());
                     taskParams.put("workerId", task.getWorkerId());
-                    inputMap.put(task.getReferenceTaskName(), taskParams);
+                    inputMap.put(task.isLoopOverTask() ? task.getReferenceTaskName().split(WorkflowExecutor.LOOP_TASK_LEFT_DELIMITER)[0]  :  task.getReferenceTaskName(), taskParams);
                 });
 
         Configuration option = Configuration.defaultConfiguration()
