@@ -41,7 +41,7 @@ import java.util.Optional;
 public class DoWhileTaskMapper implements TaskMapper {
 
     public static final Logger logger = LoggerFactory.getLogger(DoWhileTaskMapper.class);
-    public static final String LOOP_TASK_LEFT_DELIMITER = "__";
+    public static final String LOOP_TASK_DELIMITER = "__";
 
     private final MetadataDAO metadataDAO;
 
@@ -100,11 +100,20 @@ public class DoWhileTaskMapper implements TaskMapper {
         List<Task> tasks2 = taskMapperContext.getDeciderService()
                 .getTasksToBeScheduled(workflowInstance, loopOverTasks.get(0), retryCount);
         tasks2.stream().forEach(t -> {
-            t.setReferenceTaskName(t.getReferenceTaskName() + LOOP_TASK_LEFT_DELIMITER + loopTask.getIteration());
+            t.setReferenceTaskName(t.getReferenceTaskName() + LOOP_TASK_DELIMITER + loopTask.getIteration());
             t.setIteration(loopTask.getIteration());
         });
         tasksToBeScheduled.addAll(tasks2);
 
         return tasksToBeScheduled;
+    }
+
+    public static String getTaskDefReferenceName(String name) {
+        String[] tokens = name.split(LOOP_TASK_DELIMITER);
+        return tokens.length > 0 ? tokens[0]: name;
+    }
+
+    public static String appendIteration(String name, int iteration) {
+        return name + LOOP_TASK_DELIMITER + iteration;
     }
 }

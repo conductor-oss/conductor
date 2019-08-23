@@ -19,6 +19,7 @@ package com.netflix.conductor.core.execution.tasks;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,7 +46,7 @@ public class ExclusiveJoin extends WorkflowSystemTask {
 		Task.Status taskStatus = null;
 		List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
 		if (task.isLoopOverTask()) {
-			joinOn = joinOn.stream().map(name -> name + WorkflowExecutor.LOOP_TASK_LEFT_DELIMITER + task.getIteration()).collect(Collectors.toList());
+			joinOn = joinOn.stream().map(name -> DoWhileTaskMapper.appendIteration(name, task.getIteration())).collect(Collectors.toList());
 		}
 		Task exclusiveTask = null;
 		for (String joinOnRef : joinOn) {

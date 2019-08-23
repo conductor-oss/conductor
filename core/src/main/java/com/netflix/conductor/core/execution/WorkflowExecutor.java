@@ -94,7 +94,6 @@ public class WorkflowExecutor {
 
     private int activeWorkerLastPollInSecs;
     public static final String DECIDER_QUEUE = "_deciderQueue";
-    public static final String LOOP_TASK_LEFT_DELIMITER = "__";
     private static final String className = WorkflowExecutor.class.getSimpleName();
 
     @Inject
@@ -1230,7 +1229,7 @@ public class WorkflowExecutor {
     }
 
     @VisibleForTesting
-    public boolean scheduleTask(Workflow workflow, List<Task> tasks) {
+    boolean scheduleTask(Workflow workflow, List<Task> tasks) {
         List<Task> createdTasks = new ArrayList<>();
 
         try {
@@ -1439,7 +1438,7 @@ public class WorkflowExecutor {
     public void scheduleNextIteration(Task loopTask, Workflow workflow) {
         List<Task> scheduledLoopOverTasks = deciderService.getTasksToBeScheduled(workflow, loopTask.getWorkflowTask().getLoopOver().get(0), loopTask.getRetryCount(), null);
         scheduledLoopOverTasks.stream().forEach(t -> {
-            t.setReferenceTaskName(t.getReferenceTaskName() + DoWhileTaskMapper.LOOP_TASK_LEFT_DELIMITER + loopTask.getIteration());
+            t.setReferenceTaskName(DoWhileTaskMapper.appendIteration(t.getReferenceTaskName(), loopTask.getIteration()));
             t.setIteration(loopTask.getIteration());
         });
         scheduleTask(workflow, scheduledLoopOverTasks);

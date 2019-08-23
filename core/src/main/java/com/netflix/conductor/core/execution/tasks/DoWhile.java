@@ -107,7 +107,7 @@ public class DoWhile extends WorkflowSystemTask {
 	}
 
 	String getLoopOverTaskSuffix(int iteration) {
-		return DoWhileTaskMapper.LOOP_TASK_LEFT_DELIMITER + iteration;
+		return DoWhileTaskMapper.LOOP_TASK_DELIMITER + iteration;
 	}
 
 	boolean scheduleNextIteration(Task task, Workflow workflow, WorkflowExecutor workflowExecutor) {

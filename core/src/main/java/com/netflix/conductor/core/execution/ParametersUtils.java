@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+
+import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 /**
@@ -114,7 +116,7 @@ public class ParametersUtils {
                     taskParams.put("reasonForIncompletion", task.getReasonForIncompletion());
                     taskParams.put("callbackAfterSeconds", task.getCallbackAfterSeconds());
                     taskParams.put("workerId", task.getWorkerId());
-                    inputMap.put(task.isLoopOverTask() ? task.getReferenceTaskName().split(WorkflowExecutor.LOOP_TASK_LEFT_DELIMITER)[0]  :  task.getReferenceTaskName(), taskParams);
+                    inputMap.put(task.isLoopOverTask() ? DoWhileTaskMapper.getTaskDefReferenceName(task.getReferenceTaskName()) :  task.getReferenceTaskName(), taskParams);
                 });
 
         Configuration option = Configuration.defaultConfiguration()

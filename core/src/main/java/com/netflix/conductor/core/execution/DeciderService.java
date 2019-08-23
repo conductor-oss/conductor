@@ -224,7 +224,7 @@ public class DeciderService {
 
     List<Task> filterNextLoopOverTasks(List<Task> task, Task pendingTask, Workflow workflow) {
         task.forEach(nextTask -> {
-            nextTask.setReferenceTaskName(nextTask.getReferenceTaskName() + DoWhileTaskMapper.LOOP_TASK_LEFT_DELIMITER + pendingTask.getIteration());
+            nextTask.setReferenceTaskName(DoWhileTaskMapper.appendIteration(nextTask.getReferenceTaskName(), pendingTask.getIteration()));
             nextTask.setIteration(pendingTask.getIteration());});
 
         List<String> tasksInWorkflow = workflow.getTasks().stream()
@@ -351,7 +351,7 @@ public class DeciderService {
             }
         }
 
-        String taskReferenceName = task.isLoopOverTask() ? task.getReferenceTaskName().split( DoWhileTaskMapper.LOOP_TASK_LEFT_DELIMITER)[0] : task.getReferenceTaskName();
+        String taskReferenceName = task.isLoopOverTask() ? DoWhileTaskMapper.getTaskDefReferenceName(task.getReferenceTaskName()) : task.getReferenceTaskName();
         WorkflowTask taskToSchedule = workflowDef.getNextTask(taskReferenceName);
         while (isTaskSkipped(taskToSchedule, workflow)) {
             taskToSchedule = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());
