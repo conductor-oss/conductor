@@ -7,6 +7,47 @@
   "workflowId": "WORKFLOW_INSTANCE_ID",
   "tasks": [
     {
+      "taskType": "HTTP",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": null,
+        "p2": null
+      },
+      "referenceTaskName": "http0__1",
+      "iteration": 1,
+      "retryCount": 0,
+      "seq": 2,
+      "correlationId": "looptest",
+      "pollCount": 0,
+      "taskDefName": "http0",
+      "scheduledTime": 1534983505160,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1534983505160,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "DoWhileTest_1",
+      "taskId": "feb6c6c2-0974-4e78-b4df-df4389c46aea",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "http0__1",
+        "taskReferenceName": "http0__1",
+        "iteration": 1,
+        "inputParameters": {
+          "tp1": "workflow.input.param1"
+        },
+        "type": "HTTP",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    },{
       "taskType": "DO_WHILE",
       "status": "IN_PROGRESS",
       "referenceTaskName": "loopTask",
@@ -36,29 +77,57 @@
         "type": "DO_WHILE",
         "loopCondition": "if ($.loopTask['iteration'] < 1 ) { true;} else {false;} ",
         "loopOver": [
-            {
-              "name": "junit_task_1",
-              "taskReferenceName": "t1__1",
-              "iteration": 1,
-              "inputParameters": {
-                "p1": "workflow.input.param1",
-                "p2": "workflow.input.param2"
-              },
-              "type": "HTTP",
-              "startDelay": 0,
-              "optional": false
+          {
+            "name": "http0",
+            "taskReferenceName": "http0",
+            "inputParameters": {
+              "tp1": "workflow.input.param1"
             },
-            {
-              "name": "junit_task_2",
-              "taskReferenceName": "t2__1",
-              "iteration": 1,
-              "inputParameters": {
-                "tp1": "workflow.input.param1"
-              },
-              "type": "HTTP",
-              "startDelay": 0,
-              "optional": false
+            "type": "HTTP",
+            "startDelay": 0,
+            "optional": false
+          },{
+            "name": "fork",
+            "taskReferenceName": "fork",
+            "type": "FORK_JOIN",
+            "forkTasks": [
+              [
+                {
+                  "name": "http1",
+                  "taskReferenceName": "http1",
+                  "inputParameters": {
+                    "tp1": "workflow.input.param1"
+                  },
+                  "type": "HTTP",
+                  "startDelay": 0,
+                  "optional": false
+                }
+              ],
+              [
+                {
+                  "name": "http2",
+                  "taskReferenceName": "http2",
+                  "inputParameters": {
+                    "tp1": "workflow.input.param1"
+                  },
+                  "type": "HTTP",
+                  "startDelay": 0,
+                  "optional": false
+                }
+              ]
+            ]
+          },
+          {
+            "name": "join",
+            "taskReferenceName": "join",
+            "type": "JOIN",
+            "inputData": {
+              "joinOn": [
+                "http1",
+                "http2"
+              ]
             }
+          }
         ],
         "startDelay": 0,
         "optional": false
@@ -66,89 +135,6 @@
       "rateLimitPerSecond": 0,
       "taskStatus": "SCHEDULED",
       "queueWaitTime": 2
-    },{
-      "taskType": "HTTP",
-      "status": "SCHEDULED",
-      "inputData": {
-        "p1": null,
-        "p2": null
-      },
-      "referenceTaskName": "t1__1",
-      "iteration": 1,
-      "retryCount": 0,
-      "seq": 2,
-      "correlationId": "looptest",
-      "pollCount": 0,
-      "taskDefName": "junit_task_1",
-      "scheduledTime": 1534983505160,
-      "startTime": 0,
-      "endTime": 0,
-      "updateTime": 1534983505160,
-      "startDelayInSeconds": 0,
-      "retried": false,
-      "executed": false,
-      "callbackFromWorker": true,
-      "responseTimeoutSeconds": 3600,
-      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
-      "workflowType": "FanInOutTest",
-      "taskId": "feb6c6c2-0974-4e78-b4df-df4389c46aea",
-      "callbackAfterSeconds": 0,
-      "workflowTask": {
-        "name": "junit_task_1",
-        "taskReferenceName": "t1__1",
-        "iteration": 1,
-        "inputParameters": {
-          "p1": "workflow.input.param1",
-          "p2": "workflow.input.param2"
-        },
-        "type": "HTTP",
-        "startDelay": 0,
-        "optional": false
-      },
-      "rateLimitPerSecond": 0,
-      "taskStatus": "SCHEDULED",
-      "queueWaitTime": 0
-    },
-    {
-      "taskType": "HTTP",
-      "status": "SCHEDULED",
-      "inputData": {
-        "tp1": null
-      },
-      "referenceTaskName": "t2__1",
-      "iteration": 1,
-      "retryCount": 0,
-      "seq": 3,
-      "correlationId": "fanouttest",
-      "pollCount": 0,
-      "taskDefName": "junit_task_2",
-      "scheduledTime": 1534983505160,
-      "startTime": 0,
-      "endTime": 0,
-      "updateTime": 1534983505160,
-      "startDelayInSeconds": 0,
-      "retried": false,
-      "executed": false,
-      "callbackFromWorker": true,
-      "responseTimeoutSeconds": 3600,
-      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
-      "workflowType": "FanInOutTest",
-      "taskId": "36ee8037-e378-4649-92ca-3655c4e2ba75",
-      "callbackAfterSeconds": 0,
-      "workflowTask": {
-        "name": "junit_task_2",
-        "taskReferenceName": "t2__1",
-        "iteration": 1,
-        "inputParameters": {
-          "tp1": "workflow.input.param1"
-        },
-        "type": "HTTP",
-        "startDelay": 0,
-        "optional": false
-      },
-      "rateLimitPerSecond": 0,
-      "taskStatus": "SCHEDULED",
-      "queueWaitTime": 0
     }
   ],
   "workflowType": "DoWhileTest_1",

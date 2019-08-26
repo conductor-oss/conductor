@@ -635,50 +635,69 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testDoWhileSingleIteration() throws Exception {
         try {
-            createDoWhileWorkflowWithIteration(2, false);
+            createDoWhileWorkflowWithIteration(1, false);
         } catch (Exception e) {
         }
-        String taskName = "junit_task_1";
-        TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
-        taskDef.setRetryCount(0);
-        taskDef.setTimeoutSeconds(0);
-        metadataService.updateTaskDef(taskDef);
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("http1");
+        taskDef.setTimeoutSeconds(2);
+        taskDef.setRetryCount(1);
+        taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskDef.setRetryDelaySeconds(10);
         metadataService.registerTaskDef(Arrays.asList(taskDef));
 
-        taskName = "junit_task_2";
-        taskDef = notFoundSafeGetTaskDef(taskName);
-        taskDef.setRetryCount(0);
-        taskDef.setTimeoutSeconds(0);
-        metadataService.updateTaskDef(taskDef);
-        metadataService.registerTaskDef(Arrays.asList(taskDef));
+        TaskDef taskDef2 = new TaskDef();
+        taskDef2.setName("http0");
+        taskDef2.setTimeoutSeconds(2);
+        taskDef2.setRetryCount(1);
+        taskDef2.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskDef2.setRetryDelaySeconds(10);
+        metadataService.registerTaskDef(Arrays.asList(taskDef2));
+
+        TaskDef taskDef1 = new TaskDef();
+        taskDef1.setName("http2");
+        taskDef1.setTimeoutSeconds(2);
+        taskDef1.setRetryCount(1);
+        taskDef1.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskDef1.setRetryDelaySeconds(10);
+        metadataService.registerTaskDef(Arrays.asList(taskDef1));
 
         Map<String, Object> input = new HashMap<>();
         String workflowId = startOrLoadWorkflowExecution(DO_WHILE_WF + "_1", 1, "looptest", input, null, null);
         System.out.println("testDoWhile.wfid=" + workflowId);
         printTaskStatuses(workflowId, "initiated");
 
-        Task task1 = workflowExecutionService.poll("HTTP", "test");
-        assertNotNull(task1);
-        assertTrue(task1.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task1.getIteration()));
-        assertTrue(workflowExecutionService.ackTaskReceived(task1.getTaskId()));
+        Task task = workflowExecutionService.poll("HTTP", "test");
+        assertNotNull(task);
+        assertTrue(task.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration()));
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
 
-        task1.setStatus(COMPLETED);
-        workflowExecutionService.updateTask(task1);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
 
-        Task task2 = workflowExecutionService.poll("HTTP", "test");
-        assertNotNull(task2);
-        assertTrue(task2.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task2.getIteration()));
-        assertTrue(workflowExecutionService.ackTaskReceived(task2.getTaskId()));
+        task = workflowExecutionService.poll("FORK_JOIN", "test");
+        assertNull(task); // fork task is completed
+
+        task = workflowExecutionService.poll("HTTP", "test");
+        assertNotNull(task);
+        assertTrue(task.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration()));
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("HTTP", "test");
+        assertNotNull(task);
+        assertTrue(task.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration()));
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("JOIN", "test");
+        assertNull(task); // Both HTTP task completed.
 
         Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
-        assertNotNull(workflow);
-        assertEquals("Found " + workflow.getTasks(), RUNNING, workflow.getStatus());
-        printTaskStatuses(workflow, "T1 completed");
-
-        task2.setStatus(COMPLETED);
-        workflowExecutionService.updateTask(task2);
-
-        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals("Found " + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
         printTaskStatuses(workflow, "All completed");
@@ -1465,9 +1484,9 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.updateWorkflowDef(workflowDef);
     }
 
-    private void createDoWhileWorkflowWithIteration(int iteration, boolean isInputParamter) {
+    private void createDoWhileWorkflowWithIteration(int iteration, boolean isInputParameter) {
         WorkflowDef workflowDef = new WorkflowDef();
-        if (isInputParamter) {
+        if (isInputParameter) {
             workflowDef.setName(DO_WHILE_WF + "_3");
         } else {
             workflowDef.setName(DO_WHILE_WF + "_" + iteration);
@@ -1532,7 +1551,7 @@ public abstract class AbstractWorkflowServiceTest {
         loopTask.getLoopOver().add(http0);
         loopTask.getLoopOver().add(fork);
         loopTask.getLoopOver().add(join);
-        if (isInputParamter) {
+        if (isInputParameter) {
             loopTask.setLoopCondition("if ($.loopTask['iteration'] < $.value) { true; } else { false; }");
         } else {
             loopTask.setLoopCondition("if ($.loopTask['iteration'] < " + iteration + " ) { true;} else {false;} ");
