@@ -774,6 +774,9 @@ public abstract class AbstractWorkflowServiceTest {
         assertTrue(task.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration()));
         assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
 
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
         task = workflowExecutionService.poll("HTTP", "test");
         assertNotNull(task);
         assertTrue(task.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration()));
@@ -787,7 +790,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
-        assertEquals("Found " + workflow.getTasks(), COMPLETED, workflow.getStatus());
+        assertEquals("Found " + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
     }
 
     @Test
