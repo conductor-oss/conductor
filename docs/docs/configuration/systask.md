@@ -556,13 +556,10 @@ The task is marked as ```FAILED``` if the message could not be published to the 
 
 ## Do While Task
 
-Do While Task allows tasks to be executed in loop until given condition become false. Condition is evaluated using nasshorn javascript engine.
-Iteration, loopover task's output or input parameters can be used to form condition.
-LoopOver Task history will be removed from execution once new iteration is scheduled.
-Do while task output number of iterations with iteration as key and value as number of iterations
-Each iteration's output will be stored as, iteration as key and loopover task's output as value
-Taskname which contains arithmetic operator must not be used in loopCondition.
-Any of loopOver task can be reference outside do while task same way other tasks are referenced.
+Do While Task allows tasks to be executed in loop until given condition become false. Condition is evaluated using nashorn javascript engine.
+Each iteration of loop over task will be scheduled as taskRefname__iteration. Iteration, any of loopover task's output or input parameters can be used to form a condition.
+Do while task output number of iterations with iteration as key and value as number of iterations. Each iteration's output will be stored as, iteration as key and loopover task's output as value
+Taskname which contains arithmetic operator must not be used in loopCondition. Any of loopOver task can be reference outside do while task same way other tasks are referenced.
 To reference specific iteration's output, ```$.LoopTask['iteration]['first_task']```
 Do while task does NOT support domain or isolation group execution.
 
@@ -584,8 +581,7 @@ Do while task does NOT support domain or isolation group execution.
             "inputParameters": {
               "value": "${workflow.input.value}"
             },
-            "loopCondition": "if ( ($.LoopTask['iteration'] < 5 ) || ( $.first_task['response']['body'] > 10) ||
-                            ($.value < 10)) { false; } else { true; }",
+            "loopCondition": "if ( ($.LoopTask['iteration'] < 5 ) || ( $.first_task['response']['body'] > 10) || ($.value < 10)) { false; } else { true; }",
             "loopOver": [
                 {
                     "name": "first_task",

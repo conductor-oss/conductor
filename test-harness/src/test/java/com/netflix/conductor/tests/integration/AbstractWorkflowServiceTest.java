@@ -635,7 +635,7 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testDoWhileSingleIteration() throws Exception {
         try {
-            createDoWhileWorkflowWithIteration(1);
+            createDoWhileWorkflowWithIteration(2, false);
         } catch (Exception e) {
         }
         String taskName = "junit_task_1";
@@ -687,7 +687,7 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testDoWhileTwoIteration() throws Exception {
         try {
-            createDoWhileWorkflowWithIteration(2);
+            createDoWhileWorkflowWithIteration(2, false);
         } catch (Exception e) {
         }
 
@@ -787,6 +787,81 @@ public abstract class AbstractWorkflowServiceTest {
 
         task = workflowExecutionService.poll("JOIN", "test");
         assertNull(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("Found " + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
+    @Test
+    public void testLoopConditionWithInputParamter() throws Exception {
+        try {
+            createDoWhileWorkflowWithIteration(2, true);
+        } catch (Exception e) {
+        }
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("http1");
+        taskDef.setTimeoutSeconds(2);
+        taskDef.setRetryCount(1);
+        taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskDef.setRetryDelaySeconds(10);
+        metadataService.registerTaskDef(Arrays.asList(taskDef));
+
+        TaskDef taskDef2 = new TaskDef();
+        taskDef2.setName("http0");
+        taskDef2.setTimeoutSeconds(2);
+        taskDef2.setRetryCount(1);
+        taskDef2.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskDef2.setRetryDelaySeconds(10);
+        metadataService.registerTaskDef(Arrays.asList(taskDef2));
+
+        TaskDef taskDef1 = new TaskDef();
+        taskDef1.setName("http2");
+        taskDef1.setTimeoutSeconds(2);
+        taskDef1.setRetryCount(1);
+        taskDef1.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskDef1.setRetryDelaySeconds(10);
+        metadataService.registerTaskDef(Arrays.asList(taskDef1));
+
+        Map<String, Object> input = new HashMap<>();
+        String workflowId = startOrLoadWorkflowExecution(DO_WHILE_WF + "_3", 1, "looptest", input, null, null);
+        System.out.println("testDoWhile.wfid=" + workflowId);
+        printTaskStatuses(workflowId, "initiated");
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("Found " + workflow.getTasks(), RUNNING, workflow.getStatus());
+
+        Task task = workflowExecutionService.poll("HTTP", "test");
+        assertNotNull(task);
+        assertTrue(task.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration()));
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("FORK_JOIN", "test");
+        assertNull(task); // fork task is completed
+
+        task = workflowExecutionService.poll("HTTP", "test");
+        assertNotNull(task);
+        assertTrue(task.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration()));
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("HTTP", "test");
+        assertNotNull(task);
+        assertTrue(task.getReferenceTaskName().endsWith(DoWhileTaskMapper.LOOP_TASK_DELIMITER + task.getIteration()));
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("JOIN", "test");
+        assertNull(task); // Both HTTP task completed.
 
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
@@ -1390,9 +1465,13 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.updateWorkflowDef(workflowDef);
     }
 
-    private void createDoWhileWorkflowWithIteration(int iteration) {
+    private void createDoWhileWorkflowWithIteration(int iteration, boolean isInputParamter) {
         WorkflowDef workflowDef = new WorkflowDef();
-        workflowDef.setName(DO_WHILE_WF + "_" + iteration);
+        if (isInputParamter) {
+            workflowDef.setName(DO_WHILE_WF + "_3");
+        } else {
+            workflowDef.setName(DO_WHILE_WF + "_" + iteration);
+        }
         workflowDef.setDescription(workflowDef.getName());
         workflowDef.setVersion(1);
         workflowDef.setInputParameters(Arrays.asList("param1", "param2"));
@@ -1402,6 +1481,9 @@ public abstract class AbstractWorkflowServiceTest {
         loopTask.setTaskReferenceName("loopTask");
         loopTask.setName("loopTask");
         loopTask.setWorkflowTaskType(TaskType.DO_WHILE);
+        Map<String, Object> input = new HashMap<>();
+        input.put("value", "${workflow.input.loop}");
+        loopTask.setInputParameters(input);
 
         TaskDef taskDef = new TaskDef();
         taskDef.setName("loopTask");
@@ -1409,6 +1491,7 @@ public abstract class AbstractWorkflowServiceTest {
         taskDef.setRetryCount(1);
         taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
         taskDef.setRetryDelaySeconds(10);
+
         metadataService.registerTaskDef(Arrays.asList(taskDef));
 
         Map<String, Object> inputParams1 = new HashMap<>();
@@ -1449,7 +1532,11 @@ public abstract class AbstractWorkflowServiceTest {
         loopTask.getLoopOver().add(http0);
         loopTask.getLoopOver().add(fork);
         loopTask.getLoopOver().add(join);
-        loopTask.setLoopCondition("if ($.loopTask['iteration'] < " + iteration + " ) { true;} else {false;} ");
+        if (isInputParamter) {
+            loopTask.setLoopCondition("if ($.loopTask['iteration'] < $.value) { true; } else { false; }");
+        } else {
+            loopTask.setLoopCondition("if ($.loopTask['iteration'] < " + iteration + " ) { true;} else {false;} ");
+        }
 
         workflowDef.getTasks().add(loopTask);
         metadataService.registerWorkflowDef(workflowDef);
