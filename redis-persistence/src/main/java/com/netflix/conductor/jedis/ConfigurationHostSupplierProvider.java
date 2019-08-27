@@ -2,17 +2,16 @@ package com.netflix.conductor.jedis;
 
 import com.netflix.conductor.dyno.DynomiteConfiguration;
 import com.netflix.dyno.connectionpool.Host;
+import com.netflix.dyno.connectionpool.HostBuilder;
 import com.netflix.dyno.connectionpool.HostSupplier;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
+import javax.inject.Provider;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
 
 public class ConfigurationHostSupplierProvider implements Provider<HostSupplier> {
     private static Logger logger = LoggerFactory.getLogger(ConfigurationHostSupplierProvider.class);
@@ -31,7 +30,7 @@ public class ConfigurationHostSupplierProvider implements Provider<HostSupplier>
 
     private List<Host> parseHostsFromConfig(DynomiteConfiguration configuration) {
         String hosts = configuration.getHosts();
-        if(hosts == null) {
+        if (hosts == null) {
             // FIXME This type of validation probably doesn't belong here.
             String message = String.format(
                     "Missing dynomite/redis hosts.  Ensure '%s' has been set in the supplied configuration.",
@@ -43,7 +42,7 @@ public class ConfigurationHostSupplierProvider implements Provider<HostSupplier>
         return parseHostsFrom(hosts);
     }
 
-    private List<Host> parseHostsFrom(String hostConfig){
+    private List<Host> parseHostsFrom(String hostConfig) {
         List<String> hostConfigs = Arrays.asList(hostConfig.split(";"));
 
         List<Host> hosts = hostConfigs.stream().map(hc -> {
@@ -54,10 +53,20 @@ public class ConfigurationHostSupplierProvider implements Provider<HostSupplier>
 
             if (hostConfigValues.length >= 4) {
                 String password = hostConfigValues[3];
-                return new Host(host, port, rack, Host.Status.Up, null, password);
+                return new HostBuilder()
+                        .setHostname(host)
+                        .setPort(port)
+                        .setRack(rack)
+                        .setStatus(Host.Status.Up)
+                        .setPassword(password)
+                        .createHost();
             }
-
-            return new Host(host, port, rack, Host.Status.Up);
+            return new HostBuilder()
+                    .setHostname(host)
+                    .setPort(port)
+                    .setRack(rack)
+                    .setStatus(Host.Status.Up)
+                    .createHost();
         }).collect(Collectors.toList());
 
         return hosts;

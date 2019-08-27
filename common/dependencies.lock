@@ -39,7 +39,7 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.2.0",
+            "locked": "2.3.2",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -51,7 +51,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "27.1-jre",
+            "locked": "28.0-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -63,7 +63,7 @@
             ]
         },
         "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.1",
+            "locked": "1.3",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -91,7 +91,7 @@
             "requested": "3.0"
         },
         "org.checkerframework:checker-qual": {
-            "locked": "2.5.2",
+            "locked": "2.8.1",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -167,7 +167,7 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.2.0",
+            "locked": "2.3.2",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -179,7 +179,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "27.1-jre",
+            "locked": "28.0-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -191,7 +191,7 @@
             ]
         },
         "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.1",
+            "locked": "1.3",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -219,7 +219,7 @@
             "requested": "3.0"
         },
         "org.checkerframework:checker-qual": {
-            "locked": "2.5.2",
+            "locked": "2.8.1",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -295,7 +295,7 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.2.0",
+            "locked": "2.3.2",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -307,7 +307,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "27.1-jre",
+            "locked": "28.0-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -319,7 +319,7 @@
             ]
         },
         "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.1",
+            "locked": "1.3",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -347,7 +347,7 @@
             "requested": "3.0"
         },
         "org.checkerframework:checker-qual": {
-            "locked": "2.5.2",
+            "locked": "2.8.1",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -486,7 +486,7 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.2.0",
+            "locked": "2.3.2",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -498,7 +498,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "27.1-jre",
+            "locked": "28.0-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -510,7 +510,7 @@
             ]
         },
         "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.1",
+            "locked": "1.3",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -538,7 +538,7 @@
             "requested": "3.0"
         },
         "org.checkerframework:checker-qual": {
-            "locked": "2.5.2",
+            "locked": "2.8.1",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -614,7 +614,7 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.2.0",
+            "locked": "2.3.2",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -626,7 +626,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "27.1-jre",
+            "locked": "28.0-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -638,7 +638,7 @@
             ]
         },
         "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.1",
+            "locked": "1.3",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -666,7 +666,7 @@
             "requested": "3.0"
         },
         "org.checkerframework:checker-qual": {
-            "locked": "2.5.2",
+            "locked": "2.8.1",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -742,7 +742,7 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.2.0",
+            "locked": "2.3.2",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -754,7 +754,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "27.1-jre",
+            "locked": "28.0-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -766,7 +766,7 @@
             ]
         },
         "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.1",
+            "locked": "1.3",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -798,7 +798,7 @@
             "requested": "3.0"
         },
         "org.checkerframework:checker-qual": {
-            "locked": "2.5.2",
+            "locked": "2.8.1",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -890,7 +890,7 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.2.0",
+            "locked": "2.3.2",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -902,7 +902,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "27.1-jre",
+            "locked": "28.0-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -914,7 +914,7 @@
             ]
         },
         "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.1",
+            "locked": "1.3",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -946,7 +946,7 @@
             "requested": "3.0"
         },
         "org.checkerframework:checker-qual": {
-            "locked": "2.5.2",
+            "locked": "2.8.1",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -1038,7 +1038,7 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.2.0",
+            "locked": "2.3.2",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -1050,7 +1050,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "27.1-jre",
+            "locked": "28.0-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -1062,7 +1062,7 @@
             ]
         },
         "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.1",
+            "locked": "1.3",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -1094,7 +1094,7 @@
             "requested": "3.0"
         },
         "org.checkerframework:checker-qual": {
-            "locked": "2.5.2",
+            "locked": "2.8.1",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -1186,7 +1186,7 @@
             ]
         },
         "com.google.errorprone:error_prone_annotations": {
-            "locked": "2.2.0",
+            "locked": "2.3.2",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -1198,7 +1198,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "27.1-jre",
+            "locked": "28.0-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -1210,7 +1210,7 @@
             ]
         },
         "com.google.j2objc:j2objc-annotations": {
-            "locked": "1.1",
+            "locked": "1.3",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -1242,7 +1242,7 @@
             "requested": "3.0"
         },
         "org.checkerframework:checker-qual": {
-            "locked": "2.5.2",
+            "locked": "2.8.1",
             "transitive": [
                 "com.google.guava:guava"
             ]
