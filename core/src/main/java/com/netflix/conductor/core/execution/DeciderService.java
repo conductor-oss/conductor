@@ -133,7 +133,7 @@ public class DeciderService {
                 .filter(isNonPendingTask)
                 .collect(Collectors.toList());
 
-        // Get all the tasks that are ready to rerun or not marked to be skipped
+        // Get all the tasks that have not completed their lifecycle yet
         // This list will be empty for a new workflow
         Set<String> executedTaskRefNames = workflow.getTasks()
                 .stream()

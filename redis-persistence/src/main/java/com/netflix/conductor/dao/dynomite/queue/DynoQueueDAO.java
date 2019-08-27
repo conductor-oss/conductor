@@ -16,6 +16,7 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.dyno.connectionpool.Host;
+import com.netflix.dyno.connectionpool.HostBuilder;
 import com.netflix.dyno.contrib.EurekaHostsSupplier;
 import com.netflix.dyno.jedis.DynoJedisClient;
 import com.netflix.dyno.queues.DynoQueue;
@@ -75,14 +76,21 @@ public class DynoQueueDAO implements QueueDAO {
             public List<Host> getHosts() {
                 List<Host> hosts = super.getHosts();
                 List<Host> updatedHosts = new ArrayList<>(hosts.size());
-                hosts.forEach(host -> {
-                    updatedHosts.add(new Host(host.getHostName(), host.getIpAddress(), readConnPort, host.getRack(), host.getDatacenter(), host.isUp() ? Host.Status.Up : Host.Status.Down));
-                });
+                hosts.forEach(host -> updatedHosts.add(
+                        new HostBuilder()
+                                .setHostname(host.getHostName())
+                                .setIpAddress(host.getIpAddress())
+                                .setPort(readConnPort)
+                                .setRack(host.getRack())
+                                .setDatacenter(host.getDatacenter())
+                                .setStatus(host.isUp() ? Host.Status.Up : Host.Status.Down)
+                                .createHost()
+                ));
                 return updatedHosts;
             }
         };
 
-        this.dynoClientRead = new DynoJedisClient.Builder().withApplicationName(config.getAppId()).withDynomiteClusterName(cluster).withHostSupplier(hostSupplier).build();
+        this.dynoClientRead = new DynoJedisClient.Builder().withApplicationName(config.getAppId()).withDynomiteClusterName(cluster).withHostSupplier(hostSupplier).isDatastoreClient(true).build();
         DynoJedisClient dyno = new DynoJedisClient.Builder().withApplicationName(config.getAppId()).withDynomiteClusterName(cluster).withDiscoveryClient(dc).build();
 
         this.dynoClient = dyno;
