@@ -71,7 +71,7 @@ Example Workflow task
 
 The property `workflow.isolated.system.task.worker.thread.count`  sets the thread pool size for isolated tasks; default is `1`.
 
-isolationGroupId is currently supported only in HTTP Task. 
+isolationGroupId is currently supported only in HTTP and kafka Task. 
 
 #### Execution Name Space
 
