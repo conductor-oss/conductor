@@ -661,6 +661,7 @@ public class WorkflowExecutor {
             workflowStatusListener.onWorkflowCompleted(workflow);
         }
 
+        executionLockService.releaseLock(workflow.getWorkflowId());
         executionLockService.deleteLock(workflow.getWorkflowId());
     }
 
