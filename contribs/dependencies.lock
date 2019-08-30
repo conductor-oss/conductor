@@ -7,7 +7,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -27,11 +27,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -468,7 +468,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -488,11 +488,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -936,7 +936,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -956,11 +956,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -1460,7 +1460,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -1480,11 +1480,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -1921,7 +1921,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -1941,11 +1941,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -2382,7 +2382,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -2402,11 +2402,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -2905,7 +2905,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -2925,11 +2925,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -3428,7 +3428,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -3448,11 +3448,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -3951,7 +3951,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -3971,11 +3971,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.619",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",

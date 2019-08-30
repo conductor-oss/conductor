@@ -51,7 +51,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "28.0-jre",
+            "locked": "28.1-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -97,7 +97,7 @@
             ]
         },
         "org.codehaus.mojo:animal-sniffer-annotations": {
-            "locked": "1.17",
+            "locked": "1.18",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -179,7 +179,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "28.0-jre",
+            "locked": "28.1-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -225,7 +225,7 @@
             ]
         },
         "org.codehaus.mojo:animal-sniffer-annotations": {
-            "locked": "1.17",
+            "locked": "1.18",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -307,7 +307,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "28.0-jre",
+            "locked": "28.1-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -353,7 +353,7 @@
             ]
         },
         "org.codehaus.mojo:animal-sniffer-annotations": {
-            "locked": "1.17",
+            "locked": "1.18",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -498,7 +498,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "28.0-jre",
+            "locked": "28.1-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -544,7 +544,7 @@
             ]
         },
         "org.codehaus.mojo:animal-sniffer-annotations": {
-            "locked": "1.17",
+            "locked": "1.18",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -626,7 +626,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "28.0-jre",
+            "locked": "28.1-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -672,7 +672,7 @@
             ]
         },
         "org.codehaus.mojo:animal-sniffer-annotations": {
-            "locked": "1.17",
+            "locked": "1.18",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -754,7 +754,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "28.0-jre",
+            "locked": "28.1-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -804,7 +804,7 @@
             ]
         },
         "org.codehaus.mojo:animal-sniffer-annotations": {
-            "locked": "1.17",
+            "locked": "1.18",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -902,7 +902,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "28.0-jre",
+            "locked": "28.1-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -952,7 +952,7 @@
             ]
         },
         "org.codehaus.mojo:animal-sniffer-annotations": {
-            "locked": "1.17",
+            "locked": "1.18",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -1050,7 +1050,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "28.0-jre",
+            "locked": "28.1-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -1100,7 +1100,7 @@
             ]
         },
         "org.codehaus.mojo:animal-sniffer-annotations": {
-            "locked": "1.17",
+            "locked": "1.18",
             "transitive": [
                 "com.google.guava:guava"
             ]
@@ -1198,7 +1198,7 @@
             ]
         },
         "com.google.guava:guava": {
-            "locked": "28.0-jre",
+            "locked": "28.1-jre",
             "transitive": [
                 "com.github.rholder:guava-retrying"
             ]
@@ -1248,7 +1248,7 @@
             ]
         },
         "org.codehaus.mojo:animal-sniffer-annotations": {
-            "locked": "1.17",
+            "locked": "1.18",
             "transitive": [
                 "com.google.guava:guava"
             ]

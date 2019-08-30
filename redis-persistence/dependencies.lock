@@ -165,10 +165,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.jayway.jsonpath:json-path": {
@@ -196,59 +193,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc6",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc6",
-            "requested": "2.0.0-rc6"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.eureka:eureka-client": {
@@ -310,10 +282,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey:jersey-client"
             ]
@@ -322,12 +291,6 @@
             "locked": "1.4.10",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
-            ]
-        },
-        "commons-cli:commons-cli": {
-            "locked": "1.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
             ]
         },
         "commons-codec:commons-codec": {
@@ -413,10 +376,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
@@ -478,10 +438,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
@@ -548,10 +505,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-eventbus",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core",
@@ -564,10 +518,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "redis.clients:jedis": {
@@ -769,10 +720,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.jayway.jsonpath:json-path": {
@@ -800,59 +748,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc6",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc6",
-            "requested": "2.0.0-rc6"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.eureka:eureka-client": {
@@ -914,10 +837,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey:jersey-client"
             ]
@@ -926,12 +846,6 @@
             "locked": "1.4.10",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
-            ]
-        },
-        "commons-cli:commons-cli": {
-            "locked": "1.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
             ]
         },
         "commons-codec:commons-codec": {
@@ -1017,10 +931,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
@@ -1082,10 +993,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
@@ -1152,10 +1060,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-eventbus",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core",
@@ -1168,10 +1073,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "redis.clients:jedis": {
@@ -1373,10 +1275,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.jayway.jsonpath:json-path": {
@@ -1404,59 +1303,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc6",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc6",
-            "requested": "2.0.0-rc6"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.eureka:eureka-client": {
@@ -1518,10 +1392,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey:jersey-client"
             ]
@@ -1530,12 +1401,6 @@
             "locked": "1.4.10",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
-            ]
-        },
-        "commons-cli:commons-cli": {
-            "locked": "1.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
             ]
         },
         "commons-codec:commons-codec": {
@@ -1621,10 +1486,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
@@ -1686,10 +1548,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
@@ -1756,10 +1615,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-eventbus",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core",
@@ -1772,10 +1628,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "redis.clients:jedis": {
@@ -2040,10 +1893,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.jayway.jsonpath:json-path": {
@@ -2071,59 +1921,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc6",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc6",
-            "requested": "2.0.0-rc6"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.eureka:eureka-client": {
@@ -2185,10 +2010,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey:jersey-client"
             ]
@@ -2197,12 +2019,6 @@
             "locked": "1.4.10",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
-            ]
-        },
-        "commons-cli:commons-cli": {
-            "locked": "1.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
             ]
         },
         "commons-codec:commons-codec": {
@@ -2288,10 +2104,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
@@ -2353,10 +2166,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
@@ -2423,10 +2233,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-eventbus",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core",
@@ -2439,10 +2246,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "redis.clients:jedis": {
@@ -2644,10 +2448,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.jayway.jsonpath:json-path": {
@@ -2675,59 +2476,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc6",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc6",
-            "requested": "2.0.0-rc6"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.eureka:eureka-client": {
@@ -2789,10 +2565,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey:jersey-client"
             ]
@@ -2801,12 +2574,6 @@
             "locked": "1.4.10",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
-            ]
-        },
-        "commons-cli:commons-cli": {
-            "locked": "1.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
             ]
         },
         "commons-codec:commons-codec": {
@@ -2892,10 +2659,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
@@ -2957,10 +2721,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
@@ -3027,10 +2788,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-eventbus",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core",
@@ -3043,10 +2801,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "redis.clients:jedis": {
@@ -3248,10 +3003,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.jayway.jsonpath:json-path": {
@@ -3279,59 +3031,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc6",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc6",
-            "requested": "2.0.0-rc6"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.eureka:eureka-client": {
@@ -3393,10 +3120,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey:jersey-client"
             ]
@@ -3405,12 +3129,6 @@
             "locked": "1.4.10",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
-            ]
-        },
-        "commons-cli:commons-cli": {
-            "locked": "1.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
             ]
         },
         "commons-codec:commons-codec": {
@@ -3496,10 +3214,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
@@ -3565,10 +3280,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
@@ -3651,10 +3363,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-eventbus",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core",
@@ -3667,10 +3376,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "redis.clients:jedis": {
@@ -3872,10 +3578,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.jayway.jsonpath:json-path": {
@@ -3903,59 +3606,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc6",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc6",
-            "requested": "2.0.0-rc6"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.eureka:eureka-client": {
@@ -4017,10 +3695,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey:jersey-client"
             ]
@@ -4029,12 +3704,6 @@
             "locked": "1.4.10",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
-            ]
-        },
-        "commons-cli:commons-cli": {
-            "locked": "1.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
             ]
         },
         "commons-codec:commons-codec": {
@@ -4120,10 +3789,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
@@ -4189,10 +3855,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
@@ -4275,10 +3938,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-eventbus",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core",
@@ -4291,10 +3951,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "redis.clients:jedis": {
@@ -4496,10 +4153,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.jayway.jsonpath:json-path": {
@@ -4527,59 +4181,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc6",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc6",
-            "requested": "2.0.0-rc6"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.eureka:eureka-client": {
@@ -4641,10 +4270,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey:jersey-client"
             ]
@@ -4653,12 +4279,6 @@
             "locked": "1.4.10",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
-            ]
-        },
-        "commons-cli:commons-cli": {
-            "locked": "1.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
             ]
         },
         "commons-codec:commons-codec": {
@@ -4744,10 +4364,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
@@ -4813,10 +4430,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
@@ -4899,10 +4513,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-eventbus",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core",
@@ -4915,10 +4526,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "redis.clients:jedis": {
@@ -5120,10 +4728,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.jayway.jsonpath:json-path": {
@@ -5151,59 +4756,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc6",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc6",
-            "requested": "2.0.0-rc6"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-demo": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5-rc.3",
+            "locked": "1.6.5-rc.4",
             "transitive": [
-                "com.netflix.dyno-queues:dyno-queues-redis",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-recipes"
-            ]
-        },
-        "com.netflix.dyno:dyno-memcache": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
-            ]
-        },
-        "com.netflix.dyno:dyno-recipes": {
-            "locked": "1.6.5-rc.3",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
+                "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.eureka:eureka-client": {
@@ -5265,10 +4845,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey:jersey-client"
             ]
@@ -5277,12 +4854,6 @@
             "locked": "1.4.10",
             "transitive": [
                 "com.netflix.eureka:eureka-client"
-            ]
-        },
-        "commons-cli:commons-cli": {
-            "locked": "1.4",
-            "transitive": [
-                "com.netflix.dyno:dyno-demo"
             ]
         },
         "commons-codec:commons-codec": {
@@ -5368,10 +4939,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-infix"
             ]
         },
@@ -5437,10 +5005,7 @@
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.eureka:eureka-client",
                 "com.sun.jersey.contribs:jersey-apache-client4"
             ]
@@ -5523,10 +5088,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
                 "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes",
                 "com.netflix.netflix-commons:netflix-eventbus",
                 "com.netflix.netflix-commons:netflix-infix",
                 "com.netflix.servo:servo-core",
@@ -5539,10 +5101,7 @@
             "transitive": [
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-core",
-                "com.netflix.dyno:dyno-demo",
-                "com.netflix.dyno:dyno-jedis",
-                "com.netflix.dyno:dyno-memcache",
-                "com.netflix.dyno:dyno-recipes"
+                "com.netflix.dyno:dyno-jedis"
             ]
         },
         "redis.clients:jedis": {
