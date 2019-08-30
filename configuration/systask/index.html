@@ -369,8 +369,8 @@ The task takes 3 parameters:</p>
 </table>
 <p><strong>Example</strong></p>
 <div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;sink&quot;</span><span class="p">:</span> <span class="s2">&quot;sqs:example_sqs_queue_name&quot;</span>
-    <span class="s2">&quot;asyncComplete&quot;</span><span class="p">:</span> <span class="kc">false</span>
+    <span class="nt">&quot;sink&quot;</span><span class="p">:</span> <span class="s2">&quot;sqs:example_sqs_queue_name&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;asyncComplete&quot;</span><span class="p">:</span> <span class="kc">false</span>
 <span class="p">}</span>
 </pre></div>
 
@@ -914,7 +914,11 @@ None required.</p>
 </tr>
 <tr>
 <td>requestTimeoutMs</td>
-<td>Request timeout while publishing to kafka. If this value is not given the value is read from the property <code>kafka.publish.request.timeout.ms</code>. If the property is not set the value defaults to 100</td>
+<td>Request timeout while publishing to kafka. If this value is not given the value is read from the property <code>kafka.publish.request.timeout.ms</code>. If the property is not set the value defaults to 100 ms</td>
+</tr>
+<tr>
+<td>maxBlockMs</td>
+<td>maxBlockMs while publishing to kafka. If this value is not given the value is read from the property <code>kafka.publish.max.block.ms</code>. If the property is not set the value defaults to 500 ms</td>
 </tr>
 <tr>
 <td>headers</td>
@@ -926,21 +930,28 @@ None required.</p>
 </tr>
 </tbody>
 </table>
+<p>The producer created in the kafka task is cached. By default the cache size is 10 and expiry time is 120000 ms. To change the defaults following can be modified kafka.publish.producer.cache.size,kafka.publish.producer.cache.time.ms respectively.  </p>
 <p><strong>Kafka Task Output</strong></p>
 <p>Task status transitions to COMPLETED</p>
 <p><strong>Example</strong></p>
-<p>Task Input payload sample</p>
-<div class="codehilite"><pre><span></span><span class="s2">&quot;kafka_request&quot;</span><span class="err">:</span> <span class="p">{</span>
-            <span class="nt">&quot;topic&quot;</span><span class="p">:</span> <span class="s2">&quot;userTopic&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;Message to publish&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;bootStrapServers&quot;</span><span class="p">:</span><span class="s2">&quot;localhost:9092&quot;</span><span class="p">,</span>
-             <span class="nt">&quot;headers&quot;</span> <span class="p">:{</span>
-              <span class="nt">&quot;x-Auth&quot;</span><span class="p">:</span><span class="s2">&quot;Auth-key&quot;</span>
-             <span class="p">},</span>
-             <span class="nt">&quot;key&quot;</span><span class="p">:</span><span class="s2">&quot;123&quot;</span><span class="p">,</span>
-             <span class="nt">&quot;keySerializer&quot;</span><span class="p">:</span><span class="s2">&quot;org.apache.kafka.common.serialization.IntegerSerializer&quot;</span>
-          <span class="p">}</span>
-<span class="err">}</span>
+<p>Task sample</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;call_kafka&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;call_kafka&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;kafka_request&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;topic&quot;</span><span class="p">:</span> <span class="s2">&quot;userTopic&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;value&quot;</span><span class="p">:</span> <span class="s2">&quot;Message to publish&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;bootStrapServers&quot;</span><span class="p">:</span> <span class="s2">&quot;localhost:9092&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;headers&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;x-Auth&quot;</span><span class="p">:</span><span class="s2">&quot;Auth-key&quot;</span>    
+      <span class="p">},</span>
+      <span class="nt">&quot;key&quot;</span><span class="p">:</span> <span class="s2">&quot;123&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;keySerializer&quot;</span><span class="p">:</span> <span class="s2">&quot;org.apache.kafka.common.serialization.IntegerSerializer&quot;</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;KAFKA_PUBLISH&quot;</span>
+<span class="p">}</span>
 </pre></div>
 
 

@@ -302,7 +302,7 @@
 </ul>
 <p><b>Note: </b>  To enable the this feature, the <code>workflow.isolated.system.task.enable</code> property needs to be made <code>true</code>,its default value is <code>false</code></p>
 <p>The property <code>workflow.isolated.system.task.worker.thread.count</code>  sets the thread pool size for isolated tasks; default is <code>1</code>.</p>
-<p>isolationGroupId is currently supported only in HTTP Task. </p>
+<p>isolationGroupId is currently supported only in HTTP and kafka Task. </p>
 <h4 id="execution-name-space">Execution Name Space<a class="headerlink" href="#execution-name-space" title="Permanent link">&para;</a></h4>
 <p><code>executionNameSpace</code> A property of taskdef can be used to provide JVM isolation to task execution and scale executor deployments horizontally.</p>
 <p>Limitation of using isolationGroupId is that we need to scale executors vertically as the executor allocates a new thread pool per <code>isolationGroupId</code>.  Also, since the executor runs the tasks in the same JVM, task execution is not isolated completely. </p>
