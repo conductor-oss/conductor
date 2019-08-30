@@ -535,19 +535,25 @@ Task status transitions to COMPLETED
 
 **Example**
 
-Task Input payload sample
+Task sample
 
 ```json
-"kafka_request": {
-            "topic": "userTopic",
-            "value": "Message to publish",
-            "bootStrapServers":"localhost:9092",
-             "headers" :{
-              "x-Auth":"Auth-key"
-             },
-             "key":"123",
-             "keySerializer":"org.apache.kafka.common.serialization.IntegerSerializer"
-          }
+{
+  "name": "call_kafka",
+  "taskReferenceName": "call_kafka",
+  "inputParameters": {
+    "kafka_request": {
+      "topic": "userTopic",
+      "value": "Message to publish",
+      "bootStrapServers": "localhost:9092",
+      "headers": {
+  	"x-Auth":"Auth-key"    
+      },
+      "key": "123",
+      "keySerializer": "org.apache.kafka.common.serialization.IntegerSerializer"
+    }
+  },
+  "type": "KAFKA_PUBLISH"
 }
 ```
 
