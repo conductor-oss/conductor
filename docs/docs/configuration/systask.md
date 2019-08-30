@@ -78,7 +78,7 @@ Event task provides ability to publish an event (message) to either Conductor or
 
 ``` json
 {
-	"sink": "sqs:example_sqs_queue_name"
+	"sink": "sqs:example_sqs_queue_name",
 	"asyncComplete": false
 }
 ```
