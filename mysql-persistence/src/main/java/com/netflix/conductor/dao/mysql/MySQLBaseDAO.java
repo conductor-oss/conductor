@@ -4,14 +4,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.sql.ExecuteFunction;
 import com.netflix.conductor.sql.QueryFunction;
 import com.netflix.conductor.sql.TransactionalFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -20,8 +17,22 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import javax.sql.DataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+
+import static com.mysql.cj.exceptions.MysqlErrorNumbers.ER_LOCK_DEADLOCK;
+import static com.netflix.conductor.core.execution.ApplicationException.Code.BACKEND_ERROR;
+import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT;
+import static com.netflix.conductor.core.execution.ApplicationException.Code.INTERNAL_ERROR;
+import static java.lang.Integer.parseInt;
+import static java.lang.System.getProperty;
 
 public abstract class MySQLBaseDAO {
+    private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_NAME = "conductor.mysql.deadlock.retry.max";
+    private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE = "3";
+    private static final int MAX_RETRY_ON_DEADLOCK = getMaxRetriesOnDeadLock();
     private static final List<String> EXCLUDED_STACKTRACE_CLASS = ImmutableList.of(
             MySQLBaseDAO.class.getName(),
             Thread.class.getName()
@@ -48,7 +59,7 @@ public abstract class MySQLBaseDAO {
         try {
             return objectMapper.writeValueAsString(value);
         } catch (JsonProcessingException ex) {
-            throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, ex);
+            throw new ApplicationException(INTERNAL_ERROR, ex);
         }
     }
 
@@ -56,7 +67,7 @@ public abstract class MySQLBaseDAO {
         try {
             return objectMapper.readValue(json, tClass);
         } catch (IOException ex) {
-            throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, ex);
+            throw new ApplicationException(INTERNAL_ERROR, ex);
         }
     }
 
@@ -64,7 +75,7 @@ public abstract class MySQLBaseDAO {
         try {
             return objectMapper.readValue(json, typeReference);
         } catch (IOException ex) {
-            throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, ex);
+            throw new ApplicationException(INTERNAL_ERROR, ex);
         }
     }
 
@@ -86,8 +97,8 @@ public abstract class MySQLBaseDAO {
      * @return The result of {@code TransactionalFunction#apply(Connection)}
      * @throws ApplicationException If any errors occur.
      */
-    protected <R> R getWithTransaction(TransactionalFunction<R> function) {
-        Instant start = Instant.now();
+    private <R> R getWithTransaction(final TransactionalFunction<R> function){
+        final Instant start = Instant.now();
         LazyToString callingMethod = getCallingMethod();
         logger.trace("{} : starting transaction", callingMethod);
 
@@ -100,14 +111,29 @@ public abstract class MySQLBaseDAO {
                 return result;
             } catch (Throwable th) {
                 tx.rollback();
-                throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, th.getMessage(), th);
+                throw new ApplicationException(BACKEND_ERROR, th.getMessage(), th);
             } finally {
                 tx.setAutoCommit(previousAutoCommitMode);
             }
         } catch (SQLException ex) {
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, ex.getMessage(), ex);
+            throw new ApplicationException(BACKEND_ERROR, ex.getMessage(), ex);
         } finally {
             logger.trace("{} : took {}ms", callingMethod, Duration.between(start, Instant.now()).toMillis());
+        }
+    }
+
+    <R> R getWithRetriedTransactions(final TransactionalFunction<R> function) {
+        try {
+            return new RetryUtil<R>().retryOnException(
+                    () -> getWithTransaction(function),
+                    this::isDeadLockError,
+                    null,
+                    MAX_RETRY_ON_DEADLOCK,
+                    "retry on deadlock",
+                    "transactional"
+            );
+        } catch (RuntimeException e){
+            throw (ApplicationException)e.getCause();
         }
     }
 
@@ -125,13 +151,13 @@ public abstract class MySQLBaseDAO {
                 return result;
             } catch (Throwable th) {
                 tx.rollback();
-                logger.info(ApplicationException.Code.CONFLICT + " " +th.getMessage());
+                logger.info(CONFLICT + " " +th.getMessage());
                 return null;
             } finally {
                 tx.setAutoCommit(previousAutoCommitMode);
             }
         } catch (SQLException ex) {
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, ex.getMessage(), ex);
+            throw new ApplicationException(BACKEND_ERROR, ex.getMessage(), ex);
         } finally {
             logger.trace("{} : took {}ms", callingMethod, Duration.between(start, Instant.now()).toMillis());
         }
@@ -139,17 +165,17 @@ public abstract class MySQLBaseDAO {
 
 
     /**
-     * Wraps {@link #getWithTransaction(TransactionalFunction)} with no return value.
+     * Wraps {@link #getWithRetriedTransactions(TransactionalFunction)} with no return value.
      * <p>
      * Generally this is used to wrap multiple {@link #execute(Connection, String, ExecuteFunction)} or
      * {@link #query(Connection, String, QueryFunction)} invocations that produce no expected return value.
      *
      * @param consumer The {@link Consumer} callback to pass a transactional {@link Connection} to.
      * @throws ApplicationException If any errors occur.
-     * @see #getWithTransaction(TransactionalFunction)
+     * @see #getWithRetriedTransactions(TransactionalFunction)
      */
     protected void withTransaction(Consumer<Connection> consumer) {
-        getWithTransaction(connection -> {
+        getWithRetriedTransactions(connection -> {
             consumer.accept(connection);
             return null;
         });
@@ -165,7 +191,7 @@ public abstract class MySQLBaseDAO {
      * @return The results of applying {@literal function}.
      */
     protected <R> R queryWithTransaction(String query, QueryFunction<R> function) {
-        return getWithTransaction(tx -> query(tx, query, function));
+        return getWithRetriedTransactions(tx -> query(tx, query, function));
     }
 
     /**
@@ -181,7 +207,7 @@ public abstract class MySQLBaseDAO {
         try (Query q = new Query(objectMapper, tx, query)) {
             return function.apply(q);
         } catch (SQLException ex) {
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, ex);
+            throw new ApplicationException(BACKEND_ERROR, ex);
         }
     }
 
@@ -196,7 +222,7 @@ public abstract class MySQLBaseDAO {
         try (Query q = new Query(objectMapper, tx, query)) {
             function.apply(q);
         } catch (SQLException ex) {
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, ex);
+            throw new ApplicationException(BACKEND_ERROR, ex);
         }
     }
 
@@ -208,5 +234,20 @@ public abstract class MySQLBaseDAO {
      */
     protected void executeWithTransaction(String query, ExecuteFunction function) {
         withTransaction(tx -> execute(tx, query, function));
+    }
+
+    private boolean isDeadLockError(Throwable throwable){
+        if (!(throwable.getCause() instanceof SQLException)){
+            return false;
+        }
+        return ER_LOCK_DEADLOCK == ((SQLException)throwable.getCause()).getErrorCode();
+    }
+
+    private static int getMaxRetriesOnDeadLock() {
+        try {
+            return parseInt(getProperty(MAX_RETRY_ON_DEADLOCK_PROPERTY_NAME, MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE));
+        } catch (Exception e) {
+            return parseInt(MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE);
+        }
     }
 }

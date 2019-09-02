@@ -220,7 +220,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
         if (taskIds.isEmpty()) {
             return Lists.newArrayList();
         }
-        return getWithTransaction(c -> getTasks(c, taskIds));
+        return getWithRetriedTransactions(c -> getTasks(c, taskIds));
     }
 
     @Override
@@ -238,7 +238,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     @Override
     public List<Task> getTasksForWorkflow(String workflowId) {
         String GET_TASKS_FOR_WORKFLOW = "SELECT task_id FROM workflow_to_task WHERE workflow_id = ?";
-        return getWithTransaction(tx -> query(tx, GET_TASKS_FOR_WORKFLOW, q -> {
+        return getWithRetriedTransactions(tx -> query(tx, GET_TASKS_FOR_WORKFLOW, q -> {
             List<String> taskIds = q.addParameter(workflowId).executeScalarList(String.class);
             return getTasks(tx, taskIds);
         }));
@@ -287,7 +287,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
 
     @Override
     public Workflow getWorkflow(String workflowId, boolean includeTasks) {
-        Workflow workflow = getWithTransaction(tx -> readWorkflow(tx, workflowId));
+        Workflow workflow = getWithRetriedTransactions(tx -> readWorkflow(tx, workflowId));
 
         if (workflow != null) {
             if (includeTasks) {
@@ -392,7 +392,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     @Override
     public boolean addEventExecution(EventExecution eventExecution) {
         try {
-            return getWithTransaction(tx -> insertEventExecution(tx, eventExecution));
+            return getWithRetriedTransactions(tx -> insertEventExecution(tx, eventExecution));
         } catch (Exception e) {
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR,
                     "Unable to add event execution " + eventExecution.getId(), e);
@@ -456,7 +456,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO {
     public PollData getPollData(String taskDefName, String domain) {
         Preconditions.checkNotNull(taskDefName, "taskDefName name cannot be null");
         String effectiveDomain = (domain == null) ? "DEFAULT" : domain;
-        return getWithTransaction(tx -> readPollData(tx, taskDefName, effectiveDomain));
+        return getWithRetriedTransactions(tx -> readPollData(tx, taskDefName, effectiveDomain));
     }
 
     @Override
