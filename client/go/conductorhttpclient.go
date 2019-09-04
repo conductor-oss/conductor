@@ -14,7 +14,7 @@
 package conductor
 
 import (
-    "conductor/httpclient"
+    "github.com/netflix/conductor/client/go/httpclient"
     "strconv"
     "log"
     "fmt"
