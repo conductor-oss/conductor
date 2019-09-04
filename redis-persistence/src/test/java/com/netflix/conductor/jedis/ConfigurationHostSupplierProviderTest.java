@@ -2,8 +2,6 @@ package com.netflix.conductor.jedis;
 
 import com.netflix.conductor.dyno.SystemPropertiesDynomiteConfiguration;
 import com.netflix.dyno.connectionpool.Host;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;

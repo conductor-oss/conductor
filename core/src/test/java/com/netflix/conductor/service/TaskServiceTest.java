@@ -15,8 +15,6 @@ import org.mockito.Mockito;
 
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Set;
 
 import static com.netflix.conductor.utility.TestUtils.getConstraintViolationMessages;

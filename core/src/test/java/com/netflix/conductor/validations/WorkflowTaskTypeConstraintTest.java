@@ -4,7 +4,6 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.validation.ValidationError;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.hibernate.validator.HibernateValidator;

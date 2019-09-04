@@ -2,9 +2,6 @@ package com.netflix.conductor.core.execution.tasks;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
-import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.MetadataService;
 import org.junit.Assert;
 import org.junit.Test;

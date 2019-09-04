@@ -3,9 +3,6 @@ package com.netflix.conductor.validations;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.execution.mapper.KafkaPublishTaskMapper;
-import com.netflix.conductor.core.execution.tasks.Terminate;
 
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
@@ -17,8 +14,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.util.Optional;
 
-import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.COMPLETED;
-import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.FAILED;
+
 import static com.netflix.conductor.core.execution.tasks.Terminate.getTerminationStatusParameter;
 import static com.netflix.conductor.core.execution.tasks.Terminate.validateInputStatus;
 import static java.lang.annotation.ElementType.ANNOTATION_TYPE;

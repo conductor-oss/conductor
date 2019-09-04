@@ -21,7 +21,6 @@ package com.netflix.conductor.core.events.nats;
 import com.netflix.conductor.contribs.queue.nats.NATSObservableQueue;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.EventQueueProvider;
-import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import io.nats.client.ConnectionFactory;
 import org.slf4j.Logger;

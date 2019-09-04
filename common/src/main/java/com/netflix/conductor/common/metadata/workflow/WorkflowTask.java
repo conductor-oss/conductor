@@ -37,7 +37,7 @@ import java.util.Set;
  * @author Viren
  *
  * This is the task definition definied as part of the {@link WorkflowDef}. The tasks definied in the Workflow definition are saved
- * as part of {@link WorkflowDef#tasks}
+ * as part of {@link WorkflowDef#getTasks}
  */
 @ProtoMessage
 public class WorkflowTask {

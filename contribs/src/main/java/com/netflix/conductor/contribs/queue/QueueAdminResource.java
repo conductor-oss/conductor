@@ -18,7 +18,6 @@
  */
 package com.netflix.conductor.contribs.queue;
 
-import java.util.HashMap;
 import java.util.Map;
 
 import javax.inject.Inject;
