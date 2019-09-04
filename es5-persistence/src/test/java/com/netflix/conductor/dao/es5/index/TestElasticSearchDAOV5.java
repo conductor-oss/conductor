@@ -80,6 +80,7 @@ public class TestElasticSearchDAOV5 {
 	public static void startServer() throws Exception {
 		System.setProperty(ElasticSearchConfiguration.EMBEDDED_PORT_PROPERTY_NAME, "9203");
 		System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_URL_PROPERTY_NAME, "localhost:9303");
+		System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_INDEX_BATCH_SIZE_PROPERTY_NAME, "1");
 
 		configuration = new SystemPropertiesElasticSearchConfiguration();
 		String host = configuration.getEmbeddedHost();
@@ -370,6 +371,65 @@ public class TestElasticSearchDAOV5 {
 					assertTrue("should return 1 or more search results", result.getResults().size() > 0);
 					assertEquals("taskId should match the indexed task", "some-task-id", result.getResults().get(0));
 				});
+	}
+
+	@Test
+	public void indexTaskWithBatchSizeTwo() throws Exception {
+		embeddedElasticSearch.stop();
+		startElasticSearchWithBatchSize(2);
+		String correlationId = "some-correlation-id";
+
+		Task task = new Task();
+		task.setTaskId("some-task-id");
+		task.setWorkflowInstanceId("some-workflow-instance-id");
+		task.setTaskType("some-task-type");
+		task.setStatus(Status.FAILED);
+		task.setInputData(new HashMap<String, Object>() {{ put("input_key", "input_value"); }});
+		task.setCorrelationId(correlationId);
+		task.setTaskDefName("some-task-def-name");
+		task.setReasonForIncompletion("some-failure-reason");
+
+		indexDAO.indexTask(task);
+		indexDAO.indexTask(task);
+
+		await()
+				.atMost(5, TimeUnit.SECONDS)
+				.untilAsserted(() -> {
+					SearchResult<String> result = indexDAO
+							.searchTasks("correlationId='" + correlationId + "'", "*", 0, 10000, null);
+
+					assertTrue("should return 1 or more search results", result.getResults().size() > 0);
+					assertEquals("taskId should match the indexed task", "some-task-id", result.getResults().get(0));
+				});
+
+		embeddedElasticSearch.stop();
+		startElasticSearchWithBatchSize(1);
+	}
+
+	private void startElasticSearchWithBatchSize(int i) throws Exception {
+		System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_INDEX_BATCH_SIZE_PROPERTY_NAME, String.valueOf(i));
+
+		configuration = new SystemPropertiesElasticSearchConfiguration();
+		String host = configuration.getEmbeddedHost();
+		int port = configuration.getEmbeddedPort();
+		String clusterName = configuration.getEmbeddedClusterName();
+
+		embeddedElasticSearch = new EmbeddedElasticSearchV5(clusterName, host, port);
+		embeddedElasticSearch.start();
+
+		ElasticSearchTransportClientProvider transportClientProvider =
+				new ElasticSearchTransportClientProvider(configuration);
+		elasticSearchClient = transportClientProvider.get();
+
+		elasticSearchClient.admin()
+				.cluster()
+				.prepareHealth()
+				.setWaitForGreenStatus()
+				.execute()
+				.get();
+
+		ObjectMapper objectMapper = new ObjectMapper();
+		indexDAO = new ElasticSearchDAOV5(elasticSearchClient, configuration, objectMapper);
 	}
 
 	@Test
