@@ -7,7 +7,6 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
-import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.utils.IDGenerator;
 import org.junit.Assert;
 import org.junit.Before;

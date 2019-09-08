@@ -5,12 +5,10 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.grpc.MetadataServiceGrpc;
 import com.netflix.conductor.grpc.MetadataServicePb;
-import com.netflix.conductor.proto.WorkflowDefPb;
 import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nullable;
 import java.util.List;
-import java.util.Optional;
 
 public class MetadataClient extends ClientBase {
     private MetadataServiceGrpc.MetadataServiceBlockingStub stub;

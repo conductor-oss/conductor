@@ -212,6 +212,10 @@ public class Monitors {
 		counter(classQualifier, "task_update_conflict", "workflowName", workflowType, "taskType", taskType, "taskStatus", status.name());
 	}
 
+	public static void recordTaskUpdateError(String taskType, String workflowType) {
+		counter(classQualifier, "task_update_error", "workflowName", workflowType, "taskType", taskType);
+	}
+
 	public static void recordWorkflowCompletion(String workflowType, long duration, String ownerApp) {
 		getTimer(classQualifier, "workflow_execution", "workflowName", workflowType, "ownerApp", ""+ownerApp).record(duration, TimeUnit.MILLISECONDS);
 	}
@@ -258,5 +262,21 @@ public class Monitors {
 
 	public static void recordDaoError(String dao, String action) {
 		counter(classQualifier, "dao_errors", "dao", dao, "action", action);
+	}
+
+	public static void recordAckTaskError(String taskType) {
+		counter(classQualifier, "task_ack_error", "taskType", taskType);
+	}
+
+	public static void recordESIndexTime(String docType, long val) {
+		getTimer(Monitors.classQualifier, docType, docType).record(val, TimeUnit.MILLISECONDS);
+	}
+
+	public static void recordWorkerQueueSize(int val) {
+		getGauge(Monitors.classQualifier, "indexing_worker_queue").set(val);
+	}
+
+	public static void recordDiscardedIndexingCount() {
+		getCounter(Monitors.classQualifier, "discarded_index_count").increment();
 	}
 }

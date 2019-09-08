@@ -78,7 +78,7 @@ Event task provides ability to publish an event (message) to either Conductor or
 
 ``` json
 {
-	"sink": "sqs:example_sqs_queue_name"
+	"sink": "sqs:example_sqs_queue_name",
 	"asyncComplete": false
 }
 ```
@@ -524,10 +524,12 @@ The task expects an input parameter named ```kafka_request``` as part of the tas
 |key|Key to be published|
 |keySerializer | Serializer used for serializing the key published to kafka.  One of the following can be set : <br/> 1. org.apache.kafka.common.serialization.IntegerSerializer<br/>2. org.apache.kafka.common.serialization.LongSerializer<br/>3. org.apache.kafka.common.serialization.StringSerializer. <br/>Default is String serializer  |
 |value| Value published to kafka|
-|requestTimeoutMs| Request timeout while publishing to kafka. If this value is not given the value is read from the property `kafka.publish.request.timeout.ms`. If the property is not set the value defaults to 100 |
+|requestTimeoutMs| Request timeout while publishing to kafka. If this value is not given the value is read from the property `kafka.publish.request.timeout.ms`. If the property is not set the value defaults to 100 ms |
+|maxBlockMs| maxBlockMs while publishing to kafka. If this value is not given the value is read from the property `kafka.publish.max.block.ms`. If the property is not set the value defaults to 500 ms |
 |headers|A map of additional kafka headers to be sent along with the request.|
 |topic|Topic to publish|
 
+The producer created in the kafka task is cached. By default the cache size is 10 and expiry time is 120000 ms. To change the defaults following can be modified kafka.publish.producer.cache.size,kafka.publish.producer.cache.time.ms respectively.  
 
 **Kafka Task Output**
 
@@ -535,19 +537,25 @@ Task status transitions to COMPLETED
 
 **Example**
 
-Task Input payload sample
+Task sample
 
 ```json
-"kafka_request": {
-            "topic": "userTopic",
-            "value": "Message to publish",
-            "bootStrapServers":"localhost:9092",
-             "headers" :{
-              "x-Auth":"Auth-key"
-             },
-             "key":"123",
-             "keySerializer":"org.apache.kafka.common.serialization.IntegerSerializer"
-          }
+{
+  "name": "call_kafka",
+  "taskReferenceName": "call_kafka",
+  "inputParameters": {
+    "kafka_request": {
+      "topic": "userTopic",
+      "value": "Message to publish",
+      "bootStrapServers": "localhost:9092",
+      "headers": {
+  	"x-Auth":"Auth-key"    
+      },
+      "key": "123",
+      "keySerializer": "org.apache.kafka.common.serialization.IntegerSerializer"
+    }
+  },
+  "type": "KAFKA_PUBLISH"
 }
 ```
 

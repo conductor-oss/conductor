@@ -192,7 +192,7 @@ public class ForkJoinTaskMapperTest {
                 .build();
 
         expectedException.expect(TerminateWorkflowException.class);
-        expectedException.expectMessage("Dynamic join definition is not followed by a join task.  Check the blueprint");
+        expectedException.expectMessage("Fork task definition is not followed by a join task.  Check the blueprint");
         forkJoinTaskMapper.getMappedTasks(taskMapperContext);
 
     }

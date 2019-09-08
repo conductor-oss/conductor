@@ -69,6 +69,7 @@ public class ExclusiveJoinEndToEndTest {
 		TestEnvironment.setup();
         System.setProperty(ElasticSearchConfiguration.EMBEDDED_PORT_PROPERTY_NAME, "9205");
         System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_URL_PROPERTY_NAME, "localhost:9305");
+		System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_INDEX_BATCH_SIZE_PROPERTY_NAME, "1");
 
 		Injector bootInjector = Guice.createInjector(new BootstrapModule());
 		Injector serverInjector = Guice.createInjector(bootInjector.getInstance(ModulesProvider.class).get());

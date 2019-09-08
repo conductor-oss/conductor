@@ -5,31 +5,19 @@ Go client for Conductor provides two sets of functions:
 2. Worker execution framework
 
 ## Prerequisites
-Go must be installed and GOPATH env variable set.  Directory $GOPATH/src/conductor must not be in use.
+Go must be installed and GOPATH env variable set.
 
 ## Install
 
 ```shell
-./install.sh
+go get github.com/netflix/conductor/client/go
 ```
-This will create a Go project under $GOPATH/src/conductor and download any dependencies.
-It can then be ran:
-```shell
-go run $GOPATH/src/conductor/startclient/startclient.go
-```
+This will create a Go project under $GOPATH/src and download any dependencies.
 
-## Install and Run
+## Run
 
 ```shell
-./install_and_run.sh
-```
-This will create a Go project under $GOPATH/src/conductor and download any dependencies.  In addition, it will run the go application listed under startclient/startclient.go
-
-## Uninstall
-WARNING: This will simply remove the $GOPATH/src/conductor directory where it has installed so if other work is there, it will be deleted.  Use with caution.
-
-```shell
-./uninstall.sh
+go run $GOPATH/src/netflix-conductor/client/go/startclient/startclient.go
 ```
 
 ## Using Workflow Management API
@@ -40,7 +28,7 @@ Go struct ```ConductorHttpClient``` provides client API calls to the conductor s
 package main
 
 import (
-    "conductor"
+    conductor "github.com/netflix/conductor/client/go"
 )
 
 func main() {
@@ -104,8 +92,8 @@ Then main application to utilize these workers
 package main
 
 import (
-    "conductor"
-    "conductor/task/sample"
+    "github.com/netflix/conductor/client/go"
+    "github.com/netflix/conductor/client/go/task/sample"
 )
 
 func main() {

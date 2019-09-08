@@ -22,7 +22,6 @@
  import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
  import com.netflix.conductor.common.run.Workflow;
  import com.netflix.conductor.core.execution.ParametersUtils;
- import com.netflix.conductor.core.execution.TerminateWorkflowException;
  import com.netflix.conductor.core.utils.IDGenerator;
  import com.netflix.conductor.dao.MetadataDAO;
  import org.junit.Before;
@@ -86,7 +85,7 @@
      }
 
      @Test
-     public void getMappedTasksException() {
+     public void getMappedTasks_WithoutTaskDef() {
          //Given
          WorkflowTask taskToSchedule = new WorkflowTask();
          taskToSchedule.setName("http_task");
@@ -101,6 +100,7 @@
          TaskMapperContext taskMapperContext = TaskMapperContext.newBuilder()
                  .withWorkflowDefinition(workflowDef)
                  .withWorkflowInstance(workflow)
+                 .withTaskDefinition(null)
                  .withTaskToSchedule(taskToSchedule)
                  .withTaskInput(new HashMap<>())
                  .withRetryCount(0)
@@ -108,10 +108,11 @@
                  .withTaskId(taskId)
                  .build();
 
-         //then
-         expectedException.expect(TerminateWorkflowException.class);
-         expectedException.expectMessage(String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName()));
          //when
-         httpTaskMapper.getMappedTasks(taskMapperContext);
+         List<Task> mappedTasks = httpTaskMapper.getMappedTasks(taskMapperContext);
+
+         //Then
+         assertEquals(1, mappedTasks.size());
+         assertEquals(TaskType.HTTP.name(), mappedTasks.get(0).getTaskType());
      }
  }

@@ -29,7 +29,6 @@ import javax.ws.rs.ext.Provider;
 
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.Code;
-import com.sun.jersey.api.NotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

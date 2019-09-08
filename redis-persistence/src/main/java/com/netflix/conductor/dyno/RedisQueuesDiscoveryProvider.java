@@ -2,6 +2,7 @@ package com.netflix.conductor.dyno;
 
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.dyno.connectionpool.Host;
+import com.netflix.dyno.connectionpool.HostBuilder;
 import com.netflix.dyno.contrib.EurekaHostsSupplier;
 import com.netflix.dyno.jedis.DynoJedisClient;
 import com.netflix.dyno.queues.ShardSupplier;
@@ -42,18 +43,16 @@ public class RedisQueuesDiscoveryProvider implements Provider<RedisQueues> {
             public List<Host> getHosts() {
                 List<Host> hosts = super.getHosts();
                 List<Host> updatedHosts = new ArrayList<>(hosts.size());
-                hosts.forEach(host -> {
-                    updatedHosts.add(
-                            new Host(
-                                    host.getHostName(),
-                                    host.getIpAddress(),
-                                    readConnPort,
-                                    host.getRack(),
-                                    host.getDatacenter(),
-                                    host.isUp() ? Host.Status.Up : Host.Status.Down
-                            )
-                    );
-                });
+                hosts.forEach(host -> updatedHosts.add(
+                        new HostBuilder()
+                                .setHostname(host.getHostName())
+                                .setIpAddress(host.getIpAddress())
+                                .setPort(readConnPort)
+                                .setRack(host.getRack())
+                                .setDatacenter(host.getDatacenter())
+                                .setStatus(host.isUp() ? Host.Status.Up : Host.Status.Down)
+                                .createHost()
+                ));
                 return updatedHosts;
             }
         };
@@ -70,6 +69,7 @@ public class RedisQueuesDiscoveryProvider implements Provider<RedisQueues> {
                 .withApplicationName(configuration.getAppId())
                 .withDynomiteClusterName(cluster)
                 .withHostSupplier(hostSupplier)
+                .isDatastoreClient(true)
                 .build();
 
         String region = configuration.getRegion();

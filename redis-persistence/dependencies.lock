@@ -193,31 +193,32 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
-            "requested": "2.0.0-rc5"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
@@ -747,31 +748,32 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
-            "requested": "2.0.0-rc5"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
@@ -1301,31 +1303,32 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
-            "requested": "2.0.0-rc5"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
@@ -1918,31 +1921,32 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
-            "requested": "2.0.0-rc5"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
@@ -2472,31 +2476,32 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
-            "requested": "2.0.0-rc5"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
@@ -3026,31 +3031,32 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
-            "requested": "2.0.0-rc5"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
@@ -3600,31 +3606,32 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
-            "requested": "2.0.0-rc5"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
@@ -4174,31 +4181,32 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
-            "requested": "2.0.0-rc5"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
@@ -4748,31 +4756,32 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
-            "requested": "2.0.0-rc5"
+            "locked": "2.0.0-rc8",
+            "requested": "2.0.0-rc8"
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]

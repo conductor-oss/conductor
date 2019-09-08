@@ -1,6 +1,5 @@
 package com.netflix.conductor.grpc.server.service;
 
-import com.google.protobuf.Empty;
 import com.google.rpc.DebugInfo;
 import io.grpc.Metadata;
 import io.grpc.Status;
@@ -11,7 +10,6 @@ import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.slf4j.Logger;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.Arrays;
 
 public class GRPCHelper {

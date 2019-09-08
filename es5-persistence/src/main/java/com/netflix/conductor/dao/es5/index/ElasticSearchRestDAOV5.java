@@ -35,15 +35,11 @@ import org.elasticsearch.action.delete.DeleteResponse;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.index.IndexResponse;
 import org.elasticsearch.action.search.SearchRequest;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
-import org.elasticsearch.client.Response;
-import org.elasticsearch.client.ResponseException;
-import org.elasticsearch.client.RestClient;
-import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.client.*;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
@@ -62,9 +58,16 @@ import javax.inject.Singleton;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -103,6 +106,8 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
     private final RestHighLevelClient elasticSearchClient;
     private final RestClient elasticSearchAdminClient;
     private final ExecutorService executorService;
+    private final ConcurrentHashMap<String, BulkRequest> bulkRequests;
+    private final int indexBatchSize;
 
 
     static {
@@ -118,6 +123,8 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
         this.indexName = config.getIndexName();
         this.logIndexPrefix = config.getTasklogIndexName();
         this.clusterHealthColor = config.getClusterHealthColor();
+        this.bulkRequests = new ConcurrentHashMap<>();
+        this.indexBatchSize = config.getIndexBatchSize();
 
         // Set up a workerpool for performing async operations.
         int corePoolSize = 6;
@@ -131,6 +138,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
                 new LinkedBlockingQueue<>(workerQueueSize),
                 (runnable, executor) -> {
                     logger.warn("Request  {} to async dao discarded in executor {}", runnable, executor);
+                    Monitors.recordDiscardedIndexingCount();
                 });
 
     }
@@ -653,7 +661,15 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
         IndexRequest request = new IndexRequest(index, docType, docId);
         request.source(docBytes, XContentType.JSON);
 
-        indexWithRetry(request, "Indexing " + docType + ": " + docId);
+        if(bulkRequests.get(docType) == null) {
+            bulkRequests.put(docType, new BulkRequest());
+        }
+
+        bulkRequests.get(docType).add(request);
+        if (bulkRequests.get(docType).numberOfActions() >= this.indexBatchSize) {
+            indexWithRetry(bulkRequests.get(docType), "Indexing " + docType + ": " + docId);
+            bulkRequests.put(docType, new BulkRequest());
+        }
     }
 
     /**
@@ -661,19 +677,25 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
      * @param request The index request that we want to perform.
      * @param operationDescription The type of operation that we are performing.
      */
-    private void indexWithRetry(final IndexRequest request, final String operationDescription) {
+    private synchronized void indexWithRetry(final BulkRequest request, final String operationDescription) {
 
         try {
-            new RetryUtil<IndexResponse>().retryOnException(() -> {
+            long startTime = Instant.now().toEpochMilli();
+            new RetryUtil<BulkResponse>().retryOnException(() -> {
                 try {
-                    return elasticSearchClient.index(request);
+                    return elasticSearchClient.bulk(request);
                 } catch (IOException e) {
                     throw new RuntimeException(e);
                 }
             }, null, null, RETRY_COUNT, operationDescription, "indexWithRetry");
+            long endTime = Instant.now().toEpochMilli();
+            logger.info("Time taken {} ", endTime - startTime);
+            logger.info("Current executor state queue {} ,executor {}", ((ThreadPoolExecutor) executorService).getQueue().size(), executorService);
+            Monitors.recordESIndexTime("index_time", endTime - startTime);
+            Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
         } catch (Exception e) {
             Monitors.error(className, "index");
-            logger.error("Failed to index {} for request type: {}", request.id(), request.type(), e);
+            logger.error("Failed to index {} for request type: {}", request.toString(), e);
         }
     }
 

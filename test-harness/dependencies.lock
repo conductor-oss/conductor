@@ -105,7 +105,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.528",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -126,13 +126,13 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.528",
+            "locked": "1.11.622",
             "transitive": [
                 "com.netflix.conductor:conductor-contribs"
             ]
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.528",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -298,6 +298,12 @@
             "locked": "1.0.2",
             "transitive": [
                 "com.github.jnr:jnr-ffi"
+            ]
+        },
+        "com.github.luben:zstd-jni": {
+            "locked": "1.3.8-1",
+            "transitive": [
+                "org.apache.kafka:kafka-clients"
             ]
         },
         "com.github.rholder:guava-retrying": {
@@ -577,33 +583,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ]
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
@@ -791,7 +798,7 @@
             ]
         },
         "commons-codec:commons-codec": {
-            "locked": "1.10",
+            "locked": "1.11",
             "transitive": [
                 "org.apache.httpcomponents:httpclient",
                 "org.elasticsearch.client:elasticsearch-rest-client"
@@ -1188,7 +1195,7 @@
             ]
         },
         "org.apache.httpcomponents:httpclient": {
-            "locked": "4.5.5",
+            "locked": "4.5.9",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
@@ -1200,7 +1207,7 @@
             ]
         },
         "org.apache.httpcomponents:httpcore": {
-            "locked": "4.4.9",
+            "locked": "4.4.11",
             "transitive": [
                 "org.apache.httpcomponents:httpclient",
                 "org.elasticsearch.client:elasticsearch-rest-client"
@@ -1210,6 +1217,12 @@
             "locked": "4.4.5",
             "transitive": [
                 "org.elasticsearch.client:elasticsearch-rest-client"
+            ]
+        },
+        "org.apache.kafka:kafka-clients": {
+            "locked": "2.2.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-contribs"
             ]
         },
         "org.apache.logging.log4j:log4j-api": {
@@ -1579,6 +1592,12 @@
                 "org.rarefiedredis.redis:redis-java"
             ]
         },
+        "org.lz4:lz4-java": {
+            "locked": "1.5.0",
+            "transitive": [
+                "org.apache.kafka:kafka-clients"
+            ]
+        },
         "org.mockito:mockito-core": {
             "locked": "1.10.19",
             "requested": "1.10.19"
@@ -1659,6 +1678,7 @@
                 "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
+                "org.apache.kafka:kafka-clients",
                 "org.slf4j:slf4j-log4j12"
             ]
         },
@@ -1674,6 +1694,12 @@
             "locked": "4.3.6.RELEASE",
             "transitive": [
                 "ch.vorburger.mariaDB4j:mariaDB4j-core"
+            ]
+        },
+        "org.xerial.snappy:snappy-java": {
+            "locked": "1.1.7.2",
+            "transitive": [
+                "org.apache.kafka:kafka-clients"
             ]
         },
         "org.yaml:snakeyaml": {
@@ -1759,7 +1785,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.528",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -1780,13 +1806,13 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.528",
+            "locked": "1.11.622",
             "transitive": [
                 "com.netflix.conductor:conductor-contribs"
             ]
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.528",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -1952,6 +1978,12 @@
             "locked": "1.0.2",
             "transitive": [
                 "com.github.jnr:jnr-ffi"
+            ]
+        },
+        "com.github.luben:zstd-jni": {
+            "locked": "1.3.8-1",
+            "transitive": [
+                "org.apache.kafka:kafka-clients"
             ]
         },
         "com.github.rholder:guava-retrying": {
@@ -2231,33 +2263,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ]
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
@@ -2445,7 +2478,7 @@
             ]
         },
         "commons-codec:commons-codec": {
-            "locked": "1.10",
+            "locked": "1.11",
             "transitive": [
                 "org.apache.httpcomponents:httpclient",
                 "org.elasticsearch.client:elasticsearch-rest-client"
@@ -2842,7 +2875,7 @@
             ]
         },
         "org.apache.httpcomponents:httpclient": {
-            "locked": "4.5.5",
+            "locked": "4.5.9",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
@@ -2854,7 +2887,7 @@
             ]
         },
         "org.apache.httpcomponents:httpcore": {
-            "locked": "4.4.9",
+            "locked": "4.4.11",
             "transitive": [
                 "org.apache.httpcomponents:httpclient",
                 "org.elasticsearch.client:elasticsearch-rest-client"
@@ -2864,6 +2897,12 @@
             "locked": "4.4.5",
             "transitive": [
                 "org.elasticsearch.client:elasticsearch-rest-client"
+            ]
+        },
+        "org.apache.kafka:kafka-clients": {
+            "locked": "2.2.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-contribs"
             ]
         },
         "org.apache.logging.log4j:log4j-api": {
@@ -3233,6 +3272,12 @@
                 "org.rarefiedredis.redis:redis-java"
             ]
         },
+        "org.lz4:lz4-java": {
+            "locked": "1.5.0",
+            "transitive": [
+                "org.apache.kafka:kafka-clients"
+            ]
+        },
         "org.mockito:mockito-core": {
             "locked": "1.10.19",
             "requested": "1.10.19"
@@ -3313,6 +3358,7 @@
                 "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
+                "org.apache.kafka:kafka-clients",
                 "org.slf4j:slf4j-log4j12"
             ]
         },
@@ -3328,6 +3374,12 @@
             "locked": "4.3.6.RELEASE",
             "transitive": [
                 "ch.vorburger.mariaDB4j:mariaDB4j-core"
+            ]
+        },
+        "org.xerial.snappy:snappy-java": {
+            "locked": "1.1.7.2",
+            "transitive": [
+                "org.apache.kafka:kafka-clients"
             ]
         },
         "org.yaml:snakeyaml": {
@@ -3413,7 +3465,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.528",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -3434,13 +3486,13 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.528",
+            "locked": "1.11.622",
             "transitive": [
                 "com.netflix.conductor:conductor-contribs"
             ]
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.528",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -3606,6 +3658,12 @@
             "locked": "1.0.2",
             "transitive": [
                 "com.github.jnr:jnr-ffi"
+            ]
+        },
+        "com.github.luben:zstd-jni": {
+            "locked": "1.3.8-1",
+            "transitive": [
+                "org.apache.kafka:kafka-clients"
             ]
         },
         "com.github.rholder:guava-retrying": {
@@ -3885,33 +3943,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ]
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
@@ -4099,7 +4158,7 @@
             ]
         },
         "commons-codec:commons-codec": {
-            "locked": "1.10",
+            "locked": "1.11",
             "transitive": [
                 "org.apache.httpcomponents:httpclient",
                 "org.elasticsearch.client:elasticsearch-rest-client"
@@ -4496,7 +4555,7 @@
             ]
         },
         "org.apache.httpcomponents:httpclient": {
-            "locked": "4.5.5",
+            "locked": "4.5.9",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
@@ -4508,7 +4567,7 @@
             ]
         },
         "org.apache.httpcomponents:httpcore": {
-            "locked": "4.4.9",
+            "locked": "4.4.11",
             "transitive": [
                 "org.apache.httpcomponents:httpclient",
                 "org.elasticsearch.client:elasticsearch-rest-client"
@@ -4518,6 +4577,12 @@
             "locked": "4.4.5",
             "transitive": [
                 "org.elasticsearch.client:elasticsearch-rest-client"
+            ]
+        },
+        "org.apache.kafka:kafka-clients": {
+            "locked": "2.2.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-contribs"
             ]
         },
         "org.apache.logging.log4j:log4j-api": {
@@ -4887,6 +4952,12 @@
                 "org.rarefiedredis.redis:redis-java"
             ]
         },
+        "org.lz4:lz4-java": {
+            "locked": "1.5.0",
+            "transitive": [
+                "org.apache.kafka:kafka-clients"
+            ]
+        },
         "org.mockito:mockito-core": {
             "locked": "1.10.19",
             "requested": "1.10.19"
@@ -4967,6 +5038,7 @@
                 "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
+                "org.apache.kafka:kafka-clients",
                 "org.slf4j:slf4j-log4j12"
             ]
         },
@@ -4982,6 +5054,12 @@
             "locked": "4.3.6.RELEASE",
             "transitive": [
                 "ch.vorburger.mariaDB4j:mariaDB4j-core"
+            ]
+        },
+        "org.xerial.snappy:snappy-java": {
+            "locked": "1.1.7.2",
+            "transitive": [
+                "org.apache.kafka:kafka-clients"
             ]
         },
         "org.yaml:snakeyaml": {
@@ -5067,7 +5145,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.528",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -5088,13 +5166,13 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.528",
+            "locked": "1.11.622",
             "transitive": [
                 "com.netflix.conductor:conductor-contribs"
             ]
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.528",
+            "locked": "1.11.622",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -5260,6 +5338,12 @@
             "locked": "1.0.2",
             "transitive": [
                 "com.github.jnr:jnr-ffi"
+            ]
+        },
+        "com.github.luben:zstd-jni": {
+            "locked": "1.3.8-1",
+            "transitive": [
+                "org.apache.kafka:kafka-clients"
             ]
         },
         "com.github.rholder:guava-retrying": {
@@ -5539,33 +5623,34 @@
             "project": true
         },
         "com.netflix.dyno-queues:dyno-queues-core": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
         },
         "com.netflix.dyno-queues:dyno-queues-redis": {
-            "locked": "2.0.0-rc5",
+            "locked": "2.0.0-rc8",
             "transitive": [
                 "com.netflix.conductor:conductor-redis-persistence"
             ]
         },
         "com.netflix.dyno:dyno-contrib": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-core": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
+                "com.netflix.dyno-queues:dyno-queues-core",
                 "com.netflix.dyno-queues:dyno-queues-redis",
                 "com.netflix.dyno:dyno-contrib",
                 "com.netflix.dyno:dyno-jedis"
             ]
         },
         "com.netflix.dyno:dyno-jedis": {
-            "locked": "1.6.5",
+            "locked": "1.6.5-rc.4",
             "transitive": [
                 "com.netflix.dyno-queues:dyno-queues-redis"
             ]
@@ -5753,7 +5838,7 @@
             ]
         },
         "commons-codec:commons-codec": {
-            "locked": "1.10",
+            "locked": "1.11",
             "transitive": [
                 "org.apache.httpcomponents:httpclient",
                 "org.elasticsearch.client:elasticsearch-rest-client"
@@ -6150,7 +6235,7 @@
             ]
         },
         "org.apache.httpcomponents:httpclient": {
-            "locked": "4.5.5",
+            "locked": "4.5.9",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-core",
                 "com.netflix.dyno:dyno-contrib",
@@ -6162,7 +6247,7 @@
             ]
         },
         "org.apache.httpcomponents:httpcore": {
-            "locked": "4.4.9",
+            "locked": "4.4.11",
             "transitive": [
                 "org.apache.httpcomponents:httpclient",
                 "org.elasticsearch.client:elasticsearch-rest-client"
@@ -6172,6 +6257,12 @@
             "locked": "4.4.5",
             "transitive": [
                 "org.elasticsearch.client:elasticsearch-rest-client"
+            ]
+        },
+        "org.apache.kafka:kafka-clients": {
+            "locked": "2.2.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-contribs"
             ]
         },
         "org.apache.logging.log4j:log4j-api": {
@@ -6541,6 +6632,12 @@
                 "org.rarefiedredis.redis:redis-java"
             ]
         },
+        "org.lz4:lz4-java": {
+            "locked": "1.5.0",
+            "transitive": [
+                "org.apache.kafka:kafka-clients"
+            ]
+        },
         "org.mockito:mockito-core": {
             "locked": "1.10.19",
             "requested": "1.10.19"
@@ -6621,6 +6718,7 @@
                 "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
+                "org.apache.kafka:kafka-clients",
                 "org.slf4j:slf4j-log4j12"
             ]
         },
@@ -6636,6 +6734,12 @@
             "locked": "4.3.6.RELEASE",
             "transitive": [
                 "ch.vorburger.mariaDB4j:mariaDB4j-core"
+            ]
+        },
+        "org.xerial.snappy:snappy-java": {
+            "locked": "1.1.7.2",
+            "transitive": [
+                "org.apache.kafka:kafka-clients"
             ]
         },
         "org.yaml:snakeyaml": {

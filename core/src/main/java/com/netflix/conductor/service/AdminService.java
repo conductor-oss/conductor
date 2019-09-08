@@ -18,7 +18,6 @@ package com.netflix.conductor.service;
 import com.netflix.conductor.common.metadata.tasks.Task;
 
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 

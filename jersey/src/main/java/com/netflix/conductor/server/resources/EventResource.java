@@ -33,14 +33,11 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
-import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.service.EventService;
 
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
-import org.apache.commons.lang3.StringUtils;
 
 
 /**

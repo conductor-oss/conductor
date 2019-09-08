@@ -19,12 +19,13 @@
 package com.netflix.conductor.core.execution.tasks;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author Viren
@@ -86,10 +87,13 @@ public class WorkflowSystemTask {
 	 */
 	public boolean isAsyncComplete(Task task) {
 		if (task.getInputData().containsKey("asyncComplete")) {
-			Object result = task.getInputData().get("asyncComplete");
-			return (result == null)?false:(Boolean)result;
+			return Optional.ofNullable(task.getInputData().get("asyncComplete"))
+				.map(result -> (Boolean) result)
+				.orElse(false);
 		} else {
-			return false;
+			return Optional.ofNullable(task.getWorkflowTask())
+				.map(WorkflowTask::isAsyncComplete)
+				.orElse(false);
 		}
 	}
 	

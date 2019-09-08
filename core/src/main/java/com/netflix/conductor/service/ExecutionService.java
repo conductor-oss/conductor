@@ -130,6 +130,9 @@ public class ExecutionService {
 			for (String taskId : taskIds) {
 				Task task = getTask(taskId);
 				if (task == null) {
+					// Remove taskId(s) without a valid Task from the queue.
+					queueDAO.remove(queueName, taskId);
+					logger.info("Removed taskId without a valid task from queue: {}, {}", queueName, taskId);
 					continue;
 				}
 
@@ -186,6 +189,10 @@ public class ExecutionService {
 		});
 		return allPollData;
 
+	}
+
+	public void terminateWorkflow(String workflowId, String reason) {
+		workflowExecutor.terminateWorkflow(workflowId, reason);
 	}
 
 	//For backward compatibility - to be removed in the later versions

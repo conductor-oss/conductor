@@ -248,6 +248,28 @@ public class TestWorkflowExecutor {
         assertTrue(http2TaskExecuted.get());
     }
 
+    @Test(expected = TerminateWorkflowException.class)
+    public void testScheduleTaskFailure() {
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId("wid_01");
+
+        List<Task> tasks = new LinkedList<>();
+
+        Task task1 = new Task();
+        task1.setTaskType(TaskType.TASK_TYPE_SIMPLE);
+        task1.setTaskDefName("task_1");
+        task1.setReferenceTaskName("task_1");
+        task1.setWorkflowInstanceId(workflow.getWorkflowId());
+        task1.setTaskId("tid_01");
+        task1.setStatus(Status.SCHEDULED);
+        task1.setRetryCount(0);
+
+        tasks.add(task1);
+
+        when(executionDAOFacade.createTasks(tasks)).thenThrow(Exception.class);
+        workflowExecutor.scheduleTask(workflow, tasks);
+    }
+
     @Test
     @SuppressWarnings("unchecked")
     public void testCompleteWorkflow() {

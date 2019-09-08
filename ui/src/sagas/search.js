@@ -14,8 +14,7 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-
 const getHits = data => get(data, 'result.hits', []);
 const getTotalHits = data => get(data, 'result.totalHits', 0);
 
-function* doFetchSearchResults() {
-  const {query, entirely, types, states, cutoff, start, version} = yield select(state => state.search);
+function* doFetchSearchResults() {  const {query, entirely, types, states, cutoff, start, version} = yield select(state => state.search);
 
   const queryParts = [];
 
@@ -29,7 +28,7 @@ function* doFetchSearchResults() {
 
   if(!isEmpty(version)){
     queryParts.push(`version=${toString(version)}`)
-  } 
+  }
 
   const fullQuery = join(queryParts, ' AND ');
   const freeText = (!isEmpty(query) && entirely) ? `"${query}"` : query;
@@ -39,7 +38,7 @@ function* doFetchSearchResults() {
   try {
     // this is possible a task ID
     if (query.match(UUID_RE)) {
-      const taskSearchUrl = `/api/wfe/search-by-task/${query}?q=${fullQuery}&h=${cutoff}&start=${start}`;
+      const taskSearchUrl = `/api/wfe/search-by-task/${query}?q=${fullQuery}&h=${cutoff}&start=${start}&entire=${entirely ? "t" : "f"}`;
 
       const [allResult, byTaskResult] = yield all([
         call(http.get, searchUrl),
