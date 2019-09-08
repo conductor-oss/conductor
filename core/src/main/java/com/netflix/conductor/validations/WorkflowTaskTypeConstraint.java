@@ -3,6 +3,7 @@ package com.netflix.conductor.validations;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 
 import javax.validation.Constraint;
 import javax.validation.ConstraintValidator;
