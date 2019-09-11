@@ -70,7 +70,7 @@ public class Lambda extends WorkflowSystemTask {
                         scriptExpression +
                         "} scriptFun();";
 
-                logger.info("scriptExpressionBuilder: {}" , scriptExpressionBuilder);
+                logger.debug("scriptExpressionBuilder: {}, task: {}" , scriptExpressionBuilder, task.getTaskId());
                 Object returnValue = ScriptEvaluator.eval(scriptExpressionBuilder, taskInput);
                 taskOutput.put("result", returnValue);
                 task.setStatus(Task.Status.COMPLETED);
@@ -88,7 +88,5 @@ public class Lambda extends WorkflowSystemTask {
         }
 
         return true;
-
     }
-
 }

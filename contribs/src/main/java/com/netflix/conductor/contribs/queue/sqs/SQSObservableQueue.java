@@ -267,15 +267,15 @@ public class SQSObservableQueue implements ObservableQueue {
     }
 
 	private void publishMessages(List<Message> messages) {
-		logger.info("Sending {} messages to the SQS queue: {}", messages.size(), queueName);
+		logger.debug("Sending {} messages to the SQS queue: {}", messages.size(), queueName);
 		SendMessageBatchRequest batch = new SendMessageBatchRequest(queueURL);
 		messages.forEach(msg -> {
 			SendMessageBatchRequestEntry sendr = new SendMessageBatchRequestEntry(msg.getId(), msg.getPayload());
 			batch.getEntries().add(sendr);
 		});
-		logger.info("sending {} messages in batch", batch.getEntries().size());
+		logger.debug("sending {} messages in batch", batch.getEntries().size());
 		SendMessageBatchResult result = client.sendMessageBatch(batch);
-		logger.info("send result: {} for SQS queue: {}", result.getFailed().toString(), queueName);
+		logger.debug("send result: {} for SQS queue: {}", result.getFailed().toString(), queueName);
 	}
 
 	@VisibleForTesting

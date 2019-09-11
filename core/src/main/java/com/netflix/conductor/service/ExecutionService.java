@@ -132,7 +132,7 @@ public class ExecutionService {
 				if (task == null) {
 					// Remove taskId(s) without a valid Task from the queue.
 					queueDAO.remove(queueName, taskId);
-					logger.info("Removed taskId without a valid task from queue: {}, {}", queueName, taskId);
+					logger.debug("Removed taskId without a valid task from queue: {}, {}", queueName, taskId);
 					continue;
 				}
 
@@ -271,8 +271,7 @@ public class ExecutionService {
 				continue;
 			}
 			if (pending.getUpdateTime() < threshold) {
-				logger.info("Requeuing Task: workflowId=" + workflow.getWorkflowId() + ", taskType=" + pending.getTaskType() + ", taskId="
-						+ pending.getTaskId());
+				logger.debug("Requeuing Task: {} of taskType: {} in Workflow: {}", pending.getTaskId(), pending.getTaskType(), workflow.getWorkflowId());
 				long callback = pending.getCallbackAfterSeconds();
 				if (callback < 0) {
 					callback = 0;
@@ -300,7 +299,7 @@ public class ExecutionService {
 				continue;
 			}
 
-			logger.info("Requeuing Task: workflowId=" + pending.getWorkflowInstanceId() + ", taskType=" + pending.getTaskType() + ", taskId=" + pending.getTaskId());
+			logger.debug("Requeuing Task: {} of taskType: {} in Workflow: {}", pending.getTaskId(), pending.getTaskType(), pending.getWorkflowInstanceId());
 			boolean pushed = requeue(pending);
 			if (pushed) {
 				count++;
