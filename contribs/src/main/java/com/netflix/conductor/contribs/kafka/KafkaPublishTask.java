@@ -43,7 +43,7 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 	private static final String MISSING_KAFKA_VALUE = "Missing Kafka value.  See documentation for KafkaTask for required input parameters";
 	private static final String FAILED_TO_INVOKE = "Failed to invoke kafka task due to: ";
 
-	private ObjectMapper om = objectMapper();
+	private ObjectMapper objectMapper = objectMapper();
 	private Configuration config;
 	private String requestParameter;
 	KafkaProducerManager producerManager;
@@ -82,7 +82,7 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 			return;
 		}
 
-		KafkaPublishTask.Input input = om.convertValue(request, KafkaPublishTask.Input.class);
+		KafkaPublishTask.Input input = objectMapper.convertValue(request, KafkaPublishTask.Input.class);
 
 		if (StringUtils.isBlank(input.getBootStrapServers())) {
 			markTaskAsFailed(task, MISSING_BOOT_STRAP_SERVERS);
@@ -105,14 +105,14 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 				recordMetaDataFuture.get();
 				task.setStatus(Task.Status.COMPLETED);
 				long timeTakenToCompleteTask = Instant.now().toEpochMilli() - taskStartMillis;
-				logger.info("Published message {}, Time taken {}", input, timeTakenToCompleteTask);
+				logger.debug("Published message {}, Time taken {}", input, timeTakenToCompleteTask);
 
 			} catch (ExecutionException ec) {
-				logger.error("Failed to invoke kafka task - execution exception {}", ec);
+				logger.error("Failed to invoke kafka task: {} - execution exception ", task.getTaskId(), ec);
 				markTaskAsFailed(task, FAILED_TO_INVOKE + ec.getMessage());
 			}
 		} catch (Exception e) {
-			logger.error(String.format("Failed to invoke kafka task for input {} - unknown exception: {}", input), e);
+			logger.error("Failed to invoke kafka task:{} for input {} - unknown exception", task.getTaskId(), input, e);
 			markTaskAsFailed(task, FAILED_TO_INVOKE + e.getMessage());
 		}
 	}
@@ -126,6 +126,7 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 	 * @param input Kafka Request
 	 * @return Future for execution.
 	 */
+	 @SuppressWarnings("unchecked")
 	 private Future<RecordMetadata> kafkaPublish(KafkaPublishTask.Input input) throws Exception {
 
 		long startPublishingEpochMillis = Instant.now().toEpochMilli();
@@ -142,7 +143,7 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 				.map(header -> new RecordHeader(header.getKey(), String.valueOf(header.getValue()).getBytes()))
 				.collect(Collectors.toList());
 		ProducerRecord rec = new ProducerRecord(input.getTopic(), null,
-				null, key, om.writeValueAsString(input.getValue()), headers);
+				null, key, objectMapper.writeValueAsString(input.getValue()), headers);
 
 		Future send = producer.send(rec);
 

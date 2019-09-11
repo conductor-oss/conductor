@@ -21,6 +21,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.metrics.Monitors;
@@ -181,25 +182,28 @@ public class ExecutionDAOFacade {
         try {
             Workflow workflow = getWorkflowById(workflowId, true);
 
-            // remove workflow from ES
-            if (archiveWorkflow) {
-                //Add to elasticsearch
-                indexDAO.updateWorkflow(workflowId,
+            if (workflow.getStatus().isTerminal()) {
+
+                if (archiveWorkflow) {
+                    //Add to elasticsearch
+                    indexDAO.updateWorkflow(workflowId,
                         new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD},
                         new Object[]{objectMapper.writeValueAsString(workflow), true});
+                } else {
+                    // Not archiving, also remove workflowId from index
+                    indexDAO.removeWorkflow(workflowId);
+                }
+
+                // remove workflow from DAO
+                try {
+                    executionDAO.removeWorkflow(workflowId);
+                } catch (Exception ex) {
+                    Monitors.recordDaoError("executionDao", "removeWorkflow");
+                    throw ex;
+                }
             } else {
-                // Not archiving, also remove workflowId from index
-                indexDAO.removeWorkflow(workflowId);
+                throw new ApplicationException(Code.INVALID_INPUT, String.format("Workflow: %s is not in terminal state, unable to remove", workflow));
             }
-
-            // remove workflow from DAO
-            try {
-                executionDAO.removeWorkflow(workflowId);
-            } catch (Exception ex) {
-                Monitors.recordDaoError("executionDao", "removeWorkflow");
-                throw ex;
-            }
-
         } catch (Exception e) {
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "Error removing workflow: " + workflowId, e);
         }

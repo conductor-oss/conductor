@@ -15,7 +15,6 @@
  */
 package com.netflix.conductor.contribs.http;
 
-
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -34,17 +33,16 @@ import com.sun.jersey.api.client.WebResource.Builder;
 import com.sun.jersey.oauth.client.OAuthClientFilter;
 import com.sun.jersey.oauth.signature.OAuthParameters;
 import com.sun.jersey.oauth.signature.OAuthSecrets;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.MultivaluedMap;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Viren
@@ -65,22 +63,22 @@ public class HttpTask extends WorkflowSystemTask {
 	
 	private TypeReference<List<Object>> listOfObj = new TypeReference<List<Object>>(){};
 	
-	protected ObjectMapper om = objectMapper();
+	protected ObjectMapper objectMapper = objectMapper();
 
-	protected RestClientManager rcm;
+	protected RestClientManager restClientManager;
 	
 	protected Configuration config;
 	
 	private String requestParameter;
 	
 	@Inject
-	public HttpTask(RestClientManager rcm, Configuration config) {
-		this(NAME, rcm, config);
+	public HttpTask(RestClientManager restClientManager, Configuration config) {
+		this(NAME, restClientManager, config);
 	}
 	
-	public HttpTask(String name, RestClientManager rcm, Configuration config) {
+	public HttpTask(String name, RestClientManager restClientManager, Configuration config) {
 		super(name);
-		this.rcm = rcm;
+		this.restClientManager = restClientManager;
 		this.config = config;
 		this.requestParameter = REQUEST_PARAMETER_NAME;
 		logger.info("HttpTask initialized...");
@@ -96,7 +94,7 @@ public class HttpTask extends WorkflowSystemTask {
 			return;
 		}
 		
-		Input input = om.convertValue(request, Input.class);
+		Input input = objectMapper.convertValue(request, Input.class);
 		if(input.getUri() == null) {
 			String reason = "Missing HTTP URI.  See documentation for HttpTask for required input parameters";
 			task.setReasonForIncompletion(reason);
@@ -113,7 +111,7 @@ public class HttpTask extends WorkflowSystemTask {
 		
 		try {
 			HttpResponse response = httpCall(input);
-			logger.info("response {}, {}", response.statusCode, response.body);
+			logger.debug("Response: {}, {}, task:{}", response.statusCode, response.body, task.getTaskId());
 			if(response.statusCode > 199 && response.statusCode < 300) {
 				if (isAsyncComplete(task)) {
 					task.setStatus(Status.IN_PROGRESS);
@@ -148,7 +146,7 @@ public class HttpTask extends WorkflowSystemTask {
 	 * Note: protected access is so that tasks extended from this task can re-use this to make http calls
 	 */
 	protected HttpResponse httpCall(Input input) throws Exception {
-		Client client = rcm.getClient(input);
+		Client client = restClientManager.getClient(input);
 
 		if(input.connectionTimeOut != null ) {
 			client.setConnectTimeout(input.connectionTimeOut);
@@ -158,7 +156,7 @@ public class HttpTask extends WorkflowSystemTask {
 			client.setReadTimeout(input.readTimeOut);
 		}
 		if(input.oauthConsumerKey != null) {
-			logger.info("Configuring OAuth filter");
+			logger.debug("Configuring OAuth filter");
 			OAuthParameters params = new OAuthParameters().consumerKey(input.oauthConsumerKey).signatureMethod("HMAC-SHA1").version("1.0");
 			OAuthSecrets secrets = new OAuthSecrets().consumerSecret(input.oauthConsumerSecret);
 			client.addFilter(new OAuthClientFilter(client.getProviders(), params, secrets));
@@ -205,21 +203,17 @@ public class HttpTask extends WorkflowSystemTask {
 	private Object extractBody(ClientResponse cr) {
 
 		String json = cr.getEntity(String.class);
-		logger.info(json);
-		
 		try {
-			
-			JsonNode node = om.readTree(json);
+			JsonNode node = objectMapper.readTree(json);
 			if (node.isArray()) {
-				return om.convertValue(node, listOfObj);
+				return objectMapper.convertValue(node, listOfObj);
 			} else if (node.isObject()) {
-				return om.convertValue(node, mapOfObj);
+				return objectMapper.convertValue(node, mapOfObj);
 			} else if (node.isNumber()) {
-				return om.convertValue(node, Double.class);
+				return objectMapper.convertValue(node, Double.class);
 			} else {
 				return node.asText();
 			}
-
 		} catch (IOException jpe) {
 			logger.error("Error extracting response body", jpe);
 			return json;
