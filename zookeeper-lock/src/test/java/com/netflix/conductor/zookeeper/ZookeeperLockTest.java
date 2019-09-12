@@ -2,6 +2,7 @@ package com.netflix.conductor.zookeeper;
 
 import com.netflix.conductor.core.utils.Lock;
 import com.netflix.conductor.service.ExecutionLockService;
+import com.netflix.conductor.zookeeper.config.SystemPropertiesZookeeperConfiguration;
 import com.netflix.conductor.zookeeper.config.ZookeeperConfiguration;
 import org.apache.curator.test.TestingServer;
 import org.junit.After;
@@ -9,7 +10,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import javax.inject.Provider;
 import java.util.ArrayList;
@@ -20,16 +20,14 @@ import java.util.concurrent.TimeUnit;
 
 public class ZookeeperLockTest {
     TestingServer zkServer;
-    ZookeeperConfiguration mockConfig;
+    ZookeeperConfiguration zkConfig;
     Provider<Lock> mockProvider;
     Lock zkLock;
 
     @Before
     public void setUp() throws Exception {
         zkServer = new TestingServer(2181);
-        mockConfig = Mockito.mock(ZookeeperConfiguration.class);
-        Mockito.when(mockConfig.getZkConnection()).thenReturn("localhost:2181");
-        Mockito.when(mockConfig.enableWorkflowExecutionLock()).thenReturn(true);
+        zkConfig = new SystemPropertiesZookeeperConfiguration();
     }
 
     @After
@@ -39,7 +37,7 @@ public class ZookeeperLockTest {
 
     @Test
     public void testLockReentrance() {
-        Lock zkLock = new ZookeeperLock(mockConfig, "wfexecution");
+        Lock zkLock = new ZookeeperLock(zkConfig, "wfexecution");
         Boolean hasLock = zkLock.acquireLock("reentrantLock1", 50, TimeUnit.MILLISECONDS);
         Assert.assertTrue(hasLock);
 
@@ -51,7 +49,7 @@ public class ZookeeperLockTest {
 
     @Test
     public void testZkLock() throws InterruptedException {
-        Lock zkLock = new ZookeeperLock(mockConfig, "wfexecution");
+        Lock zkLock = new ZookeeperLock(zkConfig, "wfexecution");
         String lock1 = "lock1";
         String lock2 = "lock2";
 
@@ -99,7 +97,7 @@ public class ZookeeperLockTest {
             locksIDs.addAll(locksIDs);
         }
         List<MultiLockWorker> workers = new ArrayList<>(numThreads);
-        ExecutionLockService executionLock = new ExecutionLockService(mockConfig, mockProvider);
+        ExecutionLockService executionLock = new ExecutionLockService(zkConfig, mockProvider);
         for (int i = 0; i < numThreads; i++) {
             List<String> workerLockIDs = new ArrayList<>(locksIDs);
             Collections.shuffle(workerLockIDs);
