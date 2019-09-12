@@ -29,7 +29,12 @@ public class ZookeeperLock implements Lock {
     @Inject
     public ZookeeperLock(ZookeeperConfiguration config, String namespace) {
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
-        client = CuratorFrameworkFactory.newClient(config.getZkConnection(), retryPolicy);
+        client = CuratorFrameworkFactory.newClient(
+                config.getZkConnection(),
+                config.getZkSessiontimeoutMs(),
+                config.getZkConnectiontimeoutMs(),
+                retryPolicy
+        );
         client.start();
         zkLocks = CacheBuilder.newBuilder()
                 .maximumSize(CACHE_MAXSIZE)
