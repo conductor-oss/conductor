@@ -123,3 +123,22 @@ workflow.dynomite.connection.maxConnsPerHost=31
 
 queues.dynomite.nonQuorum.port=server_port
 ```
+
+## Setting up Zookeeper to enable Distributed Locking Service.
+
+See [Technical Details](/technicaldetails/#maintaining-workflow-consistency-with-distributed-locking-and-fencing-tokens) for more details about this.
+
+Locking Service is disabled by default. Enable this by setting:
+
+```decider.locking.enabled: true```
+
+Setup Zookeeper cluster connection string:
+
+```zk.connection=1.2.3.4:2181,5.6.7.8:2181```
+
+Optionally, configure the default timeouts:
+
+```    
+zk.sessionTimeoutMs
+zk.connectionTimeoutMs
+```
