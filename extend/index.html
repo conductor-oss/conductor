@@ -151,6 +151,9 @@
     <li class="toctree-l2"><a href="#workflow-status-listener">Workflow Status Listener</a></li>
     
 
+    <li class="toctree-l2"><a href="#locking-service">Locking Service</a></li>
+    
+
     </ul>
 	    </li>
           
@@ -241,24 +244,20 @@
                 <h2 id="backend">Backend<a class="headerlink" href="#backend" title="Permanent link">&para;</a></h2>
 <p>Conductor provides a pluggable backend.  The current implementation uses Dynomite.</p>
 <p>There are 4 interfaces that needs to be implemented for each backend:</p>
-<div class="codehilite"><pre><span></span><span class="c1">//Store for workflow and task definitions</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">MetadataDAO</span>
-</pre></div>
+<pre class="codehilite"><code class="language-java">//Store for workflow and task definitions
+com.netflix.conductor.dao.MetadataDAO</code></pre>
 
 
-<div class="codehilite"><pre><span></span><span class="c1">//Store for workflow executions</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">ExecutionDAO</span>
-</pre></div>
+<pre class="codehilite"><code class="language-java">//Store for workflow executions
+com.netflix.conductor.dao.ExecutionDAO</code></pre>
 
 
-<div class="codehilite"><pre><span></span><span class="c1">//Index for workflow executions</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">IndexDAO</span>
-</pre></div>
+<pre class="codehilite"><code class="language-java">//Index for workflow executions
+com.netflix.conductor.dao.IndexDAO</code></pre>
 
 
-<div class="codehilite"><pre><span></span><span class="c1">//Queue provider for tasks</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">QueueDAO</span>
-</pre></div>
+<pre class="codehilite"><code class="language-java">//Queue provider for tasks
+com.netflix.conductor.dao.QueueDAO</code></pre>
 
 
 <p>It is possible to mix and match different implementations for each of these.<br />
@@ -284,6 +283,14 @@ For example, SQS for queueing and a relational store for others.</p>
 <ul>
 <li>Implement the <code>WorkflowStatusListener</code> <a href="https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/execution/WorkflowStatusListener.java">interface</a></li>
 <li>This can be configured to plugin custom notification/eventing upon workflows reaching a terminal state.</li>
+</ul>
+<h2 id="locking-service">Locking Service<a class="headerlink" href="#locking-service" title="Permanent link">&para;</a></h2>
+<p>By default, Conductor Server module loads Zookeeper lock module. If you'd like to provide your own locking implementation module, 
+for eg., with Dynomite and Redlock:</p>
+<ul>
+<li>Implement <code>Lock</code> interface.</li>
+<li>Add a binding similar to <a href="https://github.com/Netflix/conductor/blob/master/server/src/main/java/com/netflix/conductor/bootstrap/ModulesProvider.java#L115-L129">this</a></li>
+<li>Enable locking service: <code>decider.locking.enabled: true</code></li>
 </ul>
               
             </div>

@@ -138,6 +138,9 @@
     <li class="toctree-l2"><a href="#using-standalone-redis-elasticache">Using Standalone Redis / ElastiCache</a></li>
     
 
+    <li class="toctree-l2"><a href="#setting-up-zookeeper-to-enable-distributed-locking-service">Setting up Zookeeper to enable Distributed Locking Service.</a></li>
+    
+
     </ul>
 	    </li>
           
@@ -261,8 +264,7 @@
 <h4 id="1-build-from-source">1. Build from source<a class="headerlink" href="#1-build-from-source" title="Permanent link">&para;</a></h4>
 <p>To build from source, checkout the code from github and build server module using <code>gradle build</code> command. If you do not have gradle installed, you can run the command <code>./gradlew build</code> from the project root. This produces <em>conductor-server-all-VERSION.jar</em> in the folder <em>./server/build/libs/</em></p>
 <p>The jar can be executed using:</p>
-<div class="codehilite"><pre><span></span>java -jar conductor-server-VERSION-all.jar
-</pre></div>
+<pre class="codehilite"><code class="language-shell">java -jar conductor-server-VERSION-all.jar</code></pre>
 
 
 <h4 id="2-download-pre-built-binaries-from-jcenter-or-maven-central">2. Download pre-built binaries from jcenter or maven central<a class="headerlink" href="#2-download-pre-built-binaries-from-jcenter-or-maven-central" title="Permanent link">&para;</a></h4>
@@ -285,75 +287,71 @@
 </table>
 <h4 id="3-use-the-pre-configured-docker-image">3. Use the pre-configured Docker image<a class="headerlink" href="#3-use-the-pre-configured-docker-image" title="Permanent link">&para;</a></h4>
 <p>To build the docker images for the conductor server and ui run the commands:</p>
-<div class="codehilite"><pre><span></span><span class="nb">cd</span> docker
-docker-compose build
-</pre></div>
+<pre class="codehilite"><code class="language-shell">cd docker
+docker-compose build</code></pre>
 
 
 <p>After the docker images are built, run the following command to start the containers:</p>
-<div class="codehilite"><pre><span></span>docker-compose up
-</pre></div>
+<pre class="codehilite"><code class="language-shell">docker-compose up</code></pre>
 
 
 <p>This will create a docker container network that consists of the following images: conductor:server, conductor:ui, <a href="https://hub.docker.com/_/elasticsearch/">elasticsearch:5.6.8</a>, and dynomite.</p>
 <p>To view the UI, navigate to <a href="http://localhost:5000/">localhost:5000</a>, to view the Swagger docs, navigate to <a href="http://localhost:8080/">localhost:8080</a>.</p>
 <h2 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h2>
 <p>Conductor server uses a property file based configuration.  The property file is passed to the Main class as a command line argument.</p>
-<div class="codehilite"><pre><span></span>java -jar conductor-server-all-VERSION.jar <span class="o">[</span>PATH TO PROPERTY FILE<span class="o">]</span> <span class="o">[</span>log4j.properties file path<span class="o">]</span>
-</pre></div>
+<pre class="codehilite"><code class="language-shell">java -jar conductor-server-all-VERSION.jar [PATH TO PROPERTY FILE] [log4j.properties file path]</code></pre>
 
 
 <p>log4j.properties file path is optional and allows finer control over the logging (defaults to INFO level logging in the console).</p>
 <h4 id="configuration-parameters">Configuration Parameters<a class="headerlink" href="#configuration-parameters" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre><span></span><span class="c"># Database persistence model.  Possible values are memory, redis, redis_cluster, redis_sentinel and dynomite.</span>
-<span class="c"># If omitted, the persistence used is memory</span>
-<span class="c">#</span>
-<span class="c"># memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo</span>
-<span class="c"># redis : non-Dynomite based redis instance</span>
-<span class="c"># redis_cluster: AWS Elasticache Redis (cluster mode enabled).See [http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.Create.CON.RedisCluster.html]</span>
-<span class="c"># redis_sentinel: Redis HA with Redis Sentinel. See [https://redis.io/topics/sentinel]</span>
-<span class="c"># dynomite : Dynomite cluster.  Use this for HA configuration.</span>
-<span class="na">db</span><span class="o">=</span><span class="s">dynomite</span>
+<pre class="codehilite"><code class="language-properties"># Database persistence model.  Possible values are memory, redis, redis_cluster, redis_sentinel and dynomite.
+# If omitted, the persistence used is memory
+#
+# memory : The data is stored in memory and lost when the server dies.  Useful for testing or demo
+# redis : non-Dynomite based redis instance
+# redis_cluster: AWS Elasticache Redis (cluster mode enabled).See [http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.Create.CON.RedisCluster.html]
+# redis_sentinel: Redis HA with Redis Sentinel. See [https://redis.io/topics/sentinel]
+# dynomite : Dynomite cluster.  Use this for HA configuration.
+db=dynomite
 
-<span class="c"># Dynomite Cluster details.</span>
-<span class="c"># format is host:port:rack separated by semicolon</span>
-<span class="c"># for AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e. The region in this case does not matter</span>
-<span class="na">workflow.dynomite.cluster.hosts</span><span class="o">=</span><span class="s">host1:8102:us-east-1c;host2:8102:us-east-1d;host3:8102:us-east-1e</span>
+# Dynomite Cluster details.
+# format is host:port:rack separated by semicolon
+# for AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e. The region in this case does not matter
+workflow.dynomite.cluster.hosts=host1:8102:us-east-1c;host2:8102:us-east-1d;host3:8102:us-east-1e
 
-<span class="c"># If you are running using dynomite, also add the following line to the property </span>
-<span class="c"># to set the rack/availability zone of the conductor server to be same as dynomite cluster config</span>
-<span class="na">EC2_AVAILABILTY_ZONE</span><span class="o">=</span><span class="s">us-east-1c</span>
+# If you are running using dynomite, also add the following line to the property 
+# to set the rack/availability zone of the conductor server to be same as dynomite cluster config
+EC2_AVAILABILTY_ZONE=us-east-1c
 
-<span class="c"># Dynomite cluster name</span>
-<span class="na">workflow.dynomite.cluster.name</span><span class="o">=</span><span class="s">dyno_cluster_name</span>
+# Dynomite cluster name
+workflow.dynomite.cluster.name=dyno_cluster_name
 
-<span class="c"># Maximum connections to redis/dynomite</span>
-<span class="na">workflow.dynomite.connection.maxConnsPerHost</span><span class="o">=</span><span class="s">31</span>
+# Maximum connections to redis/dynomite
+workflow.dynomite.connection.maxConnsPerHost=31
 
-<span class="c"># Namespace for the keys stored in Dynomite/Redis</span>
-<span class="na">workflow.namespace.prefix</span><span class="o">=</span><span class="s">conductor</span>
+# Namespace for the keys stored in Dynomite/Redis
+workflow.namespace.prefix=conductor
 
-<span class="c"># Namespace prefix for the dyno queues</span>
-<span class="na">workflow.namespace.queue.prefix</span><span class="o">=</span><span class="s">conductor_queues</span>
+# Namespace prefix for the dyno queues
+workflow.namespace.queue.prefix=conductor_queues
 
-<span class="c"># No. of threads allocated to dyno-queues (optional)</span>
-<span class="na">queues.dynomite.threads</span><span class="o">=</span><span class="s">10</span>
+# No. of threads allocated to dyno-queues (optional)
+queues.dynomite.threads=10
 
-<span class="c"># Non-quorum port used to connect to local redis.  Used by dyno-queues.</span>
-<span class="c"># When using redis directly, set this to the same port as redis server.</span>
-<span class="c"># For Dynomite, this is 22122 by default or the local redis-server port used by Dynomite.</span>
-<span class="na">queues.dynomite.nonQuorum.port</span><span class="o">=</span><span class="s">22122</span>
+# Non-quorum port used to connect to local redis.  Used by dyno-queues.
+# When using redis directly, set this to the same port as redis server.
+# For Dynomite, this is 22122 by default or the local redis-server port used by Dynomite.
+queues.dynomite.nonQuorum.port=22122
 
-<span class="c"># Transport address to elasticsearch</span>
-<span class="c"># Specifying multiple node urls is not supported. specify one of the nodes&#39; url, or a load balancer.</span>
-<span class="na">workflow.elasticsearch.url</span><span class="o">=</span><span class="s">localhost:9300</span>
+# Transport address to elasticsearch
+# Specifying multiple node urls is not supported. specify one of the nodes' url, or a load balancer.
+workflow.elasticsearch.url=localhost:9300
 
-<span class="c"># Name of the elasticsearch cluster</span>
-<span class="na">workflow.elasticsearch.index.name</span><span class="o">=</span><span class="s">conductor</span>
+# Name of the elasticsearch cluster
+workflow.elasticsearch.index.name=conductor
 
-<span class="c"># Additional modules (optional)</span>
-<span class="na">conductor.additional.modules</span><span class="o">=</span><span class="s">class_extending_com.google.inject.AbstractModule</span>
-</pre></div>
+# Additional modules (optional)
+conductor.additional.modules=class_extending_com.google.inject.AbstractModule</code></pre>
 
 
 <h2 id="high-availability-configuration">High Availability Configuration<a class="headerlink" href="#high-availability-configuration" title="Permanent link">&para;</a></h2>
@@ -361,15 +359,25 @@ docker-compose build
 <p>Clients connects to the server via HTTP load balancer or using Discovery (on NetflixOSS stack).</p>
 <h2 id="using-standalone-redis-elasticache">Using Standalone Redis / ElastiCache<a class="headerlink" href="#using-standalone-redis-elasticache" title="Permanent link">&para;</a></h2>
 <p>Conductor server can be used with a standlone Redis or ElastiCache server.  To configure the server, change the config to use the following:</p>
-<div class="codehilite"><pre><span></span><span class="na">db</span><span class="o">=</span><span class="s">redis</span>
+<pre class="codehilite"><code class="language-properties">db=redis
 
-<span class="c"># For AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e.</span>
-<span class="c"># The region in this case does not matter</span>
-<span class="na">workflow.dynomite.cluster.hosts</span><span class="o">=</span><span class="s">server_address:server_port:us-east-1e</span>
-<span class="na">workflow.dynomite.connection.maxConnsPerHost</span><span class="o">=</span><span class="s">31</span>
+# For AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e.
+# The region in this case does not matter
+workflow.dynomite.cluster.hosts=server_address:server_port:us-east-1e
+workflow.dynomite.connection.maxConnsPerHost=31
 
-<span class="na">queues.dynomite.nonQuorum.port</span><span class="o">=</span><span class="s">server_port</span>
-</pre></div>
+queues.dynomite.nonQuorum.port=server_port</code></pre>
+
+
+<h2 id="setting-up-zookeeper-to-enable-distributed-locking-service">Setting up Zookeeper to enable Distributed Locking Service.<a class="headerlink" href="#setting-up-zookeeper-to-enable-distributed-locking-service" title="Permanent link">&para;</a></h2>
+<p>See <a href="/technicaldetails/#maintaining-workflow-consistency-with-distributed-locking-and-fencing-tokens">Technical Details</a> for more details about this.</p>
+<p>Locking Service is disabled by default. Enable this by setting:</p>
+<p><code>decider.locking.enabled: true</code></p>
+<p>Setup Zookeeper cluster connection string:</p>
+<p><code>zk.connection=1.2.3.4:2181,5.6.7.8:2181</code></p>
+<p>Optionally, configure the default timeouts:</p>
+<pre class="codehilite"><code>zk.sessionTimeoutMs
+zk.connectionTimeoutMs</code></pre>
               
             </div>
           </div>

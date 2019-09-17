@@ -348,16 +348,15 @@
 <h4 id="output">Output<a class="headerlink" href="#output" title="Permanent link">&para;</a></h4>
 <p>Id of the workflow (GUID)</p>
 <h3 id="with-input-and-task-domains">With Input and Task Domains<a class="headerlink" href="#with-input-and-task-domains" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><span class="err">POST /workflow</span>
-<span class="err">{</span>
-<span class="err">   //JSON payload for Start workflow request</span>
-<span class="err">}</span>
-</pre></div>
+<pre class="codehilite"><code>POST /workflow
+{
+   //JSON payload for Start workflow request
+}</code></pre>
 
 
 <h4 id="start-workflow-request">Start workflow request<a class="headerlink" href="#start-workflow-request" title="Permanent link">&para;</a></h4>
 <p>JSON for start workflow request</p>
-<div class="codehilite"><pre><span></span>{
+<pre class="codehilite"><code>{
   &quot;name&quot;: &quot;myWorkflow&quot;, // Name of the workflow
   &quot;version&quot;: 1, // Version
   “correlationId”: “corr1”, // correlation Id
@@ -368,8 +367,7 @@
   &quot;taskToDomain&quot;: {
     // Task to domain map
   }
-}
-</pre></div>
+}</code></pre>
 
 
 <h4 id="output_1">Output<a class="headerlink" href="#output_1" title="Permanent link">&para;</a></h4>
@@ -436,27 +434,26 @@
 </table>
 <h3 id="output_2">Output<a class="headerlink" href="#output_2" title="Permanent link">&para;</a></h3>
 <p>Search result as described below:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;totalHits&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-  <span class="nt">&quot;results&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;workflowType&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-      <span class="nt">&quot;workflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;correlationId&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;startTime&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;updateTime&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;endTime&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;RUNNING&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;output&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;reasonForIncompletion&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;executionTime&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-      <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;totalHits&quot;: 0,
+  &quot;results&quot;: [
+    {
+      &quot;workflowType&quot;: &quot;string&quot;,
+      &quot;version&quot;: 0,
+      &quot;workflowId&quot;: &quot;string&quot;,
+      &quot;correlationId&quot;: &quot;string&quot;,
+      &quot;startTime&quot;: &quot;string&quot;,
+      &quot;updateTime&quot;: &quot;string&quot;,
+      &quot;endTime&quot;: &quot;string&quot;,
+      &quot;status&quot;: &quot;RUNNING&quot;,
+      &quot;input&quot;: &quot;string&quot;,
+      &quot;output&quot;: &quot;string&quot;,
+      &quot;reasonForIncompletion&quot;: &quot;string&quot;,
+      &quot;executionTime&quot;: 0,
+      &quot;event&quot;: &quot;string&quot;
+    }
+  ]
+}</code></pre>
 
 
 <h2 id="manage-workflows">Manage Workflows<a class="headerlink" href="#manage-workflows" title="Permanent link">&para;</a></h2>
@@ -505,24 +502,22 @@
 <h3 id="rerun">Rerun<a class="headerlink" href="#rerun" title="Permanent link">&para;</a></h3>
 <p>Re-runs a completed workflow from a specific task. </p>
 <p><code>POST /workflow/{workflowId}/rerun</code></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;reRunFromWorkflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;workflowInput&quot;</span><span class="p">:</span> <span class="p">{},</span>
-  <span class="nt">&quot;reRunFromTaskId&quot;</span><span class="p">:</span> <span class="s2">&quot;string&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;taskInput&quot;</span><span class="p">:</span> <span class="p">{}</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;reRunFromWorkflowId&quot;: &quot;string&quot;,
+  &quot;workflowInput&quot;: {},
+  &quot;reRunFromTaskId&quot;: &quot;string&quot;,
+  &quot;taskInput&quot;: {}
+}</code></pre>
 
 
 <h3 id="skip-task">Skip Task<a class="headerlink" href="#skip-task" title="Permanent link">&para;</a></h3>
 <p>Skips a task execution (specified as <code>taskReferenceName</code> parameter) in a running workflow and continues forward.
 Optionally updating task's input and output as specified in the payload.
 <code>PUT /workflow/{workflowId}/skiptask/{taskReferenceName}?workflowId=&amp;taskReferenceName=</code></p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;taskInput&quot;</span><span class="p">:</span> <span class="p">{},</span>
-  <span class="nt">&quot;taskOutput&quot;</span><span class="p">:</span> <span class="p">{}</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;taskInput&quot;: {},
+  &quot;taskOutput&quot;: {}
+}</code></pre>
 
 
 <h2 id="manage-tasks">Manage Tasks<a class="headerlink" href="#manage-tasks" title="Permanent link">&para;</a></h2>
@@ -585,18 +580,17 @@ Optionally updating task's input and output as specified in the payload.
 </tbody>
 </table>
 <h3 id="schema-for-updating-task-result">Schema for updating Task Result<a class="headerlink" href="#schema-for-updating-task-result" title="Permanent link">&para;</a></h3>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;workflowInstanceId&quot;</span><span class="p">:</span> <span class="s2">&quot;Workflow Instance Id&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;taskId&quot;</span><span class="p">:</span> <span class="s2">&quot;ID of the task to be updated&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;reasonForIncompletion&quot;</span> <span class="p">:</span> <span class="s2">&quot;If failed, reason for failure&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;callbackAfterSeconds&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-    <span class="nt">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;IN_PROGRESS|FAILED|COMPLETED&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;outputData&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="err">//JSON</span> <span class="err">document</span> <span class="err">representing</span> <span class="err">Task</span> <span class="err">execution</span> <span class="err">output</span>     
-    <span class="p">}</span>
+<pre class="codehilite"><code class="language-json">{
+    &quot;workflowInstanceId&quot;: &quot;Workflow Instance Id&quot;,
+    &quot;taskId&quot;: &quot;ID of the task to be updated&quot;,
+    &quot;reasonForIncompletion&quot; : &quot;If failed, reason for failure&quot;,
+    &quot;callbackAfterSeconds&quot;: 0,
+    &quot;status&quot;: &quot;IN_PROGRESS|FAILED|COMPLETED&quot;,
+    &quot;outputData&quot;: {
+        //JSON document representing Task execution output     
+    }
 
-<span class="p">}</span>
-</pre></div>
+}</code></pre>
 
 
 <div class="admonition info">
