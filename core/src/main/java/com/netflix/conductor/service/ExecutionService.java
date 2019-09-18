@@ -129,10 +129,10 @@ public class ExecutionService {
 			List<String> taskIds = queueDAO.pop(queueName, count, timeoutInMilliSecond);
 			for (String taskId : taskIds) {
 				Task task = getTask(taskId);
-				if (task == null) {
-					// Remove taskId(s) without a valid Task from the queue.
+				if (task == null || task.getStatus().isTerminal()) {
+					// Remove taskId(s) without a valid Task/terminal state task from the queue
 					queueDAO.remove(queueName, taskId);
-					logger.debug("Removed taskId without a valid task from queue: {}, {}", queueName, taskId);
+					logger.debug("Removed taskId from the queue: {}, {}", queueName, taskId);
 					continue;
 				}
 
