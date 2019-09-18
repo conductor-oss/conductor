@@ -181,28 +181,22 @@ public class ExecutionDAOFacade {
     public void removeWorkflow(String workflowId, boolean archiveWorkflow) {
         try {
             Workflow workflow = getWorkflowById(workflowId, true);
-
-            if (workflow.getStatus().isTerminal()) {
-
-                if (archiveWorkflow) {
-                    //Add to elasticsearch
-                    indexDAO.updateWorkflow(workflowId,
-                        new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD},
-                        new Object[]{objectMapper.writeValueAsString(workflow), true});
-                } else {
-                    // Not archiving, also remove workflowId from index
-                    indexDAO.removeWorkflow(workflowId);
-                }
-
-                // remove workflow from DAO
-                try {
-                    executionDAO.removeWorkflow(workflowId);
-                } catch (Exception ex) {
-                    Monitors.recordDaoError("executionDao", "removeWorkflow");
-                    throw ex;
-                }
+            if (archiveWorkflow) {
+                //Add to elasticsearch
+                indexDAO.updateWorkflow(workflowId,
+                    new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD},
+                    new Object[]{objectMapper.writeValueAsString(workflow), true});
             } else {
-                throw new ApplicationException(Code.INVALID_INPUT, String.format("Workflow: %s is not in terminal state, unable to remove", workflow));
+                // Not archiving, also remove workflow from index
+                indexDAO.removeWorkflow(workflowId);
+            }
+
+            // remove workflow from DAO
+            try {
+                executionDAO.removeWorkflow(workflowId);
+            } catch (Exception ex) {
+                Monitors.recordDaoError("executionDao", "removeWorkflow");
+                throw ex;
             }
         } catch (Exception e) {
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "Error removing workflow: " + workflowId, e);
