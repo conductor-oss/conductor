@@ -21,6 +21,7 @@ package com.netflix.conductor.core.execution.tasks;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
 
@@ -46,7 +47,7 @@ public class Join extends WorkflowSystemTask {
         StringBuilder failureReason = new StringBuilder();
         List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
         if (task.isLoopOverTask()) {
-            joinOn = joinOn.stream().map(name -> DoWhileTaskMapper.appendIteration(name, task.getIteration())).collect(Collectors.toList());
+            joinOn = joinOn.stream().map(name -> TaskUtils.appendIteration(name, task.getIteration())).collect(Collectors.toList());
         }
         for (String joinOnRef : joinOn) {
             Task forkedTask = workflow.getTaskByRefName(joinOnRef);

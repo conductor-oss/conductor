@@ -22,12 +22,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,7 +65,7 @@ public class DoWhile extends WorkflowSystemTask {
 		StringBuilder failureReason = new StringBuilder();
 		Map<String, Object> output = new HashMap<>();
 		task.getOutputData().put("iteration", task.getIteration());
-		List<Task> loopOver = workflow.getTasks().stream().filter(t -> (t.getReferenceTaskName().endsWith(getLoopOverTaskSuffix(task.getIteration()))) && t.isLoopOverTask()).collect(Collectors.toList());
+		List<Task> loopOver = workflow.getTasks().stream().filter(t -> (t.getReferenceTaskName().endsWith(TaskUtils.getLoopOverTaskRefNameSuffix(task.getIteration()))) && t.isLoopOverTask()).collect(Collectors.toList());
 
 		for (Task loopOverTask : loopOver) {
 			Status taskStatus = loopOverTask.getStatus();
@@ -106,10 +105,6 @@ public class DoWhile extends WorkflowSystemTask {
 		}
 	}
 
-	String getLoopOverTaskSuffix(int iteration) {
-		return DoWhileTaskMapper.LOOP_TASK_DELIMITER + iteration;
-	}
-
 	boolean scheduleNextIteration(Task task, Workflow workflow, WorkflowExecutor workflowExecutor) {
 		logger.debug("Scheduling loop tasks for taskid {} as condition {} evaluated to true",
 				task.getTaskId(), task.getWorkflowTask().getLoopCondition());
@@ -134,10 +129,10 @@ public class DoWhile extends WorkflowSystemTask {
 		TaskDef taskDefinition = workflowExecutor.getTaskDefinition(task);
 		Map<String, Object> taskInput = parametersUtils.getTaskInputV2(task.getWorkflowTask().getInputParameters(), workflow, task.getTaskId(), taskDefinition);
 		taskInput.put(task.getReferenceTaskName(), task.getOutputData());
-		List<Task> loopOver = workflow.getTasks().stream().filter(t -> (t.getReferenceTaskName().endsWith(getLoopOverTaskSuffix(task.getIteration()))) && t.isLoopOverTask()).collect(Collectors.toList());
+		List<Task> loopOver = workflow.getTasks().stream().filter(t -> (t.getReferenceTaskName().endsWith(TaskUtils.getLoopOverTaskRefNameSuffix(task.getIteration()))) && t.isLoopOverTask()).collect(Collectors.toList());
 
 		for (Task loopOverTask : loopOver) {
-			taskInput.put(loopOverTask.getReferenceTaskName().split(getLoopOverTaskSuffix(task.getIteration()))[0], loopOverTask.getOutputData());
+			taskInput.put(loopOverTask.getReferenceTaskName().split(TaskUtils.getLoopOverTaskRefNameSuffix(task.getIteration()))[0], loopOverTask.getOutputData());
 		}
 		String condition = task.getWorkflowTask().getLoopCondition();
 		boolean shouldContinue = false;

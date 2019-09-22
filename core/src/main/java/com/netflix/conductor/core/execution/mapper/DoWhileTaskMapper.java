@@ -22,6 +22,7 @@ import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
@@ -33,6 +34,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DO_WHILE}
@@ -41,7 +43,6 @@ import java.util.Optional;
 public class DoWhileTaskMapper implements TaskMapper {
 
     public static final Logger logger = LoggerFactory.getLogger(DoWhileTaskMapper.class);
-    public static final String LOOP_TASK_DELIMITER = "__";
 
     private final MetadataDAO metadataDAO;
 
@@ -100,20 +101,11 @@ public class DoWhileTaskMapper implements TaskMapper {
         List<Task> tasks2 = taskMapperContext.getDeciderService()
                 .getTasksToBeScheduled(workflowInstance, loopOverTasks.get(0), retryCount);
         tasks2.stream().forEach(t -> {
-            t.setReferenceTaskName(t.getReferenceTaskName() + LOOP_TASK_DELIMITER + loopTask.getIteration());
+            t.setReferenceTaskName(TaskUtils.appendIteration(t.getReferenceTaskName(), loopTask.getIteration()));
             t.setIteration(loopTask.getIteration());
         });
         tasksToBeScheduled.addAll(tasks2);
 
         return tasksToBeScheduled;
-    }
-
-    public static String getTaskDefReferenceName(String name) {
-        String[] tokens = name.split(LOOP_TASK_DELIMITER);
-        return tokens.length > 0 ? tokens[0]: name;
-    }
-
-    public static String appendIteration(String name, int iteration) {
-        return name + LOOP_TASK_DELIMITER + iteration;
     }
 }

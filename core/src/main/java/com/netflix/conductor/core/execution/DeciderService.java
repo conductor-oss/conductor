@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
@@ -224,7 +225,7 @@ public class DeciderService {
 
     List<Task> filterNextLoopOverTasks(List<Task> task, Task pendingTask, Workflow workflow) {
         task.forEach(nextTask -> {
-            nextTask.setReferenceTaskName(DoWhileTaskMapper.appendIteration(nextTask.getReferenceTaskName(), pendingTask.getIteration()));
+            nextTask.setReferenceTaskName(TaskUtils.appendIteration(nextTask.getReferenceTaskName(), pendingTask.getIteration()));
             nextTask.setIteration(pendingTask.getIteration());});
 
         List<String> tasksInWorkflow = workflow.getTasks().stream()
@@ -351,7 +352,7 @@ public class DeciderService {
             }
         }
 
-        String taskReferenceName = task.isLoopOverTask() ? DoWhileTaskMapper.getTaskDefReferenceName(task.getReferenceTaskName()) : task.getReferenceTaskName();
+        String taskReferenceName = task.isLoopOverTask() ? TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName()) : task.getReferenceTaskName();
         WorkflowTask taskToSchedule = workflowDef.getNextTask(taskReferenceName);
         while (isTaskSkipped(taskToSchedule, workflow)) {
             taskToSchedule = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());

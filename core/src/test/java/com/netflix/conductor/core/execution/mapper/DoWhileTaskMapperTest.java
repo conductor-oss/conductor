@@ -6,6 +6,7 @@ import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.DeciderService;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.utils.IDGenerator;
@@ -80,7 +81,7 @@ public class DoWhileTaskMapperTest {
 
         assertNotNull(mappedTasks);
         assertEquals(mappedTasks.size(), 2);
-        assertEquals("task1" + DoWhileTaskMapper.LOOP_TASK_DELIMITER + "1", mappedTasks.get(1).getReferenceTaskName());
+        assertEquals("task1__1", mappedTasks.get(1).getReferenceTaskName());
         assertEquals(1, mappedTasks.get(1).getIteration());
         assertEquals(SystemTaskType.DO_WHILE.name(), mappedTasks.get(0).getTaskType());
     }
@@ -97,13 +98,8 @@ public class DoWhileTaskMapperTest {
     }
 
     @Test
-    public void testGetTaskDefReferenceName() {
-        assertEquals("task", DoWhileTaskMapper.getTaskDefReferenceName("task" + DoWhileTaskMapper.LOOP_TASK_DELIMITER + "1"));
-    }
-
-    @Test
     public void testAppendIteration() {
-        assertEquals("task__1", DoWhileTaskMapper.appendIteration("task", 1));
+        assertEquals("task__1", TaskUtils.appendIteration("task", 1));
     }
 
 }
