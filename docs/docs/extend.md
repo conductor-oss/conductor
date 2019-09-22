@@ -48,3 +48,12 @@ To provide a notification mechanism upon completion/termination of workflows:
 
 * Implement the ```WorkflowStatusListener``` [interface](https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/execution/WorkflowStatusListener.java)
 * This can be configured to plugin custom notification/eventing upon workflows reaching a terminal state.
+
+## Locking Service
+
+By default, Conductor Server module loads Zookeeper lock module. If you'd like to provide your own locking implementation module, 
+for eg., with Dynomite and Redlock:
+
+* Implement ```Lock``` interface.
+* Add a binding similar to [this](https://github.com/Netflix/conductor/blob/master/server/src/main/java/com/netflix/conductor/bootstrap/ModulesProvider.java#L115-L129)
+* Enable locking service: ```decider.locking.enabled: true```
