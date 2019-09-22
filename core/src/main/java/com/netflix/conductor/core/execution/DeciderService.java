@@ -220,7 +220,7 @@ public class DeciderService {
         return outcome;
     }
 
-    private List<Task> filterNextLoopOverTasks(List<Task> tasks, Task pendingTask, Workflow workflow) {
+    protected List<Task> filterNextLoopOverTasks(List<Task> tasks, Task pendingTask, Workflow workflow) {
 
         //Update the task reference name and iteration
         tasks.forEach(nextTask -> {
