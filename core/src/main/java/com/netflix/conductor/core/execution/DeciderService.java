@@ -32,7 +32,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.TaskUtils;
-import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
@@ -221,9 +220,10 @@ public class DeciderService {
         return outcome;
     }
 
+    private List<Task> filterNextLoopOverTasks(List<Task> tasks, Task pendingTask, Workflow workflow) {
 
-    List<Task> filterNextLoopOverTasks(List<Task> task, Task pendingTask, Workflow workflow) {
-        task.forEach(nextTask -> {
+        //Update the task reference name and iteration
+        tasks.forEach(nextTask -> {
             nextTask.setReferenceTaskName(TaskUtils.appendIteration(nextTask.getReferenceTaskName(), pendingTask.getIteration()));
             nextTask.setIteration(pendingTask.getIteration());});
 
@@ -232,7 +232,7 @@ public class DeciderService {
             .map(Task::getReferenceTaskName)
             .collect(Collectors.toList());
 
-        return task.stream()
+        return tasks.stream()
             .filter(runningTask -> !tasksInWorkflow.contains(runningTask.getReferenceTaskName()))
             .collect(Collectors.toList());
     }

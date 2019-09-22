@@ -708,7 +708,6 @@ public class Task {
         this.iteration = iteration;
     }
 
-
     public boolean isLoopOverTask() {
         return iteration > 0;
     }

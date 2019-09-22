@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.netflix.conductor.common.utils.TaskUtils;
-import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,6 +46,7 @@ public class ExclusiveJoin extends WorkflowSystemTask {
 		Task.Status taskStatus;
 		List<String> joinOn = (List<String>) task.getInputData().get("joinOn");
 		if (task.isLoopOverTask()) {
+			//If exclusive join is part of loop over task, wait for specific iteration to get complete
 			joinOn = joinOn.stream().map(name -> TaskUtils.appendIteration(name, task.getIteration())).collect(Collectors.toList());
 		}
 		Task exclusiveTask = null;

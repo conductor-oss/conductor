@@ -24,7 +24,7 @@ package com.netflix.conductor.common.utils;
  */
 public class TaskUtils {
 
-	public static String LOOP_TASK_DELIMITER = "__";
+	private static String LOOP_TASK_DELIMITER = "__";
 
 	public static String appendIteration(String name, int iteration) {
 		return name + LOOP_TASK_DELIMITER + iteration;
