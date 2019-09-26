@@ -332,7 +332,7 @@ public class TaskDef extends Auditable {
 	 * @return concurrency limit
 	 */
 	public int concurrencyLimit() {
-		return concurrentExecLimit == null ? 0 : concurrentExecLimit.intValue();
+		return concurrentExecLimit == null ? 0 : concurrentExecLimit;
 	}
 
 	/**

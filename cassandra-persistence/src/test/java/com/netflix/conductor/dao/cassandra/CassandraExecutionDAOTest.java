@@ -15,6 +15,9 @@ package com.netflix.conductor.dao.cassandra;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.config.TestConfiguration;
@@ -35,6 +38,7 @@ import java.util.List;
 
 import static com.netflix.conductor.dao.cassandra.CassandraBaseDAO.WorkflowMetadata;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -262,5 +266,66 @@ public class CassandraExecutionDAOTest {
         assertNull(foundId);
         foundId = executionDAO.lookupWorkflowIdFromTaskId(task2Id);
         assertNull(foundId);
+    }
+
+    @Test
+    public void testTaskDefLimitCRUD() {
+        String taskDefName = "test_task_def";
+        String taskId = IDGenerator.generate();
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setConcurrentExecLimit(1);
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskDefinition(taskDef);
+
+        Task task = new Task();
+        task.setTaskDefName(taskDefName);
+        task.setTaskId(taskId);
+        task.setWorkflowInstanceId(IDGenerator.generate());
+        task.setWorkflowTask(workflowTask);
+        task.setTaskType("test_task");
+        task.setWorkflowType("test_workflow");
+        task.setStatus(Task.Status.SCHEDULED);
+
+        Task newTask = new Task();
+        newTask.setTaskDefName(taskDefName);
+        newTask.setTaskId(IDGenerator.generate());
+        newTask.setWorkflowInstanceId(IDGenerator.generate());
+        newTask.setWorkflowTask(workflowTask);
+        newTask.setTaskType("test_task");
+        newTask.setWorkflowType("test_workflow");
+        newTask.setStatus(Task.Status.SCHEDULED);
+
+        // no tasks are IN_PROGRESS
+        executionDAO.updateTaskDefLimit(task, false);
+        assertFalse(executionDAO.exceedsInProgressLimit(task));
+
+        // set a task to IN_PROGRESS
+        task.setStatus(Status.IN_PROGRESS);
+        executionDAO.updateTaskDefLimit(task, false);
+
+        // when same task is checked
+        assertFalse(executionDAO.exceedsInProgressLimit(task));
+
+        // check if new task can be added
+        assertTrue(executionDAO.exceedsInProgressLimit(newTask));
+
+        // set IN_PROGRESS task to COMPLETED
+        task.setStatus(Status.COMPLETED);
+        executionDAO.updateTaskDefLimit(task, false);
+
+        // check new task again
+        assertFalse(executionDAO.exceedsInProgressLimit(newTask));
+
+        // set new task to IN_PROGRESS
+        newTask.setStatus(Status.IN_PROGRESS);
+        executionDAO.updateTaskDefLimit(newTask, false);
+
+        // check new task again
+        assertFalse(executionDAO.exceedsInProgressLimit(newTask));
+
+        // force remove from task def limit
+        executionDAO.updateTaskDefLimit(newTask, true);
+        assertFalse(executionDAO.exceedsInProgressLimit(task));
     }
 }

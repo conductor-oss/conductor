@@ -15,6 +15,19 @@
  */
 package com.netflix.conductor.dao.cassandra;
 
+import static com.netflix.conductor.util.Constants.DAO_NAME;
+import static com.netflix.conductor.util.Constants.ENTITY_KEY;
+import static com.netflix.conductor.util.Constants.PAYLOAD_KEY;
+import static com.netflix.conductor.util.Constants.SHARD_ID_KEY;
+import static com.netflix.conductor.util.Constants.TABLE_TASK_DEF_LIMIT;
+import static com.netflix.conductor.util.Constants.TABLE_TASK_LOOKUP;
+import static com.netflix.conductor.util.Constants.TABLE_WORKFLOWS;
+import static com.netflix.conductor.util.Constants.TASK_DEF_NAME_KEY;
+import static com.netflix.conductor.util.Constants.TASK_ID_KEY;
+import static com.netflix.conductor.util.Constants.TOTAL_PARTITIONS_KEY;
+import static com.netflix.conductor.util.Constants.TOTAL_TASKS_KEY;
+import static com.netflix.conductor.util.Constants.WORKFLOW_ID_KEY;
+
 import com.datastax.driver.core.DataType;
 import com.datastax.driver.core.Session;
 import com.datastax.driver.core.schemabuilder.SchemaBuilder;
@@ -23,22 +36,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableMap;
 import com.netflix.conductor.cassandra.CassandraConfiguration;
 import com.netflix.conductor.metrics.Monitors;
+import java.io.IOException;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-
-import static com.netflix.conductor.util.Constants.DAO_NAME;
-import static com.netflix.conductor.util.Constants.ENTITY_KEY;
-import static com.netflix.conductor.util.Constants.PAYLOAD_KEY;
-import static com.netflix.conductor.util.Constants.SHARD_ID_KEY;
-import static com.netflix.conductor.util.Constants.TABLE_TASK_LOOKUP;
-import static com.netflix.conductor.util.Constants.TABLE_WORKFLOWS;
-import static com.netflix.conductor.util.Constants.TASK_ID_KEY;
-import static com.netflix.conductor.util.Constants.TOTAL_PARTITIONS_KEY;
-import static com.netflix.conductor.util.Constants.TOTAL_TASKS_KEY;
-import static com.netflix.conductor.util.Constants.WORKFLOW_ID_KEY;
 
 /**
  * Creates the keyspace and tables.
@@ -62,6 +63,13 @@ import static com.netflix.conductor.util.Constants.WORKFLOW_ID_KEY;
  * workflow_id uuid,
  * PRIMARY KEY (task_id)
  * );
+ * <p>
+ * CREATE TABLE IF NOT EXISTS conductor.task_def_limit(
+ * task_def_name text,
+ * task_id uuid,
+ * workflow_id uuid,
+ * PRIMARY KEY ((task_def_name), task_id_key)
+ * );
  */
 public class CassandraBaseDAO {
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraBaseDAO.class);
@@ -84,6 +92,7 @@ public class CassandraBaseDAO {
             session.execute(getCreateKeyspaceStatement());
             session.execute(getCreateWorkflowsTableStatement());
             session.execute(getCreateTaskLookupTableStatement());
+            session.execute(getCreateTaskDefLimitStatement());
             LOGGER.info("CassandraDAO initialization complete! Tables created!");
         } catch (Exception e) {
             LOGGER.error("Error initializing and setting up keyspace and table in cassandra", e);
@@ -119,6 +128,15 @@ public class CassandraBaseDAO {
                 .addPartitionKey(TASK_ID_KEY, DataType.uuid())
                 .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
                 .getQueryString();
+    }
+
+    private String getCreateTaskDefLimitStatement() {
+        return SchemaBuilder.createTable(config.getCassandraKeyspace(), TABLE_TASK_DEF_LIMIT)
+            .ifNotExists()
+            .addPartitionKey(TASK_DEF_NAME_KEY, DataType.text())
+            .addClusteringColumn(TASK_ID_KEY, DataType.uuid())
+            .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
+            .getQueryString();
     }
 
     String toJson(Object value) {
