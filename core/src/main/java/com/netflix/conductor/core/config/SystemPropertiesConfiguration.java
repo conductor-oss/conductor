@@ -108,7 +108,6 @@ public class SystemPropertiesConfiguration implements Configuration {
         return defaultValue;
     }
 
-
     @Override
     public Long getWorkflowInputPayloadSizeThresholdKB() {
         return getLongProperty("conductor.workflow.input.payload.threshold.kb", 5120L);

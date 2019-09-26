@@ -318,7 +318,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertFalse(e.isRetryable());
             List<ValidationError> errors = e.getValidationErrors();
             List<String> errorMessages = errors.stream()
-                    .map(v -> v.getMessage())
+                    .map(ValidationError::getMessage)
                     .collect(Collectors.toList());
             assertEquals(2, errors.size());
             assertTrue(errorMessages.contains("Workflow Id cannot be null or empty"));
@@ -349,7 +349,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertFalse(e.isRetryable());
             List<ValidationError> errors = e.getValidationErrors();
             List<String> errorMessages = errors.stream()
-                    .map(v -> v.getMessage())
+                    .map(ValidationError::getMessage)
                     .collect(Collectors.toList());
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
@@ -370,7 +370,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertFalse(e.isRetryable());
             List<ValidationError> errors = e.getValidationErrors();
             List<String> errorMessages = errors.stream()
-                    .map(v -> v.getMessage())
+                    .map(ValidationError::getMessage)
                     .collect(Collectors.toList());
             assertEquals(2, errors.size());
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
@@ -423,7 +423,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertFalse(e.isRetryable());
             List<ValidationError> errors = e.getValidationErrors();
             List<String> errorMessages = errors.stream()
-                    .map(v -> v.getMessage())
+                    .map(ValidationError::getMessage)
                     .collect(Collectors.toList());
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
@@ -443,7 +443,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertFalse(e.isRetryable());
             List<ValidationError> errors = e.getValidationErrors();
             List<String> errorMessages = errors.stream()
-                    .map(v -> v.getMessage())
+                    .map(ValidationError::getMessage)
                     .collect(Collectors.toList());
             assertTrue(errorMessages.contains("TaskDef name cannot be null or empty"));
             throw e;
@@ -469,7 +469,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             assertFalse(e.isRetryable());
             List<ValidationError> errors = e.getValidationErrors();
             List<String> errorMessages = errors.stream()
-                    .map(v -> v.getMessage())
+                    .map(ValidationError::getMessage)
                     .collect(Collectors.toList());
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));

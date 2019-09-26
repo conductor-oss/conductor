@@ -87,7 +87,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
     private static final String MSG_DOC_TYPE = "message";
 
     private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
-    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMww");
+    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMWW");
 
     private @interface HttpMethod {
         String GET = "GET";
@@ -691,7 +691,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
             long endTime = Instant.now().toEpochMilli();
             logger.info("Time taken {} ", endTime - startTime);
             logger.info("Current executor state queue {} ,executor {}", ((ThreadPoolExecutor) executorService).getQueue().size(), executorService);
-            Monitors.recordESIndexTime("index_time", endTime - startTime);
+            Monitors.recordESIndexTime("index_time", "n/a",endTime - startTime);
             Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
         } catch (Exception e) {
             Monitors.error(className, "index");

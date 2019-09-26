@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -58,6 +58,11 @@ public class TestConfiguration implements Configuration {
 	@Override
 	public String getAppId() {
 		return "workflow";
+	}
+
+	@Override
+	public boolean enableAsyncIndexing() {
+		return true;
 	}
 
 	@Override
