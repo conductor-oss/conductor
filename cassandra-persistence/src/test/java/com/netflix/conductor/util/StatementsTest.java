@@ -59,6 +59,12 @@ public class StatementsTest {
     }
 
     @Test
+    public void testGetSelectTasksFromTaskDefLimitStatement() {
+        String statement = "SELECT * FROM junit.task_def_limit WHERE task_def_name=?;";
+        assertEquals(statement, statements.getSelectTasksFromTaskDefLimitStatement());
+    }
+
+    @Test
     public void testGetUpdateWorkflowStatement() {
         String statement = "UPDATE junit.workflows SET payload=? WHERE workflow_id=? AND shard_id=1 AND entity='workflow' AND task_id='';";
         assertEquals(statement, statements.getUpdateWorkflowStatement());
@@ -83,6 +89,12 @@ public class StatementsTest {
     }
 
     @Test
+    public void testGetUpdateTaskDefLimitStatement() {
+        String statement = "UPDATE junit.task_def_limit SET workflow_id=? WHERE task_def_name=? AND task_id=?;";
+        assertEquals(statement, statements.getUpdateTaskDefLimitStatement());
+    }
+
+    @Test
     public void testGetDeleteWorkflowStatement() {
         String statement = "DELETE FROM junit.workflows WHERE workflow_id=? AND shard_id=?;";
         assertEquals(statement, statements.getDeleteWorkflowStatement());
@@ -98,5 +110,11 @@ public class StatementsTest {
     public void testGetDeleteTaskStatement() {
         String statement = "DELETE FROM junit.workflows WHERE workflow_id=? AND shard_id=? AND entity='task' AND task_id=?;";
         assertEquals(statement, statements.getDeleteTaskStatement());
+    }
+
+    @Test
+    public void testGetDeleteTaskDefLimitStatement() {
+        String statement = "DELETE FROM junit.task_def_limit WHERE task_def_name=? AND task_id=?;";
+        assertEquals(statement, statements.getDeleteTaskDefLimitStatement());
     }
 }
