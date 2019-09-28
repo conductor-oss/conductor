@@ -268,8 +268,8 @@ public class Monitors {
 		counter(classQualifier, "task_ack_error", "taskType", taskType);
 	}
 
-	public static void recordESIndexTime(String docType, long val) {
-		getTimer(Monitors.classQualifier, docType, docType).record(val, TimeUnit.MILLISECONDS);
+	public static void recordESIndexTime(String action, String docType, long val) {
+		getTimer(Monitors.classQualifier, action, docType).record(val, TimeUnit.MILLISECONDS);
 	}
 
 	public static void recordWorkerQueueSize(int val) {

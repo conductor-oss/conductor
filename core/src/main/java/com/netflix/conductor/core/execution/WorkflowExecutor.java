@@ -1153,16 +1153,19 @@ public class WorkflowExecutor {
 
             LOGGER.debug("Executing {}/{}-{}", task.getTaskType(), task.getTaskId(), task.getStatus());
 
-            queueDAO.setUnackTimeout(QueueUtils.getQueueName(task), task.getTaskId(), systemTask.getRetryTimeInSecond() * 1000);
-            task.setPollCount(task.getPollCount() + 1);
-            executionDAOFacade.updateTask(task);
-
             switch (task.getStatus()) {
                 case SCHEDULED:
+                    queueDAO.setUnackTimeout(QueueUtils.getQueueName(task), task.getTaskId(), systemTask.getRetryTimeInSecond() * 1000);
+                    task.setPollCount(task.getPollCount() + 1);
+                    executionDAOFacade.updateTask(task);
                     systemTask.start(workflow, task, this);
                     break;
 
                 case IN_PROGRESS:
+                    if (!systemTask.isAsyncComplete(task)) {
+                        task.setPollCount(task.getPollCount() + 1);
+                        executionDAOFacade.updateTask(task);
+                    }
                     systemTask.execute(workflow, task, this);
                     break;
                 default:
@@ -1251,7 +1254,7 @@ public class WorkflowExecutor {
 
     @VisibleForTesting
     boolean scheduleTask(Workflow workflow, List<Task> tasks) {
-        List<Task> createdTasks = new ArrayList<>();
+        List<Task> createdTasks;
 
         try {
             if (tasks == null || tasks.isEmpty()) {

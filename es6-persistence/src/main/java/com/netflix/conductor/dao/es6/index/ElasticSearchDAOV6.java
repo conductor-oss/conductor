@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
@@ -31,38 +31,6 @@ import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.query.parser.ParserException;
 import com.netflix.conductor.metrics.Monitors;
-import org.elasticsearch.ResourceAlreadyExistsException;
-import org.elasticsearch.action.DocWriteResponse;
-import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
-import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
-import org.elasticsearch.action.bulk.BulkRequestBuilder;
-import org.elasticsearch.action.bulk.BulkResponse;
-import org.elasticsearch.action.delete.DeleteRequest;
-import org.elasticsearch.action.delete.DeleteResponse;
-import org.elasticsearch.action.get.GetRequest;
-import org.elasticsearch.action.get.GetResponse;
-import org.elasticsearch.action.index.IndexRequest;
-import org.elasticsearch.action.search.SearchRequestBuilder;
-import org.elasticsearch.action.search.SearchResponse;
-import org.elasticsearch.action.update.UpdateRequest;
-import org.elasticsearch.client.Client;
-import org.elasticsearch.common.Strings;
-import org.elasticsearch.common.xcontent.XContentType;
-import org.elasticsearch.index.IndexNotFoundException;
-import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
-import org.elasticsearch.search.SearchHits;
-import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
-import org.elasticsearch.search.sort.SortBuilders;
-import org.elasticsearch.search.sort.SortOrder;
-import org.joda.time.DateTime;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
@@ -83,6 +51,38 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.elasticsearch.ResourceAlreadyExistsException;
+import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
+import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
+import org.elasticsearch.action.bulk.BulkRequestBuilder;
+import org.elasticsearch.action.bulk.BulkResponse;
+import org.elasticsearch.action.delete.DeleteRequest;
+import org.elasticsearch.action.delete.DeleteResponse;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.index.IndexRequest;
+import org.elasticsearch.action.search.SearchRequestBuilder;
+import org.elasticsearch.action.search.SearchResponse;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.client.Client;
+import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.IndexNotFoundException;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.search.SearchHit;
+import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
+import org.elasticsearch.search.sort.SortBuilders;
+import org.elasticsearch.search.sort.SortOrder;
+import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @Trace
 @Singleton
@@ -134,7 +134,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
 
     private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
-    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMww");
+    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMWW");
 
     private final ExecutorService executorService;
 
@@ -278,10 +278,18 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
             byte[] doc = objectMapper.writeValueAsBytes(summary);
 
             UpdateRequest req = buildUpdateRequest(id, doc, workflowIndexName, WORKFLOW_DOC_TYPE);
-            indexObject(req, WORKFLOW_DOC_TYPE);
+            new RetryUtil<UpdateResponse>().retryOnException(
+                () -> elasticSearchClient.update(req).actionGet(),
+                null,
+                null,
+                RETRY_COUNT,
+                "Indexing workflow document: " + workflow.getWorkflowId(),
+                "indexWorkflow"
+            );
+
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for  request {}, index {}", endTime - startTime, req, req);
-            Monitors.recordESIndexTime("index_workflow", endTime - startTime);
+            Monitors.recordESIndexTime("index_workflow", WORKFLOW_DOC_TYPE, endTime - startTime);
             Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
         } catch (Throwable e) {
             logger.error("Failed to index workflow: {}", workflow.getWorkflowId(), e);
@@ -306,9 +314,9 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
             indexObject(req, TASK_DOC_TYPE);
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for  request {}, index {}", endTime - startTime, req, req);
-            Monitors.recordESIndexTime("index_task", endTime - startTime);
+            Monitors.recordESIndexTime("index_task", TASK_DOC_TYPE, endTime - startTime);
             Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
-        } catch (Throwable e) {
+        } catch (Exception e) {
             logger.error("Failed to index task: {}", task.getTaskId(), e);
         }
     }
@@ -522,13 +530,21 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
             throw new ApplicationException(ApplicationException.Code.INVALID_INPUT, "Number of keys and values do not match");
         }
 
-        UpdateRequest request = new UpdateRequest(workflowIndexName, WORKFLOW_DOC_TYPE, workflowInstanceId);
-        Map<String, Object> source = IntStream.range(0, keys.length).boxed()
+        try {
+            long startTime = Instant.now().toEpochMilli();
+            UpdateRequest request = new UpdateRequest(workflowIndexName, WORKFLOW_DOC_TYPE, workflowInstanceId);
+            Map<String, Object> source = IntStream.range(0, keys.length).boxed()
                 .collect(Collectors.toMap(i -> keys[i], i -> values[i]));
-        request.doc(source);
-        logger.debug("Updating workflow {} with {}", workflowInstanceId, source);
-        new RetryUtil<>().retryOnException(() -> elasticSearchClient.update(request), null, null, RETRY_COUNT,
-                "Updating index for doc_type workflow", "updateWorkflow");
+            request.doc(source);
+            logger.debug("Updating workflow {} with {}", workflowInstanceId, source);
+            indexObject(request, WORKFLOW_DOC_TYPE);
+            long endTime = Instant.now().toEpochMilli();
+            logger.debug("Time taken {} for  request {}", endTime - startTime, request);
+            Monitors.recordESIndexTime("update_workflow", WORKFLOW_DOC_TYPE, endTime - startTime);
+            Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
+        } catch (Exception e) {
+            logger.error("Failed to update workflow in index: {}", workflowInstanceId, e);
+        }
     }
 
     @Override
