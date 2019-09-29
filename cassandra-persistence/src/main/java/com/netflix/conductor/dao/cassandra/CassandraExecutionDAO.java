@@ -650,6 +650,14 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
             if (task.getStatus().isTerminal() || forceRemove) {
                 recordCassandraDaoRequests("removeTaskDefLimit", task.getTaskType(), task.getWorkflowType());
                 session.execute(deleteTaskDefLimitStatement.bind(task.getTaskDefName(), UUID.fromString(task.getTaskId())));
+                new RetryUtil<>().retryOnException(
+                    () -> session.execute(deleteTaskDefLimitStatement.bind(task.getTaskDefName(), UUID.fromString(task.getTaskId()))),
+                    null,
+                    null,
+                    3,
+                    "Deleting taskDefLimit",
+                    "removeTaskDefLimit"
+                );
             } else if (task.getStatus().equals(IN_PROGRESS)) {
                 recordCassandraDaoRequests("addTaskDefLimit", task.getTaskType(), task.getWorkflowType());
                 new RetryUtil<>().retryOnException(
@@ -657,8 +665,8 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
                     null,
                     null,
                     3,
-                    "Deleting taskDefLimit",
-                    "updateTaskDefLimit"
+                    "Adding taskDefLimit",
+                    "addTaskDefLimit"
                 );
             }
         } catch (Exception e) {

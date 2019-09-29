@@ -197,17 +197,12 @@ public class ExecutionDAOFacade {
             Workflow workflow = getWorkflowById(workflowId, true);
 
             if (archiveWorkflow) {
-                if (workflow.getStatus().isTerminal()){
+                if (workflow.getStatus().isTerminal()) {
                     // Only allow archival if workflow is in terminal state
-                    if (config.enableAsyncIndexing()) {
-                        indexDAO.asyncUpdateWorkflow(workflowId,
-                            new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD},
-                            new Object[]{objectMapper.writeValueAsString(workflow), true});
-                    } else {
-                        indexDAO.updateWorkflow(workflowId,
-                            new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD},
-                            new Object[]{objectMapper.writeValueAsString(workflow), true});
-                    }
+                    // DO NOT archive async, since if archival errors out, workflow data will be lost
+                    indexDAO.updateWorkflow(workflowId,
+                        new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD},
+                        new Object[]{objectMapper.writeValueAsString(workflow), true});
                 } else {
                     throw new ApplicationException(Code.INVALID_INPUT, String.format("Cannot archive workflow: %s with status: %s", workflowId, workflow.getStatus()));
                 }
