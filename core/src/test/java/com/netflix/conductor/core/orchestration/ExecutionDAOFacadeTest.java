@@ -117,7 +117,7 @@ public class ExecutionDAOFacadeTest {
 
         when(executionDAO.getWorkflow(anyString(), anyBoolean())).thenReturn(workflow);
         executionDAOFacade.removeWorkflow("workflowId", true);
-        verify(indexDAO, times(1)).asyncUpdateWorkflow(any(), any(), any());
+        verify(indexDAO, times(1)).updateWorkflow(any(), any(), any());
         verify(indexDAO, never()).removeWorkflow(any());
     }
 
