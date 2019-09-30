@@ -269,7 +269,7 @@ public class Monitors {
 	}
 
 	public static void recordESIndexTime(String action, String docType, long val) {
-		getTimer(Monitors.classQualifier, action, docType).record(val, TimeUnit.MILLISECONDS);
+		getTimer(Monitors.classQualifier, action, "docType", docType).record(val, TimeUnit.MILLISECONDS);
 	}
 
 	public static void recordWorkerQueueSize(int val) {
