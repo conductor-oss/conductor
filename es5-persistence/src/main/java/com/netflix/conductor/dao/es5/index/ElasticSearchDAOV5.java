@@ -117,6 +117,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
     private final ObjectMapper objectMapper;
     private final Client elasticSearchClient;
     private final ExecutorService executorService;
+    private final ExecutorService logExecutorService;
     private final int archiveSearchBatchSize;
     private ConcurrentHashMap<String, BulkRequestBuilder> bulkRequests;
     private final int indexBatchSize;
@@ -149,6 +150,19 @@ public class ElasticSearchDAOV5 implements IndexDAO {
                     logger.warn("Request {} to async dao discarded in executor {}", runnable, executor);
                     Monitors.recordDiscardedIndexingCount();
                 });
+
+        corePoolSize = 1;
+        maximumPoolSize = 2;
+        keepAliveTime = 30L;
+        this.logExecutorService = new ThreadPoolExecutor(corePoolSize,
+            maximumPoolSize,
+            keepAliveTime,
+            TimeUnit.SECONDS,
+            new LinkedBlockingQueue<>(workerQueueSize),
+            (runnable, executor) -> {
+                logger.warn("Request {} to async log dao discarded in executor {}", runnable, executor);
+                Monitors.recordDiscardedLogIndexingCount();
+            });
     }
 
     @Override
@@ -396,7 +410,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 
     @Override
     public CompletableFuture<Void> asyncAddTaskExecutionLogs(List<TaskExecLog> logs) {
-        return CompletableFuture.runAsync(() -> addTaskExecutionLogs(logs), executorService);
+        return CompletableFuture.runAsync(() -> addTaskExecutionLogs(logs), logExecutorService);
     }
 
     @Override
@@ -484,7 +498,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 
     @Override
     public CompletableFuture<Void> asyncAddEventExecution(EventExecution eventExecution) {
-        return CompletableFuture.runAsync(() -> addEventExecution(eventExecution), executorService);
+        return CompletableFuture.runAsync(() -> addEventExecution(eventExecution), logExecutorService);
     }
 
     private void indexObject(UpdateRequest req, String docType) {
@@ -500,18 +514,21 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 
     private synchronized void updateWithRetry(BulkRequestBuilder request, String docType) {
         try {
+            long startTime = Instant.now().toEpochMilli();
             new RetryUtil<BulkResponse>().retryOnException(
                     () -> request.execute().actionGet(),
                     null,
                     BulkResponse::hasFailures,
                     RETRY_COUNT,
-                    "Indexing all "+ docType + " task",
-                    docType
+                    "Bulk Indexing "+ docType,
+                    "indexObject"
             );
+            long endTime = Instant.now().toEpochMilli();
+            logger.debug("Time taken {} for indexing object of type: {}", endTime - startTime, docType);
+            Monitors.recordESIndexTime("index_object", docType, endTime - startTime);
         } catch (Exception e) {
             Monitors.error(className, "index");
-            logger.error("Failed to index {} for request docType: {}", request, docType,
-                e);
+            logger.error("Failed to index object of type: {}", docType, e);
         }
     }
 

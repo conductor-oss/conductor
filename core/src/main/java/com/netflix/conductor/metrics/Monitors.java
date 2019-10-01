@@ -279,4 +279,8 @@ public class Monitors {
 	public static void recordDiscardedIndexingCount() {
 		getCounter(Monitors.classQualifier, "discarded_index_count").increment();
 	}
+
+	public static void recordDiscardedLogIndexingCount() {
+		getCounter(Monitors.classQualifier, "discarded_log_index_count").increment();
+	}
 }
