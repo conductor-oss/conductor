@@ -57,7 +57,7 @@ public interface Configuration {
     boolean ASYNC_INDEXING_ENABLED_DEFAULT_VALUE = false;
 
     String ASYNC_UPDATE_SHORT_WORKFLOW_DURATION_PROPERTY_NAME = "async.update.short.workflow.duration.seconds";
-    int ASYNC_UPDATE_SHORT_WORKFLOW_DURATION_DEFAULT_VALUE = 30000;
+    int ASYNC_UPDATE_SHORT_WORKFLOW_DURATION_DEFAULT_VALUE = 30;
 
     String ASYNC_UPDATE_DELAY_PROPERTY_NAME = "async.update.delay.seconds";
     int ASYNC_UPDATE_DELAY_DEFAULT_VALUE = 60;

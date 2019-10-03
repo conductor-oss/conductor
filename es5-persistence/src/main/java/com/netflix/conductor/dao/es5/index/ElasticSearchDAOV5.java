@@ -119,8 +119,9 @@ public class ElasticSearchDAOV5 implements IndexDAO {
     private final ExecutorService executorService;
     private final ExecutorService logExecutorService;
     private final int archiveSearchBatchSize;
-    private ConcurrentHashMap<String, BulkRequestBuilder> bulkRequests;
+    private ConcurrentHashMap<String, BulkRequests> bulkRequests;
     private final int indexBatchSize;
+    private final int asyncBufferFlushTimeout;
 
     static {
         SIMPLE_DATE_FORMAT.setTimeZone(GMT);
@@ -136,6 +137,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         this.archiveSearchBatchSize = config.getArchiveSearchBatchSize();
         this.bulkRequests = new ConcurrentHashMap<>();
         this.indexBatchSize = config.getIndexBatchSize();
+        this.asyncBufferFlushTimeout = config.getAsyncBufferFlushTimeout();
 
         int corePoolSize = 4;
         int maximumPoolSize = config.getAsyncMaxPoolSize();
@@ -163,6 +165,8 @@ public class ElasticSearchDAOV5 implements IndexDAO {
                 logger.warn("Request {} to async log dao discarded in executor {}", runnable, executor);
                 Monitors.recordDiscardedIndexingCount("logQueue");
             });
+
+        Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::flushBulkRequests, 60, 30, TimeUnit.SECONDS);
     }
 
     @Override
@@ -464,7 +468,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             UpdateRequest req = new UpdateRequest(logIndexName, MSG_DOC_TYPE, message.getId());
             req.doc(doc, XContentType.JSON);
             req.upsert(doc, XContentType.JSON);
-            indexObject(req, EVENT_DOC_TYPE);
+            indexObject(req, MSG_DOC_TYPE);
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for  indexing message: {}", endTime - startTime, message.getId());
             Monitors.recordESIndexTime("add_message", MSG_DOC_TYPE, endTime - startTime);
@@ -502,13 +506,17 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 
     private void indexObject(UpdateRequest req, String docType) {
         if (bulkRequests.get(docType) == null) {
-            bulkRequests.put(docType, elasticSearchClient.prepareBulk());
+            bulkRequests.put(docType, new BulkRequests(0, elasticSearchClient.prepareBulk()));
         }
-        bulkRequests.get(docType).add(req);
-        if (bulkRequests.get(docType).numberOfActions() >= this.indexBatchSize) {
-            updateWithRetry(bulkRequests.get(docType), docType);
-            bulkRequests.put(docType, elasticSearchClient.prepareBulk());
+        bulkRequests.get(docType).getBulkRequestBuilder().add(req);
+        if (bulkRequests.get(docType).getBulkRequestBuilder().numberOfActions() >= this.indexBatchSize) {
+            indexBulkRequest(docType);
         }
+    }
+
+    private void indexBulkRequest(String docType) {
+        updateWithRetry(bulkRequests.get(docType).getBulkRequestBuilder(), docType);
+        bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis(), elasticSearchClient.prepareBulk()));
     }
 
     private synchronized void updateWithRetry(BulkRequestBuilder request, String docType) {
@@ -785,5 +793,38 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             executions.add(tel);
         }
         return executions;
+    }
+
+    private void flushBulkRequests() {
+        bulkRequests.entrySet().stream()
+            .filter(entry -> (System.currentTimeMillis() - entry.getValue().getLastFlushTime()) > asyncBufferFlushTimeout
+                * 1000)
+            .forEach(entry -> indexBulkRequest(entry.getKey()));
+    }
+
+    static class BulkRequests {
+        private long lastFlushTime;
+        private BulkRequestBuilder bulkRequestBuilder;
+
+        public long getLastFlushTime() {
+            return lastFlushTime;
+        }
+
+        public void setLastFlushTime(long lastFlushTime) {
+            this.lastFlushTime = lastFlushTime;
+        }
+
+        public BulkRequestBuilder getBulkRequestBuilder() {
+            return bulkRequestBuilder;
+        }
+
+        public void setBulkRequestBuilder(BulkRequestBuilder bulkRequestBuilder) {
+            this.bulkRequestBuilder = bulkRequestBuilder;
+        }
+
+        BulkRequests(long lastFlushTime, BulkRequestBuilder bulkRequestBuilder) {
+            this.lastFlushTime = lastFlushTime;
+            this.bulkRequestBuilder = bulkRequestBuilder;
+        }
     }
 }

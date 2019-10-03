@@ -67,6 +67,9 @@ public interface ElasticSearchConfiguration extends Configuration {
     String ELASTIC_SEARCH_ASYNC_DAO_MAX_POOL_SIZE = "workflow.elasticsearch.async.dao.max.pool.size";
     int DEFAULT_ASYNC_MAX_POOL_SIZE = 12;
 
+    String ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_PROPERTY_NAME = "workflow.elasticsearch.async.buffer.flush.timeout.seconds";
+    int ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_DEFAULT_VALUE = 10;
+
     default String getURL() {
         return getProperty(ELASTIC_SEARCH_URL_PROPERTY_NAME, ELASTIC_SEARCH_URL_DEFAULT_VALUE);
     }
@@ -148,5 +151,10 @@ public interface ElasticSearchConfiguration extends Configuration {
 
     default int getAsyncMaxPoolSize() {
         return  getIntProperty(ELASTIC_SEARCH_ASYNC_DAO_MAX_POOL_SIZE, DEFAULT_ASYNC_MAX_POOL_SIZE);
+    }
+
+    default int getAsyncBufferFlushTimeout() {
+        return getIntProperty(ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_PROPERTY_NAME,
+            ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_DEFAULT_VALUE);
     }
 }

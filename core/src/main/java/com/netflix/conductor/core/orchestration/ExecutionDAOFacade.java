@@ -181,7 +181,7 @@ public class ExecutionDAOFacade {
         executionDAO.updateWorkflow(workflow);
         if (workflow.getStatus().isTerminal()) {
             if (config.enableAsyncIndexing()) {
-                if (workflow.getEndTime() - workflow.getStartTime() < config.getAsyncUpdateShortRunningWorkflowDuration()) {
+                if (workflow.getEndTime() - workflow.getStartTime() < config.getAsyncUpdateShortRunningWorkflowDuration() * 1000) {
                     final String workflowId = workflow.getWorkflowId();
                     DelayWorkflowUpdate delayWorkflowUpdate = new DelayWorkflowUpdate(workflowId);
                     LOGGER.debug("Delayed updating workflow: {} in the index by {} seconds", workflowId, config.getAsyncUpdateDelay());
