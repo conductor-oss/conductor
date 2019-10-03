@@ -138,7 +138,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
                 new LinkedBlockingQueue<>(workerQueueSize),
                 (runnable, executor) -> {
                     logger.warn("Request  {} to async dao discarded in executor {}", runnable, executor);
-                    Monitors.recordDiscardedIndexingCount();
+                    Monitors.recordDiscardedIndexingCount("indexQueue");
                 });
 
     }
@@ -690,9 +690,9 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
             }, null, null, RETRY_COUNT, operationDescription, "indexWithRetry");
             long endTime = Instant.now().toEpochMilli();
             logger.info("Time taken {} ", endTime - startTime);
-            logger.info("Current executor state queue {} ,executor {}", ((ThreadPoolExecutor) executorService).getQueue().size(), executorService);
+            logger.info("Current executor state queue {}, executor {}", ((ThreadPoolExecutor) executorService).getQueue().size(), executorService);
             Monitors.recordESIndexTime("index_time", "n/a",endTime - startTime);
-            Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
+            Monitors.recordWorkerQueueSize("indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
         } catch (Exception e) {
             Monitors.error(className, "index");
             logger.error("Failed to index {} for request type: {}", request.toString(), e);

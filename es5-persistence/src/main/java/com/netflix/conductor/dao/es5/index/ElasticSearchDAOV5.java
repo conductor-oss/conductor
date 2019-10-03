@@ -137,7 +137,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         this.bulkRequests = new ConcurrentHashMap<>();
         this.indexBatchSize = config.getIndexBatchSize();
 
-        int corePoolSize = 6;
+        int corePoolSize = 4;
         int maximumPoolSize = config.getAsyncMaxPoolSize();
         long keepAliveTime = 1L;
         int workerQueueSize = config.getAsyncWorkerQueueSize();
@@ -148,7 +148,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             new LinkedBlockingQueue<>(workerQueueSize),
                 (runnable, executor) -> {
                     logger.warn("Request {} to async dao discarded in executor {}", runnable, executor);
-                    Monitors.recordDiscardedIndexingCount();
+                    Monitors.recordDiscardedIndexingCount("indexQueue");
                 });
 
         corePoolSize = 1;
@@ -161,7 +161,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             new LinkedBlockingQueue<>(workerQueueSize),
             (runnable, executor) -> {
                 logger.warn("Request {} to async log dao discarded in executor {}", runnable, executor);
-                Monitors.recordDiscardedLogIndexingCount();
+                Monitors.recordDiscardedIndexingCount("logQueue");
             });
     }
 
@@ -336,7 +336,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for indexing workflow: {}", endTime - startTime, workflow.getWorkflowId());
             Monitors.recordESIndexTime("index_workflow", WORKFLOW_DOC_TYPE, endTime - startTime);
-            Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
+            Monitors.recordWorkerQueueSize("indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
         } catch (Exception e) {
             logger.error("Failed to index workflow: {}", workflow.getWorkflowId(), e);
         }
@@ -363,7 +363,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for  indexing task:{} in workflow: {}", endTime - startTime, task.getTaskId(), task.getWorkflowInstanceId());
             Monitors.recordESIndexTime("index_task", TASK_DOC_TYPE, endTime - startTime);
-            Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
+            Monitors.recordWorkerQueueSize("indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
         } catch (Exception e) {
             logger.error("Failed to index task: {}", task.getTaskId(), e);
         }
@@ -399,7 +399,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for indexing taskExecutionLogs", endTime - startTime);
             Monitors.recordESIndexTime("index_task_execution_logs", LOG_DOC_TYPE, endTime - startTime);
-            Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
+            Monitors.recordWorkerQueueSize("loqQueue", ((ThreadPoolExecutor) logExecutorService).getQueue().size());
         } catch (Exception e) {
             List<String> taskIds = taskExecLogs.stream()
                 .map(TaskExecLog::getTaskId)
@@ -468,7 +468,6 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for  indexing message: {}", endTime - startTime, message.getId());
             Monitors.recordESIndexTime("add_message", MSG_DOC_TYPE, endTime - startTime);
-            Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
         } catch (Exception e) {
             logger.error("Failed to index message: {}", message.getId(), e);
         }
@@ -490,7 +489,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for indexing event execution: {}", endTime - startTime, eventExecution.getId());
             Monitors.recordESIndexTime("add_event_execution", EVENT_DOC_TYPE, endTime - startTime);
-            Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
+            Monitors.recordWorkerQueueSize("logQueue", ((ThreadPoolExecutor) logExecutorService).getQueue().size());
         } catch (Exception e) {
             logger.error("Failed to index event execution: {}", eventExecution.getId(), e);
         }
@@ -554,7 +553,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for removing workflow: {}", endTime - startTime, workflowId);
             Monitors.recordESIndexTime("remove_workflow", WORKFLOW_DOC_TYPE, endTime - startTime);
-            Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
+            Monitors.recordWorkerQueueSize("indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
         } catch (Exception e) {
             logger.error("Failed to remove workflow {} from index", workflowId, e);
             Monitors.error(className, "remove");
@@ -592,7 +591,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         long endTime = Instant.now().toEpochMilli();
         logger.debug("Time taken {} for updating workflow: {}", endTime - startTime, workflowInstanceId);
         Monitors.recordESIndexTime("update_workflow", WORKFLOW_DOC_TYPE, endTime - startTime);
-        Monitors.recordWorkerQueueSize(((ThreadPoolExecutor) executorService).getQueue().size());
+        Monitors.recordWorkerQueueSize("indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
     }
 
     @Override

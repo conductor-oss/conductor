@@ -272,15 +272,11 @@ public class Monitors {
 		getTimer(Monitors.classQualifier, action, "docType", docType).record(val, TimeUnit.MILLISECONDS);
 	}
 
-	public static void recordWorkerQueueSize(int val) {
-		getGauge(Monitors.classQualifier, "indexing_worker_queue").set(val);
+	public static void recordWorkerQueueSize(String queueType, int val) {
+		getGauge(Monitors.classQualifier, "indexing_worker_queue", "queueType", queueType).set(val);
 	}
 
-	public static void recordDiscardedIndexingCount() {
-		getCounter(Monitors.classQualifier, "discarded_index_count").increment();
-	}
-
-	public static void recordDiscardedLogIndexingCount() {
-		getCounter(Monitors.classQualifier, "discarded_log_index_count").increment();
+	public static void recordDiscardedIndexingCount(String queueType) {
+		getCounter(Monitors.classQualifier, "discarded_index_count", "queueType", queueType).increment();
 	}
 }
