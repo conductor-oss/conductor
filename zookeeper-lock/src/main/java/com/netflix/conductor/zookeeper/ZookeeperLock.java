@@ -94,7 +94,7 @@ public class ZookeeperLock implements Lock {
     public void deleteLock(String lockId) {
         try {
             LOGGER.debug("Deleting lock {}", zkPath.concat(lockId));
-            client.delete().inBackground().forPath(zkPath.concat(lockId));
+            client.delete().guaranteed().forPath(zkPath.concat(lockId));
         } catch (Exception e) {
             LOGGER.debug("Failed to removeLock: ", e);
         }
