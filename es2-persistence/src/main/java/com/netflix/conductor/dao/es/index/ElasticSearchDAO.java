@@ -666,6 +666,7 @@ public class ElasticSearchDAO implements IndexDAO {
 	private void flushBulkRequests() {
 		bulkRequests.entrySet().stream()
 			.filter(entry -> (System.currentTimeMillis() - entry.getValue().getLastFlushTime()) >= asyncBufferFlushTimeout * 1000)
+			.filter(entry -> entry.getValue().getBulkRequestBuilder() != null && entry.getValue().getBulkRequestBuilder().numberOfActions() > 0)
 			.forEach(entry -> {
 				logger.debug("Flushing bulk request buffer for type {}, size: {}", entry.getKey(), entry.getValue().getBulkRequestBuilder().numberOfActions());
 				indexBulkRequest(entry.getKey());
