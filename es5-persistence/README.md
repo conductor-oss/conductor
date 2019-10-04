@@ -21,6 +21,8 @@ Defaults to `task_log`
 Defaults to `100`
 * `workflow.elasticsearch.async.dao.max.pool.size` - Maximum thread pool size in executor service for async methods in IndexDao 
 Defaults to `12`
+* `workflow.elasticsearch.async.buffer.flush.timeout.seconds` - Timeout (in seconds) for the in-memory to be flushed if not explicitly indexed
+Defaults to `10`
 
 ### Embedded Configuration
 
