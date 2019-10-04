@@ -34,6 +34,7 @@ import com.netflix.conductor.elasticsearch.SystemPropertiesElasticSearchConfigur
 import com.netflix.conductor.elasticsearch.es5.EmbeddedElasticSearchV5;
 import com.netflix.conductor.elasticsearch.query.parser.ParserException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.util.Arrays;
@@ -306,11 +307,13 @@ public class TestElasticSearchDAOV5 {
 	public void testSearchArchivableWorkflows() {
 		String workflowId = "search-workflow-id";
 
+		LocalDate today = LocalDate.now();
+
 		workflow.setWorkflowId(workflowId);
 		workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
-		workflow.setCreateTime(new Date().getTime());
-		workflow.setUpdateTime(new Date().getTime());
-		workflow.setEndTime(new Date().getTime());
+		workflow.setCreateTime(today.minusDays(5).toEpochDay());
+		workflow.setUpdateTime(today.minusDays(5).toEpochDay());
+		workflow.setEndTime(today.minusDays(5).toEpochDay());
 
 		indexDAO.indexWorkflow(workflow);
 
@@ -318,7 +321,7 @@ public class TestElasticSearchDAOV5 {
 				.atMost(3, TimeUnit.SECONDS)
 				.untilAsserted(
 						() -> {
-							List<String> searchIds = indexDAO.searchArchivableWorkflows("conductor",10);
+							List<String> searchIds = indexDAO.searchArchivableWorkflows("conductor",3);
 							assertEquals(1, searchIds.size());
 							assertEquals(workflowId, searchIds.get(0));
 						}

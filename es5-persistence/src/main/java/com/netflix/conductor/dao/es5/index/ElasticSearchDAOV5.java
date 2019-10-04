@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -403,7 +404,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for indexing taskExecutionLogs", endTime - startTime);
             Monitors.recordESIndexTime("index_task_execution_logs", LOG_DOC_TYPE, endTime - startTime);
-            Monitors.recordWorkerQueueSize("loqQueue", ((ThreadPoolExecutor) logExecutorService).getQueue().size());
+            Monitors.recordWorkerQueueSize("logQueue", ((ThreadPoolExecutor) logExecutorService).getQueue().size());
         } catch (Exception e) {
             List<String> taskIds = taskExecLogs.stream()
                 .map(TaskExecLog::getTaskId)
@@ -679,6 +680,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
     @Override
     public List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays) {
         QueryBuilder q = QueryBuilders.boolQuery()
+            .must(QueryBuilders.rangeQuery("endTime").lt(LocalDate.now().minusDays(archiveTtlDays).toString()))
             .should(QueryBuilders.termQuery("status", "COMPLETED"))
             .should(QueryBuilders.termQuery("status", "FAILED"))
             .should(QueryBuilders.termQuery("status", "TIMED_OUT"))

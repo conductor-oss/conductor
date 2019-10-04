@@ -440,7 +440,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for indexing taskExecutionLogs", endTime - startTime);
             Monitors.recordESIndexTime("index_task_execution_logs", LOG_DOC_TYPE, endTime - startTime);
-            Monitors.recordWorkerQueueSize("loqQueue", ((ThreadPoolExecutor) logExecutorService).getQueue().size());
+            Monitors.recordWorkerQueueSize("logQueue", ((ThreadPoolExecutor) logExecutorService).getQueue().size());
         } catch (Exception e) {
             List<String> taskIds = taskExecLogs.stream()
                 .map(TaskExecLog::getTaskId)
@@ -796,7 +796,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
             Monitors.recordWorkerQueueSize("logQueue", ((ThreadPoolExecutor) logExecutorService).getQueue().size());
         } catch (Exception e) {
             Monitors.error(className, "index");
-            logger.error("Failed to index {} for request type: {}", request.toString(), e);
+            logger.error("Failed to index {} for request type: {}", request.toString(), docType, e);
         }
     }
 
