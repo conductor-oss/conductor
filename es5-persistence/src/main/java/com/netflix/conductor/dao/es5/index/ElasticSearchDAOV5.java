@@ -506,7 +506,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 
     private void indexObject(UpdateRequest req, String docType) {
         if (bulkRequests.get(docType) == null) {
-            bulkRequests.put(docType, new BulkRequests(0, elasticSearchClient.prepareBulk()));
+            bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis(), elasticSearchClient.prepareBulk()));
         }
         bulkRequests.get(docType).getBulkRequestBuilder().add(req);
         if (bulkRequests.get(docType).getBulkRequestBuilder().numberOfActions() >= this.indexBatchSize) {
@@ -795,14 +795,20 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         return executions;
     }
 
+    /**
+     * Flush the buffers if bulk requests have not been indexed for the past {@link ElasticSearchConfiguration#ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_PROPERTY_NAME} seconds
+     * This is to prevent data loss in case the instance is terminated, while the buffer still holds documents to be indexed.
+     */
     private void flushBulkRequests() {
         bulkRequests.entrySet().stream()
-            .filter(entry -> (System.currentTimeMillis() - entry.getValue().getLastFlushTime()) > asyncBufferFlushTimeout
-                * 1000)
-            .forEach(entry -> indexBulkRequest(entry.getKey()));
+            .filter(entry -> (System.currentTimeMillis() - entry.getValue().getLastFlushTime()) >= asyncBufferFlushTimeout * 1000)
+            .forEach(entry -> {
+                logger.debug("Flushing bulk request buffer for type {}, size: {}", entry.getKey(), entry.getValue().getBulkRequestBuilder().numberOfActions());
+                indexBulkRequest(entry.getKey());
+            });
     }
 
-    static class BulkRequests {
+    private static class BulkRequests {
         private long lastFlushTime;
         private BulkRequestBuilder bulkRequestBuilder;
 
