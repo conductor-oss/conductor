@@ -29,6 +29,8 @@ import com.netflix.conductor.metrics.Monitors;
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -49,6 +51,7 @@ public class ExecutionDAOFacade {
     private final IndexDAO indexDAO;
     private final ObjectMapper objectMapper;
     private final Configuration config;
+    private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
     @Inject
     public ExecutionDAOFacade(ExecutionDAO executionDAO, IndexDAO indexDAO, ObjectMapper objectMapper, Configuration config) {
@@ -56,6 +59,12 @@ public class ExecutionDAOFacade {
         this.indexDAO = indexDAO;
         this.objectMapper = objectMapper;
         this.config = config;
+        this.scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(4,
+            (runnable, executor) -> {
+            LOGGER.warn("Request {} to delay updating index dropped in executor {}", runnable, executor);
+            Monitors.recordDiscardedIndexingCount("delayQueue");
+        });
+        this.scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
     }
 
     /**
@@ -172,7 +181,15 @@ public class ExecutionDAOFacade {
         executionDAO.updateWorkflow(workflow);
         if (workflow.getStatus().isTerminal()) {
             if (config.enableAsyncIndexing()) {
-                indexDAO.asyncIndexWorkflow(workflow);
+                if (workflow.getEndTime() - workflow.getStartTime() < config.getAsyncUpdateShortRunningWorkflowDuration() * 1000) {
+                    final String workflowId = workflow.getWorkflowId();
+                    DelayWorkflowUpdate delayWorkflowUpdate = new DelayWorkflowUpdate(workflowId);
+                    LOGGER.debug("Delayed updating workflow: {} in the index by {} seconds", workflowId, config.getAsyncUpdateDelay());
+                    scheduledThreadPoolExecutor.schedule(delayWorkflowUpdate, config.getAsyncUpdateDelay(), TimeUnit.SECONDS);
+                    Monitors.recordWorkerQueueSize("delayQueue", scheduledThreadPoolExecutor.getQueue().size());
+                } else {
+                    indexDAO.asyncIndexWorkflow(workflow);
+                }
                 workflow.getTasks().forEach(indexDAO::asyncIndexTask);
             } else {
                 indexDAO.indexWorkflow(workflow);
@@ -357,5 +374,23 @@ public class ExecutionDAOFacade {
 
     public List<TaskExecLog> getTaskExecutionLogs(String taskId) {
         return indexDAO.getTaskExecutionLogs(taskId);
+    }
+
+    class DelayWorkflowUpdate implements Runnable {
+        private String workflowId;
+
+        DelayWorkflowUpdate(String workflowId) {
+            this.workflowId = workflowId;
+        }
+
+        @Override
+        public void run() {
+            try {
+                Workflow workflow = executionDAO.getWorkflow(workflowId, false);
+                indexDAO.asyncIndexWorkflow(workflow);
+            } catch (Exception e) {
+                LOGGER.error("Unable to update workflow: {}", workflowId, e);
+            }
+        }
     }
 }
