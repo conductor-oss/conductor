@@ -1,6 +1,6 @@
 language: java
 jdk:
-- oraclejdk8
+  - openjdk8
 install: true
 script: "./buildViaTravis.sh"
 git:
