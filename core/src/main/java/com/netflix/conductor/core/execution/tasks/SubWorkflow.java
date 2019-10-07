@@ -23,6 +23,7 @@ import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -74,11 +75,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 
 	@Override
 	public boolean execute(Workflow workflow, Task task, WorkflowExecutor provider) {
-		String workflowId = (String) task.getOutputData().get(SUB_WORKFLOW_ID);
-		if (workflowId == null) {
-			workflowId = (String) task.getInputData().get(SUB_WORKFLOW_ID);	//Backward compatibility
-		}
-
+		String workflowId = getSubWorkflowId(task);
 		if(StringUtils.isEmpty(workflowId)) {
 			return false;
 		}
@@ -100,11 +97,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 
 	@Override
 	public void cancel(Workflow workflow, Task task, WorkflowExecutor provider) {
-		String workflowId = (String) task.getOutputData().get(SUB_WORKFLOW_ID);
-		if(workflowId == null) {
-			workflowId = (String) task.getInputData().get(SUB_WORKFLOW_ID);	//Backward compatibility
-		}
-
+		String workflowId = getSubWorkflowId(task);
 		if(StringUtils.isEmpty(workflowId)) {
 			return;
 		}
@@ -118,4 +111,13 @@ public class SubWorkflow extends WorkflowSystemTask {
 		return false;
 	}
 
+	private String getSubWorkflowId(Task task) {
+		String subWorkflowId = (String) task.getOutputData().get(SUB_WORKFLOW_ID);
+		if (subWorkflowId == null) {
+			subWorkflowId = Optional.ofNullable(task.getInputData())
+				.map(data -> (String)data.get(SUB_WORKFLOW_ID)) //Backward compatibility
+				.orElse("");
+		}
+		return subWorkflowId;
+	}
 }
