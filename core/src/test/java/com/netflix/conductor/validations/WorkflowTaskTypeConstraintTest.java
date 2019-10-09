@@ -140,6 +140,63 @@ public class WorkflowTaskTypeConstraintTest {
     }
 
     @Test
+    public void testWorkflowTaskTypeDoWhile() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("DO_WHILE");
+
+        ConstraintMapping mapping = config.createConstraintMapping();
+
+        mapping.type(WorkflowTask.class)
+                .constraint(new WorkflowTaskTypeConstraintDef());
+
+        Validator validator = config.addMapping(mapping)
+                .buildValidatorFactory()
+                .getValidator();
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(2, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(validationErrors.contains("loopExpression field is required for taskType: DO_WHILE taskName: encode"));
+        assertTrue(validationErrors.contains("loopover field is required for taskType: DO_WHILE taskName: encode"));
+    }
+
+    @Test
+    public void testWorkflowTaskTypeDoWhileWithSubWorkflow() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("DO_WHILE");
+        workflowTask.setLoopCondition("Test condition");
+        WorkflowTask workflowTask2 = createSampleWorkflowTask();
+        workflowTask2.setType("SUB_WORKFLOW");
+        workflowTask.setLoopOver(Arrays.asList(workflowTask2));
+
+        ConstraintMapping mapping = config.createConstraintMapping();
+
+        mapping.type(WorkflowTask.class)
+                .constraint(new WorkflowTaskTypeConstraintDef());
+
+        Validator validator = config.addMapping(mapping)
+                .buildValidatorFactory()
+                .getValidator();
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(1, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(validationErrors.contains("SUB_WORKFLOW task inside loopover task is not supported."));
+    }
+
+    @Test
     public void testWorkflowTaskTypeDecisionWithCaseParam() {
         WorkflowTask workflowTask = createSampleWorkflowTask();
         workflowTask.setType("DECISION");

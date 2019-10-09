@@ -560,3 +560,62 @@ Task sample
 ```
 
 The task is marked as ```FAILED``` if the message could not be published to the Kafka queue. 
+
+
+## Do While Task
+
+Do While Task allows tasks to be executed in loop until given condition become false. Condition is evaluated using nashorn javascript engine.
+Each iteration of loop over task will be scheduled as taskRefname__iteration. Iteration, any of loopover task's output or input parameters can be used to form a condition.
+Do while task output number of iterations with iteration as key and value as number of iterations. Each iteration's output will be stored as, iteration as key and loopover task's output as value
+Taskname which contains arithmetic operator must not be used in loopCondition. Any of loopOver task can be reference outside do while task same way other tasks are referenced.
+To reference specific iteration's output, ```$.LoopTask['iteration]['first_task']```
+Do while task does NOT support domain or isolation group execution.
+
+
+**Parameters:**
+
+|name|description|
+|---|---|
+|loopCondition|condition to be evaluated after every iteration|
+|loopOver|List of tasks that needs to be executed in loop.|
+
+**Example**
+
+```json
+{
+            "name": "Loop Task",
+            "taskReferenceName": "LoopTask",
+            "type": "DO_WHILE",
+            "inputParameters": {
+              "value": "${workflow.input.value}"
+            },
+            "loopCondition": "if ( ($.LoopTask['iteration'] < $.value ) || ( $.first_task['response']['body'] > 10)) { false; } else { true; }",
+            "loopOver": [
+                {
+                    "name": "first_task",
+                    "taskReferenceName": "first_task",
+                    "inputParameters": {
+                        "http_request": {
+                            "uri": "http://localhost:8082",
+                            "method": "POST"
+                        }
+                    },
+                    "type": "HTTP"
+                },{
+                    "name": "second_task",
+                    "taskReferenceName": "second_task",
+                    "inputParameters": {
+                        "http_request": {
+                            "uri": "http://localhost:8082",
+                            "method": "POST"
+                        }
+                    },
+                    "type": "HTTP"
+                }
+            ],
+            "startDelay": 0,
+            "optional": false
+        }
+```
+If any of loopover task will be failed then do while task will be failed. In such case retry will start iteration from 1. TaskType SUB_WORKFLOW is not supported as a part of loopover task. Since loopover tasks will be executed in loop inside scope of parent do while task, crossing branching outside of DO_WHILE task will not be respected. Branching inside loopover task will be supported.
+In case of exception while evaluating loopCondition, do while task will be failed with FAILED_WITH_TERMINAL_ERROR.

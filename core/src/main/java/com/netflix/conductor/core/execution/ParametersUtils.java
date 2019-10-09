@@ -34,6 +34,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+
+import com.netflix.conductor.common.utils.TaskUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 /**
@@ -113,7 +115,7 @@ public class ParametersUtils {
                     taskParams.put("reasonForIncompletion", task.getReasonForIncompletion());
                     taskParams.put("callbackAfterSeconds", task.getCallbackAfterSeconds());
                     taskParams.put("workerId", task.getWorkerId());
-                    inputMap.put(task.getReferenceTaskName(), taskParams);
+                    inputMap.put(task.isLoopOverTask() ? TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName()) :  task.getReferenceTaskName(), taskParams);
                 });
 
         Configuration option = Configuration.defaultConfiguration()

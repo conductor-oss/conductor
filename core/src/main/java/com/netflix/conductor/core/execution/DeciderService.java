@@ -32,6 +32,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.Operation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
@@ -188,6 +189,9 @@ public class DeciderService {
             if (!pendingTask.isExecuted() && !pendingTask.isRetried() && pendingTask.getStatus().isTerminal()) {
                 pendingTask.setExecuted(true);
                 List<Task> nextTasks = getNextTask(workflow, pendingTask);
+                if (pendingTask.isLoopOverTask() && !nextTasks.isEmpty()) {
+                    nextTasks = filterNextLoopOverTasks(nextTasks, pendingTask, workflow);
+                }
                 nextTasks.forEach(nextTask -> tasksToBeScheduled.putIfAbsent(nextTask.getReferenceTaskName(), nextTask));
                 outcome.tasksToBeUpdated.add(pendingTask);
                 LOGGER.debug("Scheduling Tasks from {}, next = {} for workflowId: {}", pendingTask.getTaskDefName(),
@@ -215,6 +219,23 @@ public class DeciderService {
         }
 
         return outcome;
+    }
+
+    protected List<Task> filterNextLoopOverTasks(List<Task> tasks, Task pendingTask, Workflow workflow) {
+
+        //Update the task reference name and iteration
+        tasks.forEach(nextTask -> {
+            nextTask.setReferenceTaskName(TaskUtils.appendIteration(nextTask.getReferenceTaskName(), pendingTask.getIteration()));
+            nextTask.setIteration(pendingTask.getIteration());});
+
+        List<String> tasksInWorkflow = workflow.getTasks().stream()
+            .filter(runningTask -> runningTask.getStatus().equals(Status.IN_PROGRESS) || runningTask.getStatus().isTerminal())
+            .map(Task::getReferenceTaskName)
+            .collect(Collectors.toList());
+
+        return tasks.stream()
+            .filter(runningTask -> !tasksInWorkflow.contains(runningTask.getReferenceTaskName()))
+            .collect(Collectors.toList());
     }
 
     private List<Task> startWorkflow(Workflow workflow) throws TerminateWorkflowException {
@@ -331,7 +352,7 @@ public class DeciderService {
             }
         }
 
-        String taskReferenceName = task.getReferenceTaskName();
+        String taskReferenceName = task.isLoopOverTask() ? TaskUtils.removeIterationFromTaskRefName(task.getReferenceTaskName()) : task.getReferenceTaskName();
         WorkflowTask taskToSchedule = workflowDef.getNextTask(taskReferenceName);
         while (isTaskSkipped(taskToSchedule, workflow)) {
             taskToSchedule = workflowDef.getNextTask(taskToSchedule.getTaskReferenceName());

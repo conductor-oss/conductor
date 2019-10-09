@@ -11,6 +11,7 @@ public enum TaskType {
     FORK_JOIN_DYNAMIC(true),
     DECISION(true),
     JOIN(true),
+    DO_WHILE(true),
     SUB_WORKFLOW(true),
     EVENT(true),
     WAIT(true),
@@ -29,6 +30,7 @@ public enum TaskType {
     public static final String TASK_TYPE_DECISION = "DECISION";
     public static final String TASK_TYPE_DYNAMIC = "DYNAMIC";
     public static final String TASK_TYPE_JOIN = "JOIN";
+    public static final String TASK_TYPE_DO_WHILE = "DO_WHILE";
     public static final String TASK_TYPE_FORK_JOIN_DYNAMIC = "FORK_JOIN_DYNAMIC";
     public static final String TASK_TYPE_EVENT = "EVENT";
     public static final String TASK_TYPE_WAIT = "WAIT";
