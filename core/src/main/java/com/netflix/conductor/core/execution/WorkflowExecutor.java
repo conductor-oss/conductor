@@ -1153,21 +1153,23 @@ public class WorkflowExecutor {
             }
 
             LOGGER.debug("Executing {}/{}-{}", task.getTaskType(), task.getTaskId(), task.getStatus());
+            queueDAO.setUnackTimeout(QueueUtils.getQueueName(task), task.getTaskId(), systemTask.getRetryTimeInSecond() * 1000);
+            if (task.getStatus() == SCHEDULED || !systemTask.isAsyncComplete(task)) {
+                task.setPollCount(task.getPollCount() + 1);
+                executionDAOFacade.updateTask(task);
+            }
+
+            deciderService.populateTaskData(task);
 
             switch (task.getStatus()) {
                 case SCHEDULED:
-                    queueDAO.setUnackTimeout(QueueUtils.getQueueName(task), task.getTaskId(), systemTask.getRetryTimeInSecond() * 1000);
-                    task.setPollCount(task.getPollCount() + 1);
-                    executionDAOFacade.updateTask(task);
                     systemTask.start(workflow, task, this);
                     break;
 
                 case IN_PROGRESS:
                     if (!systemTask.isAsyncComplete(task)) {
-                        task.setPollCount(task.getPollCount() + 1);
-                        executionDAOFacade.updateTask(task);
+                        systemTask.execute(workflow, task, this);
                     }
-                    systemTask.execute(workflow, task, this);
                     break;
                 default:
                     break;
@@ -1298,12 +1300,14 @@ public class WorkflowExecutor {
                 }
                 if (!workflowSystemTask.isAsync()) {
                     try {
+                        deciderService.populateTaskData(task);
                         workflowSystemTask.start(workflow, task, this);
                     } catch (Exception e) {
                         String errorMsg = String.format("Unable to start system task: %s, {id: %s, name: %s}", task.getTaskType(), task.getTaskId(), task.getTaskDefName());
                         throw new ApplicationException(Code.INTERNAL_ERROR, errorMsg, e);
                     }
                     startedSystemTasks = true;
+                    deciderService.externalizeTaskData(task);
                     executionDAOFacade.updateTask(task);
                 } else {
                     tasksToBeQueued.add(task);

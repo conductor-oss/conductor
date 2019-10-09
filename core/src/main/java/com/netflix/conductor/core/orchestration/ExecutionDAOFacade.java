@@ -51,6 +51,7 @@ public class ExecutionDAOFacade {
     private final IndexDAO indexDAO;
     private final ObjectMapper objectMapper;
     private final Configuration config;
+
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
     @Inject

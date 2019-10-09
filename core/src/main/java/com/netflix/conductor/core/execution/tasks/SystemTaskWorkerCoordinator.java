@@ -52,7 +52,7 @@ import org.slf4j.LoggerFactory;
 @Singleton
 public class SystemTaskWorkerCoordinator {
 
-	private static Logger logger = LoggerFactory.getLogger(SystemTaskWorkerCoordinator.class);
+	private static final Logger logger = LoggerFactory.getLogger(SystemTaskWorkerCoordinator.class);
 
 	private QueueDAO queueDAO;
 
