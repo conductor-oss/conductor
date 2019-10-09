@@ -589,7 +589,7 @@ Do while task does NOT support domain or isolation group execution.
             "inputParameters": {
               "value": "${workflow.input.value}"
             },
-            "loopCondition": "if ( ($.LoopTask['iteration'] < 5 ) || ( $.first_task['response']['body'] > 10) || ($.value < 10)) { false; } else { true; }",
+            "loopCondition": "if ( ($.LoopTask['iteration'] < $.value ) || ( $.first_task['response']['body'] > 10)) { false; } else { true; }",
             "loopOver": [
                 {
                     "name": "first_task",
@@ -617,5 +617,5 @@ Do while task does NOT support domain or isolation group execution.
             "optional": false
         }
 ```
-If any of loopover task will be failed then do while task will be failed. In such case retry will start iteration from 1.
+If any of loopover task will be failed then do while task will be failed. In such case retry will start iteration from 1. TaskType SUB_WORKFLOW is not supported as a part of loopover task. Since loopover tasks will be executed in loop inside scope of parent do while task, crossing branching outside of DO_WHILE task will not be respected. Branching inside loopover task will be supported.
 In case of exception while evaluating loopCondition, do while task will be failed with FAILED_WITH_TERMINAL_ERROR.
