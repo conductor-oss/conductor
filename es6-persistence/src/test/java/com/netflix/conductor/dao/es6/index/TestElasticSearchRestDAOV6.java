@@ -6,6 +6,7 @@ import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
+import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
@@ -40,14 +41,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 import java.util.UUID;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static org.awaitility.Awaitility.await;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class TestElasticSearchRestDAOV6 {
 
-    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMww");
+    private static final SimpleDateFormat SIMPLE_DATE_FORMAT = new SimpleDateFormat("yyyyMMWW");
 
     private static final String INDEX_PREFIX = "conductor";
     private static final String WORKFLOW_DOC_TYPE = "workflow";
@@ -74,6 +77,7 @@ public class TestElasticSearchRestDAOV6 {
     public static void startServer() throws Exception {
         System.setProperty(ElasticSearchConfiguration.EMBEDDED_PORT_PROPERTY_NAME, "9204");
         System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_URL_PROPERTY_NAME, "http://localhost:9204");
+        System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_INDEX_BATCH_SIZE_PROPERTY_NAME, "1");
 
         configuration = new SystemPropertiesElasticSearchConfiguration();
 
@@ -254,6 +258,68 @@ public class TestElasticSearchRestDAOV6 {
         List<String> tasks = tryFindResults(() -> searchTasks(workflow));
 
         assertEquals(summary.getTaskId(), tasks.get(0));
+    }
+
+    @Test
+    public void indexTaskWithBatchSizeTwo() throws Exception {
+        embeddedElasticSearch.stop();
+        startElasticSearchWithBatchSize(2);
+        String correlationId = "some-correlation-id";
+
+        Task task = new Task();
+        task.setTaskId("some-task-id");
+        task.setWorkflowInstanceId("some-workflow-instance-id");
+        task.setTaskType("some-task-type");
+        task.setStatus(Task.Status.FAILED);
+        task.setInputData(new HashMap<String, Object>() {{ put("input_key", "input_value"); }});
+        task.setCorrelationId(correlationId);
+        task.setTaskDefName("some-task-def-name");
+        task.setReasonForIncompletion("some-failure-reason");
+
+        indexDAO.indexTask(task);
+        indexDAO.indexTask(task);
+
+        await()
+                .atMost(5, TimeUnit.SECONDS)
+                .untilAsserted(() -> {
+                    SearchResult<String> result = indexDAO
+                            .searchTasks("correlationId='" + correlationId + "'", "*", 0, 10000, null);
+
+                    assertTrue("should return 1 or more search results", result.getResults().size() > 0);
+                    assertEquals("taskId should match the indexed task", "some-task-id", result.getResults().get(0));
+                });
+
+        embeddedElasticSearch.stop();
+        startElasticSearchWithBatchSize(1);
+
+    }
+
+    private void startElasticSearchWithBatchSize(int i) throws Exception {
+        System.setProperty(ElasticSearchConfiguration.ELASTIC_SEARCH_INDEX_BATCH_SIZE_PROPERTY_NAME, String.valueOf(i));
+
+        configuration = new SystemPropertiesElasticSearchConfiguration();
+
+        String host = configuration.getEmbeddedHost();
+        int port = configuration.getEmbeddedPort();
+        String clusterName = configuration.getEmbeddedClusterName();
+
+        embeddedElasticSearch = new EmbeddedElasticSearchV6(clusterName, host, port);
+        embeddedElasticSearch.start();
+
+        ElasticSearchRestClientBuilderProvider restClientProvider =
+                new ElasticSearchRestClientBuilderProvider(configuration);
+
+        RestClientBuilder restClientBuilder = restClientProvider.get();
+        restClient = restClientBuilder.build();
+
+        Map<String, String> params = new HashMap<>();
+        params.put("wait_for_status", "yellow");
+        params.put("timeout", "30s");
+
+        restClient.performRequest("GET", "/_cluster/health", params);
+
+        objectMapper = new ObjectMapper();
+        indexDAO = new ElasticSearchRestDAOV6(restClientBuilder, configuration, objectMapper);
     }
 
     @Test

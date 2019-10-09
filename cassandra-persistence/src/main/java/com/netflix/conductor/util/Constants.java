@@ -18,6 +18,7 @@ public interface Constants {
 
     String TABLE_WORKFLOWS = "workflows";
     String TABLE_TASK_LOOKUP = "task_lookup";
+    String TABLE_TASK_DEF_LIMIT = "task_def_limit";
 
     String WORKFLOW_ID_KEY = "workflow_id";
     String SHARD_ID_KEY = "shard_id";
@@ -26,6 +27,7 @@ public interface Constants {
     String PAYLOAD_KEY = "payload";
     String TOTAL_TASKS_KEY = "total_tasks";
     String TOTAL_PARTITIONS_KEY = "total_partitions";
+    String TASK_DEF_NAME_KEY = "task_def_name";
 
     String ENTITY_TYPE_WORKFLOW = "workflow";
     String ENTITY_TYPE_TASK = "task";

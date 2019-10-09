@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2018 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -42,7 +42,7 @@ import java.util.Map;
  */
 public class DecisionTaskMapper implements TaskMapper {
 
-    Logger logger = LoggerFactory.getLogger(DecisionTaskMapper.class);
+    private static final Logger logger = LoggerFactory.getLogger(DecisionTaskMapper.class);
 
     /**
      * This method gets the list of tasks that need to scheduled when the the task to scheduled is of type {@link TaskType#DECISION}.

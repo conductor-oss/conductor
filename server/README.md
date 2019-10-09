@@ -53,4 +53,10 @@ For Dynomite, this is 22122 by default or the local redis-server port used by Dy
 ### Additional modules (optional)
 `conductor.additional.modules=class_extending_com.google.inject.AbstractModule`
 
+### Using asynchronous indexing
+`async.indexing.enabled=true`
+
+Configure the below properties to appropriate values to delay workflow document updates in the index upon completion for workflows that complete in short duration
+`async.update.short.workflow.duration.seconds=30`
+`async.update.delay.seconds=60`
 

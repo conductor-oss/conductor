@@ -12,11 +12,6 @@
  */
 package com.netflix.conductor.util;
 
-import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.netflix.conductor.cassandra.CassandraConfiguration;
-
-import javax.inject.Inject;
-
 import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
@@ -25,12 +20,18 @@ import static com.netflix.conductor.util.Constants.ENTITY_TYPE_TASK;
 import static com.netflix.conductor.util.Constants.ENTITY_TYPE_WORKFLOW;
 import static com.netflix.conductor.util.Constants.PAYLOAD_KEY;
 import static com.netflix.conductor.util.Constants.SHARD_ID_KEY;
+import static com.netflix.conductor.util.Constants.TABLE_TASK_DEF_LIMIT;
 import static com.netflix.conductor.util.Constants.TABLE_TASK_LOOKUP;
 import static com.netflix.conductor.util.Constants.TABLE_WORKFLOWS;
+import static com.netflix.conductor.util.Constants.TASK_DEF_NAME_KEY;
 import static com.netflix.conductor.util.Constants.TASK_ID_KEY;
 import static com.netflix.conductor.util.Constants.TOTAL_PARTITIONS_KEY;
 import static com.netflix.conductor.util.Constants.TOTAL_TASKS_KEY;
 import static com.netflix.conductor.util.Constants.WORKFLOW_ID_KEY;
+
+import com.datastax.driver.core.querybuilder.QueryBuilder;
+import com.netflix.conductor.cassandra.CassandraConfiguration;
+import javax.inject.Inject;
 
 /**
  * DML statements
@@ -43,15 +44,18 @@ import static com.netflix.conductor.util.Constants.WORKFLOW_ID_KEY;
  * SELECT payload FROM conductor.workflows WHERE workflow_id=? AND shard_id=1 AND entity='workflow';
  * SELECT * FROM conductor.workflows WHERE workflow_id=? AND shard_id=?;
  * SELECT workflow_id FROM conductor.task_lookup WHERE task_id=?;
+ * SELECT * FROM conductor.task_def_limit WHERE task_def_name=?;
  * <p>
  * UPDATE conductor.workflows SET payload=? WHERE workflow_id=? AND shard_id=1 AND entity='workflow' AND task_id='';
  * UPDATE conductor.workflows SET total_tasks=? WHERE workflow_id=? AND shard_id=?;
  * UPDATE conductor.workflows SET total_partitions=?,total_tasks=? WHERE workflow_id=? AND shard_id=1;
  * UPDATE conductor.task_lookup SET workflow_id=? WHERE task_id=?;
+ * UPDATE conductor.task_def_limit SET workflow_id=? WHERE task_def_name=? AND task_id=?;
  * <p>
  * DELETE FROM conductor.workflows WHERE workflow_id=? AND shard_id=?;
  * DELETE FROM conductor.workflows WHERE workflow_id=? AND shard_id=? AND entity='task' AND task_id=?;
  * DELETE FROM conductor.task_lookup WHERE task_id=?;
+ * DELETE FROM conductor.task_def_limit WHERE task_def_name=? AND task_id=?;
  */
 public class Statements {
     private final String keyspace;
@@ -151,6 +155,18 @@ public class Statements {
                 .getQueryString();
     }
 
+    /**
+     * @return cql query statement to retrieve all task ids for a given taskDefName with concurrent execution
+     * limit configured from the "task_def_limit" table
+     */
+    public String getSelectTasksFromTaskDefLimitStatement() {
+        return QueryBuilder.select()
+            .all()
+            .from(keyspace, TABLE_TASK_DEF_LIMIT)
+            .where(eq(TASK_DEF_NAME_KEY, bindMarker()))
+            .getQueryString();
+    }
+
     // Update Statements
 
     /**
@@ -199,6 +215,17 @@ public class Statements {
                 .getQueryString();
     }
 
+    /**
+     * @return cql query statement to add a new task_id to the "task_def_limit" table
+     */
+    public String getUpdateTaskDefLimitStatement() {
+        return QueryBuilder.update(keyspace, TABLE_TASK_DEF_LIMIT)
+            .with(set(WORKFLOW_ID_KEY, bindMarker()))
+            .where(eq(TASK_DEF_NAME_KEY, bindMarker()))
+            .and(eq(TASK_ID_KEY, bindMarker()))
+            .getQueryString();
+    }
+
     // Delete statements
 
     /**
@@ -233,5 +260,16 @@ public class Statements {
                 .and(eq(ENTITY_KEY, ENTITY_TYPE_TASK))
                 .and(eq(TASK_ID_KEY, bindMarker()))
                 .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to delete a task_id from the "task_def_limit" table
+     */
+    public String getDeleteTaskDefLimitStatement() {
+        return QueryBuilder.delete()
+            .from(keyspace, TABLE_TASK_DEF_LIMIT)
+            .where(eq(TASK_DEF_NAME_KEY, bindMarker()))
+            .and(eq(TASK_ID_KEY, bindMarker()))
+            .getQueryString();
     }
 }

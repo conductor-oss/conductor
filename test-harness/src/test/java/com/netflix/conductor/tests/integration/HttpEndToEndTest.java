@@ -66,5 +66,4 @@ public class HttpEndToEndTest extends AbstractHttpEndToEndTest {
         TestEnvironment.teardown();
         search.stop();
     }
-
 }

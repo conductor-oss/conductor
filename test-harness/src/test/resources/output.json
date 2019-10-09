@@ -1,5 +1,6 @@
 {
   "imageType": "TEST_SAMPLE",
+  "case": "two",
   "op": {
     "TEST_SAMPLE": [
       {

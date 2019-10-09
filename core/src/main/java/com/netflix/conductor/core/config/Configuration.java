@@ -53,6 +53,15 @@ public interface Configuration {
     String JERSEY_ENABLED_PROPERTY_NAME = "conductor.jersey.enabled";
     boolean JERSEY_ENABLED_DEFAULT_VALUE = true;
 
+    String ASYNC_INDEXING_ENABLED_PROPERTY_NAME = "async.indexing.enabled";
+    boolean ASYNC_INDEXING_ENABLED_DEFAULT_VALUE = false;
+
+    String ASYNC_UPDATE_SHORT_WORKFLOW_DURATION_PROPERTY_NAME = "async.update.short.workflow.duration.seconds";
+    int ASYNC_UPDATE_SHORT_WORKFLOW_DURATION_DEFAULT_VALUE = 30;
+
+    String ASYNC_UPDATE_DELAY_PROPERTY_NAME = "async.update.delay.seconds";
+    int ASYNC_UPDATE_DELAY_DEFAULT_VALUE = 60;
+
     String ADDITIONAL_MODULES_PROPERTY_NAME = "conductor.additional.modules";
 
     //TODO add constants for input/output external payload related properties.
@@ -110,6 +119,28 @@ public interface Configuration {
      * @return Availability zone / rack.  for AWS deployments, the value is something like us-east-1a, etc.
      */
     String getAvailabilityZone();
+
+    /**
+     * @return when set to true, the indexing operation to elasticsearch will be performed asynchronously
+     */
+    default boolean enableAsyncIndexing() {
+        return getBooleanProperty(ASYNC_INDEXING_ENABLED_PROPERTY_NAME, ASYNC_INDEXING_ENABLED_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return the duration of workflow execution which qualifies a workflow as a short-running workflow for async
+     * updating to the index
+     */
+    default int getAsyncUpdateShortRunningWorkflowDuration() {
+        return getIntProperty(ASYNC_UPDATE_SHORT_WORKFLOW_DURATION_PROPERTY_NAME, ASYNC_UPDATE_SHORT_WORKFLOW_DURATION_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return the delay with which short-running workflows will be updated in the index
+     */
+    default int getAsyncUpdateDelay() {
+        return getIntProperty(ASYNC_UPDATE_DELAY_PROPERTY_NAME, ASYNC_UPDATE_DELAY_DEFAULT_VALUE);
+    }
 
     default boolean getJerseyEnabled() {
         return getBooleanProperty(JERSEY_ENABLED_PROPERTY_NAME, JERSEY_ENABLED_DEFAULT_VALUE);

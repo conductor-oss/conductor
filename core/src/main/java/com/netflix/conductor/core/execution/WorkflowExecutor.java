@@ -627,11 +627,12 @@ public class WorkflowExecutor {
         deciderService.updateWorkflowOutput(wf, null);
 
         workflow.setStatus(WorkflowStatus.COMPLETED);
+        workflow.setTasks(wf.getTasks());
         workflow.setOutput(wf.getOutput());
         workflow.setExternalOutputPayloadStoragePath(wf.getExternalOutputPayloadStoragePath());
         executionDAOFacade.updateWorkflow(workflow);
-        executionDAOFacade.updateTasks(wf.getTasks());
-        LOGGER.debug("Completed workflow execution for {}", wf.getWorkflowId());
+        executionDAOFacade.updateTasks(workflow.getTasks());
+        LOGGER.debug("Completed workflow execution for {}", workflow.getWorkflowId());
 
         // If the following task, for some reason fails, the sweep will take care of this again!
         if (workflow.getParentWorkflowId() != null) {
@@ -640,7 +641,7 @@ public class WorkflowExecutor {
                     .orElseGet(() -> metadataDAO.get(parent.getWorkflowName(), parent.getWorkflowVersion())
                             .orElseThrow(() -> new ApplicationException(NOT_FOUND, String.format("Unable to find parent workflow definition for %s", wf.getWorkflowId())))
                     );
-            LOGGER.debug("Completed sub-workflow {}, deciding parent workflow {}", wf.getWorkflowId(), wf.getParentWorkflowId());
+            LOGGER.debug("Completed sub-workflow {}, deciding parent workflow {}", workflow.getWorkflowId(), workflow.getParentWorkflowId());
 
             Task parentWorkflowTask = executionDAOFacade.getTaskById(workflow.getParentWorkflowTaskId());
             // If parent is FAILED and the sub workflow task in parent is FAILED, we want to resume them
@@ -652,7 +653,7 @@ public class WorkflowExecutor {
             }
             decide(parent.getWorkflowId());
         }
-        Monitors.recordWorkflowCompletion(workflow.getWorkflowName(), workflow.getEndTime() - workflow.getStartTime(), wf.getOwnerApp());
+        Monitors.recordWorkflowCompletion(workflow.getWorkflowName(), workflow.getEndTime() - workflow.getStartTime(), workflow.getOwnerApp());
         queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
 
         if (workflow.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
@@ -1155,10 +1156,13 @@ public class WorkflowExecutor {
             }
 
             LOGGER.debug("Executing {}/{}-{}", task.getTaskType(), task.getTaskId(), task.getStatus());
-
             queueDAO.setUnackTimeout(QueueUtils.getQueueName(task), task.getTaskId(), systemTask.getRetryTimeInSecond() * 1000);
-            task.setPollCount(task.getPollCount() + 1);
-            executionDAOFacade.updateTask(task);
+            if (task.getStatus() == SCHEDULED || !systemTask.isAsyncComplete(task)) {
+                task.setPollCount(task.getPollCount() + 1);
+                executionDAOFacade.updateTask(task);
+            }
+
+            deciderService.populateTaskData(task);
 
             switch (task.getStatus()) {
                 case SCHEDULED:
@@ -1166,7 +1170,9 @@ public class WorkflowExecutor {
                     break;
 
                 case IN_PROGRESS:
-                    systemTask.execute(workflow, task, this);
+                    if (!systemTask.isAsyncComplete(task)) {
+                        systemTask.execute(workflow, task, this);
+                    }
                     break;
                 default:
                     break;
@@ -1254,7 +1260,7 @@ public class WorkflowExecutor {
 
     @VisibleForTesting
     boolean scheduleTask(Workflow workflow, List<Task> tasks) {
-        List<Task> createdTasks = new ArrayList<>();
+        List<Task> createdTasks;
 
         try {
             if (tasks == null || tasks.isEmpty()) {
@@ -1297,12 +1303,14 @@ public class WorkflowExecutor {
                 }
                 if (!workflowSystemTask.isAsync()) {
                     try {
+                        deciderService.populateTaskData(task);
                         workflowSystemTask.start(workflow, task, this);
                     } catch (Exception e) {
                         String errorMsg = String.format("Unable to start system task: %s, {id: %s, name: %s}", task.getTaskType(), task.getTaskId(), task.getTaskDefName());
                         throw new ApplicationException(Code.INTERNAL_ERROR, errorMsg, e);
                     }
                     startedSystemTasks = true;
+                    deciderService.externalizeTaskData(task);
                     executionDAOFacade.updateTask(task);
                 } else {
                     tasksToBeQueued.add(task);
