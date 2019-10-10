@@ -102,6 +102,7 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
                     InputStream opStream = MockExternalPayloadStorage.class.getResourceAsStream("/output.json");
                     return objectMapper.readValue(opStream, Map.class);
                 case INPUT_PAYLOAD_PATH:
+                case "workflow/output":
                     InputStream ipStream = MockExternalPayloadStorage.class.getResourceAsStream("/input.json");
                     return objectMapper.readValue(ipStream, Map.class);
             }
