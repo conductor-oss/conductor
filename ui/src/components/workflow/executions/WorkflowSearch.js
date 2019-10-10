@@ -48,10 +48,6 @@ class WorkflowSearch extends Component {
 
     // update the state
     changeSearch(search);
-    fetchSearchResults();
-
-    // fetch workflow types
-    getWorkflowDefs();
   }
 
   handleQueryChange({target: {value}}) {
