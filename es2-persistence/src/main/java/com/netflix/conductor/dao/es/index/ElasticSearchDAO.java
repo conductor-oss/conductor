@@ -56,6 +56,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.IOUtils;
@@ -192,6 +193,29 @@ public class ElasticSearchDAO implements IndexDAO {
 		}
 	}
 
+	@PreDestroy
+	private void shutdown() {
+		logger.info("Gracefully shutdown executor service");
+		shutdownExecutorService(logExecutorService);
+		shutdownExecutorService(executorService);
+	}
+
+	private void shutdownExecutorService(ExecutorService execService) {
+		try {
+			execService.shutdown();
+			if (execService.awaitTermination(30, TimeUnit.SECONDS)) {
+				logger.debug("tasks completed, shutting down");
+			} else {
+				logger.warn("forcing shutdown after waiting for 30 seconds");
+				execService.shutdownNow();
+			}
+		} catch (InterruptedException ie) {
+			logger.warn("shutdown interrupted, invoking shutdownNow");
+			execService.shutdownNow();
+			Thread.currentThread().interrupt();
+		}
+	}
+
 	private void updateIndexName(Configuration config) {
 		this.logIndexPrefix = config.getProperty("workflow.elasticsearch.tasklog.index.name", "task_log");
 		this.logIndexName = this.logIndexPrefix + "_" + SIMPLE_DATE_FORMAT.format(new Date());
@@ -294,6 +318,7 @@ public class ElasticSearchDAO implements IndexDAO {
 			Monitors.recordESIndexTime("index_workflow", WORKFLOW_DOC_TYPE, endTime - startTime);
 			Monitors.recordWorkerQueueSize("indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
 		} catch (Exception e) {
+			Monitors.error(className, "index_workflow");
 			logger.error("Failed to index workflow: {}", workflow.getWorkflowId(), e);
 		}
 	}
@@ -457,16 +482,18 @@ public class ElasticSearchDAO implements IndexDAO {
 		}
 	}
 
-	private void indexBulkRequest(String docType) {
-		updateWithRetry(bulkRequests.get(docType).getBulkRequestBuilder(), docType);
-		bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis(), elasticSearchClient.prepareBulk()));
+	private synchronized void indexBulkRequest(String docType) {
+		if (bulkRequests.get(docType).getBulkRequestBuilder() != null && bulkRequests.get(docType).getBulkRequestBuilder().numberOfActions() > 0) {
+			updateWithRetry(bulkRequests.get(docType).getBulkRequestBuilder(), docType);
+			bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis(), elasticSearchClient.prepareBulk()));
+		}
 	}
 
-	private synchronized void updateWithRetry(BulkRequestBuilder request, String docType) {
+	private void updateWithRetry(BulkRequestBuilder request, String docType) {
 		try {
 			long startTime = Instant.now().toEpochMilli();
 			new RetryUtil<BulkResponse>().retryOnException(
-				() -> request.execute().actionGet(),
+				() -> request.execute().actionGet(30, TimeUnit.SECONDS),
 				null,
 				BulkResponse::hasFailures,
 				RETRY_COUNT,
