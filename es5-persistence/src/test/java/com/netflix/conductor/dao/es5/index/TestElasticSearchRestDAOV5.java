@@ -318,7 +318,7 @@ public class TestElasticSearchRestDAOV5 {
                 .atMost(5, TimeUnit.SECONDS)
                 .untilAsserted(
                         () -> {
-                            List<String> searchIds = indexDAO.searchArchivableWorkflows("conductor",1);
+                            List<String> searchIds = indexDAO.searchArchivableWorkflows("conductor",6);
                             assertEquals(1, searchIds.size());
                             assertEquals(workflowId, searchIds.get(0));
                         }
