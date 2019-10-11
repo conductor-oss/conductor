@@ -32,6 +32,7 @@ import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.slf4j.Logger;
@@ -66,6 +67,24 @@ public class ExecutionDAOFacade {
             Monitors.recordDiscardedIndexingCount("delayQueue");
         });
         this.scheduledThreadPoolExecutor.setRemoveOnCancelPolicy(true);
+    }
+
+    @PreDestroy
+    public void shutdownExecutorService() {
+        try {
+            LOGGER.info("Gracefully shutdown executor service");
+            scheduledThreadPoolExecutor.shutdown();
+            if (scheduledThreadPoolExecutor.awaitTermination(config.getAsyncUpdateDelay(), TimeUnit.SECONDS)) {
+                LOGGER.debug("tasks completed, shutting down");
+            } else {
+                LOGGER.warn("Forcing shutdown after waiting for {} seconds", config.getAsyncUpdateDelay());
+                scheduledThreadPoolExecutor.shutdownNow();
+            }
+        } catch (InterruptedException ie) {
+            LOGGER.warn("Shutdown interrupted, invoking shutdownNow on scheduledThreadPoolExecutor for delay queue");
+            scheduledThreadPoolExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
