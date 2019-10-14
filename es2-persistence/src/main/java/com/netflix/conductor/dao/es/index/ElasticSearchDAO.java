@@ -56,6 +56,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.IOUtils;
@@ -133,11 +134,6 @@ public class ElasticSearchDAO implements IndexDAO {
 	private final ExecutorService executorService;
 	private final ExecutorService logExecutorService;
 
-	private ConcurrentHashMap<String, BulkRequests> bulkRequests;
-
-	private final int indexBatchSize;
-	private final int asyncBufferFlushTimeout;
-
 	static {
 		SIMPLE_DATE_FORMAT.setTimeZone(GMT);
 	}
@@ -148,10 +144,6 @@ public class ElasticSearchDAO implements IndexDAO {
 		this.elasticSearchClient = elasticSearchClient;
 		this.indexName = config.getProperty("workflow.elasticsearch.index.name", null);
 		this.archiveSearchBatchSize = config.getIntProperty("workflow.elasticsearch.archive.search.batchSize", 5000);
-
-		this.bulkRequests = new ConcurrentHashMap<>();
-		this.indexBatchSize = config.getIntProperty("workflow.elasticsearch.index.batchSize", 1);
-		this.asyncBufferFlushTimeout = config.getIntProperty("workflow.elasticsearch.async.buffer.flush.timeout.seconds", 10);
 
 		int corePoolSize = 4;
 		int maximumPoolSize = config.getIntProperty("workflow.elasticsearch.async.dao.max.pool.size", 12);
@@ -180,8 +172,6 @@ public class ElasticSearchDAO implements IndexDAO {
 				Monitors.recordDiscardedIndexingCount("logQueue");
 			});
 
-		Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::flushBulkRequests, 60, 30, TimeUnit.SECONDS);
-
 		try {
 			initIndex();
 			updateIndexName(config);
@@ -189,6 +179,29 @@ public class ElasticSearchDAO implements IndexDAO {
 
 		} catch (Exception e) {
 			logger.error(e.getMessage(), e);
+		}
+	}
+
+	@PreDestroy
+	private void shutdown() {
+		logger.info("Gracefully shutdown executor service");
+		shutdownExecutorService(logExecutorService);
+		shutdownExecutorService(executorService);
+	}
+
+	private void shutdownExecutorService(ExecutorService execService) {
+		try {
+			execService.shutdown();
+			if (execService.awaitTermination(30, TimeUnit.SECONDS)) {
+				logger.debug("tasks completed, shutting down");
+			} else {
+				logger.warn("forcing shutdown after waiting for 30 seconds");
+				execService.shutdownNow();
+			}
+		} catch (InterruptedException ie) {
+			logger.warn("shutdown interrupted, invoking shutdownNow");
+			execService.shutdownNow();
+			Thread.currentThread().interrupt();
 		}
 	}
 
@@ -204,7 +217,7 @@ public class ElasticSearchDAO implements IndexDAO {
 			} catch (IndexAlreadyExistsException ignored) {
 
 			} catch (Exception e) {
-				logger.error(e.getMessage(), e);
+				logger.error("Error creating log index", e);
 			}
 		}
 	}
@@ -275,25 +288,19 @@ public class ElasticSearchDAO implements IndexDAO {
 			WorkflowSummary summary = new WorkflowSummary(workflow);
 			byte[] doc = objectMapper.writeValueAsBytes(summary);
 
+			logger.debug("Indexing workflow document: {}", workflowId);
 			UpdateRequest req = new UpdateRequest(indexName, WORKFLOW_DOC_TYPE, workflowId);
 			req.doc(doc);
 			req.upsert(doc);
 			req.retryOnConflict(5);
-
-			new RetryUtil<UpdateResponse>().retryOnException(
-				() -> elasticSearchClient.update(req).actionGet(),
-				null,
-				null,
-				RETRY_COUNT,
-				"Indexing workflow document: " + workflow.getWorkflowId(),
-				"indexWorkflow"
-			);
+			indexDocument(req, WORKFLOW_DOC_TYPE);
 
 			long endTime = Instant.now().toEpochMilli();
 			logger.debug("Time taken {} for indexing workflow: {}", endTime - startTime, workflow.getWorkflowId());
 			Monitors.recordESIndexTime("index_workflow", WORKFLOW_DOC_TYPE, endTime - startTime);
 			Monitors.recordWorkerQueueSize("indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
 		} catch (Exception e) {
+			Monitors.error(className, "indexWorkflow");
 			logger.error("Failed to index workflow: {}", workflow.getWorkflowId(), e);
 		}
 	}
@@ -307,20 +314,22 @@ public class ElasticSearchDAO implements IndexDAO {
 	public void indexTask(Task task) {
 		try {
 			long startTime = Instant.now().toEpochMilli();
-			String id = task.getTaskId();
+			String taskId = task.getTaskId();
 			TaskSummary summary = new TaskSummary(task);
 			byte[] doc = objectMapper.writeValueAsBytes(summary);
 
-			UpdateRequest req = new UpdateRequest(indexName, TASK_DOC_TYPE, id);
+			logger.debug("Indexing task document: {} for workflow: {}" + taskId, task.getWorkflowInstanceId());
+			UpdateRequest req = new UpdateRequest(indexName, TASK_DOC_TYPE, taskId);
 			req.doc(doc);
 			req.upsert(doc);
-			logger.debug("Indexing task document: {} for workflow: {}" + id, task.getWorkflowInstanceId());
-			indexObject(req, TASK_DOC_TYPE);
+			indexDocument(req, TASK_DOC_TYPE);
+
 			long endTime = Instant.now().toEpochMilli();
 			logger.debug("Time taken {} for  indexing task:{} in workflow: {}", endTime - startTime, task.getTaskId(), task.getWorkflowInstanceId());
 			Monitors.recordESIndexTime("index_task", TASK_DOC_TYPE, endTime - startTime);
 			Monitors.recordWorkerQueueSize("indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
 		} catch (Exception e) {
+			Monitors.error(className, "indexTask");
 			logger.error("Failed to index task: {}", task.getTaskId(), e);
 		}
 	}
@@ -345,7 +354,7 @@ public class ElasticSearchDAO implements IndexDAO {
 				bulkRequestBuilder.add(request);
 			}
 			new RetryUtil<BulkResponse>().retryOnException(
-				() -> bulkRequestBuilder.execute().actionGet(),
+				() -> bulkRequestBuilder.execute().actionGet(5, TimeUnit.SECONDS),
 				null,
 				BulkResponse::hasFailures,
 				RETRY_COUNT,
@@ -411,14 +420,17 @@ public class ElasticSearchDAO implements IndexDAO {
 			doc.put("queue", queue);
 			doc.put("created", System.currentTimeMillis());
 
+			logger.debug("Indexing message document: {}", msg.getId());
 			UpdateRequest request = new UpdateRequest(logIndexName, MSG_DOC_TYPE, msg.getId());
 			request.doc(doc, XContentType.JSON);
 			request.upsert(doc, XContentType.JSON);
-			indexObject(request, MSG_DOC_TYPE);
+			indexDocument(request, MSG_DOC_TYPE);
+
 			long endTime = Instant.now().toEpochMilli();
 			logger.debug("Time taken {} for  indexing message: {}", endTime - startTime, msg.getId());
 			Monitors.recordESIndexTime("add_message", MSG_DOC_TYPE, endTime - startTime);
 		}catch (Exception e) {
+			Monitors.error(className, "addMessage");
 			logger.error("Failed to index message: {}", msg.getId(), e);
 		}
 	}
@@ -429,15 +441,19 @@ public class ElasticSearchDAO implements IndexDAO {
 			long startTime = Instant.now().toEpochMilli();
 			byte[] doc = objectMapper.writeValueAsBytes(eventExecution);
 			String id = eventExecution.getName() + "." + eventExecution.getEvent() + "." + eventExecution.getMessageId() + "." + eventExecution.getId();
+
+			logger.debug("Indexing event document: {}", id);
 			UpdateRequest req = new UpdateRequest(logIndexName, EVENT_DOC_TYPE, id);
 			req.doc(doc);
 			req.upsert(doc);
 			req.retryOnConflict(5);
-			indexObject(req, EVENT_DOC_TYPE);
+			indexDocument(req, EVENT_DOC_TYPE);
+
 			long endTime = Instant.now().toEpochMilli();
 			logger.debug("Time taken {} for indexing event execution: {}", endTime - startTime, eventExecution.getId());
 			Monitors.recordESIndexTime("add_event_execution", EVENT_DOC_TYPE, endTime - startTime);
 		} catch (Exception e) {
+			Monitors.error(className, "addEventExecution");
 			logger.error("Failed to index event execution: {}", eventExecution.getId(), e);
 		}
 	}
@@ -447,39 +463,15 @@ public class ElasticSearchDAO implements IndexDAO {
 		return CompletableFuture.runAsync(() -> addEventExecution(eventExecution), logExecutorService);
 	}
 
-	private void indexObject(UpdateRequest req, String docType) {
-		if (bulkRequests.get(docType) == null) {
-			bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis(), elasticSearchClient.prepareBulk()));
-		}
-		bulkRequests.get(docType).getBulkRequestBuilder().add(req);
-		if (bulkRequests.get(docType).getBulkRequestBuilder().numberOfActions() >= this.indexBatchSize) {
-			indexBulkRequest(docType);
-		}
-	}
-
-	private void indexBulkRequest(String docType) {
-		updateWithRetry(bulkRequests.get(docType).getBulkRequestBuilder(), docType);
-		bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis(), elasticSearchClient.prepareBulk()));
-	}
-
-	private synchronized void updateWithRetry(BulkRequestBuilder request, String docType) {
-		try {
-			long startTime = Instant.now().toEpochMilli();
-			new RetryUtil<BulkResponse>().retryOnException(
-				() -> request.execute().actionGet(),
-				null,
-				BulkResponse::hasFailures,
-				RETRY_COUNT,
-				"Bulk Indexing "+ docType,
-				"indexObject"
-			);
-			long endTime = Instant.now().toEpochMilli();
-			logger.debug("Time taken {} for indexing object of type: {}", endTime - startTime, docType);
-			Monitors.recordESIndexTime("index_object", docType, endTime - startTime);
-		} catch (Exception e) {
-			Monitors.error(className, "index");
-			logger.error("Failed to index object of type: {}", docType, e);
-		}
+	private void indexDocument(UpdateRequest request, String docType) {
+		new RetryUtil<UpdateResponse>().retryOnException(
+			() -> elasticSearchClient.update(request).actionGet(5, TimeUnit.SECONDS),
+			null,
+			null,
+			RETRY_COUNT,
+			"Indexing document of type - " + docType,
+			"indexDocument"
+		);
 	}
 
 	@Override
@@ -515,7 +507,7 @@ public class ElasticSearchDAO implements IndexDAO {
 			Monitors.recordWorkerQueueSize("indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
 		} catch (Exception e) {
 			logger.error("Failed to remove workflow {} from index", workflowId, e);
-			Monitors.error(className, "remove");
+			Monitors.error(className, "removeWorkflow");
 		}
 	}
 
@@ -536,15 +528,9 @@ public class ElasticSearchDAO implements IndexDAO {
 		Map<String, Object> source = IntStream.range(0, keys.length).boxed()
 				.collect(Collectors.toMap(i -> keys[i], i -> values[i]));
 		request.doc(source);
+
 		logger.debug("Updating workflow {} in elasticsearch index: {}", workflowInstanceId, indexName);
-		new RetryUtil<>().retryOnException(
-			() -> elasticSearchClient.update(request).actionGet(),
-			null,
-			null,
-			RETRY_COUNT,
-			"Updating index for doc_type workflow",
-			"updateWorkflow"
-		);
+		indexDocument(request, WORKFLOW_DOC_TYPE);
 
 		long endTime = Instant.now().toEpochMilli();
 		logger.debug("Time taken {} for updating workflow: {}", endTime - startTime, workflowInstanceId);
@@ -657,45 +643,5 @@ public class ElasticSearchDAO implements IndexDAO {
 			ids.add(hit.getId());
 		}
 		return ids;
-	}
-
-	/**
-	 * Flush the buffers if bulk requests have not been indexed for the past "workflow.elasticsearch.async.buffer.flush.timeout.seconds" seconds
-	 * This is to prevent data loss in case the instance is terminated, while the buffer still holds documents to be indexed.
-	 */
-	private void flushBulkRequests() {
-		bulkRequests.entrySet().stream()
-			.filter(entry -> (System.currentTimeMillis() - entry.getValue().getLastFlushTime()) >= asyncBufferFlushTimeout * 1000)
-			.filter(entry -> entry.getValue().getBulkRequestBuilder() != null && entry.getValue().getBulkRequestBuilder().numberOfActions() > 0)
-			.forEach(entry -> {
-				logger.debug("Flushing bulk request buffer for type {}, size: {}", entry.getKey(), entry.getValue().getBulkRequestBuilder().numberOfActions());
-				indexBulkRequest(entry.getKey());
-			});
-	}
-
-	private static class BulkRequests {
-		private long lastFlushTime;
-		private BulkRequestBuilder bulkRequestBuilder;
-
-		public long getLastFlushTime() {
-			return lastFlushTime;
-		}
-
-		public void setLastFlushTime(long lastFlushTime) {
-			this.lastFlushTime = lastFlushTime;
-		}
-
-		public BulkRequestBuilder getBulkRequestBuilder() {
-			return bulkRequestBuilder;
-		}
-
-		public void setBulkRequestBuilder(BulkRequestBuilder bulkRequestBuilder) {
-			this.bulkRequestBuilder = bulkRequestBuilder;
-		}
-
-		BulkRequests(long lastFlushTime, BulkRequestBuilder bulkRequestBuilder) {
-			this.lastFlushTime = lastFlushTime;
-			this.bulkRequestBuilder = bulkRequestBuilder;
-		}
 	}
 }
