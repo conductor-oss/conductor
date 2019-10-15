@@ -49,6 +49,10 @@ class WorkflowSearch extends Component {
     // update the state
     changeSearch(search);
 
+    if(search !== null && (search.query !== "" || search.types.length !== 0)){
+      fetchSearchResults()
+    }
+
     // fetch workflow types
     getWorkflowDefs();
   }
