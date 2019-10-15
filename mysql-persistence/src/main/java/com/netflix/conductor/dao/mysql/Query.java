@@ -273,7 +273,7 @@ public class Query implements AutoCloseable {
 
             return val;
         } catch (SQLException ex) {
-            throw new ApplicationException(Code.BACKEND_ERROR, ex.getMessage());
+            throw new ApplicationException(Code.BACKEND_ERROR, ex.getMessage(), ex);
         }
     }
 
