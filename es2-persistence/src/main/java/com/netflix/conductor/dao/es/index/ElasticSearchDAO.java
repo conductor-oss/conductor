@@ -594,7 +594,7 @@ public class ElasticSearchDAO implements IndexDAO {
 	@Override
 	public List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays) {
 		QueryBuilder q = QueryBuilders.boolQuery()
-			.must(QueryBuilders.rangeQuery("endTime").lt(LocalDate.now().minusDays(archiveTtlDays).toString()))
+			.must(QueryBuilders.rangeQuery("endTime").lt(LocalDate.now().minusDays(archiveTtlDays).toString()).gte(LocalDate.now().minusDays(archiveTtlDays).minusDays(1).toString()))
 			.should(QueryBuilders.termQuery("status", "COMPLETED"))
 			.should(QueryBuilders.termQuery("status", "FAILED"))
 			.should(QueryBuilders.termQuery("status", "TIMED_OUT"))
