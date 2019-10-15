@@ -1,0 +1,145 @@
+{
+  "ownerApp": "junit_app",
+  "createTime": 1534983505157,
+  "updateTime": 1534983505166,
+  "status": "RUNNING",
+  "endTime": 0,
+  "workflowId": "WORKFLOW_INSTANCE_ID",
+  "tasks": [
+    {
+      "taskType": "HTTP",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": null,
+        "p2": null
+      },
+      "referenceTaskName": "http0__1",
+      "iteration": 1,
+      "retryCount": 0,
+      "seq": 2,
+      "correlationId": "looptest",
+      "pollCount": 0,
+      "taskDefName": "http0",
+      "scheduledTime": 1534983505160,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1534983505160,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "DoWhileTest_1",
+      "taskId": "feb6c6c2-0974-4e78-b4df-df4389c46aea",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "http0__1",
+        "taskReferenceName": "http0__1",
+        "iteration": 1,
+        "inputParameters": {
+          "tp1": "workflow.input.param1"
+        },
+        "type": "HTTP",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    },{
+      "taskType": "DO_WHILE",
+      "status": "IN_PROGRESS",
+      "referenceTaskName": "loopTask",
+      "iteration": 1,
+      "retryCount": 0,
+      "seq": 1,
+      "correlationId": "looptest",
+      "pollCount": 0,
+      "taskDefName": "DO_WHILE",
+      "scheduledTime": 1534983505159,
+      "startTime": 1534983505161,
+      "endTime": 1534983505164,
+      "updateTime": 1534983505164,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "DoWhileTest_1",
+      "taskId": "3e66a03d-08ef-4e71-8588-49d6c82bc75d",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "taskReferenceName": "loopTask",
+        "iteration": 1,
+        "name": "loopTask",
+        "type": "DO_WHILE",
+        "loopCondition": "if ($.loopTask['iteration'] < 1 ) { true;} else {false;} ",
+        "loopOver": [
+          {
+            "name": "http0",
+            "taskReferenceName": "http0",
+            "inputParameters": {
+              "tp1": "workflow.input.param1"
+            },
+            "type": "HTTP",
+            "startDelay": 0,
+            "optional": false
+          },{
+            "name": "fork",
+            "taskReferenceName": "fork",
+            "type": "FORK_JOIN",
+            "forkTasks": [
+              [
+                {
+                  "name": "http1",
+                  "taskReferenceName": "http1",
+                  "inputParameters": {
+                    "tp1": "workflow.input.param1"
+                  },
+                  "type": "HTTP",
+                  "startDelay": 0,
+                  "optional": false
+                }
+              ],
+              [
+                {
+                  "name": "http2",
+                  "taskReferenceName": "http2",
+                  "inputParameters": {
+                    "tp1": "workflow.input.param1"
+                  },
+                  "type": "HTTP",
+                  "startDelay": 0,
+                  "optional": false
+                }
+              ]
+            ]
+          },
+          {
+            "name": "join",
+            "taskReferenceName": "join",
+            "type": "JOIN",
+            "inputData": {
+              "joinOn": [
+                "http1",
+                "http2"
+              ]
+            }
+          }
+        ],
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 2
+    }
+  ],
+  "workflowType": "DoWhileTest_1",
+  "version": 1,
+  "correlationId": "looptask",
+  "schemaVersion": 1,
+  "startTime": 1534983505157
+}

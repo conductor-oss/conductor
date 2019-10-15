@@ -160,6 +160,12 @@ public class WorkflowTask {
 	@ProtoField(id = 23)
 	private Boolean asyncComplete = false;
 
+	@ProtoField(id = 24)
+	private String loopCondition;
+
+	@ProtoField(id = 25)
+	private List<WorkflowTask> loopOver = new LinkedList<>();
+
 	/**
 	 * @return the name
 	 */
@@ -402,6 +408,34 @@ public class WorkflowTask {
 	}
 
 	/**
+	 * @return the loopCondition
+	 */
+	public String getLoopCondition() {
+		return loopCondition;
+	}
+
+	/**
+	 * @param loopCondition the expression to set
+	 */
+	public void setLoopCondition(String loopCondition) {
+		this.loopCondition = loopCondition;
+	}
+
+	/**
+	 * @return the loopOver
+	 */
+	public List<WorkflowTask> getLoopOver() {
+		return loopOver;
+	}
+
+	/**
+	 * @param loopOver the loopOver to set
+	 */
+	public void setLoopOver(List<WorkflowTask> loopOver) {
+		this.loopOver = loopOver;
+	}
+
+	/**
 	 * 
 	 * @return Sink value for the EVENT type of task
 	 */
@@ -495,6 +529,9 @@ public class WorkflowTask {
 			case FORK_JOIN:
 				workflowTaskLists.addAll(forkTasks);
 				break;
+			case DO_WHILE:
+				workflowTaskLists.add(loopOver);
+				break;
 			default:
 				break;
 		}
@@ -520,6 +557,7 @@ public class WorkflowTask {
 		}
 
 		switch (taskType) {
+			case DO_WHILE:
 			case DECISION:
 				for (List<WorkflowTask> wfts : children()) {
 					Iterator<WorkflowTask> it = wfts.iterator();
@@ -587,6 +625,7 @@ public class WorkflowTask {
 		switch(tt){
 			
 			case DECISION:
+			case DO_WHILE:
 			case FORK_JOIN:	
 				for(List<WorkflowTask> childx : children()){
 					for(WorkflowTask child : childx){

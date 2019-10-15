@@ -32,6 +32,7 @@ import com.google.common.base.Preconditions;
 import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
@@ -41,6 +42,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.utils.RetryUtil;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
@@ -65,6 +67,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+
 import javax.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -1469,5 +1472,24 @@ public class WorkflowExecutor {
             return true;
         }
         return false;
+    }
+
+    public void scheduleNextIteration(Task loopTask, Workflow workflow) {
+        //Schedule only first loop over task. Rest will be taken care in Decider Service when this task will get completed.
+        List<Task> scheduledLoopOverTasks = deciderService.getTasksToBeScheduled(workflow, loopTask.getWorkflowTask().getLoopOver().get(0), loopTask.getRetryCount(), null);
+        scheduledLoopOverTasks.stream().forEach(t -> {
+            t.setReferenceTaskName(TaskUtils.appendIteration(t.getReferenceTaskName(), loopTask.getIteration()));
+            t.setIteration(loopTask.getIteration());
+        });
+        scheduleTask(workflow, scheduledLoopOverTasks);
+    }
+
+    public TaskDef getTaskDefinition(Task task) {
+        return task.getTaskDefinition()
+                .orElseGet(() -> Optional.ofNullable(metadataDAO.getTaskDef(task.getWorkflowTask().getName()))
+                        .orElseThrow(() -> {
+                            String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", task.getWorkflowTask().getName());
+                            return new TerminateWorkflowException(reason);
+                        }));
     }
 }

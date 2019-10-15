@@ -27,6 +27,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
+import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
@@ -674,6 +675,37 @@ public class TestDeciderService {
     }
 
     @Test
+    public void testDecideWithLoopTask() {
+        WorkflowDef workflowDef = createLinearWorkflow();
+
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setStatus(WorkflowStatus.RUNNING);
+
+        Task task1 = new Task();
+        task1.setTaskType("junit_task_l1");
+        task1.setReferenceTaskName("s1");
+        task1.setSeq(1);
+        task1.setIteration(1);
+        task1.setRetried(false);
+        task1.setExecuted(false);
+        task1.setStatus(Status.COMPLETED);
+
+        workflow.getTasks().add(task1);
+
+        DeciderOutcome deciderOutcome = deciderService.decide(workflow);
+        assertNotNull(deciderOutcome);
+
+        assertFalse(workflow.getTaskByRefName("s1").isRetried());
+        assertEquals(1, deciderOutcome.tasksToBeUpdated.size());
+        assertEquals("s1", deciderOutcome.tasksToBeUpdated.get(0).getReferenceTaskName());
+        assertEquals(1, deciderOutcome.tasksToBeScheduled.size());
+        assertEquals("s2__1", deciderOutcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+        assertEquals(0, deciderOutcome.tasksToBeRequeued.size());
+        assertFalse(deciderOutcome.isComplete);
+    }
+
+    @Test
     public void testDecideFailedTask() {
         WorkflowDef workflowDef = createLinearWorkflow();
 
@@ -754,6 +786,47 @@ public class TestDeciderService {
         boolean flag = deciderService.isResponseTimedOut(taskDef, task);
         assertNotNull(task);
         assertTrue(flag);
+    }
+
+    @Test
+    public void testFilterNextLoopOverTasks() {
+
+        Workflow workflow = new Workflow();
+
+        Task task1 = new Task();
+        task1.setReferenceTaskName("task1");
+        task1.setStatus(Status.COMPLETED);
+        task1.setTaskId("task1");
+        task1.setIteration(1);
+
+        Task task2 = new Task();
+        task2.setReferenceTaskName("task2");
+        task2.setStatus(Status.SCHEDULED);
+        task2.setTaskId("task2");
+
+        Task task3 = new Task();
+        task3.setReferenceTaskName("task3__1");
+        task3.setStatus(Status.IN_PROGRESS);
+        task3.setTaskId("task3__1");
+
+        Task task4 = new Task();
+        task4.setReferenceTaskName("task4");
+        task4.setStatus(Status.SCHEDULED);
+        task4.setTaskId("task4");
+
+        Task task5 = new Task();
+        task5.setReferenceTaskName("task5");
+        task5.setStatus(Status.COMPLETED);
+        task5.setTaskId("task5");
+
+        workflow.getTasks().addAll(Arrays.asList(task1, task2, task3, task4, task5));
+        List<Task> tasks = deciderService.filterNextLoopOverTasks(Arrays.asList(task2, task3, task4), task1, workflow);
+        assertEquals(2, tasks.size());
+        tasks.forEach(task -> {
+            assertTrue(task.getReferenceTaskName().endsWith(TaskUtils.getLoopOverTaskRefNameSuffix(1)));
+            assertEquals(1, task.getIteration());
+        });
+
     }
 
     @Test

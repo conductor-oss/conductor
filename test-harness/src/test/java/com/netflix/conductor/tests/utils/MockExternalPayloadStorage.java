@@ -32,7 +32,12 @@ import org.slf4j.LoggerFactory;
 public class MockExternalPayloadStorage implements ExternalPayloadStorage {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MockExternalPayloadStorage.class);
+
     public static final String INPUT_PAYLOAD_PATH = "payload/input";
+
+    public static final String INITIAL_WORKFLOW_INPUT_PATH = "workflow/input";
+    public static final String WORKFLOW_OUTPUT_PATH = "workflow/output";
+    public static final String TASK_OUTPUT_PATH = "task/output";
 
     private ObjectMapper objectMapper = new ObjectMapper();
 
@@ -46,7 +51,7 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
                 location.setPath(INPUT_PAYLOAD_PATH);
                 break;
             case WORKFLOW_OUTPUT:
-                location.setPath("workflow/output");
+                location.setPath(WORKFLOW_OUTPUT_PATH);
                 break;
         }
         return location;
@@ -94,14 +99,15 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
         Map<String, Object> stringObjectMap = new HashMap<>();
         try {
             switch (path) {
-                case "workflow/input":
+                case INITIAL_WORKFLOW_INPUT_PATH:
                     stringObjectMap.put("param1", "p1 value");
                     stringObjectMap.put("param2", "p2 value");
                     return stringObjectMap;
-                case "task/output":
+                case TASK_OUTPUT_PATH:
                     InputStream opStream = MockExternalPayloadStorage.class.getResourceAsStream("/output.json");
                     return objectMapper.readValue(opStream, Map.class);
                 case INPUT_PAYLOAD_PATH:
+                case WORKFLOW_OUTPUT_PATH:
                     InputStream ipStream = MockExternalPayloadStorage.class.getResourceAsStream("/input.json");
                     return objectMapper.readValue(ipStream, Map.class);
             }

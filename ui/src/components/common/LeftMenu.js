@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import { connect } from 'react-redux';
 import shallowCompare from 'react-addons-shallow-compare';
-import { updateSearchAndFetch } from '../../actions/search';
+import { updateSearchAndFetch, changeSearch } from '../../actions/search';
 
 
 const menuPaths = {
@@ -105,7 +105,7 @@ class LeftMenu extends Component {
   }
 
   render() {
-    const { loading, minimize, updateSearchAndFetch } = this.props;
+    const { loading, minimize, updateSearchAndFetch, changeSearch } = this.props;
     const appName = 'Workflow';
 
     const width = minimize ? '50px' : '176px';
@@ -128,7 +128,7 @@ class LeftMenu extends Component {
         );
       } else if (search) {
         menuItems.push(
-            <Link to={href} key={`key-${(keyVal += 1)}`} onClick={() => updateSearchAndFetch(search)}>
+            <Link to={href} key={`key-${(keyVal += 1)}`} onClick={() => changeSearch(search)}>
               <div className="menuItem">
                 <i className={iconClass} style={{ width: '20px' }} />
                 <span style={{ marginLeft: '10px', display }}>{label}</span>
@@ -165,6 +165,7 @@ class LeftMenu extends Component {
 
 LeftMenu.propTypes = {
   updateSearchAndFetch: PropTypes.func.isRequired,
+  changeSearch: PropTypes.func.isRequired,
   version: PropTypes.string,
   minimize: PropTypes.bool,
   loading: PropTypes.bool.isRequired
@@ -174,6 +175,6 @@ function mapStateToProps(state) {
   return {loading: state.workflow.fetching}
 }
 
-const mapDispatchToProps = {updateSearchAndFetch};
+const mapDispatchToProps = {updateSearchAndFetch, changeSearch};
 
 export default connect(mapStateToProps, mapDispatchToProps)(LeftMenu);
