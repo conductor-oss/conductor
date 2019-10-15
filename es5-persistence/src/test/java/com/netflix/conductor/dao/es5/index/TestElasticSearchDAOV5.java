@@ -307,13 +307,11 @@ public class TestElasticSearchDAOV5 {
 	public void testSearchArchivableWorkflows() {
 		String workflowId = "search-workflow-id";
 
-		LocalDate today = LocalDate.now();
-
 		workflow.setWorkflowId(workflowId);
 		workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
-		workflow.setCreateTime(today.minusDays(5).toEpochDay());
-		workflow.setUpdateTime(today.minusDays(5).toEpochDay());
-		workflow.setEndTime(today.minusDays(5).toEpochDay());
+		workflow.setCreateTime((new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4))).getTime());
+		workflow.setUpdateTime((new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4))).getTime());
+		workflow.setEndTime((new Date(System.currentTimeMillis() - TimeUnit.DAYS.toMillis(4))).getTime());
 
 		indexDAO.indexWorkflow(workflow);
 

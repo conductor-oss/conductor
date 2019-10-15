@@ -57,6 +57,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.StreamSupport;
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.apache.commons.io.IOUtils;
@@ -168,6 +169,29 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             });
 
         Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::flushBulkRequests, 60, 30, TimeUnit.SECONDS);
+    }
+
+    @PreDestroy
+    private void shutdown() {
+        logger.info("Gracefully shutdown executor service");
+        shutdownExecutorService(logExecutorService);
+        shutdownExecutorService(executorService);
+    }
+
+    private void shutdownExecutorService(ExecutorService execService) {
+        try {
+            execService.shutdown();
+            if (execService.awaitTermination(30, TimeUnit.SECONDS)) {
+                logger.debug("tasks completed, shutting down");
+            } else {
+                logger.warn("Forcing shutdown after waiting for 30 seconds");
+                execService.shutdownNow();
+            }
+        } catch (InterruptedException ie) {
+            logger.warn("Shutdown interrupted, invoking shutdownNow on scheduledThreadPoolExecutor for delay queue");
+            execService.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 
     @Override
@@ -343,6 +367,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             Monitors.recordESIndexTime("index_workflow", WORKFLOW_DOC_TYPE, endTime - startTime);
             Monitors.recordWorkerQueueSize("indexQueue", ((ThreadPoolExecutor) executorService).getQueue().size());
         } catch (Exception e) {
+            Monitors.error(className, "indexWorkflow");
             logger.error("Failed to index workflow: {}", workflow.getWorkflowId(), e);
         }
     }
@@ -394,7 +419,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
                 bulkRequestBuilder.add(request);
             }
             new RetryUtil<BulkResponse>().retryOnException(
-                () -> bulkRequestBuilder.execute().actionGet(),
+                () -> bulkRequestBuilder.execute().actionGet(5, TimeUnit.SECONDS),
                 null,
                 BulkResponse::hasFailures,
                 RETRY_COUNT,
@@ -515,16 +540,18 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         }
     }
 
-    private void indexBulkRequest(String docType) {
-        updateWithRetry(bulkRequests.get(docType).getBulkRequestBuilder(), docType);
-        bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis(), elasticSearchClient.prepareBulk()));
+    private synchronized void indexBulkRequest(String docType) {
+        if (bulkRequests.get(docType).getBulkRequestBuilder() != null && bulkRequests.get(docType).getBulkRequestBuilder().numberOfActions() > 0) {
+            updateWithRetry(bulkRequests.get(docType).getBulkRequestBuilder(), docType);
+            bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis(), elasticSearchClient.prepareBulk()));
+        }
     }
 
-    private synchronized void updateWithRetry(BulkRequestBuilder request, String docType) {
+    private void updateWithRetry(BulkRequestBuilder request, String docType) {
         try {
             long startTime = Instant.now().toEpochMilli();
             new RetryUtil<BulkResponse>().retryOnException(
-                    () -> request.execute().actionGet(),
+                    () -> request.execute().actionGet(5, TimeUnit.SECONDS),
                     null,
                     BulkResponse::hasFailures,
                     RETRY_COUNT,
@@ -680,7 +707,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
     @Override
     public List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays) {
         QueryBuilder q = QueryBuilders.boolQuery()
-            .must(QueryBuilders.rangeQuery("endTime").lt(LocalDate.now().minusDays(archiveTtlDays).toString()))
+            .must(QueryBuilders.rangeQuery("endTime").lt(LocalDate.now().minusDays(archiveTtlDays).toString()).gte(LocalDate.now().minusDays(archiveTtlDays).minusDays(1).toString()))
             .should(QueryBuilders.termQuery("status", "COMPLETED"))
             .should(QueryBuilders.termQuery("status", "FAILED"))
             .should(QueryBuilders.termQuery("status", "TIMED_OUT"))
