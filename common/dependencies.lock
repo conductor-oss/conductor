@@ -1,12 +1,12 @@
 {
     "compile": {
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
@@ -47,12 +47,12 @@
     },
     "compileClasspath": {
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
@@ -93,12 +93,12 @@
     },
     "default": {
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
@@ -149,12 +149,12 @@
     },
     "runtime": {
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
@@ -195,12 +195,12 @@
     },
     "runtimeClasspath": {
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
@@ -241,12 +241,12 @@
     },
     "testCompile": {
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
@@ -295,12 +295,12 @@
     },
     "testCompileClasspath": {
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
@@ -349,12 +349,12 @@
     },
     "testRuntime": {
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
@@ -403,12 +403,12 @@
     },
     "testRuntimeClasspath": {
         "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",

@@ -8,17 +8,17 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -107,17 +107,17 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -206,17 +206,17 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -325,17 +325,17 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -424,17 +424,17 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -523,17 +523,17 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -634,17 +634,17 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -745,17 +745,17 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -856,17 +856,17 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
             ],
-            "locked": "2.8.7"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
-            "locked": "2.7.5",
-            "requested": "2.7.5"
+            "locked": "2.10.0",
+            "requested": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [

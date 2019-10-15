@@ -7,7 +7,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.673",
+            "locked": "1.11.677",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -15,14 +15,14 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -167,7 +167,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.673",
+            "locked": "1.11.677",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -175,14 +175,14 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -337,7 +337,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.673",
+            "locked": "1.11.677",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -345,14 +345,14 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -507,7 +507,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.673",
+            "locked": "1.11.677",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -515,14 +515,14 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -667,7 +667,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.673",
+            "locked": "1.11.677",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -675,14 +675,14 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -827,7 +827,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.673",
+            "locked": "1.11.677",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -835,14 +835,14 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -963,12 +963,12 @@
             "requested": "2.2.0"
         },
         "org.eclipse.jetty:jetty-server": {
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.eclipse.jetty:jetty-servlet": {
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.glassfish:javax.el": {
             "firstLevelTransitive": [
@@ -1003,7 +1003,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.673",
+            "locked": "1.11.677",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -1011,14 +1011,14 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -1139,12 +1139,12 @@
             "requested": "2.2.0"
         },
         "org.eclipse.jetty:jetty-server": {
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.eclipse.jetty:jetty-servlet": {
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.glassfish:javax.el": {
             "firstLevelTransitive": [
@@ -1179,7 +1179,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.673",
+            "locked": "1.11.677",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -1187,14 +1187,14 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -1315,12 +1315,12 @@
             "requested": "2.2.0"
         },
         "org.eclipse.jetty:jetty-server": {
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.eclipse.jetty:jetty-servlet": {
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.glassfish:javax.el": {
             "firstLevelTransitive": [
@@ -1355,7 +1355,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.673",
+            "locked": "1.11.677",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -1363,14 +1363,14 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -1491,12 +1491,12 @@
             "requested": "2.2.0"
         },
         "org.eclipse.jetty:jetty-server": {
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.eclipse.jetty:jetty-servlet": {
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.glassfish:javax.el": {
             "firstLevelTransitive": [

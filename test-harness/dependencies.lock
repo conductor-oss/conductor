@@ -18,7 +18,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.673"
+            "locked": "1.11.677"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -30,7 +30,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.673"
+            "locked": "1.11.677"
         },
         "com.datastax.cassandra:cassandra-driver-core": {
             "firstLevelTransitive": [
@@ -43,20 +43,20 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -94,6 +94,7 @@
                 "com.netflix.conductor:conductor-contribs",
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-server"
             ],
@@ -154,6 +155,7 @@
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-jersey",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-server",
@@ -190,6 +192,12 @@
             "project": true
         },
         "com.netflix.conductor:conductor-mysql-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-postgres-persistence": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
@@ -254,6 +262,10 @@
             ],
             "locked": "0.68.0"
         },
+        "com.opentable.components:otj-pg-embedded": {
+            "locked": "0.13.1",
+            "requested": "0.13.1"
+        },
         "com.spotify:completable-futures": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -293,7 +305,8 @@
         },
         "com.zaxxer:HikariCP": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-mysql-persistence"
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "3.2.0"
         },
@@ -301,7 +314,8 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-es5-persistence",
-                "com.netflix.conductor:conductor-mysql-persistence"
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "2.6"
         },
@@ -409,7 +423,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.6"
+            "locked": "3.7"
         },
         "org.apache.curator:curator-recipes": {
             "firstLevelTransitive": [
@@ -443,21 +457,21 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022"
         },
         "org.eclipse.jetty:jetty-server": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.eclipse.jetty:jetty-servlet": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
             "firstLevelTransitive": [
@@ -486,7 +500,8 @@
         },
         "org.flywaydb:flyway-core": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-mysql-persistence"
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "4.0.3"
         },
@@ -508,6 +523,12 @@
         "org.mockito:mockito-core": {
             "locked": "1.10.19",
             "requested": "1.10.19"
+        },
+        "org.postgresql:postgresql": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-postgres-persistence"
+            ],
+            "locked": "42.2.6"
         },
         "org.rarefiedredis.redis:redis-java": {
             "firstLevelTransitive": [
@@ -544,7 +565,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.673"
+            "locked": "1.11.677"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -556,7 +577,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.673"
+            "locked": "1.11.677"
         },
         "com.datastax.cassandra:cassandra-driver-core": {
             "firstLevelTransitive": [
@@ -569,20 +590,20 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -620,6 +641,7 @@
                 "com.netflix.conductor:conductor-contribs",
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-server"
             ],
@@ -680,6 +702,7 @@
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-jersey",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-server",
@@ -716,6 +739,12 @@
             "project": true
         },
         "com.netflix.conductor:conductor-mysql-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-postgres-persistence": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
@@ -780,6 +809,10 @@
             ],
             "locked": "0.68.0"
         },
+        "com.opentable.components:otj-pg-embedded": {
+            "locked": "0.13.1",
+            "requested": "0.13.1"
+        },
         "com.spotify:completable-futures": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -819,7 +852,8 @@
         },
         "com.zaxxer:HikariCP": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-mysql-persistence"
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "3.2.0"
         },
@@ -827,7 +861,8 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-es5-persistence",
-                "com.netflix.conductor:conductor-mysql-persistence"
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "2.6"
         },
@@ -935,7 +970,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.6"
+            "locked": "3.7"
         },
         "org.apache.curator:curator-recipes": {
             "firstLevelTransitive": [
@@ -969,21 +1004,21 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022"
         },
         "org.eclipse.jetty:jetty-server": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.eclipse.jetty:jetty-servlet": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
             "firstLevelTransitive": [
@@ -1012,7 +1047,8 @@
         },
         "org.flywaydb:flyway-core": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-mysql-persistence"
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "4.0.3"
         },
@@ -1034,6 +1070,12 @@
         "org.mockito:mockito-core": {
             "locked": "1.10.19",
             "requested": "1.10.19"
+        },
+        "org.postgresql:postgresql": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-postgres-persistence"
+            ],
+            "locked": "42.2.6"
         },
         "org.rarefiedredis.redis:redis-java": {
             "firstLevelTransitive": [
@@ -1070,7 +1112,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.673"
+            "locked": "1.11.677"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -1082,7 +1124,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.673"
+            "locked": "1.11.677"
         },
         "com.datastax.cassandra:cassandra-driver-core": {
             "firstLevelTransitive": [
@@ -1095,20 +1137,20 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -1146,6 +1188,7 @@
                 "com.netflix.conductor:conductor-contribs",
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-server"
             ],
@@ -1206,6 +1249,7 @@
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-jersey",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-server",
@@ -1242,6 +1286,12 @@
             "project": true
         },
         "com.netflix.conductor:conductor-mysql-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-postgres-persistence": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
@@ -1306,6 +1356,10 @@
             ],
             "locked": "0.68.0"
         },
+        "com.opentable.components:otj-pg-embedded": {
+            "locked": "0.13.1",
+            "requested": "0.13.1"
+        },
         "com.spotify:completable-futures": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -1345,7 +1399,8 @@
         },
         "com.zaxxer:HikariCP": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-mysql-persistence"
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "3.2.0"
         },
@@ -1353,7 +1408,8 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-es5-persistence",
-                "com.netflix.conductor:conductor-mysql-persistence"
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "2.6"
         },
@@ -1461,7 +1517,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.6"
+            "locked": "3.7"
         },
         "org.apache.curator:curator-recipes": {
             "firstLevelTransitive": [
@@ -1495,21 +1551,21 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022"
         },
         "org.eclipse.jetty:jetty-server": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.eclipse.jetty:jetty-servlet": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
             "firstLevelTransitive": [
@@ -1538,7 +1594,8 @@
         },
         "org.flywaydb:flyway-core": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-mysql-persistence"
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "4.0.3"
         },
@@ -1560,6 +1617,12 @@
         "org.mockito:mockito-core": {
             "locked": "1.10.19",
             "requested": "1.10.19"
+        },
+        "org.postgresql:postgresql": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-postgres-persistence"
+            ],
+            "locked": "42.2.6"
         },
         "org.rarefiedredis.redis:redis-java": {
             "firstLevelTransitive": [
@@ -1596,7 +1659,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "1.11.673"
+            "locked": "1.11.677"
         },
         "com.amazonaws:aws-java-sdk-s3": {
             "firstLevelTransitive": [
@@ -1608,7 +1671,7 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-contribs"
             ],
-            "locked": "1.11.673"
+            "locked": "1.11.677"
         },
         "com.datastax.cassandra:cassandra-driver-core": {
             "firstLevelTransitive": [
@@ -1621,20 +1684,20 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.core:jackson-databind": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client"
             ],
-            "locked": "2.7.5"
+            "locked": "2.10.0"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -1672,6 +1735,7 @@
                 "com.netflix.conductor:conductor-contribs",
                 "com.netflix.conductor:conductor-core",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-server"
             ],
@@ -1732,6 +1796,7 @@
                 "com.netflix.conductor:conductor-grpc-server",
                 "com.netflix.conductor:conductor-jersey",
                 "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence",
                 "com.netflix.conductor:conductor-redis-lock",
                 "com.netflix.conductor:conductor-redis-persistence",
                 "com.netflix.conductor:conductor-server",
@@ -1768,6 +1833,12 @@
             "project": true
         },
         "com.netflix.conductor:conductor-mysql-persistence": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-server"
+            ],
+            "project": true
+        },
+        "com.netflix.conductor:conductor-postgres-persistence": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
@@ -1832,6 +1903,10 @@
             ],
             "locked": "0.68.0"
         },
+        "com.opentable.components:otj-pg-embedded": {
+            "locked": "0.13.1",
+            "requested": "0.13.1"
+        },
         "com.spotify:completable-futures": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-core"
@@ -1871,7 +1946,8 @@
         },
         "com.zaxxer:HikariCP": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-mysql-persistence"
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "3.2.0"
         },
@@ -1879,7 +1955,8 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-client",
                 "com.netflix.conductor:conductor-es5-persistence",
-                "com.netflix.conductor:conductor-mysql-persistence"
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "2.6"
         },
@@ -1987,7 +2064,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "3.6"
+            "locked": "3.7"
         },
         "org.apache.curator:curator-recipes": {
             "firstLevelTransitive": [
@@ -2021,21 +2098,21 @@
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022"
         },
         "org.eclipse.jetty:jetty-server": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.eclipse.jetty:jetty-servlet": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-server"
             ],
-            "locked": "9.3.9.v20160517",
-            "requested": "9.3.9.v20160517"
+            "locked": "9.4.22.v20191022",
+            "requested": "9.4.22.v20191022"
         },
         "org.elasticsearch.client:elasticsearch-rest-client": {
             "firstLevelTransitive": [
@@ -2064,7 +2141,8 @@
         },
         "org.flywaydb:flyway-core": {
             "firstLevelTransitive": [
-                "com.netflix.conductor:conductor-mysql-persistence"
+                "com.netflix.conductor:conductor-mysql-persistence",
+                "com.netflix.conductor:conductor-postgres-persistence"
             ],
             "locked": "4.0.3"
         },
@@ -2086,6 +2164,12 @@
         "org.mockito:mockito-core": {
             "locked": "1.10.19",
             "requested": "1.10.19"
+        },
+        "org.postgresql:postgresql": {
+            "firstLevelTransitive": [
+                "com.netflix.conductor:conductor-postgres-persistence"
+            ],
+            "locked": "42.2.6"
         },
         "org.rarefiedredis.redis:redis-java": {
             "firstLevelTransitive": [
