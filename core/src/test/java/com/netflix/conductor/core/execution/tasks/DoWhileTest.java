@@ -15,6 +15,7 @@ import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.service.ExecutionLockService;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -51,6 +52,7 @@ public class DoWhileTest {
     WorkflowStatusListener workflowStatusListener ;
     ExecutionDAOFacade executionDAOFacade;
     ExternalPayloadStorageUtils externalPayloadStorageUtils;
+    ExecutionLockService executionLockService;
     Configuration config;
     ParametersUtils parametersUtils;
 
@@ -66,9 +68,10 @@ public class DoWhileTest {
         workflowStatusListener = Mockito.mock(WorkflowStatusListener.class);
         executionDAOFacade = Mockito.mock(ExecutionDAOFacade.class);
         externalPayloadStorageUtils = Mockito.mock(ExternalPayloadStorageUtils.class);
+        executionLockService = Mockito.mock(ExecutionLockService.class);
         config = Mockito.mock(Configuration.class);
         provider = spy(new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService,
-                workflowStatusListener, executionDAOFacade, externalPayloadStorageUtils, config));
+                workflowStatusListener, executionDAOFacade, externalPayloadStorageUtils, config, executionLockService));
         loopWorkflowTask1 = new WorkflowTask();
         loopWorkflowTask1.setTaskReferenceName("task1__1");
         loopWorkflowTask1.setName("task1__1");
