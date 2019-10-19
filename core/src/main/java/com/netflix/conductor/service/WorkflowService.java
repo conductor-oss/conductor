@@ -23,14 +23,13 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
-
+import java.util.List;
+import java.util.Map;
 import javax.validation.Valid;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
-import java.util.List;
-import java.util.Map;
 
 public interface WorkflowService {
 
@@ -82,6 +81,22 @@ public interface WorkflowService {
     String startWorkflow(@NotEmpty(message = "Workflow name cannot be null or empty") String name, Integer version, String correlationId,
                          @Min(value = 0, message = "0 is the minimum priority value") @Max(value = 99, message = "99 is the maximum priority value") Integer priority,
                          Map<String, Object> input);
+
+    /**
+     * Start a new workflow. Returns the ID of the workflow instance that can be later used for tracking.
+     *
+     * @param name                            Name of the workflow you want to start.
+     * @param version                         Version of the workflow you want to start.
+     * @param correlationId                   CorrelationID of the workflow you want to start.
+     * @param priority                        Priority of the workflow you want to start.
+     * @param input                           Input to the workflow you want to start.
+     * @param externalInputPayloadStoragePath
+     * @param taskToDomain
+     * @param workflowDef                     - workflow definition
+     * @return the id of the workflow instance that can be use for tracking.
+     */
+    String startWorkflow(String name, Integer version, String correlationId, Integer priority, Map<String, Object> input,
+        String externalInputPayloadStoragePath, Map<String, String> taskToDomain, WorkflowDef workflowDef);
 
     /**
      * Lists workflows for the given correlation id.

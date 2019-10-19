@@ -1,7 +1,8 @@
 package com.netflix.conductor.core.utils;
 
-import org.junit.Before;
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -9,11 +10,11 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.Before;
+import org.junit.Test;
 
 public class TestJsonUtils {
+
     private JsonUtils jsonUtils;
 
     @Before
@@ -55,5 +56,26 @@ public class TestJsonUtils {
         jsonUtils.expand(map);
 
         assertTrue(map.get("externalId") instanceof LinkedHashMap);
+    }
+
+    @Test
+    public void testMultiLevelMap() {
+        Map<String, Object> parentMap = new HashMap<>();
+        parentMap.put("requestId", "abcde");
+        parentMap.put("status", "PROCESSED");
+
+        Map<String, Object> childMap = new HashMap<>();
+        childMap.put("path", "test/path");
+        childMap.put("type", "VIDEO");
+
+        Map<String, Object> grandChildMap = new HashMap<>();
+        grandChildMap.put("duration", "370");
+        grandChildMap.put("passed", "true");
+
+        childMap.put("metadata", grandChildMap);
+        parentMap.put("asset", childMap);
+
+        Object jsonObject = jsonUtils.expand(parentMap);
+        assertNotNull(jsonObject);
     }
 }
