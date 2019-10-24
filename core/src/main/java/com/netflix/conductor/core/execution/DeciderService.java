@@ -308,7 +308,7 @@ public class DeciderService {
         }
 
         workflow.setOutput(output);
-        externalPayloadStorageUtils.verifyAndUpload(workflow, PayloadType.WORKFLOW_OUTPUT);
+        externalizeWorkflowData(workflow);
     }
 
     private boolean checkForWorkflowCompletion(final Workflow workflow) throws TerminateWorkflowException {
@@ -475,6 +475,11 @@ public class DeciderService {
     void externalizeTaskData(Task task) {
         externalPayloadStorageUtils.verifyAndUpload(task, PayloadType.TASK_INPUT);
         externalPayloadStorageUtils.verifyAndUpload(task, PayloadType.TASK_OUTPUT);
+    }
+
+    void externalizeWorkflowData(Workflow workflow) {
+        externalPayloadStorageUtils.verifyAndUpload(workflow, PayloadType.WORKFLOW_INPUT);
+        externalPayloadStorageUtils.verifyAndUpload(workflow, PayloadType.WORKFLOW_OUTPUT);
     }
 
     @VisibleForTesting

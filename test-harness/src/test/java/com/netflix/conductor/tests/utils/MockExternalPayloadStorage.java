@@ -39,6 +39,8 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
     public static final String WORKFLOW_OUTPUT_PATH = "workflow/output";
     public static final String TASK_OUTPUT_PATH = "task/output";
 
+    public static final String TEMP_FILE_PATH = "/input.json";
+
     private ObjectMapper objectMapper = new ObjectMapper();
 
     @Override
@@ -53,6 +55,9 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
             case WORKFLOW_OUTPUT:
                 location.setPath(WORKFLOW_OUTPUT_PATH);
                 break;
+            case TASK_OUTPUT:
+                location.setPath(TASK_OUTPUT_PATH);
+                break;
         }
         return location;
     }
@@ -60,7 +65,7 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
     @Override
     public void upload(String path, InputStream payload, long payloadSize) {
         try {
-            URL filePathURL = MockExternalPayloadStorage.class.getResource("/input.json");
+            URL filePathURL = MockExternalPayloadStorage.class.getResource(TEMP_FILE_PATH);
             File file = new File(filePathURL.toURI());
             try (FileOutputStream outputStream = new FileOutputStream(file)) {
                 int read;
@@ -108,7 +113,7 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
                     return objectMapper.readValue(opStream, Map.class);
                 case INPUT_PAYLOAD_PATH:
                 case WORKFLOW_OUTPUT_PATH:
-                    InputStream ipStream = MockExternalPayloadStorage.class.getResourceAsStream("/input.json");
+                    InputStream ipStream = MockExternalPayloadStorage.class.getResourceAsStream(TEMP_FILE_PATH);
                     return objectMapper.readValue(ipStream, Map.class);
             }
         } catch (IOException e) {

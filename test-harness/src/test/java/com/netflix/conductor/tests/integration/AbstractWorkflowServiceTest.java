@@ -28,6 +28,7 @@ import static com.netflix.conductor.common.run.Workflow.WorkflowStatus.TERMINATE
 import static com.netflix.conductor.tests.utils.MockExternalPayloadStorage.INITIAL_WORKFLOW_INPUT_PATH;
 import static com.netflix.conductor.tests.utils.MockExternalPayloadStorage.INPUT_PAYLOAD_PATH;
 import static com.netflix.conductor.tests.utils.MockExternalPayloadStorage.TASK_OUTPUT_PATH;
+import static com.netflix.conductor.tests.utils.MockExternalPayloadStorage.TEMP_FILE_PATH;
 import static com.netflix.conductor.tests.utils.MockExternalPayloadStorage.WORKFLOW_OUTPUT_PATH;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -65,6 +66,7 @@ import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.tests.utils.UserTask;
+import java.io.FileOutputStream;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -2044,7 +2046,7 @@ public abstract class AbstractWorkflowServiceTest {
     }
 
     @Test
-    public void testSimpleWorkflowFailureWithTerminalError() {
+    public void testSimpleWorkflowFailureWithTerminalError() throws Exception {
         clearWorkflows();
 
         TaskDef taskDef = notFoundSafeGetTaskDef("junit_task_1");
@@ -2110,7 +2112,7 @@ public abstract class AbstractWorkflowServiceTest {
     }
 
     @Test
-    public void testSimpleWorkflow() {
+    public void testSimpleWorkflow() throws Exception {
 
         clearWorkflows();
 
@@ -2331,7 +2333,7 @@ public abstract class AbstractWorkflowServiceTest {
     }
 
     @Test
-    public void testWorkflowRerunWithSubWorkflows() {
+    public void testWorkflowRerunWithSubWorkflows() throws Exception {
         // Execute a workflow with sub-workflow
         String workflowId = this.runWorkflowWithSubworkflow();
         // Check it completed
@@ -2430,7 +2432,7 @@ public abstract class AbstractWorkflowServiceTest {
     }
 
     @Test
-    public void testSimpleWorkflowWithTaskSpecificDomain() {
+    public void testSimpleWorkflowWithTaskSpecificDomain() throws Exception {
 
         long startTimeTimestamp = System.currentTimeMillis();
 
@@ -2556,7 +2558,7 @@ public abstract class AbstractWorkflowServiceTest {
     }
 
     @Test
-    public void testSimpleWorkflowWithAllTaskInOneDomain() {
+    public void testSimpleWorkflowWithAllTaskInOneDomain() throws Exception {
 
         clearWorkflows();
         createWorkflowWithSubWorkflow();
@@ -2660,7 +2662,7 @@ public abstract class AbstractWorkflowServiceTest {
     }
 
     @After
-    public void clearWorkflows() {
+    public void clearWorkflows() throws Exception {
         List<String> workflowsWithVersion = metadataService.getWorkflowDefs().stream()
                 .map(def -> def.getName() + ":" + def.getVersion())
                 .collect(Collectors.toList());
@@ -2673,10 +2675,12 @@ public abstract class AbstractWorkflowServiceTest {
             }
         }
         queueDAO.queuesDetail().keySet().forEach(queueDAO::flush);
+
+        new FileOutputStream(this.getClass().getResource(TEMP_FILE_PATH).getPath()).close();
     }
 
     @Test
-    public void testLongRunning() {
+    public void testLongRunning() throws Exception {
 
         clearWorkflows();
 
@@ -2773,7 +2777,7 @@ public abstract class AbstractWorkflowServiceTest {
     }
 
     @Test
-    public void testResetWorkflowInProgressTasks() {
+    public void testResetWorkflowInProgressTasks() throws Exception {
 
         clearWorkflows();
 
@@ -5105,8 +5109,8 @@ public abstract class AbstractWorkflowServiceTest {
     }
 
     @Test
-    public void testWorkflowWithSystemTaskUsingExternalPayloadStorage() {
-        createConditionWFWithSystemTask();
+    public void testWorkflowWithConditionalSystemTaskUsingExternalPayloadStorage() {
+        createConditionalWFWithSystemTask();
         WorkflowDef workflowDef = metadataService.getWorkflowDef(CONDITIONAL_SYSTEM_WORKFLOW, 1);
         assertNotNull(workflowDef);
 
@@ -5181,6 +5185,102 @@ public abstract class AbstractWorkflowServiceTest {
         assertTrue(workflow.getOutput().isEmpty());
         assertNotNull(workflow.getExternalOutputPayloadStoragePath());
         assertEquals(WORKFLOW_OUTPUT_PATH, workflow.getExternalOutputPayloadStoragePath());
+    }
+
+    @Test
+    public void testWorkflowWithForkJoinUsingExternalPayloadStorage() {
+        createForkJoinWorkflow();
+
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(FORK_JOIN_WF, 1);
+        assertNotNull(workflowDef);
+
+        String workflowInputPath = "workflow/input";
+        String correlationId = "fork_join_external_storage";
+        String workflowId = workflowExecutor.startWorkflow(FORK_JOIN_WF, 1, correlationId, null, workflowInputPath, null, null);
+        assertNotNull(workflowId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertTrue("The workflow input should not be persisted", workflow.getInput().isEmpty());
+        assertEquals(workflowInputPath, workflow.getExternalInputPayloadStoragePath());
+        assertEquals(workflow.getReasonForIncompletion(), WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(4, workflow.getTasks().size());
+
+        // Polling for first task from left fork
+        Task task1 = workflowExecutionService.poll("junit_task_1", "junit.worker.task_1");
+        assertNotNull(task1);
+        assertEquals("junit_task_1", task1.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task1.getTaskId()));
+        assertEquals(workflowId, task1.getWorkflowInstanceId());
+
+        // Polling for second task from left fork should not return a task
+        Task task3 = workflowExecutionService.poll("junit_task_3", "junit.worker.task_3");
+        assertNull(task3);
+
+        // Polling for first task from right fork
+        Task task2 = workflowExecutionService.poll("junit_task_2", "junit.worker.task_2");
+        assertNotNull(task2);
+        assertEquals("junit_task_2", task2.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task2.getTaskId()));
+        assertEquals(workflowId, task2.getWorkflowInstanceId());
+
+        // Update first task of left fork to COMPLETED
+        task1.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task1);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(workflow.getReasonForIncompletion(), WorkflowStatus.RUNNING, workflow.getStatus());
+        assertEquals(5, workflow.getTasks().size());
+
+        // Polling for second task from left fork
+        task3 = workflowExecutionService.poll("junit_task_3", "junit.worker.task_3");
+        assertNotNull(task3);
+        assertEquals("junit_task_3", task3.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task3.getTaskId()));
+        assertEquals(workflowId, task3.getWorkflowInstanceId());
+
+        // Update both tasks to COMPLETED with output in external storage
+        task2.setOutputData(null);
+        task2.setExternalOutputPayloadStoragePath(TASK_OUTPUT_PATH);
+        task2.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task2);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+
+        task3.setOutputData(null);
+        task3.setExternalOutputPayloadStoragePath(TASK_OUTPUT_PATH);
+        task3.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task3);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(6, workflow.getTasks().size());
+        assertTrue("The JOIN task output should not be persisted", workflow.getTasks().get(3).getOutputData().isEmpty());
+        assertEquals(TASK_OUTPUT_PATH, workflow.getTasks().get(3).getExternalOutputPayloadStoragePath());
+
+        // Polling for task after the JOIN task
+        Task task4 = workflowExecutionService.poll("junit_task_4", "junit.worker.task_4");
+        assertNotNull(task4);
+        assertEquals("junit_task_4", task4.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task4.getTaskId()));
+        assertEquals(workflowId, task4.getWorkflowInstanceId());
+
+        task4.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task4);
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertTrue("The workflow input should not be persisted", workflow.getInput().isEmpty());
+        assertEquals(workflowInputPath, workflow.getExternalInputPayloadStoragePath());
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals(6, workflow.getTasks().size());
+        assertTrue("The task_2 output should not be persisted", workflow.getTasks().get(2).getOutputData().isEmpty());
+        assertEquals(TASK_OUTPUT_PATH, workflow.getTasks().get(3).getExternalOutputPayloadStoragePath());
+        assertTrue("The JOIN task output should not be persisted", workflow.getTasks().get(3).getOutputData().isEmpty());
+        assertEquals(TASK_OUTPUT_PATH, workflow.getTasks().get(3).getExternalOutputPayloadStoragePath());
+        assertTrue("The task_3 output should not be persisted", workflow.getTasks().get(4).getOutputData().isEmpty());
+        assertEquals(TASK_OUTPUT_PATH, workflow.getTasks().get(3).getExternalOutputPayloadStoragePath());
     }
 
     @Test
@@ -6018,7 +6118,7 @@ public abstract class AbstractWorkflowServiceTest {
         }
     }
 
-    private void createConditionWFWithSystemTask() {
+    private void createConditionalWFWithSystemTask() {
         WorkflowDef defConditionalHttp = new WorkflowDef();
         defConditionalHttp.setName(CONDITIONAL_SYSTEM_WORKFLOW);
         defConditionalHttp.setDescription(defConditionalHttp.getName());
@@ -6275,7 +6375,7 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.updateWorkflowDef(workflowDef);
     }
 
-    private String runWorkflowWithSubworkflow() {
+    private String runWorkflowWithSubworkflow() throws Exception {
         clearWorkflows();
         createWorkflowWithSubWorkflow();
 
