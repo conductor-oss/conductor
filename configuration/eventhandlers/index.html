@@ -272,12 +272,13 @@
 <h3 id="configuration">Configuration<a class="headerlink" href="#configuration" title="Permanent link">&para;</a></h3>
 <p>Event Handlers are configured via <code>/event/</code> APIs.</p>
 <h4 id="structure">Structure:<a class="headerlink" href="#structure" title="Permanent link">&para;</a></h4>
-<pre class="codehilite"><code class="language-json">{
-  &quot;name&quot; : &quot;descriptive unique name&quot;,
-  &quot;event&quot;: &quot;event_type:event_location&quot;,
-  &quot;condition&quot;: &quot;boolean condition&quot;,
-  &quot;actions&quot;: [&quot;see examples below&quot;]
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span> <span class="p">:</span> <span class="s2">&quot;descriptive unique name&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;event&quot;</span><span class="p">:</span> <span class="s2">&quot;event_type:event_location&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;condition&quot;</span><span class="p">:</span> <span class="s2">&quot;boolean condition&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;actions&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;see examples below&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <h4 id="condition">Condition<a class="headerlink" href="#condition" title="Permanent link">&para;</a></h4>
@@ -285,14 +286,15 @@
 Actions are executed only when the condition evaluates to <code>true</code>.</p>
 <p><strong>Examples</strong></p>
 <p>Given the following payload in the message:</p>
-<pre class="codehilite"><code class="language-json">{
-    &quot;fileType&quot;: &quot;AUDIO&quot;,
-    &quot;version&quot;: 3,
-    &quot;metadata&quot;: {
-       &quot;length&quot;: 300,
-       &quot;codec&quot;: &quot;aac&quot;
-    }
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;fileType&quot;</span><span class="p">:</span> <span class="s2">&quot;AUDIO&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+    <span class="nt">&quot;metadata&quot;</span><span class="p">:</span> <span class="p">{</span>
+       <span class="nt">&quot;length&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
+       <span class="nt">&quot;codec&quot;</span><span class="p">:</span> <span class="s2">&quot;aac&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <table>
@@ -319,44 +321,47 @@ Actions are executed only when the condition evaluates to <code>true</code>.</p>
 </table>
 <h3 id="actions">Actions<a class="headerlink" href="#actions" title="Permanent link">&para;</a></h3>
 <p><strong>Start A Workflow</strong></p>
-<pre class="codehilite"><code class="language-json">{
-    &quot;action&quot;: &quot;start_workflow&quot;,
-    &quot;start_workflow&quot;: {
-        &quot;name&quot;: &quot;WORKFLOW_NAME&quot;,
-        &quot;version&quot;: &quot;&lt;optional_param&gt;&quot;,
-        &quot;input&quot;: {
-            &quot;param1&quot;: &quot;${param1}&quot; 
-        }
-    }
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;start_workflow&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;start_workflow&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;WORKFLOW_NAME&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="s2">&quot;&lt;optional_param&gt;&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;param1&quot;</span><span class="p">:</span> <span class="s2">&quot;${param1}&quot;</span> 
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <p><strong>Complete Task</strong>*</p>
-<pre class="codehilite"><code class="language-json">{
-    &quot;action&quot;: &quot;complete_task&quot;,
-    &quot;complete_task&quot;: {
-      &quot;workflowId&quot;: &quot;${workflowId}&quot;,
-      &quot;taskRefName&quot;: &quot;task_1&quot;,
-      &quot;output&quot;: {
-        &quot;response&quot;: &quot;${result}&quot;
-      }
-    },
-    &quot;expandInlineJSON&quot;: true
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;complete_task&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;complete_task&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;workflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflowId}&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;taskRefName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;output&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;response&quot;</span><span class="p">:</span> <span class="s2">&quot;${result}&quot;</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;expandInlineJSON&quot;</span><span class="p">:</span> <span class="kc">true</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <p><strong>Fail Task</strong>*</p>
-<pre class="codehilite"><code class="language-json">{
-    &quot;action&quot;: &quot;fail_task&quot;,
-    &quot;fail_task&quot;: {
-      &quot;workflowId&quot;: &quot;${workflowId}&quot;,
-      &quot;taskRefName&quot;: &quot;task_1&quot;,
-      &quot;output&quot;: {
-        &quot;response&quot;: &quot;${result}&quot;
-      }
-    },
-    &quot;expandInlineJSON&quot;: true
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;action&quot;</span><span class="p">:</span> <span class="s2">&quot;fail_task&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;fail_task&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;workflowId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflowId}&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;taskRefName&quot;</span><span class="p">:</span> <span class="s2">&quot;task_1&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;output&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;response&quot;</span><span class="p">:</span> <span class="s2">&quot;${result}&quot;</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;expandInlineJSON&quot;</span><span class="p">:</span> <span class="kc">true</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <p>Input for starting a workflow and output when completing / failing task follows the same <a href="/configuration/workflowdef/#wiring-inputs-and-outputs">expressions</a> used for wiring workflow inputs.</p>
