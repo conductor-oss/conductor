@@ -20,8 +20,7 @@ import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
 import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.SUB_WORKFLOW;
-import static com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType.TASK_OUTPUT;
-import static com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TERMINATE;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.INVALID_INPUT;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.NOT_FOUND;
@@ -50,13 +49,11 @@ import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
-import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
@@ -67,7 +64,6 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
 import javax.inject.Inject;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
@@ -89,7 +85,6 @@ public class WorkflowExecutor {
     private final ExecutionDAOFacade executionDAOFacade;
 
     private WorkflowStatusListener workflowStatusListener;
-    private ExternalPayloadStorageUtils externalPayloadStorageUtils;
 
     private int activeWorkerLastPollInSecs;
     public static final String DECIDER_QUEUE = "_deciderQueue";
@@ -103,7 +98,6 @@ public class WorkflowExecutor {
             MetadataMapperService metadataMapperService,
             WorkflowStatusListener workflowStatusListener,
             ExecutionDAOFacade executionDAOFacade,
-            ExternalPayloadStorageUtils externalPayloadStorageUtils,
             Configuration config
     ) {
         this.deciderService = deciderService;
@@ -114,7 +108,6 @@ public class WorkflowExecutor {
         this.executionDAOFacade = executionDAOFacade;
         this.activeWorkerLastPollInSecs = config.getIntProperty("tasks.active.worker.lastpoll", 10);
         this.workflowStatusListener = workflowStatusListener;
-        this.externalPayloadStorageUtils = externalPayloadStorageUtils;
     }
 
     /**
@@ -386,7 +379,7 @@ public class WorkflowExecutor {
 
         workflow.setInput(workflowInput);
         if (workflow.getInput() != null) {
-            externalPayloadStorageUtils.verifyAndUpload(workflow, WORKFLOW_INPUT);
+            deciderService.externalizeWorkflowData(workflow);
         } else {
             workflow.setInput(null);
             workflow.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
@@ -807,7 +800,7 @@ public class WorkflowExecutor {
         task.setOutputData(taskResult.getOutputData());
 
         if (task.getOutputData() != null) {
-            externalPayloadStorageUtils.verifyAndUpload(task, TASK_OUTPUT);
+            deciderService.externalizeTaskData(task);
         } else {
             task.setExternalOutputPayloadStoragePath(taskResult.getExternalOutputPayloadStoragePath());
         }
@@ -953,9 +946,16 @@ public class WorkflowExecutor {
             for (Task task : outcome.tasksToBeScheduled) {
                 if (isSystemTask.and(isNonTerminalTask).test(task)) {
                     WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
-
+                    Workflow workflowInstance = deciderService.populateWorkflowAndTaskData(workflow);
                     try {
-                        if (!workflowSystemTask.isAsync() && workflowSystemTask.execute(workflow, task, this)) {
+                        if (!workflowSystemTask.isAsync() && workflowSystemTask.execute(workflowInstance, task, this)) {
+                            // FIXME: temporary hack to workaround TERMINATE task
+                            if (TERMINATE.name().equals(task.getTaskType())) {
+                                workflow.setStatus(workflowInstance.getStatus());
+                                workflow.setOutput(workflowInstance.getOutput());
+                                deciderService.externalizeWorkflowData(workflow);
+                            }
+                            deciderService.externalizeTaskData(task);
                             tasksToBeUpdated.add(task);
                             stateChanged = true;
                         }
