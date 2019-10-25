@@ -27,7 +27,7 @@ import com.netflix.dyno.queues.redis.RedisQueues;
 import com.netflix.dyno.queues.shard.DynoShardSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import redis.clients.jedis.JedisCommands;
+import redis.clients.jedis.commands.JedisCommands;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;

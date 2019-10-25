@@ -378,6 +378,7 @@ public class ExecutionService {
 					}
 				})
 				.filter(Objects::nonNull)
+				.distinct()
 				.collect(Collectors.toList());
 		int missing = taskSummarySearchResult.getResults().size() - workflowSummaries.size();
 		long totalHits = taskSummarySearchResult.getTotalHits() - missing;

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -13,15 +13,10 @@
 package com.netflix.conductor.dyno;
 
 import com.google.inject.Singleton;
-
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.discovery.DiscoveryClient;
 import com.netflix.dyno.connectionpool.exception.DynoException;
 import com.netflix.dyno.jedis.DynoJedisClient;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -30,25 +25,25 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-
 import javax.inject.Inject;
-
-import redis.clients.jedis.JedisCommands;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import redis.clients.jedis.ScanParams;
 import redis.clients.jedis.ScanResult;
 import redis.clients.jedis.Tuple;
-import redis.clients.jedis.params.sortedset.ZAddParams;
+import redis.clients.jedis.commands.JedisCommands;
+import redis.clients.jedis.params.ZAddParams;
 
 /**
- *
- * @author Viren Proxy for the Dynomite client
+ * @author Viren
+ * Proxy for the Dynomite client
  */
 @Singleton
 public class DynoProxy {
 
     private static Logger logger = LoggerFactory.getLogger(DynoProxy.class);
 
-    protected DiscoveryClient dc;
+    protected DiscoveryClient discoveryClient;
 
     protected JedisCommands dynoClient;
 
@@ -57,18 +52,18 @@ public class DynoProxy {
         this.dynoClient = dynoClient;
     }
 
-    @Deprecated
     /**
      * @deprecated The preferred method of construction for this use case is via DynoProxyDiscoveryProvider.
      */
-    public DynoProxy(DiscoveryClient dc, Configuration config) throws DynoException, InterruptedException, ExecutionException {
-        this.dc = dc;
+    @Deprecated
+    public DynoProxy(DiscoveryClient discoveryClient, Configuration config) throws DynoException, InterruptedException, ExecutionException {
+        this.discoveryClient = discoveryClient;
         String cluster = config.getProperty("workflow.dynomite.cluster", null);
         String applicationName = config.getAppId();
         this.dynoClient = new DynoJedisClient.Builder()
                 .withApplicationName(applicationName)
                 .withDynomiteClusterName(cluster)
-                .withDiscoveryClient(dc)
+                .withDiscoveryClient(discoveryClient)
                 .build();
     }
 
@@ -160,9 +155,9 @@ public class DynoProxy {
         Map<String, String> m = new HashMap<>();
         int cursor = 0;
         do {
-            ScanResult<Entry<String, String>> sr = dynoClient.hscan(key, "" + cursor);
-            cursor = Integer.parseInt(sr.getStringCursor());
-            for (Entry<String, String> r : sr.getResult()) {
+            ScanResult<Entry<String, String>> scanResult = dynoClient.hscan(key, "" + cursor);
+            cursor = Integer.parseInt(scanResult.getCursor());
+            for (Entry<String, String> r : scanResult.getResult()) {
                 m.put(r.getKey(), r.getValue());
             }
             if (m.size() > count) {
@@ -178,9 +173,9 @@ public class DynoProxy {
         JedisCommands dyno = dynoClient;
         int cursor = 0;
         do {
-            ScanResult<Entry<String, String>> sr = dyno.hscan(key, "" + cursor);
-            cursor = Integer.parseInt(sr.getStringCursor());
-            for (Entry<String, String> r : sr.getResult()) {
+            ScanResult<Entry<String, String>> scanResult = dyno.hscan(key, "" + cursor);
+            cursor = Integer.parseInt(scanResult.getCursor());
+            for (Entry<String, String> r : scanResult.getResult()) {
                 m.put(r.getKey(), r.getValue());
             }
         } while (cursor > 0);
@@ -200,7 +195,7 @@ public class DynoProxy {
         int cursor = 0;
         do {
             ScanResult<Entry<String, String>> sr = client.hscan(key, "" + cursor);
-            cursor = Integer.parseInt(sr.getStringCursor());
+            cursor = Integer.parseInt(sr.getCursor());
             List<Entry<String, String>> result = sr.getResult();
             for (Entry<String, String> e : result) {
                 keys.add(e.getKey());
@@ -248,9 +243,9 @@ public class DynoProxy {
         sp.count(50);
 
         do {
-            ScanResult<String> sr = client.sscan(key, "" + cursor, sp);
-            cursor = Integer.parseInt(sr.getStringCursor());
-            r.addAll(sr.getResult());
+            ScanResult<String> scanResult = client.sscan(key, "" + cursor, sp);
+            cursor = Integer.parseInt(scanResult.getCursor());
+            r.addAll(scanResult.getResult());
 
         } while (cursor > 0);
 
