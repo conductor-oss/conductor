@@ -77,6 +77,10 @@ public class ZookeeperLock implements Lock {
         return false;
     }
 
+    public boolean acquireLock(String lockId, long timeToTry, long leaseTime, TimeUnit unit) {
+        return acquireLock(lockId, timeToTry, unit);
+    }
+
     public void releaseLock(String lockId) {
         if (StringUtils.isEmpty(lockId)) {
             throw new IllegalArgumentException("lockId cannot be NULL or empty: lockId=" + lockId);
