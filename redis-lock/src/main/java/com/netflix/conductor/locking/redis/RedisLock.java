@@ -23,12 +23,10 @@ public class RedisLock implements Lock {
     private RedissonClient redisson;
     private final int connectionTimeout = 10000;
     private static String LOCK_NAMESPACE = "";
-    private static String LOCK_LEASE_TIME;
 
     @Inject
     public RedisLock(RedisLockConfiguration configuration) {
         LOCK_NAMESPACE = configuration.getProperty("decider.locking.namespace", "");
-        LOCK_LEASE_TIME = configuration.getProperty("locking.leaseTimeInSeconds", "60");
         RedisLockConfiguration.REDIS_SERVER_TYPE redisServerType = configuration.getRedisServerType();
         try {
             redisServerType = configuration.getRedisServerType();
@@ -58,36 +56,45 @@ public class RedisLock implements Lock {
     }
 
     @Override
-    public boolean acquireLock(String lockId) {
+    public void acquireLock(String lockId) {
         RLock lock = redisson.getLock(parseLockId(lockId));
-        return lock.tryLock();
+        lock.lock();
     }
 
     @Override
     public boolean acquireLock(String lockId, long timeToTry, TimeUnit unit) {
         RLock lock = redisson.getLock(parseLockId(lockId));
         try {
-            return lock.tryLock(timeToTry, LOCK_LEASE_TIME, unit);
+            return lock.tryLock(timeToTry, unit);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            LOGGER.debug("Failed in acquireLock: ", e);
         }
         return false;
     }
 
+    /**
+     *
+     * @param lockId resource to lock on
+     * @param timeToTry blocks up to timeToTry duration in attempt to acquire the lock
+     * @param leaseTime Lock lease expiration duration. Redisson default is -1, meaning it holds the lock until explicitly unlocked.
+     * @param unit time unit
+     * @return
+     */
+    @Override
     public boolean acquireLock(String lockId, long timeToTry, long leaseTime, TimeUnit unit) {
         RLock lock = redisson.getLock(parseLockId(lockId));
         try {
             return lock.tryLock(timeToTry, leaseTime, unit);
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            LOGGER.debug("Failed in acquireLock: ", e);
         }
         return false;
     }
 
     @Override
-    public boolean releaseLock(String lockId) {
+    public void releaseLock(String lockId) {
         RLock lock = redisson.getLock(parseLockId(lockId));
-        return lock.forceUnlock();
+        lock.unlock();
     }
 
     /**
@@ -96,8 +103,8 @@ public class RedisLock implements Lock {
      * @return
      */
     @Override
-    public boolean deleteLock(String lockId) {
-        return true;
+    public void deleteLock(String lockId) {
+        // Noop for Redlock algorithm as releaseLock / unlock deletes it.
     }
 
     private String parseLockId(String lockId) {

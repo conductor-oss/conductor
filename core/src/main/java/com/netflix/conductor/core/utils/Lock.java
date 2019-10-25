@@ -18,9 +18,10 @@ import java.util.concurrent.TimeUnit;
 public interface Lock {
 
     /**
+     * acquires a re-entrant lock on lockId, blocks indefinitely on lockId until it succeeds
      * @param lockId resource to lock on
      */
-    boolean acquireLock(String lockId);
+    void acquireLock(String lockId);
 
     /**
      * acquires a re-entrant lock on lockId, blocks for timeToTry duration before giving up
@@ -31,7 +32,17 @@ public interface Lock {
      */
     boolean acquireLock(String lockId, long timeToTry, TimeUnit unit);
 
-    boolean releaseLock(String lockId);
+    /**
+     * acquires a re-entrant lock on lockId, blocks for timeToTry duration before giving up
+     * @param lockId resource to lock on
+     * @param timeToTry blocks up to timeToTry duration in attempt to acquire the lock
+     * @param leaseTime Lock lease expiration duration.
+     * @param unit time unit
+     * @return
+     */
+    boolean acquireLock(String lockId, long timeToTry, long leaseTime, TimeUnit unit);
 
-    boolean deleteLock(String lockId);
+    void releaseLock(String lockId);
+
+    void deleteLock(String lockId);
 }
