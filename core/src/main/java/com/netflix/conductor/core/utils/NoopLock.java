@@ -4,7 +4,9 @@ import java.util.concurrent.TimeUnit;
 
 public class NoopLock implements Lock {
     @Override
-    public void acquireLock(String lockId) {}
+    public boolean acquireLock(String lockId) {
+        return true; // Always acquire lock.
+    }
 
     @Override
     public boolean acquireLock(String lockId, long timeToTry, TimeUnit unit) {
@@ -12,8 +14,17 @@ public class NoopLock implements Lock {
     }
 
     @Override
-    public void releaseLock(String lockId) {}
+    public boolean acquireLock(String lockId, long timeToTry, long leaseTime, TimeUnit unit) {
+        return true;
+    }
 
     @Override
-    public void deleteLock(String lockId) {}
+    public boolean releaseLock(String lockId) {
+        return true;
+    }
+
+    @Override
+    public boolean deleteLock(String lockId) {
+        return true;
+    }
 }

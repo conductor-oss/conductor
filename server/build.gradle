@@ -29,6 +29,7 @@ dependencies {
     compile project(':conductor-es5-persistence')
     compile project(':conductor-grpc-server')
     compile project(':conductor-zookeeper-lock')
+    compile project(':conductor-redis-lock')
 
     compile "com.netflix.runtime:health-guice:${revHealth}"
 

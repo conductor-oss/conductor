@@ -17,6 +17,7 @@ import com.netflix.conductor.core.utils.DummyPayloadStorage;
 import com.netflix.conductor.core.utils.S3PayloadStorage;
 import com.netflix.conductor.dao.RedisWorkflowModule;
 import com.netflix.conductor.elasticsearch.ElasticSearchModule;
+import com.netflix.conductor.locking.redis.config.RedisLockModule;
 import com.netflix.conductor.mysql.MySQLWorkflowModule;
 import com.netflix.conductor.server.DynomiteClusterModule;
 import com.netflix.conductor.server.JerseyModule;
@@ -113,9 +114,30 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
         }
 
         if (configuration.enableWorkflowExecutionLock()) {
-            modules.add(new ZookeeperModule());
-        } else {
-            modules.add(new NoopLockModule());
+            Configuration.LOCKING_SERVER lockingServer;
+            try {
+                lockingServer = configuration.getLockingServer();
+            } catch (IllegalArgumentException ie) {
+                final String message = "Invalid locking server name: " + configuration.getLockingServerString()
+                        + ", supported values are: " + Arrays.toString(Configuration.LOCKING_SERVER.values());
+                logger.error(message);
+                throw new ProvisionException(message, ie);
+            }
+
+            switch (lockingServer) {
+                case REDIS:
+                    modules.add(new RedisLockModule());
+                    logger.info("Starting locking module using Redis cluster.");
+                    break;
+                case ZOOKEEPER:
+                    modules.add(new ZookeeperModule());
+                    logger.info("Starting locking module using Zookeeper cluster.");
+                    break;
+                default:
+                    modules.add(new NoopLockModule());
+                    logger.info("Starting locking module using Noop Lock. Are you sure with this setting?");
+                    break;
+            }
         }
 
         ExternalPayloadStorageType externalPayloadStorageType = null;

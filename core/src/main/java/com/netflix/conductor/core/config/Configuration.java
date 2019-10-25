@@ -67,14 +67,25 @@ public interface Configuration {
     String EXECUTION_LOCK_ENABLED_PROPERTY_NAME = "decider.locking.enabled";
     boolean EXECUTION_LOCK_ENABLED_DEFAULT_VALUE = false;
 
+    String LOCKING_SERVER_PROPERTY_NAME = "locking.server";
+    String LOCKING_SERVER_DEFAULT_VALUE = "noop_lock";
+
     //TODO add constants for input/output external payload related properties.
 
     default DB getDB() {
         return DB.valueOf(getDBString());
     }
 
+    default LOCKING_SERVER getLockingServer() {
+        return LOCKING_SERVER.valueOf(getLockingServerString());
+    }
+
     default String getDBString() {
         return getProperty(DB_PROPERTY_NAME, DB_DEFAULT_VALUE).toUpperCase();
+    }
+
+    default String getLockingServerString() {
+        return getProperty(LOCKING_SERVER_PROPERTY_NAME, LOCKING_SERVER_DEFAULT_VALUE).toUpperCase();
     }
 
     /**
@@ -252,5 +263,9 @@ public interface Configuration {
 
     enum DB {
         REDIS, DYNOMITE, MEMORY, REDIS_CLUSTER, MYSQL, CASSANDRA, REDIS_SENTINEL
+    }
+
+    enum LOCKING_SERVER {
+        NOOP_LOCK, REDIS, ZOOKEEPER
     }
 }

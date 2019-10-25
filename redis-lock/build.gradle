@@ -1,0 +1,10 @@
+
+dependencies {
+
+    compile project(':conductor-core')
+
+    compile 'org.redisson:redisson:3.11.4'
+
+    testCompile "com.github.kstyrc:embedded-redis:0.6"
+    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
+}
