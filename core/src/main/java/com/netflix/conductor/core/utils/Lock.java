@@ -32,6 +32,16 @@ public interface Lock {
      */
     boolean acquireLock(String lockId, long timeToTry, TimeUnit unit);
 
+    /**
+     * acquires a re-entrant lock on lockId, blocks for timeToTry duration before giving up
+     * @param lockId resource to lock on
+     * @param timeToTry blocks up to timeToTry duration in attempt to acquire the lock
+     * @param leaseTime Lock lease expiration duration.
+     * @param unit time unit
+     * @return
+     */
+    boolean acquireLock(String lockId, long timeToTry, long leaseTime, TimeUnit unit);
+
     void releaseLock(String lockId);
 
     void deleteLock(String lockId);

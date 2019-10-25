@@ -17,17 +17,36 @@ public class ExecutionLockService {
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionLockService.class);
     private final Configuration config;
     private final Provider<Lock> lockProvider;
+    private static long LOCK_TIME_TO_TRY;
+    private static long LOCK_LEASE_TIME;
 
     @Inject
     public ExecutionLockService(Configuration config, Provider<Lock> lockProvider) {
         this.config = config;
         this.lockProvider = lockProvider;
+        LOCK_LEASE_TIME = config.getLongProperty("locking.leaseTimeInMilliSeconds", 60000);
+        LOCK_TIME_TO_TRY = config.getLongProperty("locking.lockTimeToTryInMilliSeconds", 500);
     }
 
+    /**
+     * Tries to acquire lock with reasonable timeToTry duration and lease time. Exits if a lock cannot be acquired.
+     * Considering that the workflow decide can be triggered through multiple entry points, and periodically through the sweeper service,
+     * do not block on acquiring the lock, as the order of execution of decides on a workflow doesn't matter.
+     * @param lockId
+     * @return
+     */
     public boolean acquireLock(String lockId) {
+        return acquireLock(lockId, LOCK_TIME_TO_TRY, LOCK_LEASE_TIME);
+    }
+
+    public boolean acquireLock(String lockId, long timeToTryMs) {
+        return acquireLock(lockId, timeToTryMs, LOCK_LEASE_TIME);
+    }
+
+    public boolean acquireLock(String lockId, long timeToTryMs, long leaseTimeMs) {
         if (config.enableWorkflowExecutionLock()) {
             Lock lock = lockProvider.get();
-            if (!lock.acquireLock(lockId, 2, TimeUnit.MILLISECONDS)) {
+            if (!lock.acquireLock(lockId, timeToTryMs, leaseTimeMs, TimeUnit.MILLISECONDS)) {
                 LOGGER.info("Thread {} failed to acquire lock to lockId {}.", Thread.currentThread().getId(), lockId);
                 Monitors.recordAcquireLockUnsuccessful(lockId);
                 return false;
@@ -51,7 +70,7 @@ public class ExecutionLockService {
 
     public void releaseLock(String lockId) {
         if (config.enableWorkflowExecutionLock()) {
-            Lock  lock = lockProvider.get();
+            Lock lock = lockProvider.get();
             lock.releaseLock(lockId);
             LOGGER.debug("Thread {} released lock to lockId {}.", Thread.currentThread().getId(), lockId);
         }

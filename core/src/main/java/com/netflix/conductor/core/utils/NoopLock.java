@@ -12,6 +12,11 @@ public class NoopLock implements Lock {
     }
 
     @Override
+    public boolean acquireLock(String lockId, long timeToTry, long leaseTime, TimeUnit unit) {
+        return true;
+    }
+
+    @Override
     public void releaseLock(String lockId) {}
 
     @Override
