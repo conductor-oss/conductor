@@ -55,21 +55,17 @@ public class RedisLockTest {
     }
 
     @Test
-    public void testLocking() throws IOException {
+    public void testLocking() {
         redisson.getKeys().flushall();
         String lockId = "abcd-1234";
-        redisLock.acquireLock(lockId);
-
-        // get the lock back
-        RLock lock = redisson.getLock(lockId);
-        assertTrue(lock.isLocked());
+        assertTrue(redisLock.acquireLock(lockId, 1000, 1000, TimeUnit.MILLISECONDS));
     }
 
     @Test
     public void testLockExpiration() throws InterruptedException {
         redisson.getKeys().flushall();
         String lockId = "abcd-1234";
-        boolean isLocked = redisLock.acquireLock(lockId, 100, 1000, TimeUnit.MILLISECONDS);
+        boolean isLocked = redisLock.acquireLock(lockId, 1000, 1000, TimeUnit.MILLISECONDS);
         assertTrue(isLocked);
 
         Thread.sleep(2000);
@@ -82,13 +78,13 @@ public class RedisLockTest {
     public void testLockReentry() throws InterruptedException {
         redisson.getKeys().flushall();
         String lockId = "abcd-1234";
-        boolean isLocked = redisLock.acquireLock(lockId, 100, 60000, TimeUnit.MILLISECONDS);
+        boolean isLocked = redisLock.acquireLock(lockId, 1000, 60000, TimeUnit.MILLISECONDS);
         assertTrue(isLocked);
 
         Thread.sleep(1000);
 
         // get the lock back
-        isLocked = redisLock.acquireLock(lockId, 100, 1000, TimeUnit.MILLISECONDS);
+        isLocked = redisLock.acquireLock(lockId, 1000, 1000, TimeUnit.MILLISECONDS);
         assertTrue(isLocked);
 
         RLock lock = redisson.getLock(lockId);
@@ -101,7 +97,7 @@ public class RedisLockTest {
         redisson.getKeys().flushall();
         String lockId = "abcd-1234";
 
-        boolean isLocked = redisLock.acquireLock(lockId, 100, 10000, TimeUnit.MILLISECONDS);
+        boolean isLocked = redisLock.acquireLock(lockId, 1000, 10000, TimeUnit.MILLISECONDS);
         assertTrue(isLocked);
 
         redisLock.releaseLock(lockId);
@@ -194,7 +190,7 @@ public class RedisLockTest {
         redisson.getKeys().flushall();
         String lockId = "abcd-1234";
 
-        boolean isLocked = redisLock.acquireLock(lockId, 100, 10000, TimeUnit.MILLISECONDS);
+        boolean isLocked = redisLock.acquireLock(lockId, 1000, 10000, TimeUnit.MILLISECONDS);
         assertTrue(isLocked);
 
         // Delete key from the cluster to reacquire

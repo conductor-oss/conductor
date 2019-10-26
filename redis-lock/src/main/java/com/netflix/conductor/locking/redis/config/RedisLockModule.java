@@ -1,7 +1,6 @@
 package com.netflix.conductor.locking.redis.config;
 
 import com.google.inject.AbstractModule;
-import com.google.inject.Provides;
 import com.google.inject.Singleton;
 import com.netflix.conductor.core.utils.Lock;
 import com.netflix.conductor.locking.redis.RedisLock;
