@@ -82,18 +82,17 @@ public class RedisLockTest {
     public void testLockReentry() throws InterruptedException {
         redisson.getKeys().flushall();
         String lockId = "abcd-1234";
-        boolean isLocked = redisLock.acquireLock(lockId, 100, 2000, TimeUnit.MILLISECONDS);
+        boolean isLocked = redisLock.acquireLock(lockId, 100, 60000, TimeUnit.MILLISECONDS);
         assertTrue(isLocked);
 
         Thread.sleep(1000);
 
         // get the lock back
-        isLocked = redisLock.acquireLock(lockId, 100, 2000, TimeUnit.MILLISECONDS);
+        isLocked = redisLock.acquireLock(lockId, 100, 1000, TimeUnit.MILLISECONDS);
         assertTrue(isLocked);
 
         RLock lock = redisson.getLock(lockId);
-        long ttl = lock.remainTimeToLive();
-        assertTrue(ttl > 0);
+        assertTrue(isLocked);
     }
 
 
