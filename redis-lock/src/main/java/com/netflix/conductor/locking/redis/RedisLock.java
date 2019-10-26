@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import com.google.inject.ProvisionException;
 import com.netflix.conductor.core.utils.Lock;
 import com.netflix.conductor.locking.redis.config.RedisLockConfiguration;
+import com.netflix.conductor.metrics.Monitors;
 import org.apache.commons.lang3.StringUtils;
 import org.redisson.Redisson;
 import org.redisson.api.RLock;
@@ -66,8 +67,9 @@ public class RedisLock implements Lock {
         RLock lock = redisson.getLock(parseLockId(lockId));
         try {
             return lock.tryLock(timeToTry, unit);
-        } catch (InterruptedException e) {
-            LOGGER.debug("Failed in acquireLock: ", e);
+        } catch (Exception e) {
+            LOGGER.error("Failed in acquireLock: ", e);
+            Monitors.recordAcquireLockFailure(e.getClass().getName());
         }
         return false;
     }
@@ -85,8 +87,9 @@ public class RedisLock implements Lock {
         RLock lock = redisson.getLock(parseLockId(lockId));
         try {
             return lock.tryLock(timeToTry, leaseTime, unit);
-        } catch (InterruptedException e) {
-            LOGGER.debug("Failed in acquireLock: ", e);
+        } catch (Exception e) {
+            LOGGER.error("Failed in acquireLock: ", e);
+            Monitors.recordAcquireLockFailure(e.getClass().getName());
         }
         return false;
     }

@@ -25,7 +25,7 @@ public class ExecutionLockService {
         this.config = config;
         this.lockProvider = lockProvider;
         LOCK_LEASE_TIME = config.getLongProperty("locking.leaseTimeInMilliSeconds", 60000);
-        LOCK_TIME_TO_TRY = config.getLongProperty("locking.lockTimeToTryInMilliSeconds", 100);
+        LOCK_TIME_TO_TRY = config.getLongProperty("locking.lockTimeToTryInMilliSeconds", 500);
     }
 
     /**
@@ -36,9 +36,17 @@ public class ExecutionLockService {
      * @return
      */
     public boolean acquireLock(String lockId) {
+        return acquireLock(lockId, LOCK_TIME_TO_TRY, LOCK_LEASE_TIME);
+    }
+
+    public boolean acquireLock(String lockId, long timeToTryMs) {
+        return acquireLock(lockId, timeToTryMs, LOCK_LEASE_TIME);
+    }
+
+    public boolean acquireLock(String lockId, long timeToTryMs, long leaseTimeMs) {
         if (config.enableWorkflowExecutionLock()) {
             Lock lock = lockProvider.get();
-            if (!lock.acquireLock(lockId, LOCK_TIME_TO_TRY, LOCK_LEASE_TIME, TimeUnit.MILLISECONDS)) {
+            if (!lock.acquireLock(lockId, timeToTryMs, leaseTimeMs, TimeUnit.MILLISECONDS)) {
                 LOGGER.info("Thread {} failed to acquire lock to lockId {}.", Thread.currentThread().getId(), lockId);
                 Monitors.recordAcquireLockUnsuccessful(lockId);
                 return false;

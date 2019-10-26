@@ -283,4 +283,8 @@ public class Monitors {
 	public static void recordAcquireLockUnsuccessful(String lockId) {
 		counter(classQualifier, "acquire_lock_unsuccessful", "lockId", lockId);
 	}
+
+	public static void recordAcquireLockFailure(String exceptionClassName) {
+		counter(classQualifier, "acquire_lock_failure", "exceptionType", exceptionClassName);
+	}
 }

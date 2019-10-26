@@ -124,7 +124,7 @@ public class RedisLockTest {
         worker1.join();
 
         assertTrue(worker1.isLocked);
-        worker1.releaseLock();
+//        worker1.releaseLock();
 
         RLock lock = redisson.getLock(lockId);
         assertFalse(lock.isLocked());
@@ -144,13 +144,13 @@ public class RedisLockTest {
         worker1.join();
 
         assertTrue(worker1.isLocked);
-        worker1.releaseLock();
+//        worker1.releaseLock();
 
         worker2.start();
         worker2.join();
         assertTrue(worker2.isLocked);
 
-        worker2.releaseLock();
+//        worker2.releaseLock();
         RLock lock = redisson.getLock(lockId);
         assertFalse(lock.isLocked());
     }
@@ -172,6 +172,22 @@ public class RedisLockTest {
         // Ensure only one of them had got the lock.
         assertFalse(worker1.isLocked && worker2.isLocked);
         assertTrue(worker1.isLocked || worker2.isLocked);
+    }
+
+    @Test
+    public void testDuplicateLockAcquireFailure() throws InterruptedException {
+        redisson.getKeys().flushall();
+        String lockId = "abcd-1234";
+
+        boolean isLocked = redisLock.acquireLock(lockId, 500L, 60000L, TimeUnit.MILLISECONDS);
+        Worker worker1 = new Worker(redisLock, lockId);
+
+        worker1.start();
+        worker1.join();
+
+        // Ensure only one of them had got the lock.
+        assertTrue(isLocked);
+        assertFalse(worker1.isLocked);
     }
 
     @Test
@@ -209,11 +225,6 @@ public class RedisLockTest {
             this.lockID = lockID;
             this.timeToTry = timeToTry;
             this.leaseTime = leaseTime;
-        }
-
-        // Wrapper to prevent "not locked by current thread" exception.
-        public void releaseLock() {
-            lock.releaseLock(lockID);
         }
 
         @Override
