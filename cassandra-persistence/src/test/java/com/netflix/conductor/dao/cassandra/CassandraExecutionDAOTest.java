@@ -36,6 +36,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import static com.netflix.conductor.core.execution.ApplicationException.Code.INVALID_INPUT;
 import static com.netflix.conductor.dao.cassandra.CassandraBaseDAO.WorkflowMetadata;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -327,5 +328,32 @@ public class CassandraExecutionDAOTest {
         // force remove from task def limit
         executionDAO.updateTaskDefLimit(newTask, true);
         assertFalse(executionDAO.exceedsInProgressLimit(task));
+    }
+
+    @Test
+    public void testInvalid() {
+        Task task = null;
+        String id = "invalid_id";
+        try {
+            task = executionDAO.getTask(id);
+        } catch (ApplicationException e) {
+            assertEquals(INVALID_INPUT, e.getCode());
+        }
+        assertNull(task);
+
+        Workflow workflow = null;
+        try {
+            workflow = executionDAO.getWorkflow(id, true);
+        } catch (ApplicationException e) {
+            assertEquals(INVALID_INPUT, e.getCode());
+        }
+        assertNull(workflow);
+
+        id = IDGenerator.generate();
+        task = executionDAO.getTask(id);
+        assertNull(task);
+
+        workflow = executionDAO.getWorkflow(id, true);
+        assertNull(workflow);
     }
 }
