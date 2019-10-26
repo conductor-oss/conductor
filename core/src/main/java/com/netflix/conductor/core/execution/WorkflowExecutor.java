@@ -680,7 +680,7 @@ public class WorkflowExecutor {
      */
     public void terminateWorkflow(Workflow workflow, String reason, String failureWorkflow) {
         try {
-            executionLockService.waitForLock(workflow.getWorkflowId());
+            executionLockService.acquireLock(workflow.getWorkflowId(), 60000);
 
             if (!workflow.getStatus().isTerminal()) {
                 workflow.setStatus(WorkflowStatus.TERMINATED);
