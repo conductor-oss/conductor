@@ -134,10 +134,11 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
                     logger.info("Starting locking module using Zookeeper cluster.");
                     break;
                 default:
-                    modules.add(new NoopLockModule());
-                    logger.info("Starting locking module using Noop Lock. Are you sure with this setting?");
                     break;
             }
+        } else {
+            modules.add(new NoopLockModule());
+            logger.info("Starting locking module using Noop Lock. Are you sure with this setting?");
         }
 
         ExternalPayloadStorageType externalPayloadStorageType = null;

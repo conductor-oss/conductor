@@ -30,7 +30,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.9.10"
+            "locked": "2.7.5"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -438,7 +438,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.9.10"
+            "locked": "2.7.5"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -846,7 +846,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.9.10"
+            "locked": "2.7.5"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -1254,7 +1254,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.9.10"
+            "locked": "2.7.5"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -1732,7 +1732,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.9.10"
+            "locked": "2.7.5"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -2140,7 +2140,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.9.10"
+            "locked": "2.7.5"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -2548,7 +2548,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.9.10"
+            "locked": "2.7.5"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -2956,7 +2956,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.9.10"
+            "locked": "2.7.5"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -3372,7 +3372,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.9.10"
+            "locked": "2.7.5"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -3788,7 +3788,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.9.10"
+            "locked": "2.7.5"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
@@ -4204,7 +4204,7 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ],
-            "locked": "2.9.10"
+            "locked": "2.7.5"
         },
         "com.github.rholder:guava-retrying": {
             "firstLevelTransitive": [
