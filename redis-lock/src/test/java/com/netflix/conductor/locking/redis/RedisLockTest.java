@@ -201,6 +201,19 @@ public class RedisLockTest {
         assertTrue(isLocked);
     }
 
+    @Test
+    public void testReleaseLockTwice() throws InterruptedException {
+        redisson.getKeys().flushall();
+        String lockId = "abcd-1234";
+
+        boolean isLocked = redisLock.acquireLock(lockId, 1000, 10000, TimeUnit.MILLISECONDS);
+        assertTrue(isLocked);
+
+
+        redisLock.releaseLock(lockId);
+        redisLock.releaseLock(lockId);
+    }
+
     private static class Worker extends Thread {
         private RedisLock lock;
         private String lockID;

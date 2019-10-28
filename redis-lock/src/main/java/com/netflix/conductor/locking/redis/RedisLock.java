@@ -97,7 +97,11 @@ public class RedisLock implements Lock {
     @Override
     public void releaseLock(String lockId) {
         RLock lock = redisson.getLock(parseLockId(lockId));
-        lock.unlock();
+        try {
+            lock.unlock();
+        } catch (IllegalMonitorStateException e) {
+            // Releasing a lock twice using Redisson can cause this exception, which can be ignored.
+        }
     }
 
     /**
