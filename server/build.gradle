@@ -34,6 +34,7 @@ dependencies {
     //Jetty
     compile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
     compile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
+    compile "org.eclipse.jetty:jetty-jmx:${revJettyServlet}"
 
     //Guice
     compile "com.sun.jersey.contribs:jersey-guice:${revJerseyGuice}"
