@@ -237,10 +237,19 @@ public abstract class MySQLBaseDAO {
     }
 
     private boolean isDeadLockError(Throwable throwable){
-        if (!(throwable.getCause() instanceof SQLException)){
+        SQLException sqlException = findCauseSQLException(throwable);
+        if (sqlException == null){
             return false;
         }
-        return ER_LOCK_DEADLOCK == ((SQLException)throwable.getCause()).getErrorCode();
+        return ER_LOCK_DEADLOCK == sqlException.getErrorCode();
+    }
+
+    private SQLException findCauseSQLException(Throwable throwable) {
+        Throwable causeException = throwable;
+        while (null != causeException && !(causeException instanceof SQLException)) {
+            causeException = causeException.getCause();
+        }
+        return (SQLException)causeException;
     }
 
     private static int getMaxRetriesOnDeadLock() {
