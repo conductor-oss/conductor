@@ -27,6 +27,7 @@ import com.netflix.conductor.server.RedisSentinelModule;
 import com.netflix.conductor.server.ServerModule;
 import com.netflix.conductor.server.SwaggerModule;
 import com.netflix.conductor.zookeeper.config.ZookeeperModule;
+import com.netflix.conductor.postgres.PostgresWorkflowModule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,10 +80,13 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
                 modules.add(new RedisWorkflowModule());
                 logger.info("Starting conductor server using dynomite/redis cluster.");
                 break;
-
             case MYSQL:
                 modules.add(new MySQLWorkflowModule());
                 logger.info("Starting conductor server using MySQL data store.");
+                break;
+            case POSTGRES:
+                modules.add(new PostgresWorkflowModule());
+                logger.info("Starting conductor server using Postgres data store.");
                 break;
             case MEMORY:
                 modules.add(new LocalRedisModule());

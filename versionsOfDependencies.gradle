@@ -64,4 +64,6 @@ ext {
     revEmbeddedRedis = '0.6'
     revCuratorRecipes = '2.4.0'
     revCuratorTest = '2.4.0'
+    revPostgres = '42.2.6'
+    revOtjPgEmbedded = '0.13.1'
 }
