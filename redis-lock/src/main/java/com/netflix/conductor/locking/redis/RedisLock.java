@@ -46,7 +46,10 @@ public class RedisLock implements Lock {
                 config.useSingleServer().setAddress(redisServerAddress).setTimeout(connectionTimeout);
                 break;
             case CLUSTER:
-                config.useClusterServers().addNodeAddress(redisServerAddress).setTimeout(connectionTimeout);
+                config.useClusterServers()
+                        .setScanInterval(2000) // cluster state scan interval in milliseconds
+                        .addNodeAddress(redisServerAddress.split(","))
+                        .setTimeout(connectionTimeout);
                 break;
             case SENTINEL:
                 config.useSentinelServers().addSentinelAddress(redisServerAddress).setTimeout(connectionTimeout);
@@ -104,11 +107,6 @@ public class RedisLock implements Lock {
         }
     }
 
-    /**
-     * Redlock deletes the lock on release.
-     * @param lockId
-     * @return
-     */
     @Override
     public void deleteLock(String lockId) {
         // Noop for Redlock algorithm as releaseLock / unlock deletes it.
