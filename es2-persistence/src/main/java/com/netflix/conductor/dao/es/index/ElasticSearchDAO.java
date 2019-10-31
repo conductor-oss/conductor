@@ -281,6 +281,10 @@ public class ElasticSearchDAO implements IndexDAO {
 	}
 
 	@Override
+	public void setup() {
+	}
+
+	@Override
 	public void indexWorkflow(Workflow workflow) {
 		try {
 			long startTime = Instant.now().toEpochMilli();
