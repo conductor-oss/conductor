@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2019 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -27,7 +27,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
-import redis.clients.jedis.JedisCommands;
+import redis.clients.jedis.commands.JedisCommands;
 
 import java.util.Collections;
 import java.util.List;
@@ -47,7 +47,6 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
     private RedisExecutionDAO executionDAO;
 	private static ObjectMapper objectMapper = new JsonMapperProvider().get();
 
-    @SuppressWarnings("unchecked")
     @Before
     public void init() {
         Configuration config = new TestConfiguration();
@@ -58,7 +57,6 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
     }
 
     @Test
-    @SuppressWarnings("unchecked")
     public void testCorrelateTaskToWorkflowInDS() {
         String workflowId = "workflowId";
         String taskId = "taskId1";

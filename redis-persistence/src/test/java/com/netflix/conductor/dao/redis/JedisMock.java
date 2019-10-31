@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-/**
- * 
  */
 package com.netflix.conductor.dao.redis;
 
@@ -36,7 +33,7 @@ import redis.clients.jedis.ScanParams;
 import redis.clients.jedis.ScanResult;
 import redis.clients.jedis.Tuple;
 import redis.clients.jedis.exceptions.JedisException;
-import redis.clients.jedis.params.sortedset.ZAddParams;
+import redis.clients.jedis.params.ZAddParams;
 
 /**
  * @author Viren
@@ -52,7 +49,7 @@ public class JedisMock extends Jedis {
     }
     
     private Set<Tuple> toTupleSet(Set<ZsetPair> pairs) {
-        Set<Tuple> set = new HashSet<Tuple>();
+        Set<Tuple> set = new HashSet<>();
         for (ZsetPair pair : pairs) {
             set.add(new Tuple(pair.member, pair.score));
         }
@@ -62,17 +59,6 @@ public class JedisMock extends Jedis {
     @Override public String set(final String key, String value) {
         try { 
             return redis.set(key, value);
-        }
-        catch (Exception e) {
-            throw new JedisException(e);
-        }
-    }
-
-
-    @Override public String set(final String key, final String value, final String nxxx, final String expx,
-                                final long time) {
-        try {
-            return redis.set(key, value, nxxx, expx, String.valueOf(time));
         }
         catch (Exception e) {
             throw new JedisException(e);
@@ -123,31 +109,7 @@ public class JedisMock extends Jedis {
             throw new JedisException(e);
         }
     }
-    /*
-    public Set<String> keys(final String pattern) {
-        checkIsInMulti();
-        client.keys(pattern);
-        return BuilderFactory.STRING_SET.build(client.getBinaryMultiBulkReply());
-    }
 
-    public String randomKey() {
-        checkIsInMulti();
-        client.randomKey();
-        return client.getBulkReply();
-    }
-
-    public String rename(final String oldkey, final String newkey) {
-        checkIsInMulti();
-        client.rename(oldkey, newkey);
-        return client.getStatusCodeReply();
-    }
-
-    public Long renamenx(final String oldkey, final String newkey) {
-        checkIsInMulti();
-        client.renamenx(oldkey, newkey);
-        return client.getIntegerReply();
-    }
-    */
     @Override public Long expire(final String key, final int seconds) {
         try {
             return redis.expire(key, seconds) ? 1L : 0L;
@@ -744,7 +706,7 @@ public class JedisMock extends Jedis {
 		
 		try {
 			
-			if(params.contains("xx")) {
+			if(params.getParam("xx") != null) {
 				Double existing = redis.zscore(key, member);
 				if(existing == null) {
 					return 0L;

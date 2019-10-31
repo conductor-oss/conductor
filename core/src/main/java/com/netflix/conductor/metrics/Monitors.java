@@ -100,7 +100,6 @@ public class Monitors {
 
 	public static Timer getTimer(String className, String name, String... additionalTags) {
 		Map<String, String> tags = toMap(className, additionalTags);
-		tags.put("unit", TimeUnit.SECONDS.name());
 		return timers.computeIfAbsent(name, s -> new ConcurrentHashMap<>()).computeIfAbsent(tags, t -> {
 			Id id = registry.createId(name, tags);
 			return PercentileTimer.get(registry, id);

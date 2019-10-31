@@ -1,5 +1,5 @@
-/**
- * Copyright 2016 Netflix, Inc.
+/*
+ * Copyright 2019 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,10 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- *
- */
 package com.netflix.conductor.dao.dynomite;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -33,22 +35,16 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.dao.redis.JedisMock;
 import com.netflix.conductor.dyno.DynoProxy;
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.junit.Before;
-import org.junit.Test;
-import redis.clients.jedis.JedisCommands;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.apache.commons.lang.builder.EqualsBuilder;
+import org.junit.Before;
+import org.junit.Test;
+import redis.clients.jedis.commands.JedisCommands;
 
 /**
  * @author Viren
@@ -56,9 +52,9 @@ import static org.junit.Assert.assertTrue;
  */
 public class RedisMetadataDAOTest {
 
-	private RedisMetadataDAO dao;
+	private RedisMetadataDAO redisMetadataDAO;
 	
-	private static ObjectMapper om = new JsonMapperProvider().get();
+	private static ObjectMapper objectMapper = new JsonMapperProvider().get();
 
 	@Before
 	public void init() {
@@ -66,21 +62,21 @@ public class RedisMetadataDAOTest {
 		JedisCommands jedisMock = new JedisMock();
 		DynoProxy dynoClient = new DynoProxy(jedisMock);
 		
-		dao = new RedisMetadataDAO(dynoClient, om, config);
+		redisMetadataDAO = new RedisMetadataDAO(dynoClient, objectMapper, config);
 	}
 
     @Test(expected = ApplicationException.class)
-	public void testDup() throws Exception {
+	public void testDup() {
 		WorkflowDef def = new WorkflowDef();
 		def.setName("testDup");
 		def.setVersion(1);
 		
-		dao.create(def);
-		dao.create(def);
+		redisMetadataDAO.create(def);
+		redisMetadataDAO.create(def);
 	}
 	
 	@Test
-	public void testWorkflowDefOperations() throws Exception {
+	public void testWorkflowDefOperations() {
 		
 		WorkflowDef def = new WorkflowDef();
 		def.setName("test");
@@ -92,32 +88,32 @@ public class RedisMetadataDAOTest {
 		def.setUpdatedBy("unit_test2");
 		def.setUpdateTime(2L);
 		
-		dao.create(def);
+		redisMetadataDAO.create(def);
 		
-		List<WorkflowDef> all = dao.getAll();
+		List<WorkflowDef> all = redisMetadataDAO.getAll();
 		assertNotNull(all);
 		assertEquals(1, all.size());
 		assertEquals("test", all.get(0).getName());
 		assertEquals(1, all.get(0).getVersion());
 		
-		WorkflowDef found = dao.get("test", 1).get();
+		WorkflowDef found = redisMetadataDAO.get("test", 1).get();
 		assertTrue(EqualsBuilder.reflectionEquals(def, found));
 		
 		def.setVersion(2);
-		dao.create(def);
+		redisMetadataDAO.create(def);
 		
-		all = dao.getAll();
+		all = redisMetadataDAO.getAll();
 		assertNotNull(all);
 		assertEquals(2, all.size());
 		assertEquals("test", all.get(0).getName());
 		assertEquals(1, all.get(0).getVersion());
 		
-		found = dao.getLatest(def.getName()).get();
+		found = redisMetadataDAO.getLatest(def.getName()).get();
 		assertEquals(def.getName(), found.getName());
 		assertEquals(def.getVersion(), found.getVersion());
 		assertEquals(2, found.getVersion());
 
-		all = dao.getAllVersions(def.getName());
+		all = redisMetadataDAO.getAllVersions(def.getName());
 		assertNotNull(all);
 		assertEquals(2, all.size());
 		assertEquals("test", all.get(0).getName());
@@ -126,20 +122,20 @@ public class RedisMetadataDAOTest {
 		assertEquals(2, all.get(1).getVersion());
 		
 		def.setDescription("updated");
-		dao.update(def);
-		found = dao.get(def.getName(), def.getVersion()).get();
+		redisMetadataDAO.update(def);
+		found = redisMetadataDAO.get(def.getName(), def.getVersion()).get();
 		assertEquals(def.getDescription(), found.getDescription());
 		
-		List<String> allnames = dao.findAll();
+		List<String> allnames = redisMetadataDAO.findAll();
 		assertNotNull(allnames);
 		assertEquals(1, allnames.size());
 		assertEquals(def.getName(), allnames.get(0));
 
-		dao.removeWorkflowDef("test", 1);
-		Optional<WorkflowDef> deleted = dao.get("test", 1);
+		redisMetadataDAO.removeWorkflowDef("test", 1);
+		Optional<WorkflowDef> deleted = redisMetadataDAO.get("test", 1);
 		assertFalse(deleted.isPresent());
-		dao.removeWorkflowDef("test", 2);
-		Optional<WorkflowDef> latestDef = dao.getLatest("test");
+		redisMetadataDAO.removeWorkflowDef("test", 2);
+		Optional<WorkflowDef> latestDef = redisMetadataDAO.getLatest("test");
 		assertFalse(latestDef.isPresent());
 
 		WorkflowDef[] workflowDefsArray = new WorkflowDef[3];
@@ -153,18 +149,18 @@ public class RedisMetadataDAOTest {
 			workflowDefsArray[i-1].setOwnerApp("ownerApp");
 			workflowDefsArray[i-1].setUpdatedBy("unit_test2");
 			workflowDefsArray[i-1].setUpdateTime(2L);
-			dao.create( workflowDefsArray[i-1]);
+			redisMetadataDAO.create( workflowDefsArray[i-1]);
 		}
-		dao.removeWorkflowDef("test", 1);
-		dao.removeWorkflowDef("test", 2);
-		WorkflowDef workflow = dao.getLatest("test").get();
+		redisMetadataDAO.removeWorkflowDef("test", 1);
+		redisMetadataDAO.removeWorkflowDef("test", 2);
+		WorkflowDef workflow = redisMetadataDAO.getLatest("test").get();
 		assertEquals(workflow.getVersion(), 3);
 	}
 
 	@Test(expected = ApplicationException.class)
 	public void removeInvalidWorkflowDef() throws Exception {
 		WorkflowDef def = new WorkflowDef();
-		dao.removeWorkflowDef("hello", 1);
+		redisMetadataDAO.removeWorkflowDef("hello", 1);
 	}
 	
 	@Test
@@ -186,23 +182,23 @@ public class RedisMetadataDAOTest {
 		def.setRateLimitPerFrequency(50);
 		def.setRateLimitFrequencyInSeconds(1);
 
-		dao.createTaskDef(def);
+		redisMetadataDAO.createTaskDef(def);
 		
-		TaskDef found = dao.getTaskDef(def.getName());
+		TaskDef found = redisMetadataDAO.getTaskDef(def.getName());
 		assertTrue(EqualsBuilder.reflectionEquals(def, found));
 		
 		def.setDescription("updated description");
-		dao.updateTaskDef(def);
-		found = dao.getTaskDef(def.getName());
+		redisMetadataDAO.updateTaskDef(def);
+		found = redisMetadataDAO.getTaskDef(def.getName());
 		assertTrue(EqualsBuilder.reflectionEquals(def, found));
 		assertEquals("updated description", found.getDescription());
 		
 		for(int i = 0; i < 9; i++) {
 			TaskDef tdf = new TaskDef("taskA" + i);
-			dao.createTaskDef(tdf);
+			redisMetadataDAO.createTaskDef(tdf);
 		}
 		
-		List<TaskDef> all = dao.getAllTaskDefs();
+		List<TaskDef> all = redisMetadataDAO.getAllTaskDefs();
 		assertNotNull(all);
 		assertEquals(10, all.size());
 		Set<String> allnames = all.stream().map(TaskDef::getName).collect(Collectors.toSet());
@@ -215,9 +211,9 @@ public class RedisMetadataDAOTest {
 		}
 		
 		for(int i = 0; i < 9; i++) {
-			dao.removeTaskDef(def.getName() + i);
+			redisMetadataDAO.removeTaskDef(def.getName() + i);
 		}
-		all = dao.getAllTaskDefs();
+		all = redisMetadataDAO.getAllTaskDefs();
 		assertNotNull(all);
 		assertEquals(1, all.size());
 		assertEquals(def.getName(), all.get(0).getName());
@@ -225,7 +221,7 @@ public class RedisMetadataDAOTest {
 
 	@Test(expected = ApplicationException.class)
 	public void testRemoveTaskDef() throws Exception {
-		dao.removeTaskDef("test" + UUID.randomUUID().toString());
+		redisMetadataDAO.removeTaskDef("test" + UUID.randomUUID().toString());
 	}
 	
 	@Test
@@ -243,33 +239,32 @@ public class RedisMetadataDAOTest {
 		eh.getActions().add(action);
 		eh.setEvent(event1);
 		
-		dao.addEventHandler(eh);
-		List<EventHandler> all = dao.getEventHandlers();
+		redisMetadataDAO.addEventHandler(eh);
+		List<EventHandler> all = redisMetadataDAO.getEventHandlers();
 		assertNotNull(all);
 		assertEquals(1, all.size());
 		assertEquals(eh.getName(), all.get(0).getName());
 		assertEquals(eh.getEvent(), all.get(0).getEvent());
 
-		List<EventHandler> byEvents = dao.getEventHandlersForEvent(event1, true);
+		List<EventHandler> byEvents = redisMetadataDAO.getEventHandlersForEvent(event1, true);
 		assertNotNull(byEvents);
 		assertEquals(0, byEvents.size());		//event is marked as in-active
 		
 		eh.setActive(true);
 		eh.setEvent(event2);
-		dao.updateEventHandler(eh);
+		redisMetadataDAO.updateEventHandler(eh);
 		
-		all = dao.getEventHandlers();
+		all = redisMetadataDAO.getEventHandlers();
 		assertNotNull(all);
 		assertEquals(1, all.size());
 
-		byEvents = dao.getEventHandlersForEvent(event1, true);
+		byEvents = redisMetadataDAO.getEventHandlersForEvent(event1, true);
 		assertNotNull(byEvents);
 		assertEquals(0, byEvents.size());
 		
-		byEvents = dao.getEventHandlersForEvent(event2, true);
+		byEvents = redisMetadataDAO.getEventHandlersForEvent(event2, true);
 		assertNotNull(byEvents);
 		assertEquals(1, byEvents.size());
-		
 	}
 
 }

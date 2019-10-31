@@ -1,3 +1,18 @@
+/*
+ * Copyright 2016 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.conductor.jedis;
 
 import com.netflix.conductor.dyno.SystemPropertiesDynomiteConfiguration;
@@ -15,13 +30,13 @@ public class ConfigurationHostSupplierProviderTest {
     private ConfigurationHostSupplierProvider provider;
 
     @Before
-    public void setUp() throws Exception {
+    public void setUp() {
         configuration = new TestPropertiesDynomiteConfiguration();
         provider = new ConfigurationHostSupplierProvider(configuration);
     }
 
     @Test
-    public void getHost() throws Exception {
+    public void getHost() {
         configuration.setProperty("workflow.dynomite.cluster.hosts", "dyno1:8102:us-east-1c");
 
         List<Host> hosts = provider.get().getHosts();
@@ -35,7 +50,7 @@ public class ConfigurationHostSupplierProviderTest {
     }
 
     @Test
-    public void getMultipleHosts() throws Exception {
+    public void getMultipleHosts() {
         configuration.setProperty("workflow.dynomite.cluster.hosts",
             "dyno1:8102:us-east-1c;dyno2:8103:us-east-1c");
 
@@ -55,7 +70,7 @@ public class ConfigurationHostSupplierProviderTest {
     }
 
     @Test
-    public void getAuthenticatedHost() throws Exception {
+    public void getAuthenticatedHost() {
         configuration
             .setProperty("workflow.dynomite.cluster.hosts", "redis1:6432:us-east-1c:password");
 
@@ -84,6 +99,7 @@ public class ConfigurationHostSupplierProviderTest {
             return prop.getOrDefault(key, defaultValue).toString();
         }
 
+        @SuppressWarnings("unchecked")
         @Override
         public Map<String, Object> getAll() {
             return (Map) prop;
