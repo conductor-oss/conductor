@@ -37,6 +37,10 @@ import com.netflix.conductor.dao.IndexDAO;
 public class MockIndexDAO implements IndexDAO {
 
 	@Override
+	public void setup() {
+	}
+
+	@Override
 	public void indexWorkflow(Workflow workflow) {
 	}
 

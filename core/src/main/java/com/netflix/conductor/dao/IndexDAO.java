@@ -33,6 +33,11 @@ import java.util.concurrent.CompletableFuture;
 public interface IndexDAO {
 
 	/**
+	 * Unused method; backported here for forward-compatible byte-code with Conductor v2.+
+	 */
+	void setup() throws Exception;
+
+	/**
 	 * This method should return an unique identifier of the indexed doc
 	 * @param workflow Workflow to be indexed
 	 *

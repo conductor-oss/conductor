@@ -286,6 +286,10 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
     }
 
     @Override
+    public void setup() {
+    }
+
+    @Override
     public void indexWorkflow(Workflow workflow) {
 
         String workflowId = workflow.getWorkflowId();
