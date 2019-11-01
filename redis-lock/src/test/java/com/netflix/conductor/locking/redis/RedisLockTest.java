@@ -173,16 +173,16 @@ public class RedisLockTest {
     public void testDuplicateLockAcquireFailure() throws InterruptedException {
         redisson.getKeys().flushall();
         String lockId = "abcd-1234";
-
-        boolean isLocked = redisLock.acquireLock(lockId, 500L, 60000L, TimeUnit.MILLISECONDS);
-        Worker worker1 = new Worker(redisLock, lockId);
+        Worker worker1 = new Worker(redisLock, lockId, 100L, 60000L);
 
         worker1.start();
         worker1.join();
 
+        boolean isLocked = redisLock.acquireLock(lockId, 500L, 1000L, TimeUnit.MILLISECONDS);
+
         // Ensure only one of them had got the lock.
-        assertTrue(isLocked);
-        assertFalse(worker1.isLocked);
+        assertFalse(isLocked);
+        assertTrue(worker1.isLocked);
     }
 
     @Test

@@ -70,6 +70,9 @@ public interface Configuration {
     String LOCKING_SERVER_PROPERTY_NAME = "locking.server";
     String LOCKING_SERVER_DEFAULT_VALUE = "noop_lock";
 
+    String IGNORE_LOCKING_EXCEPTIONS_PROPERTY_NAME = "locking.exceptions.ignore";
+    boolean IGNORE_LOCKING_EXCEPTIONS_DEFAULT_VALUE = false;
+
     //TODO add constants for input/output external payload related properties.
 
     default DB getDB() {
@@ -86,6 +89,10 @@ public interface Configuration {
 
     default String getLockingServerString() {
         return getProperty(LOCKING_SERVER_PROPERTY_NAME, LOCKING_SERVER_DEFAULT_VALUE).toUpperCase();
+    }
+
+    default boolean ignoreLockingExceptions() {
+        return getBooleanProperty(IGNORE_LOCKING_EXCEPTIONS_PROPERTY_NAME, IGNORE_LOCKING_EXCEPTIONS_DEFAULT_VALUE);
     }
 
     /**

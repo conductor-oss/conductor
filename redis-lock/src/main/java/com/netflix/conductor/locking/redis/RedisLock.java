@@ -2,6 +2,7 @@ package com.netflix.conductor.locking.redis;
 
 import com.google.inject.Inject;
 import com.google.inject.ProvisionException;
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.utils.Lock;
 import com.netflix.conductor.locking.redis.config.RedisLockConfiguration;
 import com.netflix.conductor.metrics.Monitors;
@@ -20,13 +21,15 @@ public class RedisLock implements Lock {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisLock.class);
 
-    private Config config;
+    private RedisLockConfiguration configuration;
+    private Config redisConfig;
     private RedissonClient redisson;
     private final int connectionTimeout = 10000;
     private static String LOCK_NAMESPACE = "";
 
     @Inject
     public RedisLock(RedisLockConfiguration configuration) {
+        this.configuration = configuration;
         LOCK_NAMESPACE = configuration.getProperty("decider.locking.namespace", "");
         RedisLockConfiguration.REDIS_SERVER_TYPE redisServerType = configuration.getRedisServerType();
         try {
@@ -39,24 +42,24 @@ public class RedisLock implements Lock {
         }
         String redisServerAddress = configuration.getRedisServerAddress();
 
-        config = new Config();
+        redisConfig = new Config();
 
         switch (redisServerType) {
             case SINGLE:
-                config.useSingleServer().setAddress(redisServerAddress).setTimeout(connectionTimeout);
+                redisConfig.useSingleServer().setAddress(redisServerAddress).setTimeout(connectionTimeout);
                 break;
             case CLUSTER:
-                config.useClusterServers()
+                redisConfig.useClusterServers()
                         .setScanInterval(2000) // cluster state scan interval in milliseconds
                         .addNodeAddress(redisServerAddress.split(","))
                         .setTimeout(connectionTimeout);
                 break;
             case SENTINEL:
-                config.useSentinelServers().addSentinelAddress(redisServerAddress).setTimeout(connectionTimeout);
+                redisConfig.useSentinelServers().addSentinelAddress(redisServerAddress).setTimeout(connectionTimeout);
                 break;
         }
 
-        redisson = Redisson.create(config);
+        redisson = Redisson.create(redisConfig);
     }
 
     @Override
@@ -71,10 +74,8 @@ public class RedisLock implements Lock {
         try {
             return lock.tryLock(timeToTry, unit);
         } catch (Exception e) {
-            LOGGER.error("Failed in acquireLock: ", e);
-            Monitors.recordAcquireLockFailure(e.getClass().getName());
+            return handleAcquireLockFailure(lockId, e);
         }
-        return false;
     }
 
     /**
@@ -91,10 +92,8 @@ public class RedisLock implements Lock {
         try {
             return lock.tryLock(timeToTry, leaseTime, unit);
         } catch (Exception e) {
-            LOGGER.error("Failed in acquireLock: ", e);
-            Monitors.recordAcquireLockFailure(e.getClass().getName());
+            return handleAcquireLockFailure(lockId, e);
         }
-        return false;
     }
 
     @Override
@@ -117,5 +116,14 @@ public class RedisLock implements Lock {
             throw new IllegalArgumentException("lockId cannot be NULL or empty: lockId=" + lockId);
         }
         return LOCK_NAMESPACE + "." + lockId;
+    }
+
+    private boolean handleAcquireLockFailure(String lockId, Exception e) {
+        LOGGER.error("Failed to acquireLock for lockId: {}", lockId, e);
+        Monitors.recordAcquireLockFailure(e.getClass().getName());
+        // A Valid failure to acquire lock when another thread has acquired it returns false.
+        // However, when an exception is thrown while acquiring lock, due to connection or others issues,
+        // we can optionally continue without a "lock" to not block executions until Locking service is available.
+        return configuration.ignoreLockingExceptions();
     }
 }
