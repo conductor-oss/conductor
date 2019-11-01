@@ -1,6 +1,21 @@
+/*
+ * Copyright (c) 2019 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.netflix.conductor.service;
 
-import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.utils.Lock;
 import com.netflix.conductor.metrics.Monitors;
@@ -12,7 +27,6 @@ import javax.inject.Provider;
 import java.util.concurrent.TimeUnit;
 
 public class ExecutionLockService {
-    public static final String LOCK_NAMESPACE = "executionlock";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionLockService.class);
     private final Configuration config;
@@ -24,8 +38,8 @@ public class ExecutionLockService {
     public ExecutionLockService(Configuration config, Provider<Lock> lockProvider) {
         this.config = config;
         this.lockProvider = lockProvider;
-        LOCK_LEASE_TIME = config.getLongProperty("locking.leaseTimeInMilliSeconds", 60000);
-        LOCK_TIME_TO_TRY = config.getLongProperty("locking.lockTimeToTryInMilliSeconds", 500);
+        LOCK_LEASE_TIME = config.getLongProperty("workflow.locking.lease.time.ms", 60000);
+        LOCK_TIME_TO_TRY = config.getLongProperty("workflow.locking.time.to.try.ms", 500);
     }
 
     /**
@@ -47,8 +61,8 @@ public class ExecutionLockService {
         if (config.enableWorkflowExecutionLock()) {
             Lock lock = lockProvider.get();
             if (!lock.acquireLock(lockId, timeToTryMs, leaseTimeMs, TimeUnit.MILLISECONDS)) {
-                LOGGER.info("Thread {} failed to acquire lock to lockId {}.", Thread.currentThread().getId(), lockId);
-                Monitors.recordAcquireLockUnsuccessful(lockId);
+                LOGGER.debug("Thread {} failed to acquire lock to lockId {}.", Thread.currentThread().getId(), lockId);
+                Monitors.recordAcquireLockUnsuccessful();
                 return false;
             }
             LOGGER.debug("Thread {} acquired lock to lockId {}.", Thread.currentThread().getId(), lockId);

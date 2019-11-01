@@ -1,3 +1,19 @@
+/*
+ * Copyright (c) 2019 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.netflix.conductor.locking.redis;
 
 import com.google.inject.Inject;
@@ -20,15 +36,17 @@ public class RedisLock implements Lock {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisLock.class);
 
-    private Config config;
+    private RedisLockConfiguration configuration;
+    private Config redisConfig;
     private RedissonClient redisson;
     private final int connectionTimeout = 10000;
     private static String LOCK_NAMESPACE = "";
 
     @Inject
     public RedisLock(RedisLockConfiguration configuration) {
-        LOCK_NAMESPACE = configuration.getProperty("decider.locking.namespace", "");
-        RedisLockConfiguration.REDIS_SERVER_TYPE redisServerType = configuration.getRedisServerType();
+        this.configuration = configuration;
+        LOCK_NAMESPACE = configuration.getProperty("workflow.decider.locking.namespace", "");
+        RedisLockConfiguration.REDIS_SERVER_TYPE redisServerType;
         try {
             redisServerType = configuration.getRedisServerType();
         } catch (IllegalArgumentException ie) {
@@ -39,24 +57,29 @@ public class RedisLock implements Lock {
         }
         String redisServerAddress = configuration.getRedisServerAddress();
 
-        config = new Config();
+        redisConfig = new Config();
 
         switch (redisServerType) {
             case SINGLE:
-                config.useSingleServer().setAddress(redisServerAddress).setTimeout(connectionTimeout);
+                redisConfig.useSingleServer()
+                        .setAddress(redisServerAddress)
+                        .setTimeout(connectionTimeout);
                 break;
             case CLUSTER:
-                config.useClusterServers()
+                redisConfig.useClusterServers()
                         .setScanInterval(2000) // cluster state scan interval in milliseconds
                         .addNodeAddress(redisServerAddress.split(","))
                         .setTimeout(connectionTimeout);
                 break;
             case SENTINEL:
-                config.useSentinelServers().addSentinelAddress(redisServerAddress).setTimeout(connectionTimeout);
+                redisConfig.useSentinelServers()
+                        .setScanInterval(2000)
+                        .addSentinelAddress(redisServerAddress)
+                        .setTimeout(connectionTimeout);
                 break;
         }
 
-        redisson = Redisson.create(config);
+        redisson = Redisson.create(redisConfig);
     }
 
     @Override
@@ -71,10 +94,8 @@ public class RedisLock implements Lock {
         try {
             return lock.tryLock(timeToTry, unit);
         } catch (Exception e) {
-            LOGGER.error("Failed in acquireLock: ", e);
-            Monitors.recordAcquireLockFailure(e.getClass().getName());
+            return handleAcquireLockFailure(lockId, e);
         }
-        return false;
     }
 
     /**
@@ -91,10 +112,8 @@ public class RedisLock implements Lock {
         try {
             return lock.tryLock(timeToTry, leaseTime, unit);
         } catch (Exception e) {
-            LOGGER.error("Failed in acquireLock: ", e);
-            Monitors.recordAcquireLockFailure(e.getClass().getName());
+            return handleAcquireLockFailure(lockId, e);
         }
-        return false;
     }
 
     @Override
@@ -117,5 +136,14 @@ public class RedisLock implements Lock {
             throw new IllegalArgumentException("lockId cannot be NULL or empty: lockId=" + lockId);
         }
         return LOCK_NAMESPACE + "." + lockId;
+    }
+
+    private boolean handleAcquireLockFailure(String lockId, Exception e) {
+        LOGGER.error("Failed to acquireLock for lockId: {}", lockId, e);
+        Monitors.recordAcquireLockFailure(e.getClass().getName());
+        // A Valid failure to acquire lock when another thread has acquired it returns false.
+        // However, when an exception is thrown while acquiring lock, due to connection or others issues,
+        // we can optionally continue without a "lock" to not block executions until Locking service is available.
+        return configuration.ignoreLockingExceptions();
     }
 }

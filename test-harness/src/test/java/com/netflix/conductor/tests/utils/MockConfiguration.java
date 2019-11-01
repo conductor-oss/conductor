@@ -150,7 +150,4 @@ public class MockConfiguration implements Configuration {
     public List<AbstractModule> getAdditionalModules() {
         return Collections.emptyList();
     }
-
-    @Override
-    public boolean enableWorkflowExecutionLock(){return true;}
 }

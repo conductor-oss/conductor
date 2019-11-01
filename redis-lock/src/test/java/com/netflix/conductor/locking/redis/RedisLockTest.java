@@ -1,12 +1,25 @@
+/*
+ * Copyright (c) 2019 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.netflix.conductor.locking.redis;
 
-import com.netflix.conductor.core.utils.Lock;
 import com.netflix.conductor.locking.redis.config.RedisLockConfiguration;
 import com.netflix.conductor.locking.redis.config.SystemPropertiesRedisLockConfiguration;
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.redisson.Redisson;
 import org.redisson.api.RLock;
@@ -14,10 +27,10 @@ import org.redisson.api.RedissonClient;
 import org.redisson.config.Config;
 import redis.embedded.RedisServer;
 
-import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class RedisLockTest {
 
@@ -106,48 +119,22 @@ public class RedisLockTest {
         assertFalse(lock.isLocked());
     }
 
-    // TODO
-    @Ignore
-    @Test
-    public void testReleaseLockThread() throws InterruptedException {
-        redisson.getKeys().flushall();
-        String lockId = "abcd-1234";
-
-        Worker worker1 = new Worker(redisLock, lockId);
-
-        worker1.start();
-        worker1.join();
-
-        assertTrue(worker1.isLocked);
-//        worker1.releaseLock();
-
-        RLock lock = redisson.getLock(lockId);
-        assertFalse(lock.isLocked());
-    }
-
-    // TODO
-    @Ignore
     @Test
     public void testLockReleaseAndAcquire() throws InterruptedException {
         redisson.getKeys().flushall();
         String lockId = "abcd-1234";
 
+        boolean isLocked = redisLock.acquireLock(lockId, 1000, 10000, TimeUnit.MILLISECONDS);
+        assertTrue(isLocked);
+
+        redisLock.releaseLock(lockId);
+
         Worker worker1 = new Worker(redisLock, lockId);
-        Worker worker2 = new Worker(redisLock, lockId);
 
         worker1.start();
         worker1.join();
 
         assertTrue(worker1.isLocked);
-//        worker1.releaseLock();
-
-        worker2.start();
-        worker2.join();
-        assertTrue(worker2.isLocked);
-
-//        worker2.releaseLock();
-        RLock lock = redisson.getLock(lockId);
-        assertFalse(lock.isLocked());
     }
 
     @Test
@@ -173,16 +160,16 @@ public class RedisLockTest {
     public void testDuplicateLockAcquireFailure() throws InterruptedException {
         redisson.getKeys().flushall();
         String lockId = "abcd-1234";
-
-        boolean isLocked = redisLock.acquireLock(lockId, 500L, 60000L, TimeUnit.MILLISECONDS);
-        Worker worker1 = new Worker(redisLock, lockId);
+        Worker worker1 = new Worker(redisLock, lockId, 100L, 60000L);
 
         worker1.start();
         worker1.join();
 
+        boolean isLocked = redisLock.acquireLock(lockId, 500L, 1000L, TimeUnit.MILLISECONDS);
+
         // Ensure only one of them had got the lock.
-        assertTrue(isLocked);
-        assertFalse(worker1.isLocked);
+        assertFalse(isLocked);
+        assertTrue(worker1.isLocked);
     }
 
     @Test

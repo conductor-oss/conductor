@@ -14,23 +14,19 @@
  * limitations under the License.
  */
 
-package com.netflix.conductor.zookeeper.config;
+package com.netflix.conductor.core.utils;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
-import com.netflix.conductor.core.utils.Lock;
-import com.netflix.conductor.service.ExecutionLockService;
-import com.netflix.conductor.zookeeper.ZookeeperLock;
 
-public class ZookeeperModule extends AbstractModule {
+public class NoopLockModule extends AbstractModule {
 
     @Override
-    protected void configure() {
-        bind(ZookeeperConfiguration.class).to(SystemPropertiesZookeeperConfiguration.class);
-    }
+    protected void configure() {}
 
     @Provides
-    protected Lock provideLock(ZookeeperConfiguration config) {
-        return new ZookeeperLock(config);
+    protected Lock provideLock() {
+        return new NoopLock();
     }
+
 }

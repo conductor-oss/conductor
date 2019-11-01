@@ -11,7 +11,7 @@ import com.netflix.conductor.contribs.json.JsonJqTransform;
 import com.netflix.conductor.contribs.kafka.KafkaProducerManager;
 import com.netflix.conductor.contribs.kafka.KafkaPublishTask;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.config.NoopLockModule;
+import com.netflix.conductor.core.utils.NoopLockModule;
 import com.netflix.conductor.core.execution.WorkflowExecutorModule;
 import com.netflix.conductor.core.utils.DummyPayloadStorage;
 import com.netflix.conductor.core.utils.S3PayloadStorage;
@@ -138,7 +138,7 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
             }
         } else {
             modules.add(new NoopLockModule());
-            logger.info("Starting locking module using Noop Lock. Are you sure with this setting?");
+            logger.warn("Starting locking module using Noop Lock.");
         }
 
         ExternalPayloadStorageType externalPayloadStorageType = null;

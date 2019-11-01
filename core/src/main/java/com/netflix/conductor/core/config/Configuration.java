@@ -64,11 +64,14 @@ public interface Configuration {
 
     String ADDITIONAL_MODULES_PROPERTY_NAME = "conductor.additional.modules";
 
-    String EXECUTION_LOCK_ENABLED_PROPERTY_NAME = "decider.locking.enabled";
+    String EXECUTION_LOCK_ENABLED_PROPERTY_NAME = "workflow.decider.locking.enabled";
     boolean EXECUTION_LOCK_ENABLED_DEFAULT_VALUE = false;
 
-    String LOCKING_SERVER_PROPERTY_NAME = "locking.server";
+    String LOCKING_SERVER_PROPERTY_NAME = "workflow.decider.locking.server";
     String LOCKING_SERVER_DEFAULT_VALUE = "noop_lock";
+
+    String IGNORE_LOCKING_EXCEPTIONS_PROPERTY_NAME = "workflow.decider.locking.exceptions.ignore";
+    boolean IGNORE_LOCKING_EXCEPTIONS_DEFAULT_VALUE = false;
 
     //TODO add constants for input/output external payload related properties.
 
@@ -88,6 +91,17 @@ public interface Configuration {
         return getProperty(LOCKING_SERVER_PROPERTY_NAME, LOCKING_SERVER_DEFAULT_VALUE).toUpperCase();
     }
 
+    default boolean ignoreLockingExceptions() {
+        return getBooleanProperty(IGNORE_LOCKING_EXCEPTIONS_PROPERTY_NAME, IGNORE_LOCKING_EXCEPTIONS_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return when set to true(default), locking is enabled for workflow execution
+     */
+    default boolean enableWorkflowExecutionLock() {
+        return getBooleanProperty(EXECUTION_LOCK_ENABLED_PROPERTY_NAME, EXECUTION_LOCK_ENABLED_DEFAULT_VALUE);
+    }
+
     /**
      * @return time frequency in seconds, at which the workflow sweeper should run to evaluate running workflows.
      */
@@ -103,11 +117,6 @@ public interface Configuration {
      * @return when set to true, the background task workers executing async system tasks (eg HTTP) are disabled
      */
     boolean disableAsyncWorkers();
-
-    /**
-     * @return when set to true(default), locking is enabled for workflow execution
-     */
-    boolean enableWorkflowExecutionLock();
 
     /**
      * @return ID of the server.  Can be host name, IP address or any other meaningful identifier.  Used for logging

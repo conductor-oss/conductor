@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2019 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -49,7 +49,6 @@ import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
 import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
-import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -1036,7 +1035,7 @@ public class WorkflowExecutor {
      */
     public void pauseWorkflow(String workflowId) {
         try {
-            executionLockService.acquireLock(workflowId);
+            executionLockService.acquireLock(workflowId, 60000);
             WorkflowStatus status = WorkflowStatus.PAUSED;
             Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, false);
             if (workflow.getStatus().isTerminal()) {
@@ -1057,19 +1056,14 @@ public class WorkflowExecutor {
      * @throws IllegalStateException
      */
     public void resumeWorkflow(String workflowId) {
-        try {
-            executionLockService.acquireLock(workflowId);
-            Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, false);
-            if (!workflow.getStatus().equals(WorkflowStatus.PAUSED)) {
-                throw new IllegalStateException("The workflow " + workflowId + " is not PAUSED so cannot resume. " +
-                        "Current status is " + workflow.getStatus().name());
-            }
-            workflow.setStatus(WorkflowStatus.RUNNING);
-            executionDAOFacade.updateWorkflow(workflow);
-            decide(workflowId);
-        } finally {
-            executionLockService.releaseLock(workflowId);
+        Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, false);
+        if (!workflow.getStatus().equals(WorkflowStatus.PAUSED)) {
+            throw new IllegalStateException("The workflow " + workflowId + " is not PAUSED so cannot resume. " +
+                    "Current status is " + workflow.getStatus().name());
         }
+        workflow.setStatus(WorkflowStatus.RUNNING);
+        executionDAOFacade.updateWorkflow(workflow);
+        decide(workflowId);
     }
 
     /**

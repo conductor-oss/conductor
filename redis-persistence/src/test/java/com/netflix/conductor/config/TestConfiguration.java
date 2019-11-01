@@ -15,7 +15,7 @@
  */
 package com.netflix.conductor.config;
 /**
- * 
+ *
  */
 
 
@@ -43,7 +43,7 @@ public class TestConfiguration implements Configuration {
 	public boolean disableAsyncWorkers() {
 		return false;
 	}
-	
+
 	@Override
 	public String getServerId() {
 		return "server_id";
@@ -78,12 +78,12 @@ public class TestConfiguration implements Configuration {
 	public String getAvailabilityZone() {
 		return "us-east-1a";
 	}
-	
+
 	@Override
 	public int getIntProperty(String string, int def) {
 		return 100;
 	}
-	
+
 	@Override
 	public String getRegion() {
 		return "us-east-1";
@@ -138,7 +138,4 @@ public class TestConfiguration implements Configuration {
 	public Map<String, Object> getAll() {
 		return null;
 	}
-
-	@Override
-	public boolean enableWorkflowExecutionLock(){return true;}
 }
