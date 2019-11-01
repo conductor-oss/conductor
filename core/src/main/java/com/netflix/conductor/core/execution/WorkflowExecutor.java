@@ -644,7 +644,7 @@ public class WorkflowExecutor {
                 parent.setStatus(WorkflowStatus.RUNNING);
                 executionDAOFacade.updateWorkflow(parent);
             }
-            decide(parent.getWorkflowId());
+            decide(parent.getWorkflowId(), DeciderService.DecideType.PARENT_WORKFLOW_EVAL);
         }
         Monitors.recordWorkflowCompletion(workflow.getWorkflowName(), workflow.getEndTime() - workflow.getStartTime(), workflow.getOwnerApp());
         queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
@@ -708,7 +708,7 @@ public class WorkflowExecutor {
         // care of this again!
         if (workflow.getParentWorkflowId() != null) {
             Workflow parent = executionDAOFacade.getWorkflowById(workflow.getParentWorkflowId(), false);
-            decide(parent.getWorkflowId());
+            decide(parent.getWorkflowId(), DeciderService.DecideType.PARENT_WORKFLOW_EVAL);
         }
 
         if (!StringUtils.isBlank(failureWorkflow)) {
@@ -867,7 +867,7 @@ public class WorkflowExecutor {
         taskResult.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
         executionDAOFacade.addTaskExecLog(taskResult.getLogs());
 
-        decide(workflowId);
+        decide(workflowId, DeciderService.DecideType.UPDATE_TASK);
 
         if (task.getStatus().isTerminal()) {
             long duration = getTaskDuration(0, task);
@@ -908,6 +908,17 @@ public class WorkflowExecutor {
 
     public List<String> getRunningWorkflowIds(String workflowName, int version) {
         return executionDAOFacade.getRunningWorkflowIds(workflowName, version);
+    }
+
+    public boolean decide(String workflowId, DeciderService.DecideType decideType) {
+        if (config.asyncDecideEnabled()) {
+            // Push to decider queue without an offset time.
+            // We'd like this to be decided as soon as possible.
+            queueDAO.push(DECIDER_QUEUE, workflowId, decideType.getPriority(), 0);
+            return false;
+        } else {
+            return decide(workflowId);
+        }
     }
 
     /**

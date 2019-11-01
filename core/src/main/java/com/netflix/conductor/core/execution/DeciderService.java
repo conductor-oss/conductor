@@ -636,4 +636,23 @@ public class DeciderService {
         }
 
     }
+
+    /**
+     * Decide types with increasing order of priority.
+     */
+    public enum DecideType {
+        SWEEP(0),
+        UPDATE_TASK(50),    // In the range of Priority 0-99, keeping at median to avoid starvation by user provided priorities.
+        PARENT_WORKFLOW_EVAL(50);
+
+        private final int priority;
+
+        DecideType(final int priority) {
+            this.priority = priority;
+        }
+
+        public int getPriority() {
+            return priority;
+        }
+    }
 }

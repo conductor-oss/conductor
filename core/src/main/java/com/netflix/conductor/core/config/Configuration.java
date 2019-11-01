@@ -24,6 +24,9 @@ public interface Configuration {
     String DB_PROPERTY_NAME = "db";
     String DB_DEFAULT_VALUE = "memory";
 
+    String ASYNC_WORKFLOW_DECIDE_PROPERTY_NAME = "workflow.decide.async";
+    boolean ASYNC_WORKFLOW_DECIDE_DEFAULT_VALUE = false;
+
     String SWEEP_FREQUENCY_PROPERTY_NAME = "decider.sweep.frequency.seconds";
     int SWEEP_FREQUENCY_DEFAULT_VALUE = 30;
 
@@ -119,6 +122,10 @@ public interface Configuration {
      * @return Availability zone / rack.  for AWS deployments, the value is something like us-east-1a, etc.
      */
     String getAvailabilityZone();
+
+    default boolean asyncDecideEnabled() {
+        return getBooleanProperty(ASYNC_WORKFLOW_DECIDE_PROPERTY_NAME, ASYNC_WORKFLOW_DECIDE_DEFAULT_VALUE);
+    }
 
     /**
      * @return when set to true, the indexing operation to elasticsearch will be performed asynchronously
