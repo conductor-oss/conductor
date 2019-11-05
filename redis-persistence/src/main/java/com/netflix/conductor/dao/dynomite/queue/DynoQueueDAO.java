@@ -25,12 +25,6 @@ import com.netflix.dyno.queues.ShardSupplier;
 import com.netflix.dyno.queues.redis.RedisDynoQueue;
 import com.netflix.dyno.queues.redis.RedisQueues;
 import com.netflix.dyno.queues.shard.DynoShardSupplier;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import redis.clients.jedis.commands.JedisCommands;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -38,6 +32,11 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import redis.clients.jedis.commands.JedisCommands;
 
 @Singleton
 public class DynoQueueDAO implements QueueDAO {
@@ -90,8 +89,18 @@ public class DynoQueueDAO implements QueueDAO {
             }
         };
 
-        this.dynoClientRead = new DynoJedisClient.Builder().withApplicationName(config.getAppId()).withDynomiteClusterName(cluster).withHostSupplier(hostSupplier).isDatastoreClient(true).build();
-        DynoJedisClient dyno = new DynoJedisClient.Builder().withApplicationName(config.getAppId()).withDynomiteClusterName(cluster).withDiscoveryClient(dc).build();
+        this.dynoClientRead = new DynoJedisClient.Builder()
+            .withApplicationName(config.getAppId())
+            .withDynomiteClusterName(cluster)
+            .withHostSupplier(hostSupplier)
+            .withConnectionPoolConsistency("DC_ONE")
+            .build();
+
+        DynoJedisClient dyno = new DynoJedisClient.Builder()
+            .withApplicationName(config.getAppId())
+            .withDynomiteClusterName(cluster)
+            .withDiscoveryClient(dc)
+            .build();
 
         this.dynoClient = dyno;
 

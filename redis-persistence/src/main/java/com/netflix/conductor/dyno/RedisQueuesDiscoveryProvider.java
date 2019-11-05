@@ -80,7 +80,7 @@ public class RedisQueuesDiscoveryProvider implements Provider<RedisQueues> {
                 .withApplicationName(configuration.getAppId())
                 .withDynomiteClusterName(cluster)
                 .withHostSupplier(hostSupplier)
-                .isDatastoreClient(true)
+                .withConnectionPoolConsistency("DC_ONE")
                 .build();
 
         String region = configuration.getRegion();
