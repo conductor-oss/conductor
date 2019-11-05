@@ -171,7 +171,4 @@ public class TestConfiguration implements CassandraConfiguration {
     public ConsistencyLevel getWriteConsistencyLevel() {
         return ConsistencyLevel.LOCAL_ONE;
     }
-
-    @Override
-    public boolean enableWorkflowExecutionLock(){return true;}
 }

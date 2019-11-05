@@ -96,6 +96,13 @@ public interface Configuration {
     }
 
     /**
+     * @return when set to true(default), locking is enabled for workflow execution
+     */
+    default boolean enableWorkflowExecutionLock() {
+        return getBooleanProperty(EXECUTION_LOCK_ENABLED_PROPERTY_NAME, EXECUTION_LOCK_ENABLED_DEFAULT_VALUE);
+    }
+
+    /**
      * @return time frequency in seconds, at which the workflow sweeper should run to evaluate running workflows.
      */
     int getSweepFrequency();
@@ -110,11 +117,6 @@ public interface Configuration {
      * @return when set to true, the background task workers executing async system tasks (eg HTTP) are disabled
      */
     boolean disableAsyncWorkers();
-
-    /**
-     * @return when set to true(default), locking is enabled for workflow execution
-     */
-    boolean enableWorkflowExecutionLock();
 
     /**
      * @return ID of the server.  Can be host name, IP address or any other meaningful identifier.  Used for logging
