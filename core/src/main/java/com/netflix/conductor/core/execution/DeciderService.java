@@ -38,9 +38,7 @@ import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapperContext;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.core.utils.IDGenerator;
-import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import java.util.Collections;
 import java.util.HashMap;
@@ -69,7 +67,6 @@ public class DeciderService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeciderService.class);
 
-    private final QueueDAO queueDAO;
     private final ParametersUtils parametersUtils;
     private final ExternalPayloadStorageUtils externalPayloadStorageUtils;
     private final MetadataDAO metadataDAO;
@@ -82,10 +79,9 @@ public class DeciderService {
     private static final String PENDING_TASK_TIME_THRESHOLD_PROPERTY_NAME = "workflow.task.pending.time.threshold.minutes";
 
     @Inject
-    public DeciderService(ParametersUtils parametersUtils, QueueDAO queueDAO, MetadataDAO metadataDAO,
+    public DeciderService(ParametersUtils parametersUtils, MetadataDAO metadataDAO,
                           ExternalPayloadStorageUtils externalPayloadStorageUtils,
                           @Named("TaskMappers") Map<String, TaskMapper> taskMappers, Configuration configuration) {
-        this.queueDAO = queueDAO;
         this.metadataDAO = metadataDAO;
         this.parametersUtils = parametersUtils;
         this.taskMappers = taskMappers;
@@ -529,13 +525,15 @@ public class DeciderService {
             LOGGER.warn("missing task type : {}, workflowId= {}", task.getTaskDefName(), task.getWorkflowInstanceId());
             return false;
         }
-        if (task.getStatus().isTerminal() || !task.getStatus().equals(IN_PROGRESS) || taskDefinition.getResponseTimeoutSeconds() == 0) {
+        if (task.getStatus().isTerminal()) {
             return false;
         }
 
         // calculate pendingTime
         long now = System.currentTimeMillis();
-        long pendingTime = now - task.getUpdateTime();
+        long callbackTime = 1000L * task.getCallbackAfterSeconds();
+        long referenceTime = task.getUpdateTime() > 0 ? task.getUpdateTime() : task.getScheduledTime();
+        long pendingTime = now - (referenceTime + callbackTime);
         Monitors.recordTaskPendingTime(task.getTaskType(), task.getWorkflowType(), pendingTime);
         long thresholdMS = config.getIntProperty(PENDING_TASK_TIME_THRESHOLD_PROPERTY_NAME, 60) * 60 * 1000;
         if (pendingTime > thresholdMS) {
@@ -543,18 +541,18 @@ public class DeciderService {
                 task.getTaskId(), task.getTaskType(), task.getWorkflowInstanceId(), task.getWorkflowType(), thresholdMS);
         }
 
-        if (queueDAO.exists(QueueUtils.getQueueName(task), task.getTaskId())) {
-            // this task is present in the queue
-            // this means that it has been updated with callbackAfterSeconds and is not being executed in a worker
+        if (!task.getStatus().equals(IN_PROGRESS) || taskDefinition.getResponseTimeoutSeconds() == 0) {
             return false;
         }
 
         LOGGER.debug("Evaluating responseTimeOut for Task: {}, with Task Definition: {}", task, taskDefinition);
         long responseTimeout = 1000L * taskDefinition.getResponseTimeoutSeconds();
+        long adjustedResponseTimeout = responseTimeout + callbackTime;
+        long noResponseTime = now - task.getUpdateTime();
 
-        if (pendingTime < responseTimeout) {
-            LOGGER.debug("Current responseTime: {} has not exceeded the configured responseTimeout of {} " +
-                    "for the Task: {} with Task Definition: {}", pendingTime, responseTimeout, task, taskDefinition);
+        if (noResponseTime < adjustedResponseTimeout) {
+            LOGGER.debug("Current responseTime: {} has not exceeded the configured responseTimeout of {} for the Task: {} with Task Definition: {}",
+                pendingTime, responseTimeout, task, taskDefinition);
             return false;
         }
 

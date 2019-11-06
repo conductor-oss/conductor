@@ -254,10 +254,4 @@ public class DynoQueueDAO implements QueueDAO {
         return queue.setTimeout(id, offsetTimeInSecond);
 
     }
-
-	@Override
-	public boolean exists(String queueName, String id) {
-		DynoQueue queue = queues.get(queueName);
-		return Optional.ofNullable(queue.get(id)).isPresent();
-	}
 }
