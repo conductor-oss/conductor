@@ -111,7 +111,7 @@ public class TestDeciderOutcomes {
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
         taskMappers.put("HTTP", new HTTPTaskMapper(parametersUtils, metadataDAO));
 
-        this.deciderService = new DeciderService(parametersUtils, queueDAO, metadataDAO,  externalPayloadStorageUtils, taskMappers);
+        this.deciderService = new DeciderService(parametersUtils, queueDAO, metadataDAO,  externalPayloadStorageUtils, taskMappers, configuration);
     }
 
     @Test
