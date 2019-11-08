@@ -29,7 +29,6 @@ import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.Timer;
 import com.netflix.spectator.api.histogram.PercentileTimer;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -193,6 +192,10 @@ public class Monitors {
 
 	public static void recordTaskResponseTimeout(String taskType) {
 		counter(classQualifier, "task_response_timeout", "taskType", taskType);
+	}
+
+	public static void recordTaskPendingTime(String taskType, String workflowType, long duration) {
+		getTimer(classQualifier, "task_pending_time", "workflowName", workflowType, "taskType", taskType).record(duration, TimeUnit.MILLISECONDS);
 	}
 
 	public static void recordWorkflowTermination(String workflowType, WorkflowStatus status, String ownerApp) {

@@ -355,9 +355,10 @@ public class TestHttpTask {
         MetadataDAO metadataDAO = mock(MetadataDAO.class);
         ExternalPayloadStorageUtils externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
         ParametersUtils parametersUtils = mock(ParametersUtils.class);
+        Configuration configuration = mock(Configuration.class);
 
         Map<String, TaskMapper> taskMappers = new HashMap<>();
-        new DeciderService(parametersUtils, queueDAO, metadataDAO, externalPayloadStorageUtils, taskMappers).decide(workflow);
+        new DeciderService(parametersUtils, queueDAO, metadataDAO, externalPayloadStorageUtils, taskMappers, configuration).decide(workflow);
 
         System.out.println(workflow.getTasks());
         System.out.println(workflow.getStatus());
