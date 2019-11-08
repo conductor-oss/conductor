@@ -51,6 +51,8 @@ public class WorkflowSweeper {
 
 	private int executorThreadPoolSize;
 
+	private int numberOfMessagesToPop;
+
 	private static final String className = WorkflowSweeper.class.getSimpleName();
 
 	@Inject
@@ -58,6 +60,7 @@ public class WorkflowSweeper {
 		this.config = config;
 		this.queueDAO = queueDAO;
 		this.executorThreadPoolSize = config.getIntProperty("workflow.sweeper.thread.count", 5);
+		this.numberOfMessagesToPop = config.getIntProperty("workflow.sweeper.messages.popCount", 10);
 		if(this.executorThreadPoolSize > 0) {
 			this.executorService = Executors.newFixedThreadPool(executorThreadPoolSize);
 			init(workflowExecutor);
@@ -65,7 +68,6 @@ public class WorkflowSweeper {
 		} else {
 			logger.warn("Workflow sweeper is DISABLED");
 		}
-
 	}
 
 	public void init(WorkflowExecutor workflowExecutor) {
@@ -77,7 +79,7 @@ public class WorkflowSweeper {
 					logger.info("Workflow sweep is disabled.");
 					return;
 				}
-				List<String> workflowIds = queueDAO.pop(WorkflowExecutor.DECIDER_QUEUE, 2 * executorThreadPoolSize, 2000);
+				List<String> workflowIds = queueDAO.pop(WorkflowExecutor.DECIDER_QUEUE, numberOfMessagesToPop, 2000);
 				int currentQueueSize = queueDAO.getSize(WorkflowExecutor.DECIDER_QUEUE);
 				logger.debug("Sweeper's current deciderqueue size: {}.", currentQueueSize);
 				int retrievedWorkflows = (workflowIds != null) ? workflowIds.size() : 0;
