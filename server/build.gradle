@@ -10,7 +10,9 @@ plugins {
 
 configurations.all {
     resolutionStrategy {
-        force 'com.fasterxml.jackson.core:jackson-core:2.7.5'
+        force "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
+        force "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
+        force "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:${revJaxrsJackson}"
     }
 }
 
@@ -28,6 +30,8 @@ dependencies {
     compile project(':conductor-contribs')
     compile project(':conductor-es5-persistence')
     compile project(':conductor-grpc-server')
+    compile project(':conductor-zookeeper-lock')
+    compile project(':conductor-redis-lock')
 
     compile "com.netflix.runtime:health-guice:${revHealth}"
 

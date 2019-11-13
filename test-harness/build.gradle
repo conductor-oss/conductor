@@ -1,6 +1,8 @@
 configurations.all {
     resolutionStrategy {
-        force 'com.fasterxml.jackson.core:jackson-core:2.7.5'
+        force "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
+        force "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
+        force "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:${revJaxrsJackson}"
     }
 }
 dependencies {

@@ -281,4 +281,12 @@ public class Monitors {
 	public static void recordDiscardedIndexingCount(String queueType) {
 		getCounter(Monitors.classQualifier, "discarded_index_count", "queueType", queueType).increment();
 	}
+
+	public static void recordAcquireLockUnsuccessful() {
+		counter(classQualifier, "acquire_lock_unsuccessful");
+	}
+
+	public static void recordAcquireLockFailure(String exceptionClassName) {
+		counter(classQualifier, "acquire_lock_failure", "exceptionType", exceptionClassName);
+	}
 }

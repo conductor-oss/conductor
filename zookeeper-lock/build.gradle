@@ -1,0 +1,10 @@
+
+dependencies {
+
+    compile project(':conductor-core')
+    
+    compile "org.apache.curator:curator-recipes:${revCuratorRecipes}"
+    testCompile "org.apache.curator:curator-test:${revCuratorTest}"
+
+    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
+}

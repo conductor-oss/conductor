@@ -93,7 +93,6 @@ public class CoreModule extends AbstractModule {
         bind(Lambda.class).asEagerSingleton();
         bind(Terminate.class).asEagerSingleton();
         bind(IsolatedTaskQueueProducer.class).asEagerSingleton();
-
         // start processing events when instance starts
         bind(ActionProcessor.class).to(SimpleActionProcessor.class);
         bind(EventProcessor.class).to(SimpleEventProcessor.class).asEagerSingleton();
@@ -223,7 +222,7 @@ public class CoreModule extends AbstractModule {
     public TaskMapper getLambdaTaskMapper(ParametersUtils parametersUtils) {
         return new LambdaTaskMapper(parametersUtils);
     }
-    
+
     @ProvidesIntoMap
     @StringMapKey(TASK_TYPE_EXCLUSIVE_JOIN)
     @Singleton

@@ -60,4 +60,8 @@ ext {
     revSlf4j = '1.7.25'
     revSlf4jlog4j = '1.8.0-alpha1'
     revSpectator = '0.68.0'
+    revRedisson = '3.11.4'
+    revEmbeddedRedis = '0.6'
+    revCuratorRecipes = '2.4.0'
+    revCuratorTest = '2.4.0'
 }
