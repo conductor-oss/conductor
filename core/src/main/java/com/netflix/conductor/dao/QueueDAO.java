@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -150,13 +150,4 @@ public interface QueueDAO {
 	 * @return true if the message is in queue and the change was successful else returns false  
 	 */
 	boolean setOffsetTime(String queueName, String id, long offsetTimeInSecond);
-
-	/**
-	 * Checks if a message with the given id exists on the queue
-	 * @param queueName name of the queue
-	 * @param id message id
-	 * @return true if the message with the specified id is present in the queue
-	 * false if the message with the given id is not present in the queue
-	 */
-	boolean exists(String queueName, String id);
 }

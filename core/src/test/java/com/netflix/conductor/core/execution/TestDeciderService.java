@@ -1,5 +1,9 @@
 /*
+<<<<<<< HEAD
  * Copyright 2019 Netflix, Inc.
+=======
+ * Copyright 2016 Netflix, Inc.
+>>>>>>> 45397da6... remove usage of exists method in queuedao
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -54,7 +58,6 @@ import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DefaultRegistry;
 import com.netflix.spectator.api.Registry;
@@ -109,7 +112,6 @@ public class TestDeciderService {
     public void setup() {
         metadataDAO = mock(MetadataDAO.class);
         externalPayloadStorageUtils = mock(ExternalPayloadStorageUtils.class);
-        QueueDAO queueDAO = mock(QueueDAO.class);
         MetadataDAO metadataDAO = mock(MetadataDAO.class);
         Configuration config = mock(Configuration.class);
 
@@ -135,7 +137,7 @@ public class TestDeciderService {
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
         taskMappers.put("HTTP", new HTTPTaskMapper(parametersUtils, metadataDAO));
 
-        deciderService = new DeciderService(parametersUtils, queueDAO, metadataDAO, externalPayloadStorageUtils, taskMappers, config);
+        deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, taskMappers, config);
     }
 
     @Test

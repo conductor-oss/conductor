@@ -33,6 +33,7 @@ import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
@@ -432,11 +433,9 @@ public class WorkflowExecutor {
             throw new ApplicationException(CONFLICT, "Workflow is in terminal state. Status =" + workflow.getStatus());
         }
 
-        // Get tasks that are in progress and have callbackAfterSeconds > 0
-        // and set the callbackAfterSeconds to 0;
+        // Get tasks that have callbackAfterSeconds > 0 and set the callbackAfterSeconds to 0
         for (Task task : workflow.getTasks()) {
-            if (task.getStatus().equals(IN_PROGRESS) &&
-                    task.getCallbackAfterSeconds() > 0) {
+            if (task.getCallbackAfterSeconds() > 0) {
                 if (queueDAO.setOffsetTime(QueueUtils.getQueueName(task), task.getTaskId(), 0)) {
                     task.setCallbackAfterSeconds(0);
                     executionDAOFacade.updateTask(task);
@@ -806,7 +805,13 @@ public class WorkflowExecutor {
             return;
         }
 
-        task.setStatus(valueOf(taskResult.getStatus().name()));
+        // for system tasks, setting to SCHEDULED would mean restarting the task which is undesirable
+        // for worker tasks, set status to SCHEDULED and push to the queue
+        if (!isSystemTask.test(task) && taskResult.getStatus() == Status.IN_PROGRESS) {
+            task.setStatus(SCHEDULED);
+        } else {
+            task.setStatus(valueOf(taskResult.getStatus().name()));
+        }
         task.setOutputMessage(taskResult.getOutputMessage());
         task.setReasonForIncompletion(taskResult.getReasonForIncompletion());
         task.setWorkerId(taskResult.getWorkerId());
@@ -846,6 +851,7 @@ public class WorkflowExecutor {
                         LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
                         break;
                     case IN_PROGRESS:
+                    case SCHEDULED:
                         // put it back in queue based on callbackAfterSeconds
                         long callBack = taskResult.getCallbackAfterSeconds();
                         queueDAO.remove(taskQueueName, task.getTaskId());

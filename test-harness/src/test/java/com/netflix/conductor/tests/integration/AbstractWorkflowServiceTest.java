@@ -2301,7 +2301,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull(workflow);
         assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
         assertEquals(2, workflow.getTasks().size());
-        assertEquals(IN_PROGRESS, workflow.getTasks().get(1).getStatus());
+        assertEquals(SCHEDULED, workflow.getTasks().get(1).getStatus());
 
         // wait for callback after seconds which is longer than response timeout seconds and then call decide
         Thread.sleep(20000);
@@ -2777,62 +2777,54 @@ public abstract class AbstractWorkflowServiceTest {
     }
 
     @Test
-    public void testResetWorkflowInProgressTasks() throws Exception {
-
-        clearWorkflows();
-
-        metadataService.getWorkflowDef(LONG_RUNNING, 1);
+    public void testResetWorkflowInProgressTasks() {
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(LONG_RUNNING, 1);
+        assertNotNull(workflowDef);
 
         String correlationId = "unit_test_1";
-        Map<String, Object> input = new HashMap<String, Object>();
+        Map<String, Object> input = new HashMap<>();
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(LONG_RUNNING, 1, correlationId, input, null, null);
-        System.out.println("testLongRunning.wfid=" + wfid);
-        assertNotNull(wfid);
+        String workflowId = startOrLoadWorkflowExecution(LONG_RUNNING, 1, correlationId, input, null, null);
+        assertNotNull(workflowId);
 
-        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
-        assertNotNull(es);
-        assertEquals(RUNNING, es.getStatus());
-
-
-        es = workflowExecutionService.getExecutionStatus(wfid, true);
-        assertNotNull(es);
-        assertEquals(RUNNING, es.getStatus());
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
 
         // Check the queue
-        assertEquals(Integer.valueOf(1), workflowExecutionService.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
-        ///
+        assertEquals(Integer.valueOf(1), workflowExecutionService.getTaskQueueSizes(Collections.singletonList("junit_task_1")).get("junit_task_1"));
 
         Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
         assertNotNull(task);
         assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
 
+        // Verify the task
         String param1 = (String) task.getInputData().get("p1");
         String param2 = (String) task.getInputData().get("p2");
-
         assertNotNull(param1);
         assertNotNull(param2);
         assertEquals("p1 value", param1);
         assertEquals("p2 value", param2);
 
-
-        String task1Op = "task1.In.Progress";
-        task.getOutputData().put("op", task1Op);
+        // Update the task with callbackAfterSeconds
+        String task1Output = "task1.In.Progress";
+        task.getOutputData().put("op", task1Output);
         task.setStatus(IN_PROGRESS);
         task.setCallbackAfterSeconds(3600);
         workflowExecutionService.updateTask(task);
         String taskId = task.getTaskId();
 
         // Check the queue
-        assertEquals(Integer.valueOf(1), workflowExecutionService.getTaskQueueSizes(Arrays.asList("junit_task_1")).get("junit_task_1"));
-        ///
+        assertEquals(Integer.valueOf(1), workflowExecutionService.getTaskQueueSizes(Collections.singletonList("junit_task_1")).get("junit_task_1"));
 
-
-        es = workflowExecutionService.getExecutionStatus(wfid, true);
-        assertNotNull(es);
-        assertEquals(RUNNING, es.getStatus());
+        // Check the workflow
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(1, workflow.getTasks().size());
+        assertEquals(SCHEDULED, workflow.getTasks().get(0).getStatus());
 
         // Polling for next task should not return anything
         Task task2 = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
@@ -2841,10 +2833,8 @@ public abstract class AbstractWorkflowServiceTest {
         task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
         assertNull(task);
 
-        //Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
-        // Reset
-        workflowExecutor.resetCallbacksForInProgressTasks(wfid);
-
+        // Reset the callbackAfterSeconds
+        workflowExecutor.resetCallbacksForInProgressTasks(workflowId);
 
         // Now Polling for the first task should return the same task as before
         task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
@@ -2853,41 +2843,33 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals(task.getTaskId(), taskId);
         assertEquals(task.getCallbackAfterSeconds(), 0);
 
-        task1Op = "task1.Done";
-        List<Task> tasks = workflowExecutionService.getTasks(task.getTaskType(), null, 1);
-        assertNotNull(tasks);
-        assertEquals(1, tasks.size());
-        assertEquals(wfid, task.getWorkflowInstanceId());
-        task = tasks.get(0);
-        task.getOutputData().put("op", task1Op);
+        // update task with COMPLETED status
+        task1Output = "task1.Done";
+        task.getOutputData().put("op", task1Output);
         task.setStatus(COMPLETED);
         workflowExecutionService.updateTask(task);
 
+        // poll for next task
         task = workflowExecutionService.poll("junit_task_2", "task2.junit.worker");
         assertNotNull(task);
         assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
         String task2Input = (String) task.getInputData().get("tp2");
         assertNotNull(task2Input);
-        assertEquals(task1Op, task2Input);
+        assertEquals(task1Output, task2Input);
 
         task2Input = (String) task.getInputData().get("tp1");
         assertNotNull(task2Input);
         assertEquals(inputParam1, task2Input);
 
+         // update task with COMPLETED status
         task.setStatus(COMPLETED);
         workflowExecutionService.updateTask(task);
 
-
-        es = workflowExecutionService.getExecutionStatus(wfid, true);
-        assertNotNull(es);
-        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-        tasks = es.getTasks();
-        assertNotNull(tasks);
-        assertEquals(2, tasks.size());
-
-
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
     }
-
 
     @Test
     public void testConcurrentWorkflowExecutions() {
