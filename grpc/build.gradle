@@ -36,6 +36,7 @@ protobuf {
         }
     }
     generateProtoTasks {
+        processResources.dependsOn extractProto
         all()*.plugins {
             grpc {}
         }

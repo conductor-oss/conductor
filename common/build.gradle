@@ -36,4 +36,6 @@ task protogen(dependsOn: jar, type: ProtoGenTask) {
 
     sourceJar = jar.archivePath
     sourcePackage = "com.netflix.conductor.common"
+    outputs.dir protosDir
+    outputs.dir mapperDir
 }
