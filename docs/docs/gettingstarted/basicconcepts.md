@@ -1,5 +1,5 @@
 ## Definitions (aka Metadata or Blueprints)
-Conductor definitions are like class defintions in OOP paradigm, or templates. You define this once, and use for each workflow execution. Definitions to Executions have 1:N relationship.
+Conductor definitions are like class definitions in OOP paradigm, or templates. You define this once, and use for each workflow execution. Definitions to Executions have 1:N relationship.
 
 ## Tasks
 Tasks are the building blocks of Workflow. There must be at least one task in a Workflow.  
