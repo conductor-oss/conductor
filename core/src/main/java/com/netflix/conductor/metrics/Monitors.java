@@ -195,7 +195,7 @@ public class Monitors {
 	}
 
 	public static void recordTaskPendingTime(String taskType, String workflowType, long duration) {
-		getTimer(classQualifier, "task_pending_time", "workflowName", workflowType, "taskType", taskType).record(duration, TimeUnit.MILLISECONDS);
+		gauge(classQualifier, "task_pending_time", duration, "workflowName", workflowType, "taskType", taskType);
 	}
 
 	public static void recordWorkflowTermination(String workflowType, WorkflowStatus status, String ownerApp) {
