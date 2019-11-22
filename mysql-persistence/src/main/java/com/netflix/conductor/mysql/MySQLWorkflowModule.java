@@ -6,6 +6,7 @@ import com.google.inject.Scopes;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.RateLimitingDao;
 import com.netflix.conductor.dao.mysql.MySQLExecutionDAO;
 import com.netflix.conductor.dao.mysql.MySQLMetadataDAO;
 import com.netflix.conductor.dao.mysql.MySQLQueueDAO;
@@ -23,6 +24,7 @@ public class MySQLWorkflowModule extends AbstractModule {
         bind(DataSource.class).toProvider(MySQLDataSourceProvider.class).in(Scopes.SINGLETON);
         bind(MetadataDAO.class).to(MySQLMetadataDAO.class);
         bind(ExecutionDAO.class).to(MySQLExecutionDAO.class);
+        bind(RateLimitingDao.class).to(MySQLExecutionDAO.class);
         bind(QueueDAO.class).to(MySQLQueueDAO.class);
     }
 

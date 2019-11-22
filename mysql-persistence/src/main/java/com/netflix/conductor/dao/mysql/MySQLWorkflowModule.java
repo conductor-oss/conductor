@@ -7,6 +7,7 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.RateLimitingDao;
 import com.zaxxer.hikari.HikariDataSource;
 
 import org.flywaydb.core.Flyway;
@@ -44,6 +45,7 @@ public class MySQLWorkflowModule extends AbstractModule {
     protected void configure() {
         bind(MetadataDAO.class).to(MySQLMetadataDAO.class);
         bind(ExecutionDAO.class).to(MySQLExecutionDAO.class);
+        bind(RateLimitingDao.class).to(MySQLExecutionDAO.class);
         bind(QueueDAO.class).to(MySQLQueueDAO.class);
     }
 

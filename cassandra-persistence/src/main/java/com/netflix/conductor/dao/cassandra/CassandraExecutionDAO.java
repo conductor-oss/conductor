@@ -231,15 +231,6 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
         return false;
     }
 
-    /**
-     * This is a dummy implementation and this feature is not implemented
-     * for Cassandra backed Conductor
-     */
-    @Override
-    public boolean exceedsRateLimitPerFrequency(Task task) {
-        throw new UnsupportedOperationException("This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
-    }
-
     @Override
     public boolean removeTask(String taskId) {
         Task task = getTask(taskId);

@@ -84,27 +84,6 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
         assertEquals(taskId, tasks.get(0).getTaskId());
     }
 
-	@Test
-	public void testExceedsRateLimitWhenNoRateLimitSet() {
-		Task task =new Task();
-		assertFalse(executionDAO.exceedsRateLimitPerFrequency(task));
-	}
-	@Test
-	public void testExceedsRateLimitWithinLimit() {
-		Task task =new Task();
-		task.setRateLimitFrequencyInSeconds(60);
-		task.setRateLimitPerFrequency(20);
-		assertFalse(executionDAO.exceedsRateLimitPerFrequency(task));
-	}
-	@Test
-	public void testExceedsRateLimitOutOfLimit() {
-		Task task =new Task();
-		task.setRateLimitFrequencyInSeconds(60);
-		task.setRateLimitPerFrequency(1);
-		assertFalse(executionDAO.exceedsRateLimitPerFrequency(task));
-		assertTrue(executionDAO.exceedsRateLimitPerFrequency(task));
-	}
-
     @Override
     protected ExecutionDAO getExecutionDAO() {
         return executionDAO;

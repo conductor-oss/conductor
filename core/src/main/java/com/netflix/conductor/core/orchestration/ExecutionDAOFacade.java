@@ -25,6 +25,7 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.dao.RateLimitingDao;
 import com.netflix.conductor.metrics.Monitors;
 import java.io.IOException;
 import java.util.List;
@@ -39,7 +40,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Service that acts as a facade for accessing execution data from the {@link ExecutionDAO} and {@link IndexDAO} storage layers
+ * Service that acts as a facade for accessing execution data from the {@link ExecutionDAO}, {@link RateLimitingDao} and {@link IndexDAO} storage layers
  */
 @Singleton
 public class ExecutionDAOFacade {
@@ -50,15 +51,18 @@ public class ExecutionDAOFacade {
 
     private final ExecutionDAO executionDAO;
     private final IndexDAO indexDAO;
+    private final RateLimitingDao rateLimitingDao;
     private final ObjectMapper objectMapper;
     private final Configuration config;
 
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
     @Inject
-    public ExecutionDAOFacade(ExecutionDAO executionDAO, IndexDAO indexDAO, ObjectMapper objectMapper, Configuration config) {
+    public ExecutionDAOFacade(ExecutionDAO executionDAO, IndexDAO indexDAO, RateLimitingDao rateLimitingDao,
+                              ObjectMapper objectMapper, Configuration config) {
         this.executionDAO = executionDAO;
         this.indexDAO = indexDAO;
+        this.rateLimitingDao = rateLimitingDao;
         this.objectMapper = objectMapper;
         this.config = config;
         this.scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(4,
@@ -395,7 +399,7 @@ public class ExecutionDAOFacade {
     }
 
     public boolean exceedsRateLimitPerFrequency(Task task) {
-        return executionDAO.exceedsRateLimitPerFrequency(task);
+        return rateLimitingDao.exceedsRateLimitPerFrequency(task);
     }
 
     public void addTaskExecLog(List<TaskExecLog> logs) {

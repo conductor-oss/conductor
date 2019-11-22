@@ -26,8 +26,10 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.RateLimitingDao;
 import com.netflix.conductor.dao.dynomite.RedisExecutionDAO;
 import com.netflix.conductor.dao.dynomite.RedisMetadataDAO;
+import com.netflix.conductor.dao.dynomite.RedisRateLimitingDao;
 import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
 import com.netflix.conductor.dyno.RedisQueuesProvider;
 import com.netflix.conductor.server.LocalRedisModule;
@@ -62,6 +64,7 @@ public class TestModule extends AbstractModule {
 
         bind(MetadataDAO.class).to(RedisMetadataDAO.class);
         bind(ExecutionDAO.class).to(RedisExecutionDAO.class);
+        bind(RateLimitingDao.class).to(RedisRateLimitingDao.class);
         bind(QueueDAO.class).to(DynoQueueDAO.class);
         bind(IndexDAO.class).to(MockIndexDAO.class);
 
