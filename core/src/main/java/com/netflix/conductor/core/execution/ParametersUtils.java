@@ -70,7 +70,7 @@ public class ParametersUtils {
             inputParams = new HashMap<>();
         }
         if (taskDefinition != null && taskDefinition.getInputTemplate() != null) {
-            inputParams.putAll(clone(taskDefinition.getInputTemplate()));
+            clone(taskDefinition.getInputTemplate()).forEach(inputParams::putIfAbsent);
         }
 
         Map<String, Map<String, Object>> inputMap = new HashMap<>();

@@ -321,6 +321,39 @@ public class TestDeciderService {
     }
 
     @Test
+    public void testGetTaskInputV2WithInputTemplate() {
+        TaskDef def = new TaskDef();
+        Map<String, Object> inputTemplate = new HashMap<>();
+        inputTemplate.put("url", "https://some_url:7004");
+        inputTemplate.put("default_url", "https://default_url:7004");
+
+        def.getInputTemplate().putAll(inputTemplate);
+
+        Map<String, Object> workflowInput = new HashMap<>();
+        workflowInput.put("some_new_url", "https://some_new_url:7004");
+        workflowInput.put("workflow_input_url", "https://workflow_input_url:7004");
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("testGetTaskInputV2WithInputTemplate");
+        workflowDef.setVersion(1);
+
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(workflowDef);
+        workflow.setInput(workflowInput);
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.getInputParameters().put("url", "${workflow.input.some_new_url}");
+        workflowTask.getInputParameters().put("workflow_input_url", "${workflow.input.workflow_input_url}");
+
+        Map<String, Object> taskInput = parametersUtils.getTaskInputV2(workflowTask.getInputParameters(), workflow, null, def);
+        assertTrue(taskInput.containsKey("url"));
+        assertTrue(taskInput.containsKey("default_url"));
+        assertEquals(taskInput.get("url"), "https://some_new_url:7004");
+        assertEquals(taskInput.get("default_url"), "https://default_url:7004");
+        assertEquals(taskInput.get("workflow_input_url"), "https://workflow_input_url:7004");
+    }
+
+    @Test
     public void testGetNextTask() {
 
         WorkflowDef def = createNestedWorkflow();
