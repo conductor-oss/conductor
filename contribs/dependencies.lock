@@ -7,7 +7,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.685",
+            "locked": "1.11.687",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -124,8 +124,8 @@
             "locked": "1"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.8",
-            "requested": "0.0.8"
+            "locked": "0.0.11",
+            "requested": "0.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -167,7 +167,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.685",
+            "locked": "1.11.687",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -288,8 +288,8 @@
             "requested": "1.1.1"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.8",
-            "requested": "0.0.8"
+            "locked": "0.0.11",
+            "requested": "0.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -337,7 +337,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.685",
+            "locked": "1.11.687",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -454,8 +454,8 @@
             "locked": "1"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.8",
-            "requested": "0.0.8"
+            "locked": "0.0.11",
+            "requested": "0.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -507,7 +507,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.685",
+            "locked": "1.11.687",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -624,8 +624,8 @@
             "locked": "1"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.8",
-            "requested": "0.0.8"
+            "locked": "0.0.11",
+            "requested": "0.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -667,7 +667,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.685",
+            "locked": "1.11.687",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -784,8 +784,8 @@
             "locked": "1"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.8",
-            "requested": "0.0.8"
+            "locked": "0.0.11",
+            "requested": "0.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -827,7 +827,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.685",
+            "locked": "1.11.687",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -948,8 +948,8 @@
             "requested": "4.12"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.8",
-            "requested": "0.0.8"
+            "locked": "0.0.11",
+            "requested": "0.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -1003,7 +1003,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.685",
+            "locked": "1.11.687",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -1124,8 +1124,8 @@
             "requested": "4.12"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.8",
-            "requested": "0.0.8"
+            "locked": "0.0.11",
+            "requested": "0.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -1179,7 +1179,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.685",
+            "locked": "1.11.687",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -1300,8 +1300,8 @@
             "requested": "4.12"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.8",
-            "requested": "0.0.8"
+            "locked": "0.0.11",
+            "requested": "0.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
@@ -1355,7 +1355,7 @@
             "locked": "1.11.86"
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.685",
+            "locked": "1.11.687",
             "requested": "latest.release"
         },
         "com.fasterxml.jackson.core:jackson-core": {
@@ -1476,8 +1476,8 @@
             "requested": "4.12"
         },
         "net.thisptr:jackson-jq": {
-            "locked": "0.0.8",
-            "requested": "0.0.8"
+            "locked": "0.0.11",
+            "requested": "0.0.11"
         },
         "org.apache.commons:commons-lang3": {
             "firstLevelTransitive": [
