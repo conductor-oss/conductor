@@ -393,7 +393,12 @@ public class Task {
      */
     public long getQueueWaitTime() {
         if (this.startTime > 0 && this.scheduledTime > 0) {
-            return this.startTime - scheduledTime - (getCallbackAfterSeconds() * 1000);
+            if (this.updateTime > 0 && getCallbackAfterSeconds() > 0) {
+                long waitTime = System.currentTimeMillis() - (this.updateTime + (getCallbackAfterSeconds() * 1000));
+                return waitTime > 0 ? waitTime : 0;
+            } else {
+                return this.startTime - this.scheduledTime;
+            }
         }
         return 0L;
     }
