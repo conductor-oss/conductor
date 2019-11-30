@@ -663,6 +663,10 @@ public class WorkflowExecutor {
 
     public void terminateWorkflow(String workflowId, String reason) {
         Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, true);
+        if (workflow.getStatus().isTerminal()) {
+            throw new ApplicationException(CONFLICT,
+                "Workflow is already in terminal state. Status =" + workflow.getStatus());
+        }
         workflow.setStatus(WorkflowStatus.TERMINATED);
         terminateWorkflow(workflow, reason, null);
     }
