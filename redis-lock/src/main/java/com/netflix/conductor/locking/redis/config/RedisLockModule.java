@@ -17,14 +17,65 @@
 package com.netflix.conductor.locking.redis.config;
 
 import com.google.inject.AbstractModule;
+import com.google.inject.Provides;
+import com.google.inject.ProvisionException;
 import com.google.inject.Singleton;
 import com.netflix.conductor.core.utils.Lock;
 import com.netflix.conductor.locking.redis.RedisLock;
+import org.redisson.Redisson;
+import org.redisson.config.Config;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.Arrays;
 
 public class RedisLockModule extends AbstractModule{
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RedisLockModule.class);
+
     @Override
     protected void configure() {
         bind(RedisLockConfiguration.class).to(SystemPropertiesRedisLockConfiguration.class);
         bind(Lock.class).to(RedisLock.class).in(Singleton.class);
+    }
+
+    @Provides
+    @javax.inject.Singleton
+    public Redisson getRedissonBasedOnConfig(RedisLockConfiguration clusterConfiguration) {
+        RedisLockConfiguration.REDIS_SERVER_TYPE redisServerType;
+        try {
+            redisServerType = clusterConfiguration.getRedisServerType();
+        } catch (IllegalArgumentException ie) {
+            final String message = "Invalid Redis server type: " + clusterConfiguration.getRedisServerType()
+                    + ", supported values are: " + Arrays.toString(clusterConfiguration.getRedisServerType().values());
+            LOGGER.error(message);
+            throw new ProvisionException(message, ie);
+        }
+        String redisServerAddress = clusterConfiguration.getRedisServerAddress();
+
+        Config redisConfig = new Config();
+
+        int connectionTimeout = 10000;
+        switch (redisServerType) {
+            case SINGLE:
+                redisConfig.useSingleServer()
+                        .setAddress(redisServerAddress)
+                        .setTimeout(connectionTimeout);
+                break;
+            case CLUSTER:
+                redisConfig.useClusterServers()
+                        .setScanInterval(2000) // cluster state scan interval in milliseconds
+                        .addNodeAddress(redisServerAddress.split(","))
+                        .setTimeout(connectionTimeout);
+                break;
+            case SENTINEL:
+                redisConfig.useSentinelServers()
+                        .setScanInterval(2000)
+                        .addSentinelAddress(redisServerAddress)
+                        .setTimeout(connectionTimeout);
+                break;
+        }
+
+        return (Redisson) Redisson.create(redisConfig);
     }
 }

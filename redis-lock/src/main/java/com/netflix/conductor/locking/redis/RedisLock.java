@@ -17,7 +17,6 @@
 package com.netflix.conductor.locking.redis;
 
 import com.google.inject.Inject;
-import com.google.inject.ProvisionException;
 import com.netflix.conductor.core.utils.Lock;
 import com.netflix.conductor.locking.redis.config.RedisLockConfiguration;
 import com.netflix.conductor.metrics.Monitors;
@@ -25,11 +24,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.redisson.Redisson;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
-import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 public class RedisLock implements Lock {
@@ -37,49 +34,14 @@ public class RedisLock implements Lock {
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisLock.class);
 
     private RedisLockConfiguration configuration;
-    private Config redisConfig;
     private RedissonClient redisson;
-    private final int connectionTimeout = 10000;
     private static String LOCK_NAMESPACE = "";
 
     @Inject
-    public RedisLock(RedisLockConfiguration configuration) {
+    public RedisLock(Redisson redisson, RedisLockConfiguration configuration) {
         this.configuration = configuration;
+        this.redisson = redisson;
         LOCK_NAMESPACE = configuration.getProperty("workflow.decider.locking.namespace", "");
-        RedisLockConfiguration.REDIS_SERVER_TYPE redisServerType;
-        try {
-            redisServerType = configuration.getRedisServerType();
-        } catch (IllegalArgumentException ie) {
-            final String message = "Invalid Redis server type: " + configuration.getRedisServerType()
-                    + ", supported values are: " + Arrays.toString(configuration.getRedisServerType().values());
-            LOGGER.error(message);
-            throw new ProvisionException(message, ie);
-        }
-        String redisServerAddress = configuration.getRedisServerAddress();
-
-        redisConfig = new Config();
-
-        switch (redisServerType) {
-            case SINGLE:
-                redisConfig.useSingleServer()
-                        .setAddress(redisServerAddress)
-                        .setTimeout(connectionTimeout);
-                break;
-            case CLUSTER:
-                redisConfig.useClusterServers()
-                        .setScanInterval(2000) // cluster state scan interval in milliseconds
-                        .addNodeAddress(redisServerAddress.split(","))
-                        .setTimeout(connectionTimeout);
-                break;
-            case SENTINEL:
-                redisConfig.useSentinelServers()
-                        .setScanInterval(2000)
-                        .addSentinelAddress(redisServerAddress)
-                        .setTimeout(connectionTimeout);
-                break;
-        }
-
-        redisson = Redisson.create(redisConfig);
     }
 
     @Override

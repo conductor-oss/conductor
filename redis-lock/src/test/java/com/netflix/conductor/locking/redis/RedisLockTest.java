@@ -54,7 +54,10 @@ public class RedisLockTest {
                 return testServerAddress;
             }
         };
-        redisLock = new RedisLock(redisLockConfiguration);
+
+        Config redissonConfig = new Config();
+        redissonConfig.useSingleServer().setAddress(testServerAddress).setTimeout(10000);
+        redisLock = new RedisLock((Redisson) Redisson.create(redissonConfig), redisLockConfiguration);
 
         // Create another instance of redisson for tests.
         config = new Config();
