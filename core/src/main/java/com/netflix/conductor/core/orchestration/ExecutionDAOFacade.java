@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.Workflow;
@@ -398,8 +399,8 @@ public class ExecutionDAOFacade {
         return executionDAO.exceedsInProgressLimit(task);
     }
 
-    public boolean exceedsRateLimitPerFrequency(Task task) {
-        return rateLimitingDao.exceedsRateLimitPerFrequency(task);
+    public boolean exceedsRateLimitPerFrequency(Task task, TaskDef taskDef) {
+        return rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef);
     }
 
     public void addTaskExecLog(List<TaskExecLog> logs) {

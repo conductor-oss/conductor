@@ -146,7 +146,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
      * @return
      */
     @Override
-    public boolean exceedsRateLimitPerFrequency(Task task) {
+    public boolean exceedsRateLimitPerFrequency(Task task, TaskDef taskDef) {
         return false;
     }
 

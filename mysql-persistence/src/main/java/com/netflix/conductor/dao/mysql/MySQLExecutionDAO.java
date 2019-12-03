@@ -146,7 +146,7 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, Rat
      * @return
      */
     @Override
-    public boolean exceedsRateLimitPerFrequency(Task task) {
+    public boolean exceedsRateLimitPerFrequency(Task task, TaskDef taskDef) {
         return false;
     }
 

@@ -2,6 +2,7 @@ package com.netflix.conductor.dao.dynomite;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
@@ -12,6 +13,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 import redis.clients.jedis.commands.JedisCommands;
+
+import java.util.UUID;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -34,22 +37,31 @@ public class RedisRateLimitDaoTest {
 
     @Test
     public void testExceedsRateLimitWhenNoRateLimitSet() {
+        TaskDef taskDef = new TaskDef("TestTaskDefinition");
         Task task =new Task();
-        assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task));
+        task.setTaskId(UUID.randomUUID().toString());
+        task.setTaskDefName(taskDef.getName());
+        assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
     }
     @Test
     public void testExceedsRateLimitWithinLimit() {
+        TaskDef taskDef = new TaskDef("TestTaskDefinition");
+        taskDef.setRateLimitFrequencyInSeconds(60);
+        taskDef.setRateLimitPerFrequency(20);
         Task task =new Task();
-        task.setRateLimitFrequencyInSeconds(60);
-        task.setRateLimitPerFrequency(20);
-        assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task));
+        task.setTaskId(UUID.randomUUID().toString());
+        task.setTaskDefName(taskDef.getName());
+        assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
     }
     @Test
     public void testExceedsRateLimitOutOfLimit() {
+        TaskDef taskDef = new TaskDef("TestTaskDefinition");
+        taskDef.setRateLimitFrequencyInSeconds(60);
+        taskDef.setRateLimitPerFrequency(1);
         Task task =new Task();
-        task.setRateLimitFrequencyInSeconds(60);
-        task.setRateLimitPerFrequency(1);
-        assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task));
-        assertTrue(rateLimitingDao.exceedsRateLimitPerFrequency(task));
+        task.setTaskId(UUID.randomUUID().toString());
+        task.setTaskDefName(taskDef.getName());
+        assertFalse(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
+        assertTrue(rateLimitingDao.exceedsRateLimitPerFrequency(task, taskDef));
     }
 }
