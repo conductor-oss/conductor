@@ -14,6 +14,7 @@ import javax.inject.Provider;
 import java.io.IOException;
 
 public class JsonMapperProvider implements Provider<ObjectMapper> {
+
     public JsonMapperProvider() {}
 
     /**
@@ -111,11 +112,11 @@ public class JsonMapperProvider implements Provider<ObjectMapper> {
                 JsonNode value = root.get(JSON_VALUE);
 
                 if (type == null || !type.isTextual()) {
-                    throw ctxt.reportMappingException("invalid '@type' field when deserializing ProtoBuf Any object");
+                    ctxt.reportMappingException("invalid '@type' field when deserializing ProtoBuf Any object");
                 }
 
                 if (value == null || !value.isTextual()) {
-                    throw ctxt.reportMappingException("invalid '@value' field when deserializing ProtoBuf Any object");
+                    ctxt.reportMappingException("invalid '@value' field when deserializing ProtoBuf Any object");
                 }
 
                 return Any.newBuilder()
@@ -138,8 +139,7 @@ public class JsonMapperProvider implements Provider<ObjectMapper> {
         objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
         objectMapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
+        objectMapper.setDefaultPropertyInclusion(JsonInclude.Value.construct(JsonInclude.Include.NON_NULL, JsonInclude.Include.ALWAYS));
         objectMapper.registerModule(new JsonProtoModule());
         return objectMapper;
     }
