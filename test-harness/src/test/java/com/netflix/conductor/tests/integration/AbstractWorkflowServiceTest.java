@@ -2671,7 +2671,10 @@ public abstract class AbstractWorkflowServiceTest {
             int version = Integer.parseInt(StringUtils.substringAfter(workflowWithVersion, ":"));
             List<String> running = workflowExecutionService.getRunningWorkflows(workflowName, version);
             for (String wfid : running) {
-                workflowExecutor.terminateWorkflow(wfid, "cleanup");
+                Workflow workflow = workflowExecutor.getWorkflow(wfid, false);
+                if (!workflow.getStatus().isTerminal()) {
+                    workflowExecutor.terminateWorkflow(wfid, "cleanup");
+                }
             }
         }
         queueDAO.queuesDetail().keySet().forEach(queueDAO::flush);

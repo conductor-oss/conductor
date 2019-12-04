@@ -18,6 +18,9 @@
  */
 package com.netflix.conductor.tests.listener;
 
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
+import static org.junit.Assert.assertEquals;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -30,18 +33,18 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import javax.inject.Inject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-
-import javax.inject.Inject;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
-
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
-import static org.junit.Assert.assertEquals;
 
 @RunWith(StatusPublisherTestRunner.class)
 public class WorkflowStatusPublisherIntegrationTest {
@@ -77,14 +80,7 @@ public class WorkflowStatusPublisherIntegrationTest {
 
     @Test
     public void testListenerOnTerminatedWorkflow() throws IOException {
-        WorkflowDef empty = new WorkflowDef();
-        empty.setName("empty_workflow");
-        empty.setVersion(WORKFLOW_VERSION);
-        empty.setSchemaVersion(2);
-        empty.setWorkflowStatusListenerEnabled(true);
-        metadataService.registerWorkflowDef(empty);
-
-        String id = startOrLoadWorkflowExecution(empty.getName(), 1, "testWorkflowTerminatedListener", new HashMap<>(), null, null);
+        String id = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, "testWorkflowTerminatedListener", new HashMap<>(), null, null);
         workflowExecutor.terminateWorkflow(id, INCOMPLETION_REASON);
 
         List<Message> callbackMessages = queueDAO.pollMessages(CALLBACK_QUEUE, 1, 200);
@@ -93,7 +89,7 @@ public class WorkflowStatusPublisherIntegrationTest {
         WorkflowSummary payload = mapper.readValue(callbackMessages.get(0).getPayload(), WorkflowSummary.class);
 
         assertEquals(id, callbackMessages.get(0).getId());
-        assertEquals("empty_workflow", payload.getWorkflowType());
+        assertEquals(LINEAR_WORKFLOW_T1_T2, payload.getWorkflowType());
         assertEquals("testWorkflowTerminatedListener", payload.getCorrelationId());
         assertEquals(Workflow.WorkflowStatus.TERMINATED, payload.getStatus());
         assertEquals(INCOMPLETION_REASON, payload.getReasonForIncompletion());

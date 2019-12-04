@@ -1008,6 +1008,16 @@ public class TestWorkflowExecutor {
         assertEquals(3, removeTaskCalledCounter.get());
     }
 
+    @Test(expected = ApplicationException.class)
+    public void testTerminateWorkflow() {
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId("testTerminateTerminalWorkflow");
+        workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
+        when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
+
+        workflowExecutor.terminateWorkflow(workflow.getWorkflowId(), "test terminating terminal workflow");
+    }
+
     private Workflow generateSampleWorkflow() {
         //setup
         Workflow workflow = new Workflow();
