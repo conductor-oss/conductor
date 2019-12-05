@@ -50,13 +50,15 @@ public class WorkflowDefValidatorTest {
         ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
         Validator validator = factory.getValidator();
         Set<ConstraintViolation<Object>> result = validator.validate(workflowDef);
-        assertEquals(2, result.size());
+        assertEquals(3, result.size());
 
         List<String> validationErrors = new ArrayList<>();
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
         assertTrue(validationErrors.contains("WorkflowDef name cannot be null or empty"));
         assertTrue(validationErrors.contains("WorkflowTask list cannot be empty"));
+        assertTrue(validationErrors.contains("ownerEmail cannot be empty"));
+        //assertTrue(validationErrors.contains("workflowDef schemaVersion: 1 should be >= 2"));
     }
 
 	@Test
@@ -64,6 +66,7 @@ public class WorkflowDefValidatorTest {
 		WorkflowDef workflowDef = new WorkflowDef();
 		workflowDef.setSchemaVersion(2);
 		workflowDef.setName("test_env");
+		workflowDef.setOwnerEmail("owner@test.com");
 
 		WorkflowTask workflowTask_1 = new WorkflowTask();
 		workflowTask_1.setName("task_1");
@@ -103,6 +106,7 @@ public class WorkflowDefValidatorTest {
 		WorkflowDef workflowDef = new WorkflowDef();//name is null
 		workflowDef.setSchemaVersion(2);
 		workflowDef.setName("test_env");
+		workflowDef.setOwnerEmail("owner@test.com");
 
 		WorkflowTask workflowTask_1 = new WorkflowTask();
 		workflowTask_1.setName("task_1");
@@ -130,6 +134,7 @@ public class WorkflowDefValidatorTest {
 		WorkflowDef workflowDef = new WorkflowDef();//name is null
 		workflowDef.setSchemaVersion(2);
 		workflowDef.setName("test_env");
+		workflowDef.setOwnerEmail("owner@test.com");
 
 		WorkflowTask workflowTask_1 = new WorkflowTask();
 		workflowTask_1.setName("task_1");
@@ -159,6 +164,7 @@ public class WorkflowDefValidatorTest {
 		WorkflowDef workflowDef = new WorkflowDef();//name is null
 		workflowDef.setSchemaVersion(2);
 		workflowDef.setName("test_env");
+		workflowDef.setOwnerEmail("owner@test.com");
 
 		WorkflowTask workflowTask_1 = new WorkflowTask();
 		workflowTask_1.setName("task_1");
@@ -193,6 +199,7 @@ public class WorkflowDefValidatorTest {
 		WorkflowDef workflowDef = new WorkflowDef();//name is null
 		workflowDef.setSchemaVersion(2);
 		workflowDef.setName("test_env");
+		workflowDef.setOwnerEmail("owner@test.com");
 
 		WorkflowTask workflowTask = new WorkflowTask();//name is null
 		workflowTask.setName("t1");
@@ -222,6 +229,7 @@ public class WorkflowDefValidatorTest {
 		WorkflowDef workflowDef = new WorkflowDef();//name is null
 		workflowDef.setSchemaVersion(2);
 		workflowDef.setName("test_env");
+		workflowDef.setOwnerEmail("owner@test.com");
 
 		WorkflowTask workflowTask = new WorkflowTask();//name is null
 
@@ -246,6 +254,7 @@ public class WorkflowDefValidatorTest {
 		WorkflowDef workflowDef = new WorkflowDef();//name is null
 		workflowDef.setSchemaVersion(2);
 		workflowDef.setName("test_env");
+		workflowDef.setOwnerEmail("owner@test.com");
 
 		WorkflowTask workflowTask = new WorkflowTask();//name is null
 
@@ -271,6 +280,7 @@ public class WorkflowDefValidatorTest {
 		WorkflowDef workflowDef = new WorkflowDef();//name is null
 		workflowDef.setSchemaVersion(3);
 		workflowDef.setName("test_env");
+		workflowDef.setOwnerEmail("owner@test.com");
 
 		WorkflowTask workflowTask = new WorkflowTask();
 
@@ -293,5 +303,58 @@ public class WorkflowDefValidatorTest {
 		result.forEach(e -> validationErrors.add(e.getMessage()));
 
 		assertTrue(validationErrors.contains("workflowDef schemaVersion: 2 is only supported"));
+	}
+
+	@Test
+	public void testWorkflowOwnerInvalidEmail() {
+		WorkflowDef workflowDef = new WorkflowDef();
+		workflowDef.setName("test_env");
+		workflowDef.setOwnerEmail("owner");
+
+		WorkflowTask workflowTask = new WorkflowTask();
+
+		workflowTask.setName("t1");
+		workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
+		workflowTask.setTaskReferenceName("t1");
+
+		Map<String, Object> map = new HashMap<>();
+		map.put("blabla", "");
+		workflowTask.setInputParameters(map);
+
+		workflowDef.getTasks().add(workflowTask);
+
+		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+		Validator validator = factory.getValidator();
+		Set<ConstraintViolation<Object>> result = validator.validate(workflowDef);
+		assertEquals(1, result.size());
+
+		List<String> validationErrors = new ArrayList<>();
+		result.forEach(e -> validationErrors.add(e.getMessage()));
+
+		assertTrue(validationErrors.contains("ownerEmail should be valid email address"));
+	}
+
+	@Test
+	public void testWorkflowOwnerValidEmail() {
+		WorkflowDef workflowDef = new WorkflowDef();
+		workflowDef.setName("test_env");
+		workflowDef.setOwnerEmail("owner@test.com");
+
+		WorkflowTask workflowTask = new WorkflowTask();
+
+		workflowTask.setName("t1");
+		workflowTask.setWorkflowTaskType(TaskType.SIMPLE);
+		workflowTask.setTaskReferenceName("t1");
+
+		Map<String, Object> map = new HashMap<>();
+		map.put("blabla", "");
+		workflowTask.setInputParameters(map);
+
+		workflowDef.getTasks().add(workflowTask);
+
+		ValidatorFactory factory = Validation.buildDefaultValidatorFactory();
+		Validator validator = factory.getValidator();
+		Set<ConstraintViolation<Object>> result = validator.validate(workflowDef);
+		assertEquals(0, result.size());
 	}
 }

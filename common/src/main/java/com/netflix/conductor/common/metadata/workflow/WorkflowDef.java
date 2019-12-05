@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.validation.Valid;
+import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
@@ -77,6 +78,11 @@ public class WorkflowDef extends Auditable {
 
 	@ProtoField(id = 10)
 	private boolean workflowStatusListenerEnabled = false;
+
+	@ProtoField(id = 11)
+	@NotEmpty(message = "ownerEmail cannot be empty")
+	@Email(message = "ownerEmail should be valid email address")
+	private String ownerEmail;
 
 	/**
 	 * @return the name
@@ -226,6 +232,20 @@ public class WorkflowDef extends Auditable {
 		this.workflowStatusListenerEnabled = workflowStatusListenerEnabled;
 	}
 
+	/**
+	 * @return the email of the owner of this workflow definition
+	 */
+	public String getOwnerEmail() {
+		return ownerEmail;
+	}
+
+	/**
+	 * @param ownerEmail the owner email to set
+	 */
+	public void setOwnerEmail(String ownerEmail) {
+		this.ownerEmail = ownerEmail;
+	}
+
 	public String key(){
 		return getKey(name, version);
 	}
@@ -270,22 +290,28 @@ public class WorkflowDef extends Auditable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 		WorkflowDef that = (WorkflowDef) o;
 		return getVersion() == that.getVersion() &&
-				getSchemaVersion() == that.getSchemaVersion() &&
-				Objects.equals(getName(), that.getName()) &&
-				Objects.equals(getDescription(), that.getDescription()) &&
-				Objects.equals(getTasks(), that.getTasks()) &&
-				Objects.equals(getInputParameters(), that.getInputParameters()) &&
-				Objects.equals(getOutputParameters(), that.getOutputParameters()) &&
-				Objects.equals(getFailureWorkflow(), that.getFailureWorkflow());
+			getSchemaVersion() == that.getSchemaVersion() &&
+			Objects.equals(getName(), that.getName()) &&
+			Objects.equals(getDescription(), that.getDescription()) &&
+			Objects.equals(getTasks(), that.getTasks()) &&
+			Objects.equals(getInputParameters(), that.getInputParameters()) &&
+			Objects.equals(getOutputParameters(), that.getOutputParameters()) &&
+			Objects.equals(getFailureWorkflow(), that.getFailureWorkflow()) &&
+			Objects.equals(getOwnerEmail(), that.getOwnerEmail());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(
+		return Objects
+			.hash(
 				getName(),
 				getDescription(),
 				getVersion(),
@@ -293,8 +319,9 @@ public class WorkflowDef extends Auditable {
 				getInputParameters(),
 				getOutputParameters(),
 				getFailureWorkflow(),
-				getSchemaVersion()
-		);
+				getSchemaVersion(),
+				getOwnerEmail()
+			);
 	}
 
 	@Override

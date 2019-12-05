@@ -689,6 +689,9 @@ public abstract class AbstractProtoMapper {
         if (from.getExecutionNameSpace() != null) {
             to.setExecutionNameSpace( from.getExecutionNameSpace() );
         }
+        if (from.getOwnerEmail() != null) {
+            to.setOwnerEmail( from.getOwnerEmail() );
+        }
         return to.build();
     }
 
@@ -714,6 +717,7 @@ public abstract class AbstractProtoMapper {
         to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
         to.setIsolationGroupId( from.getIsolationGroupId() );
         to.setExecutionNameSpace( from.getExecutionNameSpace() );
+        to.setOwnerEmail( from.getOwnerEmail() );
         return to;
     }
 
@@ -1047,6 +1051,9 @@ public abstract class AbstractProtoMapper {
         to.setSchemaVersion( from.getSchemaVersion() );
         to.setRestartable( from.isRestartable() );
         to.setWorkflowStatusListenerEnabled( from.isWorkflowStatusListenerEnabled() );
+        if (from.getOwnerEmail() != null) {
+            to.setOwnerEmail( from.getOwnerEmail() );
+        }
         return to.build();
     }
 
@@ -1066,6 +1073,7 @@ public abstract class AbstractProtoMapper {
         to.setSchemaVersion( from.getSchemaVersion() );
         to.setRestartable( from.getRestartable() );
         to.setWorkflowStatusListenerEnabled( from.getWorkflowStatusListenerEnabled() );
+        to.setOwnerEmail( from.getOwnerEmail() );
         return to;
     }
 

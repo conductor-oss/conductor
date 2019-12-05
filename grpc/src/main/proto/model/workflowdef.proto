@@ -19,4 +19,5 @@ message WorkflowDef {
     int32 schema_version = 8;
     bool restartable = 9;
     bool workflow_status_listener_enabled = 10;
+    string owner_email = 11;
 }

@@ -86,6 +86,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
 
         WorkflowDef def = new WorkflowDef();
         def.setName("test");
+        def.setOwnerEmail(DEFAULT_EMAIL_ADDRESS);
         WorkflowTask t0 = new WorkflowTask();
         t0.setName("t0");
         t0.setWorkflowTaskType(TaskType.SIMPLE);
@@ -372,9 +373,10 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             List<String> errorMessages = errors.stream()
                     .map(ValidationError::getMessage)
                     .collect(Collectors.toList());
-            assertEquals(2, errors.size());
+            assertEquals(3, errors.size());
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
+            assertTrue(errorMessages.contains("ownerEmail cannot be empty"));
             throw e;
         }
     }
@@ -417,7 +419,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
             workflowDefList.add(workflowDef);
             metadataClient.registerWorkflowDef(workflowDef);
         } catch (ConductorClientException e) {
-            assertEquals(2, e.getValidationErrors().size());
+            assertEquals(3, e.getValidationErrors().size());
             assertEquals(400, e.getStatus());
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
@@ -427,6 +429,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
                     .collect(Collectors.toList());
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
+            assertTrue(errorMessages.contains("ownerEmail cannot be empty"));
             throw e;
         }
     }
@@ -437,7 +440,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         try{
             metadataClient.updateTaskDef(taskDef);
         } catch (ConductorClientException e){
-            assertEquals(1, e.getValidationErrors().size());
+            assertEquals(2, e.getValidationErrors().size());
             assertEquals(400, e.getStatus());
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
@@ -446,6 +449,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
                     .map(ValidationError::getMessage)
                     .collect(Collectors.toList());
             assertTrue(errorMessages.contains("TaskDef name cannot be null or empty"));
+            assertTrue(errorMessages.contains("ownerEmail cannot be empty"));
             throw e;
         }
     }
@@ -463,7 +467,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
         try{
             metadataClient.updateWorkflowDefs(list);
         } catch (ConductorClientException e){
-            assertEquals(2, e.getValidationErrors().size());
+            assertEquals(3, e.getValidationErrors().size());
             assertEquals(400, e.getStatus());
             assertEquals("Validation failed, check below errors for detail.", e.getMessage());
             assertFalse(e.isRetryable());
@@ -473,6 +477,7 @@ public abstract class AbstractHttpEndToEndTest extends AbstractEndToEndTest {
                     .collect(Collectors.toList());
             assertTrue(errorMessages.contains("WorkflowDef name cannot be null or empty"));
             assertTrue(errorMessages.contains("WorkflowTask list cannot be empty"));
+            assertTrue(errorMessages.contains("ownerEmail cannot be empty"));
             throw e;
         }
     }

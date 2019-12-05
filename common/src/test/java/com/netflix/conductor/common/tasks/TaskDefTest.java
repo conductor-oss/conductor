@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,9 +12,6 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- */
-/**
- * 
  */
 package com.netflix.conductor.common.tasks;
 
@@ -70,30 +67,62 @@ public class TaskDefTest {
 	    taskDef.setResponseTimeoutSeconds(1001);
 
         Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
-        assertEquals(2, result.size());
+        assertEquals(3, result.size());
 
         List<String> validationErrors = new ArrayList<>();
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
         assertTrue(validationErrors.contains("TaskDef: task1 responseTimeoutSeconds: 1001 must be less than timeoutSeconds: 1000"));
         assertTrue(validationErrors.contains("TaskDef retryCount: 0 must be >= 0"));
+        assertTrue(validationErrors.contains("ownerEmail cannot be empty"));
     }
 
     @Test
-    public void testTaskDefNameNotSet() {
+    public void testTaskDefNameAndOwnerNotSet() {
         TaskDef taskDef = new TaskDef();
         taskDef.setRetryCount(-1);
         taskDef.setTimeoutSeconds(1000);
         taskDef.setResponseTimeoutSeconds(1);
 
         Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
-        assertEquals(2, result.size());
+        assertEquals(3, result.size());
 
         List<String> validationErrors = new ArrayList<>();
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
         assertTrue(validationErrors.contains("TaskDef retryCount: 0 must be >= 0"));
         assertTrue(validationErrors.contains("TaskDef name cannot be null or empty"));
+        assertTrue(validationErrors.contains("ownerEmail cannot be empty"));
     }
 
+    @Test
+    public void testTaskDefInvalidEmail() {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("test-task");
+        taskDef.setRetryCount(1);
+        taskDef.setTimeoutSeconds(1000);
+        taskDef.setResponseTimeoutSeconds(1);
+        taskDef.setOwnerEmail("owner");
+
+        Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
+        assertEquals(1, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(validationErrors.contains("ownerEmail should be valid email address"));
+    }
+
+    @Test
+    public void testTaskDefValidEmail() {
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("test-task");
+        taskDef.setRetryCount(1);
+        taskDef.setTimeoutSeconds(1000);
+        taskDef.setResponseTimeoutSeconds(1);
+        taskDef.setOwnerEmail("owner@test.com");
+
+        Set<ConstraintViolation<Object>> result = validator.validate(taskDef);
+        assertEquals(0, result.size());
+    }
 }
