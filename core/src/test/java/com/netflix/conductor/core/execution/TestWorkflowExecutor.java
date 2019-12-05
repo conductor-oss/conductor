@@ -643,7 +643,16 @@ public class TestWorkflowExecutor {
         task_2_1.setTaskDefName("task2");
         task_2_1.setReferenceTaskName("task2_ref1");
 
-        workflow.getTasks().addAll(Arrays.asList(task_1_1, task_1_2, task_2_1));
+        Task task_3_1 = new Task();
+        task_3_1.setTaskId(UUID.randomUUID().toString());
+        task_3_1.setSeq(51);
+        task_3_1.setRetryCount(1);
+        task_3_1.setStatus(Status.FAILED_WITH_TERMINAL_ERROR);
+        task_3_1.setTaskType(TaskType.SIMPLE.toString());
+        task_3_1.setTaskDefName("task1");
+        task_3_1.setReferenceTaskName("task3_ref1");
+
+        workflow.getTasks().addAll(Arrays.asList(task_1_1, task_1_2, task_2_1, task_3_1));
         //end of setup
 
         //when:
@@ -653,7 +662,7 @@ public class TestWorkflowExecutor {
 
         workflowExecutor.retry(workflow.getWorkflowId());
 
-        assertEquals(4, workflow.getTasks().size());
+        assertEquals(6, workflow.getTasks().size());
     }
 
 

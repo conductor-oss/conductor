@@ -527,12 +527,13 @@ public class WorkflowExecutor {
         for (Task task : workflow.getTasks()) {
             switch (task.getStatus()) {
                 case FAILED:
+                case FAILED_WITH_TERMINAL_ERROR:
                     retriableMap.put(task.getReferenceTaskName(), task);
                     break;
                 case CANCELED:
                     if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())) {
                         task.setStatus(IN_PROGRESS);
-                        // Task doesn't have to updated yet. Will be updated along with other Workflow tasks downstream.
+                        // Task doesn't have to be updated yet. Will be updated along with other Workflow tasks downstream.
                     } else {
                         retriableMap.put(task.getReferenceTaskName(), task);
                     }
