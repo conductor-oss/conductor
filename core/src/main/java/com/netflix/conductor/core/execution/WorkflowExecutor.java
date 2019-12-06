@@ -1200,15 +1200,19 @@ public class WorkflowExecutor {
 
             deciderService.populateTaskData(task);
 
+            // Stop polling for asyncComplete system tasks that are not in SCHEDULED state
+            if (systemTask.isAsyncComplete(task) && task.getStatus() != SCHEDULED) {
+                queueDAO.ack(QueueUtils.getQueueName(task), task.getTaskId());
+                return;
+            }
+
             switch (task.getStatus()) {
                 case SCHEDULED:
                     systemTask.start(workflow, task, this);
                     break;
 
                 case IN_PROGRESS:
-                    if (!systemTask.isAsyncComplete(task)) {
-                        systemTask.execute(workflow, task, this);
-                    }
+                    systemTask.execute(workflow, task, this);
                     break;
                 default:
                     break;
