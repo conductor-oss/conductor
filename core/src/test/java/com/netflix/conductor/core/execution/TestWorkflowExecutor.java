@@ -60,6 +60,7 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
+import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.Wait;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.metadata.MetadataMapperService;
@@ -1025,6 +1026,62 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
 
         workflowExecutor.terminateWorkflow(workflow.getWorkflowId(), "test terminating terminal workflow");
+    }
+
+    @Test
+    public void testExecuteSystemTask() {
+        String workflowId = "workflow-id";
+
+        Wait wait = new Wait();
+
+        String task1Id = IDGenerator.generate();
+        Task task1 = new Task();
+        task1.setTaskType(TaskType.WAIT.name());
+        task1.setReferenceTaskName("waitTask");
+        task1.setWorkflowInstanceId(workflowId);
+        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setTaskId(task1Id);
+        task1.setStatus(Status.SCHEDULED);
+
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId(workflowId);
+        workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+
+        when(executionDAOFacade.getTaskById(anyString())).thenReturn(task1);
+        when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
+
+        workflowExecutor.executeSystemTask(wait, task1Id,30);
+
+        assertEquals(Status.IN_PROGRESS, task1.getStatus());
+    }
+
+    @Test
+    public void testExecuteSystemTaskWithAsyncComplete() {
+        String workflowId = "workflow-id";
+
+        Terminate terminate = new Terminate();
+
+        String task1Id = IDGenerator.generate();
+        Task task1 = new Task();
+        task1.setTaskType(TaskType.WAIT.name());
+        task1.setReferenceTaskName("waitTask");
+        task1.setWorkflowInstanceId(workflowId);
+        task1.setScheduledTime(System.currentTimeMillis());
+        task1.setTaskId(task1Id);
+        task1.getInputData().put("asyncComplete", true);
+        task1.setStatus(Status.IN_PROGRESS);
+
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId(workflowId);
+        workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+
+        when(executionDAOFacade.getTaskById(anyString())).thenReturn(task1);
+        when(executionDAOFacade.getWorkflowById(anyString(), anyBoolean())).thenReturn(workflow);
+
+        workflowExecutor.executeSystemTask(terminate, task1Id,30);
+
+        // An asyncComplete task shouldn't be executed through this logic, and the Terminate task should remain IN_PROGRESS.
+        assertEquals(Status.IN_PROGRESS, task1.getStatus());
     }
 
     private Workflow generateSampleWorkflow() {
