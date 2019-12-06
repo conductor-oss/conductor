@@ -183,7 +183,6 @@ public class Monitors {
 
 	public static void recordRunningWorkflows(long count, String name, String version, String ownerApp) {
 		gauge(classQualifier, "workflow_running", count, "workflowName", name, "version", version, "ownerApp", ""+ownerApp);
-
 	}
 
 	public static void recordTaskTimeout(String taskType) {

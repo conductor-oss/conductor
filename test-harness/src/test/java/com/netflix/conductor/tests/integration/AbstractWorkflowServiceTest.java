@@ -162,7 +162,7 @@ public abstract class AbstractWorkflowServiceTest {
 
     private static final String LONG_RUNNING = "longRunningWf";
 
-    private static final String TEST_WORKFLOW_NAME_3 = "junit_test_wf3";
+    private static final String TEST_WORKFLOW = "junit_test_wf3";
 
     private static final String CONDITIONAL_SYSTEM_WORKFLOW = "junit_conditional_http_wf";
     private static final String WF_T1_SWF_T2 = "junit_t1_sw_t2_wf";
@@ -259,7 +259,7 @@ public abstract class AbstractWorkflowServiceTest {
         wft3.setTaskReferenceName("t3");
 
         WorkflowDef def2 = new WorkflowDef();
-        def2.setName(TEST_WORKFLOW_NAME_3);
+        def2.setName(TEST_WORKFLOW);
         def2.setDescription(def2.getName());
         def2.setVersion(1);
         def2.setInputParameters(Arrays.asList("param1", "param2"));
@@ -4218,7 +4218,7 @@ public abstract class AbstractWorkflowServiceTest {
 
 
     @Test
-    public void testTimeout() throws Exception {
+    public void testTaskTimeout() throws Exception {
 
         String taskName = "junit_task_1";
         TaskDef taskDef = notFoundSafeGetTaskDef(taskName);
@@ -4291,6 +4291,42 @@ public abstract class AbstractWorkflowServiceTest {
         taskDef.setTimeoutSeconds(0);
         taskDef.setRetryCount(RETRY_COUNT);
         metadataService.updateTaskDef(taskDef);
+    }
+
+    @Test
+    public void testWorkflowTimeouts() throws Exception {
+        WorkflowDef workflowDef = metadataService.getWorkflowDef(TEST_WORKFLOW, 1);
+        workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
+        workflowDef.setTimeoutSeconds(5);
+        metadataService.updateWorkflowDef(workflowDef);
+
+        String correlationId = "test_workflow_timeout" + UUID.randomUUID().toString();
+        Map<String, Object> input = new HashMap<>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", "p2 value");
+        String workflowId = startOrLoadWorkflowExecution(TEST_WORKFLOW, 1, correlationId, input, null, null);
+        assertNotNull(workflowId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(1, workflow.getTasks().size());
+
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        Uninterruptibles.sleepUninterruptibly(6, TimeUnit.SECONDS);
+        workflowSweeper.sweep(Collections.singletonList(workflowId), workflowExecutor);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.TIMED_OUT, workflow.getStatus());
+
+        workflowDef.setTimeoutSeconds(0);
+        workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.ALERT_ONLY);
+        metadataService.updateWorkflowDef(workflowDef);
     }
 
     @Test
@@ -4440,14 +4476,14 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.updateTaskDef(taskDef);
 
 
-        metadataService.getWorkflowDef(TEST_WORKFLOW_NAME_3, 1);
+        metadataService.getWorkflowDef(TEST_WORKFLOW, 1);
 
         String correlationId = "unit_test_1" + UUID.randomUUID().toString();
         Map<String, Object> input = new HashMap<String, Object>();
         String inputParam1 = "p1 value";
         input.put("param1", inputParam1);
         input.put("param2", "p2 value");
-        String wfid = startOrLoadWorkflowExecution(TEST_WORKFLOW_NAME_3, 1, correlationId, input, null, null);
+        String wfid = startOrLoadWorkflowExecution(TEST_WORKFLOW, 1, correlationId, input, null, null);
         assertNotNull(wfid);
 
         // Now Skip the second task

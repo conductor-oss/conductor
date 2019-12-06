@@ -93,8 +93,8 @@ public class TaskDef extends Auditable {
 	private Map<String, Object> inputTemplate = new HashMap<>();
 
 	// This field is deprecated, do not use id 13.
-//	@ProtoField(id = 13)
-//	private Integer rateLimitPerSecond;
+	//	@ProtoField(id = 13)
+	//	private Integer rateLimitPerSecond;
 
 	@ProtoField(id = 14)
 	private Integer rateLimitPerFrequency;
@@ -125,15 +125,15 @@ public class TaskDef extends Auditable {
 		this.description = description;
 	}
 
-	public TaskDef(String name, String description, int retryCount, int timeout) {
+	public TaskDef(String name, String description, int retryCount, long timeoutSeconds) {
 		this.name = name;
 		this.description = description;
 		this.retryCount = retryCount;
-		this.timeoutSeconds = timeout;
+		this.timeoutSeconds = timeoutSeconds;
 	}
 
-	public TaskDef(String name, String description, String ownerEmail, int retryCount, long timeoutSeconds,
-		long responseTimeoutSeconds) {
+	public TaskDef(String name, String description, String ownerEmail, int retryCount,
+		long timeoutSeconds, long responseTimeoutSeconds) {
 		this.name = name;
 		this.description = description;
 		this.ownerEmail = ownerEmail;
