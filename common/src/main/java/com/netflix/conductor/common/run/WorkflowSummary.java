@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -13,18 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
 package com.netflix.conductor.common.run;
 
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Objects;
 import java.util.TimeZone;
 import java.util.stream.Collectors;
-
-import com.github.vmg.protogen.annotations.*;
-import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import org.apache.commons.lang3.StringUtils;
 
 /**
@@ -340,5 +338,35 @@ public class WorkflowSummary {
 	 */
 	public void setPriority(int priority) {
 		this.priority = priority;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		WorkflowSummary that = (WorkflowSummary) o;
+		return getVersion() == that.getVersion() &&
+			getExecutionTime() == that.getExecutionTime() &&
+			getPriority() == that.getPriority() &&
+			getWorkflowType().equals(that.getWorkflowType()) &&
+			getWorkflowId().equals(that.getWorkflowId()) &&
+			Objects.equals(getCorrelationId(), that.getCorrelationId()) &&
+			getStartTime().equals(that.getStartTime()) &&
+			getUpdateTime().equals(that.getUpdateTime()) &&
+			getEndTime().equals(that.getEndTime()) &&
+			getStatus() == that.getStatus() &&
+			Objects.equals(getReasonForIncompletion(), that.getReasonForIncompletion()) &&
+			Objects.equals(getEvent(), that.getEvent());
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects
+			.hash(getWorkflowType(), getVersion(), getWorkflowId(), getCorrelationId(), getStartTime(), getUpdateTime(),
+				getEndTime(), getStatus(), getReasonForIncompletion(), getExecutionTime(), getEvent(), getPriority());
 	}
 }
