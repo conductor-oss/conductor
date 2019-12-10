@@ -1,178 +1,532 @@
 {
   "ownerApp": "junit_app",
-  "createTime": 1534990536238,
-  "updateTime": 1534990536390,
+  "createTime": 1576296413208,
+  "updateTime": 1576296413383,
   "status": "RUNNING",
   "endTime": 0,
-  "workflowId": "WORKFLOW_INSTANCE_ID",
-  "tasks": [
-    {
-      "taskType": "DECISION",
-      "status": "COMPLETED",
-      "inputData": {
-        "hasChildren": "true",
-        "case": "xxx"
-      },
-      "referenceTaskName": "conditional",
-      "retryCount": 0,
-      "seq": 1,
-      "correlationId": "testCaseStatements: 1534990536230",
-      "pollCount": 0,
-      "taskDefName": "DECISION",
-      "scheduledTime": 1534990536269,
-      "startTime": 1534990536275,
-      "endTime": 1534990536389,
-      "updateTime": 1534990536389,
-      "startDelayInSeconds": 0,
-      "retried": false,
-      "executed": true,
-      "callbackFromWorker": true,
-      "responseTimeoutSeconds": 0,
-      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
-      "workflowType": "ConditionalTaskWF",
-      "taskId": "8f65b5f2-da29-417f-a211-c86a9031d63a",
-      "callbackAfterSeconds": 0,
-      "outputData": {
-        "caseOutput": [
-          "xxx"
-        ]
-      },
-      "workflowTask": {
-        "name": "conditional",
-        "taskReferenceName": "conditional",
-        "inputParameters": {
-          "case": "workflow.input.param1"
-        },
-        "type": "DECISION",
-        "caseValueParam": "case",
-        "decisionCases": {
-          "nested": [
-            {
-              "name": "conditional2",
-              "taskReferenceName": "conditional2",
-              "inputParameters": {
-                "case": "workflow.input.param2"
-              },
-              "type": "DECISION",
-              "caseValueParam": "case",
-              "decisionCases": {
-                "one": [
-                  {
-                    "name": "junit_task_1",
-                    "taskReferenceName": "t1",
-                    "inputParameters": {
-                      "p1": "workflow.input.param1",
-                      "p2": "workflow.input.param2"
-                    },
-                    "type": "SIMPLE",
-                    "startDelay": 0,
-                    "optional": false
-                  },
-                  {
-                    "name": "junit_task_3",
-                    "taskReferenceName": "t3",
-                    "type": "SIMPLE",
-                    "startDelay": 0,
-                    "optional": false
-                  }
-                ],
-                "two": [
-                  {
-                    "name": "junit_task_2",
-                    "taskReferenceName": "t2",
-                    "inputParameters": {
-                      "tp1": "workflow.input.param1",
-                      "tp3": "workflow.input.param2"
-                    },
-                    "type": "SIMPLE",
-                    "startDelay": 0,
-                    "optional": false
-                  }
-                ]
-              },
-              "startDelay": 0,
-              "optional": false
-            }
-          ],
-          "three": [
-            {
-              "name": "junit_task_3",
-              "taskReferenceName": "t3",
-              "type": "SIMPLE",
-              "startDelay": 0,
-              "optional": false
-            }
-          ]
-        },
-        "defaultCase": [
-          {
-            "name": "junit_task_2",
-            "taskReferenceName": "t2",
-            "inputParameters": {
-              "tp1": "workflow.input.param1",
-              "tp3": "workflow.input.param2"
-            },
-            "type": "SIMPLE",
-            "startDelay": 0,
-            "optional": false
-          }
-        ],
-        "startDelay": 0,
-        "optional": false
-      },
-      "rateLimitPerSecond": 0,
-      "taskStatus": "COMPLETED",
-      "queueWaitTime": 6
+  "workflowId": "1e2ab6e4-27d4-4cd1-8ddf-bbc9bb12e67d",
+  "tasks": [{
+    "taskType": "DECISION",
+    "status": "COMPLETED",
+    "inputData": {
+      "hasChildren": "true",
+      "case": "xxx"
     },
-    {
-      "taskType": "junit_task_2",
-      "status": "SCHEDULED",
-      "inputData": {
-        "tp1": "xxx",
-        "tp3": "two"
+    "referenceTaskName": "conditional",
+    "retryCount": 0,
+    "seq": 1,
+    "correlationId": "testCaseStatements: 1576296413186",
+    "pollCount": 0,
+    "taskDefName": "DECISION",
+    "scheduledTime": 1576296413347,
+    "startTime": 1576296413347,
+    "endTime": 1576296413358,
+    "updateTime": 1576296413358,
+    "startDelayInSeconds": 0,
+    "retried": false,
+    "executed": true,
+    "callbackFromWorker": true,
+    "responseTimeoutSeconds": 0,
+    "workflowInstanceId": "1e2ab6e4-27d4-4cd1-8ddf-bbc9bb12e67d",
+    "workflowType": "ConditionalTaskWF",
+    "taskId": "e2298255-705c-4cd0-b278-df2147d5ee0f",
+    "callbackAfterSeconds": 0,
+    "outputData": {
+      "caseOutput": ["xxx"]
+    },
+    "workflowTask": {
+      "name": "conditional",
+      "taskReferenceName": "conditional",
+      "inputParameters": {
+        "case": "${workflow.input.param1}"
       },
-      "referenceTaskName": "t2",
-      "retryCount": 0,
-      "seq": 2,
-      "correlationId": "testCaseStatements: 1534990536230",
-      "pollCount": 0,
-      "taskDefName": "junit_task_2",
-      "scheduledTime": 1534990536275,
-      "startTime": 0,
-      "endTime": 0,
-      "updateTime": 1534990536275,
-      "startDelayInSeconds": 0,
-      "retried": false,
-      "executed": false,
-      "callbackFromWorker": true,
-      "responseTimeoutSeconds": 3600,
-      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
-      "workflowType": "ConditionalTaskWF",
-      "taskId": "5c00a173-d931-4f68-b3ba-c182265bc3db",
-      "callbackAfterSeconds": 0,
-      "workflowTask": {
-        "name": "junit_task_2",
-        "taskReferenceName": "t2",
+      "type": "DECISION",
+      "caseValueParam": "case",
+      "decisionCases": {
+        "nested": [{
+          "name": "nestedCondition",
+          "taskReferenceName": "nestedCondition",
+          "inputParameters": {
+            "case": "${workflow.input.param2}"
+          },
+          "type": "DECISION",
+          "caseValueParam": "case",
+          "decisionCases": {
+            "one": [{
+              "name": "junit_task_1",
+              "taskReferenceName": "t1",
+              "inputParameters": {
+                "p1": "${workflow.input.param1}",
+                "p2": "${workflow.input.param2}"
+              },
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 1576296412909,
+                "createdBy": "junit_app",
+                "name": "junit_task_1",
+                "retryCount": 1,
+                "timeoutSeconds": 120,
+                "inputKeys": [],
+                "outputKeys": [],
+                "timeoutPolicy": "TIME_OUT_WF",
+                "retryLogic": "FIXED",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 3600,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            }],
+            "two": [{
+              "name": "junit_task_2",
+              "taskReferenceName": "t2",
+              "inputParameters": {
+                "tp1": "${workflow.input.param1}"
+              },
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 1576296412910,
+                "createdBy": "junit_app",
+                "name": "junit_task_2",
+                "retryCount": 1,
+                "timeoutSeconds": 120,
+                "inputKeys": [],
+                "outputKeys": [],
+                "timeoutPolicy": "TIME_OUT_WF",
+                "retryLogic": "FIXED",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 3600,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            }]
+          },
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        }],
+        "three": [{
+          "name": "junit_task_3",
+          "taskReferenceName": "t3",
+          "inputParameters": {
+            "tp3": "workflow.input.param2"
+          },
+          "type": "SIMPLE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "taskDefinition": {
+            "createTime": 1576296412910,
+            "createdBy": "junit_app",
+            "name": "junit_task_3",
+            "retryCount": 1,
+            "timeoutSeconds": 120,
+            "inputKeys": [],
+            "outputKeys": [],
+            "timeoutPolicy": "TIME_OUT_WF",
+            "retryLogic": "FIXED",
+            "retryDelaySeconds": 60,
+            "responseTimeoutSeconds": 3600,
+            "inputTemplate": {},
+            "rateLimitPerFrequency": 0,
+            "rateLimitFrequencyInSeconds": 1
+          },
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        }]
+      },
+      "defaultCase": [{
+        "name": "junit_task_10",
+        "taskReferenceName": "t10",
         "inputParameters": {
-          "tp1": "workflow.input.param1",
-          "tp3": "workflow.input.param2"
+          "tp10": "workflow.input.param2"
         },
         "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
         "startDelay": 0,
-        "optional": false
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1576296412921,
+          "createdBy": "junit_app",
+          "name": "junit_task_10",
+          "retryCount": 1,
+          "timeoutSeconds": 120,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 3600,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      }],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    },
+    "rateLimitPerFrequency": 0,
+    "rateLimitFrequencyInSeconds": 0,
+    "workflowPriority": 0,
+    "iteration": 0,
+    "taskStatus": "COMPLETED",
+    "queueWaitTime": 0,
+    "taskDefinition": {
+      "present": false
+    },
+    "loopOverTask": false
+  }, {
+    "taskType": "junit_task_10",
+    "status": "SCHEDULED",
+    "inputData": {
+      "tp10": "workflow.input.param2"
+    },
+    "referenceTaskName": "t10",
+    "retryCount": 0,
+    "seq": 2,
+    "correlationId": "testCaseStatements: 1576296413186",
+    "pollCount": 0,
+    "taskDefName": "junit_task_10",
+    "scheduledTime": 1576296413349,
+    "startTime": 0,
+    "endTime": 0,
+    "updateTime": 0,
+    "startDelayInSeconds": 0,
+    "retried": false,
+    "executed": false,
+    "callbackFromWorker": true,
+    "responseTimeoutSeconds": 3600,
+    "workflowInstanceId": "1e2ab6e4-27d4-4cd1-8ddf-bbc9bb12e67d",
+    "workflowType": "ConditionalTaskWF",
+    "taskId": "243ea389-1b4d-4940-9776-6b7803fac541",
+    "callbackAfterSeconds": 0,
+    "outputData": {},
+    "workflowTask": {
+      "name": "junit_task_10",
+      "taskReferenceName": "t10",
+      "inputParameters": {
+        "tp10": "workflow.input.param2"
       },
-      "rateLimitPerSecond": 0,
-      "taskStatus": "SCHEDULED",
-      "queueWaitTime": 0
-    }
-  ],
+      "type": "SIMPLE",
+      "decisionCases": {},
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "taskDefinition": {
+        "createTime": 1576296412921,
+        "createdBy": "junit_app",
+        "name": "junit_task_10",
+        "retryCount": 1,
+        "timeoutSeconds": 120,
+        "inputKeys": [],
+        "outputKeys": [],
+        "timeoutPolicy": "TIME_OUT_WF",
+        "retryLogic": "FIXED",
+        "retryDelaySeconds": 60,
+        "responseTimeoutSeconds": 3600,
+        "inputTemplate": {},
+        "rateLimitPerFrequency": 0,
+        "rateLimitFrequencyInSeconds": 1
+      },
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    },
+    "rateLimitPerFrequency": 0,
+    "rateLimitFrequencyInSeconds": 0,
+    "workflowPriority": 0,
+    "iteration": 0,
+    "taskStatus": "SCHEDULED",
+    "queueWaitTime": 0,
+    "taskDefinition": {
+      "present": true
+    },
+    "loopOverTask": false
+  }],
   "input": {
     "param1": "xxx",
     "param2": "two"
   },
+  "output": {},
   "workflowType": "ConditionalTaskWF",
   "version": 1,
-  "correlationId": "testCaseStatements: 1534990536230",
-  "schemaVersion": 1,
-  "startTime": 1534990536238
+  "correlationId": "testCaseStatements: 1576296413186",
+  "schemaVersion": 2,
+  "taskToDomain": {},
+  "failedReferenceTaskNames": [],
+  "workflowDefinition": {
+    "updateTime": 1576296413181,
+    "name": "ConditionalTaskWF",
+    "description": "ConditionalTaskWF",
+    "version": 1,
+    "tasks": [{
+      "name": "conditional",
+      "taskReferenceName": "conditional",
+      "inputParameters": {
+        "case": "${workflow.input.param1}"
+      },
+      "type": "DECISION",
+      "caseValueParam": "case",
+      "decisionCases": {
+        "nested": [{
+          "name": "nestedCondition",
+          "taskReferenceName": "nestedCondition",
+          "inputParameters": {
+            "case": "${workflow.input.param2}"
+          },
+          "type": "DECISION",
+          "caseValueParam": "case",
+          "decisionCases": {
+            "one": [{
+              "name": "junit_task_1",
+              "taskReferenceName": "t1",
+              "inputParameters": {
+                "p1": "${workflow.input.param1}",
+                "p2": "${workflow.input.param2}"
+              },
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 1576296412909,
+                "createdBy": "junit_app",
+                "name": "junit_task_1",
+                "retryCount": 1,
+                "timeoutSeconds": 120,
+                "inputKeys": [],
+                "outputKeys": [],
+                "timeoutPolicy": "TIME_OUT_WF",
+                "retryLogic": "FIXED",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 3600,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            }],
+            "two": [{
+              "name": "junit_task_2",
+              "taskReferenceName": "t2",
+              "inputParameters": {
+                "tp1": "${workflow.input.param1}"
+              },
+              "type": "SIMPLE",
+              "decisionCases": {},
+              "defaultCase": [],
+              "forkTasks": [],
+              "startDelay": 0,
+              "joinOn": [],
+              "optional": false,
+              "taskDefinition": {
+                "createTime": 1576296412910,
+                "createdBy": "junit_app",
+                "name": "junit_task_2",
+                "retryCount": 1,
+                "timeoutSeconds": 120,
+                "inputKeys": [],
+                "outputKeys": [],
+                "timeoutPolicy": "TIME_OUT_WF",
+                "retryLogic": "FIXED",
+                "retryDelaySeconds": 60,
+                "responseTimeoutSeconds": 3600,
+                "inputTemplate": {},
+                "rateLimitPerFrequency": 0,
+                "rateLimitFrequencyInSeconds": 1
+              },
+              "defaultExclusiveJoinTask": [],
+              "asyncComplete": false,
+              "loopOver": []
+            }]
+          },
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        }],
+        "three": [{
+          "name": "junit_task_3",
+          "taskReferenceName": "t3",
+          "inputParameters": {
+            "tp3": "workflow.input.param2"
+          },
+          "type": "SIMPLE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "taskDefinition": {
+            "createTime": 1576296412910,
+            "createdBy": "junit_app",
+            "name": "junit_task_3",
+            "retryCount": 1,
+            "timeoutSeconds": 120,
+            "inputKeys": [],
+            "outputKeys": [],
+            "timeoutPolicy": "TIME_OUT_WF",
+            "retryLogic": "FIXED",
+            "retryDelaySeconds": 60,
+            "responseTimeoutSeconds": 3600,
+            "inputTemplate": {},
+            "rateLimitPerFrequency": 0,
+            "rateLimitFrequencyInSeconds": 1
+          },
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        }]
+      },
+      "defaultCase": [{
+        "name": "junit_task_10",
+        "taskReferenceName": "t10",
+        "inputParameters": {
+          "tp10": "workflow.input.param2"
+        },
+        "type": "SIMPLE",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "joinOn": [],
+        "optional": false,
+        "taskDefinition": {
+          "createTime": 1576296412921,
+          "createdBy": "junit_app",
+          "name": "junit_task_10",
+          "retryCount": 1,
+          "timeoutSeconds": 120,
+          "inputKeys": [],
+          "outputKeys": [],
+          "timeoutPolicy": "TIME_OUT_WF",
+          "retryLogic": "FIXED",
+          "retryDelaySeconds": 60,
+          "responseTimeoutSeconds": 3600,
+          "inputTemplate": {},
+          "rateLimitPerFrequency": 0,
+          "rateLimitFrequencyInSeconds": 1
+        },
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      }],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    }, {
+      "name": "finalcondition",
+      "taskReferenceName": "finalCase",
+      "inputParameters": {
+        "finalCase": "${workflow.input.finalCase}"
+      },
+      "type": "DECISION",
+      "caseValueParam": "finalCase",
+      "decisionCases": {
+        "notify": [{
+          "name": "junit_task_4",
+          "taskReferenceName": "junit_task_4",
+          "inputParameters": {},
+          "type": "SIMPLE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "taskDefinition": {
+            "createTime": 1576296412911,
+            "createdBy": "junit_app",
+            "name": "junit_task_4",
+            "retryCount": 1,
+            "timeoutSeconds": 120,
+            "inputKeys": [],
+            "outputKeys": [],
+            "timeoutPolicy": "TIME_OUT_WF",
+            "retryLogic": "FIXED",
+            "retryDelaySeconds": 60,
+            "responseTimeoutSeconds": 3600,
+            "inputTemplate": {},
+            "rateLimitPerFrequency": 0,
+            "rateLimitFrequencyInSeconds": 1
+          },
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        }]
+      },
+      "defaultCase": [],
+      "forkTasks": [],
+      "startDelay": 0,
+      "joinOn": [],
+      "optional": false,
+      "defaultExclusiveJoinTask": [],
+      "asyncComplete": false,
+      "loopOver": []
+    }],
+    "inputParameters": ["param1", "param2"],
+    "outputParameters": {},
+    "schemaVersion": 2,
+    "restartable": true,
+    "workflowStatusListenerEnabled": false
+  },
+  "priority": 0,
+  "startTime": 1576296413208,
+  "workflowName": "ConditionalTaskWF",
+  "workflowVersion": 1
 }

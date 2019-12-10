@@ -15,19 +15,18 @@
  */
 package com.netflix.conductor.client.metadata.workflow;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.io.InputStream;
 import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.junit.Before;
+import org.junit.Test;
 
 /**
  * @author Viren
@@ -69,7 +68,7 @@ public class TestWorkflowTask {
 
     @SuppressWarnings("unchecked")
     @Test
-    public void testObectMapper() throws Exception {
+    public void testObjectMapper() throws Exception {
         try (InputStream stream = TestWorkflowTask.class.getResourceAsStream("/tasks.json")) {
             List<Task> tasks = objectMapper.readValue(stream, List.class);
             assertNotNull(tasks);
