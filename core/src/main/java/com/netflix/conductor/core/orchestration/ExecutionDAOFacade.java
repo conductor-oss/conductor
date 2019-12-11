@@ -269,23 +269,19 @@ public class ExecutionDAOFacade {
 
     /**
      * Reset the workflow state by removing from the {@link ExecutionDAO} and
-     * archiving this workflow in the {@link IndexDAO}.
+     * removing this workflow from the {@link IndexDAO}.
      *
      * @param workflowId the workflow id to be reset
      */
     public void resetWorkflow(String workflowId) {
         try {
             Workflow workflow = getWorkflowById(workflowId, true);
-            if (config.enableAsyncIndexing()) {
-                indexDAO.asyncUpdateWorkflow(workflowId,
-                    new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD},
-                    new Object[]{objectMapper.writeValueAsString(workflow), true});
-            } else {
-                indexDAO.updateWorkflow(workflowId,
-                    new String[]{RAW_JSON_FIELD, ARCHIVED_FIELD},
-                    new Object[]{objectMapper.writeValueAsString(workflow), true});
-            }
             executionDAO.removeWorkflow(workflowId);
+            if (config.enableAsyncIndexing()) {
+                indexDAO.asyncRemoveWorkflow(workflowId);
+            } else {
+                indexDAO.removeWorkflow(workflowId);
+            }
         } catch (ApplicationException ae) {
             throw ae;
         } catch (Exception e) {
