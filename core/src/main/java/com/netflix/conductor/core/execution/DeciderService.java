@@ -638,8 +638,6 @@ public class DeciderService {
 
         List<Task> tasksToBeUpdated = new LinkedList<>();
 
-        List<Task> tasksToBeRequeued = new LinkedList<>();
-
         boolean isComplete;
 
         private DeciderOutcome() {

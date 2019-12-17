@@ -26,6 +26,7 @@ import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.RateLimitingDao;
 import com.netflix.conductor.metrics.Monitors;
 import java.io.IOException;
@@ -40,6 +41,8 @@ import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static com.netflix.conductor.core.execution.WorkflowExecutor.DECIDER_QUEUE;
+
 /**
  * Service that acts as a facade for accessing execution data from the {@link ExecutionDAO}, {@link RateLimitingDao} and {@link IndexDAO} storage layers
  */
@@ -51,6 +54,7 @@ public class ExecutionDAOFacade {
     private static final String RAW_JSON_FIELD = "rawJSON";
 
     private final ExecutionDAO executionDAO;
+    private final QueueDAO queueDAO;
     private final IndexDAO indexDAO;
     private final RateLimitingDao rateLimitingDao;
     private final ObjectMapper objectMapper;
@@ -59,9 +63,14 @@ public class ExecutionDAOFacade {
     private final ScheduledThreadPoolExecutor scheduledThreadPoolExecutor;
 
     @Inject
-    public ExecutionDAOFacade(ExecutionDAO executionDAO, IndexDAO indexDAO, RateLimitingDao rateLimitingDao,
-                              ObjectMapper objectMapper, Configuration config) {
+    public ExecutionDAOFacade(ExecutionDAO executionDAO,
+                              QueueDAO queueDAO,
+                              IndexDAO indexDAO,
+                              RateLimitingDao rateLimitingDao,
+                              ObjectMapper objectMapper,
+                              Configuration config) {
         this.executionDAO = executionDAO;
+        this.queueDAO = queueDAO;
         this.indexDAO = indexDAO;
         this.rateLimitingDao = rateLimitingDao;
         this.objectMapper = objectMapper;
@@ -184,6 +193,8 @@ public class ExecutionDAOFacade {
     public String createWorkflow(Workflow workflow) {
         workflow.setCreateTime(System.currentTimeMillis());
         executionDAO.createWorkflow(workflow);
+        // Add to decider queue
+        queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), config.getSweepFrequency());
         if (config.enableAsyncIndexing()) {
             indexDAO.asyncIndexWorkflow(workflow);
         } else {

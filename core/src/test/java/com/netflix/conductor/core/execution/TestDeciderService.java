@@ -683,7 +683,6 @@ public class TestDeciderService {
         assertEquals("s1", deciderOutcome.tasksToBeUpdated.get(0).getReferenceTaskName());
         assertEquals(1, deciderOutcome.tasksToBeScheduled.size());
         assertEquals("s2", deciderOutcome.tasksToBeScheduled.get(0).getReferenceTaskName());
-        assertEquals(0, deciderOutcome.tasksToBeRequeued.size());
         assertFalse(deciderOutcome.isComplete);
 
         Task task2 = new Task();
@@ -702,7 +701,6 @@ public class TestDeciderService {
         assertEquals(1, deciderOutcome.tasksToBeUpdated.size());
         assertEquals("s2", deciderOutcome.tasksToBeUpdated.get(0).getReferenceTaskName());
         assertEquals(0, deciderOutcome.tasksToBeScheduled.size());
-        assertEquals(0, deciderOutcome.tasksToBeRequeued.size());
         assertTrue(deciderOutcome.isComplete);
     }
 
@@ -733,7 +731,6 @@ public class TestDeciderService {
         assertEquals("s1", deciderOutcome.tasksToBeUpdated.get(0).getReferenceTaskName());
         assertEquals(1, deciderOutcome.tasksToBeScheduled.size());
         assertEquals("s2__1", deciderOutcome.tasksToBeScheduled.get(0).getReferenceTaskName());
-        assertEquals(0, deciderOutcome.tasksToBeRequeued.size());
         assertFalse(deciderOutcome.isComplete);
     }
 
@@ -769,7 +766,6 @@ public class TestDeciderService {
         assertEquals("s1", deciderOutcome.tasksToBeUpdated.get(0).getReferenceTaskName());
         assertEquals(1, deciderOutcome.tasksToBeScheduled.size());
         assertEquals("s1", deciderOutcome.tasksToBeScheduled.get(0).getReferenceTaskName());
-        assertEquals(0, deciderOutcome.tasksToBeRequeued.size());
         assertFalse(deciderOutcome.isComplete);
     }
 
