@@ -15,9 +15,7 @@
  */
 package com.netflix.conductor.contribs.http;
 
-import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -33,16 +31,17 @@ import com.sun.jersey.api.client.WebResource.Builder;
 import com.sun.jersey.oauth.client.OAuthClientFilter;
 import com.sun.jersey.oauth.signature.OAuthParameters;
 import com.sun.jersey.oauth.signature.OAuthSecrets;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * @author Viren
@@ -52,38 +51,44 @@ import org.slf4j.LoggerFactory;
 public class HttpTask extends WorkflowSystemTask {
 
 	public static final String REQUEST_PARAMETER_NAME = "http_request";
-	
+
 	static final String MISSING_REQUEST = "Missing HTTP request. Task input MUST have a '" + REQUEST_PARAMETER_NAME + "' key with HttpTask.Input as value. See documentation for HttpTask for required input parameters";
 
 	private static final Logger logger = LoggerFactory.getLogger(HttpTask.class);
-	
+
 	public static final String NAME = "HTTP";
-	
+
 	private TypeReference<Map<String, Object>> mapOfObj = new TypeReference<Map<String, Object>>(){};
-	
+
 	private TypeReference<List<Object>> listOfObj = new TypeReference<List<Object>>(){};
-	
-	protected ObjectMapper objectMapper = objectMapper();
+
+	protected ObjectMapper objectMapper;
 
 	protected RestClientManager restClientManager;
-	
+
 	protected Configuration config;
-	
+
 	private String requestParameter;
-	
+
 	@Inject
-	public HttpTask(RestClientManager restClientManager, Configuration config) {
-		this(NAME, restClientManager, config);
+	public HttpTask(RestClientManager restClientManager,
+					Configuration config,
+					ObjectMapper objectMapper) {
+		this(NAME, restClientManager, config, objectMapper);
 	}
-	
-	public HttpTask(String name, RestClientManager restClientManager, Configuration config) {
+
+	public HttpTask(String name,
+					RestClientManager restClientManager,
+					Configuration config,
+					ObjectMapper objectMapper) {
 		super(name);
 		this.restClientManager = restClientManager;
 		this.config = config;
+		this.objectMapper = objectMapper;
 		this.requestParameter = REQUEST_PARAMETER_NAME;
 		logger.info("HttpTask initialized...");
 	}
-	
+
 	@Override
 	public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
 		Object request = task.getInputData().get(requestParameter);
@@ -93,7 +98,7 @@ public class HttpTask extends WorkflowSystemTask {
 			task.setStatus(Status.FAILED);
 			return;
 		}
-		
+
 		Input input = objectMapper.convertValue(request, Input.class);
 		if(input.getUri() == null) {
 			String reason = "Missing HTTP URI.  See documentation for HttpTask for required input parameters";
@@ -101,14 +106,14 @@ public class HttpTask extends WorkflowSystemTask {
 			task.setStatus(Status.FAILED);
 			return;
 		}
-		
+
 		if(input.getMethod() == null) {
 			String reason = "No HTTP method specified";
 			task.setReasonForIncompletion(reason);
 			task.setStatus(Status.FAILED);
 			return;
 		}
-		
+
 		try {
 			HttpResponse response = httpCall(input);
 			logger.debug("Response: {}, {}, task:{}", response.statusCode, response.body, task.getTaskId());
@@ -130,7 +135,7 @@ public class HttpTask extends WorkflowSystemTask {
 			if(response != null) {
 				task.getOutputData().put("response", response.asMap());
 			}
-			
+
 		}catch(Exception e) {
 			logger.error("Failed to invoke http task: {} - uri: {}, vipAddress: {} in workflow: {}", task.getTaskId(), input.getUri(), input.getVipAddress(), task.getWorkflowInstanceId(), e);
 			task.setStatus(Status.FAILED);
@@ -168,7 +173,7 @@ public class HttpTask extends WorkflowSystemTask {
 			builder.entity(input.body);
 		}
 		input.headers.forEach(builder::header);
-		
+
 		HttpResponse response = new HttpResponse();
 		try {
 
@@ -224,38 +229,28 @@ public class HttpTask extends WorkflowSystemTask {
 	public boolean execute(Workflow workflow, Task task, WorkflowExecutor executor) {
 		return false;
 	}
-	
+
 	@Override
 	public void cancel(Workflow workflow, Task task, WorkflowExecutor executor) {
 		task.setStatus(Status.CANCELED);
 	}
-	
+
 	@Override
 	public boolean isAsync() {
 		return true;
 	}
-	
+
 	@Override
 	public int getRetryTimeInSecond() {
 		return 60;
 	}
-	
-	private static ObjectMapper objectMapper() {
-	    final ObjectMapper om = new ObjectMapper();
-        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-        om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-        om.setSerializationInclusion(Include.NON_NULL);
-        om.setSerializationInclusion(Include.NON_EMPTY);
-	    return om;
-	}
-	
+
 	public static class HttpResponse {
-		
+
 		public Object body;
-		
+
 		public MultivaluedMap<String, String> headers;
-		
+
 		public int statusCode;
 
 		public String reasonPhrase;
@@ -264,37 +259,37 @@ public class HttpTask extends WorkflowSystemTask {
 		public String toString() {
 			return "HttpResponse [body=" + body + ", headers=" + headers + ", statusCode=" + statusCode + ", reasonPhrase=" + reasonPhrase + "]";
 		}
-		
+
 		public Map<String, Object> asMap() {
-			
+
 			Map<String, Object> map = new HashMap<>();
 			map.put("body", body);
 			map.put("headers", headers);
 			map.put("statusCode", statusCode);
 			map.put("reasonPhrase", reasonPhrase);
-			
+
 			return map;
 		}
 	}
-	
+
 	public static class Input {
-		
+
 		private String method;	//PUT, POST, GET, DELETE, OPTIONS, HEAD
-		
+
 		private String vipAddress;
 
 		private String appName;
-		
+
 		private Map<String, Object> headers = new HashMap<>();
-		
+
 		private String uri;
-		
+
 		private Object body;
-		
+
 		private String accept = MediaType.APPLICATION_JSON;
 
 		private String contentType = MediaType.APPLICATION_JSON;
-		
+
 		private String oauthConsumerKey;
 
 		private String oauthConsumerSecret;
@@ -370,7 +365,7 @@ public class HttpTask extends WorkflowSystemTask {
 
 		/**
 		 * @param vipAddress the vipAddress to set
-		 * 
+		 *
 		 */
 		public void setVipAddress(String vipAddress) {
 			this.vipAddress = vipAddress;
@@ -385,7 +380,7 @@ public class HttpTask extends WorkflowSystemTask {
 
 		/**
 		 * @param accept the accept to set
-		 * 
+		 *
 		 */
 		public void setAccept(String accept) {
 			this.accept = accept;
