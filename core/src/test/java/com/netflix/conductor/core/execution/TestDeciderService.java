@@ -326,12 +326,14 @@ public class TestDeciderService {
         Map<String, Object> inputTemplate = new HashMap<>();
         inputTemplate.put("url", "https://some_url:7004");
         inputTemplate.put("default_url", "https://default_url:7004");
+        inputTemplate.put("someKey", "someValue");
 
         def.getInputTemplate().putAll(inputTemplate);
 
         Map<String, Object> workflowInput = new HashMap<>();
         workflowInput.put("some_new_url", "https://some_new_url:7004");
         workflowInput.put("workflow_input_url", "https://workflow_input_url:7004");
+        workflowInput.put("some_other_key", "some_other_value");
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("testGetTaskInputV2WithInputTemplate");
@@ -344,6 +346,9 @@ public class TestDeciderService {
         WorkflowTask workflowTask = new WorkflowTask();
         workflowTask.getInputParameters().put("url", "${workflow.input.some_new_url}");
         workflowTask.getInputParameters().put("workflow_input_url", "${workflow.input.workflow_input_url}");
+        workflowTask.getInputParameters().put("someKey", "${workflow.input.someKey}");
+        workflowTask.getInputParameters().put("someOtherKey", "${workflow.input.some_other_key}");
+        workflowTask.getInputParameters().put("someNowhereToBeFoundKey", "${workflow.input.some_ne_key}");
 
         Map<String, Object> taskInput = parametersUtils.getTaskInputV2(workflowTask.getInputParameters(), workflow, null, def);
         assertTrue(taskInput.containsKey("url"));
@@ -351,6 +356,9 @@ public class TestDeciderService {
         assertEquals(taskInput.get("url"), "https://some_new_url:7004");
         assertEquals(taskInput.get("default_url"), "https://default_url:7004");
         assertEquals(taskInput.get("workflow_input_url"), "https://workflow_input_url:7004");
+        assertEquals("some_other_value", taskInput.get("someOtherKey"));
+        assertEquals("someValue", taskInput.get("someKey"));
+        assertNull(taskInput.get("someNowhereToBeFoundKey"));
     }
 
     @Test

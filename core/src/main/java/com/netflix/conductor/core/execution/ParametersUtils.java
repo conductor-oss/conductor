@@ -121,7 +121,12 @@ public class ParametersUtils {
         Configuration option = Configuration.defaultConfiguration()
                 .addOptions(Option.SUPPRESS_EXCEPTIONS);
         DocumentContext documentContext = JsonPath.parse(inputMap, option);
-        return replace(inputParams, documentContext, taskId);
+        Map<String, Object> replacedTaskInput = replace(inputParams, documentContext, taskId);
+        if (taskDefinition != null && taskDefinition.getInputTemplate() != null) {
+            // If input for a given key resolves to null, try replacing it with one from inputTemplate, if it exists.
+            replacedTaskInput.replaceAll((key, value) -> (value == null) ? taskDefinition.getInputTemplate().get(key) : value);
+        }
+        return replacedTaskInput;
     }
 
     //deep clone using json - POJO
