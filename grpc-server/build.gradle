@@ -13,6 +13,5 @@ dependencies {
     compile "log4j:log4j:1.2.17"
 
     testCompile "io.grpc:grpc-testing:${revGrpc}"
-    testCompile "org.mockito:mockito-all:${revMockito}"
     testCompile 'org.testinfected.hamcrest-matchers:all-matchers:1.8'
 }

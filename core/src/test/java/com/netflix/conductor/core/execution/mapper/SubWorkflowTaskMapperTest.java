@@ -13,7 +13,6 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
@@ -37,7 +36,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyMap;
-import static org.mockito.Mockito.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -77,7 +75,7 @@ public class SubWorkflowTaskMapperTest {
         subWorkflowParamMap.put("name", "FooWorkFlow");
         subWorkflowParamMap.put("version", 2);
         subWorkflowParamMap.put("taskToDomain", taskToDomain);
-        when(parametersUtils.getTaskInputV2(anyMap(), any(Workflow.class), anyString(), any(TaskDef.class)))
+        when(parametersUtils.getTaskInputV2(anyMap(), any(Workflow.class), any(), any()))
                 .thenReturn(subWorkflowParamMap);
 
         //When
@@ -123,7 +121,7 @@ public class SubWorkflowTaskMapperTest {
         subWorkflowParamMap.put("name", "FooWorkFlow");
         subWorkflowParamMap.put("version", 2);
 
-        when(parametersUtils.getTaskInputV2(anyMap(), any(Workflow.class), anyString(), any(TaskDef.class)))
+        when(parametersUtils.getTaskInputV2(anyMap(), any(Workflow.class), any(), any()))
                 .thenReturn(subWorkflowParamMap);
 
         //When

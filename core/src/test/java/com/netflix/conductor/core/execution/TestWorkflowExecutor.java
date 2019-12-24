@@ -24,11 +24,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
@@ -235,13 +236,13 @@ public class TestWorkflowExecutor {
 
         AtomicInteger queuedTaskCount = new AtomicInteger(0);
         final Answer answer = invocation -> {
-            String queueName = invocation.getArgumentAt(0, String.class);
+            String queueName = invocation.getArgument(0, String.class);
             System.out.println(queueName);
             queuedTaskCount.incrementAndGet();
             return null;
         };
-        doAnswer(answer).when(queueDAO).push(any(), any(), anyInt());
-        doAnswer(answer).when(queueDAO).push(any(), any(), anyInt(), anyInt());
+        doAnswer(answer).when(queueDAO).push(any(), any(), anyLong());
+        doAnswer(answer).when(queueDAO).push(any(), any(), anyInt(), anyLong());
 
         boolean stateChanged = workflowExecutor.scheduleTask(workflow, tasks);
         assertEquals(2, startedTaskCount.get());
@@ -269,7 +270,7 @@ public class TestWorkflowExecutor {
 
         tasks.add(task1);
 
-        when(executionDAOFacade.createTasks(tasks)).thenThrow(Exception.class);
+        when(executionDAOFacade.createTasks(tasks)).thenThrow(new RuntimeException());
         workflowExecutor.scheduleTask(workflow, tasks);
     }
 

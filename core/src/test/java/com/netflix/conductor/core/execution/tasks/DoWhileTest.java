@@ -12,7 +12,7 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
-import static org.mockito.Matchers.isA;
+import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 

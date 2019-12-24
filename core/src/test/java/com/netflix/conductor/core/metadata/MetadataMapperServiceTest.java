@@ -22,7 +22,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.junit.MockitoJUnitRunner;
 
 import javax.validation.ConstraintViolationException;
 import javax.validation.Validator;
@@ -31,13 +31,13 @@ import java.util.Optional;
 import java.util.Set;
 
 import static com.netflix.conductor.utility.TestUtils.getConstraintViolationMessages;
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -98,7 +98,7 @@ public class MetadataMapperServiceTest {
         assertEquals(1, workflowDefinition.getTasks().size());
         WorkflowTask populatedWorkflowTask = workflowDefinition.getTasks().get(0);
         assertNotNull(populatedWorkflowTask.getTaskDefinition());
-        verifyZeroInteractions(metadataDAO);
+        verifyNoInteractions(metadataDAO);
     }
 
     @Test

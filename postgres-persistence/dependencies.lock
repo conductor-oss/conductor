@@ -895,8 +895,8 @@
             "locked": "6.0.13.Final"
         },
         "org.mockito:mockito-core": {
-            "locked": "1.10.19",
-            "requested": "1.10.19"
+            "locked": "3.1.0",
+            "requested": "3.1.0"
         },
         "org.postgresql:postgresql": {
             "locked": "42.2.6",
@@ -1059,8 +1059,8 @@
             "locked": "6.0.13.Final"
         },
         "org.mockito:mockito-core": {
-            "locked": "1.10.19",
-            "requested": "1.10.19"
+            "locked": "3.1.0",
+            "requested": "3.1.0"
         },
         "org.postgresql:postgresql": {
             "locked": "42.2.6",
@@ -1223,8 +1223,8 @@
             "locked": "6.0.13.Final"
         },
         "org.mockito:mockito-core": {
-            "locked": "1.10.19",
-            "requested": "1.10.19"
+            "locked": "3.1.0",
+            "requested": "3.1.0"
         },
         "org.postgresql:postgresql": {
             "locked": "42.2.6",
@@ -1387,8 +1387,8 @@
             "locked": "6.0.13.Final"
         },
         "org.mockito:mockito-core": {
-            "locked": "1.10.19",
-            "requested": "1.10.19"
+            "locked": "3.1.0",
+            "requested": "3.1.0"
         },
         "org.postgresql:postgresql": {
             "locked": "42.2.6",

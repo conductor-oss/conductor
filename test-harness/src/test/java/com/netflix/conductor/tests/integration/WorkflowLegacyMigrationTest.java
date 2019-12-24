@@ -27,12 +27,12 @@ import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.tests.utils.TestRunner;
-import org.apache.commons.io.Charsets;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import javax.inject.Inject;
+import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
 import static org.junit.Assert.fail;
@@ -99,7 +99,7 @@ public class WorkflowLegacyMigrationTest extends AbstractWorkflowServiceTest {
 
     private Workflow loadWorkflowSnapshot(String resourcePath) throws Exception {
 
-        String content = Resources.toString(WorkflowLegacyMigrationTest.class.getResource(resourcePath), Charsets.UTF_8);
+        String content = Resources.toString(WorkflowLegacyMigrationTest.class.getResource(resourcePath), StandardCharsets.UTF_8);
         String workflowId = IDGenerator.generate();
         content = content.replace(WORKFLOW_INSTANCE_ID_PLACEHOLDER, workflowId);
 

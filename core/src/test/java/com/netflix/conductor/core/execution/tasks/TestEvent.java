@@ -43,7 +43,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 
@@ -174,16 +174,16 @@ public class TestEvent {
         List<Message> publishedMessages = new LinkedList<>();
 
         doAnswer((Answer<Void>) invocation -> {
-            String queueName = invocation.getArgumentAt(0, String.class);
+            String queueName = invocation.getArgument(0, String.class);
             System.out.println(queueName);
             publishedQueue[0] = queueName;
-            List<Message> messages = invocation.getArgumentAt(1, List.class);
+            List<Message> messages = invocation.getArgument(1, List.class);
             publishedMessages.addAll(messages);
             return null;
         }).when(dao).push(any(), any());
 
         doAnswer((Answer<List<String>>) invocation -> {
-            String messageId = invocation.getArgumentAt(1, String.class);
+            String messageId = invocation.getArgument(1, String.class);
             if(publishedMessages.get(0).getId().equals(messageId)) {
                 publishedMessages.remove(0);
                 return Collections.singletonList(messageId);
@@ -299,16 +299,16 @@ public class TestEvent {
         List<Message> publishedMessages = new LinkedList<>();
 
         doAnswer((Answer<Void>) invocation -> {
-            String queueName = invocation.getArgumentAt(0, String.class);
+            String queueName = invocation.getArgument(0, String.class);
             System.out.println(queueName);
             publishedQueue[0] = queueName;
-            List<Message> messages = invocation.getArgumentAt(1, List.class);
+            List<Message> messages = invocation.getArgument(1, List.class);
             publishedMessages.addAll(messages);
             return null;
         }).when(dao).push(any(), any());
 
         doAnswer((Answer<List<String>>) invocation -> {
-            String messageId = invocation.getArgumentAt(1, String.class);
+            String messageId = invocation.getArgument(1, String.class);
             if(publishedMessages.get(0).getId().equals(messageId)) {
                 publishedMessages.remove(0);
                 return Collections.singletonList(messageId);

@@ -20,9 +20,9 @@ package com.netflix.conductor.contribs.queue.sqs;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.eq;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -106,7 +106,7 @@ public class TestQueueManager {
 			@SuppressWarnings("unchecked")
 			@Override
 			public Void answer(InvocationOnMock invocation) throws Throwable {
-				List<Message> msgs = invocation.getArgumentAt(0, List.class);
+				List<Message> msgs = invocation.getArgument(0, List.class);
 				System.out.println("got messages to publish: " + msgs);
 				messages.addAll(msgs);
 				return null;
@@ -124,8 +124,8 @@ public class TestQueueManager {
 
 			@Override
 			public Void answer(InvocationOnMock invocation) throws Throwable {
-				System.out.println("Updating task: " + invocation.getArgumentAt(0, Task.class));
-				updatedTasks.add(invocation.getArgumentAt(0, Task.class));
+				System.out.println("Updating task: " + invocation.getArgument(0, Task.class));
+				updatedTasks.add(invocation.getArgument(0, Task.class));
 				return null;
 			}
 		}).when(es).updateTask(any(Task.class));

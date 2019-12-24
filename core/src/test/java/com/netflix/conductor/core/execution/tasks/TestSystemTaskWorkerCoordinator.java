@@ -42,8 +42,8 @@ public class TestSystemTaskWorkerCoordinator {
 
 		Configuration configuration = Mockito.mock(Configuration.class);
 		QueueDAO queueDao = Mockito.mock(QueueDAO.class);
-		Mockito.when(configuration.getIntProperty(Mockito.anyString(), Mockito.anyInt())).thenReturn(10);
-		Mockito.when(queueDao.pop(Mockito.anyString(), Mockito.anyInt(), Mockito.anyInt())).thenReturn(Arrays.asList("taskId"));
+		Mockito.when(configuration.getIntProperty(Mockito.any(), Mockito.anyInt())).thenReturn(10);
+		Mockito.when(queueDao.pop(Mockito.any(), Mockito.anyInt(), Mockito.anyInt())).thenReturn(Arrays.asList("taskId"));
 		WorkflowExecutor wfE = Mockito.mock(WorkflowExecutor.class);
 		SystemTaskWorkerCoordinator systemTaskWorkerCoordinator = new SystemTaskWorkerCoordinator(queueDao, wfE, configuration);
 

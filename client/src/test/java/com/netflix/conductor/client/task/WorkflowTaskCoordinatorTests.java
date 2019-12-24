@@ -29,11 +29,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyInt;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.isNull;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -95,8 +97,8 @@ public class WorkflowTaskCoordinatorTests {
 				.withTaskClient(client)
 				.withWorkerNamePrefix("test-worker-")
 				.build();
-		when(client.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(new Task()));
-		when(client.ack(anyString(), anyString())).thenReturn(true);
+		when(client.batchPollTasksInDomain(anyString(), isNull(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(new Task()));
+		when(client.ack(any(), any())).thenReturn(true);
 		CountDownLatch latch = new CountDownLatch(1);
 		doAnswer(invocation -> {
 				assertEquals("test-worker-0", Thread.currentThread().getName());
@@ -132,10 +134,12 @@ public class WorkflowTaskCoordinatorTests {
 				.build();
 		Task testTask = new Task();
 		testTask.setStatus(Task.Status.IN_PROGRESS);
-		when(client.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask));
-		when(client.ack(anyString(), anyString())).thenReturn(false);
+		when(client.batchPollTasksInDomain(any(), any(), any(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask));
+		when(client.ack(any(), any())).thenReturn(false);
 
 		coordinator.init();
+		Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+		verify(client, atLeastOnce()).ack(any(), any());
 
 		// then worker.execute must not be called and task must be updated with IN_PROGRESS status
 		verify(worker, never()).execute(any());
@@ -162,10 +166,12 @@ public class WorkflowTaskCoordinatorTests {
 				.build();
 		Task testTask = new Task();
 		testTask.setStatus(Task.Status.IN_PROGRESS);
-		when(client.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask));
-		when(client.ack(anyString(), anyString())).thenThrow(new RuntimeException("Ack failed"));
+		when(client.batchPollTasksInDomain(any(), any(), any(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask));
+		when(client.ack(any(), any())).thenThrow(new RuntimeException("Ack failed"));
 
 		coordinator.init();
+		Uninterruptibles.sleepUninterruptibly(2, TimeUnit.SECONDS);
+		verify(client).ack(any(), any());
 
 		// then worker.execute must not be called and task must be updated with IN_PROGRESS status
 		verify(worker, never()).execute(any());
@@ -198,8 +204,8 @@ public class WorkflowTaskCoordinatorTests {
 				.withTaskClient(client)
 				.withWorkerNamePrefix("test-worker-")
 				.build();
-		when(client.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask, testTask, testTask));
-		when(client.ack(anyString(), anyString())).thenReturn(true);
+		when(client.batchPollTasksInDomain(anyString(), isNull(), isNull(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask, testTask, testTask));
+		when(client.ack(any(), any())).thenReturn(true);
 		CountDownLatch latch = new CountDownLatch(3);
 		doAnswer(invocation -> {
 					Object[] args = invocation.getArguments();
@@ -248,10 +254,10 @@ public class WorkflowTaskCoordinatorTests {
 				.withWorkerNamePrefix("test-worker-")
 				.build();
 
-		when(taskClient.batchPollTasksInDomain(anyString(), anyString(), anyString(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask));
-		when(taskClient.ack(anyString(), anyString())).thenReturn(true);
+		when(taskClient.batchPollTasksInDomain(anyString(), isNull(), isNull(), anyInt(), anyInt())).thenReturn(ImmutableList.of(testTask));
+		when(taskClient.ack(any(), any())).thenReturn(true);
 
-		doThrow(ConductorClientException.class).when(taskClient).evaluateAndUploadLargePayload(any(TaskResult.class), anyString());
+		doThrow(ConductorClientException.class).when(taskClient).evaluateAndUploadLargePayload(any(TaskResult.class), any());
 
 		CountDownLatch latch = new CountDownLatch(1);
 

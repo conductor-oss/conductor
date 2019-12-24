@@ -78,13 +78,15 @@ public class TaskTest {
     @Test
     public void testTaskQueueWaitTime() {
         Task task = new Task();
-        task.setScheduledTime(System.currentTimeMillis() - 30_000); // 30 seconds ago
-        task.setStartTime(System.currentTimeMillis() - 25_000);
+
+        long currentTimeMillis = System.currentTimeMillis();
+        task.setScheduledTime(currentTimeMillis - 30_000); // 30 seconds ago
+        task.setStartTime(currentTimeMillis - 25_000);
 
         long queueWaitTime = task.getQueueWaitTime();
         assertEquals(5000L, queueWaitTime);
 
-        task.setUpdateTime(System.currentTimeMillis() - 20_000);
+        task.setUpdateTime(currentTimeMillis - 20_000);
         task.setCallbackAfterSeconds(10);
         queueWaitTime = task.getQueueWaitTime();
         assertTrue(queueWaitTime > 0);

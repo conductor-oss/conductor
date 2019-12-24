@@ -15,8 +15,8 @@
             "requested": "4.12"
         },
         "org.mockito:mockito-core": {
-            "locked": "1.10.19",
-            "requested": "1.10.19"
+            "locked": "3.1.0",
+            "requested": "3.1.0"
         }
     },
     "testCompileClasspath": {
@@ -25,8 +25,8 @@
             "requested": "4.12"
         },
         "org.mockito:mockito-core": {
-            "locked": "1.10.19",
-            "requested": "1.10.19"
+            "locked": "3.1.0",
+            "requested": "3.1.0"
         }
     },
     "testRuntime": {
@@ -35,8 +35,8 @@
             "requested": "4.12"
         },
         "org.mockito:mockito-core": {
-            "locked": "1.10.19",
-            "requested": "1.10.19"
+            "locked": "3.1.0",
+            "requested": "3.1.0"
         }
     },
     "testRuntimeClasspath": {
@@ -45,8 +45,8 @@
             "requested": "4.12"
         },
         "org.mockito:mockito-core": {
-            "locked": "1.10.19",
-            "requested": "1.10.19"
+            "locked": "3.1.0",
+            "requested": "3.1.0"
         }
     }
 }

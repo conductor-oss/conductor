@@ -30,10 +30,9 @@ import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyMap;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 public class ForkJoinDynamicTaskMapperTest {
@@ -106,10 +105,10 @@ public class ForkJoinDynamicTaskMapperTest {
         dynamicTasksInput.put("dynamicTasksInput", dynamicTasksInput);
 
         //when
-        when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(TaskDef.class), anyString()))
+        when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(), any()))
                 .thenReturn(dynamicTasksInput);
 
-        when(objectMapper.convertValue(anyMap(),any(TypeReference.class))).thenReturn(Arrays.asList(wt2, wt3));
+        when(objectMapper.convertValue(any(), any(TypeReference.class))).thenReturn(Arrays.asList(wt2, wt3));
 
 
         Task simpleTask1 = new Task();
@@ -186,9 +185,9 @@ public class ForkJoinDynamicTaskMapperTest {
         dynamicTasksInput.put("dynamicTasksInput", dynamicTasksInput);
 
         //when
-        when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(TaskDef.class), anyString()))
+        when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(), any()))
                 .thenReturn(dynamicTasksInput);
-        when(objectMapper.convertValue(anyMap(),any(TypeReference.class))).thenReturn(Arrays.asList(wt2, wt3));
+        when(objectMapper.convertValue(any(), any(TypeReference.class))).thenReturn(Arrays.asList(wt2, wt3));
 
 
         Task simpleTask1 = new Task();
@@ -250,7 +249,7 @@ public class ForkJoinDynamicTaskMapperTest {
         when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(TaskDef.class), anyString()))
                 .thenReturn(dynamicTasksInput);
 
-        when(objectMapper.convertValue(anyObject(),any(Class.class))).thenReturn(dtasks);
+        when(objectMapper.convertValue(any(), any(Class.class))).thenReturn(dtasks);
 
         Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> dynamicForkJoinTasksAndInput =
                 forkJoinDynamicTaskMapper.getDynamicForkJoinTasksAndInput(dynamicForkJoinToSchedule, new Workflow());
@@ -288,7 +287,7 @@ public class ForkJoinDynamicTaskMapperTest {
         when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(TaskDef.class), anyString()))
                 .thenReturn(dynamicTasksInput);
 
-        when(objectMapper.convertValue(anyObject(),any(Class.class))).thenReturn(null);
+        when(objectMapper.convertValue(any(), any(Class.class))).thenReturn(null);
 
         //then
         expectedException.expect(TerminateWorkflowException.class);
@@ -329,10 +328,10 @@ public class ForkJoinDynamicTaskMapperTest {
         dynamicTasksInput.put("dynamicTasksInput", dynamicTasksInput);
 
         //when
-        when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(TaskDef.class), anyString()))
+        when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(), any()))
                 .thenReturn(dynamicTasksInput);
 
-        when(objectMapper.convertValue(anyMap(),any(TypeReference.class))).thenReturn(Arrays.asList(wt2, wt3));
+        when(objectMapper.convertValue(any(), any(TypeReference.class))).thenReturn(Arrays.asList(wt2, wt3));
 
         Pair<List<WorkflowTask>, Map<String, Map<String, Object>>> dynamicTasks = forkJoinDynamicTaskMapper.getDynamicForkTasksAndInput(dynamicForkJoinToSchedule, new Workflow(), "dynamicTasks");
 
@@ -371,10 +370,10 @@ public class ForkJoinDynamicTaskMapperTest {
         dynamicTasksInput.put("dynamicTasks", Arrays.asList(wt2, wt3));
         dynamicTasksInput.put("dynamicTasksInput", null);
 
-        when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(TaskDef.class), anyString()))
+        when(parametersUtils.getTaskInput(anyMap(), any(Workflow.class), any(), any()))
                 .thenReturn(dynamicTasksInput);
 
-        when(objectMapper.convertValue(anyMap(),any(TypeReference.class))).thenReturn(Arrays.asList(wt2, wt3));
+        when(objectMapper.convertValue(any(), any(TypeReference.class))).thenReturn(Arrays.asList(wt2, wt3));
         //then
         expectedException.expect(TerminateWorkflowException.class);
         //when

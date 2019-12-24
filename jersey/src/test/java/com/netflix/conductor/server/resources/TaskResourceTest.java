@@ -17,10 +17,10 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -145,7 +145,7 @@ public class TaskResourceTest {
         list.add("test1");
         list.add("test2");
 
-        when(mockTaskService.getTaskQueueSizes(anyListOf(String.class))).thenReturn(map);
+        when(mockTaskService.getTaskQueueSizes(anyList())).thenReturn(map);
         assertEquals(map, taskResource.size(list));
     }
 

@@ -42,7 +42,7 @@ ext {
     revLog4jApi = '2.9.1'
     revLog4jCore = '2.9.1'
     revMariaDB4j = '2.2.3'
-    revMockito = '1.10.19'
+    revMockito = '3.1.0'
     revMySqlConnector = '8.0.11'
     revNatsStreaming = '0.5.0'
     revOauthClient = '1.19.4'

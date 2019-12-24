@@ -16,7 +16,6 @@
 package com.netflix.conductor.server.resources;
 
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
-import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.service.WorkflowService;
@@ -31,13 +30,14 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyBoolean;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyMapOf;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -72,7 +72,7 @@ public class WorkflowResourceTest {
         Map<String, Object> input = new HashMap<>();
         input.put("1", "abc");
         String workflowID = "w112";
-        when(mockWorkflowService.startWorkflow(anyString(), anyInt(), anyString(), anyInt(), anyMapOf(String.class, Object.class))).thenReturn(workflowID);
+        when(mockWorkflowService.startWorkflow(anyString(), anyInt(), anyString(), anyInt(), anyMap())).thenReturn(workflowID);
         assertEquals("w112", workflowResource.startWorkflow("test1", 1, "c123", 0, input));
     }
 
@@ -103,7 +103,7 @@ public class WorkflowResourceTest {
         Map<String, List<Workflow>> workflowMap = new HashMap<>();
         workflowMap.put("c123", workflowArrayList);
 
-        when(mockWorkflowService.getWorkflows(anyString(), anyBoolean(), anyBoolean(), anyListOf(String.class)))
+        when(mockWorkflowService.getWorkflows(anyString(), anyBoolean(), anyBoolean(), anyList()))
                 .thenReturn(workflowMap);
         assertEquals(workflowMap, workflowResource.getWorkflows("test", true,
                 true, correlationIdList));
@@ -154,8 +154,7 @@ public class WorkflowResourceTest {
     @Test
     public void testSkipTaskFromWorkflow() {
         workflowResource.skipTaskFromWorkflow("test", "testTask", null);
-        verify(mockWorkflowService, times(1)).skipTaskFromWorkflow(anyString(), anyString(),
-                any(SkipTaskRequest.class));
+        verify(mockWorkflowService, times(1)).skipTaskFromWorkflow(anyString(), anyString(), isNull());
     }
 
     @Test
