@@ -56,7 +56,6 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.WorkflowSweeper;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
@@ -101,10 +100,12 @@ public abstract class AbstractWorkflowServiceTest {
     private static final Logger logger = LoggerFactory.getLogger(AbstractWorkflowServiceTest.class);
 
     private static final String COND_TASK_WF = "ConditionalTaskWF";
+    private static final String DECISION_WF = "DecisionWorkflow";
 
     private static final String FORK_JOIN_NESTED_WF = "FanInOutNestedTest";
 
     private static final String FORK_JOIN_WF = "FanInOutTest";
+    private static final String FORK_JOIN_DECISION_WF = "ForkConditionalTest";
 
     private static final String DO_WHILE_WF = "DoWhileTest";
 
@@ -1438,6 +1439,79 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.updateTaskDef(taskDef);
     }
 
+    @Test
+    public void testForkJoinDecisionWorkflow() {
+        createForkJoinDecisionWorkflow();
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("param1", "p1");
+        input.put("param2", "p2");
+        input.put("case", "c");
+        String workflowId = startOrLoadWorkflowExecution(FORK_JOIN_DECISION_WF, 1, "forkjoin_conditional", input, null, null);
+        assertNotNull(workflowId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(5, workflow.getTasks().size());
+
+        // poll task 10
+        Task task = workflowExecutionService.poll("junit_task_10", "task10.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        // update to COMPLETED
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(5, workflow.getTasks().size());
+
+        // poll task 1
+        task = workflowExecutionService.poll("junit_task_1", "task1.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        // update to COMPLETED
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(6, workflow.getTasks().size());
+
+        // poll task 2
+        task = workflowExecutionService.poll("junit_task_2", "task2.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        // update to COMPLETED
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(7, workflow.getTasks().size());
+
+        // poll task 20
+        task = workflowExecutionService.poll("junit_task_20", "task20.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        // update to COMPLETED
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals(7, workflow.getTasks().size());
+    }
+
     private void createForkJoinWorkflow() {
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(FORK_JOIN_WF);
@@ -1492,6 +1566,191 @@ public abstract class AbstractWorkflowServiceTest {
         workflowTask4.setTaskReferenceName("t4");
 
         workflowDef.getTasks().add(workflowTask4);
+        metadataService.updateWorkflowDef(workflowDef);
+    }
+
+    private void createForkJoinDecisionWorkflow() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName(FORK_JOIN_DECISION_WF);
+        workflowDef.setDescription(workflowDef.getName());
+        workflowDef.setVersion(1);
+
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("p1", "${workflow.input.param1}");
+        inputParams.put("p2", "${workflow.input.param2}");
+
+        // left decision
+        WorkflowTask leftCaseTask1 = new WorkflowTask();
+        leftCaseTask1.setName("junit_task_1");
+        leftCaseTask1.setInputParameters(inputParams);
+        leftCaseTask1.setTaskReferenceName("t1");
+
+        WorkflowTask leftCaseTask2 = new WorkflowTask();
+        leftCaseTask2.setName("junit_task_2");
+        leftCaseTask2.setInputParameters(inputParams);
+        leftCaseTask2.setTaskReferenceName("t2");
+
+        // default decision
+        WorkflowTask defaultCaseTask5 = new WorkflowTask();
+        defaultCaseTask5.setName("junit_task_5");
+        defaultCaseTask5.setInputParameters(inputParams);
+        defaultCaseTask5.setTaskReferenceName("t5");
+
+        // left fork
+        // decision task
+        Map<String, Object> decisionInput = new HashMap<>();
+        decisionInput.put("case", "${workflow.input.case}");
+
+        WorkflowTask decisionTask = new WorkflowTask();
+        decisionTask.setType(TaskType.DECISION.name());
+        decisionTask.setCaseValueParam("case");
+        decisionTask.setName("decisionTask");
+        decisionTask.setTaskReferenceName("decisionTask");
+        decisionTask.setInputParameters(decisionInput);
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap<>();
+        decisionCases.put("c", Arrays.asList(leftCaseTask1, leftCaseTask2));
+        decisionTask.setDefaultCase(Collections.singletonList(defaultCaseTask5));
+        decisionTask.setDecisionCases(decisionCases);
+
+        WorkflowTask workflowTask20 = new WorkflowTask();
+        workflowTask20.setName("junit_task_20");
+        workflowTask20.setInputParameters(inputParams);
+        workflowTask20.setTaskReferenceName("t20");
+
+        // right fork
+        WorkflowTask rightForkTask10 = new WorkflowTask();
+        rightForkTask10.setName("junit_task_10");
+        rightForkTask10.setInputParameters(inputParams);
+        rightForkTask10.setTaskReferenceName("t10");
+
+        // fork task
+        WorkflowTask forkTask = new WorkflowTask();
+        forkTask.setName("forkTask");
+        forkTask.setType(TaskType.FORK_JOIN.name());
+        forkTask.setTaskReferenceName("forkTask");
+        forkTask.getForkTasks().add(Arrays.asList(decisionTask, workflowTask20));
+        forkTask.getForkTasks().add(Collections.singletonList(rightForkTask10));
+
+        // join task
+        WorkflowTask joinTask = new WorkflowTask();
+        joinTask.setName("joinTask");
+        joinTask.setType(TaskType.JOIN.name());
+        joinTask.setTaskReferenceName("joinTask");
+        joinTask.setJoinOn(Arrays.asList("t20", "t10"));
+
+        workflowDef.getTasks().add(forkTask);
+        workflowDef.getTasks().add(joinTask);
+
+        metadataService.updateWorkflowDef(workflowDef);
+    }
+
+    @Test
+    public void testDecisionWorkflow() {
+        createDecisionWorkflow();
+
+        Map<String, Object> input = new HashMap<>();
+        input.put("param1", "p1");
+        input.put("param2", "p2");
+        input.put("case", "c");
+        String workflowId = startOrLoadWorkflowExecution(DECISION_WF, 1, "decision", input, null, null);
+        assertNotNull(workflowId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+
+        // poll task 1
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        // update to COMPLETED
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(3, workflow.getTasks().size());
+
+        // poll task 2
+        task = workflowExecutionService.poll("junit_task_2", "task2.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        // update to COMPLETED
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(4, workflow.getTasks().size());
+
+        // poll task 20
+        task = workflowExecutionService.poll("junit_task_20", "task20.worker");
+        assertNotNull(task);
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        // update to COMPLETED
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
+    private void createDecisionWorkflow() {
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName(DECISION_WF);
+        workflowDef.setDescription(workflowDef.getName());
+        workflowDef.setVersion(1);
+
+        Map<String, Object> inputParams = new HashMap<>();
+        inputParams.put("p1", "${workflow.input.param1}");
+        inputParams.put("p2", "${workflow.input.param2}");
+
+        // left decision
+        WorkflowTask leftCaseTask1 = new WorkflowTask();
+        leftCaseTask1.setName("junit_task_1");
+        leftCaseTask1.setInputParameters(inputParams);
+        leftCaseTask1.setTaskReferenceName("t1");
+
+        WorkflowTask leftCaseTask2 = new WorkflowTask();
+        leftCaseTask2.setName("junit_task_2");
+        leftCaseTask2.setInputParameters(inputParams);
+        leftCaseTask2.setTaskReferenceName("t2");
+
+        // default decision
+        WorkflowTask defaultCaseTask5 = new WorkflowTask();
+        defaultCaseTask5.setName("junit_task_5");
+        defaultCaseTask5.setInputParameters(inputParams);
+        defaultCaseTask5.setTaskReferenceName("t5");
+
+        // decision task
+        Map<String, Object> decisionInput = new HashMap<>();
+        decisionInput.put("case", "${workflow.input.case}");
+        WorkflowTask decisionTask = new WorkflowTask();
+        decisionTask.setType(TaskType.DECISION.name());
+        decisionTask.setCaseValueParam("case");
+        decisionTask.setName("decisionTask");
+        decisionTask.setTaskReferenceName("decisionTask");
+        decisionTask.setInputParameters(decisionInput);
+        Map<String, List<WorkflowTask>> decisionCases = new HashMap<>();
+        decisionCases.put("c", Arrays.asList(leftCaseTask1, leftCaseTask2));
+        decisionTask.setDefaultCase(Collections.singletonList(defaultCaseTask5));
+        decisionTask.setDecisionCases(decisionCases);
+
+        WorkflowTask workflowTask20 = new WorkflowTask();
+        workflowTask20.setName("junit_task_20");
+        workflowTask20.setInputParameters(inputParams);
+        workflowTask20.setTaskReferenceName("t20");
+
+        workflowDef.getTasks().add(decisionTask);
+        workflowDef.getTasks().add(workflowTask20);
+
         metadataService.updateWorkflowDef(workflowDef);
     }
 
@@ -1861,8 +2120,8 @@ public abstract class AbstractWorkflowServiceTest {
     }
 
     private void createConditionalWF(int schemaVersion) {
-        WorkflowTask wft1 = new WorkflowTask();
-        wft1.setName("junit_task_1");
+        WorkflowTask workflowTask1 = new WorkflowTask();
+        workflowTask1.setName("junit_task_1");
         Map<String, Object> ip1 = new HashMap<>();
 
         if (schemaVersion <= 1) {
@@ -1873,53 +2132,60 @@ public abstract class AbstractWorkflowServiceTest {
             ip1.put("p2", "${workflow.input.param2}");
         }
 
-        wft1.setInputParameters(ip1);
-        wft1.setTaskReferenceName("t1");
+        workflowTask1.setInputParameters(ip1);
+        workflowTask1.setTaskReferenceName("t1");
 
-        WorkflowTask wft2 = new WorkflowTask();
-        wft2.setName("junit_task_2");
+        WorkflowTask workflowTask2 = new WorkflowTask();
+        workflowTask2.setName("junit_task_2");
         Map<String, Object> ip2 = new HashMap<>();
         if (schemaVersion <= 1) {
             ip2.put("tp1", "workflow.input.param1");
         } else {
             ip2.put("tp1", "${workflow.input.param1}");
         }
-        wft2.setInputParameters(ip2);
-        wft2.setTaskReferenceName("t2");
+        workflowTask2.setInputParameters(ip2);
+        workflowTask2.setTaskReferenceName("t2");
 
-        WorkflowTask wft3 = new WorkflowTask();
-        wft3.setName("junit_task_3");
+        WorkflowTask workflowTask3 = new WorkflowTask();
+        workflowTask3.setName("junit_task_3");
         Map<String, Object> ip3 = new HashMap<>();
-        ip2.put("tp3", "workflow.input.param2");
-        wft3.setInputParameters(ip3);
-        wft3.setTaskReferenceName("t3");
+        ip3.put("tp3", "workflow.input.param2");
+        workflowTask3.setInputParameters(ip3);
+        workflowTask3.setTaskReferenceName("t3");
 
-        WorkflowDef def2 = new WorkflowDef();
-        def2.setName(COND_TASK_WF);
-        def2.setDescription(COND_TASK_WF);
-        def2.setInputParameters(Arrays.asList("param1", "param2"));
+        WorkflowTask workflowTask10 = new WorkflowTask();
+        workflowTask10.setName("junit_task_10");
+        Map<String, Object> ip10 = new HashMap<>();
+        ip10.put("tp10", "workflow.input.param2");
+        workflowTask10.setInputParameters(ip10);
+        workflowTask10.setTaskReferenceName("t10");
 
-        WorkflowTask c2 = new WorkflowTask();
-        c2.setType(TaskType.DECISION.name());
-        c2.setCaseValueParam("case");
-        c2.setName("conditional2");
-        c2.setTaskReferenceName("conditional2");
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName(COND_TASK_WF);
+        workflowDef.setDescription(COND_TASK_WF);
+        workflowDef.setInputParameters(Arrays.asList("param1", "param2"));
+
+        WorkflowTask nestedCondition = new WorkflowTask();
+        nestedCondition.setType(TaskType.DECISION.name());
+        nestedCondition.setCaseValueParam("case");
+        nestedCondition.setName("nestedCondition");
+        nestedCondition.setTaskReferenceName("nestedCondition");
         Map<String, List<WorkflowTask>> dc = new HashMap<>();
-        dc.put("one", Arrays.asList(wft1, wft3));
-        dc.put("two", Collections.singletonList(wft2));
-        c2.setDecisionCases(dc);
+        dc.put("one", Collections.singletonList(workflowTask1));
+        dc.put("two", Collections.singletonList(workflowTask2));
+        nestedCondition.setDecisionCases(dc);
 
         WorkflowTask condition = new WorkflowTask();
-        Map<String, Object> fi = new HashMap<>();
+        Map<String, Object> finalCaseInput = new HashMap<>();
 
         if (schemaVersion <= 1) {
             condition.getInputParameters().put("case", "workflow.input.param1");
-            c2.getInputParameters().put("case", "workflow.input.param2");
-            fi.put("finalCase", "workflow.input.finalCase");
+            nestedCondition.getInputParameters().put("case", "workflow.input.param2");
+            finalCaseInput.put("finalCase", "workflow.input.finalCase");
         } else {
             condition.getInputParameters().put("case", "${workflow.input.param1}");
-            c2.getInputParameters().put("case", "${workflow.input.param2}");
-            fi.put("finalCase", "${workflow.input.finalCase}");
+            nestedCondition.getInputParameters().put("case", "${workflow.input.param2}");
+            finalCaseInput.put("finalCase", "${workflow.input.finalCase}");
         }
 
         condition.setType(TaskType.DECISION.name());
@@ -1927,11 +2193,11 @@ public abstract class AbstractWorkflowServiceTest {
         condition.setName("conditional");
         condition.setTaskReferenceName("conditional");
         Map<String, List<WorkflowTask>> decisionCases = new HashMap<>();
-        decisionCases.put("nested", Collections.singletonList(c2));
-        decisionCases.put("three", Collections.singletonList(wft3));
+        decisionCases.put("nested", Collections.singletonList(nestedCondition));
+        decisionCases.put("three", Collections.singletonList(workflowTask3));
         condition.setDecisionCases(decisionCases);
-        condition.getDefaultCase().add(wft2);
-        def2.getTasks().add(condition);
+        condition.getDefaultCase().add(workflowTask10);
+        workflowDef.getTasks().add(condition);
 
         WorkflowTask notifyTask = new WorkflowTask();
         notifyTask.setName("junit_task_4");
@@ -1939,15 +2205,15 @@ public abstract class AbstractWorkflowServiceTest {
 
         WorkflowTask finalTask = new WorkflowTask();
         finalTask.setName("finalcondition");
-        finalTask.setTaskReferenceName("tf");
+        finalTask.setTaskReferenceName("finalCase");
         finalTask.setType(TaskType.DECISION.name());
         finalTask.setCaseValueParam("finalCase");
-        finalTask.setInputParameters(fi);
+        finalTask.setInputParameters(finalCaseInput);
         finalTask.getDecisionCases().put("notify", Collections.singletonList(notifyTask));
 
-        def2.setSchemaVersion(schemaVersion);
-        def2.getTasks().add(finalTask);
-        metadataService.updateWorkflowDef(def2);
+        workflowDef.setSchemaVersion(schemaVersion);
+        workflowDef.getTasks().add(finalTask);
+        metadataService.updateWorkflowDef(workflowDef);
     }
 
     @Test
@@ -2947,89 +3213,35 @@ public abstract class AbstractWorkflowServiceTest {
         wfs.forEach(wf -> {
             assertEquals(WorkflowStatus.COMPLETED, wf.getStatus());
         });
-
-
     }
 
     @Test
     public void testCaseStatementsSchemaVersion1() {
         createConditionalWF(1);
-
-        String correlationId = "testCaseStatements: " + System.currentTimeMillis();
-        Map<String, Object> input = new HashMap<String, Object>();
-        String wfid;
-        String[] sequence;
-
-        //default case
-        input.put("param1", "xxx");
-        input.put("param2", "two");
-        wfid = startOrLoadWorkflowExecution(COND_TASK_WF, 1, correlationId, input, null, null);
-        System.out.println("testCaseStatements.wfid=" + wfid);
-        assertNotNull(wfid);
-        Workflow es = workflowExecutionService.getExecutionStatus(wfid, true);
-        assertNotNull(es);
-        assertEquals(RUNNING, es.getStatus());
-        Task task = workflowExecutionService.poll("junit_task_2", "junit");
-        assertNotNull(task);
-        task.setStatus(COMPLETED);
-        workflowExecutionService.updateTask(task);
-
-        es = workflowExecutionService.getExecutionStatus(wfid, true);
-        assertNotNull(es);
-        assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
-        assertEquals(3, es.getTasks().size());
-
-        //nested - one
-        input.put("param1", "nested");
-        input.put("param2", "one");
-        wfid = startOrLoadWorkflowExecution(COND_TASK_WF + 2, COND_TASK_WF, 1, correlationId, input, null, null);
-        System.out.println("testCaseStatements.wfid=" + wfid);
-        assertNotNull(wfid);
-        es = workflowExecutionService.getExecutionStatus(wfid, true);
-        assertNotNull(es);
-        assertEquals(RUNNING, es.getStatus());
-        sequence = new String[]{"junit_task_1", "junit_task_3"};
-
-        validate(wfid, sequence, new String[]{SystemTaskType.DECISION.name(), SystemTaskType.DECISION.name(), "junit_task_1", "junit_task_3", SystemTaskType.DECISION.name()}, 5);
-
-        //nested - two
-        input.put("param1", "nested");
-        input.put("param2", "two");
-        wfid = startOrLoadWorkflowExecution(COND_TASK_WF + 3, COND_TASK_WF, 1, correlationId, input, null, null);
-        System.out.println("testCaseStatements.wfid=" + wfid);
-        assertNotNull(wfid);
-        sequence = new String[]{"junit_task_2"};
-        validate(wfid, sequence, new String[]{SystemTaskType.DECISION.name(), SystemTaskType.DECISION.name(), "junit_task_2", SystemTaskType.DECISION.name()}, 4);
-
-        //three
-        input.put("param1", "three");
-        input.put("param2", "two");
-        input.put("finalCase", "notify");
-        wfid = startOrLoadWorkflowExecution(COND_TASK_WF + 4, COND_TASK_WF, 1, correlationId, input, null, null);
-        System.out.println("testCaseStatements.wfid=" + wfid);
-        assertNotNull(wfid);
-        sequence = new String[]{"junit_task_3", "junit_task_4"};
-        validate(wfid, sequence, new String[]{SystemTaskType.DECISION.name(), "junit_task_3", SystemTaskType.DECISION.name(), "junit_task_4"}, 3);
+        runConditionalWorkflowTest();
     }
 
     @Test
     public void testCaseStatementsSchemaVersion2() {
         createConditionalWF(2);
+        runConditionalWorkflowTest();
+    }
 
+    private void runConditionalWorkflowTest() {
         String correlationId = "testCaseStatements: " + System.currentTimeMillis();
         Map<String, Object> input = new HashMap<>();
-        String workflowId;
-        String[] sequence;
 
         //default case
         input.put("param1", "xxx");
         input.put("param2", "two");
-        workflowId = startOrLoadWorkflowExecution(COND_TASK_WF, 1, correlationId, input, null, null);
+        String workflowId = startOrLoadWorkflowExecution(COND_TASK_WF, 1, correlationId, input, null, null);
         assertNotNull(workflowId);
+
         Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals(RUNNING, workflow.getStatus());
-        Task task = workflowExecutionService.poll("junit_task_2", "junit");
+
+        Task task = workflowExecutionService.poll("junit_task_10", "junit");
         assertNotNull(task);
         task.setStatus(COMPLETED);
         workflowExecutionService.updateTask(task);
@@ -3044,20 +3256,24 @@ public abstract class AbstractWorkflowServiceTest {
         input.put("param2", "one");
         workflowId = startOrLoadWorkflowExecution(COND_TASK_WF + 2, COND_TASK_WF, 1, correlationId, input, null, null);
         assertNotNull(workflowId);
+
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals(RUNNING, workflow.getStatus());
-        sequence = new String[]{"junit_task_1", "junit_task_3"};
-
-        validate(workflowId, sequence, new String[]{SystemTaskType.DECISION.name(), SystemTaskType.DECISION.name(), "junit_task_1", "junit_task_3", SystemTaskType.DECISION.name()}, 5);
+        assertEquals(3, workflow.getTasks().size());
+        assertEquals("junit_task_1", workflow.getTasks().get(2).getTaskDefName());
 
         //nested - two
         input.put("param1", "nested");
         input.put("param2", "two");
         workflowId = startOrLoadWorkflowExecution(COND_TASK_WF + 3, COND_TASK_WF, 1, correlationId, input, null, null);
         assertNotNull(workflowId);
-        sequence = new String[]{"junit_task_2"};
-        validate(workflowId, sequence, new String[]{SystemTaskType.DECISION.name(), SystemTaskType.DECISION.name(), "junit_task_2", SystemTaskType.DECISION.name()}, 4);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(3, workflow.getTasks().size());
+        assertEquals("junit_task_2", workflow.getTasks().get(2).getTaskDefName());
 
         //three
         input.put("param1", "three");
@@ -3065,44 +3281,33 @@ public abstract class AbstractWorkflowServiceTest {
         input.put("finalCase", "notify");
         workflowId = startOrLoadWorkflowExecution(COND_TASK_WF + 4, COND_TASK_WF, 1, correlationId, input, null, null);
         assertNotNull(workflowId);
-        sequence = new String[]{"junit_task_3", "junit_task_4"};
-        validate(workflowId, sequence, new String[]{SystemTaskType.DECISION.name(), "junit_task_3", SystemTaskType.DECISION.name(), "junit_task_4"}, 3);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(2, workflow.getTasks().size());
+        assertEquals("junit_task_3", workflow.getTasks().get(1).getTaskDefName());
+
+        task = workflowExecutionService.poll("junit_task_3", "junit");
+        assertNotNull(task);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(4, workflow.getTasks().size());
+        assertEquals("junit_task_4", workflow.getTasks().get(3).getTaskDefName());
+
+        task = workflowExecutionService.poll("junit_task_4", "junit");
+        assertNotNull(task);
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
     }
-
-    private void validate(String wfid, String[] sequence, String[] executedTasks, int expectedTotalTasks) {
-        for (int i = 0; i < sequence.length; i++) {
-            String t = sequence[i];
-            Task task = getTask(t);
-            if (task == null) {
-                System.out.println("Missing task for " + t + ", below are the workflow tasks completed...");
-                Workflow workflow = workflowExecutionService.getExecutionStatus(wfid, true);
-                for (Task x : workflow.getTasks()) {
-                    System.out.println(x.getTaskType() + "/" + x.getReferenceTaskName());
-                }
-            }
-            assertNotNull("No task for " + t, task);
-            assertEquals(wfid, task.getWorkflowInstanceId());
-            task.setStatus(COMPLETED);
-            workflowExecutionService.updateTask(task);
-
-            Workflow workflow = workflowExecutionService.getExecutionStatus(wfid, true);
-            assertNotNull(workflow);
-            assertFalse(workflow.getTasks().isEmpty());
-            if (i < sequence.length - 1) {
-                assertEquals(RUNNING, workflow.getStatus());
-            } else {
-                workflow = workflowExecutionService.getExecutionStatus(wfid, true);
-                List<Task> workflowTasks = workflow.getTasks();
-                assertEquals(workflowTasks.toString(), executedTasks.length, workflowTasks.size());
-                for (int k = 0; k < executedTasks.length; k++) {
-                    assertEquals("Tasks: " + workflowTasks.toString() + "\n", executedTasks[k], workflowTasks.get(k).getTaskType());
-                }
-
-                assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
-            }
-        }
-    }
-
 
     private Task getTask(String taskType) {
         Task task;

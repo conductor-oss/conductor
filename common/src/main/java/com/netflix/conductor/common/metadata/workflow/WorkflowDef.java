@@ -17,22 +17,20 @@ package com.netflix.conductor.common.metadata.workflow;
 
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
-import com.google.common.base.MoreObjects;
 import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
 import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
 import com.netflix.conductor.common.metadata.Auditable;
-
-import javax.validation.Valid;
-import javax.validation.constraints.Max;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import javax.validation.Valid;
+import javax.validation.constraints.Max;
+import javax.validation.constraints.Min;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.NotNull;
 
 
 /**
@@ -301,17 +299,17 @@ public class WorkflowDef extends Auditable {
 
 	@Override
 	public String toString() {
-		return MoreObjects.toStringHelper(getClass())
-				.add("name", name)
-				.add("description", description)
-				.add("version", version)
-				.add("tasks", tasks)
-				.add("inputParameters", inputParameters)
-				.add("outputParameters", outputParameters)
-				.add("failureWorkflow", failureWorkflow)
-				.add("schemaVersion", schemaVersion)
-				.add("restartable", restartable)
-				.add("workflowStatusListenerEnabled", workflowStatusListenerEnabled)
-				.toString();
+		return "WorkflowDef{" +
+			"name='" + name + '\'' +
+			", description='" + description + '\'' +
+			", version=" + version +
+			", tasks=" + tasks +
+			", inputParameters=" + inputParameters +
+			", outputParameters=" + outputParameters +
+			", failureWorkflow='" + failureWorkflow + '\'' +
+			", schemaVersion=" + schemaVersion +
+			", restartable=" + restartable +
+			", workflowStatusListenerEnabled=" + workflowStatusListenerEnabled +
+			'}';
 	}
 }

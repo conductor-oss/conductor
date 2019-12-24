@@ -18,10 +18,7 @@ package com.netflix.conductor.common.metadata.workflow;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-
-import javax.validation.Valid;
-import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.PositiveOrZero;
+import com.netflix.conductor.common.run.Workflow;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +29,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import javax.validation.Valid;
+import javax.validation.constraints.NotEmpty;
+import javax.validation.constraints.PositiveOrZero;
 
 /**
  * @author Viren
@@ -78,8 +78,6 @@ public class WorkflowTask {
 	@ProtoField(id = 3)
 	private String description;
 
-	//Key: Name of the input parameter.  MUST be one of the keys defined in TaskDef (e.g. fileName)
-	//Value: mapping of the parameter from another task (e.g. task1.someOutputParameterAsFileName)
 	@ProtoField(id = 4)
 	private Map<String, Object> inputParameters = new HashMap<>();
 
@@ -559,10 +557,10 @@ public class WorkflowTask {
 		switch (taskType) {
 			case DO_WHILE:
 			case DECISION:
-				for (List<WorkflowTask> wfts : children()) {
-					Iterator<WorkflowTask> it = wfts.iterator();
-					while (it.hasNext()) {
-						WorkflowTask task = it.next();
+				for (List<WorkflowTask> workflowTasks : children()) {
+					Iterator<WorkflowTask> iterator = workflowTasks.iterator();
+					while (iterator.hasNext()) {
+						WorkflowTask task = iterator.next();
 						if (task.getTaskReferenceName().equals(taskReferenceName)) {
 							break;
 						}
@@ -574,17 +572,17 @@ public class WorkflowTask {
 							break;
 						}
 					}
-					if (it.hasNext()) {
-						return it.next();
+					if (iterator.hasNext()) {
+						return iterator.next();
 					}
 				}
 				break;
 			case FORK_JOIN:
 				boolean found = false;
-				for (List<WorkflowTask> wfts : children()) {
-					Iterator<WorkflowTask> it = wfts.iterator();
-					while (it.hasNext()) {
-						WorkflowTask task = it.next();
+				for (List<WorkflowTask> workflowTasks : children()) {
+					Iterator<WorkflowTask> iterator = workflowTasks.iterator();
+					while (iterator.hasNext()) {
+						WorkflowTask task = iterator.next();
 						if (task.getTaskReferenceName().equals(taskReferenceName)) {
 							found = true;
 							break;
@@ -593,9 +591,12 @@ public class WorkflowTask {
 						if (nextTask != null) {
 							return nextTask;
 						}
+						if (task.has(taskReferenceName)) {
+							break;
+						}
 					}
-					if (it.hasNext()) {
-						return it.next();
+					if (iterator.hasNext()) {
+						return iterator.next();
 					}
 					if (found && parent != null) {
 						return parent.next(this.taskReferenceName, parent);        //we need to return join task... -- get my sibling from my parent..
@@ -610,37 +611,33 @@ public class WorkflowTask {
 		}
 		return null;
 	}
-	
-	public boolean has(String taskReferenceName){
 
-		if(this.getTaskReferenceName().equals(taskReferenceName)){
+	public boolean has(String taskReferenceName) {
+		if (this.getTaskReferenceName().equals(taskReferenceName)) {
 			return true;
 		}
-		
-		TaskType tt = TaskType.USER_DEFINED;
-		if(TaskType.isSystemTask(type)) {
-			tt = TaskType.valueOf(type);
+
+		TaskType taskType = TaskType.USER_DEFINED;
+		if (TaskType.isSystemTask(type)) {
+			taskType = TaskType.valueOf(type);
 		}
-		
-		switch(tt){
-			
+
+		switch (taskType) {
 			case DECISION:
 			case DO_WHILE:
-			case FORK_JOIN:	
-				for(List<WorkflowTask> childx : children()){
-					for(WorkflowTask child : childx){
-						if(child.has(taskReferenceName)){
+			case FORK_JOIN:
+				for (List<WorkflowTask> childx : children()) {
+					for (WorkflowTask child : childx) {
+						if (child.has(taskReferenceName)) {
 							return true;
-						}	
+						}
 					}
 				}
 				break;
 			default:
 				break;
 		}
-		
 		return false;
-		
 	}
 	
 	public WorkflowTask get(String taskReferenceName){

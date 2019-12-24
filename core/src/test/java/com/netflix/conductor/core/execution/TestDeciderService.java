@@ -1,9 +1,5 @@
 /*
-<<<<<<< HEAD
  * Copyright 2019 Netflix, Inc.
-=======
- * Copyright 2016 Netflix, Inc.
->>>>>>> 45397da6... remove usage of exists method in queuedao
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -415,7 +411,7 @@ public class TestDeciderService {
 
         WorkflowTask taskAfterT9 = def.getNextTask("t9");
         assertNotNull(taskAfterT9);
-        assertEquals("join1", taskAfterT9.getTaskReferenceName());
+        assertEquals("join2", taskAfterT9.getTaskReferenceName());
     }
 
     @Test
@@ -1106,6 +1102,7 @@ public class TestDeciderService {
         WorkflowDef subWorkflowDef = createLinearWorkflow();
         WorkflowTask subWorkflow = new WorkflowTask();
         subWorkflow.setType(TaskType.SUB_WORKFLOW.name());
+        subWorkflow.setName("sw1");
         SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         subWorkflowParams.setName(subWorkflowDef.getName());
         subWorkflow.setSubWorkflowParam(subWorkflowParams);
@@ -1119,12 +1116,14 @@ public class TestDeciderService {
         forkTask2.getForkTasks().add(Arrays.asList(tasks.get(3), decisionTask));
 
         WorkflowTask joinTask2 = new WorkflowTask();
+        joinTask2.setName("join2");
         joinTask2.setType(TaskType.JOIN.name());
         joinTask2.setTaskReferenceName("join2");
         joinTask2.setJoinOn(Arrays.asList("t4", "d1"));
 
         WorkflowTask forkTask1 = new WorkflowTask();
         forkTask1.setType(TaskType.FORK_JOIN.name());
+        forkTask1.setName("fork1");
         forkTask1.setTaskReferenceName("fork1");
         forkTask1.getForkTasks().add(Collections.singletonList(tasks.get(1)));
         forkTask1.getForkTasks().add(Arrays.asList(forkTask2, joinTask2));
@@ -1132,6 +1131,7 @@ public class TestDeciderService {
 
 
         WorkflowTask joinTask1 = new WorkflowTask();
+        joinTask1.setName("join1");
         joinTask1.setType(TaskType.JOIN.name());
         joinTask1.setTaskReferenceName("join1");
         joinTask1.setJoinOn(Arrays.asList("t1", "fork2"));
