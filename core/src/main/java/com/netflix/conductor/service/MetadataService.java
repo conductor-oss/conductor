@@ -113,13 +113,12 @@ public interface MetadataService {
     /**
      * @return All the event handlers registered in the system
      */
-    List<EventHandler> getEventHandlers();
+    List<EventHandler> getAllEventHandlers();
 
     /**
      * @param event      name of the event
      * @param activeOnly if true, returns only the active handlers
      * @return Returns the list of all the event handlers for a given event
      */
-
     List<EventHandler> getEventHandlersForEvent(@NotEmpty(message = "EventName cannot be null or empty") String event, boolean activeOnly);
 }

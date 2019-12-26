@@ -251,7 +251,7 @@ public class ExecutionService {
 
 	public int requeuePendingTasks() {
 		long threshold = System.currentTimeMillis() - taskRequeueTimeout;
-		List<WorkflowDef> workflowDefs = metadataDAO.getAll();
+		List<WorkflowDef> workflowDefs = metadataDAO.getAllWorkflowDefs();
 		int count = 0;
 		for (WorkflowDef workflowDef : workflowDefs) {
 			List<Workflow> workflows = workflowExecutor.getRunningWorkflows(workflowDef.getName(), workflowDef.getVersion());

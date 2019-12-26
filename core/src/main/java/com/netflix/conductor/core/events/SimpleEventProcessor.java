@@ -120,7 +120,7 @@ public class SimpleEventProcessor implements EventProcessor {
 
     private void refresh() {
         try {
-            Set<String> events = metadataService.getEventHandlers().stream()
+            Set<String> events = metadataService.getAllEventHandlers().stream()
                     .map(EventHandler::getEvent)
                     .collect(Collectors.toSet());
 

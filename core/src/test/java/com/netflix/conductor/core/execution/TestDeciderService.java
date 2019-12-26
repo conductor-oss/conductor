@@ -118,7 +118,7 @@ public class TestDeciderService {
         workflowDef.setVersion(1);
 
         when(metadataDAO.getTaskDef(any())).thenReturn(taskDef);
-        when(metadataDAO.getLatest(any())).thenReturn(Optional.of(workflowDef));
+        when(metadataDAO.getLatestWorkflowDef(any())).thenReturn(Optional.of(workflowDef));
         parametersUtils = new ParametersUtils();
         Map<String, TaskMapper> taskMappers = new HashMap<>();
         taskMappers.put("DECISION", new DecisionTaskMapper());
@@ -641,7 +641,7 @@ public class TestDeciderService {
         task3.getInputData().putAll(taskInput);
         task3.setStatus(Status.FAILED_WITH_TERMINAL_ERROR);
         task3.setTaskId("t1");
-        when(metadataDAO.get(anyString(), anyInt())).thenReturn(Optional.of(new WorkflowDef()));
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(new WorkflowDef()));
         exception.expect(TerminateWorkflowException.class);
         deciderService.retry(taskDef, workflowTask, task3, workflow);
     }
@@ -905,7 +905,7 @@ public class TestDeciderService {
         task.setOutputData(taskOutput);
         workflow.getTasks().add(task);
         WorkflowDef workflowDef = new WorkflowDef();
-        when(metadataDAO.get(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
+        when(metadataDAO.getWorkflowDef(anyString(), anyInt())).thenReturn(Optional.of(workflowDef));
         deciderService.updateWorkflowOutput(workflow, null);
         assertNotNull(workflow.getOutput());
         assertEquals("taskValue", workflow.getOutput().get("taskKey"));

@@ -20,7 +20,6 @@ import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.run.Workflow;
-
 import java.util.List;
 
 /**
@@ -245,11 +244,4 @@ public interface ExecutionDAO {
 	 * @return list of matching events
 	 */
 	List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max);
-	
-	void updateLastPoll(String taskDefName, String domain, String workerId);
-	
-	PollData getPollData(String taskDefName, String domain);
-
-	List<PollData> getPollData(String taskDefName);
-
 }

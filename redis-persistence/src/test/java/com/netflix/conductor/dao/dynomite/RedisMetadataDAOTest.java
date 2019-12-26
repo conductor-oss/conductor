@@ -21,10 +21,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.metadata.events.EventHandler;
-import com.netflix.conductor.common.metadata.events.EventHandler.Action;
-import com.netflix.conductor.common.metadata.events.EventHandler.Action.Type;
-import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
@@ -71,8 +67,8 @@ public class RedisMetadataDAOTest {
 		def.setName("testDup");
 		def.setVersion(1);
 		
-		redisMetadataDAO.create(def);
-		redisMetadataDAO.create(def);
+		redisMetadataDAO.createWorkflowDef(def);
+		redisMetadataDAO.createWorkflowDef(def);
 	}
 	
 	@Test
@@ -88,27 +84,27 @@ public class RedisMetadataDAOTest {
 		def.setUpdatedBy("unit_test2");
 		def.setUpdateTime(2L);
 		
-		redisMetadataDAO.create(def);
+		redisMetadataDAO.createWorkflowDef(def);
 		
-		List<WorkflowDef> all = redisMetadataDAO.getAll();
+		List<WorkflowDef> all = redisMetadataDAO.getAllWorkflowDefs();
 		assertNotNull(all);
 		assertEquals(1, all.size());
 		assertEquals("test", all.get(0).getName());
 		assertEquals(1, all.get(0).getVersion());
 		
-		WorkflowDef found = redisMetadataDAO.get("test", 1).get();
+		WorkflowDef found = redisMetadataDAO.getWorkflowDef("test", 1).get();
 		assertTrue(EqualsBuilder.reflectionEquals(def, found));
 		
 		def.setVersion(2);
-		redisMetadataDAO.create(def);
+		redisMetadataDAO.createWorkflowDef(def);
 		
-		all = redisMetadataDAO.getAll();
+		all = redisMetadataDAO.getAllWorkflowDefs();
 		assertNotNull(all);
 		assertEquals(2, all.size());
 		assertEquals("test", all.get(0).getName());
 		assertEquals(1, all.get(0).getVersion());
 		
-		found = redisMetadataDAO.getLatest(def.getName()).get();
+		found = redisMetadataDAO.getLatestWorkflowDef(def.getName()).get();
 		assertEquals(def.getName(), found.getName());
 		assertEquals(def.getVersion(), found.getVersion());
 		assertEquals(2, found.getVersion());
@@ -122,8 +118,8 @@ public class RedisMetadataDAOTest {
 		assertEquals(2, all.get(1).getVersion());
 		
 		def.setDescription("updated");
-		redisMetadataDAO.update(def);
-		found = redisMetadataDAO.get(def.getName(), def.getVersion()).get();
+		redisMetadataDAO.updateWorkflowDef(def);
+		found = redisMetadataDAO.getWorkflowDef(def.getName(), def.getVersion()).get();
 		assertEquals(def.getDescription(), found.getDescription());
 		
 		List<String> allnames = redisMetadataDAO.findAll();
@@ -132,10 +128,10 @@ public class RedisMetadataDAOTest {
 		assertEquals(def.getName(), allnames.get(0));
 
 		redisMetadataDAO.removeWorkflowDef("test", 1);
-		Optional<WorkflowDef> deleted = redisMetadataDAO.get("test", 1);
+		Optional<WorkflowDef> deleted = redisMetadataDAO.getWorkflowDef("test", 1);
 		assertFalse(deleted.isPresent());
 		redisMetadataDAO.removeWorkflowDef("test", 2);
-		Optional<WorkflowDef> latestDef = redisMetadataDAO.getLatest("test");
+		Optional<WorkflowDef> latestDef = redisMetadataDAO.getLatestWorkflowDef("test");
 		assertFalse(latestDef.isPresent());
 
 		WorkflowDef[] workflowDefsArray = new WorkflowDef[3];
@@ -149,22 +145,22 @@ public class RedisMetadataDAOTest {
 			workflowDefsArray[i-1].setOwnerApp("ownerApp");
 			workflowDefsArray[i-1].setUpdatedBy("unit_test2");
 			workflowDefsArray[i-1].setUpdateTime(2L);
-			redisMetadataDAO.create( workflowDefsArray[i-1]);
+			redisMetadataDAO.createWorkflowDef( workflowDefsArray[i-1]);
 		}
 		redisMetadataDAO.removeWorkflowDef("test", 1);
 		redisMetadataDAO.removeWorkflowDef("test", 2);
-		WorkflowDef workflow = redisMetadataDAO.getLatest("test").get();
+		WorkflowDef workflow = redisMetadataDAO.getLatestWorkflowDef("test").get();
 		assertEquals(workflow.getVersion(), 3);
 	}
 
 	@Test(expected = ApplicationException.class)
-	public void removeInvalidWorkflowDef() throws Exception {
+	public void removeInvalidWorkflowDef() {
 		WorkflowDef def = new WorkflowDef();
 		redisMetadataDAO.removeWorkflowDef("hello", 1);
 	}
 	
 	@Test
-	public void testTaskDefOperations() throws Exception {
+	public void testTaskDefOperations() {
 		
 		TaskDef def = new TaskDef("taskA");
 		def.setDescription("description");
@@ -220,51 +216,7 @@ public class RedisMetadataDAOTest {
 	}
 
 	@Test(expected = ApplicationException.class)
-	public void testRemoveTaskDef() throws Exception {
+	public void testRemoveTaskDef() {
 		redisMetadataDAO.removeTaskDef("test" + UUID.randomUUID().toString());
 	}
-	
-	@Test
-	public void testEventHandlers() {
-		String event1 = "SQS::arn:account090:sqstest1";
-		String event2 = "SQS::arn:account090:sqstest2";
-		
-		EventHandler eh = new EventHandler();
-		eh.setName(UUID.randomUUID().toString());
-		eh.setActive(false);
-		Action action = new Action();
-		action.setAction(Type.start_workflow);
-		action.setStart_workflow(new StartWorkflow());
-		action.getStart_workflow().setName("workflow_x");
-		eh.getActions().add(action);
-		eh.setEvent(event1);
-		
-		redisMetadataDAO.addEventHandler(eh);
-		List<EventHandler> all = redisMetadataDAO.getEventHandlers();
-		assertNotNull(all);
-		assertEquals(1, all.size());
-		assertEquals(eh.getName(), all.get(0).getName());
-		assertEquals(eh.getEvent(), all.get(0).getEvent());
-
-		List<EventHandler> byEvents = redisMetadataDAO.getEventHandlersForEvent(event1, true);
-		assertNotNull(byEvents);
-		assertEquals(0, byEvents.size());		//event is marked as in-active
-		
-		eh.setActive(true);
-		eh.setEvent(event2);
-		redisMetadataDAO.updateEventHandler(eh);
-		
-		all = redisMetadataDAO.getEventHandlers();
-		assertNotNull(all);
-		assertEquals(1, all.size());
-
-		byEvents = redisMetadataDAO.getEventHandlersForEvent(event1, true);
-		assertNotNull(byEvents);
-		assertEquals(0, byEvents.size());
-		
-		byEvents = redisMetadataDAO.getEventHandlersForEvent(event2, true);
-		assertNotNull(byEvents);
-		assertEquals(1, byEvents.size());
-	}
-
 }

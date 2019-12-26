@@ -43,6 +43,7 @@ import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.util.Statements;
 import java.util.ArrayList;
@@ -57,7 +58,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 @Trace
-public class CassandraExecutionDAO extends CassandraBaseDAO implements ExecutionDAO {
+public class CassandraExecutionDAO extends CassandraBaseDAO implements ExecutionDAO, PollDataDAO {
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraExecutionDAO.class);
     private static final String CLASS_NAME = CassandraExecutionDAO.class.getSimpleName();
 
@@ -530,7 +531,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
      * for Cassandra backed Conductor
      */
     @Override
-    public void updateLastPoll(String taskDefName, String domain, String workerId) {
+    public void updateLastPollData(String taskDefName, String domain, String workerId) {
         throw new UnsupportedOperationException("This method is not implemented in CassandraExecutionDAO. Please use ExecutionDAOFacade instead.");
     }
 

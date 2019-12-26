@@ -164,7 +164,7 @@ public class MetadataMapperServiceTest {
         WorkflowDef workflowDefinition = createWorkflowDefinition("testMetadataPopulation");
         workflowDefinition.setTasks(ImmutableList.of(workflowTask));
 
-        when(metadataDAO.getLatest(workflowDefinitionName)).thenReturn(Optional.of(subWorkflowDefinition));
+        when(metadataDAO.getLatestWorkflowDef(workflowDefinitionName)).thenReturn(Optional.of(subWorkflowDefinition));
 
         metadataMapperService.populateTaskDefinitions(workflowDefinition);
 
@@ -175,7 +175,7 @@ public class MetadataMapperServiceTest {
         assertEquals(workflowDefinitionName, params.getName());
         assertEquals(version, params.getVersion());
 
-        verify(metadataDAO).getLatest(workflowDefinitionName);
+        verify(metadataDAO).getLatestWorkflowDef(workflowDefinitionName);
         verify(metadataDAO).getTaskDef(nameTaskDefinition);
         verifyNoMoreInteractions(metadataDAO);
     }
@@ -224,18 +224,18 @@ public class MetadataMapperServiceTest {
         WorkflowDef workflowDefinition = createWorkflowDefinition("testMetadataPopulation");
         workflowDefinition.setTasks(ImmutableList.of(workflowTask));
 
-        when(metadataDAO.getLatest(workflowDefinitionName)).thenReturn(Optional.empty());
+        when(metadataDAO.getLatestWorkflowDef(workflowDefinitionName)).thenReturn(Optional.empty());
 
         metadataMapperService.populateTaskDefinitions(workflowDefinition);
 
-        verify(metadataDAO).getLatest(workflowDefinitionName);
+        verify(metadataDAO).getLatestWorkflowDef(workflowDefinitionName);
     }
 
     @Test(expected = IllegalArgumentException.class)
     public void testLookupWorkflowDefinition() {
         try {
             String workflowName = "test";
-            when(metadataDAO.get(workflowName, 0)).thenReturn(Optional.of(new WorkflowDef()));
+            when(metadataDAO.getWorkflowDef(workflowName, 0)).thenReturn(Optional.of(new WorkflowDef()));
             Optional<WorkflowDef> optionalWorkflowDef = metadataMapperService.lookupWorkflowDefinition(workflowName, 0);
             assertTrue(optionalWorkflowDef.isPresent());
             metadataMapperService.lookupWorkflowDefinition(null, 0);
@@ -249,7 +249,7 @@ public class MetadataMapperServiceTest {
     @Test(expected = IllegalArgumentException.class)
     public void testLookupLatestWorkflowDefinition() {
         String workflowName = "test";
-        when(metadataDAO.getLatest(workflowName)).thenReturn(Optional.of(new WorkflowDef()));
+        when(metadataDAO.getLatestWorkflowDef(workflowName)).thenReturn(Optional.of(new WorkflowDef()));
         Optional<WorkflowDef> optionalWorkflowDef = metadataMapperService.lookupLatestWorkflowDefinition(workflowName);
         assertTrue(optionalWorkflowDef.isPresent());
 

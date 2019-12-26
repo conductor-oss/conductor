@@ -69,7 +69,7 @@ public class WorkflowMonitor {
 		this.scheduledExecutorService.scheduleWithFixedDelay(() -> {
 			try {
 				if (refreshCounter <= 0) {
-					workflowDefs = metadataDAO.getAll();
+					workflowDefs = metadataDAO.getAllWorkflowDefs();
 					taskDefs = new ArrayList<>(metadataDAO.getAllTaskDefs());
 					refreshCounter = metadataRefreshInterval;
 				}

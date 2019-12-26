@@ -75,7 +75,7 @@ public class EventServiceImpl implements EventService {
      * @return list of {@link EventHandler}
      */
     public List<EventHandler> getEventHandlers() {
-        return metadataService.getEventHandlers();
+        return metadataService.getAllEventHandlers();
     }
 
     /**

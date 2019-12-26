@@ -76,13 +76,13 @@ public class MetadataMapperService {
     @VisibleForTesting
     Optional<WorkflowDef> lookupWorkflowDefinition(String workflowName, int workflowVersion) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowName), "Workflow name must be specified when searching for a definition");
-        return metadataDAO.get(workflowName, workflowVersion);
+        return metadataDAO.getWorkflowDef(workflowName, workflowVersion);
     }
 
     @VisibleForTesting
     Optional<WorkflowDef> lookupLatestWorkflowDefinition(String workflowName) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowName), "Workflow name must be specified when searching for a definition");
-        return metadataDAO.getLatest(workflowName);
+        return metadataDAO.getLatestWorkflowDef(workflowName);
     }
 
     public Workflow populateWorkflowWithDefinitions(Workflow workflow) {
@@ -125,7 +125,7 @@ public class MetadataMapperService {
         if (subworkflowParams.getVersion() == null) {
             String subWorkflowName = subworkflowParams.getName();
             Integer subWorkflowVersion =
-                    metadataDAO.getLatest(subWorkflowName)
+                    metadataDAO.getLatestWorkflowDef(subWorkflowName)
                             .map(WorkflowDef::getVersion)
                             .orElseThrow(
                                     () -> {

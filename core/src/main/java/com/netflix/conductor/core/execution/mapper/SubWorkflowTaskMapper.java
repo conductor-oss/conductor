@@ -116,7 +116,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
                 .map(Object::toString)
                 .map(Integer::parseInt)
                 .orElseGet(
-                        () -> metadataDAO.getLatest(subWorkflowName)
+                        () -> metadataDAO.getLatestWorkflowDef(subWorkflowName)
                                 .map(WorkflowDef::getVersion)
                                 .orElseThrow(() -> {
                                     String reason = String.format("The Task %s defined as a sub-workflow has no workflow definition available ", subWorkflowName);

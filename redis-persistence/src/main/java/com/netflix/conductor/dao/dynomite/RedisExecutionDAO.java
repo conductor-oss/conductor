@@ -68,7 +68,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	private final static String PENDING_WORKFLOWS = "PENDING_WORKFLOWS";
 	private final static String WORKFLOW_DEF_TO_WORKFLOWS = "WORKFLOW_DEF_TO_WORKFLOWS";
 	private final static String CORR_ID_TO_WORKFLOWS = "CORR_ID_TO_WORKFLOWS";
-	private final static String POLL_DATA = "POLL_DATA";
 
 	private final static String EVENT_EXECUTION = "EVENT_EXECUTION";
 
@@ -580,56 +579,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		} catch (Exception e) {
 			throw new ApplicationException(Code.BACKEND_ERROR, "Unable to get event executions for " + eventHandlerName, e);
 		}
-	}
-
-	@Override
-	public void updateLastPoll(String taskDefName, String domain, String workerId) {
-		Preconditions.checkNotNull(taskDefName, "taskDefName name cannot be null");
-		PollData pollData = new PollData(taskDefName, domain, workerId, System.currentTimeMillis());
-
-		String key = nsKey(POLL_DATA, pollData.getQueueName());
-		String field = (domain == null)?"DEFAULT":domain;
-
-		String payload = toJson(pollData);
-		recordRedisDaoRequests("updatePollData");
-		recordRedisDaoPayloadSize("updatePollData", payload.length(),"n/a","n/a");
-		dynoClient.hset(key, field, payload);
-	}
-
-	@Override
-	public PollData getPollData(String taskDefName, String domain) {
-		Preconditions.checkNotNull(taskDefName, "taskDefName name cannot be null");
-
-		String key = nsKey(POLL_DATA, taskDefName);
-		String field = (domain == null)?"DEFAULT":domain;
-
-		String pollDataJsonString = dynoClient.hget(key, field);
-		recordRedisDaoRequests("getPollData");
-		recordRedisDaoPayloadSize("getPollData", StringUtils.length(pollDataJsonString), "n/a", "n/a");
-
-		PollData pollData = null;
-		if (pollDataJsonString != null) {
-			pollData = readValue(pollDataJsonString, PollData.class);
-		}
-		return pollData;
-	}
-
-	@Override
-	public List<PollData> getPollData(String taskDefName) {
-		Preconditions.checkNotNull(taskDefName, "taskDefName name cannot be null");
-
-		String key = nsKey(POLL_DATA, taskDefName);
-
-		Map<String, String> pMapdata = dynoClient.hgetAll(key);
-		List<PollData> pollData = new ArrayList<PollData>();
-		if(pMapdata != null){
-			pMapdata.values().forEach(pollDataJsonString -> {
-				pollData.add(readValue(pollDataJsonString, PollData.class));
-				recordRedisDaoRequests("getPollData");
-				recordRedisDaoPayloadSize("getPollData", pollDataJsonString.length(), "n/a", "n/a");
-			});
-		}
-		return pollData;
 	}
 
     /**
