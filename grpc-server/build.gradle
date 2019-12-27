@@ -14,4 +14,5 @@ dependencies {
 
     testCompile "io.grpc:grpc-testing:${revGrpc}"
     testCompile 'org.testinfected.hamcrest-matchers:all-matchers:1.8'
+    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
 }

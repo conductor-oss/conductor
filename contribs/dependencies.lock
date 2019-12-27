@@ -993,6 +993,10 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
+        },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
         }
     },
     "testCompileClasspath": {
@@ -1169,6 +1173,10 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
+        },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
         }
     },
     "testRuntime": {
@@ -1345,6 +1353,10 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
+        },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
         }
     },
     "testRuntimeClasspath": {
@@ -1521,6 +1533,10 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
+        },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
         }
     }
 }
