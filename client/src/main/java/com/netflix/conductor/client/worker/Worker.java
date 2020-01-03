@@ -95,10 +95,9 @@ public interface Worker {
     }
 
     /**
-     * Override this method to change the number of tasks to be polled.
-     *
-     * @return the number of tasks to be polled for
+     * This method has been marked as deprecated and will be removed in a future release.
      */
+    @Deprecated
     default int getPollCount() {
         return PropertyFactory.getInteger(getTaskDefName(), "pollCount", 1);
     }
@@ -113,11 +112,9 @@ public interface Worker {
     }
 
     /**
-     * The client will wait for at-least specified timeout in milliseconds for task queue to be "filled".
-     * Use a higher number here as opposed to more frequent polls.  Helps reduce the excessive calls.
-     *
-     * @return Time to wait when making a poll to workflow server for tasks.
+     * This method has been marked as deprecated and will be removed in a future release.
      */
+    @Deprecated
     default int getLongPollTimeoutInMS() {
         return PropertyFactory.getInteger(getTaskDefName(), "longPollTimeout", 100);
     }

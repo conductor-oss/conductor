@@ -19,7 +19,7 @@ import com.google.common.base.Preconditions;
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.client.exceptions.ConductorClientException;
-import com.netflix.conductor.client.task.WorkflowTaskMetrics;
+import com.netflix.conductor.client.telemetry.MetricsContainer;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -32,21 +32,19 @@ import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.ClientFilter;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author visingh
  * @author Viren
  * Client for conductor task management including polling for task, updating task status etc.
  */
-@SuppressWarnings("unchecked")
 public class TaskClient extends ClientBase {
 
     private static GenericType<List<Task>> taskList = new GenericType<List<Task>>() {
@@ -120,7 +118,6 @@ public class TaskClient extends ClientBase {
      */
     public Task pollTask(String taskType, String workerId, String domain) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
-        Preconditions.checkArgument(StringUtils.isNotBlank(domain), "Domain cannot be blank");
         Preconditions.checkArgument(StringUtils.isNotBlank(workerId), "Worker id cannot be blank");
 
         Object[] params = new Object[]{"workerid", workerId, "domain", domain};
@@ -177,7 +174,7 @@ public class TaskClient extends ClientBase {
      */
     private void populateTaskInput(Task task) {
         if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
-            WorkflowTaskMetrics.incrementExternalPayloadUsedCount(task.getTaskDefName(), ExternalPayloadStorage.Operation.READ.name(), ExternalPayloadStorage.PayloadType.TASK_INPUT.name());
+            MetricsContainer.incrementExternalPayloadUsedCount(task.getTaskDefName(), ExternalPayloadStorage.Operation.READ.name(), ExternalPayloadStorage.PayloadType.TASK_INPUT.name());
             task.setInputData(downloadFromExternalStorage(ExternalPayloadStorage.PayloadType.TASK_INPUT, task.getExternalInputPayloadStoragePath()));
             task.setExternalInputPayloadStoragePath(null);
         }
@@ -213,16 +210,6 @@ public class TaskClient extends ClientBase {
     }
 
     /**
-     * Use updateTask(TaskResult taskResult) instead.
-     * @param taskResult
-     * @param taskType
-     */
-    @Deprecated
-    public void updateTask(TaskResult taskResult, String taskType) {
-        updateTask(taskResult);
-    }
-
-    /**
      * Updates the result of a task execution.
      * If the size of the task output payload is bigger than {@link ConductorClientConfiguration#getTaskOutputPayloadThresholdKB()},
      * it is uploaded to {@link ExternalPayloadStorage}, if enabled, else the task is marked as FAILED_WITH_TERMINAL_ERROR.
@@ -242,7 +229,7 @@ public class TaskClient extends ClientBase {
             objectMapper.writeValue(byteArrayOutputStream, taskResult.getOutputData());
             byte[] taskOutputBytes = byteArrayOutputStream.toByteArray();
             long taskResultSize = taskOutputBytes.length;
-            WorkflowTaskMetrics.recordTaskResultPayloadSize(taskType, taskResultSize);
+            MetricsContainer.recordTaskResultPayloadSize(taskType, taskResultSize);
 
             long payloadSizeThreshold = conductorClientConfiguration.getTaskOutputPayloadThresholdKB() * 1024;
             if (taskResultSize > payloadSizeThreshold) {
@@ -252,7 +239,7 @@ public class TaskClient extends ClientBase {
                     taskResult.setStatus(TaskResult.Status.FAILED_WITH_TERMINAL_ERROR);
                     taskResult.setOutputData(null);
                 } else {
-                    WorkflowTaskMetrics.incrementExternalPayloadUsedCount(taskType, ExternalPayloadStorage.Operation.WRITE.name(), ExternalPayloadStorage.PayloadType.TASK_OUTPUT.name());
+                    MetricsContainer.incrementExternalPayloadUsedCount(taskType, ExternalPayloadStorage.Operation.WRITE.name(), ExternalPayloadStorage.PayloadType.TASK_OUTPUT.name());
                     String externalStoragePath = uploadToExternalPayloadStorage(ExternalPayloadStorage.PayloadType.TASK_OUTPUT, taskOutputBytes, taskResultSize);
                     taskResult.setExternalOutputPayloadStoragePath(externalStoragePath);
                     taskResult.setOutputData(null);

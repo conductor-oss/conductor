@@ -19,7 +19,7 @@ import com.google.common.base.Preconditions;
 import com.netflix.conductor.client.config.ConductorClientConfiguration;
 import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.client.exceptions.ConductorClientException;
-import com.netflix.conductor.client.task.WorkflowTaskMetrics;
+import com.netflix.conductor.client.telemetry.MetricsContainer;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
 import com.netflix.conductor.common.run.SearchResult;
@@ -113,14 +113,15 @@ public class WorkflowClient extends ClientBase {
             objectMapper.writeValue(byteArrayOutputStream, startWorkflowRequest.getInput());
             byte[] workflowInputBytes = byteArrayOutputStream.toByteArray();
             long workflowInputSize = workflowInputBytes.length;
-            WorkflowTaskMetrics.recordWorkflowInputPayloadSize(startWorkflowRequest.getName(), version, workflowInputSize);
+            MetricsContainer.recordWorkflowInputPayloadSize(startWorkflowRequest.getName(), version, workflowInputSize);
             if (workflowInputSize > conductorClientConfiguration.getWorkflowInputPayloadThresholdKB() * 1024) {
                 if (!conductorClientConfiguration.isExternalPayloadStorageEnabled() ||
                         (workflowInputSize > conductorClientConfiguration.getWorkflowInputMaxPayloadThresholdKB() * 1024)) {
                     String errorMsg = String.format("Input payload larger than the allowed threshold of: %d KB", conductorClientConfiguration.getWorkflowInputPayloadThresholdKB());
                     throw new ConductorClientException(errorMsg);
                 } else {
-                    WorkflowTaskMetrics.incrementExternalPayloadUsedCount(startWorkflowRequest.getName(), ExternalPayloadStorage.Operation.WRITE.name(), ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT.name());
+                    MetricsContainer
+                        .incrementExternalPayloadUsedCount(startWorkflowRequest.getName(), ExternalPayloadStorage.Operation.WRITE.name(), ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT.name());
                     String externalStoragePath = uploadToExternalPayloadStorage(ExternalPayloadStorage.PayloadType.WORKFLOW_INPUT, workflowInputBytes, workflowInputSize);
                     startWorkflowRequest.setExternalInputPayloadStoragePath(externalStoragePath);
                     startWorkflowRequest.setInput(null);
@@ -129,7 +130,7 @@ public class WorkflowClient extends ClientBase {
         } catch (IOException e) {
             String errorMsg = String.format("Unable to start workflow:%s, version:%s", startWorkflowRequest.getName(), version);
             logger.error(errorMsg, e);
-            WorkflowTaskMetrics.incrementWorkflowStartErrorCount(startWorkflowRequest.getName(), e);
+            MetricsContainer.incrementWorkflowStartErrorCount(startWorkflowRequest.getName(), e);
             throw new ConductorClientException(errorMsg, e);
         }
         try {
@@ -137,7 +138,7 @@ public class WorkflowClient extends ClientBase {
         } catch (ConductorClientException e) {
             String errorMsg = String.format("Unable to send start workflow request:%s, version:%s", startWorkflowRequest.getName(), version);
             logger.error(errorMsg, e);
-            WorkflowTaskMetrics.incrementWorkflowStartErrorCount(startWorkflowRequest.getName(), e);
+            MetricsContainer.incrementWorkflowStartErrorCount(startWorkflowRequest.getName(), e);
             throw e;
         }
     }
@@ -183,7 +184,7 @@ public class WorkflowClient extends ClientBase {
      */
     private void populateWorkflowOutput(Workflow workflow) {
         if (StringUtils.isNotBlank(workflow.getExternalOutputPayloadStoragePath())) {
-            WorkflowTaskMetrics.incrementExternalPayloadUsedCount(workflow.getWorkflowName(), ExternalPayloadStorage.Operation.READ.name(), ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT.name());
+            MetricsContainer.incrementExternalPayloadUsedCount(workflow.getWorkflowName(), ExternalPayloadStorage.Operation.READ.name(), ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT.name());
             workflow.setOutput(downloadFromExternalStorage(ExternalPayloadStorage.PayloadType.WORKFLOW_OUTPUT, workflow.getExternalOutputPayloadStoragePath()));
         }
     }
