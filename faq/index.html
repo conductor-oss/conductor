@@ -211,6 +211,9 @@
     <li class="toctree-l2"><a href="#i-want-my-worker-to-stop-polling-and-executing-tasks-when-the-process-is-being-terminated-java-client">I want my worker to stop polling and executing tasks when the process is being terminated. (Java client)</a></li>
     
 
+    <li class="toctree-l2"><a href="#can-i-exit-early-from-a-task-without-executing-the-configured-automatic-retries-in-the-task-definition">Can I exit early from a task without executing the configured automatic retries in the task definition?</a></li>
+    
+
     </ul>
 	    </li>
           
@@ -285,7 +288,9 @@ More details about <a href="../configuration/eventhandlers/">eventing</a>.</p>
 <h3 id="how-do-i-configure-a-notification-when-my-workflow-completes-or-fails">How do I configure a notification when my workflow completes or fails?<a class="headerlink" href="#how-do-i-configure-a-notification-when-my-workflow-completes-or-fails" title="Permanent link">&para;</a></h3>
 <p>Refer this <a href="../configuration/workflowdef/#workflow-notifications">documentation</a> to extend conductor to send out events/notifications upon workflow completion/failure.</p>
 <h3 id="i-want-my-worker-to-stop-polling-and-executing-tasks-when-the-process-is-being-terminated-java-client">I want my worker to stop polling and executing tasks when the process is being terminated. (Java client)<a class="headerlink" href="#i-want-my-worker-to-stop-polling-and-executing-tasks-when-the-process-is-being-terminated-java-client" title="Permanent link">&para;</a></h3>
-<p>In a <code>PreDestroy</code> block within your application, call the <code>shutdown()</code> method on the <code>WorkflowTaskCoordinator</code> instance that you have created to facilitate a graceful shutdown of your worker in case the process is being terminated.</p>
+<p>In a <code>PreDestroy</code> block within your application, call the <code>shutdown()</code> method on the <code>TaskRunnerConfigurer</code> instance that you have created to facilitate a graceful shutdown of your worker in case the process is being terminated.</p>
+<h3 id="can-i-exit-early-from-a-task-without-executing-the-configured-automatic-retries-in-the-task-definition">Can I exit early from a task without executing the configured automatic retries in the task definition?<a class="headerlink" href="#can-i-exit-early-from-a-task-without-executing-the-configured-automatic-retries-in-the-task-definition" title="Permanent link">&para;</a></h3>
+<p>Set the status to <code>FAILED_WITH_TERMINAL_ERROR</code> in the TaskResult object within your worker. This would mark the task as FAILED and fail the workflow without retrying the task as a fail-fast mechanism.</p>
               
             </div>
           </div>

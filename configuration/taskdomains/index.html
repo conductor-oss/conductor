@@ -275,7 +275,7 @@
 <h3 id="change-the-poll-call">Change the poll call<a class="headerlink" href="#change-the-poll-call" title="Permanent link">&para;</a></h3>
 <p>The poll call must now specify the domain. </p>
 <h4 id="java-client">Java Client<a class="headerlink" href="#java-client" title="Permanent link">&para;</a></h4>
-<p>If you are using the java client then a simple property change will force  WorkflowTaskCoordinator to pass the domain to the poller.</p>
+<p>If you are using the java client then a simple property change will force  TaskRunnerConfigurer to pass the domain to the poller.</p>
 <div class="codehilite"><pre><span></span>    conductor.worker.T2.domain=mydomain //Task T2 needs to poll for domain &quot;mydomain&quot;
 </pre></div>
 

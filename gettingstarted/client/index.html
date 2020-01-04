@@ -81,7 +81,7 @@
         
             <li><a class="toctree-l4" href="#worker">Worker</a></li>
         
-            <li><a class="toctree-l4" href="#workflowtaskcoordinator">WorkflowTaskCoordinator</a></li>
+            <li><a class="toctree-l4" href="#taskrunnerconfigurer">TaskRunnerConfigurer</a></li>
         
         </ul>
     
@@ -274,12 +274,15 @@
 </table>
 <h2 id="java">Java<a class="headerlink" href="#java" title="Permanent link">&para;</a></h2>
 <h4 id="worker">Worker<a class="headerlink" href="#worker" title="Permanent link">&para;</a></h4>
-<p>Conductor provides a framework to poll for tasks, manage the execution thread and update the status of the execution back to the server.</p>
+<p>Conductor provides an automated framework to poll for tasks, manage the execution thread and update the status of the execution back to the server.</p>
 <p>Implement the <a href="https://github.com/Netflix/conductor/blob/dev/client/src/main/java/com/netflix/conductor/client/worker/Worker.java">Worker</a> interface to execute the task.</p>
-<h4 id="workflowtaskcoordinator">WorkflowTaskCoordinator<a class="headerlink" href="#workflowtaskcoordinator" title="Permanent link">&para;</a></h4>
-<p>Manages the task workers thread pool and server communication (poll, task update and ack).<br />
-The WorkflowTaskCoordinator can be used to register the worker(s) and initialize the polling loop.  </p>
-<p>Use the <a href="https://github.com/Netflix/conductor/blob/dev/client/src/main/java/com/netflix/conductor/client/task/WorkflowTaskCoordinator.java#L117">Builder</a> to create an instance of the WorkflowTaskCoordinator. The builder accepts the following parameters:</p>
+<h4 id="taskrunnerconfigurer">TaskRunnerConfigurer<a class="headerlink" href="#taskrunnerconfigurer" title="Permanent link">&para;</a></h4>
+<p>The TaskRunnerConfigurer can be used to register the worker(s) and initialize the polling loop.<br />
+Manages the task workers thread pool and server communication (poll and task update).  </p>
+<p>Use the <a href="https://github.com/Netflix/conductor/blob/master/client/src/main/java/com/netflix/conductor/client/automator/TaskRunnerConfigurer.java#L62">Builder</a> to create an instance of the TaskRunnerConfigurer. The builder accepts the following parameters:</p>
+<p>Initialize the Builder with the following:
+ TaskClient | TaskClient used to communicate to the Conductor server |
+| Workers | Workers that will be used for polling work and task execution. |</p>
 <table>
 <thead>
 <tr>
@@ -293,16 +296,6 @@ The WorkflowTaskCoordinator can be used to register the worker(s) and initialize
 <td>withEurekaClient</td>
 <td>EurekaClient is used to identify if the server is in discovery or not.  When the server goes out of discovery, the polling is stopped. If passed null, discovery check is not done.</td>
 <td>provided by platform</td>
-</tr>
-<tr>
-<td>withTaskClient</td>
-<td>TaskClient used to communicate to the Conductor server</td>
-<td>(required)</td>
-</tr>
-<tr>
-<td>withWorkers</td>
-<td>Workers that will be used for polling work and task execution.</td>
-<td>(required)</td>
 </tr>
 <tr>
 <td>withThreadCount</td>
@@ -320,21 +313,16 @@ The WorkflowTaskCoordinator can be used to register the worker(s) and initialize
 <td>3</td>
 </tr>
 <tr>
-<td>withWorkerQueueSize</td>
-<td>Worker queue size for the polled task.</td>
-<td>100</td>
-</tr>
-<tr>
 <td>withWorkerNamePrefix</td>
 <td>String prefix that will be used for all the workers.</td>
 <td>workflow-worker-</td>
 </tr>
 </tbody>
 </table>
-<p>Once an instance is created, call <code>init()</code> method to initialize the executor service within the coordinator and begin the polling for tasks.</p>
+<p>Once an instance is created, call <code>init()</code> method to initialize the TaskPollExecutor and begin the polling and execution of tasks.</p>
 <div class="admonition tip">
 <p class="admonition-title">Note</p>
-<p>To ensure that the WorkflowTaskCoordinator stops polling for tasks when the instance becomes unhealthy, call the provided <code>shutdown()</code> hook in a <code>PreDestroy</code> block.</p>
+<p>To ensure that the TaskRunnerConfigurer stops polling for tasks when the instance becomes unhealthy, call the provided <code>shutdown()</code> hook in a <code>PreDestroy</code> block.</p>
 </div>
 <p><strong>Properties</strong>
 The worker behavior can be further controlled by using these properties:</p>
@@ -355,22 +343,10 @@ The worker behavior can be further controlled by using these properties:</p>
 <td>false</td>
 </tr>
 <tr>
-<td>pollCount</td>
-<td>int</td>
-<td>Number of tasks to poll for in a single poll request. Used for batched polling. Each task will be executed in a separate thread.</td>
-<td>1</td>
-</tr>
-<tr>
 <td>pollInterval</td>
 <td>int</td>
 <td>Interval in milliseconds at which the server should be polled for tasks.</td>
 <td>1000</td>
-</tr>
-<tr>
-<td>longPollTimeout</td>
-<td>int</td>
-<td>Time in milliseconds for long polling to Conductor server for tasks. Use a higher number here as opposed to more frequent polls to reduce excessive calls.</td>
-<td>100</td>
 </tr>
 </tbody>
 </table>
