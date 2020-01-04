@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,13 +15,11 @@
  */
 package com.netflix.conductor.client.sample;
 
+import com.netflix.conductor.client.automator.TaskRunnerConfigurer;
 import com.netflix.conductor.client.http.TaskClient;
-import com.netflix.conductor.client.task.WorkflowTaskCoordinator;
 import com.netflix.conductor.client.worker.Worker;
+import java.util.Arrays;
 
-/**
- * @author Viren
- */
 public class Main {
 
     public static void main(String[] args) {
@@ -34,14 +32,12 @@ public class Main {
         Worker worker1 = new SampleWorker("task_1");
         Worker worker2 = new SampleWorker("task_5");
 
-        // Create WorkflowTaskCoordinator
-        WorkflowTaskCoordinator coordinator = new WorkflowTaskCoordinator.Builder()
-            .withWorkers(worker1, worker2)
+        // Create TaskRunnerConfigurer
+        TaskRunnerConfigurer configurer = new TaskRunnerConfigurer.Builder(taskClient, Arrays.asList(worker1, worker2))
             .withThreadCount(threadCount)
-            .withTaskClient(taskClient)
             .build();
 
-        // Start for polling and execution of the tasks
-        coordinator.init();
+        // Start the polling and execution of tasks
+        configurer.init();
     }
 }

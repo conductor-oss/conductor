@@ -36,7 +36,7 @@ For example, the below configuration:
 The poll call must now specify the domain. 
 
 #### Java Client
-If you are using the java client then a simple property change will force  WorkflowTaskCoordinator to pass the domain to the poller.
+If you are using the java client then a simple property change will force  TaskRunnerConfigurer to pass the domain to the poller.
 ```
 	conductor.worker.T2.domain=mydomain //Task T2 needs to poll for domain "mydomain"
 ```

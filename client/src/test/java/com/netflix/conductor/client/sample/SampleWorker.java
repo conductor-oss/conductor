@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,9 +20,6 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
 
-/**
- * @author Viren
- */
 public class SampleWorker implements Worker {
 
     private String taskDefName;
@@ -38,9 +35,6 @@ public class SampleWorker implements Worker {
 
     @Override
     public TaskResult execute(Task task) {
-
-        //System.out.printf("Executing %s%n", taskDefName);
-
         TaskResult result = new TaskResult(task);
         result.setStatus(Status.COMPLETED);
 
