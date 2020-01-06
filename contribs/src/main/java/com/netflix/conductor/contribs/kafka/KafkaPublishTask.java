@@ -1,8 +1,6 @@
 package com.netflix.conductor.contribs.kafka;
 
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -43,7 +41,7 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 	private static final String MISSING_KAFKA_VALUE = "Missing Kafka value.  See documentation for KafkaTask for required input parameters";
 	private static final String FAILED_TO_INVOKE = "Failed to invoke kafka task due to: ";
 
-	private ObjectMapper objectMapper = objectMapper();
+	private ObjectMapper objectMapper;
 	private Configuration config;
 	private String requestParameter;
 	KafkaProducerManager producerManager;
@@ -52,22 +50,13 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 
 
 	@Inject
-	public KafkaPublishTask(Configuration config, KafkaProducerManager clientManager) {
+	public KafkaPublishTask(Configuration config, KafkaProducerManager clientManager, ObjectMapper objectMapper) {
 		super(NAME);
 		this.config = config;
 		this.requestParameter = REQUEST_PARAMETER_NAME;
 		this.producerManager = clientManager;
+		this.objectMapper = objectMapper;
 		logger.info("KafkaTask initialized...");
-	}
-
-	private static ObjectMapper objectMapper() {
-		final ObjectMapper om = new ObjectMapper();
-		om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-		om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
-		om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
-		om.setSerializationInclusion(JsonInclude.Include.NON_NULL);
-		om.setSerializationInclusion(JsonInclude.Include.NON_EMPTY);
-		return om;
 	}
 
 	@Override

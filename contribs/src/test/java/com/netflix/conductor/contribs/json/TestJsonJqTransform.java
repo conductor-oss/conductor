@@ -1,7 +1,9 @@
 package com.netflix.conductor.contribs.json;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -10,9 +12,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class TestJsonJqTransform {
+
+    private ObjectMapper objectMapper = new JsonMapperProvider().get();
+
     @Test
     public void dataShouldBeCorrectlySelected() {
-        final JsonJqTransform t = new JsonJqTransform();
+        final JsonJqTransform t = new JsonJqTransform(objectMapper);
         final Workflow w = new Workflow();
         final Task task = new Task();
         final Map<String, Object> inputData = new HashMap<>();
@@ -32,7 +37,7 @@ public class TestJsonJqTransform {
 
     @Test
     public void simpleErrorShouldBeDisplayed() {
-        final JsonJqTransform t = new JsonJqTransform();
+        final JsonJqTransform t = new JsonJqTransform(objectMapper);
         final Workflow w = new Workflow();
         final Task task = new Task();
         final Map<String, Object> inputData = new HashMap<>();
@@ -47,7 +52,7 @@ public class TestJsonJqTransform {
 
     @Test
     public void nestedExceptionsWithNACausesShouldBeDisregarded() {
-        final JsonJqTransform t = new JsonJqTransform();
+        final JsonJqTransform t = new JsonJqTransform(objectMapper);
         final Workflow w = new Workflow();
         final Task task = new Task();
         final Map<String, Object> inputData = new HashMap<>();

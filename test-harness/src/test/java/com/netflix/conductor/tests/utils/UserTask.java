@@ -21,6 +21,7 @@ import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import java.util.HashMap;
@@ -36,7 +37,7 @@ public class UserTask extends WorkflowSystemTask {
 
 	public static final String NAME = "USER_TASK";
 
-	private ObjectMapper objectMapper = new ObjectMapper();
+	private ObjectMapper objectMapper = new JsonMapperProvider().get();
 
 	private static final TypeReference<Map<String, Map<String, List<Object>>>> mapStringListObjects =
 		new TypeReference<Map<String, Map<String, List<Object>>>>() {};
@@ -44,7 +45,7 @@ public class UserTask extends WorkflowSystemTask {
 	public UserTask() {
 		super(NAME);
 	}
-	
+
 	@Override
 	public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
 		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
@@ -55,7 +56,7 @@ public class UserTask extends WorkflowSystemTask {
 		task.setOutputData(output);
 		task.setStatus(Status.COMPLETED);
 	}
-	
+
 	@Override
 	public boolean isAsync() {
 		return true;

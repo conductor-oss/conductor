@@ -1,10 +1,12 @@
 package com.netflix.conductor.core.utils;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.json.JsonMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.TestConfiguration;
@@ -33,8 +35,8 @@ import static org.mockito.Mockito.when;
 public class ExternalPayloadStorageUtilsTest {
 
     private ExternalPayloadStorage externalPayloadStorage;
-    private ObjectMapper objectMapper;
     private ExternalStorageLocation location;
+    private ObjectMapper objectMapper;
 
     // Subject
     private ExternalPayloadStorageUtils externalPayloadStorageUtils;
@@ -46,11 +48,11 @@ public class ExternalPayloadStorageUtilsTest {
     public void setup() {
         externalPayloadStorage = mock(ExternalPayloadStorage.class);
         Configuration configuration = new TestConfiguration();
-        objectMapper = new ObjectMapper();
+        objectMapper = new JsonMapperProvider().get();
         location = new ExternalStorageLocation();
         location.setPath("some/test/path");
 
-        externalPayloadStorageUtils = new ExternalPayloadStorageUtils(externalPayloadStorage, configuration);
+        externalPayloadStorageUtils = new ExternalPayloadStorageUtils(externalPayloadStorage, configuration, objectMapper);
     }
 
     @Test

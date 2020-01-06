@@ -26,6 +26,8 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
+
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,7 +43,7 @@ public class MockExternalPayloadStorage implements ExternalPayloadStorage {
 
     public static final String TEMP_FILE_PATH = "/input.json";
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new JsonMapperProvider().get();
 
     @Override
     public ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType, String path) {

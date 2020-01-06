@@ -55,7 +55,7 @@ public class JsonMapperProviderTest {
         Map<String, Object> data = new HashMap<>();
         data.put("someKey", null);
         data.put("someId", "abc123");
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new JsonMapperProvider().get();
         String result = objectMapper.writeValueAsString(data);
         System.out.println(result);
         assertTrue(result.contains("null"));

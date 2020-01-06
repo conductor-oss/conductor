@@ -47,7 +47,6 @@ public class ServerModule extends AbstractModule {
         install(new GRPCModule());
 
         bindInterceptor(Matchers.any(), Matchers.annotatedWith(Service.class), new ServiceInterceptor(getProvider(Validator.class)));
-        bind(ObjectMapper.class).toProvider(JsonMapperProvider.class);
         bind(Configuration.class).to(SystemPropertiesDynomiteConfiguration.class);
         bind(ExecutorService.class).toProvider(ExecutorServiceProvider.class).in(Scopes.SINGLETON);
         bind(WorkflowSweeper.class).asEagerSingleton();

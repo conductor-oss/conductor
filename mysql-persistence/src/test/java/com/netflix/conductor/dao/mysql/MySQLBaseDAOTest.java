@@ -3,6 +3,7 @@ package com.netflix.conductor.dao.mysql;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
 import com.zaxxer.hikari.HikariDataSource;
@@ -68,7 +69,7 @@ public class MySQLBaseDAOTest {
     }
 
     private static ObjectMapper createObjectMapper() {
-        ObjectMapper om = new ObjectMapper();
+        ObjectMapper om = new JsonMapperProvider().get();
         om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
         om.configure(DeserializationFeature.FAIL_ON_IGNORED_PROPERTIES, false);
         om.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);

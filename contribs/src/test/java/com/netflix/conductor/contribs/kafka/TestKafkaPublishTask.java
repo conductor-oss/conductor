@@ -1,8 +1,10 @@
 package com.netflix.conductor.contribs.kafka;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import org.apache.kafka.clients.producer.Producer;
@@ -19,9 +21,11 @@ import java.util.concurrent.Future;
 
 public class TestKafkaPublishTask {
 
+	private static ObjectMapper objectMapper = new JsonMapperProvider().get();
+
 	@Test
 	public void missingRequest_Fail() {
-		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), new KafkaProducerManager(new SystemPropertiesConfiguration()));
+		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), new KafkaProducerManager(new SystemPropertiesConfiguration()), objectMapper);
 		Task task = new Task();
 		kPublishTask.start(Mockito.mock(Workflow.class), task, Mockito.mock(WorkflowExecutor.class));
 		Assert.assertEquals(Task.Status.FAILED, task.getStatus());
@@ -37,7 +41,7 @@ public class TestKafkaPublishTask {
 
 		task.getInputData().put(KafkaPublishTask.REQUEST_PARAMETER_NAME, input);
 
-		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), new KafkaProducerManager(new SystemPropertiesConfiguration()));
+		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), new KafkaProducerManager(new SystemPropertiesConfiguration()), objectMapper);
 		kPublishTask.start(Mockito.mock(Workflow.class), task, Mockito.mock(WorkflowExecutor.class));
 		Assert.assertEquals(Task.Status.FAILED, task.getStatus());
 	}
@@ -55,7 +59,7 @@ public class TestKafkaPublishTask {
 
 		task.getInputData().put(KafkaPublishTask.REQUEST_PARAMETER_NAME, input);
 
-		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), new KafkaProducerManager(new SystemPropertiesConfiguration()));
+		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), new KafkaProducerManager(new SystemPropertiesConfiguration()), objectMapper);
 		kPublishTask.start(Mockito.mock(Workflow.class), task, Mockito.mock(WorkflowExecutor.class));
 		Assert.assertEquals(Task.Status.FAILED, task.getStatus());
 	}
@@ -67,7 +71,7 @@ public class TestKafkaPublishTask {
 		Task task = getTask();
 
 		KafkaProducerManager producerManager = Mockito.mock(KafkaProducerManager.class);
-		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), producerManager);
+		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), producerManager, objectMapper);
 
 		Producer producer = Mockito.mock(Producer.class);
 
@@ -93,7 +97,7 @@ public class TestKafkaPublishTask {
 		Task task = getTask();
 
 		KafkaProducerManager producerManager = Mockito.mock(KafkaProducerManager.class);
-		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), producerManager);
+		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), producerManager, objectMapper);
 
 		Producer producer = Mockito.mock(Producer.class);
 
@@ -112,7 +116,7 @@ public class TestKafkaPublishTask {
 		Task task = getTask();
 
 		KafkaProducerManager producerManager = Mockito.mock(KafkaProducerManager.class);
-		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), producerManager);
+		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), producerManager, objectMapper);
 
 		Producer producer = Mockito.mock(Producer.class);
 
@@ -142,7 +146,7 @@ public class TestKafkaPublishTask {
 
 	@Test
 	public void integerSerializer_integerObject() {
-		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), new KafkaProducerManager(new SystemPropertiesConfiguration()));
+		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), new KafkaProducerManager(new SystemPropertiesConfiguration()), objectMapper);
 		KafkaPublishTask.Input input = new KafkaPublishTask.Input();
 		input.setKeySerializer(IntegerSerializer.class.getCanonicalName());
 		input.setKey(String.valueOf(Integer.MAX_VALUE));
@@ -151,7 +155,7 @@ public class TestKafkaPublishTask {
 
 	@Test
 	public void longSerializer_longObject() {
-		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), new KafkaProducerManager(new SystemPropertiesConfiguration()));
+		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), new KafkaProducerManager(new SystemPropertiesConfiguration()), objectMapper);
 		KafkaPublishTask.Input input = new KafkaPublishTask.Input();
 		input.setKeySerializer(LongSerializer.class.getCanonicalName());
 		input.setKey(String.valueOf(Long.MAX_VALUE));
@@ -160,7 +164,7 @@ public class TestKafkaPublishTask {
 
 	@Test
 	public void noSerializer_StringObject() {
-		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), new KafkaProducerManager(new SystemPropertiesConfiguration()));
+		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), new KafkaProducerManager(new SystemPropertiesConfiguration()), objectMapper);
 		KafkaPublishTask.Input input = new KafkaPublishTask.Input();
 		input.setKey("testStringKey");
 		Assert.assertEquals(kPublishTask.getKey(input), "testStringKey");

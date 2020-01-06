@@ -19,12 +19,13 @@ package com.netflix.conductor.tests.utils;
 import java.io.InputStream;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 
 public class JsonUtils {
 
 	public static <T> T fromJson(String fileName, Class<T> classObject) throws Exception {
 
-		ObjectMapper objectMapper = new ObjectMapper();
+		ObjectMapper objectMapper = new JsonMapperProvider().get();
 
 		InputStream inputStream = ClassLoader.getSystemResourceAsStream(fileName);
 		return objectMapper.readValue(inputStream, classObject);

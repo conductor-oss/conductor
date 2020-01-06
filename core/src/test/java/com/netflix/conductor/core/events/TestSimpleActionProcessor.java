@@ -25,6 +25,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.tasks.TaskResult.Status;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.JsonUtils;
@@ -42,6 +43,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -49,12 +51,14 @@ import static org.mockito.Mockito.when;
 public class TestSimpleActionProcessor {
     private WorkflowExecutor workflowExecutor;
     private SimpleActionProcessor actionProcessor;
+    private ObjectMapper objectMapper;
 
     @Before
     public void setup() {
         workflowExecutor = mock(WorkflowExecutor.class);
 
         actionProcessor = new SimpleActionProcessor(workflowExecutor, new ParametersUtils(), new JsonUtils());
+        objectMapper = new JsonMapperProvider().get();
     }
 
     @SuppressWarnings("unchecked")
@@ -73,7 +77,7 @@ public class TestSimpleActionProcessor {
         action.setAction(Type.start_workflow);
         action.setStart_workflow(startWorkflow);
 
-        Object payload = new ObjectMapper().readValue("{\"correlationId\":\"test-id\", \"testId\":\"test_1\"}", Object.class);
+        Object payload = objectMapper.readValue("{\"correlationId\":\"test-id\", \"testId\":\"test_1\"}", Object.class);
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("testWorkflow");
@@ -113,7 +117,7 @@ public class TestSimpleActionProcessor {
         action.setAction(Type.start_workflow);
         action.setStart_workflow(startWorkflow);
 
-        Object payload = new ObjectMapper().readValue("{\"testId\":\"test_1\"}", Object.class);
+        Object payload = objectMapper.readValue("{\"testId\":\"test_1\"}", Object.class);
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("testWorkflow");
@@ -143,12 +147,16 @@ public class TestSimpleActionProcessor {
         TaskDetails taskDetails = new TaskDetails();
         taskDetails.setWorkflowId("${workflowId}");
         taskDetails.setTaskRefName("testTask");
+        taskDetails.getOutput().put("someNEKey", "${Message.someNEKey}");
+        taskDetails.getOutput().put("someKey", "${Message.someKey}");
+        taskDetails.getOutput().put("someNullKey", "${Message.someNullKey}");
 
         Action action = new Action();
         action.setAction(Type.complete_task);
         action.setComplete_task(taskDetails);
 
-        Object payload = new ObjectMapper().readValue("{\"workflowId\":\"workflow_1\"}", Object.class);
+        String payloadJson = "{\"workflowId\":\"workflow_1\",\"Message\":{\"someKey\":\"someData\",\"someNullKey\":null}}";
+        Object payload = objectMapper.readValue(payloadJson, Object.class);
 
         Task task = new Task();
         task.setReferenceTaskName("testTask");
@@ -166,6 +174,12 @@ public class TestSimpleActionProcessor {
         assertEquals("testEvent", argumentCaptor.getValue().getOutputData().get("conductor.event.name"));
         assertEquals("workflow_1", argumentCaptor.getValue().getOutputData().get("workflowId"));
         assertEquals("testTask", argumentCaptor.getValue().getOutputData().get("taskRefName"));
+        assertEquals("someData", argumentCaptor.getValue().getOutputData().get("someKey"));
+        // Assert values not in message are evaluated to null
+        assertTrue("testTask", argumentCaptor.getValue().getOutputData().containsKey("someNEKey"));
+        // Assert null values from message are kept
+        assertTrue("testTask", argumentCaptor.getValue().getOutputData().containsKey("someNullKey"));
+        assertNull("testTask", argumentCaptor.getValue().getOutputData().get("someNullKey"));
     }
 
     @Test
@@ -178,7 +192,7 @@ public class TestSimpleActionProcessor {
         action.setAction(Type.complete_task);
         action.setComplete_task(taskDetails);
 
-        Object payload = new ObjectMapper().readValue("{\"workflowId\":\"workflow_1\", \"taskId\":\"task_1\"}", Object.class);
+        Object payload = objectMapper.readValue("{\"workflowId\":\"workflow_1\", \"taskId\":\"task_1\"}", Object.class);
 
         Task task = new Task();
         task.setTaskId("task_1");

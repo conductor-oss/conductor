@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.common.utils.TaskUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +45,7 @@ import org.slf4j.LoggerFactory;
 public class ParametersUtils {
     private static Logger logger = LoggerFactory.getLogger(ParametersUtils.class);
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper = new JsonMapperProvider().get();
 
     private TypeReference<Map<String, Object>> map = new TypeReference<Map<String, Object>>() {
     };

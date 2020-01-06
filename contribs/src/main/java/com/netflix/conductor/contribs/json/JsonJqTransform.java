@@ -31,6 +31,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
+import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,11 +47,13 @@ public class JsonJqTransform extends WorkflowSystemTask {
     private static final String OUTPUT_RESULT_LIST = "resultList";
     private static final String OUTPUT_ERROR = "error";
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private final ObjectMapper objectMapper;
     private final LoadingCache<String, JsonQuery> queryCache = createQueryCache();
 
-    public JsonJqTransform() {
+    @Inject
+    public JsonJqTransform(ObjectMapper objectMapper) {
         super(NAME);
+        this.objectMapper = objectMapper;
     }
 
     @Override

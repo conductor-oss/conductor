@@ -10,6 +10,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.ElasticSearchRestClientBuilderProvider;
@@ -100,7 +101,7 @@ public class TestElasticSearchRestDAOV6 {
 
         restClient.performRequest("GET", "/_cluster/health", params);
 
-        objectMapper = new ObjectMapper();
+        objectMapper = new JsonMapperProvider().get();
         indexDAO = new ElasticSearchRestDAOV6(restClientBuilder, configuration, objectMapper);
     }
 
@@ -318,7 +319,7 @@ public class TestElasticSearchRestDAOV6 {
 
         restClient.performRequest("GET", "/_cluster/health", params);
 
-        objectMapper = new ObjectMapper();
+        objectMapper = new JsonMapperProvider().get();
         indexDAO = new ElasticSearchRestDAOV6(restClientBuilder, configuration, objectMapper);
     }
 

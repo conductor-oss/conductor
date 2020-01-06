@@ -47,12 +47,15 @@ public class ExternalPayloadStorageUtils {
     private final ExternalPayloadStorage externalPayloadStorage;
     private final Configuration configuration;
 
-    private ObjectMapper objectMapper = new ObjectMapper();
+    private ObjectMapper objectMapper;
 
     @Inject
-    public ExternalPayloadStorageUtils(ExternalPayloadStorage externalPayloadStorage, Configuration configuration) {
+    public ExternalPayloadStorageUtils(ExternalPayloadStorage externalPayloadStorage,
+                                       Configuration configuration,
+                                       ObjectMapper objectMapper) {
         this.externalPayloadStorage = externalPayloadStorage;
         this.configuration = configuration;
+        this.objectMapper = objectMapper;
     }
 
     /**

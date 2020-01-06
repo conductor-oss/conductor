@@ -53,6 +53,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.execution.ApplicationException;
@@ -145,6 +146,8 @@ public abstract class AbstractWorkflowServiceTest {
     @Inject
     protected MetadataMapperService metadataMapperService;
 
+    private ObjectMapper objectMapper = new JsonMapperProvider().get();
+
     private static boolean registered;
 
     private static List<TaskDef> taskDefs;
@@ -231,6 +234,7 @@ public abstract class AbstractWorkflowServiceTest {
         Map<String, Object> ip1 = new HashMap<>();
         ip1.put("p1", "${workflow.input.param1}");
         ip1.put("p2", "${workflow.input.param2}");
+        ip1.put("someNullKey", null);
         wft1.setInputParameters(ip1);
         wft1.setTaskReferenceName("t1");
 
@@ -360,12 +364,10 @@ public abstract class AbstractWorkflowServiceTest {
         assertTrue(taskInput.containsKey("http_request"));
         assertTrue(taskInput.get("http_request") instanceof Map);
 
-        ObjectMapper om = new ObjectMapper();
-
         //Use the commented sysout to get the string value
         //System.out.println(om.writeValueAsString(om.writeValueAsString(taskInput)));
         String expected = "{\"http_request\":{\"method\":\"GET\",\"vipStack\":\"test_stack\",\"body\":{\"requestDetails\":{\"key1\":\"value1\",\"key2\":42},\"outputPath\":\"s3://bucket/outputPath\",\"inputPaths\":[\"file://path1\",\"file://path2\"]},\"uri\":\"/get/something\"}}";
-        assertEquals(expected, om.writeValueAsString(taskInput));
+        assertEquals(expected, objectMapper.writeValueAsString(taskInput));
     }
 
     @Test
@@ -395,10 +397,9 @@ public abstract class AbstractWorkflowServiceTest {
         assertTrue(taskInput.containsKey("kafka_request"));
         assertTrue(taskInput.get("kafka_request") instanceof Map);
 
-        ObjectMapper om = new ObjectMapper();
         String expected = "{\"kafka_request\":{\"topic\":\"test_kafka_topic\",\"bootStrapServers\":\"localhost:9092\",\"value\":{\"requestDetails\":{\"key1\":\"value1\",\"key2\":42},\"outputPath\":\"s3://bucket/outputPath\",\"inputPaths\":[\"file://path1\",\"file://path2\"]}}}";
 
-        assertEquals(expected, om.writeValueAsString(taskInput));
+        assertEquals(expected, objectMapper.writeValueAsString(taskInput));
 
         TaskResult taskResult = new TaskResult(task);
 
@@ -447,10 +448,9 @@ public abstract class AbstractWorkflowServiceTest {
         assertTrue(taskInput.containsKey("kafka_request"));
         assertTrue(taskInput.get("kafka_request") instanceof Map);
 
-        ObjectMapper om = new ObjectMapper();
         String expected = "{\"kafka_request\":{\"topic\":\"test_kafka_topic\",\"bootStrapServers\":\"localhost:9092\",\"value\":{\"requestDetails\":{\"key1\":\"value1\",\"key2\":42},\"outputPath\":\"s3://bucket/outputPath\",\"inputPaths\":[\"file://path1\",\"file://path2\"]}}}";
 
-        assertEquals(expected, om.writeValueAsString(taskInput));
+        assertEquals(expected, objectMapper.writeValueAsString(taskInput));
 
         TaskResult taskResult = new TaskResult(task);
         taskResult.setReasonForIncompletion("NON TRANSIENT ERROR OCCURRED: An integration point required to complete the task is down");
@@ -2395,10 +2395,6 @@ public abstract class AbstractWorkflowServiceTest {
 
         Workflow workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
         assertNotNull(workflow);
-        assertEquals(workflow.getReasonForIncompletion(), RUNNING, workflow.getStatus());
-
-        workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
-        assertNotNull(workflow);
         assertEquals(RUNNING, workflow.getStatus());
         assertEquals(1, workflow.getTasks().size());        //The very first task is the one that should be scheduled.
 
@@ -2458,6 +2454,60 @@ public abstract class AbstractWorkflowServiceTest {
 
         assertTrue("Found " + workflow.getOutput().toString(), workflow.getOutput().containsKey("o3"));
         assertEquals("task1.Done", workflow.getOutput().get("o3"));
+    }
+
+    @Test
+    public void testSimpleWorkflowNullInputOutputs() throws Exception {
+        clearWorkflows();
+
+        WorkflowDef workflowDefinition = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
+        // Assert null keys are preserved in task definition's input parameters.
+        assertTrue(workflowDefinition.getTasks().get(0).getInputParameters().containsKey("someNullKey"));
+
+        String correlationId = "unit_test_1";
+        Map<String, Object> input = new HashMap<>();
+        String inputParam1 = "p1 value";
+        input.put("param1", inputParam1);
+        input.put("param2", null);
+        String workflowInstanceId = startOrLoadWorkflowExecution(LINEAR_WORKFLOW_T1_T2, 1, correlationId, input, null, null);
+        logger.info("testSimpleWorkflow.wfid= {}", workflowInstanceId);
+        assertNotNull(workflowInstanceId);
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+        assertEquals(1, workflow.getTasks().size());        //The very first task is the one that should be scheduled.
+
+        // Assert null values are passed through workflow input.
+        assertNull(workflow.getInput().get("param2"));
+        // Assert null values are carried from task definition to task execution.
+        assertNull(workflow.getTasks().get(0).getInputData().get("someNullKey"));
+
+        // Polling for the first task
+        Task task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
+        assertNotNull(task);
+        assertEquals("junit_task_1", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(workflowInstanceId, task.getWorkflowInstanceId());
+
+        task.setStatus(COMPLETED);
+        task.getOutputData().put("someKey", null);
+        Map<String, Object> someOtherKey = new HashMap<>();
+        someOtherKey.put("a", 1);
+        someOtherKey.put("A", null);
+        task.getOutputData().put("someOtherKey", someOtherKey);
+        workflowExecutionService.updateTask(task);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true);
+        assertNotNull(workflow);
+
+        task = workflow.getTasks().get(0);
+        // Assert null keys are preserved in task outputs.
+        assertTrue(task.getOutputData().containsKey("someKey"));
+        assertNull(task.getOutputData().get("someKey"));
+        someOtherKey = (Map<String, Object>) task.getOutputData().get("someOtherKey");
+        assertTrue(someOtherKey.containsKey("A"));
+        assertNull(someOtherKey.get("A"));
     }
 
     @Test

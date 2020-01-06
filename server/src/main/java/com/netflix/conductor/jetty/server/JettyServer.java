@@ -17,6 +17,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.inject.servlet.GuiceFilter;
 import com.netflix.conductor.bootstrap.Main;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.service.Lifecycle;
 import com.sun.jersey.api.client.Client;
 import java.io.InputStream;
@@ -102,8 +103,7 @@ public class JettyServer implements Lifecycle {
 
     private static void createKitchenSink(int port) throws Exception {
         Client client = Client.create();
-        ObjectMapper objectMapper = new ObjectMapper();
-
+        ObjectMapper objectMapper = new JsonMapperProvider().get();
 
         List<TaskDef> taskDefs = new LinkedList<>();
         for (int i = 0; i < 40; i++) {

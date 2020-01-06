@@ -91,6 +91,7 @@ public class TestHttpTask {
         Map<String, Object> map = new HashMap<>();
         map.put("key", "value1");
         map.put("num", 42);
+        map.put("SomeKey", null);
         JSON_RESPONSE = objectMapper.writeValueAsString(map);
 
         server = new Server(7009);
@@ -128,6 +129,7 @@ public class TestHttpTask {
         Map<String, Object> body = new HashMap<>();
         body.put("input_key1", "value1");
         body.put("input_key2", 45.3d);
+        body.put("someKey", null);
         input.setBody(body);
         input.setMethod("POST");
         task.getInputData().put(HttpTask.REQUEST_PARAMETER_NAME, input);

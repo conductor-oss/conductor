@@ -10,6 +10,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.elasticsearch.ElasticSearchConfiguration;
 import com.netflix.conductor.elasticsearch.ElasticSearchTransportClientProvider;
@@ -89,7 +90,7 @@ public class TestElasticSearchDAOV6 {
                 .execute()
                 .get();
 
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new JsonMapperProvider().get();
         indexDAO = new ElasticSearchDAOV6(elasticSearchClient, configuration, objectMapper);
     }
 
@@ -323,7 +324,7 @@ public class TestElasticSearchDAOV6 {
                 .execute()
                 .get();
 
-        ObjectMapper objectMapper = new ObjectMapper();
+        ObjectMapper objectMapper = new JsonMapperProvider().get();
         indexDAO = new ElasticSearchDAOV6(elasticSearchClient, configuration, objectMapper);
     }
 
