@@ -29,6 +29,7 @@ import com.netflix.conductor.dao.IndexDAO;
 import com.netflix.conductor.dao.RateLimitingDao;
 import com.netflix.conductor.metrics.Monitors;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -400,10 +401,13 @@ public class ExecutionDAOFacade {
     }
 
     public void addTaskExecLog(List<TaskExecLog> logs) {
-        if (config.enableAsyncIndexing()) {
-            indexDAO.asyncAddTaskExecutionLogs(logs);
-        } else {
-            indexDAO.addTaskExecutionLogs(logs);
+        if (config.isTaskExecLogIndexingEnabled()) {
+            if (config.enableAsyncIndexing()) {
+                indexDAO.asyncAddTaskExecutionLogs(logs);
+            }
+            else {
+                indexDAO.addTaskExecutionLogs(logs);
+            }
         }
     }
 
@@ -420,7 +424,7 @@ public class ExecutionDAOFacade {
     }
 
     public List<TaskExecLog> getTaskExecutionLogs(String taskId) {
-        return indexDAO.getTaskExecutionLogs(taskId);
+        return config.isTaskExecLogIndexingEnabled() ? indexDAO.getTaskExecutionLogs(taskId) : Collections.emptyList();
     }
 
     class DelayWorkflowUpdate implements Runnable {
