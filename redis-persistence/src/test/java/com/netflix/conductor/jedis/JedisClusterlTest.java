@@ -12,33 +12,27 @@
  */
 package com.netflix.conductor.jedis;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.HashMap;
-import org.junit.Before;
 import org.junit.Test;
-import redis.clients.jedis.GeoUnit;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisSentinelPool;
-import redis.clients.jedis.ListPosition;
-import redis.clients.jedis.ScanParams;
-import redis.clients.jedis.SortingParams;
+import org.mockito.Mockito;
+import redis.clients.jedis.*;
 import redis.clients.jedis.params.GeoRadiusParam;
 import redis.clients.jedis.params.SetParams;
 import redis.clients.jedis.params.ZAddParams;
 import redis.clients.jedis.params.ZIncrByParams;
 
-public class JedisClusterTest {
+import java.util.AbstractMap;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
-    private final Jedis jedis = mock(Jedis.class);
-    private final JedisSentinelPool jedisPool = mock(JedisSentinelPool.class);
-    private final JedisCluster jedisCluster = new JedisCluster(jedisPool);
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-    @Before
-    public void init() {
-        when(this.jedisPool.getResource()).thenReturn(this.jedis);
-    }
+public class JedisClusterlTest {
+
+    private final redis.clients.jedis.JedisCluster mockCluster = mock(redis.clients.jedis.JedisCluster.class);
+    private final JedisCluster jedisCluster = new JedisCluster(mockCluster);
 
     @Test
     public void testSet() {
@@ -501,7 +495,7 @@ public class JedisClusterTest {
         jedisCluster.echo("string");
     }
 
-    @Test
+    @Test(expected = UnsupportedOperationException.class)
     public void testMove() {
         jedisCluster.move("key", 1337);
     }
@@ -512,7 +506,7 @@ public class JedisClusterTest {
         jedisCluster.bitcount("key", 1337, 1338);
     }
 
-    @Test
+    @Test(expected = UnsupportedOperationException.class)
     public void testBitpos() {
         jedisCluster.bitpos("key", true);
     }
@@ -520,13 +514,30 @@ public class JedisClusterTest {
     @Test
     public void testHscan() {
         jedisCluster.hscan("key", "cursor");
-        jedisCluster.hscan("key", "cursor", new ScanParams());
+
+        ScanResult<Map.Entry<byte[], byte[]>> scanResult = new ScanResult<>("cursor".getBytes(), Arrays.asList(new AbstractMap.SimpleEntry<>("key1".getBytes(), "val1".getBytes()),
+                new AbstractMap.SimpleEntry<>("key2".getBytes(), "val2".getBytes())));
+
+        when(mockCluster.hscan(Mockito.any(), Mockito.any(), Mockito.any(ScanParams.class))).thenReturn(scanResult);
+        ScanResult<Map.Entry<String, String>> result = jedisCluster.hscan("key", "cursor", new ScanParams());
+
+        assertEquals("cursor", result.getCursor());
+        assertEquals(2, result.getResult().size());
+        assertEquals("val1", result.getResult().get(0).getValue());
     }
 
     @Test
     public void testSscan() {
         jedisCluster.sscan("key", "cursor");
-        jedisCluster.sscan("key", "cursor", new ScanParams());
+
+        ScanResult<byte[]> scanResult = new ScanResult<>("sscursor".getBytes(), Arrays.asList("val1".getBytes(), "val2".getBytes()));
+
+        when(mockCluster.sscan(Mockito.any(), Mockito.any(), Mockito.any(ScanParams.class))).thenReturn(scanResult);
+
+        ScanResult<String> result = jedisCluster.sscan("key", "cursor", new ScanParams());
+        assertEquals("sscursor", result.getCursor());
+        assertEquals(2, result.getResult().size());
+        assertEquals("val1", result.getResult().get(0));
     }
 
     @Test

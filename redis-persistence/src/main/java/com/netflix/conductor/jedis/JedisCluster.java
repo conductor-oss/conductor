@@ -12,16 +12,10 @@
  */
 package com.netflix.conductor.jedis;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
 import redis.clients.jedis.BitPosParams;
 import redis.clients.jedis.GeoCoordinate;
 import redis.clients.jedis.GeoRadiusResponse;
 import redis.clients.jedis.GeoUnit;
-import redis.clients.jedis.Jedis;
-import redis.clients.jedis.JedisPoolAbstract;
 import redis.clients.jedis.ListPosition;
 import redis.clients.jedis.ScanParams;
 import redis.clients.jedis.ScanResult;
@@ -33,1705 +27,769 @@ import redis.clients.jedis.params.SetParams;
 import redis.clients.jedis.params.ZAddParams;
 import redis.clients.jedis.params.ZIncrByParams;
 
+import java.util.AbstractMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public class JedisCluster implements JedisCommands {
 
-    private final JedisPoolAbstract jedisPool;
+    private final redis.clients.jedis.JedisCluster jedisCluster;
 
-    public JedisCluster(JedisPoolAbstract jedisPool) {
-        this.jedisPool = jedisPool;
+    public JedisCluster(redis.clients.jedis.JedisCluster jedisCluster) {
+        this.jedisCluster = jedisCluster;
     }
 
     @Override
     public String set(String key, String value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.set(key, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.set(key, value);
     }
 
     @Override
     public String set(String key, String value, SetParams params) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.set(key, value, params);
-        }
+        return jedisCluster.set(key, value, params);
     }
 
     @Override
     public String get(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.get(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.get(key);
     }
 
     @Override
     public Boolean exists(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.exists(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.exists(key);
     }
 
     @Override
     public Long persist(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.persist(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.persist(key);
     }
 
     @Override
     public String type(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.type(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.type(key);
     }
 
     @Override
     public byte[] dump(String key) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.dump(key);
-        }
+        return jedisCluster.dump(key);
     }
 
     @Override
     public String restore(String key, int ttl, byte[] serializedValue) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.restore(key, ttl, serializedValue);
-        }
+        return jedisCluster.restore(key, ttl, serializedValue);
     }
 
     @Override
     public String restoreReplace(String key, int ttl, byte[] serializedValue) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.restoreReplace(key, ttl, serializedValue);
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Long expire(String key, int seconds) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.expire(key, seconds);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.expire(key, seconds);
     }
 
     @Override
     public Long pexpire(String key, long milliseconds) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.pexpire(key, milliseconds);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.pexpire(key, milliseconds);
     }
 
     @Override
     public Long expireAt(String key, long unixTime) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.expireAt(key, unixTime);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.expireAt(key, unixTime);
     }
 
     @Override
     public Long pexpireAt(String key, long millisecondsTimestamp) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.pexpireAt(key, millisecondsTimestamp);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.pexpireAt(key, millisecondsTimestamp);
     }
 
     @Override
     public Long ttl(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.ttl(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.ttl(key);
     }
 
     @Override
     public Long pttl(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.pttl(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.pttl(key);
     }
 
     @Override
     public Long touch(String key) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.touch(key);
-        }
+        return jedisCluster.touch(key);
     }
 
     @Override
     public Boolean setbit(String key, long offset, boolean value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.setbit(key, offset, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.setbit(key, offset, value);
     }
 
     @Override
     public Boolean setbit(String key, long offset, String value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.setbit(key, offset, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.setbit(key, offset, value);
     }
 
     @Override
     public Boolean getbit(String key, long offset) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.getbit(key, offset);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.getbit(key, offset);
     }
 
     @Override
     public Long setrange(String key, long offset, String value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.setrange(key, offset, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.setrange(key, offset, value);
     }
 
     @Override
     public String getrange(String key, long startOffset, long endOffset) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.getrange(key, startOffset, endOffset);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.getrange(key, startOffset, endOffset);
     }
 
     @Override
     public String getSet(String key, String value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.getSet(key, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.getSet(key, value);
     }
 
     @Override
     public Long setnx(String key, String value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.setnx(key, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.setnx(key, value);
     }
 
     @Override
     public String setex(String key, int seconds, String value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.setex(key, seconds, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.setex(key, seconds, value);
     }
 
     @Override
     public String psetex(String key, long milliseconds, String value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.psetex(key, milliseconds, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.psetex(key, milliseconds, value);
     }
 
     @Override
     public Long decrBy(String key, long integer) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.decrBy(key, integer);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.decrBy(key, integer);
     }
 
     @Override
     public Long decr(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.decr(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.decr(key);
     }
 
     @Override
     public Long incrBy(String key, long integer) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.incrBy(key, integer);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.incrBy(key, integer);
     }
 
     @Override
     public Double incrByFloat(String key, double value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.incrByFloat(key, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.incrByFloat(key, value);
     }
 
     @Override
     public Long incr(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.incr(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.incr(key);
     }
 
     @Override
     public Long append(String key, String value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.append(key, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.append(key, value);
     }
 
     @Override
     public String substr(String key, int start, int end) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.substr(key, start, end);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.substr(key, start, end);
     }
 
     @Override
     public Long hset(String key, String field, String value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hset(key, field, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hset(key, field, value);
     }
 
     @Override
     public Long hset(String key, Map<String, String> hash) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.hset(key, hash);
-        }
+        return jedisCluster.hset(key, hash);
     }
 
     @Override
     public String hget(String key, String field) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hget(key, field);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hget(key, field);
     }
 
     @Override
     public Long hsetnx(String key, String field, String value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hsetnx(key, field, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hsetnx(key, field, value);
     }
 
     @Override
     public String hmset(String key, Map<String, String> hash) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hmset(key, hash);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hmset(key, hash);
     }
 
     @Override
     public List<String> hmget(String key, String... fields) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hmget(key, fields);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hmget(key, fields);
     }
 
     @Override
     public Long hincrBy(String key, String field, long value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hincrBy(key, field, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hincrBy(key, field, value);
     }
 
     @Override
     public Double hincrByFloat(String key, String field, double value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hincrByFloat(key, field, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hincrByFloat(key.getBytes(), field.getBytes(), value);
     }
 
     @Override
     public Boolean hexists(String key, String field) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hexists(key, field);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hexists(key, field);
     }
 
     @Override
     public Long hdel(String key, String... field) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hdel(key, field);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hdel(key, field);
     }
 
     @Override
     public Long hlen(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hlen(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hlen(key);
     }
 
     @Override
     public Set<String> hkeys(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hkeys(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hkeys(key);
     }
 
     @Override
     public List<String> hvals(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hvals(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hvals(key);
     }
 
     @Override
     public Map<String, String> hgetAll(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hgetAll(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.hgetAll(key);
     }
 
     @Override
     public Long rpush(String key, String... string) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.rpush(key, string);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.rpush(key, string);
     }
 
     @Override
     public Long lpush(String key, String... string) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.lpush(key, string);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.lpush(key, string);
     }
 
     @Override
     public Long llen(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.llen(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.llen(key);
     }
 
     @Override
     public List<String> lrange(String key, long start, long end) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.lrange(key, start, end);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.lrange(key, start, end);
     }
 
     @Override
     public String ltrim(String key, long start, long end) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.ltrim(key, start, end);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.ltrim(key, start, end);
     }
 
     @Override
     public String lindex(String key, long index) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.lindex(key, index);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.lindex(key, index);
     }
 
     @Override
     public String lset(String key, long index, String value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.lset(key, index, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.lset(key, index, value);
     }
 
     @Override
     public Long lrem(String key, long count, String value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.lrem(key, count, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.lrem(key, count, value);
     }
 
     @Override
     public String lpop(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.lpop(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.lpop(key);
     }
 
     @Override
     public String rpop(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.rpop(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.rpop(key);
     }
 
     @Override
     public Long sadd(String key, String... member) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.sadd(key, member);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.sadd(key, member);
     }
 
     @Override
     public Set<String> smembers(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.smembers(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.smembers(key);
     }
 
     @Override
     public Long srem(String key, String... member) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.srem(key, member);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.srem(key, member);
     }
 
     @Override
     public String spop(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.spop(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.spop(key);
     }
 
     @Override
     public Set<String> spop(String key, long count) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.spop(key, count);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.spop(key, count);
     }
 
     @Override
     public Long scard(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.scard(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.scard(key);
     }
 
     @Override
     public Boolean sismember(String key, String member) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.sismember(key, member);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.sismember(key, member);
     }
 
     @Override
     public String srandmember(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.srandmember(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.srandmember(key);
     }
 
     @Override
     public List<String> srandmember(String key, int count) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.srandmember(key, count);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.srandmember(key, count);
     }
 
     @Override
     public Long strlen(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.strlen(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.strlen(key);
     }
 
     @Override
     public Long zadd(String key, double score, String member) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zadd(key, score, member);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zadd(key, score, member);
     }
 
     @Override
     public Long zadd(String key, double score, String member, ZAddParams params) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zadd(key, score, member, params);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zadd(key, score, member, params);
     }
 
     @Override
     public Long zadd(String key, Map<String, Double> scoreMembers) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zadd(key, scoreMembers);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zadd(key, scoreMembers);
     }
 
     @Override
     public Long zadd(String key, Map<String, Double> scoreMembers, ZAddParams params) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zadd(key, scoreMembers, params);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zadd(key, scoreMembers, params);
     }
 
     @Override
     public Set<String> zrange(String key, long start, long end) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrange(key, start, end);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrange(key, start, end);
     }
 
     @Override
     public Long zrem(String key, String... member) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrem(key, member);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrem(key, member);
     }
 
     @Override
     public Double zincrby(String key, double score, String member) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zincrby(key, score, member);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zincrby(key, score, member);
     }
 
     @Override
     public Double zincrby(String key, double score, String member, ZIncrByParams params) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zincrby(key, score, member, params);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zincrby(key, score, member, params);
     }
 
     @Override
     public Long zrank(String key, String member) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrank(key, member);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrank(key, member);
     }
 
     @Override
     public Long zrevrank(String key, String member) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrank(key, member);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrank(key, member);
     }
 
     @Override
     public Set<String> zrevrange(String key, long start, long end) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrange(key, start, end);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrange(key, start, end);
     }
 
     @Override
     public Set<Tuple> zrangeWithScores(String key, long start, long end) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrangeWithScores(key, start, end);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrangeWithScores(key, start, end);
     }
 
     @Override
     public Set<Tuple> zrevrangeWithScores(String key, long start, long end) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrangeWithScores(key, start, end);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrangeWithScores(key, start, end);
     }
 
     @Override
     public Long zcard(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zcard(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zcard(key);
     }
 
     @Override
     public Double zscore(String key, String member) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zscore(key, member);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zscore(key, member);
     }
 
     @Override
     public List<String> sort(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.sort(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.sort(key);
     }
 
     @Override
     public List<String> sort(String key, SortingParams sortingParameters) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.sort(key, sortingParameters);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.sort(key, sortingParameters);
     }
 
     @Override
     public Long zcount(String key, double min, double max) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zcount(key, min, max);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zcount(key, min, max);
     }
 
     @Override
     public Long zcount(String key, String min, String max) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zcount(key, min, max);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zcount(key, min, max);
     }
 
     @Override
     public Set<String> zrangeByScore(String key, double min, double max) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrangeByScore(key, min, max);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrangeByScore(key, min, max);
     }
 
     @Override
     public Set<String> zrangeByScore(String key, String min, String max) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrangeByScore(key, min, max);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrangeByScore(key, min, max);
     }
 
     @Override
     public Set<String> zrevrangeByScore(String key, double max, double min) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrangeByScore(key, max, min);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrangeByScore(key, max, min);
     }
 
     @Override
     public Set<String> zrangeByScore(String key, double min, double max, int offset, int count) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrangeByScore(key, min, max, offset, count);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrangeByScore(key, min, max, offset, count);
     }
 
     @Override
     public Set<String> zrevrangeByScore(String key, String max, String min) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrangeByScore(key, max, min);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrangeByScore(key, max, min);
     }
 
     @Override
     public Set<String> zrangeByScore(String key, String min, String max, int offset, int count) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrangeByScore(key, min, max, offset, count);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrangeByScore(key, min, max, offset, count);
     }
 
     @Override
     public Set<String> zrevrangeByScore(String key, double max, double min, int offset, int count) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrangeByScore(key, max, min, offset, count);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrangeByScore(key, max, min, offset, count);
     }
 
     @Override
     public Set<Tuple> zrangeByScoreWithScores(String key, double min, double max) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrangeByScoreWithScores(key, min, max);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrangeByScoreWithScores(key, min, max);
     }
 
     @Override
     public Set<Tuple> zrevrangeByScoreWithScores(String key, double max, double min) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrangeByScoreWithScores(key, max, min);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrangeByScoreWithScores(key, max, min);
     }
 
     @Override
     public Set<Tuple> zrangeByScoreWithScores(String key, double min, double max, int offset, int count) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrangeByScoreWithScores(key, min, max, offset, count);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrangeByScoreWithScores(key, min, max, offset, count);
     }
 
     @Override
     public Set<String> zrevrangeByScore(String key, String max, String min, int offset, int count) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrangeByScore(key, max, min, offset, count);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrangeByScore(key, max, min, offset, count);
     }
 
     @Override
     public Set<Tuple> zrangeByScoreWithScores(String key, String min, String max) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrangeByScoreWithScores(key, min, max);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrangeByScoreWithScores(key, min, max);
     }
 
     @Override
     public Set<Tuple> zrevrangeByScoreWithScores(String key, String max, String min) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrangeByScoreWithScores(key, max, min);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrangeByScoreWithScores(key, max, min);
     }
 
     @Override
     public Set<Tuple> zrangeByScoreWithScores(String key, String min, String max, int offset, int count) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrangeByScoreWithScores(key, min, max, offset, count);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrangeByScoreWithScores(key, min, max, offset, count);
     }
 
     @Override
     public Set<Tuple> zrevrangeByScoreWithScores(String key, double max, double min, int offset, int count) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrangeByScoreWithScores(key, max, min, offset, count);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrangeByScoreWithScores(key, max, min, offset, count);
     }
 
     @Override
     public Set<Tuple> zrevrangeByScoreWithScores(String key, String max, String min, int offset, int count) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrangeByScoreWithScores(key, max, min, offset, count);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrangeByScoreWithScores(key, max, min, offset, count);
     }
 
     @Override
     public Long zremrangeByRank(String key, long start, long end) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zremrangeByRank(key, start, end);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zremrangeByRank(key, start, end);
     }
 
     @Override
     public Long zremrangeByScore(String key, double start, double end) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zremrangeByScore(key, start, end);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zremrangeByScore(key, start, end);
     }
 
     @Override
     public Long zremrangeByScore(String key, String start, String end) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zremrangeByScore(key, start, end);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zremrangeByScore(key, start, end);
     }
 
     @Override
     public Long zlexcount(String key, String min, String max) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zlexcount(key, min, max);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zlexcount(key, min, max);
     }
 
     @Override
     public Set<String> zrangeByLex(String key, String min, String max) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrangeByLex(key, min, max);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrangeByLex(key, min, max);
     }
 
     @Override
     public Set<String> zrangeByLex(String key, String min, String max, int offset, int count) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrangeByLex(key, min, max, offset, count);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrangeByLex(key, min, max, offset, count);
     }
 
     @Override
     public Set<String> zrevrangeByLex(String key, String max, String min) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrangeByLex(key, max, min);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrangeByLex(key, max, min);
     }
 
     @Override
     public Set<String> zrevrangeByLex(String key, String max, String min, int offset, int count) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zrevrangeByLex(key, max, min, offset, count);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zrevrangeByLex(key, max, min, offset, count);
     }
 
     @Override
     public Long zremrangeByLex(String key, String min, String max) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zremrangeByLex(key, min, max);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zremrangeByLex(key, min, max);
     }
 
     @Override
     public Long linsert(String key, ListPosition where, String pivot, String value) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.linsert(key, where, pivot, value);
-        }
+        return jedisCluster.linsert(key, where, pivot, value);
     }
 
     @Override
     public Long lpushx(String key, String... string) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.lpushx(key, string);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.lpushx(key, string);
     }
 
     @Override
     public Long rpushx(String key, String... string) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.rpushx(key, string);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.rpushx(key, string);
     }
 
     @Override
     public List<String> blpop(int timeout, String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.blpop(timeout, key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.blpop(timeout, key);
     }
 
     @Override
     public List<String> brpop(int timeout, String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.brpop(timeout, key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.brpop(timeout, key);
     }
 
     @Override
     public Long del(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.del(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.del(key);
     }
 
     @Override
     public Long unlink(String key) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.unlink(key);
-        }
+        return jedisCluster.unlink(key);
     }
 
     @Override
     public String echo(String string) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.echo(string);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.echo(string);
     }
 
     @Override
     public Long move(String key, int dbIndex) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.move(key, dbIndex);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Long bitcount(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.bitcount(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.bitcount(key);
     }
 
     @Override
     public Long bitcount(String key, long start, long end) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.bitcount(key, start, end);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.bitcount(key, start, end);
     }
 
     @Override
     public Long bitpos(String key, boolean value) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.bitpos(key, value);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public Long bitpos(String key, boolean value, BitPosParams params) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.bitpos(key, value, params);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        throw new UnsupportedOperationException();
     }
 
     @Override
-    public ScanResult<Entry<String, String>> hscan(String key, String cursor) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hscan(key, cursor);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+    public ScanResult<Map.Entry<String, String>> hscan(String key, String cursor) {
+        return jedisCluster.hscan(key, cursor);
     }
 
     @Override
-    public ScanResult<Entry<String, String>> hscan(String key, String cursor, ScanParams params) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.hscan(key, cursor, params);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+    public ScanResult<Map.Entry<String, String>> hscan(String key, String cursor, ScanParams params) {
+        ScanResult<Map.Entry<byte[], byte[]>> scanResult = jedisCluster.hscan(key.getBytes(), cursor.getBytes(), params);
+        List<Map.Entry<String, String>> results = scanResult.getResult()
+                                                            .stream()
+                                                            .map(entry -> new AbstractMap.SimpleEntry<>(new String(entry.getKey()),
+                                                                                                        new String(entry.getValue())))
+                                                            .collect(Collectors.toList());
+
+        return new ScanResult<>(scanResult.getCursorAsBytes(), results);
     }
 
     @Override
     public ScanResult<String> sscan(String key, String cursor) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.sscan(key, cursor);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.sscan(key, cursor);
     }
 
     @Override
-    public ScanResult<String> sscan(String key, String cursor, ScanParams params) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.sscan(key, cursor, params);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+    public ScanResult<String> sscan(String key, String cursor, ScanParams params)
+    {
+        ScanResult<byte[]> scanResult = jedisCluster.sscan(key.getBytes(), cursor.getBytes(), params);
+        List<String> results = scanResult.getResult().stream().map(String::new).collect(Collectors.toList());
+        return new ScanResult<>(scanResult.getCursorAsBytes(), results);
     }
 
     @Override
     public ScanResult<Tuple> zscan(String key, String cursor) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zscan(key, cursor);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zscan(key, cursor);
     }
 
     @Override
     public ScanResult<Tuple> zscan(String key, String cursor, ScanParams params) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.zscan(key, cursor, params);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.zscan(key.getBytes(), cursor.getBytes(), params);
     }
 
     @Override
     public Long pfadd(String key, String... elements) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.pfadd(key, elements);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.pfadd(key, elements);
     }
 
     @Override
     public long pfcount(String key) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.pfcount(key);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.pfcount(key);
     }
 
     @Override
     public Long geoadd(String key, double longitude, double latitude, String member) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.geoadd(key, longitude, latitude, member);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.geoadd(key, longitude, latitude, member);
     }
 
     @Override
     public Long geoadd(String key, Map<String, GeoCoordinate> memberCoordinateMap) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.geoadd(key, memberCoordinateMap);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.geoadd(key, memberCoordinateMap);
     }
 
     @Override
     public Double geodist(String key, String member1, String member2) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.geodist(key, member1, member2);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.geodist(key, member1, member2);
     }
 
     @Override
     public Double geodist(String key, String member1, String member2, GeoUnit unit) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.geodist(key, member1, member2, unit);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.geodist(key, member1, member2, unit);
     }
 
     @Override
     public List<String> geohash(String key, String... members) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.geohash(key, members);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.geohash(key, members);
     }
 
     @Override
     public List<GeoCoordinate> geopos(String key, String... members) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.geopos(key, members);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.geopos(key, members);
     }
 
     @Override
-    public List<GeoRadiusResponse> georadius(String key, double longitude, double latitude, double radius, GeoUnit unit) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.georadius(key, longitude, latitude, radius, unit);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+    public List<GeoRadiusResponse> georadius(String key, double longitude, double latitude, double radius,
+                                             GeoUnit unit) {
+        return jedisCluster.georadius(key, longitude, latitude, radius, unit);
     }
 
     @Override
     public List<GeoRadiusResponse> georadiusReadonly(String key, double longitude, double latitude, double radius,
-        GeoUnit unit) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.georadiusReadonly(key, longitude, latitude, radius, unit);
-        }
+                                                     GeoUnit unit) {
+        return jedisCluster.georadiusReadonly(key, longitude, latitude, radius, unit);
     }
 
     @Override
     public List<GeoRadiusResponse> georadius(String key, double longitude, double latitude, double radius, GeoUnit unit,
-        GeoRadiusParam param) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.georadius(key, longitude, latitude, radius, unit, param);
-        }
+                                             GeoRadiusParam param) {
+        return jedisCluster.georadius(key, longitude, latitude, radius, unit, param);
     }
 
     @Override
     public List<GeoRadiusResponse> georadiusReadonly(String key, double longitude, double latitude, double radius,
-        GeoUnit unit, GeoRadiusParam param) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.georadiusReadonly(key, longitude, latitude, radius, unit, param);
-        }
+                                                     GeoUnit unit, GeoRadiusParam param) {
+        return jedisCluster.georadiusReadonly(key, longitude, latitude, radius, unit, param);
     }
 
     @Override
     public List<GeoRadiusResponse> georadiusByMember(String key, String member, double radius, GeoUnit unit) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.georadiusByMember(key, member, radius, unit);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.georadiusByMember(key, member, radius, unit);
     }
 
     @Override
     public List<GeoRadiusResponse> georadiusByMemberReadonly(String key, String member, double radius, GeoUnit unit) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.georadiusByMemberReadonly(key, member, radius, unit);
-        }
+        return jedisCluster.georadiusByMemberReadonly(key, member, radius, unit);
     }
 
     @Override
     public List<GeoRadiusResponse> georadiusByMember(String key, String member, double radius, GeoUnit unit,
-        GeoRadiusParam param) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.georadiusByMember(key, member, radius, unit, param);
-        }
+                                                     GeoRadiusParam param) {
+        return jedisCluster.georadiusByMember(key, member, radius, unit, param);
     }
 
     @Override
     public List<GeoRadiusResponse> georadiusByMemberReadonly(String key, String member, double radius, GeoUnit unit,
-        GeoRadiusParam param) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.georadiusByMemberReadonly(key, member, radius, unit, param);
-        }
+                                                             GeoRadiusParam param)
+    {
+        return jedisCluster.georadiusByMemberReadonly(key, member, radius, unit, param);
     }
 
     @Override
     public List<Long> bitfield(String key, String... arguments) {
-        Jedis jedis = null;
-        try {
-            jedis = jedisPool.getResource();
-            return jedis.bitfield(key, arguments);
-        } finally {
-            if (jedis != null)
-                jedis.close();
-        }
+        return jedisCluster.bitfield(key, arguments);
     }
 
     @Override
     public Long hstrlen(String key, String field) {
-        try (Jedis jedis = jedisPool.getResource()) {
-            return jedis.hstrlen(key, field);
-        }
+        return jedisCluster.hstrlen(key, field);
     }
 }
