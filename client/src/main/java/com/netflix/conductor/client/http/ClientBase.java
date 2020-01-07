@@ -179,7 +179,6 @@ public abstract class ClientBase {
                     .get(ClientResponse.class);
             if (clientResponse.getStatus() < 300) {
                 return entityProvider.apply(clientResponse);
-
             } else {
                 throw new UniformInterfaceException(clientResponse);
             }
