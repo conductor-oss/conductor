@@ -17,6 +17,7 @@ package com.netflix.conductor.client.automator;
 
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.client.http.TaskClient;
+import com.netflix.conductor.client.telemetry.MetricsContainer;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.discovery.EurekaClient;
 import java.util.LinkedList;
@@ -173,6 +174,7 @@ public class TaskRunnerConfigurer {
      * Starts the polling. Must be called after {@link TaskRunnerConfigurer.Builder#build()} method.
      */
     public synchronized void init() {
+        MetricsContainer.incrementInitializationCount(this.getClass().getCanonicalName());
         this.taskPollExecutor = new TaskPollExecutor(eurekaClient, taskClient, threadCount,
             updateRetryCount, workerNamePrefix);
 

@@ -258,6 +258,7 @@ public class WorkflowTaskCoordinator {
         }
 
         logger.info("Initialized the worker with {} threads", threadCount);
+        MetricsContainer.incrementInitializationCount(this.getClass().getCanonicalName());
 
         this.workerQueue = new LinkedBlockingQueue<Runnable>(workerQueueSize);
         AtomicInteger count = new AtomicInteger(0);

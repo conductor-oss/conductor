@@ -56,6 +56,7 @@ public class MetricsContainer {
     private static final String EXTERNAL_PAYLOAD_USED = "external_payload_used";
     private static final String WORKFLOW_START_ERROR = "workflow_start_error";
     private static final String THREAD_UNCAUGHT_EXCEPTION = "thread_uncaught_exceptions";
+    private static final String CLIENT_INITIALIZED = "client_initialized";
 
     private static Registry registry = Spectator.globalRegistry();
     private static ConcurrentHashMap<String, Timer> monitors = new ConcurrentHashMap<>();
@@ -166,5 +167,16 @@ public class MetricsContainer {
 
     public static void incrementWorkflowStartErrorCount(String workflowType, Throwable t) {
         incrementCount(WORKFLOW_START_ERROR, WORFLOW_TYPE, workflowType, EXCEPTION, t.getClass().getSimpleName());
+    }
+
+    /**
+     * This metric is used for tracking client upgrades from the deprecated class
+     * {@link com.netflix.conductor.client.task.WorkflowTaskCoordinator} to
+     * {@link com.netflix.conductor.client.automator.TaskRunnerConfigurer}
+     *
+     * @param className the name of the class which initialized the client
+     */
+    public static void incrementInitializationCount(String className) {
+        incrementCount(CLIENT_INITIALIZED, NAME, className);
     }
 }
