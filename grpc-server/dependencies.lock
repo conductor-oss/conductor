@@ -1064,6 +1064,10 @@
             ],
             "locked": "1.7.25"
         },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
+        },
         "org.testinfected.hamcrest-matchers:all-matchers": {
             "locked": "1.8",
             "requested": "1.8"
@@ -1253,6 +1257,10 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
+        },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
         },
         "org.testinfected.hamcrest-matchers:all-matchers": {
             "locked": "1.8",
@@ -1444,6 +1452,10 @@
             ],
             "locked": "1.7.25"
         },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
+        },
         "org.testinfected.hamcrest-matchers:all-matchers": {
             "locked": "1.8",
             "requested": "1.8"
@@ -1633,6 +1645,10 @@
                 "com.netflix.conductor:conductor-common"
             ],
             "locked": "1.7.25"
+        },
+        "org.slf4j:slf4j-log4j12": {
+            "locked": "1.8.0-alpha1",
+            "requested": "1.8.0-alpha1"
         },
         "org.testinfected.hamcrest-matchers:all-matchers": {
             "locked": "1.8",

@@ -9,6 +9,7 @@ dependencies {
 
     testCompile project(':conductor-core').sourceSets.test.output
     testCompile "ch.vorburger.mariaDB4j:mariaDB4j:${revMariaDB4j}"
+    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
 }
 
 test {
