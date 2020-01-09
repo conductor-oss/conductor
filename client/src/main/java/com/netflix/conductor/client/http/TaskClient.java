@@ -36,6 +36,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,7 +122,8 @@ public class TaskClient extends ClientBase {
         Preconditions.checkArgument(StringUtils.isNotBlank(workerId), "Worker id cannot be blank");
 
         Object[] params = new Object[]{"workerid", workerId, "domain", domain};
-        Task task = getForEntity("tasks/poll/{taskType}", params, Task.class, taskType);
+        Task task = Optional.ofNullable(getForEntity("tasks/poll/{taskType}", params, Task.class, taskType))
+            .orElse(new Task());
         populateTaskInput(task);
         return task;
     }

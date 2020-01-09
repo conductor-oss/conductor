@@ -8,8 +8,8 @@ dependencies {
     compile "org.flywaydb:flyway-core:${revFlywayCore}"
 
     testCompile project(':conductor-core').sourceSets.test.output
-    testCompile "org.slf4j:slf4j-simple:${revSlf4j}"
     testCompile "com.opentable.components:otj-pg-embedded:${revOtjPgEmbedded}"
+    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
 
 }
 

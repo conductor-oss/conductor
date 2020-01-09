@@ -82,7 +82,6 @@ public class TaskPollExecutorTest {
         Worker worker = mock(Worker.class);
         when(worker.getPollingInterval()).thenReturn(3000);
         when(worker.getTaskDefName()).thenReturn(TEST_TASK_DEF_NAME);
-        when(worker.preAck(any())).thenReturn(true);
         when(worker.execute(any())).thenAnswer(new Answer() {
             private int count = 0;
             Map<String, Object> outputMap = new HashMap<>();
@@ -133,7 +132,6 @@ public class TaskPollExecutorTest {
         Worker worker = mock(Worker.class);
         when(worker.getPollingInterval()).thenReturn(3000);
         when(worker.getTaskDefName()).thenReturn(TEST_TASK_DEF_NAME);
-        when(worker.preAck(any())).thenReturn(true);
         when(worker.execute(any())).thenReturn(new TaskResult(task));
 
         TaskClient taskClient = Mockito.mock(TaskClient.class);
@@ -166,14 +164,45 @@ public class TaskPollExecutorTest {
         Worker worker = mock(Worker.class);
         when(worker.getPollingInterval()).thenReturn(3000);
         when(worker.getTaskDefName()).thenReturn("test");
-        when(worker.preAck(any())).thenReturn(true);
         when(worker.execute(any())).thenReturn(new TaskResult(task));
 
         TaskClient taskClient = Mockito.mock(TaskClient.class);
         when(taskClient.pollTask(any(), any(), any()))
             .thenThrow(ConductorClientException.class)
             .thenReturn(task);
-        when(taskClient.ack(any(), any())).thenReturn(true);
+
+        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 1, "test-worker-");
+        CountDownLatch latch = new CountDownLatch(1);
+        doAnswer(invocation -> {
+                Object[] args = invocation.getArguments();
+                TaskResult result = (TaskResult) args[0];
+                assertEquals(IN_PROGRESS, result.getStatus());
+                assertEquals(task.getTaskId(), result.getTaskId());
+                latch.countDown();
+                return null;
+            }
+        ).when(taskClient).updateTask(any());
+
+        Executors.newSingleThreadScheduledExecutor()
+            .scheduleAtFixedRate(() -> taskPollExecutor.pollAndExecute(worker), 0, 1, TimeUnit.SECONDS);
+
+        Uninterruptibles.awaitUninterruptibly(latch);
+        verify(taskClient).updateTask(any());
+    }
+
+    @Test
+    public void testTaskPoll() {
+        Task task = testTask();
+
+        Worker worker = mock(Worker.class);
+        when(worker.getPollingInterval()).thenReturn(3000);
+        when(worker.getTaskDefName()).thenReturn("test");
+        when(worker.execute(any())).thenReturn(new TaskResult(task));
+
+        TaskClient taskClient = Mockito.mock(TaskClient.class);
+        when(taskClient.pollTask(any(), any(), any()))
+            .thenReturn(new Task())
+            .thenReturn(task);
 
         TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 1, "test-worker-");
         CountDownLatch latch = new CountDownLatch(1);
