@@ -42,12 +42,6 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.utils.ServiceUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import javax.validation.constraints.Max;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -57,6 +51,11 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Singleton;
+import javax.validation.constraints.Max;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  *
@@ -167,6 +166,7 @@ public class ExecutionService {
 			return null;
 		}
 		Task task = tasks.get(0);
+		ackTaskReceived(task);
 		logger.debug("The Task {} being returned for /tasks/poll/{}?{}&{}", task, taskType, workerId, domain);
 		return task;
 	}
@@ -224,9 +224,12 @@ public class ExecutionService {
 	 */
 	public boolean ackTaskReceived(String taskId) {
 		return Optional.ofNullable(getTask(taskId))
-				.map(QueueUtils::getQueueName)
-				.map(queueName -> queueDAO.ack(queueName, taskId))
+				.map(this::ackTaskReceived)
 				.orElse(false);
+	}
+
+	public boolean ackTaskReceived(Task task) {
+		return queueDAO.ack(QueueUtils.getQueueName(task), task.getTaskId());
 	}
 
 	public Map<String, Integer> getTaskQueueSizes(List<String> taskDefNames) {

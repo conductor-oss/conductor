@@ -20,12 +20,12 @@ import com.github.vmg.protogen.annotations.ProtoEnum;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.google.protobuf.Any;
-
-import javax.validation.constraints.NotEmpty;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import javax.validation.constraints.NotEmpty;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * @author Viren
@@ -121,7 +121,7 @@ public class TaskResult {
     }
 
     public void setReasonForIncompletion(String reasonForIncompletion) {
-        this.reasonForIncompletion = reasonForIncompletion;
+        this.reasonForIncompletion = StringUtils.substring(reasonForIncompletion, 0, 500);
     }
 
     public long getCallbackAfterSeconds() {
