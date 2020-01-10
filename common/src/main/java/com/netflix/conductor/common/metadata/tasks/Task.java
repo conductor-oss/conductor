@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
 
 @ProtoMessage
 public class Task {
@@ -541,7 +542,7 @@ public class Task {
      * @param reasonForIncompletion the reasonForIncompletion to set
      */
     public void setReasonForIncompletion(String reasonForIncompletion) {
-        this.reasonForIncompletion = reasonForIncompletion;
+        this.reasonForIncompletion = StringUtils.substring(reasonForIncompletion, 0, 500);
     }
 
     /**
