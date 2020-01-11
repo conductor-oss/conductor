@@ -190,7 +190,7 @@ public class DeciderService {
             if (!pendingTask.isExecuted() && !pendingTask.isRetried() && pendingTask.getStatus().isTerminal()) {
                 pendingTask.setExecuted(true);
                 List<Task> nextTasks = getNextTask(workflow, pendingTask);
-                if (pendingTask.isLoopOverTask() && nextTasks.stream().allMatch(task -> task.isLoopOverTask() && !task.getTaskType().equals(TaskType.DO_WHILE.name()))) {
+                if (pendingTask.isLoopOverTask() && !TaskType.DO_WHILE.name().equals(pendingTask.getTaskType()) && !nextTasks.isEmpty()) {
                     nextTasks = filterNextLoopOverTasks(nextTasks, pendingTask, workflow);
                 }
                 nextTasks.forEach(nextTask -> tasksToBeScheduled.putIfAbsent(nextTask.getReferenceTaskName(), nextTask));

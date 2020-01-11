@@ -81,21 +81,21 @@ public class DoWhileTest {
         provider = spy(new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService,
                 workflowStatusListener, executionDAOFacade, config, executionLockService));
         loopWorkflowTask1 = new WorkflowTask();
-        loopWorkflowTask1.setTaskReferenceName("task1__1");
-        loopWorkflowTask1.setName("task1__1");
+        loopWorkflowTask1.setTaskReferenceName("task1");
+        loopWorkflowTask1.setName("task1");
         loopWorkflowTask2 = new WorkflowTask();
-        loopWorkflowTask2.setTaskReferenceName("task2__1");
-        loopWorkflowTask2.setName("task2__1");
+        loopWorkflowTask2.setTaskReferenceName("task2");
+        loopWorkflowTask2.setName("task2");
         task1 = new Task();
         task1.setWorkflowTask(loopWorkflowTask1);
-        task1.setReferenceTaskName("task1__1");
+        task1.setReferenceTaskName("task1");
         task1.setStatus(Task.Status.COMPLETED);
         task1.setTaskType(TaskType.HTTP.name());
         task1.setInputData(new HashMap<>());
         task1.setIteration(1);
         task2 = new Task();
         task2.setWorkflowTask(loopWorkflowTask2);
-        task2.setReferenceTaskName("task2__1");
+        task2.setReferenceTaskName("task2");
         task2.setStatus(Task.Status.COMPLETED);
         task2.setTaskType(TaskType.HTTP.name());
         task2.setInputData(new HashMap<>());
@@ -107,6 +107,7 @@ public class DoWhileTest {
         loopTask.setIteration(1);
         loopWorkflowTask = new WorkflowTask();
         loopWorkflowTask.setTaskReferenceName("loopTask");
+        loopWorkflowTask.setType(TaskType.DO_WHILE.name());
         loopWorkflowTask.setName("loopTask");
         loopWorkflowTask.setLoopCondition("if ($.loopTask['iteration'] < 1) { false; } else { true; }");
         loopWorkflowTask.setLoopOver(Arrays.asList(task1.getWorkflowTask(), task2.getWorkflowTask()));
