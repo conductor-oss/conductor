@@ -736,7 +736,7 @@ public class TestDeciderService {
         assertEquals(1, deciderOutcome.tasksToBeUpdated.size());
         assertEquals("s1", deciderOutcome.tasksToBeUpdated.get(0).getReferenceTaskName());
         assertEquals(1, deciderOutcome.tasksToBeScheduled.size());
-        assertEquals("s2", deciderOutcome.tasksToBeScheduled.get(0).getReferenceTaskName());
+        assertEquals("s2__1", deciderOutcome.tasksToBeScheduled.get(0).getReferenceTaskName());
         assertEquals(0, deciderOutcome.tasksToBeRequeued.size());
         assertFalse(deciderOutcome.isComplete);
     }
