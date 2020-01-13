@@ -412,7 +412,12 @@ public class ExecutionDAOFacade {
     }
 
     public void addMessage(String queue, Message message) {
-        indexDAO.addMessage(queue, message);
+        if (config.enableAsyncIndexing()) {
+            indexDAO.asyncAddMessage(queue, message);
+        }
+        else {
+            indexDAO.addMessage(queue, message);
+        }
     }
 
     public SearchResult<String> searchWorkflows(String query, String freeText, int start, int count, List<String> sort) {

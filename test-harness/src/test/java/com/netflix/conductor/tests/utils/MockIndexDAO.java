@@ -119,6 +119,11 @@ public class MockIndexDAO implements IndexDAO {
 	}
 
 	@Override
+	public CompletableFuture<Void> asyncAddMessage(String queue, Message message) {
+		return null;
+	}
+
+	@Override
 	public List<Message> getMessages(String queue) {
 		return null;
 	}

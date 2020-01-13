@@ -480,6 +480,11 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     }
 
     @Override
+    public CompletableFuture<Void> asyncAddMessage(String queue, Message message) {
+        return CompletableFuture.runAsync(() -> addMessage(queue, message), executorService);
+    }
+
+    @Override
     public List<Message> getMessages(String queue) {
         try {
             BoolQueryBuilder fq = boolQueryBuilder("queue='" + queue + "'", "*");

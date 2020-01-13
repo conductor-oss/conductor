@@ -530,14 +530,18 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
             doc.put("payload", message.getPayload());
             doc.put("queue", queue);
             doc.put("created", System.currentTimeMillis());
-
-            indexObject(logIndexName, MSG_DOC_TYPE, doc);
+            indexObject(logIndexName, MSG_DOC_TYPE, null, doc);
             long endTime = Instant.now().toEpochMilli();
             logger.debug("Time taken {} for  indexing message: {}", endTime - startTime, message.getId());
             Monitors.recordESIndexTime("add_message", MSG_DOC_TYPE, endTime - startTime);
         } catch (Exception e) {
             logger.error("Failed to index message: {}", message.getId(), e);
         }
+    }
+
+    @Override
+    public CompletableFuture<Void> asyncAddMessage(String queue, Message message) {
+        return CompletableFuture.runAsync(() -> addMessage(queue, message), executorService);
     }
 
     @Override
@@ -674,10 +678,6 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
         }
     }
 
-    private SearchResult<String> searchObjectIds(String indexName, QueryBuilder queryBuilder, int start, int size, String docType) throws IOException {
-        return searchObjectIds(indexName, queryBuilder, start, size, null, docType);
-    }
-
     /**
      * Tries to find object ids for a given query in an index.
      *
@@ -738,7 +738,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
 
         SearchResult<String> workflowIds;
         try {
-            workflowIds = searchObjectIds(indexName, q, 0, 1000, WORKFLOW_DOC_TYPE);
+            workflowIds = searchObjectIds(indexName, q, 0, 1000, null, WORKFLOW_DOC_TYPE);
         } catch (IOException e) {
             logger.error("Unable to communicate with ES to find archivable workflows", e);
             return Collections.emptyList();
@@ -765,10 +765,6 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
         }
 
         return workflowIds.getResults();
-    }
-
-    private void indexObject(final String index, final String docType, final Object doc) {
-        indexObject(index, docType, null, doc);
     }
 
     private void indexObject(final String index, final String docType, final String docId, final Object doc) {
@@ -924,23 +920,15 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
     }
 
     private static class BulkRequests {
-        private long lastFlushTime;
-        private BulkRequest bulkRequest;
+        private final long lastFlushTime;
+        private final BulkRequest bulkRequest;
 
         public long getLastFlushTime() {
             return lastFlushTime;
         }
 
-        public void setLastFlushTime(long lastFlushTime) {
-            this.lastFlushTime = lastFlushTime;
-        }
-
         public BulkRequest getBulkRequest() {
             return bulkRequest;
-        }
-
-        public void setBulkRequest(BulkRequest bulkRequestBuilder) {
-            this.bulkRequest = bulkRequestBuilder;
         }
 
         BulkRequests(long lastFlushTime, BulkRequest bulkRequest) {

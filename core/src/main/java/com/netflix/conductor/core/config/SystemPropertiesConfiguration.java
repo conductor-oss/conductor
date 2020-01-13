@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2017 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
@@ -9,9 +9,6 @@
  * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
- */
-/**
- *
  */
 package com.netflix.conductor.core.config;
 
@@ -55,6 +52,11 @@ public class SystemPropertiesConfiguration implements Configuration {
     }
 
     @Override
+    public boolean isEventMessageIndexingEnabled() {
+        return getBooleanProperty(EVENT_MESSAGE_INDEXING_ENABLED_PROPERTY_NAME, EVENT_MESSAGE_INDEXING_ENABLED_DEFAULT_VALUE);
+    }
+
+    @Override
     public String getServerId() {
         try {
             return InetAddress.getLocalHost().getHostName();
@@ -93,7 +95,7 @@ public class SystemPropertiesConfiguration implements Configuration {
         String val = getProperty(key, Integer.toString(defaultValue));
         try {
             defaultValue = Integer.parseInt(val);
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException ignored) {
         }
         return defaultValue;
     }
@@ -103,7 +105,7 @@ public class SystemPropertiesConfiguration implements Configuration {
         String val = getProperty(key, Long.toString(defaultValue));
         try {
             defaultValue = Integer.parseInt(val);
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException ignored) {
         }
         return defaultValue;
     }

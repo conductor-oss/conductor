@@ -43,6 +43,11 @@ public class MockConfiguration implements Configuration {
     }
 
     @Override
+    public boolean isEventMessageIndexingEnabled() {
+        return true;
+    }
+
+    @Override
     public String getServerId() {
         try {
             return InetAddress.getLocalHost().getHostName();

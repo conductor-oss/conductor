@@ -61,7 +61,6 @@ public class SimpleEventProcessor implements EventProcessor {
     private static final String className = SimpleEventProcessor.class.getSimpleName();
     private static final int RETRY_COUNT = 3;
 
-
     private final MetadataService metadataService;
     private final ExecutionService executionService;
     private final ActionProcessor actionProcessor;
@@ -71,6 +70,7 @@ public class SimpleEventProcessor implements EventProcessor {
     private final Map<String, ObservableQueue> eventToQueueMap = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;
     private final JsonUtils jsonUtils;
+    private final boolean isEventMessageIndexingEnabled;
 
     @Inject
     public SimpleEventProcessor(ExecutionService executionService,
@@ -78,16 +78,17 @@ public class SimpleEventProcessor implements EventProcessor {
                                 ActionProcessor actionProcessor,
                                 EventQueues eventQueues,
                                 JsonUtils jsonUtils,
-                                Configuration config,
+                                Configuration configuration,
                                 ObjectMapper objectMapper) {
         this.executionService = executionService;
         this.metadataService = metadataService;
         this.actionProcessor = actionProcessor;
         this.eventQueues = eventQueues;
-        this.jsonUtils = jsonUtils;
         this.objectMapper = objectMapper;
+        this.jsonUtils = jsonUtils;
 
-        int executorThreadCount = config.getIntProperty("workflow.event.processor.thread.count", 2);
+        this.isEventMessageIndexingEnabled = configuration.isEventMessageIndexingEnabled();
+        int executorThreadCount = configuration.getIntProperty("workflow.event.processor.thread.count", 2);
         if (executorThreadCount > 0) {
             executorService = Executors.newFixedThreadPool(executorThreadCount);
             refresh();
@@ -148,8 +149,9 @@ public class SimpleEventProcessor implements EventProcessor {
 
     private void handle(ObservableQueue queue, Message msg) {
         try {
-            executionService.addMessage(queue.getName(), msg);
-
+            if (isEventMessageIndexingEnabled) {
+                executionService.addMessage(queue.getName(), msg);
+            }
             String event = queue.getType() + ":" + queue.getName();
             logger.debug("Evaluating message: {} for event: {}", msg.getId(), event);
             List<EventExecution> transientFailures = executeEvent(event, msg);

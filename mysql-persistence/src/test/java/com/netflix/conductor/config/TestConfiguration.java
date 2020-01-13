@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -52,6 +52,11 @@ public class TestConfiguration implements MySQLConfiguration {
 	}
 
 	@Override
+	public boolean isEventMessageIndexingEnabled() {
+		return true;
+	}
+
+	@Override
 	public String getServerId() {
 		try {
 			return InetAddress.getLocalHost().getHostName();
@@ -94,7 +99,7 @@ public class TestConfiguration implements MySQLConfiguration {
 		String val = getProperty(key, Integer.toString(defaultValue));
 		try {
 			defaultValue = Integer.parseInt(val);
-		} catch (NumberFormatException e) {
+		} catch (NumberFormatException ignored) {
 		}
 		return defaultValue;
 	}

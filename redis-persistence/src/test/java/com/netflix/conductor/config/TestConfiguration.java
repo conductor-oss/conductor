@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,10 +14,6 @@
  * limitations under the License.
  */
 package com.netflix.conductor.config;
-/**
- *
- */
-
 
 import com.netflix.conductor.core.config.Configuration;
 
@@ -42,6 +38,11 @@ public class TestConfiguration implements Configuration {
 	@Override
 	public boolean disableAsyncWorkers() {
 		return false;
+	}
+
+	@Override
+	public boolean isEventMessageIndexingEnabled() {
+		return true;
 	}
 
 	@Override
@@ -131,7 +132,7 @@ public class TestConfiguration implements Configuration {
 
 	@Override
 	public long getLongProperty(String name, long defaultValue) {
-		return 1000000l;
+		return 1000000L;
 	}
 
 	@Override

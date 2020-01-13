@@ -645,6 +645,11 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
     }
 
     @Override
+    public CompletableFuture<Void> asyncAddMessage(String queue, Message message) {
+        return CompletableFuture.runAsync(() -> addMessage(queue, message), executorService);
+    }
+
+    @Override
     public void addEventExecution(EventExecution eventExecution) {
         try {
             long startTime = Instant.now().toEpochMilli();
@@ -940,23 +945,15 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
     }
 
     private static class BulkRequests {
-        private long lastFlushTime;
-        private BulkRequest bulkRequest;
+        private final long lastFlushTime;
+        private final BulkRequest bulkRequest;
 
         public long getLastFlushTime() {
             return lastFlushTime;
         }
 
-        public void setLastFlushTime(long lastFlushTime) {
-            this.lastFlushTime = lastFlushTime;
-        }
-
         public BulkRequest getBulkRequest() {
             return bulkRequest;
-        }
-
-        public void setBulkRequest(BulkRequest bulkRequestBuilder) {
-            this.bulkRequest = bulkRequestBuilder;
         }
 
         BulkRequests(long lastFlushTime, BulkRequest bulkRequest) {
