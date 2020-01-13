@@ -15,6 +15,7 @@
  */
 package com.netflix.conductor.common.metadata.workflow;
 
+import com.github.vmg.protogen.annotations.ProtoEnum;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
@@ -27,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import javax.validation.Valid;
+import javax.validation.constraints.Email;
 import javax.validation.constraints.Max;
 import javax.validation.constraints.Min;
 import javax.validation.constraints.NotEmpty;
@@ -40,6 +42,9 @@ import javax.validation.constraints.NotNull;
 @ProtoMessage
 @TaskReferenceNameUniqueConstraint
 public class WorkflowDef extends Auditable {
+
+	@ProtoEnum
+	public enum TimeoutPolicy {TIME_OUT_WF, ALERT_ONLY}
 
     @NotEmpty(message = "WorkflowDef name cannot be null or empty")
     @ProtoField(id = 1)
@@ -77,6 +82,18 @@ public class WorkflowDef extends Auditable {
 
 	@ProtoField(id = 10)
 	private boolean workflowStatusListenerEnabled = false;
+
+	@ProtoField(id = 11)
+	@NotEmpty(message = "ownerEmail cannot be empty")
+	@Email(message = "ownerEmail should be valid email address")
+	private String ownerEmail;
+
+	@ProtoField(id = 12)
+	private TimeoutPolicy timeoutPolicy = TimeoutPolicy.ALERT_ONLY;
+
+	@ProtoField(id = 13)
+	@NotNull
+	private long timeoutSeconds;
 
 	/**
 	 * @return the name
@@ -226,6 +243,48 @@ public class WorkflowDef extends Auditable {
 		this.workflowStatusListenerEnabled = workflowStatusListenerEnabled;
 	}
 
+	/**
+	 * @return the email of the owner of this workflow definition
+	 */
+	public String getOwnerEmail() {
+		return ownerEmail;
+	}
+
+	/**
+	 * @param ownerEmail the owner email to set
+	 */
+	public void setOwnerEmail(String ownerEmail) {
+		this.ownerEmail = ownerEmail;
+	}
+
+	/**
+	 * @return the timeoutPolicy
+	 */
+	public TimeoutPolicy getTimeoutPolicy() {
+		return timeoutPolicy;
+	}
+
+	/**
+	 * @param timeoutPolicy the timeoutPolicy to set
+	 */
+	public void setTimeoutPolicy(TimeoutPolicy timeoutPolicy) {
+		this.timeoutPolicy = timeoutPolicy;
+	}
+
+	/**
+	 * @return the time after which a workflow is deemed to have timed out
+	 */
+	public long getTimeoutSeconds() {
+		return timeoutSeconds;
+	}
+
+	/**
+	 * @param timeoutSeconds the timeout in seconds to set
+	 */
+	public void setTimeoutSeconds(long timeoutSeconds) {
+		this.timeoutSeconds = timeoutSeconds;
+	}
+
 	public String key(){
 		return getKey(name, version);
 	}
@@ -270,22 +329,29 @@ public class WorkflowDef extends Auditable {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 		WorkflowDef that = (WorkflowDef) o;
 		return getVersion() == that.getVersion() &&
-				getSchemaVersion() == that.getSchemaVersion() &&
-				Objects.equals(getName(), that.getName()) &&
-				Objects.equals(getDescription(), that.getDescription()) &&
-				Objects.equals(getTasks(), that.getTasks()) &&
-				Objects.equals(getInputParameters(), that.getInputParameters()) &&
-				Objects.equals(getOutputParameters(), that.getOutputParameters()) &&
-				Objects.equals(getFailureWorkflow(), that.getFailureWorkflow());
+			getSchemaVersion() == that.getSchemaVersion() &&
+			Objects.equals(getName(), that.getName()) &&
+			Objects.equals(getDescription(), that.getDescription()) &&
+			Objects.equals(getTasks(), that.getTasks()) &&
+			Objects.equals(getInputParameters(), that.getInputParameters()) &&
+			Objects.equals(getOutputParameters(), that.getOutputParameters()) &&
+			Objects.equals(getFailureWorkflow(), that.getFailureWorkflow()) &&
+			Objects.equals(getOwnerEmail(), that.getOwnerEmail()) &&
+			Objects.equals(getTimeoutSeconds(), that.getTimeoutSeconds());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(
+		return Objects
+			.hash(
 				getName(),
 				getDescription(),
 				getVersion(),
@@ -293,8 +359,10 @@ public class WorkflowDef extends Auditable {
 				getInputParameters(),
 				getOutputParameters(),
 				getFailureWorkflow(),
-				getSchemaVersion()
-		);
+				getSchemaVersion(),
+				getOwnerEmail(),
+				getTimeoutSeconds()
+			);
 	}
 
 	@Override
@@ -310,6 +378,7 @@ public class WorkflowDef extends Auditable {
 			", schemaVersion=" + schemaVersion +
 			", restartable=" + restartable +
 			", workflowStatusListenerEnabled=" + workflowStatusListenerEnabled +
+			", timeoutSeconds=" + timeoutSeconds +
 			'}';
 	}
 }

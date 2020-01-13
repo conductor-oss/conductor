@@ -9,6 +9,10 @@ option java_outer_classname = "WorkflowDefPb";
 option go_package = "github.com/netflix/conductor/client/gogrpc/conductor/model";
 
 message WorkflowDef {
+    enum TimeoutPolicy {
+        TIME_OUT_WF = 0;
+        ALERT_ONLY = 1;
+    }
     string name = 1;
     string description = 2;
     int32 version = 3;
@@ -19,4 +23,7 @@ message WorkflowDef {
     int32 schema_version = 8;
     bool restartable = 9;
     bool workflow_status_listener_enabled = 10;
+    string owner_email = 11;
+    WorkflowDef.TimeoutPolicy timeout_policy = 12;
+    int64 timeout_seconds = 13;
 }

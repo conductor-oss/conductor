@@ -2,6 +2,7 @@
     "name": "ExclusiveJoinTestWorkflow",
     "description": "Exclusive Join Test Workflow",
     "version": 1,
+    "ownerEmail": "test@harness.com",
     "tasks": [
       {
         "name": "TASK_1",

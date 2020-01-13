@@ -21,6 +21,7 @@ public abstract class AbstractEndToEndTest {
     private static final String DEFAULT_DESCRIPTION = "description";
     // Represents null value deserialized from the redis in memory db
     private static final String DEFAULT_NULL_VALUE = "null";
+    protected static final String DEFAULT_EMAIL_ADDRESS = "test@harness.com";
 
     @Test
     public void testEphemeralWorkflowsWithStoredTasks() {
@@ -131,6 +132,7 @@ public abstract class AbstractEndToEndTest {
         workflowDefinition.setName(workflowName);
         workflowDefinition.setDescription(getDefaultDescription(workflowName));
         workflowDefinition.setFailureWorkflow(DEFAULT_NULL_VALUE);
+        workflowDefinition.setOwnerEmail(DEFAULT_EMAIL_ADDRESS);
         return workflowDefinition;
     }
 
@@ -138,7 +140,7 @@ public abstract class AbstractEndToEndTest {
         String prefix = Optional.ofNullable(prefixTaskDefinition).orElse(TASK_DEFINITION_PREFIX);
         List<TaskDef> definitions = new LinkedList<>();
         for (int i = 0; i < numberOfTaskDefinitions; i++) {
-            TaskDef def = new TaskDef(prefix + i, "task " + i + DEFAULT_DESCRIPTION);
+            TaskDef def = new TaskDef(prefix + i, "task " + i + DEFAULT_DESCRIPTION, DEFAULT_EMAIL_ADDRESS, 3, 60 ,60);
             def.setTimeoutPolicy(TaskDef.TimeoutPolicy.RETRY);
             definitions.add(def);
         }

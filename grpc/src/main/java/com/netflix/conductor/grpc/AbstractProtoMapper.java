@@ -689,6 +689,9 @@ public abstract class AbstractProtoMapper {
         if (from.getExecutionNameSpace() != null) {
             to.setExecutionNameSpace( from.getExecutionNameSpace() );
         }
+        if (from.getOwnerEmail() != null) {
+            to.setOwnerEmail( from.getOwnerEmail() );
+        }
         return to.build();
     }
 
@@ -714,6 +717,7 @@ public abstract class AbstractProtoMapper {
         to.setRateLimitFrequencyInSeconds( from.getRateLimitFrequencyInSeconds() );
         to.setIsolationGroupId( from.getIsolationGroupId() );
         to.setExecutionNameSpace( from.getExecutionNameSpace() );
+        to.setOwnerEmail( from.getOwnerEmail() );
         return to;
     }
 
@@ -1047,6 +1051,13 @@ public abstract class AbstractProtoMapper {
         to.setSchemaVersion( from.getSchemaVersion() );
         to.setRestartable( from.isRestartable() );
         to.setWorkflowStatusListenerEnabled( from.isWorkflowStatusListenerEnabled() );
+        if (from.getOwnerEmail() != null) {
+            to.setOwnerEmail( from.getOwnerEmail() );
+        }
+        if (from.getTimeoutPolicy() != null) {
+            to.setTimeoutPolicy( toProto( from.getTimeoutPolicy() ) );
+        }
+        to.setTimeoutSeconds( from.getTimeoutSeconds() );
         return to.build();
     }
 
@@ -1066,6 +1077,29 @@ public abstract class AbstractProtoMapper {
         to.setSchemaVersion( from.getSchemaVersion() );
         to.setRestartable( from.getRestartable() );
         to.setWorkflowStatusListenerEnabled( from.getWorkflowStatusListenerEnabled() );
+        to.setOwnerEmail( from.getOwnerEmail() );
+        to.setTimeoutPolicy( fromProto( from.getTimeoutPolicy() ) );
+        to.setTimeoutSeconds( from.getTimeoutSeconds() );
+        return to;
+    }
+
+    public WorkflowDefPb.WorkflowDef.TimeoutPolicy toProto(WorkflowDef.TimeoutPolicy from) {
+        WorkflowDefPb.WorkflowDef.TimeoutPolicy to;
+        switch (from) {
+            case TIME_OUT_WF: to = WorkflowDefPb.WorkflowDef.TimeoutPolicy.TIME_OUT_WF; break;
+            case ALERT_ONLY: to = WorkflowDefPb.WorkflowDef.TimeoutPolicy.ALERT_ONLY; break;
+            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        }
+        return to;
+    }
+
+    public WorkflowDef.TimeoutPolicy fromProto(WorkflowDefPb.WorkflowDef.TimeoutPolicy from) {
+        WorkflowDef.TimeoutPolicy to;
+        switch (from) {
+            case TIME_OUT_WF: to = WorkflowDef.TimeoutPolicy.TIME_OUT_WF; break;
+            case ALERT_ONLY: to = WorkflowDef.TimeoutPolicy.ALERT_ONLY; break;
+            default: throw new IllegalArgumentException("Unexpected enum constant: " + from);
+        }
         return to;
     }
 

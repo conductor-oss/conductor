@@ -116,14 +116,16 @@ public class DeciderService {
 
         DeciderOutcome outcome = new DeciderOutcome();
 
-        if (workflow.getStatus().equals(WorkflowStatus.PAUSED)) {
-            LOGGER.debug("Workflow " + workflow.getWorkflowId() + " is paused");
-            return outcome;
-        }
-
         if (workflow.getStatus().isTerminal()) {
             //you cannot evaluate a terminal workflow
             LOGGER.debug("Workflow {} is already finished. Reason: {}", workflow, workflow.getReasonForIncompletion());
+            return outcome;
+        }
+
+        checkWorkflowTimeout(workflow);
+
+        if (workflow.getStatus().equals(WorkflowStatus.PAUSED)) {
+            LOGGER.debug("Workflow " + workflow.getWorkflowId() + " is paused");
             return outcome;
         }
 
@@ -164,7 +166,7 @@ public class DeciderService {
             }
 
             if (taskDefinition.isPresent()) {
-                checkForTimeout(taskDefinition.get(), pendingTask);
+                checkTaskTimeout(taskDefinition.get(), pendingTask);
                 // If the task has not been updated for "responseTimeoutSeconds" then mark task as TIMED_OUT
                 if (isResponseTimedOut(taskDefinition.get(), pendingTask)) {
                     timeoutTask(taskDefinition.get(), pendingTask);
@@ -484,10 +486,42 @@ public class DeciderService {
     }
 
     @VisibleForTesting
-    void checkForTimeout(TaskDef taskDef, Task task) {
+    void checkWorkflowTimeout(Workflow workflow) {
+        WorkflowDef workflowDef = workflow.getWorkflowDefinition();
+        if (workflowDef == null) {
+            LOGGER.warn("Missing workflow definition : {}", workflow.getWorkflowId());
+            return;
+        }
+        if (workflow.getStatus().isTerminal() || workflowDef.getTimeoutSeconds() <= 0) {
+            return;
+        }
+
+        long timeout = 1000L * workflowDef.getTimeoutSeconds();
+        long now = System.currentTimeMillis();
+        long elapsedTime = now - workflow.getStartTime();
+
+        if (elapsedTime < timeout) {
+            return;
+        }
+
+        String reason = String.format("Workflow timed out after %d seconds. Timeout configured as %d. " +
+                "Timeout policy configured to %s",elapsedTime/1000L, timeout, workflowDef.getTimeoutPolicy().name());
+        Monitors.recordWorkflowTermination(workflow.getWorkflowName(), WorkflowStatus.TIMED_OUT, workflow.getOwnerApp());
+
+        switch (workflowDef.getTimeoutPolicy()) {
+            case ALERT_ONLY:
+                LOGGER.info(reason);
+                return;
+            case TIME_OUT_WF:
+                throw new TerminateWorkflowException(reason, WorkflowStatus.TIMED_OUT);
+        }
+    }
+
+    @VisibleForTesting
+    void checkTaskTimeout(TaskDef taskDef, Task task) {
 
         if (taskDef == null) {
-            LOGGER.warn("missing task type " + task.getTaskDefName() + ", workflowId=" + task.getWorkflowInstanceId());
+            LOGGER.warn("Missing task definition for task:{}/{} in workflow:{}", task.getTaskId(), task.getTaskDefName(), task.getWorkflowInstanceId());
             return;
         }
         if (task.getStatus().isTerminal() || taskDef.getTimeoutSeconds() <= 0 || task.getStartTime() <= 0) {
@@ -502,11 +536,13 @@ public class DeciderService {
             return;
         }
 
-        String reason = "Task timed out after " + elapsedTime + " millisecond.  Timeout configured as " + timeout;
+        String reason = String.format("Task timed out after %d seconds. Timeout configured as %d. "
+            + "Timeout policy configured to %s", elapsedTime/1000L, timeout, taskDef.getTimeoutPolicy().name());
         Monitors.recordTaskTimeout(task.getTaskDefName());
 
         switch (taskDef.getTimeoutPolicy()) {
             case ALERT_ONLY:
+                LOGGER.info(reason);
                 return;
             case RETRY:
                 task.setStatus(TIMED_OUT);

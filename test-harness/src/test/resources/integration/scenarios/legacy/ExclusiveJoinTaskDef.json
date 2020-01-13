@@ -1,19 +1,24 @@
 {
   "taskDefs": [
     {
-      "name": "TASK_1"
+      "name": "TASK_1",
+      "ownerEmail": "test@harness.com"
     },
     {
-      "name": "TASK_2"
+      "name": "TASK_2",
+      "ownerEmail": "test@harness.com"
     },
     {
-      "name": "TASK_3"
+      "name": "TASK_3",
+      "ownerEmail": "test@harness.com"
     },
     {
-      "name": "TASK_4"
+      "name": "TASK_4",
+      "ownerEmail": "test@harness.com"
     },
     {
-      "name": "TASK_5"
+      "name": "TASK_5",
+      "ownerEmail": "test@harness.com"
     }
   ]
 }
