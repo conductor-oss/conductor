@@ -952,6 +952,10 @@ public class WorkflowExecutor {
         // This code will be removed in a future version.
         workflow = metadataMapperService.populateWorkflowWithDefinitions(workflow);
 
+        if (workflow.getStatus().isTerminal()) {
+            return true;
+        }
+
         try {
             DeciderService.DeciderOutcome outcome = deciderService.decide(workflow);
             if (outcome.isComplete) {
@@ -1184,7 +1188,6 @@ public class WorkflowExecutor {
             }
 
             LOGGER.debug("Executing {}/{}-{}", task.getTaskType(), task.getTaskId(), task.getStatus());
-            queueDAO.setUnackTimeout(QueueUtils.getQueueName(task), task.getTaskId(), systemTask.getRetryTimeInSecond() * 1000);
             if (task.getStatus() == SCHEDULED || !systemTask.isAsyncComplete(task)) {
                 task.setPollCount(task.getPollCount() + 1);
                 executionDAOFacade.updateTask(task);
@@ -1194,7 +1197,7 @@ public class WorkflowExecutor {
 
             // Stop polling for asyncComplete system tasks that are not in SCHEDULED state
             if (systemTask.isAsyncComplete(task) && task.getStatus() != SCHEDULED) {
-                queueDAO.ack(QueueUtils.getQueueName(task), task.getTaskId());
+                queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId());
                 return;
             }
 
