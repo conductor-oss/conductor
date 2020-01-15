@@ -241,10 +241,8 @@ public class WorkflowDef extends Auditable {
 			 WorkflowTask nextTask = task.next(taskReferenceName, null);
 			 if(nextTask != null){
 				 return nextTask;
-			 }
-
-			 if(isLastLoopOverTask(task, taskReferenceName)) {
-			 	// If the task is last loopover task return null. Let decider will decide.
+			 } else if (TaskType.DO_WHILE.name().equals(task.getType()) && !task.getTaskReferenceName().equals(taskReferenceName) && task.has(taskReferenceName)) {
+			 	// If the task is child of Loop Task and at last position, return null.
 			 	return null;
 			 }
 
@@ -256,10 +254,6 @@ public class WorkflowDef extends Auditable {
 			return it.next();
 		}
 		return null;
-	}
-
-	private boolean isLastLoopOverTask(WorkflowTask task, String taskReferenceName) {
-		return TaskType.DO_WHILE.name().equals(task.getType()) && !task.getTaskReferenceName().equals(taskReferenceName) && task.has(taskReferenceName);
 	}
 
 	public WorkflowTask getTaskByRefName(String taskReferenceName){
