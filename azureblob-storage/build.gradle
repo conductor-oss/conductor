@@ -1,0 +1,7 @@
+dependencies {
+    compile project(':conductor-common')
+    compile project(':conductor-core')
+    compile "com.google.inject:guice:${revGuice}"
+
+    compile "com.azure:azure-storage-blob:${revAzureStorageBlobSdk}"
+}
