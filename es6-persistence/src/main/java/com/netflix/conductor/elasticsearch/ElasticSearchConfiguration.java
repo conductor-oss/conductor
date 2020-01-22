@@ -58,6 +58,13 @@ public interface ElasticSearchConfiguration extends Configuration {
     String ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_PROPERTY_NAME = "workflow.elasticsearch.async.buffer.flush.timeout.seconds";
     int ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_DEFAULT_VALUE = 10;
 
+    String ELASTIC_SEARCH_INDEX_SHARD_COUNT_PROPERTY_NAME = "workflow.elasticsearch.index.shard.count";
+    int ELASTIC_SEARCH_INDEX_SHARD_COUNT_DEFAULT_VALUE = 5;
+
+    String ELASTIC_SEARCH_INDEX_REPLICAS_COUNT_PROPERTY_NAME = "workflow.elasticsearch.index.replicas.count";
+    int ELASTIC_SEARCH_INDEX_REPLICAS_COUNT_DEFAULT_VALUE = 1;
+
+
     default String getURL() {
         return getProperty(ELASTIC_SEARCH_URL_PROPERTY_NAME, ELASTIC_SEARCH_URL_DEFAULT_VALUE);
     }
@@ -143,5 +150,17 @@ public interface ElasticSearchConfiguration extends Configuration {
 
     default int getAsyncBufferFlushTimeout() {
         return getIntProperty(ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_PROPERTY_NAME, ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_DEFAULT_VALUE);
+    }
+
+    default int getElasticSearchIndexShardCount()
+    {
+        return getIntProperty(ELASTIC_SEARCH_INDEX_SHARD_COUNT_PROPERTY_NAME,
+                ELASTIC_SEARCH_INDEX_SHARD_COUNT_DEFAULT_VALUE);
+    }
+
+    default int getElasticSearchIndexReplicationCount()
+    {
+        return getIntProperty(ELASTIC_SEARCH_INDEX_REPLICAS_COUNT_PROPERTY_NAME,
+                ELASTIC_SEARCH_INDEX_REPLICAS_COUNT_DEFAULT_VALUE);
     }
 }

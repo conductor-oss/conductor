@@ -56,6 +56,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import org.elasticsearch.ResourceAlreadyExistsException;
 import org.elasticsearch.action.DocWriteResponse;
+import org.elasticsearch.action.admin.indices.create.CreateIndexRequest;
 import org.elasticsearch.action.admin.indices.mapping.get.GetMappingsResponse;
 import org.elasticsearch.action.admin.indices.template.get.GetIndexTemplatesResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -71,6 +72,7 @@ import org.elasticsearch.action.update.UpdateRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.Strings;
+import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -142,6 +144,8 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
 
     private final int indexBatchSize;
     private final int asyncBufferFlushTimeout;
+    private final ElasticSearchConfiguration config;
+
 
     static {
         SIMPLE_DATE_FORMAT.setTimeZone(GMT);
@@ -162,6 +166,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
         this.bulkRequests = new ConcurrentHashMap<>();
         this.indexBatchSize = config.getIndexBatchSize();
         this.asyncBufferFlushTimeout = config.getAsyncBufferFlushTimeout();
+        this.config = config;
 
         this.executorService = new ThreadPoolExecutor(CORE_POOL_SIZE,
             maximumPoolSize,
@@ -294,7 +299,16 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
             elasticSearchClient.admin().indices().prepareGetIndex().addIndices(indexName).execute().actionGet();
         } catch (IndexNotFoundException infe) {
             try {
-                elasticSearchClient.admin().indices().prepareCreate(indexName).execute().actionGet();
+                CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexName);
+                createIndexRequest.settings(Settings.builder()
+                        .put("index.number_of_shards", config.getElasticSearchIndexShardCount())
+                        .put("index.number_of_replicas", config.getElasticSearchIndexReplicationCount())
+                );
+
+                elasticSearchClient.admin()
+                        .indices()
+                        .create(createIndexRequest)
+                        .actionGet();
             } catch (ResourceAlreadyExistsException done) {
                 logger.error("Failed to update log index name: {}", indexName, done);
             }

@@ -16,6 +16,7 @@ package com.netflix.conductor.dao.es5.index;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.netflix.conductor.annotations.Trace;
@@ -64,6 +65,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NByteArrayEntity;
+import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.action.DocWriteResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -134,6 +136,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
     private final ConcurrentHashMap<String, BulkRequests> bulkRequests;
     private final int indexBatchSize;
     private final int asyncBufferFlushTimeout;
+    private final ElasticSearchConfiguration config;
 
     static {
         SIMPLE_DATE_FORMAT.setTimeZone(GMT);
@@ -151,6 +154,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
         this.bulkRequests = new ConcurrentHashMap<>();
         this.indexBatchSize = config.getIndexBatchSize();
         this.asyncBufferFlushTimeout = config.getAsyncBufferFlushTimeout();
+        this.config = config;
 
         // Set up a workerpool for performing async operations for workflow and task
         int corePoolSize = 6;
@@ -301,7 +305,16 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
         if (doesResourceNotExist(resourcePath)) {
 
             try {
-                elasticSearchAdminClient.performRequest(HttpMethod.PUT, resourcePath);
+                ObjectNode setting = objectMapper.createObjectNode();
+                ObjectNode indexSetting = objectMapper.createObjectNode();
+
+                indexSetting.put("number_of_shards", config.getElasticSearchIndexShardCount());
+                indexSetting.put("number_of_replicas", config.getElasticSearchIndexReplicationCount());
+
+                setting.set("index", indexSetting);
+
+                elasticSearchAdminClient.performRequest(HttpMethod.PUT, resourcePath, Collections.emptyMap(),
+                        new NStringEntity(setting.toString(), ContentType.APPLICATION_JSON));
 
                 logger.info("Added '{}' index", index);
             } catch (ResponseException e) {
