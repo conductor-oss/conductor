@@ -4,11 +4,18 @@ The task takes 3 parameters:
 
 **Parameters:**
 
-|name|description|
-|---|---|
-|caseValueParam |Name of the parameter in task input whose value will be used as a switch.|
-|decisionCases|Map where key is possible values of ```caseValueParam``` with value being list of tasks to be executed.|
-|defaultCase|List of tasks to be executed when no matching value if found in decision case (default condition)|
+|name|type|description|
+|---|---|---|
+|caseValueParam|String|Name of the parameter in task input whose value will be used as a switch.|
+|decisionCases|Map[String, List[task]]|Map where key is possible values of ```caseValueParam``` with value being list of tasks to be executed.|
+|defaultCase|List[task]|List of tasks to be executed when no matching value if found in decision case (default condition)|
+|caseExpression|String|Case expression to use instead of caseValueParam when the case should depend on complex values. This is a Javascript expression evaluated by the Nashorn Engine. Task names with arithmetic operators should not be used.|
+
+**Outputs:**
+
+|name|type|description|
+|---|---|---|
+|caseOutput|List[String]|A List of string representing the list of cases that matched.|
 
 **Example**
 
