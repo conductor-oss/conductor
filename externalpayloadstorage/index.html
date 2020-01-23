@@ -165,6 +165,16 @@
 
     <li class="toctree-l2"><a href="#usage">Usage</a></li>
     
+        <ul>
+        
+            <li><a class="toctree-l3" href="#barriers-setup">Barriers setup</a></li>
+        
+            <li><a class="toctree-l3" href="#amazon-s3">Amazon S3</a></li>
+        
+            <li><a class="toctree-l3" href="#azure-blob-storage">Azure Blob Storage</a></li>
+        
+        </ul>
+    
 
     </ul>
 	    </li>
@@ -264,6 +274,18 @@ In such cases, conductor externalizes the storage of such payloads to S3 and upl
 <p>The hard barriers are enforced to safeguard the conductor backend from the pressure of having to persist and deal with voluminous data which is not essential for workflow execution.
 In such cases, conductor will reject such payloads and will terminate/fail the workflow execution with the reasonForIncompletion set to an appropriate error message detailing the payload size.</p>
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
+<h3 id="barriers-setup">Barriers setup<a class="headerlink" href="#barriers-setup" title="Permanent link">&para;</a></h3>
+<p>Set the following properties to the desired values in the JVM system properties:</p>
+<p>| Property | Description | default value |
+| conductor.workflow.input.payload.threshold.kb | Soft barrier for workflow input payload in KB | 5120 |
+| conductor.max.workflow.input.payload.threshold.kb | Hard barrier for workflow input payload in KB | 10240 |
+| conductor.workflow.output.payload.threshold.kb | Soft barrier for workflow output payload in KB | 5120 |
+| conductor.max.workflow.output.payload.threshold.kb | Hard barrier for workflow output payload in KB | 10240 |
+| conductor.task.input.payload.threshold.kb | Soft barrier for task input payload in KB | 3072 |
+| conductor.max.task.input.payload.threshold.kb | Hard barrier for task input payload in KB | 10240 |
+| conductor.task.output.payload.threshold.kb | Soft barrier for task output payload in KB | 3072 |
+| conductor.max.task.output.payload.threshold.kb | Hard barrier for task output payload in KB | 10240 |</p>
+<h3 id="amazon-s3">Amazon S3<a class="headerlink" href="#amazon-s3" title="Permanent link">&para;</a></h3>
 <p>Conductor provides an implementation of <a href="https://aws.amazon.com/s3/">Amazon S3</a> used to externalize large payload storage.<br />
 Set the following property in the JVM system properties:</p>
 <div class="codehilite"><pre><span></span>workflow.external.payload.storage=S3
@@ -294,54 +316,75 @@ Set the following property in the JVM system properties:</p>
 <td>The expiration time in seconds of the signed url for the payload</td>
 <td>5</td>
 </tr>
-<tr>
-<td></td>
-<td></td>
-<td></td>
-</tr>
-<tr>
-<td>conductor.workflow.input.payload.threshold.kb</td>
-<td>Soft barrier for workflow input payload in KB</td>
-<td>5120</td>
-</tr>
-<tr>
-<td>conductor.max.workflow.input.payload.threshold.kb</td>
-<td>Hard barrier for workflow input payload in KB</td>
-<td>10240</td>
-</tr>
-<tr>
-<td>conductor.workflow.output.payload.threshold.kb</td>
-<td>Soft barrier for workflow output payload in KB</td>
-<td>5120</td>
-</tr>
-<tr>
-<td>conductor.max.workflow.output.payload.threshold.kb</td>
-<td>Hard barrier for workflow output payload in KB</td>
-<td>10240</td>
-</tr>
-<tr>
-<td>conductor.task.input.payload.threshold.kb</td>
-<td>Soft barrier for task input payload in KB</td>
-<td>3072</td>
-</tr>
-<tr>
-<td>conductor.max.task.input.payload.threshold.kb</td>
-<td>Hard barrier for task input payload in KB</td>
-<td>10240</td>
-</tr>
-<tr>
-<td>conductor.task.output.payload.threshold.kb</td>
-<td>Soft barrier for task output payload in KB</td>
-<td>3072</td>
-</tr>
-<tr>
-<td>conductor.max.task.output.payload.threshold.kb</td>
-<td>Hard barrier for task output payload in KB</td>
-<td>10240</td>
-</tr>
 </tbody>
 </table>
 <p>The payloads will be stored in the bucket configured above in a <code>UUID.json</code> file at locations determined by the type of the payload. See <a href="https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/utils/S3PayloadStorage.java#L149-L167">here</a> for information about how the object key is determined.</p>
+<h3 id="azure-blob-storage">Azure Blob Storage<a class="headerlink" href="#azure-blob-storage" title="Permanent link">&para;</a></h3>
+<p>ProductLive provides an implementation of <a href="https://azure.microsoft.com/services/storage/blobs/">Azure Blob Storage</a> used to externalize large payload storage.  </p>
+<p>To build conductor with azure blob feature read the <a href="https://github.com/Netflix/conductor/blob/master/azureblob-storage/README.md">README.md</a> in <code>azureblob-storage</code> module </p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This implementation assumes that you have an <a href="https://github.com/Azure/azure-sdk-for-java/blob/master/sdk/storage/azure-storage-blob/README.md">Azure Blob Storage account's connection string or SAS Token</a>.
+If you want signed url to expired you must specify a Connection String. </p>
+</div>
+<p>Set the following properties to the desired values in the JVM system properties:</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+<th>default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>workflow.external.payload.storage.azure_blob.connection_string</td>
+<td>Azure Blob Storage connection string. Required to sign Url.</td>
+<td></td>
+</tr>
+<tr>
+<td>workflow.external.payload.storage.azure_blob.endpoint</td>
+<td>Azure Blob Storage endpoint. Optional if connection_string is set.</td>
+<td></td>
+</tr>
+<tr>
+<td>workflow.external.payload.storage.azure_blob.sas_token</td>
+<td>Azure Blob Storage SAS Token. Must have permissions <code>Read</code> and <code>Write</code> on Resource <code>Object</code> on Service <code>Blob</code>. Optional if connection_string is set.</td>
+<td></td>
+</tr>
+<tr>
+<td>workflow.external.payload.storage.azure_blob.container_name</td>
+<td>Azure Blob Storage container where the payloads will be stored</td>
+<td><code>conductor-payloads</code></td>
+</tr>
+<tr>
+<td>workflow.external.payload.storage.azure_blob.signedurlexpirationseconds</td>
+<td>The expiration time in seconds of the signed url for the payload</td>
+<td>5</td>
+</tr>
+<tr>
+<td>workflow.external.payload.storage.azure_blob.workflow_input_path</td>
+<td>Path prefix where workflows input will be stored with an random UUID filename</td>
+<td>workflow/input/</td>
+</tr>
+<tr>
+<td>workflow.external.payload.storage.azure_blob.workflow_output_path</td>
+<td>Path prefix where workflows output will be stored with an random UUID filename</td>
+<td>workflow/output/</td>
+</tr>
+<tr>
+<td>workflow.external.payload.storage.azure_blob.task_input_path</td>
+<td>Path prefix where tasks input will be stored with an random UUID filename</td>
+<td>task/input/</td>
+</tr>
+<tr>
+<td>workflow.external.payload.storage.azure_blob.task_output_path</td>
+<td>Path prefix where tasks output will be stored with an random UUID filename</td>
+<td>task/output/</td>
+</tr>
+</tbody>
+</table>
+<p>The payloads will be stored as done in <a href="https://github.com/Netflix/conductor/blob/master/core/src/main/java/com/netflix/conductor/core/utils/S3PayloadStorage.java#L149-L167">Amazon S3</a>.</p>
               
             </div>
           </div>

@@ -175,8 +175,6 @@
         
             <li><a class="toctree-l4" href="#poll-for-worker-task">Poll for Worker task</a></li>
         
-            <li><a class="toctree-l4" href="#ack-the-task">Ack the Task</a></li>
-        
             <li><a class="toctree-l4" href="#return-response-add-logs">Return response, add logs</a></li>
         
             <li><a class="toctree-l4" href="#why-is-system-task-executed-but-worker-task-is-scheduled">Why is System task executed, but Worker task is Scheduled.</a></li>
@@ -583,17 +581,6 @@ i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs f
 </pre></div>
 
 
-<h3 id="ack-the-task">Ack the Task<a class="headerlink" href="#ack-the-task" title="Permanent link">&para;</a></h3>
-<p>Let's notify the Conductor server that we have successfully received the task by sending an ACK request with <code>taskId</code> received in the previous step.<br />
-Otherwise, Conductor would assume that the worker did not receive the task, and requeue it.</p>
-<p>Send a POST request to <code>/tasks/{taskId}/ack</code> endpoint.</p>
-<p>Example:</p>
-<div class="codehilite"><pre><span></span>curl -X POST \
-  http://localhost:8080/api/tasks/{taskId}/ack \
-  -H &#39;Content-Type: application/json&#39;
-</pre></div>
-
-
 <h3 id="return-response-add-logs">Return response, add logs<a class="headerlink" href="#return-response-add-logs" title="Permanent link">&para;</a></h3>
 <p>We can respond to Conductor with any of the following states:</p>
 <ul>
@@ -647,7 +634,7 @@ Otherwise, Conductor would assume that the worker did not receive the task, and 
 <h3 id="why-is-system-task-executed-but-worker-task-is-scheduled">Why is System task executed, but Worker task is Scheduled.<a class="headerlink" href="#why-is-system-task-executed-but-worker-task-is-scheduled" title="Permanent link">&para;</a></h3>
 <p>You will notice that Workflow is in the state as below after sending the POST request:</p>
 <p><img alt="img" src="../img/bgnr_systask_state.png" /></p>
-<p>Conductor has executed <code>is_idents_added</code> all through it's lifecycle, without us polling, acking, or returning the status of Task. If it is still unclear, <code>is_idents_added</code> is a System task, and System tasks are executed by Conductor Server.</p>
+<p>Conductor has executed <code>is_idents_added</code> all through it's lifecycle, without us polling, or returning the status of Task. If it is still unclear, <code>is_idents_added</code> is a System task, and System tasks are executed by Conductor Server.</p>
 <p>But, <code>add_idents</code> is a SIMPLE task. So, the complete lifecyle of this task (Poll, Ack, Update) should be handled by a worker to continue with W\workflow execution. When Conductor has finished executing all the tasks in given flow, the workflow will reach Terminal state (COMPLETED, FAILED, TIMED_OUT etc.)</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <p>You can play around this workflow by failing one of the Tasks, restarting or retrying the Workflow, or by tuning the number of retries, timeoutSeconds etc.</p>
