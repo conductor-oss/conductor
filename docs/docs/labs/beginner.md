@@ -352,21 +352,6 @@ curl -X GET \
 ```
 
 
-### Ack the Task
-
-Let's notify the Conductor server that we have successfully received the task by sending an ACK request with `taskId` received in the previous step.  
-Otherwise, Conductor would assume that the worker did not receive the task, and requeue it.
-
-Send a POST request to `/tasks/{taskId}/ack` endpoint.
-
-Example:
-
-```
-curl -X POST \
-  http://localhost:8080/api/tasks/{taskId}/ack \
-  -H 'Content-Type: application/json'
-```
-
 ### Return response, add logs
 
 We can respond to Conductor with any of the following states:
@@ -425,7 +410,7 @@ You will notice that Workflow is in the state as below after sending the POST re
 
 ![img](img/bgnr_systask_state.png)
 
-Conductor has executed `is_idents_added` all through it's lifecycle, without us polling, acking, or returning the status of Task. If it is still unclear, `is_idents_added` is a System task, and System tasks are executed by Conductor Server.
+Conductor has executed `is_idents_added` all through it's lifecycle, without us polling, or returning the status of Task. If it is still unclear, `is_idents_added` is a System task, and System tasks are executed by Conductor Server.
 
 But, `add_idents` is a SIMPLE task. So, the complete lifecyle of this task (Poll, Ack, Update) should be handled by a worker to continue with W\workflow execution. When Conductor has finished executing all the tasks in given flow, the workflow will reach Terminal state (COMPLETED, FAILED, TIMED_OUT etc.)
 
