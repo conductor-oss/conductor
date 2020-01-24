@@ -2610,7 +2610,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         // update task with callback after seconds greater than the response timeout
         taskAgain.setStatus(IN_PROGRESS);
-        taskAgain.setCallbackAfterSeconds(20);
+        taskAgain.setCallbackAfterSeconds(2);
         workflowExecutionService.updateTask(taskAgain);
 
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
@@ -2620,7 +2620,9 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals(SCHEDULED, workflow.getTasks().get(1).getStatus());
 
         // wait for callback after seconds which is longer than response timeout seconds and then call decide
-        Thread.sleep(20000);
+        Thread.sleep(2010);
+        // Ensure unacks are processed.
+        queueDAO.processUnacks(taskAgain.getTaskDefName());
         workflowExecutor.decide(workflowId);
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
@@ -5235,7 +5237,7 @@ public abstract class AbstractWorkflowServiceTest {
     }
 
     @Test
-    public void testTaskWithCallbackAfterSecondsInWorkflow() {
+    public void testTaskWithCallbackAfterSecondsInWorkflow() throws InterruptedException {
         WorkflowDef workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1);
         assertNotNull(workflowDef);
 
@@ -5249,7 +5251,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         String taskId = task.getTaskId();
         task.setStatus(IN_PROGRESS);
-        task.setCallbackAfterSeconds(5L);
+        task.setCallbackAfterSeconds(2L);
         workflowExecutionService.updateTask(task);
 
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
@@ -5264,8 +5266,8 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull(workflow);
         assertEquals(1, workflow.getTasks().size());
 
-        Uninterruptibles.sleepUninterruptibly(5, TimeUnit.SECONDS);
-
+        Thread.sleep(2050);
+        queueDAO.processUnacks("junit_task_1");
         task = workflowExecutionService.poll("junit_task_1", "test");
         assertNotNull(task);
         assertEquals(taskId, task.getTaskId());

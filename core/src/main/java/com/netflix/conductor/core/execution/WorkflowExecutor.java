@@ -552,6 +552,8 @@ public class WorkflowExecutor {
         // Update Workflow with new status.
         // This should load Workflow from archive, if archived.
         workflow.setStatus(WorkflowStatus.RUNNING);
+        // Add to decider queue
+        queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), config.getSweepFrequency());
         executionDAOFacade.updateWorkflow(workflow);
 
         // taskToBeRescheduled would set task `retried` to true, and hence it's important to updateTasks after obtaining task copy from taskToBeRescheduled.
@@ -952,6 +954,10 @@ public class WorkflowExecutor {
         // This code will be removed in a future version.
         workflow = metadataMapperService.populateWorkflowWithDefinitions(workflow);
 
+        if (workflow.getStatus().isTerminal()) {
+            return true;
+        }
+
         try {
             DeciderService.DeciderOutcome outcome = deciderService.decide(workflow);
             if (outcome.isComplete) {
@@ -962,12 +968,7 @@ public class WorkflowExecutor {
             List<Task> tasksToBeScheduled = outcome.tasksToBeScheduled;
             setTaskDomains(tasksToBeScheduled, workflow);
             List<Task> tasksToBeUpdated = outcome.tasksToBeUpdated;
-            List<Task> tasksToBeRequeued = outcome.tasksToBeRequeued;
             boolean stateChanged = false;
-
-            if (!tasksToBeRequeued.isEmpty()) {
-                addTaskToQueue(tasksToBeRequeued);
-            }
 
             tasksToBeScheduled = dedupAndAddTasks(workflow, tasksToBeScheduled);
 
@@ -1005,7 +1006,6 @@ public class WorkflowExecutor {
             if (!outcome.tasksToBeUpdated.isEmpty() || !tasksToBeScheduled.isEmpty()) {
                 executionDAOFacade.updateTasks(tasksToBeUpdated);
                 executionDAOFacade.updateWorkflow(workflow);
-                queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), config.getSweepFrequency());
             }
 
             stateChanged = scheduleTask(workflow, tasksToBeScheduled) || stateChanged;
@@ -1135,7 +1135,6 @@ public class WorkflowExecutor {
     public void addTaskToQueue(Task task) {
         // put in queue
         String taskQueueName = QueueUtils.getQueueName(task);
-        queueDAO.remove(taskQueueName, task.getTaskId());
         if (task.getCallbackAfterSeconds() > 0) {
             queueDAO.push(taskQueueName, task.getTaskId(), task.getWorkflowPriority(), task.getCallbackAfterSeconds());
         } else {
@@ -1191,7 +1190,6 @@ public class WorkflowExecutor {
             }
 
             LOGGER.debug("Executing {}/{}-{}", task.getTaskType(), task.getTaskId(), task.getStatus());
-            queueDAO.setUnackTimeout(QueueUtils.getQueueName(task), task.getTaskId(), systemTask.getRetryTimeInSecond() * 1000);
             if (task.getStatus() == SCHEDULED || !systemTask.isAsyncComplete(task)) {
                 task.setPollCount(task.getPollCount() + 1);
                 executionDAOFacade.updateTask(task);
@@ -1201,7 +1199,7 @@ public class WorkflowExecutor {
 
             // Stop polling for asyncComplete system tasks that are not in SCHEDULED state
             if (systemTask.isAsyncComplete(task) && task.getStatus() != SCHEDULED) {
-                queueDAO.ack(QueueUtils.getQueueName(task), task.getTaskId());
+                queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId());
                 return;
             }
 
@@ -1476,6 +1474,8 @@ public class WorkflowExecutor {
             if (workflowInput != null) {
                 workflow.setInput(workflowInput);
             }
+            // Add to decider queue
+            queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), config.getSweepFrequency());
             executionDAOFacade.updateWorkflow(workflow);
             //update tasks in datastore to update workflow-tasks relationship for archived workflows
             executionDAOFacade.updateTasks(workflow.getTasks());
