@@ -5,16 +5,21 @@ jdk:
 after_success:
   - bash <(curl -s https://codecov.io/bash)
 install: true
-script: "./buildViaTravis.sh"
+script:
+  - "./buildViaTravis.sh"
+  - ./gradlew sonarqube
 git:
   depth: 150
 addons:
+  sonarcloud:
+    organization: "netflix"
   apt:
     packages:
       - redis-server
 cache:
   directories:
   - "$HOME/.gradle/caches"
+  - '$HOME/.sonar/cache'
 env:
   global:
   - secure: Klmmz8ctX995+JBE2BEnR0CQxe9IVMblIHrQMAim/j3Jdw9rgPX4H4UdDgNbt3yEbFOk54R/2g9eJst2hJVXzpsMiArFLo77HwEwl2cHUPgpCzhQLpp5nyw2e/giKBqaYqN99tzA4P/VsDL9EZR6JBdprG5pega2IdNj9pc9Q/QnG7OEwk/PU4CAhcL6iVvQVqmXf9wwgI8SH+6IKa1BVCzs5GQF3Hxtzk9tNIJAh0f/FMTyax6nLHY0cNJdu9ky75BS4X1BYIYRisSxcHKRLGaYBY6JGzWtba3p1o4hmKw6PKtd8f/aOeOLyZTOePGUVrBIn9WXG/R3UvvZgtkcv/0tq7sMjKRF5sDHetlgXTsPmXvM4RzxJYUx7JQKVdAmFKyRiUFtDFjUQKwbF2gdGSQQd9daZLm4X7KGb8tjiTCB9xSQg7wwbCUJrfGZbicA0sZ8y9Lu+fEbrmzkWqSpy+/I2P2gurKMLdM2y9FwWhcV4mN4u/U9r9B/jJHedm7pVoZBxVs32C6uhkEGeCBxy01Kr9h2EVyT/oZvzo0we2Le9pnQvJ/sNUnujbrxRHC/hWF1sZ2aBeitDLp+b7SK+IqiyX9yt1w5Y/1aduKOyttiRUNgpl1Ytg+cp0z1oz9uSe7JrGL1HSdb0zQg0Fw0ZgGcg+rwe8DyWFJYCjlAbD0=
