@@ -745,7 +745,7 @@ public class WorkflowExecutor {
                             null,
                             workflowId,
                             null,
-                            null
+                            workflow.getTaskToDomain()
                     );
 
                     workflow.getOutput().put("conductor.failure_workflow", failureWFId);
