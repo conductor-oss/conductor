@@ -17,12 +17,14 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import com.google.protobuf.Any;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.junit.Test;
@@ -90,5 +92,54 @@ public class TaskTest {
         task.setCallbackAfterSeconds(10);
         queueWaitTime = task.getQueueWaitTime();
         assertTrue(queueWaitTime > 0);
+    }
+
+    @Test
+    public void testDeepCopyTask() {
+        final Task task = new Task();
+        // In order to avoid forgetting putting inside the copy method the newly added fields check the number of declared fields.
+        final int expectedTaskFieldsNumber = 39;
+        final int declaredFieldsNumber = task.getClass().getDeclaredFields().length;
+
+        assertEquals(expectedTaskFieldsNumber, declaredFieldsNumber);
+
+        task.setCallbackAfterSeconds(111L);
+        task.setCallbackFromWorker(false);
+        task.setCorrelationId("correlation_id");
+        task.setInputData(new HashMap<>());
+        task.setOutputData(new HashMap<>());
+        task.setReferenceTaskName("ref_task_name");
+        task.setStartDelayInSeconds(1);
+        task.setTaskDefName("task_def_name");
+        task.setTaskType("dummy_task_type");
+        task.setWorkflowInstanceId("workflowInstanceId");
+        task.setWorkflowType("workflowType");
+        task.setResponseTimeoutSeconds(11L);
+        task.setStatus(Status.COMPLETED);
+        task.setRetryCount(0);
+        task.setPollCount(0);
+        task.setTaskId("taskId");
+        task.setWorkflowTask(new WorkflowTask());
+        task.setDomain("domain");
+        task.setInputMessage(Any.getDefaultInstance());
+        task.setOutputMessage(Any.getDefaultInstance());
+        task.setRateLimitPerFrequency(11);
+        task.setRateLimitFrequencyInSeconds(11);
+        task.setExternalInputPayloadStoragePath("externalInputPayloadStoragePath");
+        task.setExternalOutputPayloadStoragePath("externalOutputPayloadStoragePath");
+        task.setWorkflowPriority(0);
+        task.setIteration(1);
+        task.setExecutionNameSpace("name_space");
+        task.setIsolationGroupId("groupId");
+        task.setStartTime(12L);
+        task.setEndTime(20L);
+        task.setScheduledTime(7L);
+        task.setRetried(false);
+        task.setReasonForIncompletion("");
+        task.setWorkerId("");
+
+        final Task copy = task.deepCopy();
+        assertEquals(task, copy);
+
     }
 }

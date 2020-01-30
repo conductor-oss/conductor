@@ -15,18 +15,19 @@
  */
 package com.netflix.conductor.common.metadata.tasks;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+
+import org.apache.commons.lang3.StringUtils;
+
 import com.github.vmg.protogen.annotations.ProtoEnum;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.google.protobuf.Any;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-import org.apache.commons.lang3.StringUtils;
 
 @ProtoMessage
 public class Task {
@@ -765,6 +766,29 @@ public class Task {
 
         return copy;
     }
+
+  /**
+   * @return a deep copy of the task instance
+   * To be used inside copy Workflow method to provide
+   * a valid deep copied object.
+   * Note: This does not copy the following fields:
+   * <ul>
+   * <li>retried</li>
+   * <li>seq</li>
+   * <li>updateTime</li>
+   * <li>retriedTaskId</li>
+   * </ul>
+   */
+  public Task deepCopy() {
+    Task deepCopy = copy();
+    deepCopy.setStartTime(startTime);
+    deepCopy.setScheduledTime(scheduledTime);
+    deepCopy.setEndTime(endTime);
+    deepCopy.setWorkerId(workerId);
+    deepCopy.setReasonForIncompletion(reasonForIncompletion);
+
+    return deepCopy;
+  }
 
 
     @Override
