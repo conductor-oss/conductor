@@ -473,13 +473,13 @@ public class WorkflowExecutor {
 
         WorkflowDef workflowDef;
         if (useLatestDefinitions) {
-            workflowDef = metadataDAO.getLatest(workflow.getWorkflowName())
+            workflowDef = metadataDAO.getLatestWorkflowDef(workflow.getWorkflowName())
                     .orElseThrow(() -> new ApplicationException(NOT_FOUND, String.format("Unable to find latest definition for %s", workflowId)));
             workflow.setVersion(workflowDef.getVersion()); // setting this here to ensure backward compatibility and consistency for workflows without the embedded workflow definition
             workflow.setWorkflowDefinition(workflowDef);
         } else {
             workflowDef = Optional.ofNullable(workflow.getWorkflowDefinition())
-                    .orElseGet(() -> metadataDAO.get(workflow.getWorkflowName(), workflow.getWorkflowVersion())
+                    .orElseGet(() -> metadataDAO.getWorkflowDef(workflow.getWorkflowName(), workflow.getWorkflowVersion())
                             .orElseThrow(() -> new ApplicationException(NOT_FOUND, String.format("Unable to find definition for %s", workflowId)))
                     );
         }
@@ -638,7 +638,7 @@ public class WorkflowExecutor {
         if (workflow.getParentWorkflowId() != null) {
             Workflow parent = executionDAOFacade.getWorkflowById(workflow.getParentWorkflowId(), false);
             WorkflowDef parentDef = Optional.ofNullable(parent.getWorkflowDefinition())
-                    .orElseGet(() -> metadataDAO.get(parent.getWorkflowName(), parent.getWorkflowVersion())
+                    .orElseGet(() -> metadataDAO.getWorkflowDef(parent.getWorkflowName(), parent.getWorkflowVersion())
                             .orElseThrow(() -> new ApplicationException(NOT_FOUND, String.format("Unable to find parent workflow definition for %s", wf.getWorkflowId())))
                     );
             LOGGER.debug("Completed sub-workflow {}, deciding parent workflow {}", workflow.getWorkflowId(), workflow.getParentWorkflowId());
@@ -734,7 +734,7 @@ public class WorkflowExecutor {
                 input.put("failureStatus", workflow.getStatus().toString());
 
                 try {
-                    WorkflowDef latestFailureWorkflow = metadataDAO.getLatest(failureWorkflow)
+                    WorkflowDef latestFailureWorkflow = metadataDAO.getLatestWorkflowDef(failureWorkflow)
                             .orElseThrow(() ->
                                     new RuntimeException("Failure Workflow Definition not found for: " + failureWorkflow)
                             );

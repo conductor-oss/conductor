@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -11,28 +11,6 @@
  * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.orchestration;
-
-import com.amazonaws.util.IOUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.common.metadata.events.EventExecution;
-import com.netflix.conductor.common.run.SearchResult;
-import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
-import com.netflix.conductor.common.utils.JsonMapperProvider;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.TestConfiguration;
-import com.netflix.conductor.core.execution.TestDeciderService;
-import com.netflix.conductor.dao.ExecutionDAO;
-import com.netflix.conductor.dao.IndexDAO;
-import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.dao.RateLimitingDao;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -48,6 +26,28 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.amazonaws.util.IOUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.common.metadata.events.EventExecution;
+import com.netflix.conductor.common.run.SearchResult;
+import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
+import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.TestConfiguration;
+import com.netflix.conductor.core.execution.TestDeciderService;
+import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.dao.IndexDAO;
+import com.netflix.conductor.dao.PollDataDAO;
+import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.dao.RateLimitingDAO;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import org.junit.Before;
+import org.junit.Test;
+
 public class ExecutionDAOFacadeTest {
 
     private ExecutionDAO executionDAO;
@@ -55,17 +55,20 @@ public class ExecutionDAOFacadeTest {
     private IndexDAO indexDAO;
     private ObjectMapper objectMapper;
     private ExecutionDAOFacade executionDAOFacade;
-    private RateLimitingDao rateLimitingDao;
+    private RateLimitingDAO rateLimitingDao;
+    private PollDataDAO pollDataDAO;
 
     @Before
     public void setUp() {
         executionDAO = mock(ExecutionDAO.class);
         queueDAO = mock(QueueDAO.class);
         indexDAO = mock(IndexDAO.class);
-        rateLimitingDao = mock(RateLimitingDao.class);
+        rateLimitingDao = mock(RateLimitingDAO.class);
+        pollDataDAO = mock(PollDataDAO.class);
         objectMapper = new JsonMapperProvider().get();
         Configuration configuration = new TestConfiguration();
-        executionDAOFacade = new ExecutionDAOFacade(executionDAO, queueDAO, indexDAO, rateLimitingDao, objectMapper, configuration);
+        executionDAOFacade = new ExecutionDAOFacade(executionDAO, queueDAO, indexDAO, rateLimitingDao, pollDataDAO,
+            objectMapper, configuration);
     }
 
     @Test

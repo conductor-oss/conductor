@@ -22,6 +22,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.metrics.Monitors;
 import java.sql.Connection;
@@ -38,7 +39,7 @@ import javax.inject.Singleton;
 import javax.sql.DataSource;
 
 @Singleton
-public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
+public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO, EventHandlerDAO {
     public static final String PROP_TASKDEF_CACHE_REFRESH = "conductor.taskdef.cache.refresh.time.seconds";
     public static final int DEFAULT_TASKDEF_CACHE_REFRESH_SECONDS = 60;
     private final ConcurrentHashMap<String, TaskDef> taskDefCache = new ConcurrentHashMap<>();
@@ -53,13 +54,13 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     }
 
     @Override
-    public String createTaskDef(TaskDef taskDef) {
+    public void createTaskDef(TaskDef taskDef) {
         validate(taskDef);
         if (null == taskDef.getCreateTime() || taskDef.getCreateTime() < 1) {
             taskDef.setCreateTime(System.currentTimeMillis());
         }
 
-        return insertOrUpdateTaskDef(taskDef);
+        insertOrUpdateTaskDef(taskDef);
     }
 
     @Override
@@ -102,7 +103,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     }
 
     @Override
-    public void create(WorkflowDef def) {
+    public void createWorkflowDef(WorkflowDef def) {
         validate(def);
         if (null == def.getCreateTime() || def.getCreateTime() == 0) {
             def.setCreateTime(System.currentTimeMillis());
@@ -119,7 +120,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     }
 
     @Override
-    public void update(WorkflowDef def) {
+    public void updateWorkflowDef(WorkflowDef def) {
         validate(def);
         def.setUpdateTime(System.currentTimeMillis());
         withTransaction(tx -> insertOrUpdateWorkflowDef(tx, def));
@@ -127,7 +128,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
 
 
     @Override
-    public Optional<WorkflowDef> getLatest(String name) {
+    public Optional<WorkflowDef> getLatestWorkflowDef(String name) {
         final String GET_LATEST_WORKFLOW_DEF_QUERY = "SELECT json_data FROM meta_workflow_def WHERE NAME = ? AND " +
                 "version = latest_version";
 
@@ -138,7 +139,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     }
 
     @Override
-    public Optional<WorkflowDef> get(String name, int version) {
+    public Optional<WorkflowDef> getWorkflowDef(String name, int version) {
         final String GET_WORKFLOW_DEF_QUERY = "SELECT json_data FROM meta_workflow_def WHERE NAME = ? AND version = ?";
         return Optional.ofNullable(
                 queryWithTransaction(GET_WORKFLOW_DEF_QUERY, q -> q.addParameter(name)
@@ -159,14 +160,13 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
         });
     }
 
-    @Override
     public List<String> findAll() {
         final String FIND_ALL_WORKFLOW_DEF_QUERY = "SELECT DISTINCT name FROM meta_workflow_def";
         return queryWithTransaction(FIND_ALL_WORKFLOW_DEF_QUERY, q -> q.executeAndFetch(String.class));
     }
 
     @Override
-    public List<WorkflowDef> getAll() {
+    public List<WorkflowDef> getAllWorkflowDefs() {
         final String GET_ALL_WORKFLOW_DEF_QUERY = "SELECT json_data FROM meta_workflow_def ORDER BY name, version";
 
         return queryWithTransaction(GET_ALL_WORKFLOW_DEF_QUERY, q -> q.executeAndFetch(WorkflowDef.class));
@@ -179,7 +179,6 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
         return queryWithTransaction(GET_ALL_LATEST_WORKFLOW_DEF_QUERY, q -> q.executeAndFetch(WorkflowDef.class));
     }
 
-    @Override
     public List<WorkflowDef> getAllVersions(String name) {
         final String GET_ALL_VERSIONS_WORKFLOW_DEF_QUERY = "SELECT json_data FROM meta_workflow_def WHERE name = ? " +
                 "ORDER BY version";
@@ -235,7 +234,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     }
 
     @Override
-    public void removeEventHandlerStatus(String name) {
+    public void removeEventHandler(String name) {
         final String DELETE_EVENT_HANDLER_QUERY = "DELETE FROM meta_event_handler WHERE name = ?";
 
         withTransaction(tx -> {
@@ -250,7 +249,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO {
     }
 
     @Override
-    public List<EventHandler> getEventHandlers() {
+    public List<EventHandler> getAllEventHandlers() {
         final String READ_ALL_EVENT_HANDLER_QUERY = "SELECT json_data FROM meta_event_handler";
         return queryWithTransaction(READ_ALL_EVENT_HANDLER_QUERY, q -> q.executeAndFetch(EventHandler.class));
     }

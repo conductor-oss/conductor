@@ -49,7 +49,7 @@ public class EventServiceImpl extends EventServiceGrpc.EventServiceImplBase {
 
     @Override
     public void getEventHandlers(EventServicePb.GetEventHandlersRequest req, StreamObserver<EventHandlerPb.EventHandler> response) {
-        metadataService.getEventHandlers().stream().map(PROTO_MAPPER::toProto).forEach(response::onNext);
+        metadataService.getAllEventHandlers().stream().map(PROTO_MAPPER::toProto).forEach(response::onNext);
         response.onCompleted();
     }
 

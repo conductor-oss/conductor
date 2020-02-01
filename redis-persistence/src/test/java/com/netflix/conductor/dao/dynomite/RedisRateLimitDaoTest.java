@@ -22,7 +22,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(MockitoJUnitRunner.class)
 public class RedisRateLimitDaoTest {
 
-    private RedisRateLimitingDao rateLimitingDao;
+    private RedisRateLimitingDAO rateLimitingDao;
     private static ObjectMapper objectMapper = new JsonMapperProvider().get();
 
     @Before
@@ -31,7 +31,7 @@ public class RedisRateLimitDaoTest {
         JedisCommands jedisMock = new JedisMock();
         DynoProxy dynoClient = new DynoProxy(jedisMock);
 
-        rateLimitingDao = new RedisRateLimitingDao(dynoClient, objectMapper, config);
+        rateLimitingDao = new RedisRateLimitingDAO(dynoClient, objectMapper, config);
     }
 
 

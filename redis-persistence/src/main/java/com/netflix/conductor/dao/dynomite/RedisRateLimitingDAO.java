@@ -1,3 +1,18 @@
+/*
+ * Copyright 2019 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.conductor.dao.dynomite;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -5,27 +20,26 @@ import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.dao.RateLimitingDao;
+import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.dyno.DynoProxy;
 import com.netflix.conductor.metrics.Monitors;
+import java.util.Optional;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import java.util.Optional;
-
 @Singleton
 @Trace
-public class RedisRateLimitingDao extends BaseDynoDAO implements RateLimitingDao {
+public class RedisRateLimitingDAO extends BaseDynoDAO implements RateLimitingDAO {
 
-    private static final Logger logger = LoggerFactory.getLogger(RedisRateLimitingDao.class);
+    private static final Logger logger = LoggerFactory.getLogger(RedisRateLimitingDAO.class);
 
     private static final String TASK_RATE_LIMIT_BUCKET = "TASK_RATE_LIMIT_BUCKET";
 
     @Inject
-    protected RedisRateLimitingDao(DynoProxy dynoClient, ObjectMapper objectMapper, Configuration config) {
+    protected RedisRateLimitingDAO(DynoProxy dynoClient, ObjectMapper objectMapper, Configuration config) {
         super(dynoClient, objectMapper, config);
     }
 
