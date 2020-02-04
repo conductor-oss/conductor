@@ -60,7 +60,8 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
     private final Configuration configuration;
 
     enum ExternalPayloadStorageType {
-        S3
+        S3,
+        DUMMY
     }
 
     @Inject
@@ -163,7 +164,7 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
         }
 
         ExternalPayloadStorageType externalPayloadStorageType = null;
-        String externalPayloadStorageString = configuration.getProperty("workflow.external.payload.storage", "");
+        String externalPayloadStorageString = configuration.getProperty("workflow.external.payload.storage", "DUMMY");
         try {
             externalPayloadStorageType = ExternalPayloadStorageType.valueOf(externalPayloadStorageString);
         } catch (IllegalArgumentException e) {
