@@ -119,6 +119,7 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
             case CASSANDRA:
                 modules.add(new CassandraModule());
                 logger.info("Starting conductor server using cassandra.");
+                break;
             case REDIS_SENTINEL:
                 modules.add(new RedisSentinelModule());
                 modules.add(new RedisWorkflowModule());

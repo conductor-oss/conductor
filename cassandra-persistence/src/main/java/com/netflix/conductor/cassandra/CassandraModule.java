@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -15,8 +15,12 @@ package com.netflix.conductor.cassandra;
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.Session;
 import com.google.inject.AbstractModule;
-import com.netflix.conductor.dao.cassandra.CassandraExecutionDAO;
+import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
+import com.netflix.conductor.dao.MetadataDAO;
+import com.netflix.conductor.dao.cassandra.CassandraEventHandlerDAO;
+import com.netflix.conductor.dao.cassandra.CassandraExecutionDAO;
+import com.netflix.conductor.dao.cassandra.CassandraMetadataDAO;
 
 public class CassandraModule extends AbstractModule {
 
@@ -26,6 +30,8 @@ public class CassandraModule extends AbstractModule {
         bind(Cluster.class).toProvider(CassandraClusterProvider.class).asEagerSingleton();
         bind(Session.class).toProvider(CassandraSessionProvider.class);
 
+        bind(MetadataDAO.class).to(CassandraMetadataDAO.class);
         bind(ExecutionDAO.class).to(CassandraExecutionDAO.class);
+        bind(EventHandlerDAO.class).to(CassandraEventHandlerDAO.class);
     }
 }
