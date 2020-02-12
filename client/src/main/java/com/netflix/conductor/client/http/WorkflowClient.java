@@ -274,7 +274,7 @@ public class WorkflowClient extends ClientBase {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
         Preconditions.checkArgument(StringUtils.isNotBlank(taskReferenceName), "Task reference name cannot be blank");
 
-        put("workflow/{workflowId}/skiptask/{taskReferenceName}", null, workflowId, taskReferenceName);
+        put("workflow/{workflowId}/skiptask/{taskReferenceName}", null, null, workflowId, taskReferenceName);
     }
 
     /**
