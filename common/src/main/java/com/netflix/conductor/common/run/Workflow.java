@@ -485,7 +485,7 @@ public class Workflow extends Auditable{
 		copy.setWorkflowDefinition(workflowDefinition);
 		copy.setPriority(priority);
 		copy.setTasks(tasks.stream()
-				.map(Task::copy)
+				.map(Task::deepCopy)
 				.collect(Collectors.toList()));
 		return copy;
 	}
@@ -549,4 +549,5 @@ public class Workflow extends Auditable{
 				getPriority()
         );
     }
+
 }
