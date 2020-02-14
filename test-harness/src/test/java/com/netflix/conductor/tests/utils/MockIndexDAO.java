@@ -112,6 +112,11 @@ public class MockIndexDAO implements IndexDAO {
 	public void addMessage(String queue, Message msg) {
 		
 	}
+
+	@Override
+	public CompletableFuture<Void> asyncAddMessage(String queue, Message message) {
+		return null;
+	}
   
 	@Override
 	public String get(String workflowInstanceId, String key) {

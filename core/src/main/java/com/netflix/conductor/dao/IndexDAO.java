@@ -170,6 +170,15 @@ public interface IndexDAO {
 	void addMessage(String queue, Message msg);
 
 	/**
+	 * Adds an incoming external message into the index
+	 *
+	 * @param queue Name of the registered queue
+	 * @param message {@link Message}
+	 * @return CompletableFuture of type Void
+	 */
+	CompletableFuture<Void> asyncAddMessage(String queue, Message message);
+
+	/**
 	 * Search for Workflows completed or failed beyond archiveTtlDays
 	 * @param indexName Name of the index to search
 	 * @param archiveTtlDays Archival Time to Live
