@@ -360,6 +360,11 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 	}
 
 	@Override
+	public CompletableFuture<Void> asyncAddMessage(String queue, Message message) {
+		return CompletableFuture.runAsync(() -> addMessage(queue, message), executorService);
+	}
+
+	@Override
 	public void addEventExecution(EventExecution eventExecution) {
 		try {
 			byte[] doc = objectMapper.writeValueAsBytes(eventExecution);

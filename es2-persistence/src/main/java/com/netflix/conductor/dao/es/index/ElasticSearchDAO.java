@@ -440,6 +440,11 @@ public class ElasticSearchDAO implements IndexDAO {
 	}
 
 	@Override
+	public CompletableFuture<Void> asyncAddMessage(String queue, Message message) {
+		return CompletableFuture.runAsync(() -> addMessage(queue, message), executorService);
+	}
+
+	@Override
 	public void addEventExecution(EventExecution eventExecution) {
 		try {
 			long startTime = Instant.now().toEpochMilli();
