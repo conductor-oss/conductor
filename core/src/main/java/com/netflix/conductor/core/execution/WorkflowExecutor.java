@@ -436,7 +436,7 @@ public class WorkflowExecutor {
         // Get tasks that have callbackAfterSeconds > 0 and set the callbackAfterSeconds to 0
         for (Task task : workflow.getTasks()) {
             if (task.getCallbackAfterSeconds() > 0) {
-                if (queueDAO.setOffsetTime(QueueUtils.getQueueName(task), task.getTaskId(), 0)) {
+                if (queueDAO.resetOffsetTime(QueueUtils.getQueueName(task), task.getTaskId())) {
                     task.setCallbackAfterSeconds(0);
                     executionDAOFacade.updateTask(task);
                 }
@@ -859,12 +859,10 @@ public class WorkflowExecutor {
                         break;
                     case IN_PROGRESS:
                     case SCHEDULED:
-                        // put it back in queue based on callbackAfterSeconds
+                        // postpone based on callbackAfterSeconds
                         long callBack = taskResult.getCallbackAfterSeconds();
-                        queueDAO.remove(taskQueueName, task.getTaskId());
-                        LOGGER.debug("Task: {} removed from taskQueue: {} since the task status is {}", task, taskQueueName, task.getStatus().name());
-                        queueDAO.push(taskQueueName, task.getTaskId(), task.getWorkflowPriority(), callBack); // Milliseconds
-                        LOGGER.debug("Task: {} pushed back to taskQueue: {} since the task status is {} with callbackAfterSeconds: {}", task, taskQueueName, task.getStatus().name(), callBack);
+                        queueDAO.postpone(taskQueueName, task.getTaskId(), task.getWorkflowPriority(), callBack);
+                        LOGGER.debug("Task: {} postponed in taskQueue: {} since the task status is {} with callbackAfterSeconds: {}", task, taskQueueName, task.getStatus().name(), callBack);
                         break;
                     default:
                         break;

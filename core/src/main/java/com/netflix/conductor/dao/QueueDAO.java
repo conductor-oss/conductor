@@ -167,11 +167,25 @@ public interface QueueDAO {
 	}
 
 	/**
-	 * Sets the offset time without pulling out the message from the queue
+	 * Resets the offsetTime on a message to 0, without pulling out the message from the queue
 	 * @param queueName name of the queue
 	 * @param id message id
-	 * @param offsetTimeInSecond time in seconds, after which the message should be marked visible.  (for timed queues)
 	 * @return true if the message is in queue and the change was successful else returns false
 	 */
-	boolean setOffsetTime(String queueName, String id, long offsetTimeInSecond);
+	boolean resetOffsetTime(String queueName, String id);
+
+	/**
+	 * Postpone a given message with postponeDurationInSeconds, so that the message won't be available for further polls
+	 * until expiry.
+	 * By default, the message is removed and pushed backed with postponeDurationInSeconds to be backwards compatible.
+	 * @param queueName
+	 * @param messageId
+	 * @param priority
+	 * @param postponeDurationInSeconds
+	 */
+	default boolean postpone(String queueName, String messageId, int priority, long postponeDurationInSeconds) {
+		remove(queueName, messageId);
+		push(queueName, messageId, priority, postponeDurationInSeconds);
+		return true;
+	}
 }

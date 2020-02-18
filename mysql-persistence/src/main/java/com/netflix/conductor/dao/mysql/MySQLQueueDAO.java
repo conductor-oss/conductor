@@ -171,7 +171,8 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
     }
 
     @Override
-    public boolean setOffsetTime(String queueName, String messageId, long offsetTimeInSecond) {
+    public boolean resetOffsetTime(String queueName, String messageId) {
+        long offsetTimeInSecond = 0;    // Reset to 0
         final String SET_OFFSET_TIME = "UPDATE queue_message SET offset_time_seconds = ?, deliver_on = TIMESTAMPADD(SECOND,?,CURRENT_TIMESTAMP) \n"
                 + "WHERE queue_name = ? AND message_id = ?";
 

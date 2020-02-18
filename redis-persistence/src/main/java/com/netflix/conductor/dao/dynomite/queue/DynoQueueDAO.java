@@ -249,9 +249,9 @@ public class DynoQueueDAO implements QueueDAO {
     }
 
     @Override
-    public boolean setOffsetTime(String queueName, String id, long offsetTimeInSecond) {
+    public boolean resetOffsetTime(String queueName, String id) {
         DynoQueue queue = queues.get(queueName);
-        return queue.setTimeout(id, offsetTimeInSecond);
+        return queue.setTimeout(id, 0);
 
     }
 }
