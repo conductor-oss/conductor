@@ -136,6 +136,8 @@ public class ExecutionService {
 				}
 
 				if (executionDAOFacade.exceedsInProgressLimit(task)) {
+				    // Postpone a message with duration of 60 seconds, so that it would be available for poll again.
+					queueDAO.postpone(queueName, taskId, 0, 60);
 					continue;
 				}
 
