@@ -1150,10 +1150,11 @@ public class WorkflowExecutor {
                 return;
             }
             LOGGER.debug("Task: {} fetched from execution DAO for taskId: {}", task, taskId);
+            String queueName = QueueUtils.getQueueName(task);
             if (task.getStatus().isTerminal()) {
                 //Tune the SystemTaskWorkerCoordinator's queues - if the queue size is very big this can happen!
                 LOGGER.info("Task {}/{} was already completed.", task.getTaskType(), task.getTaskId());
-                queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId());
+                queueDAO.remove(queueName, task.getTaskId());
                 return;
             }
 
@@ -1171,7 +1172,7 @@ public class WorkflowExecutor {
                     task.setStatus(CANCELED);
                 }
                 executionDAOFacade.updateTask(task);
-                queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId());
+                queueDAO.remove(queueName, task.getTaskId());
                 return;
             }
 
@@ -1179,10 +1180,14 @@ public class WorkflowExecutor {
                 if (executionDAOFacade.exceedsInProgressLimit(task)) {
                     //to do add a metric to record this
                     LOGGER.warn("Concurrent Execution limited for {}:{}", taskId, task.getTaskDefName());
+                    // Postpone a message with duration of 60 seconds, so that it would be available for poll again.
+                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), 60);
                     return;
                 }
                 if (task.getRateLimitPerFrequency() > 0 && executionDAOFacade.exceedsRateLimitPerFrequency(task, metadataDAO.getTaskDef(task.getTaskDefName()))) {
                     LOGGER.warn("RateLimit Execution limited for {}:{}, limit:{}", taskId, task.getTaskDefName(), task.getRateLimitPerFrequency());
+                    // Postpone a message with duration of 60 seconds, so that it would be available for poll again.
+                    queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), 60);
                     return;
                 }
             }
