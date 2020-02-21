@@ -1796,7 +1796,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         TaskDef taskDef = new TaskDef();
         taskDef.setName("loopTask");
-        taskDef.setTimeoutSeconds(20);
+        taskDef.setTimeoutSeconds(200);
         taskDef.setRetryCount(1);
         taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
         taskDef.setRetryDelaySeconds(10);
@@ -1850,13 +1850,14 @@ public abstract class AbstractWorkflowServiceTest {
         workflowDef.getTasks().add(loopTask);
 
         if (iteration ==2) {
-            taskDef.setName("loopTask2");
-            taskDef.setTimeoutSeconds(20);
-            taskDef.setRetryCount(1);
-            taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
-            taskDef.setRetryDelaySeconds(10);
+            TaskDef taskDef2 = new TaskDef();
+            taskDef2.setName("loopTask2");
+            taskDef2.setTimeoutSeconds(200);
+            taskDef2.setRetryCount(3);
+            taskDef2.setTimeoutPolicy(TimeoutPolicy.RETRY);
+            taskDef2.setRetryDelaySeconds(10);
 
-            metadataService.registerTaskDef(Arrays.asList(taskDef));
+            metadataService.registerTaskDef(Arrays.asList(taskDef2));
             WorkflowTask loopTask2 = new WorkflowTask();
             loopTask2.setType(TaskType.DO_WHILE.name());
             loopTask2.setTaskReferenceName("loopTask2");
