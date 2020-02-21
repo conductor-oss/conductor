@@ -1849,7 +1849,7 @@ public abstract class AbstractWorkflowServiceTest {
 
         workflowDef.getTasks().add(loopTask);
 
-        if (iteration ==2) {
+        if (iteration == 2 && isInputParameter == false) {
             TaskDef taskDef2 = new TaskDef();
             taskDef2.setName("loopTask2");
             taskDef2.setTimeoutSeconds(200);
