@@ -79,7 +79,7 @@ public class TestConfiguration implements CassandraConfiguration {
 
     @Override
     public int getIntProperty(String name, int defaultValue) {
-        return 0;
+        return 10;
     }
 
     @Override

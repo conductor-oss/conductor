@@ -79,6 +79,12 @@ public interface Configuration {
     String TASKEXECLOG_INDEXING_ENABLED_PROPERTY_NAME = "workflow.taskExecLog.indexing.enabled";
     boolean TASKEXECLOG_INDEXING_ENABLED_DEFAULT_VALUE = true;
 
+    String TASK_DEF_REFRESH_TIME_SECS_PROPERTY_NAME = "conductor.taskdef.cache.refresh.time.seconds";
+    int TASK_DEF_REFRESH_TIME_SECS_DEFAULT_VALUE = 60;
+
+    String EVENT_HANDLER_REFRESH_TIME_SECS_PROPERTY_NAME = "conductor.eventhandler.cache.refresh.time.seconds";
+    int EVENT_HANDLER_REFRESH_TIME_SECS_DEFAULT_VALUE = 60;
+
     //TODO add constants for input/output external payload related properties.
 
     default DB getDB() {
@@ -191,6 +197,21 @@ public interface Configuration {
 
     default boolean getJerseyEnabled() {
         return getBooleanProperty(JERSEY_ENABLED_PROPERTY_NAME, JERSEY_ENABLED_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return the refresh time for the in-memory task definition cache
+     */
+    default int getTaskDefRefreshTimeSecsDefaultValue() {
+        return getIntProperty(TASK_DEF_REFRESH_TIME_SECS_PROPERTY_NAME, TASK_DEF_REFRESH_TIME_SECS_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return the refresh time for the in-memory event handler cache
+     */
+    default int getEventHandlerRefreshTimeSecsDefaultValue() {
+        return getIntProperty(EVENT_HANDLER_REFRESH_TIME_SECS_PROPERTY_NAME,
+            EVENT_HANDLER_REFRESH_TIME_SECS_DEFAULT_VALUE);
     }
 
     /**

@@ -1,3 +1,15 @@
+/*
+ * Copyright 2020 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.util;
 
 import com.netflix.conductor.config.TestConfiguration;
@@ -14,6 +26,73 @@ public class StatementsTest {
     @Before
     public void setUp() {
         statements = new Statements(testConfiguration);
+    }
+
+    @Test
+    public void testGetInsertWorkflowDefStatement() {
+        String statement = "INSERT INTO junit.workflow_definitions (workflow_def_name,version,workflow_definition) VALUES (?,?,?);";
+        assertEquals(statement, statements.getInsertWorkflowDefStatement());
+    }
+
+    @Test
+    public void testGetInsertWorkflowDefVersionStatement() {
+        String statement = "INSERT INTO junit.workflow_defs_index (workflow_def_version_index,workflow_def_name_version,workflow_def_index_value) VALUES ('workflow_def_version_index',?,?);";
+        assertEquals(statement, statements.getInsertWorkflowDefVersionIndexStatement());
+    }
+
+    @Test
+    public void testGetInsertTaskDefStatement() {
+        String statement = "INSERT INTO junit.task_definitions (task_defs,task_def_name,task_definition) VALUES ('task_defs',?,?);";
+        assertEquals(statement, statements.getInsertTaskDefStatement());
+    }
+
+    @Test
+    public void testGetSelectWorkflowDefStatement() {
+        String statement = "SELECT workflow_definition FROM junit.workflow_definitions WHERE workflow_def_name=? AND "
+            + "version=?;";
+        assertEquals(statement, statements.getSelectWorkflowDefStatement());
+    }
+
+    @Test
+    public void testGetSelectAllWorkflowDefVersionsByNameStatement() {
+        String statement = "SELECT * FROM junit.workflow_definitions WHERE workflow_def_name=?;";
+        assertEquals(statement, statements.getSelectAllWorkflowDefVersionsByNameStatement());
+    }
+
+    @Test
+    public void testGetSelectAllWorkflowDefsStatement() {
+        String statement = "SELECT * FROM junit.workflow_defs_index WHERE workflow_def_version_index=?;";
+        assertEquals(statement, statements.getSelectAllWorkflowDefsStatement());
+    }
+
+    @Test
+    public void testGetSelectTaskDefStatement() {
+        String statement = "SELECT task_definition FROM junit.task_definitions WHERE task_defs='task_defs' AND task_def_name=?;";
+        assertEquals(statement, statements.getSelectTaskDefStatement());
+    }
+
+    @Test
+    public void testGetSelectAllTaskDefsStatement() {
+        String statement = "SELECT * FROM junit.task_definitions WHERE task_defs=?;";
+        assertEquals(statement, statements.getSelectAllTaskDefsStatement());
+    }
+
+    @Test
+    public void testGetDeleteWorkflowDefStatement() {
+        String statement = "DELETE FROM junit.workflow_definitions WHERE workflow_def_name=? AND version=?;";
+        assertEquals(statement, statements.getDeleteWorkflowDefStatement());
+    }
+
+    @Test
+    public void testGetDeleteWorkflowDefIndexStatement() {
+        String statement = "DELETE FROM junit.workflow_defs_index WHERE workflow_def_version_index=? AND workflow_def_name_version=?;";
+        assertEquals(statement, statements.getDeleteWorkflowDefIndexStatement());
+    }
+
+    @Test
+    public void testGetDeleteTaskDefStatement() {
+        String statement = "DELETE FROM junit.task_definitions WHERE task_defs='task_defs' AND task_def_name=?;";
+        assertEquals(statement, statements.getDeleteTaskDefStatement());
     }
 
     @Test
@@ -116,5 +195,23 @@ public class StatementsTest {
     public void testGetDeleteTaskDefLimitStatement() {
         String statement = "DELETE FROM junit.task_def_limit WHERE task_def_name=? AND task_id=?;";
         assertEquals(statement, statements.getDeleteTaskDefLimitStatement());
+    }
+
+    @Test
+    public void testGetInsertEventHandlerStatement() {
+        String statement = "INSERT INTO junit.event_handlers (handlers,event_handler_name,event_handler) VALUES ('handlers',?,?);";
+        assertEquals(statement, statements.getInsertEventHandlerStatement());
+    }
+
+    @Test
+    public void testGetSelectAllEventHandlersStatement() {
+        String statement = "SELECT * FROM junit.event_handlers WHERE handlers=?;";
+        assertEquals(statement, statements.getSelectAllEventHandlersStatement());
+    }
+
+    @Test
+    public void testDeleteEventHandlerStatement() {
+        String statement = "DELETE FROM junit.event_handlers WHERE handlers='handlers' AND event_handler_name=?;";
+        assertEquals(statement, statements.getDeleteEventHandlerStatement());
     }
 }

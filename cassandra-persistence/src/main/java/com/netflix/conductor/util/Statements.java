@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -18,16 +18,31 @@ import static com.datastax.driver.core.querybuilder.QueryBuilder.set;
 import static com.netflix.conductor.util.Constants.ENTITY_KEY;
 import static com.netflix.conductor.util.Constants.ENTITY_TYPE_TASK;
 import static com.netflix.conductor.util.Constants.ENTITY_TYPE_WORKFLOW;
+import static com.netflix.conductor.util.Constants.EVENT_HANDLER_KEY;
+import static com.netflix.conductor.util.Constants.EVENT_HANDLER_NAME_KEY;
+import static com.netflix.conductor.util.Constants.HANDLERS_KEY;
 import static com.netflix.conductor.util.Constants.PAYLOAD_KEY;
 import static com.netflix.conductor.util.Constants.SHARD_ID_KEY;
+import static com.netflix.conductor.util.Constants.TABLE_EVENT_HANDLERS;
+import static com.netflix.conductor.util.Constants.TABLE_TASK_DEFS;
 import static com.netflix.conductor.util.Constants.TABLE_TASK_DEF_LIMIT;
 import static com.netflix.conductor.util.Constants.TABLE_TASK_LOOKUP;
 import static com.netflix.conductor.util.Constants.TABLE_WORKFLOWS;
+import static com.netflix.conductor.util.Constants.TABLE_WORKFLOW_DEFS;
+import static com.netflix.conductor.util.Constants.TABLE_WORKFLOW_DEFS_INDEX;
+import static com.netflix.conductor.util.Constants.TASK_DEFINITION_KEY;
+import static com.netflix.conductor.util.Constants.TASK_DEFS_KEY;
 import static com.netflix.conductor.util.Constants.TASK_DEF_NAME_KEY;
 import static com.netflix.conductor.util.Constants.TASK_ID_KEY;
 import static com.netflix.conductor.util.Constants.TOTAL_PARTITIONS_KEY;
 import static com.netflix.conductor.util.Constants.TOTAL_TASKS_KEY;
+import static com.netflix.conductor.util.Constants.WORKFLOW_DEFINITION_KEY;
+import static com.netflix.conductor.util.Constants.WORKFLOW_DEF_INDEX_KEY;
+import static com.netflix.conductor.util.Constants.WORKFLOW_DEF_INDEX_VALUE;
+import static com.netflix.conductor.util.Constants.WORKFLOW_DEF_NAME_KEY;
+import static com.netflix.conductor.util.Constants.WORKFLOW_DEF_NAME_VERSION_KEY;
 import static com.netflix.conductor.util.Constants.WORKFLOW_ID_KEY;
+import static com.netflix.conductor.util.Constants.WORKFLOW_VERSION_KEY;
 
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.netflix.conductor.cassandra.CassandraConfiguration;
@@ -35,29 +50,56 @@ import javax.inject.Inject;
 
 /**
  * DML statements
- * <p>
- * INSERT INTO conductor.workflows (workflow_id,shard_id,task_id,entity,payload,total_tasks,total_partitions) VALUES (?,?,?,'workflow',?,?,?);
- * INSERT INTO conductor.workflows (workflow_id,shard_id,task_id,entity,payload) VALUES (?,?,?,'task',?);
- * <p>
- * SELECT total_tasks,total_partitions FROM conductor.workflows WHERE workflow_id=? AND shard_id=1;
- * SELECT payload FROM conductor.workflows WHERE workflow_id=? AND shard_id=? AND entity='task' AND task_id=?;
- * SELECT payload FROM conductor.workflows WHERE workflow_id=? AND shard_id=1 AND entity='workflow';
- * SELECT * FROM conductor.workflows WHERE workflow_id=? AND shard_id=?;
- * SELECT workflow_id FROM conductor.task_lookup WHERE task_id=?;
- * SELECT * FROM conductor.task_def_limit WHERE task_def_name=?;
- * <p>
- * UPDATE conductor.workflows SET payload=? WHERE workflow_id=? AND shard_id=1 AND entity='workflow' AND task_id='';
- * UPDATE conductor.workflows SET total_tasks=? WHERE workflow_id=? AND shard_id=?;
- * UPDATE conductor.workflows SET total_partitions=?,total_tasks=? WHERE workflow_id=? AND shard_id=1;
- * UPDATE conductor.task_lookup SET workflow_id=? WHERE task_id=?;
- * UPDATE conductor.task_def_limit SET workflow_id=? WHERE task_def_name=? AND task_id=?;
- * <p>
- * DELETE FROM conductor.workflows WHERE workflow_id=? AND shard_id=?;
- * DELETE FROM conductor.workflows WHERE workflow_id=? AND shard_id=? AND entity='task' AND task_id=?;
- * DELETE FROM conductor.task_lookup WHERE task_id=?;
- * DELETE FROM conductor.task_def_limit WHERE task_def_name=? AND task_id=?;
+ *
+ * <em>MetadataDAO</em>
+ * <ul>
+ * <li>INSERT INTO conductor.workflow_definitions (workflow_def_name,version,workflow_definition) VALUES (?,?,?); </li>
+ * <li>INSERT INTO conductor.workflow_defs_index (workflow_def_version_index,workflow_def_name_version, workflow_def_index_value) VALUES ('workflow_def_version_index',?,?); </li>
+ * <li>INSERT INTO conductor.task_definitions (task_defs,task_def_name,task_definition) VALUES ('task_defs',?,?); </li>
+ *
+ * <li>SELECT workflow_definition FROM conductor.workflow_definitions WHERE workflow_def_name=? AND version=?; </li>
+ * <li>SELECT * FROM conductor.workflow_definitions WHERE workflow_def_name=?; </li>
+ * <li>SELECT * FROM conductor.workflow_defs_index WHERE workflow_def_version_index=?; </li>
+ * <li>SELECT task_definition FROM conductor.task_definitions WHERE task_defs='task_defs' AND task_def_name=?; </li>
+ * <li>SELECT * FROM conductor.task_definitions WHERE task_defs=?; </li>
+ *
+ * <li>DELETE FROM conductor.workflow_definitions WHERE workflow_def_name=? AND version=?; </li>
+ * <li>DELETE FROM conductor.workflow_defs_index WHERE workflow_def_version_index=? AND workflow_def_name_version=?; </li>
+ * <li>DELETE FROM conductor.task_definitions WHERE task_defs='task_defs' AND task_def_name=?; </li>
+ * </ul>
+ *
+ * <em>ExecutionDAO</em>
+ * <ul>
+ * <li> INSERT INTO conductor.workflows (workflow_id,shard_id,task_id,entity,payload,total_tasks,total_partitions) VALUES (?,?,?,'workflow',?,?,?); </li>
+ * <li> INSERT INTO conductor.workflows (workflow_id,shard_id,task_id,entity,payload) VALUES (?,?,?,'task',?); </li>
+ *
+ * <li> SELECT total_tasks,total_partitions FROM conductor.workflows WHERE workflow_id=? AND shard_id=1; </li>
+ * <li> SELECT payload FROM conductor.workflows WHERE workflow_id=? AND shard_id=? AND entity='task' AND task_id=?; </li>
+ * <li> SELECT payload FROM conductor.workflows WHERE workflow_id=? AND shard_id=1 AND entity='workflow'; </li>
+ * <li> SELECT * FROM conductor.workflows WHERE workflow_id=? AND shard_id=?; </li>
+ * <li> SELECT workflow_id FROM conductor.task_lookup WHERE task_id=?; </li>
+ * <li> SELECT * FROM conductor.task_def_limit WHERE task_def_name=?; </li>
+ *
+ * <li> UPDATE conductor.workflows SET payload=? WHERE workflow_id=? AND shard_id=1 AND entity='workflow' AND task_id=''; </li>
+ * <li> UPDATE conductor.workflows SET total_tasks=? WHERE workflow_id=? AND shard_id=?; </li>
+ * <li> UPDATE conductor.workflows SET * total_partitions=?,total_tasks=? WHERE workflow_id=? AND shard_id=1; </li>
+ * <li> UPDATE conductor.task_lookup SET workflow_id=? WHERE task_id=?; UPDATE conductor.task_def_limit SET workflow_id=? WHERE task_def_name=? AND task_id=?; </li>
+ *
+ * <li> DELETE FROM conductor.workflows WHERE workflow_id=? AND shard_id=?; </li>
+ * <li> DELETE FROM conductor.workflows WHERE workflow_id=? AND shard_id=? AND entity='task' AND task_id=?; </li>
+ * <li> DELETE FROM conductor.task_lookup WHERE task_id=?; </li>
+ * <li> DELETE FROM conductor.task_def_limit WHERE task_def_name=? AND task_id=?; </li>
+ * </ul>
+ *
+ * <em>EventHandlerDAO</em>
+ * <ul>
+ * <li>INSERT INTO conductor.event_handlers (handlers,event_handler_name,event_handler) VALUES ('handlers',?,?); </li>
+ * <li>SELECT * FROM conductor.event_handlers WHERE handlers=?; </li>
+ * <li>DELETE FROM conductor.event_handlers WHERE handlers='handlers' AND event_handler_name=?; </li>
+ * </ul>
  */
 public class Statements {
+
     private final String keyspace;
 
     @Inject
@@ -65,6 +107,138 @@ public class Statements {
         this.keyspace = config.getCassandraKeyspace();
     }
 
+    // MetadataDAO
+    // Insert Statements
+
+    /**
+     * @return cql query statement to insert a new workflow definition into the "workflow_definitions" table
+     */
+    public String getInsertWorkflowDefStatement() {
+        return QueryBuilder.insertInto(keyspace, TABLE_WORKFLOW_DEFS)
+            .value(WORKFLOW_DEF_NAME_KEY, bindMarker())
+            .value(WORKFLOW_VERSION_KEY, bindMarker())
+            .value(WORKFLOW_DEFINITION_KEY, bindMarker())
+            .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to insert a workflow def name version index into the "workflow_defs_index" table
+     */
+    public String getInsertWorkflowDefVersionIndexStatement() {
+        return QueryBuilder.insertInto(keyspace, TABLE_WORKFLOW_DEFS_INDEX)
+            .value(WORKFLOW_DEF_INDEX_KEY, WORKFLOW_DEF_INDEX_KEY)
+            .value(WORKFLOW_DEF_NAME_VERSION_KEY, bindMarker())
+            .value(WORKFLOW_DEF_INDEX_VALUE, bindMarker())
+            .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to insert a new task definition into the "task_definitions" table
+     */
+    public String getInsertTaskDefStatement() {
+        return QueryBuilder.insertInto(keyspace, TABLE_TASK_DEFS)
+            .value(TASK_DEFS_KEY, TASK_DEFS_KEY)
+            .value(TASK_DEF_NAME_KEY, bindMarker())
+            .value(TASK_DEFINITION_KEY, bindMarker())
+            .getQueryString();
+    }
+
+    // Select Statements
+
+    /**
+     * @return cql query statement to fetch a workflow definition by name and version from the "workflow_definitions"
+     * table
+     */
+    public String getSelectWorkflowDefStatement() {
+        return QueryBuilder.select(WORKFLOW_DEFINITION_KEY)
+            .from(keyspace, TABLE_WORKFLOW_DEFS)
+            .where(eq(WORKFLOW_DEF_NAME_KEY, bindMarker()))
+            .and(eq(WORKFLOW_VERSION_KEY, bindMarker()))
+            .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to retrieve all versions of a workflow definition by name from the
+     * "workflow_definitions" table
+     */
+    public String getSelectAllWorkflowDefVersionsByNameStatement() {
+        return QueryBuilder.select()
+            .all()
+            .from(keyspace, TABLE_WORKFLOW_DEFS)
+            .where(eq(WORKFLOW_DEF_NAME_KEY, bindMarker()))
+            .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to fetch all workflow def names and version from the "workflow_defs_index" table
+     */
+    public String getSelectAllWorkflowDefsStatement() {
+        return QueryBuilder.select()
+            .all()
+            .from(keyspace, TABLE_WORKFLOW_DEFS_INDEX)
+            .where(eq(WORKFLOW_DEF_INDEX_KEY, bindMarker()))
+            .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to fetch a task definition by name from the "task_definitions" table
+     */
+    public String getSelectTaskDefStatement() {
+        return QueryBuilder.select(TASK_DEFINITION_KEY)
+            .from(keyspace, TABLE_TASK_DEFS)
+            .where(eq(TASK_DEFS_KEY, TASK_DEFS_KEY))
+            .and(eq(TASK_DEF_NAME_KEY, bindMarker()))
+            .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to retrieve all task definitions from the "task_definitions" table
+     */
+    public String getSelectAllTaskDefsStatement() {
+        return QueryBuilder.select()
+            .all()
+            .from(keyspace, TABLE_TASK_DEFS)
+            .where(eq(TASK_DEFS_KEY, bindMarker()))
+            .getQueryString();
+    }
+
+    // Delete Statements
+
+    /**
+     * @return cql query statement to delete a workflow definition by name and version from the "workflow_definitions"
+     * table
+     */
+    public String getDeleteWorkflowDefStatement() {
+        return QueryBuilder.delete()
+            .from(keyspace, TABLE_WORKFLOW_DEFS)
+            .where(eq(WORKFLOW_DEF_NAME_KEY, bindMarker()))
+            .and(eq(WORKFLOW_VERSION_KEY, bindMarker()))
+            .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to delete a workflow def name/version from the "workflow_defs_index" table
+     */
+    public String getDeleteWorkflowDefIndexStatement() {
+        return QueryBuilder.delete()
+            .from(keyspace, TABLE_WORKFLOW_DEFS_INDEX)
+            .where(eq(WORKFLOW_DEF_INDEX_KEY, bindMarker()))
+            .and(eq(WORKFLOW_DEF_NAME_VERSION_KEY, bindMarker()))
+            .getQueryString();
+    }
+
+    /**
+     * @return cql query statement to delete a task definition by name from the "task_definitions" table
+     */
+    public String getDeleteTaskDefStatement() {
+        return QueryBuilder.delete()
+            .from(keyspace, TABLE_TASK_DEFS)
+            .where(eq(TASK_DEFS_KEY, TASK_DEFS_KEY))
+            .and(eq(TASK_DEF_NAME_KEY, bindMarker()))
+            .getQueryString();
+    }
+
+    // ExecutionDAO
     // Insert Statements
 
     /**
@@ -72,14 +246,14 @@ public class Statements {
      */
     public String getInsertWorkflowStatement() {
         return QueryBuilder.insertInto(keyspace, TABLE_WORKFLOWS)
-                .value(WORKFLOW_ID_KEY, bindMarker())
-                .value(SHARD_ID_KEY, bindMarker())
-                .value(TASK_ID_KEY, bindMarker())
-                .value(ENTITY_KEY, ENTITY_TYPE_WORKFLOW)
-                .value(PAYLOAD_KEY, bindMarker())
-                .value(TOTAL_TASKS_KEY, bindMarker())
-                .value(TOTAL_PARTITIONS_KEY, bindMarker())
-                .getQueryString();
+            .value(WORKFLOW_ID_KEY, bindMarker())
+            .value(SHARD_ID_KEY, bindMarker())
+            .value(TASK_ID_KEY, bindMarker())
+            .value(ENTITY_KEY, ENTITY_TYPE_WORKFLOW)
+            .value(PAYLOAD_KEY, bindMarker())
+            .value(TOTAL_TASKS_KEY, bindMarker())
+            .value(TOTAL_PARTITIONS_KEY, bindMarker())
+            .getQueryString();
     }
 
     /**
@@ -87,25 +261,26 @@ public class Statements {
      */
     public String getInsertTaskStatement() {
         return QueryBuilder.insertInto(keyspace, TABLE_WORKFLOWS)
-                .value(WORKFLOW_ID_KEY, bindMarker())
-                .value(SHARD_ID_KEY, bindMarker())
-                .value(TASK_ID_KEY, bindMarker())
-                .value(ENTITY_KEY, ENTITY_TYPE_TASK)
-                .value(PAYLOAD_KEY, bindMarker())
-                .getQueryString();
+            .value(WORKFLOW_ID_KEY, bindMarker())
+            .value(SHARD_ID_KEY, bindMarker())
+            .value(TASK_ID_KEY, bindMarker())
+            .value(ENTITY_KEY, ENTITY_TYPE_TASK)
+            .value(PAYLOAD_KEY, bindMarker())
+            .getQueryString();
     }
 
     // Select Statements
 
     /**
-     * @return cql query statement to retrieve the total_tasks and total_partitions for a workflow from the "workflows" table
+     * @return cql query statement to retrieve the total_tasks and total_partitions for a workflow from the "workflows"
+     * table
      */
     public String getSelectTotalStatement() {
         return QueryBuilder.select(TOTAL_TASKS_KEY, TOTAL_PARTITIONS_KEY)
-                .from(keyspace, TABLE_WORKFLOWS)
-                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
-                .and(eq(SHARD_ID_KEY, 1))
-                .getQueryString();
+            .from(keyspace, TABLE_WORKFLOWS)
+            .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+            .and(eq(SHARD_ID_KEY, 1))
+            .getQueryString();
     }
 
     /**
@@ -113,12 +288,12 @@ public class Statements {
      */
     public String getSelectTaskStatement() {
         return QueryBuilder.select(PAYLOAD_KEY)
-                .from(keyspace, TABLE_WORKFLOWS)
-                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
-                .and(eq(SHARD_ID_KEY, bindMarker()))
-                .and(eq(ENTITY_KEY, ENTITY_TYPE_TASK))
-                .and(eq(TASK_ID_KEY, bindMarker()))
-                .getQueryString();
+            .from(keyspace, TABLE_WORKFLOWS)
+            .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+            .and(eq(SHARD_ID_KEY, bindMarker()))
+            .and(eq(ENTITY_KEY, ENTITY_TYPE_TASK))
+            .and(eq(TASK_ID_KEY, bindMarker()))
+            .getQueryString();
     }
 
     /**
@@ -126,11 +301,11 @@ public class Statements {
      */
     public String getSelectWorkflowStatement() {
         return QueryBuilder.select(PAYLOAD_KEY)
-                .from(keyspace, TABLE_WORKFLOWS)
-                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
-                .and(eq(SHARD_ID_KEY, 1))
-                .and(eq(ENTITY_KEY, ENTITY_TYPE_WORKFLOW))
-                .getQueryString();
+            .from(keyspace, TABLE_WORKFLOWS)
+            .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+            .and(eq(SHARD_ID_KEY, 1))
+            .and(eq(ENTITY_KEY, ENTITY_TYPE_WORKFLOW))
+            .getQueryString();
     }
 
     /**
@@ -138,11 +313,11 @@ public class Statements {
      */
     public String getSelectWorkflowWithTasksStatement() {
         return QueryBuilder.select()
-                .all()
-                .from(keyspace, TABLE_WORKFLOWS)
-                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
-                .and(eq(SHARD_ID_KEY, bindMarker()))
-                .getQueryString();
+            .all()
+            .from(keyspace, TABLE_WORKFLOWS)
+            .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+            .and(eq(SHARD_ID_KEY, bindMarker()))
+            .getQueryString();
     }
 
     /**
@@ -150,14 +325,14 @@ public class Statements {
      */
     public String getSelectTaskFromLookupTableStatement() {
         return QueryBuilder.select(WORKFLOW_ID_KEY)
-                .from(keyspace, TABLE_TASK_LOOKUP)
-                .where(eq(TASK_ID_KEY, bindMarker()))
-                .getQueryString();
+            .from(keyspace, TABLE_TASK_LOOKUP)
+            .where(eq(TASK_ID_KEY, bindMarker()))
+            .getQueryString();
     }
 
     /**
-     * @return cql query statement to retrieve all task ids for a given taskDefName with concurrent execution
-     * limit configured from the "task_def_limit" table
+     * @return cql query statement to retrieve all task ids for a given taskDefName with concurrent execution limit
+     * configured from the "task_def_limit" table
      */
     public String getSelectTasksFromTaskDefLimitStatement() {
         return QueryBuilder.select()
@@ -174,12 +349,12 @@ public class Statements {
      */
     public String getUpdateWorkflowStatement() {
         return QueryBuilder.update(keyspace, TABLE_WORKFLOWS)
-                .with(set(PAYLOAD_KEY, bindMarker()))
-                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
-                .and(eq(SHARD_ID_KEY, 1))
-                .and(eq(ENTITY_KEY, ENTITY_TYPE_WORKFLOW))
-                .and(eq(TASK_ID_KEY, ""))
-                .getQueryString();
+            .with(set(PAYLOAD_KEY, bindMarker()))
+            .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+            .and(eq(SHARD_ID_KEY, 1))
+            .and(eq(ENTITY_KEY, ENTITY_TYPE_WORKFLOW))
+            .and(eq(TASK_ID_KEY, ""))
+            .getQueryString();
     }
 
     /**
@@ -187,10 +362,10 @@ public class Statements {
      */
     public String getUpdateTotalTasksStatement() {
         return QueryBuilder.update(keyspace, TABLE_WORKFLOWS)
-                .with(set(TOTAL_TASKS_KEY, bindMarker()))
-                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
-                .and(eq(SHARD_ID_KEY, bindMarker()))
-                .getQueryString();
+            .with(set(TOTAL_TASKS_KEY, bindMarker()))
+            .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+            .and(eq(SHARD_ID_KEY, bindMarker()))
+            .getQueryString();
     }
 
     /**
@@ -198,11 +373,11 @@ public class Statements {
      */
     public String getUpdateTotalPartitionsStatement() {
         return QueryBuilder.update(keyspace, TABLE_WORKFLOWS)
-                .with(set(TOTAL_PARTITIONS_KEY, bindMarker()))
-                .and(set(TOTAL_TASKS_KEY, bindMarker()))
-                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
-                .and(eq(SHARD_ID_KEY, 1))
-                .getQueryString();
+            .with(set(TOTAL_PARTITIONS_KEY, bindMarker()))
+            .and(set(TOTAL_TASKS_KEY, bindMarker()))
+            .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+            .and(eq(SHARD_ID_KEY, 1))
+            .getQueryString();
     }
 
     /**
@@ -210,9 +385,9 @@ public class Statements {
      */
     public String getUpdateTaskLookupStatement() {
         return QueryBuilder.update(keyspace, TABLE_TASK_LOOKUP)
-                .with(set(WORKFLOW_ID_KEY, bindMarker()))
-                .where(eq(TASK_ID_KEY, bindMarker()))
-                .getQueryString();
+            .with(set(WORKFLOW_ID_KEY, bindMarker()))
+            .where(eq(TASK_ID_KEY, bindMarker()))
+            .getQueryString();
     }
 
     /**
@@ -233,10 +408,10 @@ public class Statements {
      */
     public String getDeleteWorkflowStatement() {
         return QueryBuilder.delete()
-                .from(keyspace, TABLE_WORKFLOWS)
-                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
-                .and(eq(SHARD_ID_KEY, bindMarker()))
-                .getQueryString();
+            .from(keyspace, TABLE_WORKFLOWS)
+            .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+            .and(eq(SHARD_ID_KEY, bindMarker()))
+            .getQueryString();
     }
 
     /**
@@ -244,9 +419,9 @@ public class Statements {
      */
     public String getDeleteTaskLookupStatement() {
         return QueryBuilder.delete()
-                .from(keyspace, TABLE_TASK_LOOKUP)
-                .where(eq(TASK_ID_KEY, bindMarker()))
-                .getQueryString();
+            .from(keyspace, TABLE_TASK_LOOKUP)
+            .where(eq(TASK_ID_KEY, bindMarker()))
+            .getQueryString();
     }
 
     /**
@@ -254,12 +429,12 @@ public class Statements {
      */
     public String getDeleteTaskStatement() {
         return QueryBuilder.delete()
-                .from(keyspace, TABLE_WORKFLOWS)
-                .where(eq(WORKFLOW_ID_KEY, bindMarker()))
-                .and(eq(SHARD_ID_KEY, bindMarker()))
-                .and(eq(ENTITY_KEY, ENTITY_TYPE_TASK))
-                .and(eq(TASK_ID_KEY, bindMarker()))
-                .getQueryString();
+            .from(keyspace, TABLE_WORKFLOWS)
+            .where(eq(WORKFLOW_ID_KEY, bindMarker()))
+            .and(eq(SHARD_ID_KEY, bindMarker()))
+            .and(eq(ENTITY_KEY, ENTITY_TYPE_TASK))
+            .and(eq(TASK_ID_KEY, bindMarker()))
+            .getQueryString();
     }
 
     /**
@@ -270,6 +445,46 @@ public class Statements {
             .from(keyspace, TABLE_TASK_DEF_LIMIT)
             .where(eq(TASK_DEF_NAME_KEY, bindMarker()))
             .and(eq(TASK_ID_KEY, bindMarker()))
+            .getQueryString();
+    }
+
+    // EventHandlerDAO
+    // Insert Statements
+
+    /**
+     * @return cql query statement to insert an event handler into the "event_handlers" table
+     */
+    public String getInsertEventHandlerStatement() {
+        return QueryBuilder.insertInto(keyspace, TABLE_EVENT_HANDLERS)
+            .value(HANDLERS_KEY, HANDLERS_KEY)
+            .value(EVENT_HANDLER_NAME_KEY, bindMarker())
+            .value(EVENT_HANDLER_KEY, bindMarker())
+            .getQueryString();
+    }
+
+    // Select Statements
+
+    /**
+     * @return cql query statement to retrieve all event handlers from the "event_handlers" table
+     */
+    public String getSelectAllEventHandlersStatement() {
+        return QueryBuilder.select()
+            .all()
+            .from(keyspace, TABLE_EVENT_HANDLERS)
+            .where(eq(HANDLERS_KEY, bindMarker()))
+            .getQueryString();
+    }
+
+    // Delete Statements
+
+    /**
+     * @return cql query statement to delete an event handler by name from the "event_handlers" table
+     */
+    public String getDeleteEventHandlerStatement() {
+        return QueryBuilder.delete()
+            .from(keyspace, TABLE_EVENT_HANDLERS)
+            .where(eq(HANDLERS_KEY, HANDLERS_KEY))
+            .and(eq(EVENT_HANDLER_NAME_KEY, bindMarker()))
             .getQueryString();
     }
 }
