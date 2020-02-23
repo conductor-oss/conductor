@@ -15,45 +15,42 @@
  */
 package com.netflix.conductor.validations;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.when;
-
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.config.ValidationModule;
 import com.netflix.conductor.dao.MetadataDAO;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
+
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
-import org.hibernate.validator.HibernateValidator;
-import org.hibernate.validator.HibernateValidatorConfiguration;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.when;
 
 public class WorkflowDefConstraintTest {
 
     private Validator validator;
     private MetadataDAO mockMetadataDao;
-    private HibernateValidatorConfiguration config;
 
     @Before
     public void init() {
-        ValidatorFactory vf = Validation.buildDefaultValidatorFactory();
-        validator = vf.getValidator();
+        validator = new ValidationModule().getValidator();
         mockMetadataDao = Mockito.mock(MetadataDAO.class);
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
         ValidationContext.initialize(mockMetadataDao);
-
-        config = Validation.byProvider(HibernateValidator.class).configure();
     }
 
     @Test
