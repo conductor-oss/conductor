@@ -8,7 +8,8 @@ dependencies {
     compile "javax.ws.rs:jsr311-api:${revJsr311Api}"
     compile "io.swagger:swagger-jaxrs:${revSwagger}"
     compile "com.sun.jersey:jersey-bundle:${revJerseyBundle}"
-    compile "org.hibernate:hibernate-validator:${revHiberante}"
+    compile "org.apache.bval:bval-jsr:${revBval}"
+    compile "javax.validation:validation-api:${revValidationApi}"
 
     compileOnly "javax.servlet:javax.servlet-api:${revServletApi}"
 }

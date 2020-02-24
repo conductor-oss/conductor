@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<constraint-mappings
+        xmlns="http://jboss.org/xml/ns/javax/validation/mapping"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation=
+                "http://jboss.org/xml/ns/javax/validation/mapping validation-mapping-1.0.xsd">
+    <default-package>com.netflix.conductor.common.metadata.workflow</default-package>
+
+    <bean class="WorkflowTask" ignore-annotations="false">
+        <class ignore-annotations="false">
+            <constraint annotation="com.netflix.conductor.validations.WorkflowTaskTypeConstraint"/>
+            <constraint annotation="com.netflix.conductor.validations.WorkflowTaskValidConstraint"/>
+        </class>
+    </bean>
+</constraint-mappings>
