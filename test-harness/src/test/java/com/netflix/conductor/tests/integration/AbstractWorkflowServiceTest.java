@@ -3273,6 +3273,7 @@ public abstract class AbstractWorkflowServiceTest {
         runConditionalWorkflowTest();
     }
 
+
     @Test
     public void testCaseStatementsSchemaVersion2() {
         createConditionalWF(2);
@@ -5860,60 +5861,72 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals(WORKFLOW_OUTPUT_PATH, workflow.getExternalOutputPayloadStoragePath());
     }
 
-    //@Test
+    @Test
     public void testRateLimiting() {
+        // Create a dynamic workflow definition with one simple task
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test_concurrency_limits");
+        workflowDef.setVersion(1);
 
-        TaskDef td = new TaskDef();
-        td.setName("eventX1");
-        td.setTimeoutSeconds(1);
-        td.setConcurrentExecLimit(1);
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("test_task_with_ratelimits");
+        taskDef.setRateLimitFrequencyInSeconds(600);
+        taskDef.setRateLimitPerFrequency(1);
 
-        metadataService.registerTaskDef(Arrays.asList(td));
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskReferenceName("test_task_with_ratelimits");
+        workflowTask.setName("test_task_with_ratelimits");
+        workflowTask.setType(UserTask.NAME);
+        workflowTask.setTaskDefinition(taskDef);
+        Map<String, Object> userIP = new HashMap<>();
 
-        WorkflowDef def = new WorkflowDef();
-        def.setName("test_rate_limit");
-        def.setSchemaVersion(2);
+        workflowDef.setTasks(Arrays.asList(workflowTask));
 
-        WorkflowTask event = new WorkflowTask();
-        event.setType(UserTask.NAME);
-        event.setName("eventX1");
-        event.setTaskReferenceName("event0");
-        event.setSink("conductor");
+        String workflowInstanceId1 = workflowExecutor.startWorkflow(workflowDef, new HashMap<>(),
+                "",
+                "",
+                0,
+                "",
+                "",
+                "",
+                new HashMap<>());
 
-        def.getTasks().add(event);
-        metadataService.registerWorkflowDef(def);
+        assertNotNull(workflowInstanceId1);
 
-        Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(() -> {
-            queueDAO.processUnacks("USER_TASK");
-        }, 2, 2, TimeUnit.SECONDS);
+        Workflow workflow1 = workflowExecutionService.getExecutionStatus(workflowInstanceId1, true);
+        assertNotNull(workflow1);
+        assertEquals(RUNNING, workflow1.getStatus());
+        assertEquals(1, workflow1.getTasks().size());        //The very first task is the one that should be scheduled.
 
-        String[] ids = new String[100];
-        ExecutorService es = Executors.newFixedThreadPool(10);
-        for (int i = 0; i < 10; i++) {
-            final int index = i;
-            es.submit(() -> {
-                try {
-                    String id = startOrLoadWorkflowExecution(def.getName(), def.getVersion(), "", new HashMap<>(), null, null);
-                    ids[index] = id;
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
+        UserTask userTask = new UserTask();
 
-            });
-        }
-        Uninterruptibles.sleepUninterruptibly(20, TimeUnit.SECONDS);
-        for (int i = 0; i < 10; i++) {
-            String id = ids[i];
-            Workflow workflow = workflowExecutor.getWorkflow(id, true);
-            assertNotNull(workflow);
-            assertEquals(1, workflow.getTasks().size());
+        Task task = workflow1.getTasks().get(0);
+        workflowExecutor.executeSystemTask(userTask, task.getTaskId(), 30);
 
-            Task eventTask = workflow.getTasks().get(0);
-            assertEquals(COMPLETED, eventTask.getStatus());
-            assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
-            assertTrue(!eventTask.getOutputData().isEmpty());
-            assertNotNull(eventTask.getOutputData().get("event_produced"));
-        }
+        workflow1 = workflowExecutionService.getExecutionStatus(workflowInstanceId1, true);
+
+        String workflowInstanceId2 = workflowExecutor.startWorkflow(workflowDef, new HashMap<>(),
+                "",
+                "",
+                0,
+                "",
+                "",
+                "",
+                new HashMap<>());
+
+        assertNotNull(workflowInstanceId2);
+
+        Workflow workflow2 = workflowExecutionService.getExecutionStatus(workflowInstanceId2, true);
+        assertNotNull(workflow2);
+        assertEquals(RUNNING, workflow2.getStatus());
+        assertEquals(1, workflow2.getTasks().size());        //The very first task is the one that should be scheduled.
+
+        // Try to execute second task
+        Task task2 = workflow2.getTasks().get(0);
+        workflowExecutor.executeSystemTask(userTask, task2.getTaskId(), 30);
+        workflow2 = workflowExecutionService.getExecutionStatus(workflowInstanceId2, true);
+        task2 = workflow2.getTasks().get(0);
+        assertEquals(SCHEDULED, task2.getStatus());
     }
 
     @Test
@@ -6192,6 +6205,82 @@ public abstract class AbstractWorkflowServiceTest {
         es = workflowExecutionService.getExecutionStatus(wfId, true);
         assertNotNull(es);
         assertEquals(WorkflowStatus.COMPLETED, es.getStatus());
+    }
+
+    @Test
+    public void testPollWithConcurrentExecutionLimits() {
+        // Create a dynamic workflow definition with one simple task
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName("test_concurrency_limits");
+        workflowDef.setVersion(1);
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("test_task_with_cl");
+        taskDef.setConcurrentExecLimit(1);
+
+        WorkflowTask workflowTask = new WorkflowTask();
+        workflowTask.setTaskReferenceName("test_task_with_cl");
+        workflowTask.setName("test_task_with_cl");
+        workflowTask.setType("SIMPLE");
+        workflowTask.setTaskDefinition(taskDef);
+
+        workflowDef.setTasks(Arrays.asList(workflowTask));
+
+        String workflowInstanceId1 = workflowExecutor.startWorkflow(workflowDef, new HashMap<>(),
+                "",
+                "",
+                0,
+                "",
+                "",
+                "",
+                new HashMap<>());
+
+        assertNotNull(workflowInstanceId1);
+
+        Workflow workflow1 = workflowExecutionService.getExecutionStatus(workflowInstanceId1, true);
+        assertNotNull(workflow1);
+        assertEquals(RUNNING, workflow1.getStatus());
+        assertEquals(1, workflow1.getTasks().size());        //The very first task is the one that should be scheduled.
+
+        // Polling for the first task
+        Task task = workflowExecutionService.poll("test_task_with_cl", "test.worker");
+        assertNotNull(task);
+        assertEquals("test_task_with_cl", task.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+        assertEquals(workflowInstanceId1, task.getWorkflowInstanceId());
+
+        String workflowInstanceId2 = workflowExecutor.startWorkflow(workflowDef, new HashMap<>(),
+                "",
+                "",
+                0,
+                "",
+                "",
+                "",
+                new HashMap<>());
+
+        assertNotNull(workflowInstanceId2);
+
+        Workflow workflow2 = workflowExecutionService.getExecutionStatus(workflowInstanceId2, true);
+        assertNotNull(workflow2);
+        assertEquals(RUNNING, workflow2.getStatus());
+        assertEquals(1, workflow2.getTasks().size());        //The very first task is the one that should be scheduled.
+
+        // Polling for the second task
+        Task task2 = workflowExecutionService.poll("test_task_with_cl", "test.worker");
+        assertNull("Polling for the task shouldn't return anything, as concurrency limit is met.", task2);
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        // Reset task offset time to make it available for poll again.
+        queueDAO.resetOffsetTime("test_task_with_cl", workflow2.getTasks().get(0).getTaskId());
+
+        // Polling for the second task
+        task2 = workflowExecutionService.poll("test_task_with_cl", "test.worker");
+        assertNotNull(task2);
+        assertEquals("test_task_with_cl", task2.getTaskType());
+        assertTrue(workflowExecutionService.ackTaskReceived(task2.getTaskId()));
+        assertEquals(workflowInstanceId2, task2.getWorkflowInstanceId());
     }
 
     private void createSubWorkflow() {

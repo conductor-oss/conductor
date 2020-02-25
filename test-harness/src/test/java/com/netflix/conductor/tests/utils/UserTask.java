@@ -24,6 +24,8 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
+
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -52,7 +54,9 @@ public class UserTask extends WorkflowSystemTask {
 
 		Map<String, Map<String, List<Object>>> map = objectMapper.convertValue(task.getInputData(), mapStringListObjects);
 		Map<String, Object> output = new HashMap<>();
-		output.put("size", map.get("largeInput").get("TEST_SAMPLE").size());
+		Map<String, List<Object>> defaultLargeInput = new HashMap<>();
+		defaultLargeInput.put("TEST_SAMPLE", Collections.singletonList("testDefault"));
+		output.put("size", map.getOrDefault("largeInput", defaultLargeInput).get("TEST_SAMPLE").size());
 		task.setOutputData(output);
 		task.setStatus(Status.COMPLETED);
 	}

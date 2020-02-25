@@ -76,7 +76,7 @@ public class ExecutionService {
 	private final ExternalPayloadStorage externalPayloadStorage;
 
     private final int taskRequeueTimeout;
-    private final int maxSearchSize;
+	private int queueTaskMessagePostponeSeconds;
 
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
     private static final int POLL_COUNT_ONE = 1;
@@ -97,7 +97,7 @@ public class ExecutionService {
 		this.queueDAO = queueDAO;
 		this.externalPayloadStorage = externalPayloadStorage;
 		this.taskRequeueTimeout = config.getIntProperty("task.requeue.timeout", 60_000);
-        this.maxSearchSize = config.getIntProperty("workflow.max.search.size", 5_000);
+		this.queueTaskMessagePostponeSeconds = config.getIntProperty("task.queue.message.postponeSeconds", 60);
 	}
 
 	public Task poll(String taskType, String workerId) {
@@ -136,6 +136,8 @@ public class ExecutionService {
 				}
 
 				if (executionDAOFacade.exceedsInProgressLimit(task)) {
+				    // Postpone a message, so that it would be available for poll again.
+					queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSeconds);
 					continue;
 				}
 
