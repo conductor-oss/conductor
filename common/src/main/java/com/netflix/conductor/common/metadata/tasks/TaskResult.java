@@ -69,6 +69,8 @@ public class TaskResult {
 
     private String externalOutputPayloadStoragePath;
 
+    private String subWorkflowId;
+
     public TaskResult(Task task) {
         this.workflowInstanceId = task.getWorkflowInstanceId();
         this.taskId = task.getTaskId();
@@ -77,6 +79,7 @@ public class TaskResult {
         this.workerId = task.getWorkerId();
         this.outputData = task.getOutputData();
         this.externalOutputPayloadStoragePath = task.getExternalOutputPayloadStoragePath();
+        this.subWorkflowId = task.getSubWorkflowId();
         switch (task.getStatus()) {
             case CANCELED:
             case COMPLETED_WITH_ERRORS:
@@ -238,6 +241,14 @@ public class TaskResult {
      */
     public void setExternalOutputPayloadStoragePath(String externalOutputPayloadStoragePath) {
         this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
+    }
+
+    public String getSubWorkflowId() {
+        return subWorkflowId;
+    }
+
+    public void setSubWorkflowId(String subWorkflowId) {
+        this.subWorkflowId = subWorkflowId;
     }
 
     @Override

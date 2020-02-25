@@ -9,12 +9,12 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
 
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -46,12 +46,29 @@ public class TestSubWorkflow {
         inputData.put("subWorkflowVersion", 3);
         task.setInputData(inputData);
 
-        when(workflowExecutor.startWorkflow(eq("UnitWorkFlow"), eq(3), eq(inputData), eq(null), any(), any(), any(), eq(null), any()))
-                .thenReturn("workflow_1");
+        String workflowId = "workflow_1";
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId(workflowId);
 
+        when(workflowExecutor.startWorkflow(eq("UnitWorkFlow"), eq(3), eq(inputData), eq(null), any(), any(), any(), eq(null), any()))
+                .thenReturn(workflowId);
+
+        when(workflowExecutor.getWorkflow(anyString(), eq(false))).thenReturn(workflow);
+
+        workflow.setStatus(Workflow.WorkflowStatus.RUNNING);
         subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertEquals("workflow_1", task.getOutputData().get(SubWorkflow.SUB_WORKFLOW_ID));
+        assertEquals("workflow_1", task.getSubWorkflowId());
         assertEquals(Task.Status.IN_PROGRESS, task.getStatus());
+
+        workflow.setStatus(Workflow.WorkflowStatus.TERMINATED);
+        subWorkflow.start(workflowInstance, task, workflowExecutor);
+        assertEquals("workflow_1", task.getSubWorkflowId());
+        assertEquals(Task.Status.FAILED, task.getStatus());
+
+        workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
+        subWorkflow.start(workflowInstance, task, workflowExecutor);
+        assertEquals("workflow_1", task.getSubWorkflowId());
+        assertEquals(Task.Status.COMPLETED, task.getStatus());
     }
 
     @Test
@@ -75,7 +92,7 @@ public class TestSubWorkflow {
                 .thenReturn("workflow_1");
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertEquals("workflow_1", task.getOutputData().get(SubWorkflow.SUB_WORKFLOW_ID));
+        assertEquals("workflow_1", task.getSubWorkflowId());
     }
 
     @Test
@@ -100,7 +117,7 @@ public class TestSubWorkflow {
                 .thenReturn("workflow_1");
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertEquals("workflow_1", task.getOutputData().get(SubWorkflow.SUB_WORKFLOW_ID));
+        assertEquals("workflow_1", task.getSubWorkflowId());
     }
 
     @Test
@@ -123,7 +140,7 @@ public class TestSubWorkflow {
                 .thenReturn("workflow_1");
 
         subWorkflow.start(workflowInstance, task, workflowExecutor);
-        assertEquals("workflow_1", task.getOutputData().get(SubWorkflow.SUB_WORKFLOW_ID));
+        assertEquals("workflow_1", task.getSubWorkflowId());
     }
 
     @Test
@@ -156,8 +173,8 @@ public class TestSubWorkflow {
 
         Task task = new Task();
         Map<String, Object> outputData = new HashMap<>();
-        outputData.put(SubWorkflow.SUB_WORKFLOW_ID, "sub-workflow-id");
         task.setOutputData(outputData);
+        task.setSubWorkflowId("sub-workflow-id");
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
@@ -213,8 +230,8 @@ public class TestSubWorkflow {
 
         Task task = new Task();
         Map<String, Object> outputData = new HashMap<>();
-        outputData.put(SubWorkflow.SUB_WORKFLOW_ID, "sub-workflow-id");
         task.setOutputData(outputData);
+        task.setSubWorkflowId("sub-workflow-id");
 
         Map<String, Object> inputData = new HashMap<>();
         inputData.put("subWorkflowName", "UnitWorkFlow");
@@ -261,6 +278,6 @@ public class TestSubWorkflow {
     @Test
     public void testIsAsync() {
         SubWorkflow subWorkflow = new SubWorkflow();
-        assertFalse(subWorkflow.isAsync());
+        assertTrue(subWorkflow.isAsync());
     }
 }

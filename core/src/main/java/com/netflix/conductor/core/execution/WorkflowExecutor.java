@@ -24,7 +24,6 @@ import static com.netflix.conductor.common.metadata.workflow.TaskType.TERMINATE;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.INVALID_INPUT;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.NOT_FOUND;
-import static com.netflix.conductor.core.execution.tasks.SubWorkflow.SUB_WORKFLOW_ID;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -826,6 +825,7 @@ public class WorkflowExecutor {
         task.setWorkerId(taskResult.getWorkerId());
         task.setCallbackAfterSeconds(taskResult.getCallbackAfterSeconds());
         task.setOutputData(taskResult.getOutputData());
+        task.setSubWorkflowId(taskResult.getSubWorkflowId());
 
         if (task.getOutputData() != null) {
             deciderService.externalizeTaskData(task);
@@ -1390,7 +1390,7 @@ public class WorkflowExecutor {
             createdTasks.forEach(task -> new RetryUtil<>().retryOnException(() ->
             {
                 if (task.getTaskType().equals(SUB_WORKFLOW.name())) {
-                    executionDAOFacade.removeWorkflow((String) task.getOutputData().get(SUB_WORKFLOW_ID), false);
+                    executionDAOFacade.removeWorkflow(task.getSubWorkflowId(), false);
                 }
                 executionDAOFacade.removeTask(task.getTaskId());
                 return null;
@@ -1461,7 +1461,7 @@ public class WorkflowExecutor {
             } else {
                 // If not found look into sub workflows
                 if (task.getTaskType().equalsIgnoreCase(SubWorkflow.NAME)) {
-                    String subWorkflowId = task.getInputData().get(SUB_WORKFLOW_ID).toString();
+                    String subWorkflowId = task.getSubWorkflowId();
                     if (rerunWF(subWorkflowId, taskId, taskInput, null, null)) {
                         rerunFromTask = task;
                         break;

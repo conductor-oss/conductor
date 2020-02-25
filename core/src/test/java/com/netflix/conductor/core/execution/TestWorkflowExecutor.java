@@ -15,7 +15,6 @@
  */
 package com.netflix.conductor.core.execution;
 
-import static com.netflix.conductor.core.execution.tasks.SubWorkflow.SUB_WORKFLOW_ID;
 import static java.util.Comparator.comparingInt;
 import static java.util.stream.Collectors.groupingBy;
 import static java.util.stream.Collectors.maxBy;
@@ -1000,7 +999,7 @@ public class TestWorkflowExecutor {
         task3.setRetryCount(0);
         task3.setWorkflowTask(subWorkflowTask);
         task3.setOutputData(new HashMap<>());
-        task3.getOutputData().put(SUB_WORKFLOW_ID, IDGenerator.generate());
+        task3.setSubWorkflowId(IDGenerator.generate());
 
         AtomicInteger removeWorkflowCalledCounter = new AtomicInteger(0);
         doAnswer(invocation -> {

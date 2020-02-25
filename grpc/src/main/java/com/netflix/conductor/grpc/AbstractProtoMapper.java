@@ -557,6 +557,9 @@ public abstract class AbstractProtoMapper {
             to.setIsolationGroupId( from.getIsolationGroupId() );
         }
         to.setIteration( from.getIteration() );
+        if (from.getSubWorkflowId() != null) {
+            to.setSubWorkflowId( from.getSubWorkflowId() );
+        }
         return to.build();
     }
 
@@ -614,6 +617,7 @@ public abstract class AbstractProtoMapper {
         to.setExecutionNameSpace( from.getExecutionNameSpace() );
         to.setIsolationGroupId( from.getIsolationGroupId() );
         to.setIteration( from.getIteration() );
+        to.setSubWorkflowId( from.getSubWorkflowId() );
         return to;
     }
 

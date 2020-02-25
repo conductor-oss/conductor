@@ -190,7 +190,7 @@ public class Task {
 
     @ProtoField(id = 36)
     private int workflowPriority;
-    
+
     @ProtoField(id = 37)
     private String  executionNameSpace;
 
@@ -199,6 +199,9 @@ public class Task {
 
     @ProtoField(id = 40)
     private int iteration;
+
+    @ProtoField(id = 41)
+    private String subWorkflowId;
 
     public Task() {
     }
@@ -733,6 +736,15 @@ public class Task {
         this.workflowPriority = workflowPriority;
     }
 
+    public String getSubWorkflowId() {
+        return subWorkflowId;
+    }
+
+    public void setSubWorkflowId(String subWorkflowId) {
+        this.subWorkflowId = subWorkflowId;
+    }
+
+
     public Task copy() {
         Task copy = new Task();
         copy.setCallbackAfterSeconds(callbackAfterSeconds);
@@ -763,6 +775,7 @@ public class Task {
         copy.setIteration(iteration);
         copy.setExecutionNameSpace(executionNameSpace);
         copy.setIsolationGroupId(isolationGroupId);
+        copy.setSubWorkflowId(subWorkflowId);
 
         return copy;
     }
