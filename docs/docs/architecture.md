@@ -20,7 +20,11 @@ Follow the steps below to quickly bring up a local Conductor instance backed by 
 ```
 git clone git@github.com:Netflix/conductor.git
 ```
+
 #### Start Local Server
+
+The server is in the directory `conductor/server`.
+
 ```shell
 cd server
 ../gradlew server
@@ -29,8 +33,14 @@ cd server
 Swagger APIs can be accessed at [http://localhost:8080/](http://localhost:8080/)
 
 #### Start UI Server
+
+The UI Server is in the directory `conductor/ui`.
+
+In a terminal other than the one running the Conductor server: 
+
 ```shell
 cd ui
+npm i
 gulp watch
 ```
 
