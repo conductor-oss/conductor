@@ -36,6 +36,8 @@ Swagger APIs can be accessed at [http://localhost:8080/](http://localhost:8080/)
 
 The UI Server is in the directory `conductor/ui`.
 
+To run it, you need [Node.js](https://nodejs.org) installed and gulp installed with `npm i -g gulp`.
+
 In a terminal other than the one running the Conductor server: 
 
 ```shell
@@ -43,6 +45,8 @@ cd ui
 npm i
 gulp watch
 ```
+
+If you get an error message `ReferenceError: primordials is not defined`, you need to use an earlier version of Node (pre-12). See [this issue for more details](https://github.com/Netflix/conductor/issues/1232).
 
 #### Or Start all the services using [docker-compose](https://github.com/Netflix/conductor/blob/master/docker/docker-compose.yaml)
 
