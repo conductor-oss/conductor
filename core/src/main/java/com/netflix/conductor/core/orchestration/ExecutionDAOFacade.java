@@ -229,7 +229,6 @@ public class ExecutionDAOFacade {
                 workflow.getTasks().forEach(indexDAO::asyncIndexTask);
             } else {
                 indexDAO.indexWorkflow(workflow);
-                workflow.getTasks().forEach(indexDAO::indexTask);
             }
         }
         return workflow.getWorkflowId();
@@ -343,6 +342,15 @@ public class ExecutionDAOFacade {
                 }
             }
             executionDAO.updateTask(task);
+            /*
+             * Indexing a task for every update adds a lot of volume. That is ok but if async indexing
+             * is enabled and tasks are stored in memory until a block has completed, we would lose a lot
+             * of tasks on a system failure. So only index for each update if async indexing is not enabled. 
+             * If it *is* enabled, tasks will be indexed only when a workflow is in terminal state.
+             */
+            if (!config.enableAsyncIndexing()) {
+            	indexDAO.indexTask(task);
+            }
         } catch (Exception e) {
             String errorMsg = String.format("Error updating task: %s in workflow: %s", task.getTaskId(), task.getWorkflowInstanceId());
             LOGGER.error(errorMsg, e);
