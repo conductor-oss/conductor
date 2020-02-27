@@ -52,6 +52,7 @@ public class RedisLockModule extends AbstractModule{
             throw new ProvisionException(message, ie);
         }
         String redisServerAddress = clusterConfiguration.getRedisServerAddress();
+        String redisServerPassword = clusterConfiguration.getRedisServerPassword();
 
         Config redisConfig = new Config();
 
@@ -60,18 +61,21 @@ public class RedisLockModule extends AbstractModule{
             case SINGLE:
                 redisConfig.useSingleServer()
                         .setAddress(redisServerAddress)
+                        .setPassword(redisServerPassword)
                         .setTimeout(connectionTimeout);
                 break;
             case CLUSTER:
                 redisConfig.useClusterServers()
                         .setScanInterval(2000) // cluster state scan interval in milliseconds
                         .addNodeAddress(redisServerAddress.split(","))
+                        .setPassword(redisServerPassword)
                         .setTimeout(connectionTimeout);
                 break;
             case SENTINEL:
                 redisConfig.useSentinelServers()
                         .setScanInterval(2000)
                         .addSentinelAddress(redisServerAddress)
+                        .setPassword(redisServerPassword)
                         .setTimeout(connectionTimeout);
                 break;
         }

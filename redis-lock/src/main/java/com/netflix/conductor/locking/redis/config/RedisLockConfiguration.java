@@ -24,6 +24,8 @@ public interface RedisLockConfiguration extends Configuration {
     String REDIS_SERVER_TYPE_DEFAULT_VALUE = "single";
     String REDIS_SERVER_STRING_PROP_NAME = "workflow.redis.locking.server.address";
     String REDIS_SERVER_STRING_DEFAULT_VALUE = "redis://127.0.0.1:6379";
+    String REDIS_SERVER_PASSWORD_PROP_NAME = "workflow.redis.locking.server.password";
+    String REDIS_SERVER_PASSWORD_DEFAULT_VALUE = null;
 
     default REDIS_SERVER_TYPE getRedisServerType() {
         return REDIS_SERVER_TYPE.valueOf(getRedisServerStringValue());
@@ -35,6 +37,10 @@ public interface RedisLockConfiguration extends Configuration {
 
     default String getRedisServerAddress() {
         return getProperty(REDIS_SERVER_STRING_PROP_NAME, REDIS_SERVER_STRING_DEFAULT_VALUE);
+    }
+
+    default String getRedisServerPassword() {
+        return getProperty(REDIS_SERVER_PASSWORD_PROP_NAME, REDIS_SERVER_PASSWORD_DEFAULT_VALUE);
     }
 
     enum REDIS_SERVER_TYPE {
