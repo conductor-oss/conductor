@@ -647,6 +647,34 @@ public class TestDeciderService {
     }
 
     @Test
+    public void testExponentialBackoff() {
+        Workflow workflow = createDefaultWorkflow();
+
+        Task task = new Task();
+        task.setStatus(Status.FAILED);
+        task.setTaskId("t1");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setRetryDelaySeconds(60);
+        taskDef.setRetryLogic(TaskDef.RetryLogic.EXPONENTIAL_BACKOFF);
+        WorkflowTask workflowTask = new WorkflowTask();
+
+        Optional<Task> task2 = deciderService.retry(taskDef, workflowTask, task, workflow);
+        assertEquals(60, task2.get().getCallbackAfterSeconds());
+
+        Optional<Task> task3 = deciderService.retry(taskDef, workflowTask, task2.get(), workflow);
+        assertEquals(120, task3.get().getCallbackAfterSeconds());
+
+        Optional<Task> task4 = deciderService.retry(taskDef, workflowTask, task3.get(), workflow);
+        assertEquals(240, task4.get().getCallbackAfterSeconds());
+
+        taskDef.setRetryCount(Integer.MAX_VALUE);
+        task4.get().setRetryCount(Integer.MAX_VALUE - 100);
+        Optional<Task> task5 = deciderService.retry(taskDef, workflowTask, task4.get(), workflow);
+        assertEquals(Integer.MAX_VALUE, task5.get().getCallbackAfterSeconds());
+    }
+
+    @Test
     public void testFork() throws IOException {
         InputStream stream = TestDeciderService.class.getResourceAsStream("/test.json");
         Workflow workflow = objectMapper.readValue(stream, Workflow.class);
