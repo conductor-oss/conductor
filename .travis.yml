@@ -7,7 +7,7 @@ after_success:
 install: true
 script:
   - "./buildViaTravis.sh"
-  - ./gradlew sonarqube
+  - ./gradlew sonarqube --stacktrace --info
 git:
   depth: 150
 addons:
