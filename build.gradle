@@ -137,7 +137,7 @@ tasks.coveralls {
 sonarqube {
     properties {
         property "sonar.projectName", "conductor"
-        property "sonar.projectKey", "conductor"
+        property "sonar.projectKey", "Netflix_conductor"
         property "sonar.projectVersion", "2.0"
     }
 }
