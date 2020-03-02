@@ -80,7 +80,7 @@ public interface Configuration {
     boolean TASKEXECLOG_INDEXING_ENABLED_DEFAULT_VALUE = true;
 
     String INDEXING_ENABLED_PROPERTY_NAME = "workflow.indexing.enabled";
-    boolean INDEXING_ENABLED_DEFAULT_VALUE = false;
+    boolean INDEXING_ENABLED_DEFAULT_VALUE = true;
 
     String TASK_DEF_REFRESH_TIME_SECS_PROPERTY_NAME = "conductor.taskdef.cache.refresh.time.seconds";
     int TASK_DEF_REFRESH_TIME_SECS_DEFAULT_VALUE = 60;
