@@ -412,7 +412,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
 
         try {
             long startTime = Instant.now().toEpochMilli();
-            BulkRequestBuilder bulkRequestBuilder = elasticSearchClient.prepareBulk();
+            BulkRequestBuilderWrapper bulkRequestBuilder = new BulkRequestBuilderWrapper(elasticSearchClient.prepareBulk());
             for (TaskExecLog log : taskExecLogs) {
                 IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
                 request.source(objectMapper.writeValueAsBytes(log), XContentType.JSON);
@@ -579,7 +579,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
         return executions;
     }
 
-    private void updateWithRetry(BulkRequestBuilder request, String docType) {
+    private void updateWithRetry(BulkRequestBuilderWrapper request, String docType) {
         try {
             long startTime = Instant.now().toEpochMilli();
             new RetryUtil<BulkResponse>().retryOnException(
@@ -793,7 +793,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
 
     private static class BulkRequests {
         private long lastFlushTime;
-        private BulkRequestBuilder bulkRequestBuilder;
+        private BulkRequestBuilderWrapper bulkRequestBuilder;
 
         public long getLastFlushTime() {
             return lastFlushTime;
@@ -803,17 +803,17 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
             this.lastFlushTime = lastFlushTime;
         }
 
-        public BulkRequestBuilder getBulkRequestBuilder() {
+        public BulkRequestBuilderWrapper getBulkRequestBuilder() {
             return bulkRequestBuilder;
         }
 
         public void setBulkRequestBuilder(BulkRequestBuilder bulkRequestBuilder) {
-            this.bulkRequestBuilder = bulkRequestBuilder;
+            this.bulkRequestBuilder = new BulkRequestBuilderWrapper(bulkRequestBuilder);
         }
 
         BulkRequests(long lastFlushTime, BulkRequestBuilder bulkRequestBuilder) {
             this.lastFlushTime = lastFlushTime;
-            this.bulkRequestBuilder = bulkRequestBuilder;
+            this.bulkRequestBuilder = new BulkRequestBuilderWrapper(bulkRequestBuilder);
         }
     }
 }
