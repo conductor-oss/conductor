@@ -29,6 +29,7 @@ import com.netflix.conductor.core.utils.NoopLockModule;
 import com.netflix.conductor.core.execution.WorkflowExecutorModule;
 import com.netflix.conductor.core.utils.DummyPayloadStorage;
 import com.netflix.conductor.core.utils.S3PayloadStorage;
+import com.netflix.conductor.noopindex.NoopIndexModule;
 import com.netflix.conductor.dao.RedisWorkflowModule;
 import com.netflix.conductor.elasticsearch.ElasticSearchModule;
 import com.netflix.conductor.locking.redis.config.RedisLockModule;
@@ -127,7 +128,10 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
                 break;
         }
 
-        modules.add(new ElasticSearchModule());
+        if (configuration.isIndexingPersistenceEnabled())
+            modules.add(new ElasticSearchModule());
+        else
+            modules.add(new NoopIndexModule());
 
         modules.add(new WorkflowExecutorModule());
 
