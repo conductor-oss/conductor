@@ -142,3 +142,34 @@ Optionally, configure the default timeouts:
 zk.sessionTimeoutMs
 zk.connectionTimeoutMs
 ```
+
+## Default Workflow Archiving Module Configuration
+
+Conductor server does not perform automated workflow execution data cleaning by default. Archiving module (if enabled) 
+removes all execution data from conductor persistence storage immediately upon workflow completion or termination, 
+but keeps archived index data in elastic search. 
+
+To benefit form archiving module you have to do the following:
+
+### 1. Enable Archiving Module
+
+Set property in server configuration.
+
+```properties
+# Comma-separated additional conductor modules
+conductor.additional.modules=com.netflix.conductor.contribs.ArchivingWorkflowModule
+```
+
+### 2. Enable Workflow Status Listener
+
+Archiving module is triggered only if workflow status listener is enabled on workflow definition level. To enable it 
+you have to set `workflowStatusListenerEnabled` property to `true`. See sample workflow definition below:
+
+```json
+{
+  "name": "e2e_approval_v4",
+  "description": "Approval Process",
+  "workflowStatusListenerEnabled": true, 
+  "tasks": []
+}
+```
