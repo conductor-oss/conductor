@@ -557,7 +557,6 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		}
 	}
 
-	@Override
 	public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId, int max) {
 		try {
 			String key = nsKey(EVENT_EXECUTION, eventHandlerName, eventName, messageId);

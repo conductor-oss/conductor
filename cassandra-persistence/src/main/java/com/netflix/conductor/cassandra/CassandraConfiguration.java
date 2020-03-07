@@ -47,6 +47,9 @@ public interface CassandraConfiguration extends Configuration {
     String CASSANDRA_WRITE_CONSISTENCY_LEVEL = "workflow.cassandra.write.consistency.level";
     String CASSANDRA_WRITE_CONSISTENCY_LEVEL_DEFAULT_VALUE = "LOCAL_QUORUM";
 
+    String CASSANDRA_EVENT_EXECUTIONS_TTL = "workflow.cassandra.event.executions.ttl";
+    int CASSANDRA_EVENT_EXECUTIONS_TTL_DEFAULT_VALUE = 86400;
+
     default String getHostAddress() {
         return getProperty(CASSANDRA_HOST_ADDRESS_PROPERTY_NAME, CASSANDRA_HOST_ADDRESS_DEFAULT_VALUE);
     }
@@ -85,5 +88,9 @@ public interface CassandraConfiguration extends Configuration {
 
     default ConsistencyLevel getWriteConsistencyLevel() {
         return ConsistencyLevel.valueOf(getProperty(CASSANDRA_WRITE_CONSISTENCY_LEVEL, CASSANDRA_WRITE_CONSISTENCY_LEVEL_DEFAULT_VALUE));
+    }
+
+    default int getEventExecutionsTTL() {
+        return getIntProperty(CASSANDRA_EVENT_EXECUTIONS_TTL, CASSANDRA_EVENT_EXECUTIONS_TTL_DEFAULT_VALUE);
     }
 }

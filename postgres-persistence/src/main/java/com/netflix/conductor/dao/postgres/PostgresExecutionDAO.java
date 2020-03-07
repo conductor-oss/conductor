@@ -420,7 +420,6 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
         }
     }
 
-    @Override
     public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId,
                                                    int max) {
         try {

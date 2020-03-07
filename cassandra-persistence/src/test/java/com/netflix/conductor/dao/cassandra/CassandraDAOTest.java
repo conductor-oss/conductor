@@ -12,7 +12,9 @@
  */
 package com.netflix.conductor.dao.cassandra;
 
+import static com.netflix.conductor.common.metadata.events.EventExecution.Status.COMPLETED;
 import static com.netflix.conductor.core.execution.ApplicationException.Code.INVALID_INPUT;
+import static com.netflix.conductor.util.Constants.TABLE_EVENT_EXECUTIONS;
 import static com.netflix.conductor.util.Constants.TABLE_WORKFLOW_DEFS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -22,6 +24,7 @@ import static org.junit.Assert.assertTrue;
 
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -528,6 +531,59 @@ public class CassandraDAOTest {
         assertEquals(1, handlers.size());
     }
 
+    @Test
+    public void testEventExecutionCRUD() throws Exception {
+        String event = "test-event";
+        String executionId1 = "id_1";
+        String messageId1 = "message1";
+        String eventHandler1 = "test_eh_1";
+        EventExecution eventExecution1 = getEventExecution(executionId1, messageId1, eventHandler1, event);
+
+        // create event execution explicitly in test
+        // since, embedded Cassandra server does not support LWT required for this API.
+        addEventExecution(eventExecution1);
+
+        // fetch executions
+        List<EventExecution> eventExecutionList = executionDAO.getEventExecutions(eventHandler1, event, messageId1);
+        assertNotNull(eventExecutionList);
+        assertEquals(1, eventExecutionList.size());
+        assertEquals(eventExecution1, eventExecutionList.get(0));
+
+        // add a different execution for same message
+        String executionId2 = "id_2";
+        EventExecution eventExecution2 = getEventExecution(executionId2, messageId1, eventHandler1, event);
+        addEventExecution(eventExecution2);
+
+        // fetch executions
+        eventExecutionList = executionDAO.getEventExecutions(eventHandler1, event, messageId1);
+        assertNotNull(eventExecutionList);
+        assertEquals(2, eventExecutionList.size());
+        assertEquals(eventExecution1, eventExecutionList.get(0));
+        assertEquals(eventExecution2, eventExecutionList.get(1));
+
+        // update the second execution
+        eventExecution2.setStatus(COMPLETED);
+        executionDAO.updateEventExecution(eventExecution2);
+
+        // fetch executions
+        eventExecutionList = executionDAO.getEventExecutions(eventHandler1, event, messageId1);
+        assertNotNull(eventExecutionList);
+        assertEquals(2, eventExecutionList.size());
+        assertEquals(COMPLETED, eventExecutionList.get(1).getStatus());
+
+        // sleep for 5 seconds (TTL)
+        Thread.sleep(5000L);
+        eventExecutionList = executionDAO.getEventExecutions(eventHandler1, event, messageId1);
+        assertNotNull(eventExecutionList);
+        assertEquals(1, eventExecutionList.size());
+
+        // delete event execution
+        executionDAO.removeEventExecution(eventExecution1);
+        eventExecutionList = executionDAO.getEventExecutions(eventHandler1, event, messageId1);
+        assertNotNull(eventExecutionList);
+        assertEquals(0, eventExecutionList.size());
+    }
+
     private void addWorkflowDefinition(WorkflowDef workflowDef) throws Exception {
         //INSERT INTO conductor.workflow_definitions (workflow_def_name,version,workflow_definition) VALUES (?,?,?);
         String table = testConfiguration.getCassandraKeyspace() + "." + TABLE_WORKFLOW_DEFS;
@@ -537,5 +593,26 @@ public class CassandraDAOTest {
             + "' AND version=" + workflowDef.getVersion()
             + ";";
         session.execute(queryString);
+    }
+
+    private void addEventExecution(EventExecution eventExecution) throws Exception {
+        //INSERT INTO junit.event_executions (message_id,event_handler_name,event_execution_id,payload) VALUES (?,?,?,?)
+        String table = testConfiguration.getCassandraKeyspace() + "." + TABLE_EVENT_EXECUTIONS;
+        String queryString = "INSERT INTO " + table
+            + " (message_id, event_handler_name, event_execution_id, payload) "
+            + "VALUES ('" + eventExecution.getMessageId()
+            + "', '" + eventExecution.getName()
+            + "', '" + eventExecution.getId()
+            + "', '" + objectMapper.writeValueAsString(eventExecution)
+            + "');";
+        session.execute(queryString);
+    }
+
+    private EventExecution getEventExecution(String id, String msgId, String name, String event) {
+        EventExecution eventExecution = new EventExecution(id, msgId);
+        eventExecution.setName(name);
+        eventExecution.setEvent(event);
+        eventExecution.setStatus(EventExecution.Status.IN_PROGRESS);
+        return eventExecution;
     }
 }
