@@ -403,7 +403,9 @@ public class DeciderService {
                 startDelay = taskDefinition.getRetryDelaySeconds();
                 break;
             case EXPONENTIAL_BACKOFF:
-                startDelay = taskDefinition.getRetryDelaySeconds() * (1 + task.getRetryCount());
+                int retryDelaySeconds = taskDefinition.getRetryDelaySeconds() * (int) Math.pow(2, task.getRetryCount());
+                // Reset integer overflow to max value
+                startDelay = retryDelaySeconds < 0 ? Integer.MAX_VALUE : retryDelaySeconds;
                 break;
         }
 
