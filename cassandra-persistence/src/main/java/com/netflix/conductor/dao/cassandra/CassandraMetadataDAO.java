@@ -108,13 +108,11 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
 
     @Override
     public void createTaskDef(TaskDef taskDef) {
-        taskDef.setCreateTime(System.currentTimeMillis());
         insertOrUpdateTaskDef(taskDef);
     }
 
     @Override
     public String updateTaskDef(TaskDef taskDef) {
-        taskDef.setUpdateTime(System.currentTimeMillis());
         return insertOrUpdateTaskDef(taskDef);
     }
 
@@ -152,13 +150,11 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
             throw new ApplicationException(Code.CONFLICT, String.format("Workflow: %s, version: %s already exists!",
                 workflowDef.getName(), workflowDef.getVersion()));
         }
-        workflowDef.setCreateTime(System.currentTimeMillis());
         insertOrUpdateWorkflowDef(workflowDef);
     }
 
     @Override
     public void updateWorkflowDef(WorkflowDef workflowDef) {
-        workflowDef.setUpdateTime(System.currentTimeMillis());
         insertOrUpdateWorkflowDef(workflowDef);
     }
 

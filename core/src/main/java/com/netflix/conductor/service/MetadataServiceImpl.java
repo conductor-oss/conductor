@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -29,16 +29,16 @@ import com.netflix.conductor.core.execution.ApplicationException.Code;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.validations.ValidationContext;
-
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.List;
 import java.util.Optional;
+import javax.inject.Inject;
+import javax.inject.Singleton;
 
 @Audit
 @Singleton
 @Trace
 public class MetadataServiceImpl implements MetadataService {
+
     private final MetadataDAO metadataDAO;
     private final EventHandlerDAO eventHandlerDAO;
     private final EventQueues eventQueues;
@@ -103,28 +103,29 @@ public class MetadataServiceImpl implements MetadataService {
     @Service
     public TaskDef getTaskDef(String taskType) {
         TaskDef taskDef = metadataDAO.getTaskDef(taskType);
-        if (taskDef == null){
+        if (taskDef == null) {
             throw new ApplicationException(Code.NOT_FOUND,
-                    String.format("No such taskType found by name: %s", taskType));
+                String.format("No such taskType found by name: %s", taskType));
         }
         return taskDef;
     }
 
     /**
-     * @param def Workflow definition to be updated
+     * @param workflowDef Workflow definition to be updated
      */
     @Service
-    public void updateWorkflowDef(WorkflowDef def) {
-        metadataDAO.updateWorkflowDef(def);
+    public void updateWorkflowDef(WorkflowDef workflowDef) {
+        workflowDef.setUpdateTime(System.currentTimeMillis());
+        metadataDAO.updateWorkflowDef(workflowDef);
     }
 
     /**
-     *
      * @param workflowDefList Workflow definitions to be updated.
      */
     @Service
     public void updateWorkflowDef(List<WorkflowDef> workflowDefList) {
         for (WorkflowDef workflowDef : workflowDefList) {
+            workflowDef.setUpdateTime(System.currentTimeMillis());
             metadataDAO.updateWorkflowDef(workflowDef);
         }
     }
@@ -140,10 +141,11 @@ public class MetadataServiceImpl implements MetadataService {
         if (version == null) {
             workflowDef = metadataDAO.getLatestWorkflowDef(name);
         } else {
-            workflowDef =  metadataDAO.getWorkflowDef(name, version);
+            workflowDef = metadataDAO.getWorkflowDef(name, version);
         }
 
-        return workflowDef.orElseThrow(() -> new ApplicationException(Code.NOT_FOUND, String.format("No such workflow found by name: %s, version: %d", name, version)));
+        return workflowDef.orElseThrow(() -> new ApplicationException(Code.NOT_FOUND,
+            String.format("No such workflow found by name: %s, version: %d", name, version)));
     }
 
     /**
@@ -162,17 +164,18 @@ public class MetadataServiceImpl implements MetadataService {
     @Service
     public void registerWorkflowDef(WorkflowDef workflowDef) {
         if (workflowDef.getName().contains(":")) {
-            throw new ApplicationException(Code.INVALID_INPUT, "Workflow name cannot contain the following set of characters: ':'");
+            throw new ApplicationException(Code.INVALID_INPUT,
+                "Workflow name cannot contain the following set of characters: ':'");
         }
         if (workflowDef.getSchemaVersion() < 1 || workflowDef.getSchemaVersion() > 2) {
             workflowDef.setSchemaVersion(2);
         }
+        workflowDef.setCreateTime(System.currentTimeMillis());
         metadataDAO.createWorkflowDef(workflowDef);
     }
 
     /**
-     *
-     * @param name Name of the workflow definition to be removed
+     * @param name    Name of the workflow definition to be removed
      * @param version Version of the workflow definition to be removed
      */
     @Service
@@ -181,8 +184,8 @@ public class MetadataServiceImpl implements MetadataService {
     }
 
     /**
-     * @param eventHandler Event handler to be added.
-     *                     Will throw an exception if an event handler already exists with the name
+     * @param eventHandler Event handler to be added. Will throw an exception if an event handler already exists with
+     *                     the name
      */
     @Service
     public void addEventHandler(EventHandler eventHandler) {
@@ -223,5 +226,4 @@ public class MetadataServiceImpl implements MetadataService {
     public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
         return eventHandlerDAO.getEventHandlersForEvent(event, activeOnly);
     }
-
 }
