@@ -576,7 +576,7 @@ Each iteration of loop over task will be scheduled as taskRefname__iteration. It
 Do while task output number of iterations with iteration as key and value as number of iterations. Each iteration's output will be stored as, iteration as key and loopover task's output as value
 Taskname which contains arithmetic operator must not be used in loopCondition. Any of loopOver task can be reference outside do while task same way other tasks are referenced.
 To reference specific iteration's output, ```$.LoopTask['iteration]['first_task']```
-Do while task does NOT support domain or isolation group execution.
+Do while task does NOT support domain or isolation group execution. Nesting of DO_WHILE task is not supported. Loopover task must not be reused in neither workflow nor another DO_WHILE task.
 
 
 **Parameters:**

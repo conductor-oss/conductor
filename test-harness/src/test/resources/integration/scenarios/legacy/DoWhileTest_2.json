@@ -57,10 +57,6 @@
       "correlationId": "looptest",
       "pollCount": 0,
       "taskDefName": "DO_WHILE",
-      "scheduledTime": 1534983505159,
-      "startTime": 1534983505161,
-      "endTime": 1534983505164,
-      "updateTime": 1534983505164,
       "startDelayInSeconds": 0,
       "retried": false,
       "executed": false,
@@ -127,6 +123,92 @@
                 "http2"
               ]
             }
+          }
+        ],
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 2
+    },{
+      "taskType": "HTTP",
+      "status": "SCHEDULED",
+      "inputData": {
+        "p1": null,
+        "p2": null
+      },
+      "referenceTaskName": "http3__1",
+      "iteration": 1,
+      "retryCount": 0,
+      "seq": 2,
+      "correlationId": "looptest",
+      "pollCount": 0,
+      "taskDefName": "http0",
+      "scheduledTime": 1534983505160,
+      "startTime": 0,
+      "endTime": 0,
+      "updateTime": 1534983505160,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 3600,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "DoWhileTest_2",
+      "taskId": "feb6c6c2-0974-4e78-b4df-df4389c46aea",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "name": "http3__1",
+        "taskReferenceName": "http3__1",
+        "iteration": 1,
+        "inputParameters": {
+          "tp1": "workflow.input.param1"
+        },
+        "type": "HTTP",
+        "startDelay": 0,
+        "optional": false
+      },
+      "rateLimitPerSecond": 0,
+      "taskStatus": "SCHEDULED",
+      "queueWaitTime": 0
+    },
+    {
+      "taskType": "DO_WHILE",
+      "status": "IN_PROGRESS",
+      "referenceTaskName": "loopTask2",
+      "iteration": 2,
+      "retryCount": 0,
+      "seq": 11,
+      "correlationId": "looptest",
+      "pollCount": 0,
+      "taskDefName": "DO_WHILE",
+      "scheduledTime": 1534983505159,
+      "startDelayInSeconds": 0,
+      "retried": false,
+      "executed": false,
+      "callbackFromWorker": true,
+      "responseTimeoutSeconds": 0,
+      "workflowInstanceId": "WORKFLOW_INSTANCE_ID",
+      "workflowType": "DoWhileTest_2",
+      "taskId": "3e66a03d-08ef-4e71-8588-49d6c82bc75d",
+      "callbackAfterSeconds": 0,
+      "workflowTask": {
+        "taskReferenceName": "loopTask2",
+        "iteration": 1,
+        "name": "loopTask2",
+        "type": "DO_WHILE",
+        "loopCondition": "if ($.loopTask2['iteration'] < 1 ) { true;} else {false;} ",
+        "loopOver": [
+          {
+            "name": "http3__1",
+            "taskReferenceName": "http3__1",
+            "inputParameters": {
+              "tp1": "workflow.input.param1"
+            },
+            "type": "HTTP",
+            "startDelay": 0,
+            "optional": false
           }
         ],
         "startDelay": 0,
