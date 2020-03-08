@@ -53,7 +53,7 @@ import javax.inject.Inject;
  *
  * <em>MetadataDAO</em>
  * <ul>
- * <li>INSERT INTO conductor.workflow_definitions (workflow_def_name,version,workflow_definition) VALUES (?,?,?); </li>
+ * <li>INSERT INTO conductor.workflow_definitions (workflow_def_name,version,workflow_definition) VALUES (?,?,?) IF NOT EXISTS; </li>
  * <li>INSERT INTO conductor.workflow_defs_index (workflow_def_version_index,workflow_def_name_version, workflow_def_index_value) VALUES ('workflow_def_version_index',?,?); </li>
  * <li>INSERT INTO conductor.task_definitions (task_defs,task_def_name,task_definition) VALUES ('task_defs',?,?); </li>
  *
@@ -62,6 +62,8 @@ import javax.inject.Inject;
  * <li>SELECT * FROM conductor.workflow_defs_index WHERE workflow_def_version_index=?; </li>
  * <li>SELECT task_definition FROM conductor.task_definitions WHERE task_defs='task_defs' AND task_def_name=?; </li>
  * <li>SELECT * FROM conductor.task_definitions WHERE task_defs=?; </li>
+ *
+ * <li>UPDATE conductor.workflow_definitions SET workflow_definition=? WHERE workflow_def_name=? AND version=?;</li>
  *
  * <li>DELETE FROM conductor.workflow_definitions WHERE workflow_def_name=? AND version=?; </li>
  * <li>DELETE FROM conductor.workflow_defs_index WHERE workflow_def_version_index=? AND workflow_def_name_version=?; </li>
@@ -118,6 +120,7 @@ public class Statements {
             .value(WORKFLOW_DEF_NAME_KEY, bindMarker())
             .value(WORKFLOW_VERSION_KEY, bindMarker())
             .value(WORKFLOW_DEFINITION_KEY, bindMarker())
+            .ifNotExists()
             .getQueryString();
     }
 
@@ -199,6 +202,19 @@ public class Statements {
             .all()
             .from(keyspace, TABLE_TASK_DEFS)
             .where(eq(TASK_DEFS_KEY, bindMarker()))
+            .getQueryString();
+    }
+
+    // Update Statement
+
+    /**
+     * @return cql query statement to update a workflow definitinos in the "workflow_definitions" table
+     */
+    public String getUpdateWorkflowDefStatement() {
+        return QueryBuilder.update(keyspace, TABLE_WORKFLOW_DEFS)
+            .with(set(WORKFLOW_DEFINITION_KEY, bindMarker()))
+            .where(eq(WORKFLOW_DEF_NAME_KEY, bindMarker()))
+            .and(eq(WORKFLOW_VERSION_KEY, bindMarker()))
             .getQueryString();
     }
 

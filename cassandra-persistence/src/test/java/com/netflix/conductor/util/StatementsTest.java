@@ -12,11 +12,11 @@
  */
 package com.netflix.conductor.util;
 
+import static org.junit.Assert.assertEquals;
+
 import com.netflix.conductor.config.TestConfiguration;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class StatementsTest {
 
@@ -30,7 +30,7 @@ public class StatementsTest {
 
     @Test
     public void testGetInsertWorkflowDefStatement() {
-        String statement = "INSERT INTO junit.workflow_definitions (workflow_def_name,version,workflow_definition) VALUES (?,?,?);";
+        String statement = "INSERT INTO junit.workflow_definitions (workflow_def_name,version,workflow_definition) VALUES (?,?,?) IF NOT EXISTS;";
         assertEquals(statement, statements.getInsertWorkflowDefStatement());
     }
 
@@ -75,6 +75,12 @@ public class StatementsTest {
     public void testGetSelectAllTaskDefsStatement() {
         String statement = "SELECT * FROM junit.task_definitions WHERE task_defs=?;";
         assertEquals(statement, statements.getSelectAllTaskDefsStatement());
+    }
+
+    @Test
+    public void testGetUpdateWorkflowDefStatement() {
+        String statement = "UPDATE junit.workflow_definitions SET workflow_definition=? WHERE workflow_def_name=? AND version=?;";
+        assertEquals(statement, statements.getUpdateWorkflowDefStatement());
     }
 
     @Test
