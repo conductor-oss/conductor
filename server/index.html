@@ -141,6 +141,17 @@
     <li class="toctree-l2"><a href="#setting-up-zookeeper-to-enable-distributed-locking-service">Setting up Zookeeper to enable Distributed Locking Service.</a></li>
     
 
+    <li class="toctree-l2"><a href="#default-workflow-archiving-module-configuration">Default Workflow Archiving Module Configuration</a></li>
+    
+        <ul>
+        
+            <li><a class="toctree-l3" href="#1-enable-archiving-module">1. Enable Archiving Module</a></li>
+        
+            <li><a class="toctree-l3" href="#2-enable-workflow-status-listener">2. Enable Workflow Status Listener</a></li>
+        
+        </ul>
+    
+
     </ul>
 	    </li>
           
@@ -384,6 +395,30 @@ docker-compose build
 <p>Optionally, configure the default timeouts:</p>
 <div class="codehilite"><pre><span></span>zk.sessionTimeoutMs
 zk.connectionTimeoutMs
+</pre></div>
+
+
+<h2 id="default-workflow-archiving-module-configuration">Default Workflow Archiving Module Configuration<a class="headerlink" href="#default-workflow-archiving-module-configuration" title="Permanent link">&para;</a></h2>
+<p>Conductor server does not perform automated workflow execution data cleaning by default. Archiving module (if enabled) 
+removes all execution data from conductor persistence storage immediately upon workflow completion or termination, 
+but keeps archived index data in elastic search. </p>
+<p>To benefit form archiving module you have to do the following:</p>
+<h3 id="1-enable-archiving-module">1. Enable Archiving Module<a class="headerlink" href="#1-enable-archiving-module" title="Permanent link">&para;</a></h3>
+<p>Set property in server configuration.</p>
+<div class="codehilite"><pre><span></span><span class="c"># Comma-separated additional conductor modules</span>
+<span class="na">conductor.additional.modules</span><span class="o">=</span><span class="s">com.netflix.conductor.contribs.ArchivingWorkflowModule</span>
+</pre></div>
+
+
+<h3 id="2-enable-workflow-status-listener">2. Enable Workflow Status Listener<a class="headerlink" href="#2-enable-workflow-status-listener" title="Permanent link">&para;</a></h3>
+<p>Archiving module is triggered only if workflow status listener is enabled on workflow definition level. To enable it 
+you have to set <code>workflowStatusListenerEnabled</code> property to <code>true</code>. See sample workflow definition below:</p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;e2e_approval_v4&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Approval Process&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;workflowStatusListenerEnabled&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span> 
+  <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[]</span>
+<span class="p">}</span>
 </pre></div>
               
             </div>

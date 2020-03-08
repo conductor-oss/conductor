@@ -635,7 +635,7 @@ i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs f
 <p>You will notice that Workflow is in the state as below after sending the POST request:</p>
 <p><img alt="img" src="../img/bgnr_systask_state.png" /></p>
 <p>Conductor has executed <code>is_idents_added</code> all through it's lifecycle, without us polling, or returning the status of Task. If it is still unclear, <code>is_idents_added</code> is a System task, and System tasks are executed by Conductor Server.</p>
-<p>But, <code>add_idents</code> is a SIMPLE task. So, the complete lifecyle of this task (Poll, Ack, Update) should be handled by a worker to continue with W\workflow execution. When Conductor has finished executing all the tasks in given flow, the workflow will reach Terminal state (COMPLETED, FAILED, TIMED_OUT etc.)</p>
+<p>But, <code>add_idents</code> is a SIMPLE task. So, the complete lifecyle of this task (Poll, Update) should be handled by a worker to continue with W\workflow execution. When Conductor has finished executing all the tasks in given flow, the workflow will reach Terminal state (COMPLETED, FAILED, TIMED_OUT etc.)</p>
 <h2 id="next-steps">Next steps<a class="headerlink" href="#next-steps" title="Permanent link">&para;</a></h2>
 <p>You can play around this workflow by failing one of the Tasks, restarting or retrying the Workflow, or by tuning the number of retries, timeoutSeconds etc.</p>
               
