@@ -42,6 +42,7 @@ Send a `POST` request to `/workflow` with payload like:
   "name": "my_adhoc_unregistered_workflow",
   "workflowDef": {
     "ownerApp": "my_owner_app",
+    "ownerEmail": "my_owner_email@test.com",
     "createdBy": "my_username",
     "name": "my_adhoc_unregistered_workflow",
     "description": "Test Workflow setup",
