@@ -66,13 +66,11 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
     @Override
     public void createTaskDef(TaskDef taskDef) {
-        taskDef.setCreateTime(System.currentTimeMillis());
         insertOrUpdateTaskDef(taskDef);
     }
 
     @Override
     public String updateTaskDef(TaskDef taskDef) {
-        taskDef.setUpdateTime(System.currentTimeMillis());
         return insertOrUpdateTaskDef(taskDef);
     }
 
@@ -153,13 +151,11 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 		if (dynoClient.hexists(nsKey(WORKFLOW_DEF, def.getName()), String.valueOf(def.getVersion()))) {
 			throw new ApplicationException(Code.CONFLICT, "Workflow with " + def.key() + " already exists!");
 		}
-		def.setCreateTime(System.currentTimeMillis());
 		_createOrUpdate(def);
 	}
 
 	@Override
 	public void updateWorkflowDef(WorkflowDef def) {
-		def.setUpdateTime(System.currentTimeMillis());
 		_createOrUpdate(def);
 	}
 

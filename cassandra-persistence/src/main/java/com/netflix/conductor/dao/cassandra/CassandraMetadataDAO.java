@@ -65,6 +65,8 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     private final PreparedStatement selectTaskDefStatement;
     private final PreparedStatement selectAllTaskDefsStatement;
 
+    private final PreparedStatement updateWorkflowDefStatement;
+
     private final PreparedStatement deleteWorkflowDefStatement;
     private final PreparedStatement deleteWorkflowDefIndexStatement;
     private final PreparedStatement deleteTaskDefStatement;
@@ -94,6 +96,9 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
         this.selectAllTaskDefsStatement = session.prepare(statements.getSelectAllTaskDefsStatement())
             .setConsistencyLevel(config.getReadConsistencyLevel());
 
+        this.updateWorkflowDefStatement = session.prepare(statements.getUpdateWorkflowDefStatement())
+            .setConsistencyLevel(config.getWriteConsistencyLevel());
+
         this.deleteWorkflowDefStatement = session.prepare(statements.getDeleteWorkflowDefStatement())
             .setConsistencyLevel(config.getWriteConsistencyLevel());
         this.deleteWorkflowDefIndexStatement = session.prepare(statements.getDeleteWorkflowDefIndexStatement())
@@ -108,13 +113,11 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
 
     @Override
     public void createTaskDef(TaskDef taskDef) {
-        taskDef.setCreateTime(System.currentTimeMillis());
         insertOrUpdateTaskDef(taskDef);
     }
 
     @Override
     public String updateTaskDef(TaskDef taskDef) {
-        taskDef.setUpdateTime(System.currentTimeMillis());
         return insertOrUpdateTaskDef(taskDef);
     }
 
@@ -148,18 +151,47 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
 
     @Override
     public void createWorkflowDef(WorkflowDef workflowDef) {
-        if (workflowDefExists(workflowDef)) {
-            throw new ApplicationException(Code.CONFLICT, String.format("Workflow: %s, version: %s already exists!",
-                workflowDef.getName(), workflowDef.getVersion()));
+        try {
+            String workflowDefinition = toJson(workflowDef);
+            if (!session.execute(insertWorkflowDefStatement.bind(workflowDef.getName(), workflowDef.getVersion(),
+                workflowDefinition)).wasApplied()) {
+                throw new ApplicationException(Code.CONFLICT, String.format("Workflow: %s, version: %s already exists!",
+                    workflowDef.getName(), workflowDef.getVersion()));
+            }
+            String workflowDefIndex = getWorkflowDefIndexValue(workflowDef.getName(), workflowDef.getVersion());
+            session.execute(insertWorkflowDefVersionIndexStatement.bind(workflowDefIndex, workflowDefIndex));
+            recordCassandraDaoRequests("createWorkflowDef");
+            recordCassandraDaoPayloadSize("createWorkflowDef", workflowDefinition.length(), "n/a",
+                workflowDef.getName());
+        } catch (ApplicationException ae) {
+            throw ae;
+        } catch (Exception e) {
+            Monitors.error(CLASS_NAME, "createWorkflowDef");
+            String errorMsg = String.format("Error creating workflow definition: %s/%d", workflowDef.getName(),
+                workflowDef.getVersion());
+            LOGGER.error(errorMsg, e);
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
         }
-        workflowDef.setCreateTime(System.currentTimeMillis());
-        insertOrUpdateWorkflowDef(workflowDef);
     }
 
     @Override
     public void updateWorkflowDef(WorkflowDef workflowDef) {
-        workflowDef.setUpdateTime(System.currentTimeMillis());
-        insertOrUpdateWorkflowDef(workflowDef);
+        try {
+            String workflowDefinition = toJson(workflowDef);
+            session.execute(updateWorkflowDefStatement.bind(workflowDefinition, workflowDef.getName(),
+                workflowDef.getVersion()));
+            String workflowDefIndex = getWorkflowDefIndexValue(workflowDef.getName(), workflowDef.getVersion());
+            session.execute(insertWorkflowDefVersionIndexStatement.bind(workflowDefIndex, workflowDefIndex));
+            recordCassandraDaoRequests("updateWorkflowDef");
+            recordCassandraDaoPayloadSize("updateWorkflowDef", workflowDefinition.length(), "n/a",
+                workflowDef.getName());
+        } catch (Exception e) {
+            Monitors.error(CLASS_NAME, "updateWorkflowDef");
+            String errorMsg = String.format("Error updating workflow definition: %s/%d", workflowDef.getName(),
+                workflowDef.getVersion());
+            LOGGER.error(errorMsg, e);
+            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, errorMsg, e);
+        }
     }
 
     @Override
@@ -313,28 +345,7 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     }
 
     @VisibleForTesting
-    boolean workflowDefExists(WorkflowDef workflowDef) {
-        return getWorkflowDef(workflowDef.getName(), workflowDef.getVersion()).isPresent();
-    }
-
     String getWorkflowDefIndexValue(String name, int version) {
         return name + INDEX_DELIMITER + version;
-    }
-
-    private void insertOrUpdateWorkflowDef(WorkflowDef def) {
-        try {
-            String workflowDefinition = toJson(def);
-            session.execute(insertWorkflowDefStatement.bind(def.getName(), def.getVersion(), workflowDefinition));
-            String workflowDefIndex = getWorkflowDefIndexValue(def.getName(), def.getVersion());
-            session.execute(insertWorkflowDefVersionIndexStatement.bind(workflowDefIndex, workflowDefIndex));
-            recordCassandraDaoRequests("storeWorkflowDef");
-            recordCassandraDaoPayloadSize("storeWorkflwoDef", workflowDefinition.length(), "n/a", def.getName());
-        } catch (Exception e) {
-            Monitors.error(CLASS_NAME, "insertOrUpdateWorkflowDef");
-            String errorMsg = String.format("Error creating/updating workflow definition: %s/%d",
-                def.getName(), def.getVersion());
-            LOGGER.error(errorMsg, e);
-            throw new ApplicationException(Code.BACKEND_ERROR, errorMsg, e);
-        }
     }
 }

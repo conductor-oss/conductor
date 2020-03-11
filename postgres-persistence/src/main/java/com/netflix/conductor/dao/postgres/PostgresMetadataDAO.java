@@ -54,17 +54,12 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
     @Override
     public void createTaskDef(TaskDef taskDef) {
         validate(taskDef);
-        if (null == taskDef.getCreateTime() || taskDef.getCreateTime() < 1) {
-            taskDef.setCreateTime(System.currentTimeMillis());
-        }
-
         insertOrUpdateTaskDef(taskDef);
     }
 
     @Override
     public String updateTaskDef(TaskDef taskDef) {
         validate(taskDef);
-        taskDef.setUpdateTime(System.currentTimeMillis());
         return insertOrUpdateTaskDef(taskDef);
     }
 
@@ -103,9 +98,6 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
     @Override
     public void createWorkflowDef(WorkflowDef def) {
         validate(def);
-        if (null == def.getCreateTime() || def.getCreateTime() == 0) {
-            def.setCreateTime(System.currentTimeMillis());
-        }
 
         withTransaction(tx -> {
             if (workflowExists(tx, def)) {
@@ -120,7 +112,6 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
     @Override
     public void updateWorkflowDef(WorkflowDef def) {
         validate(def);
-        def.setUpdateTime(System.currentTimeMillis());
         withTransaction(tx -> insertOrUpdateWorkflowDef(tx, def));
     }
 
