@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,11 +17,14 @@ package com.netflix.conductor.dao.cassandra;
 
 import static com.netflix.conductor.util.Constants.DAO_NAME;
 import static com.netflix.conductor.util.Constants.ENTITY_KEY;
+import static com.netflix.conductor.util.Constants.EVENT_EXECUTION_ID_KEY;
 import static com.netflix.conductor.util.Constants.EVENT_HANDLER_KEY;
 import static com.netflix.conductor.util.Constants.EVENT_HANDLER_NAME_KEY;
 import static com.netflix.conductor.util.Constants.HANDLERS_KEY;
+import static com.netflix.conductor.util.Constants.MESSAGE_ID_KEY;
 import static com.netflix.conductor.util.Constants.PAYLOAD_KEY;
 import static com.netflix.conductor.util.Constants.SHARD_ID_KEY;
+import static com.netflix.conductor.util.Constants.TABLE_EVENT_EXECUTIONS;
 import static com.netflix.conductor.util.Constants.TABLE_EVENT_HANDLERS;
 import static com.netflix.conductor.util.Constants.TABLE_TASK_DEFS;
 import static com.netflix.conductor.util.Constants.TABLE_TASK_DEF_LIMIT;
@@ -80,6 +83,9 @@ import org.slf4j.LoggerFactory;
  * <p>
  * CREATE TABLE IF NOT EXISTS conductor.event_handlers( handlers text, event_handler_name text, event_handler text,
  * PRIMARY KEY ((handlers), event_handler_name) );
+ * <p>
+ * CREATE TABLE IF NOT EXISTS conductor.event_executions( message_id text, event_handler_name text, event_execution_id
+ * text, payload text, PRIMARY KEY ((message_id, event_handler_name), event_execution_id) );
  */
 public abstract class CassandraBaseDAO {
 
@@ -110,6 +116,7 @@ public abstract class CassandraBaseDAO {
                 session.execute(getCreateWorkflowDefsIndexTableStatement());
                 session.execute(getCreateTaskDefsTableStatement());
                 session.execute(getCreateEventHandlersTableStatement());
+                session.execute(getCreateEventExecutionsTableStatement());
                 LOGGER.info("CassandraDAO initialization complete! Tables created!");
                 initialized = true;
             }
@@ -192,6 +199,16 @@ public abstract class CassandraBaseDAO {
             .addPartitionKey(HANDLERS_KEY, DataType.text())
             .addClusteringColumn(EVENT_HANDLER_NAME_KEY, DataType.text())
             .addColumn(EVENT_HANDLER_KEY, DataType.text())
+            .getQueryString();
+    }
+
+    private String getCreateEventExecutionsTableStatement() {
+        return SchemaBuilder.createTable(config.getCassandraKeyspace(), TABLE_EVENT_EXECUTIONS)
+            .ifNotExists()
+            .addPartitionKey(MESSAGE_ID_KEY, DataType.text())
+            .addPartitionKey(EVENT_HANDLER_NAME_KEY, DataType.text())
+            .addClusteringColumn(EVENT_EXECUTION_ID_KEY, DataType.text())
+            .addColumn(PAYLOAD_KEY, DataType.text())
             .getQueryString();
     }
 

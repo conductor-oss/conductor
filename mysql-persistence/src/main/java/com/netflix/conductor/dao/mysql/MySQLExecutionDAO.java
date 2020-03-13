@@ -421,7 +421,6 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, Rat
         }
     }
 
-    @Override
     public List<EventExecution> getEventExecutions(String eventHandlerName, String eventName, String messageId,
                                                    int max) {
         try {

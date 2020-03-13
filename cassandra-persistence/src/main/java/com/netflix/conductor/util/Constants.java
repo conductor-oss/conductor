@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -23,6 +23,7 @@ public interface Constants {
     String TABLE_WORKFLOW_DEFS_INDEX = "workflow_defs_index";
     String TABLE_TASK_DEFS = "task_definitions";
     String TABLE_EVENT_HANDLERS = "event_handlers";
+    String TABLE_EVENT_EXECUTIONS = "event_executions";
 
     String WORKFLOW_ID_KEY = "workflow_id";
     String SHARD_ID_KEY = "shard_id";
@@ -43,6 +44,8 @@ public interface Constants {
     String HANDLERS_KEY = "handlers";
     String EVENT_HANDLER_NAME_KEY = "event_handler_name";
     String EVENT_HANDLER_KEY = "event_handler";
+    String MESSAGE_ID_KEY = "message_id";
+    String EVENT_EXECUTION_ID_KEY = "event_execution_id";
 
     String ENTITY_TYPE_WORKFLOW = "workflow";
     String ENTITY_TYPE_TASK = "task";
