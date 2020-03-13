@@ -123,10 +123,19 @@ public class ExecutionService {
 		}
 		String queueName = QueueUtils.getQueueName(taskType, domain, null,null);
 
+		List<String> taskIds = new LinkedList<>();
 		List<Task> tasks = new LinkedList<>();
 		try {
-			List<String> taskIds = queueDAO.pop(queueName, count, timeoutInMilliSecond);
-			for (String taskId : taskIds) {
+			taskIds = queueDAO.pop(queueName, count, timeoutInMilliSecond);
+		} catch (Exception e) {
+			logger.error("Error polling for task: {} from worker: {} in domain: {}, count: {}", taskType, workerId,
+				domain, count, e);
+			Monitors.error(this.getClass().getCanonicalName(), "taskPoll");
+			Monitors.recordTaskPollError(taskType, domain, e.getClass().getSimpleName());
+		}
+
+		for (String taskId : taskIds) {
+			try {
 				Task task = getTask(taskId);
 				if (task == null || task.getStatus().isTerminal()) {
 					// Remove taskId(s) without a valid Task/terminal state task from the queue
@@ -136,7 +145,7 @@ public class ExecutionService {
 				}
 
 				if (executionDAOFacade.exceedsInProgressLimit(task)) {
-				    // Postpone a message, so that it would be available for poll again.
+					// Postpone a message, so that it would be available for poll again.
 					queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSeconds);
 					continue;
 				}
@@ -151,13 +160,15 @@ public class ExecutionService {
 				task.setPollCount(task.getPollCount() + 1);
 				executionDAOFacade.updateTask(task);
 				tasks.add(task);
+			} catch (Exception e) {
+				// db operation failed for dequeued message, re-enqueue with a delay
+				logger.warn("DB operation failed for task: {}, postponing task in queue", taskId, e);
+				Monitors.recordTaskPollError(taskType, domain, e.getClass().getSimpleName());
+				queueDAO.postpone(queueName, taskId, 0, queueTaskMessagePostponeSeconds);
 			}
-			executionDAOFacade.updateTaskLastPoll(taskType, domain, workerId);
-			Monitors.recordTaskPoll(queueName);
-		} catch (Exception e) {
-			logger.error("Error polling for task: {} from worker: {} in domain: {}, count: {}", taskType, workerId, domain, count, e);
-			Monitors.error(this.getClass().getCanonicalName(), "taskPoll");
 		}
+		executionDAOFacade.updateTaskLastPoll(taskType, domain, workerId);
+		Monitors.recordTaskPoll(queueName);
 		return tasks;
 	}
 
