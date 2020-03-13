@@ -81,7 +81,7 @@ import org.slf4j.LoggerFactory;
  * CREATE TABLE IF NOT EXISTS conductor.event_handlers( handlers text, event_handler_name text, event_handler text,
  * PRIMARY KEY ((handlers), event_handler_name) );
  */
-public class CassandraBaseDAO {
+public abstract class CassandraBaseDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraBaseDAO.class);
 

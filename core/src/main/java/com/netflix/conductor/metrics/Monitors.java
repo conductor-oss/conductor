@@ -165,6 +165,10 @@ public class Monitors {
 		getTimer(classQualifier, "task_execution", "taskType", taskType, "includeRetries", "" + includesRetries, "status", status.name()).record(duration, TimeUnit.MILLISECONDS);
 	}
 
+	public static void recordTaskPollError(String taskType, String domain, String exception) {
+		counter(classQualifier, "task_poll_error", "taskType", taskType, "domain", domain, "exception", exception);
+	}
+
 	public static void recordTaskPoll(String taskType) {
 		counter(classQualifier, "task_poll", "taskType", taskType);
 	}
