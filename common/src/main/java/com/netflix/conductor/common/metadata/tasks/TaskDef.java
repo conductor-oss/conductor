@@ -19,6 +19,7 @@ package com.netflix.conductor.common.metadata.tasks;
 import com.github.vmg.protogen.annotations.ProtoEnum;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
+import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.constraints.TaskTimeoutConstraint;
 import com.netflix.conductor.common.metadata.Auditable;
 import java.util.ArrayList;
@@ -109,7 +110,7 @@ public class TaskDef extends Auditable {
 	private String executionNameSpace;
 
 	@ProtoField(id = 18)
-	@NotEmpty(message = "ownerEmail cannot be empty")
+	@OwnerEmailMandatoryConstraint
 	@Email(message = "ownerEmail should be valid email address")
 	private String ownerEmail;
 

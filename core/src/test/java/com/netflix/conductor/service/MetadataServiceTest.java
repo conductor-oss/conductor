@@ -30,6 +30,7 @@ import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.ValidationModule;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.ApplicationException;
@@ -54,12 +55,15 @@ public class MetadataServiceTest{
     private EventHandlerDAO eventHandlerDAO;
 
     private EventQueues eventQueues;
+    private Configuration configuration;
 
     @Before
     public void before() {
         metadataDAO = Mockito.mock(MetadataDAO.class);
         eventHandlerDAO = Mockito.mock(EventHandlerDAO.class);
         eventQueues = Mockito.mock(EventQueues.class);
+        configuration = Mockito.mock(Configuration.class);
+        when(configuration.isOwnerEmailMandatory()).thenReturn(true);
 
         Injector injector =
                 Guice.createInjector(
@@ -70,6 +74,7 @@ public class MetadataServiceTest{
                                 bind(MetadataDAO.class).toInstance(metadataDAO);
                                 bind(EventHandlerDAO.class).toInstance(eventHandlerDAO);
                                 bind(EventQueues.class).toInstance(eventQueues);
+                                bind(Configuration.class).toInstance(configuration);
 
                                 install(new ValidationModule());
                                 bindInterceptor(
