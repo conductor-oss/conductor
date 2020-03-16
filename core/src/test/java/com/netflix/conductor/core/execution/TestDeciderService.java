@@ -467,7 +467,7 @@ public class TestDeciderService {
     @Test
     public void testTaskTimeout() {
         Counter counter = registry.counter("task_timeout", "class", "WorkflowMonitor", "taskType", "test");
-        assertEquals(0, counter.count());
+        long counterCount = counter.count();
 
         TaskDef taskType = new TaskDef();
         taskType.setName("test");
@@ -483,7 +483,7 @@ public class TestDeciderService {
         //Task should be marked as timed out
         assertEquals(Status.TIMED_OUT, task.getStatus());
         assertNotNull(task.getReasonForIncompletion());
-        assertEquals(1, counter.count());
+        assertEquals(++counterCount, counter.count());
 
         taskType.setTimeoutPolicy(TimeoutPolicy.ALERT_ONLY);
         task.setStatus(Status.IN_PROGRESS);
@@ -493,7 +493,7 @@ public class TestDeciderService {
         //Nothing will happen
         assertEquals(Status.IN_PROGRESS, task.getStatus());
         assertNull(task.getReasonForIncompletion());
-        assertEquals(2, counter.count());
+        assertEquals(++counterCount, counter.count());
 
         boolean exception = false;
         taskType.setTimeoutPolicy(TimeoutPolicy.TIME_OUT_WF);
@@ -508,7 +508,7 @@ public class TestDeciderService {
         assertTrue(exception);
         assertEquals(Status.TIMED_OUT, task.getStatus());
         assertNotNull(task.getReasonForIncompletion());
-        assertEquals(3, counter.count());
+        assertEquals(++counterCount, counter.count());
 
         taskType.setTimeoutPolicy(TimeoutPolicy.TIME_OUT_WF);
         task.setStatus(Status.IN_PROGRESS);
@@ -517,8 +517,37 @@ public class TestDeciderService {
 
         assertEquals(Status.IN_PROGRESS, task.getStatus());
         assertNull(task.getReasonForIncompletion());
-        assertEquals(3, counter.count());
+        assertEquals(counterCount, counter.count());
+    }
 
+    @Test
+    public void testCheckTaskPollTimeout() {
+        Counter counter = registry.counter("task_timeout", "class", "WorkflowMonitor", "taskType", "test");
+        long counterCount = counter.count();
+
+        TaskDef taskType = new TaskDef();
+        taskType.setName("test");
+        taskType.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskType.setPollTimeoutSeconds(1);
+
+        Task task = new Task();
+        task.setTaskType(taskType.getName());
+        task.setScheduledTime(System.currentTimeMillis() - 2_000);
+        task.setStatus(Status.SCHEDULED);
+        deciderService.checkTaskPollTimeout(taskType, task);
+
+        assertEquals(++counterCount, counter.count());
+        assertEquals(Status.TIMED_OUT, task.getStatus());
+        assertNotNull(task.getReasonForIncompletion());
+
+        task.setScheduledTime(System.currentTimeMillis());
+        task.setReasonForIncompletion(null);
+        task.setStatus(Status.SCHEDULED);
+        deciderService.checkTaskPollTimeout(taskType, task);
+
+        assertEquals(counterCount, counter.count());
+        assertEquals(Status.SCHEDULED, task.getStatus());
+        assertNull(task.getReasonForIncompletion());
     }
 
     @SuppressWarnings("unchecked")

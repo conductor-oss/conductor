@@ -167,6 +167,7 @@ public class DeciderService {
 
             if (taskDefinition.isPresent()) {
                 checkTaskTimeout(taskDefinition.get(), pendingTask);
+                checkTaskPollTimeout(taskDefinition.get(), pendingTask);
                 // If the task has not been updated for "responseTimeoutSeconds" then mark task as TIMED_OUT
                 if (isResponseTimedOut(taskDefinition.get(), pendingTask)) {
                     timeoutTask(taskDefinition.get(), pendingTask);
@@ -538,8 +539,37 @@ public class DeciderService {
             return;
         }
 
-        String reason = String.format("Task timed out after %d seconds. Timeout configured as %d. "
-            + "Timeout policy configured to %s", elapsedTime/1000L, timeout, taskDef.getTimeoutPolicy().name());
+        String reason = String.format("Task timed out after %d seconds. Timeout configured as %d seconds. "
+            + "Timeout policy configured to %s", elapsedTime / 1000L, timeout / 1000L, taskDef.getTimeoutPolicy().name());
+        timeoutTaskWithTimeoutPolicy(reason, taskDef, task);
+    }
+
+    @VisibleForTesting
+    void checkTaskPollTimeout(TaskDef taskDef, Task task) {
+        if (taskDef == null) {
+            LOGGER.warn("Missing task definition for task:{}/{} in workflow:{}", task.getTaskId(), task.getTaskDefName(), task.getWorkflowInstanceId());
+            return;
+        }
+        if (taskDef.getPollTimeoutSeconds() == null || taskDef.getPollTimeoutSeconds() <= 0 || !task.getStatus().equals(SCHEDULED)) {
+            return;
+        }
+
+        final long pollTimeout = 1000L * taskDef.getPollTimeoutSeconds();
+        final long adjustedPollTimeout = pollTimeout + task.getCallbackAfterSeconds() * 1000L;
+        final long now = System.currentTimeMillis();
+        final long pollElapsedTime = now - (task.getScheduledTime() + ((long) task.getStartDelayInSeconds() * 1000L));
+
+        if (pollElapsedTime < adjustedPollTimeout) {
+            return;
+        }
+
+        String reason = String.format(
+            "Task poll timed out after %d seconds. Poll timeout configured as %d seconds. Timeout policy configured to %s",
+            pollElapsedTime / 1000L, pollTimeout / 1000L, taskDef.getTimeoutPolicy().name());
+        timeoutTaskWithTimeoutPolicy(reason, taskDef, task);
+    }
+
+    void timeoutTaskWithTimeoutPolicy(String reason, TaskDef taskDef, Task task) {
         Monitors.recordTaskTimeout(task.getTaskDefName());
 
         switch (taskDef.getTimeoutPolicy()) {
