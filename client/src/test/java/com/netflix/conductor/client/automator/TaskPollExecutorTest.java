@@ -17,9 +17,9 @@ package com.netflix.conductor.client.automator;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskResult.Status.IN_PROGRESS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -138,8 +138,13 @@ public class TaskPollExecutorTest {
         when(taskClient.pollTask(any(), any(), any())).thenReturn(task);
         when(taskClient.ack(any(), any())).thenReturn(true);
 
-        doThrow(ConductorClientException.class).when(taskClient)
-            .evaluateAndUploadLargePayload(any(TaskResult.class), any());
+        doAnswer(invocation -> {
+            Object[] args = invocation.getArguments();
+            TaskResult result = (TaskResult) args[0];
+            assertNull(result.getReasonForIncompletion());
+            result.setReasonForIncompletion("some_reason");
+            throw new ConductorClientException();
+        }).when(taskClient).evaluateAndUploadLargePayload(any(TaskResult.class), any());
 
         TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 3, "test-worker-");
         CountDownLatch latch = new CountDownLatch(1);
