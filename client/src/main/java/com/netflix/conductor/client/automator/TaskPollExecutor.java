@@ -212,15 +212,16 @@ class TaskPollExecutor {
                     worker.getIdentity());
             String methodName = "updateWithRetry";
 
-            new RetryUtil<>().retryOnException(() ->
+            TaskResult finalResult = new RetryUtil<TaskResult>().retryOnException(() ->
             {
-                taskClient.evaluateAndUploadLargePayload(result, task.getTaskType());
-                return null;
+                TaskResult taskResult = result.copy();
+                taskClient.evaluateAndUploadLargePayload(taskResult, task.getTaskType());
+                return taskResult;
             }, null, null, count, evaluatePayloadDesc, methodName);
 
             new RetryUtil<>().retryOnException(() ->
             {
-                taskClient.updateTask(result);
+                taskClient.updateTask(finalResult);
                 return null;
             }, null, null, count, updateTaskDesc, methodName);
         } catch (Exception e) {

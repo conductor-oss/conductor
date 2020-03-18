@@ -264,6 +264,7 @@ public class TaskResult {
                 ", outputMessage=" + outputMessage +
                 ", logs=" + logs +
                 ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
+                ", subWorkflowId='" + subWorkflowId + '\'' +
                 '}';
     }
 
@@ -289,5 +290,25 @@ public class TaskResult {
         TaskResult result = new TaskResult();
         result.setStatus(status);
         return result;
+    }
+
+    /**
+     * Copy the given task result object
+     * @return a deep copy of the task result object
+     */
+    public TaskResult copy() {
+        TaskResult taskResult = new TaskResult();
+        taskResult.setWorkflowInstanceId(workflowInstanceId);
+        taskResult.setTaskId(taskId);
+        taskResult.setReasonForIncompletion(reasonForIncompletion);
+        taskResult.setCallbackAfterSeconds(callbackAfterSeconds);
+        taskResult.setWorkerId(workerId);
+        taskResult.setStatus(status);
+        taskResult.setOutputData(outputData);
+        taskResult.setOutputMessage(outputMessage);
+        taskResult.setLogs(logs);
+        taskResult.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
+        taskResult.setSubWorkflowId(subWorkflowId);
+        return taskResult;
     }
 }
