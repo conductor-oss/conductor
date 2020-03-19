@@ -109,7 +109,7 @@ router.get('/id/:workflowId', async (req, res, next) => {
     const subs = filter(identity)(
       map(task => {
         if (task.taskType === 'SUB_WORKFLOW') {
-          const subWorkflowId = task.inputData && task.inputData.subWorkflowId;
+          const subWorkflowId = task.subWorkflowId;
 
           if (subWorkflowId != null) {
             return {
@@ -125,7 +125,7 @@ router.get('/id/:workflowId', async (req, res, next) => {
 
     (result.tasks || []).forEach(task => {
       if (task.taskType === 'SUB_WORKFLOW') {
-        const subWorkflowId = task.inputData && task.inputData.subWorkflowId;
+        const subWorkflowId = task.subWorkflowId;
 
         if (subWorkflowId != null) {
           subs.push({
