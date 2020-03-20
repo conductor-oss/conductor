@@ -423,7 +423,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 
         try {
             long startTime = Instant.now().toEpochMilli();
-            BulkRequestBuilder bulkRequestBuilder = elasticSearchClient.prepareBulk();
+            BulkRequestBuilderWrapper bulkRequestBuilder = new BulkRequestBuilderWrapper(elasticSearchClient.prepareBulk());
             for (TaskExecLog log : taskExecLogs) {
                 IndexRequest request = new IndexRequest(logIndexName, LOG_DOC_TYPE);
                 request.source(objectMapper.writeValueAsBytes(log), XContentType.JSON);
@@ -563,7 +563,7 @@ public class ElasticSearchDAOV5 implements IndexDAO {
         }
     }
 
-    private void updateWithRetry(BulkRequestBuilder request, String docType) {
+    private void updateWithRetry(BulkRequestBuilderWrapper request, String docType) {
         try {
             long startTime = Instant.now().toEpochMilli();
             new RetryUtil<BulkResponse>().retryOnException(
@@ -856,19 +856,19 @@ public class ElasticSearchDAOV5 implements IndexDAO {
 
     private static class BulkRequests {
         private final long lastFlushTime;
-        private final BulkRequestBuilder bulkRequestBuilder;
+        private final BulkRequestBuilderWrapper bulkRequestBuilder;
 
         public long getLastFlushTime() {
             return lastFlushTime;
         }
 
-        public BulkRequestBuilder getBulkRequestBuilder() {
+        public BulkRequestBuilderWrapper getBulkRequestBuilder() {
             return bulkRequestBuilder;
         }
 
         BulkRequests(long lastFlushTime, BulkRequestBuilder bulkRequestBuilder) {
             this.lastFlushTime = lastFlushTime;
-            this.bulkRequestBuilder = bulkRequestBuilder;
+            this.bulkRequestBuilder = new BulkRequestBuilderWrapper(bulkRequestBuilder);
         }
     }
 }
