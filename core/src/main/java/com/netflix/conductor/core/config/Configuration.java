@@ -79,6 +79,9 @@ public interface Configuration {
     String TASKEXECLOG_INDEXING_ENABLED_PROPERTY_NAME = "workflow.taskExecLog.indexing.enabled";
     boolean TASKEXECLOG_INDEXING_ENABLED_DEFAULT_VALUE = true;
 
+    String INDEXING_ENABLED_PROPERTY_NAME = "workflow.indexing.enabled";
+    boolean INDEXING_ENABLED_DEFAULT_VALUE = true;
+
     String TASK_DEF_REFRESH_TIME_SECS_PROPERTY_NAME = "conductor.taskdef.cache.refresh.time.seconds";
     int TASK_DEF_REFRESH_TIME_SECS_DEFAULT_VALUE = 60;
 
@@ -119,6 +122,13 @@ public interface Configuration {
      */
     default boolean isTaskExecLogIndexingEnabled() {
         return getBooleanProperty(TASKEXECLOG_INDEXING_ENABLED_PROPERTY_NAME, TASKEXECLOG_INDEXING_ENABLED_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return if true(default), enables indexing persistence
+     */
+    default boolean isIndexingPersistenceEnabled() {
+            return getBooleanProperty(INDEXING_ENABLED_PROPERTY_NAME, INDEXING_ENABLED_DEFAULT_VALUE);
     }
 
     /**
