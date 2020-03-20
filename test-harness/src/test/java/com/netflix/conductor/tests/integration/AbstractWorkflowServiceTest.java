@@ -4979,6 +4979,17 @@ public abstract class AbstractWorkflowServiceTest {
         createSubWorkflow();
         WorkflowDef found = metadataService.getWorkflowDef(WF_WITH_SUB_WF, 1);
 
+        WorkflowTask workflowTask = found.getTasks().stream().filter(t -> t.getType().equals(SUB_WORKFLOW.name())).findAny().orElse(null);
+
+        // Set subworkflow task retry count to 1.
+        TaskDef subWorkflowTaskDef = new TaskDef();
+        subWorkflowTaskDef.setRetryCount(1);
+        subWorkflowTaskDef.setName("test_subworkflow_task");
+        subWorkflowTaskDef.setOwnerEmail("test@qbc.com");
+        workflowTask.setTaskDefinition(subWorkflowTaskDef);
+
+        metadataService.updateWorkflowDef(found);
+
         // start the workflow
         Map<String, Object> workflowInputParams = new HashMap<>();
         workflowInputParams.put("param1", "param 1");
@@ -5028,8 +5039,43 @@ public abstract class AbstractWorkflowServiceTest {
         Workflow subWorkflow = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
         assertNotNull(subWorkflow);
         assertEquals(WorkflowStatus.FAILED, subWorkflow.getStatus());
+        subWorkflowTaskId = subWorkflow.getParentWorkflowTaskId();
 
-        workflowExecutor.executeSystemTask(subworkflow, subWorkflow.getParentWorkflowTaskId(), 1);
+        workflowExecutor.executeSystemTask(subworkflow, subWorkflowTaskId, 1);
+
+        // Ensure failed Subworkflow task is rescheduled.
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals(RUNNING, workflow.getStatus());
+
+        task = workflow.getTasks().stream()
+                .filter(t -> t.getTaskType().equals(SUB_WORKFLOW.name()))
+                .filter(t -> t.getStatus().equals(SCHEDULED))
+                .findAny().orElse(null);
+        assertNotNull(task);
+        assertNull("Retried task in scheduled state shouldn't have a SubworkflowId yet", task.getSubWorkflowId());
+        subWorkflowTaskId = task.getTaskId();
+
+        workflowExecutor.executeSystemTask(subworkflow, task.getTaskId(), 1);
+
+        // Get the latest workflow and task, and then acquire latest subWorkflowId
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+
+        task = workflow.getTasks().stream()
+                .filter(t -> t.getTaskType().equals(SUB_WORKFLOW.name()))
+                .filter(t -> t.getStatus().equals(IN_PROGRESS))
+                .findAny().orElse(null);
+        assertNotNull(task);
+        assertNotNull("Retried task in scheduled state shouldn't have a SubworkflowId yet", task.getSubWorkflowId());
+        subWorkflowId = task.getSubWorkflowId();
+
+        // poll and fail the first task in sub-workflow
+        task = workflowExecutionService.poll("junit_task_1", "test");
+        task.setStatus(FAILED);
+        workflowExecutionService.updateTask(task);
+
+        workflowExecutor.executeSystemTask(subworkflow, subWorkflowTaskId, 1);
 
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
@@ -5081,6 +5127,10 @@ public abstract class AbstractWorkflowServiceTest {
         taskDef = notFoundSafeGetTaskDef(taskName);
         taskDef.setRetryCount(retryCount);
         metadataService.updateTaskDef(taskDef);
+
+        workflowTask = found.getTasks().stream().filter(t -> t.getType().equals(SUB_WORKFLOW.name())).findAny().orElse(null);
+        workflowTask.setTaskDefinition(null);
+        metadataService.updateWorkflowDef(found);
     }
 
     @Test

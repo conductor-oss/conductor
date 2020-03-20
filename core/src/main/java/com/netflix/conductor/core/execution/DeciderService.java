@@ -424,6 +424,7 @@ public class DeciderService {
         rescheduled.setInputData(new HashMap<>());
         rescheduled.getInputData().putAll(task.getInputData());
         rescheduled.setReasonForIncompletion(null);
+        rescheduled.setSubWorkflowId(null);
 
         if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
             rescheduled.setExternalInputPayloadStoragePath(task.getExternalInputPayloadStoragePath());
