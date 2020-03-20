@@ -70,7 +70,8 @@ If you have 1000 task executions waiting in the queue, and 1000 workers polling 
 * `rateLimitPerFrequency`defines the number of Tasks that can be given to Workers per given "frequency window".  
 **Example:**  
 Let's set `rateLimitFrequencyInSeconds = 5`, and `rateLimitPerFrequency = 12`. This means, our frequency window is of 5 seconds duration, and for each frequency window, Conductor would only give 12 tasks to workers. So, in a given minute, Conductor would only give 12*(60/5) = 144 tasks to workers irrespective of the number of workers that are polling for the task.  
-Note that unlike `concurrentExecLimit`, rate limiting doesn't take into account tasks already in progress/completed. Even if all the previous tasks are executed within 1 sec, or would take a few days, the new tasks are still given to workers at configured frequency, 144 tasks per minute in above example.
+Note that unlike `concurrentExecLimit`, rate limiting doesn't take into account tasks already in progress/completed. Even if all the previous tasks are executed within 1 sec, or would take a few days, the new tasks are still given to workers at configured frequency, 144 tasks per minute in above example.   
+Note: Rate limiting is only supported for the Redis-persistence module and is not available with other persistence layers.
 
 ### Using inputKeys and outputKeys
 
