@@ -88,6 +88,9 @@ public interface Configuration {
     String EVENT_HANDLER_REFRESH_TIME_SECS_PROPERTY_NAME = "conductor.eventhandler.cache.refresh.time.seconds";
     int EVENT_HANDLER_REFRESH_TIME_SECS_DEFAULT_VALUE = 60;
 
+    String OWNER_EMAIL_MANDATORY_NAME = "workflow.owner.email.mandatory";
+    boolean OWNER_EMAIL_MANDATORY_DEFAULT_VALUE = true;
+
     //TODO add constants for input/output external payload related properties.
 
     default DB getDB() {
@@ -207,6 +210,13 @@ public interface Configuration {
 
     default boolean getJerseyEnabled() {
         return getBooleanProperty(JERSEY_ENABLED_PROPERTY_NAME, JERSEY_ENABLED_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return true if owner email is mandatory for task definitions and workflow definitions
+     */
+    default boolean isOwnerEmailMandatory() {
+            return getBooleanProperty(OWNER_EMAIL_MANDATORY_NAME, OWNER_EMAIL_MANDATORY_DEFAULT_VALUE);
     }
 
     /**

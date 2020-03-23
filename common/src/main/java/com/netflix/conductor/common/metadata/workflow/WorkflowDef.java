@@ -19,6 +19,7 @@ import com.github.vmg.protogen.annotations.ProtoEnum;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.constraints.NoSemiColonConstraint;
+import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.constraints.TaskReferenceNameUniqueConstraint;
 import com.netflix.conductor.common.metadata.Auditable;
 import java.util.HashMap;
@@ -84,7 +85,7 @@ public class WorkflowDef extends Auditable {
 	private boolean workflowStatusListenerEnabled = false;
 
 	@ProtoField(id = 11)
-	@NotEmpty(message = "ownerEmail cannot be empty")
+	@OwnerEmailMandatoryConstraint
 	@Email(message = "ownerEmail should be valid email address")
 	private String ownerEmail;
 

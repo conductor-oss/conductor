@@ -19,10 +19,12 @@ package com.netflix.conductor.service;
 import com.netflix.conductor.annotations.Audit;
 import com.netflix.conductor.annotations.Service;
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.constraints.OwnerEmailMandatoryConstraint;
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.WorkflowContext;
+import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.EventQueues;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.ApplicationException.Code;
@@ -44,12 +46,14 @@ public class MetadataServiceImpl implements MetadataService {
     private final EventQueues eventQueues;
 
     @Inject
-    public MetadataServiceImpl(MetadataDAO metadataDAO, EventHandlerDAO eventHandlerDAO, EventQueues eventQueues) {
+    public MetadataServiceImpl(MetadataDAO metadataDAO, EventHandlerDAO eventHandlerDAO, EventQueues eventQueues,
+                               Configuration configuration) {
         this.metadataDAO = metadataDAO;
         this.eventHandlerDAO = eventHandlerDAO;
         this.eventQueues = eventQueues;
 
         ValidationContext.initialize(metadataDAO);
+        OwnerEmailMandatoryConstraint.WorkflowTaskValidValidator.setOwnerEmailMandatory(configuration.isOwnerEmailMandatory());
     }
 
     /**
