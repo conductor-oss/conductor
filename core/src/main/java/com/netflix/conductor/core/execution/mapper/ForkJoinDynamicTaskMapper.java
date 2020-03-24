@@ -15,6 +15,20 @@
  */
 package com.netflix.conductor.core.execution.mapper;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
@@ -29,18 +43,6 @@ import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.IDGenerator;
 import com.netflix.conductor.dao.MetadataDAO;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#FORK_JOIN_DYNAMIC}
@@ -241,6 +243,9 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
         Map<String, Object> input = parametersUtils.getTaskInput(taskToSchedule.getInputParameters(), workflowInstance, null, null);
         Object dynamicForkTasksJson = input.get(dynamicForkTaskParam);
         List<WorkflowTask> dynamicForkWorkflowTasks = objectMapper.convertValue(dynamicForkTasksJson, ListOfWorkflowTasks);
+		if(dynamicForkWorkflowTasks == null) {
+			dynamicForkWorkflowTasks = new ArrayList<WorkflowTask>();
+		}
         for (WorkflowTask workflowTask : dynamicForkWorkflowTasks) {
             if ((workflowTask.getTaskDefinition() == null) && StringUtils.isNotBlank(workflowTask.getName())) {
                 workflowTask.setTaskDefinition(metadataDAO.getTaskDef(workflowTask.getName()));
