@@ -387,18 +387,21 @@ public class ExecutionDAOFacade {
      */
     public boolean addEventExecution(EventExecution eventExecution) {
         boolean added = executionDAO.addEventExecution(eventExecution);
+
         if (added) {
-            if (config.enableAsyncIndexing()) {
-                indexDAO.asyncAddEventExecution(eventExecution);
-            } else {
-                indexDAO.addEventExecution(eventExecution);
-            }
+            indexEventExecution(eventExecution);
         }
+
         return added;
     }
 
     public void updateEventExecution(EventExecution eventExecution) {
         executionDAO.updateEventExecution(eventExecution);
+        indexEventExecution(eventExecution);
+    }
+
+    private void indexEventExecution(EventExecution eventExecution)
+    {
         if (config.enableAsyncIndexing()) {
             indexDAO.asyncAddEventExecution(eventExecution);
         } else {
