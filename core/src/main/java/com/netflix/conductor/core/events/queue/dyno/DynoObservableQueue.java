@@ -28,6 +28,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -121,7 +123,7 @@ public class DynoObservableQueue implements ObservableQueue {
     @VisibleForTesting
     private OnSubscribe<Message> getOnSubscribe() {
         return subscriber -> {
-            Observable<Long> interval = Observable.interval(pollTimeInMS, TimeUnit.MILLISECONDS);
+            Observable<Long> interval = Observable.interval(pollTimeInMS, TimeUnit.MILLISECONDS, Schedulers.io());
             interval.flatMap((Long x) -> {
                 List<Message> msgs = receiveMessages();
                 return Observable.from(msgs);
