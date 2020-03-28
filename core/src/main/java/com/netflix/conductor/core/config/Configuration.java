@@ -73,7 +73,7 @@ public interface Configuration {
     String IGNORE_LOCKING_EXCEPTIONS_PROPERTY_NAME = "workflow.decider.locking.exceptions.ignore";
     boolean IGNORE_LOCKING_EXCEPTIONS_DEFAULT_VALUE = false;
 
-    String EVENT_MESSAGE_INDEXING_ENABLED_PROPERTY_NAME = "worklfow.event.message.indexing.enabled";
+    String EVENT_MESSAGE_INDEXING_ENABLED_PROPERTY_NAME = "workflow.event.message.indexing.enabled";
     boolean EVENT_MESSAGE_INDEXING_ENABLED_DEFAULT_VALUE = true;
 
     String TASKEXECLOG_INDEXING_ENABLED_PROPERTY_NAME = "workflow.taskExecLog.indexing.enabled";
@@ -88,7 +88,7 @@ public interface Configuration {
     String EVENT_HANDLER_REFRESH_TIME_SECS_PROPERTY_NAME = "conductor.eventhandler.cache.refresh.time.seconds";
     int EVENT_HANDLER_REFRESH_TIME_SECS_DEFAULT_VALUE = 60;
 
-    String EVENT_EXECUTION_PERSISTENCE_TTL_SECS_PROPERTY_NAME = "workflow.event.execution.peristence.ttl.seconds";
+    String EVENT_EXECUTION_PERSISTENCE_TTL_SECS_PROPERTY_NAME = "workflow.event.execution.persistence.ttl.seconds";
     int EVENT_EXECUTION_PERSISTENCE_TTL_SECS_DEFAULT_VALUE = 0;
 
     String OWNER_EMAIL_MANDATORY_NAME = "workflow.owner.email.mandatory";
