@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.elasticsearch.query.parser;
 
@@ -32,22 +32,24 @@ import java.io.InputStream;
  * <li>A value (x)
  * <li>A value is either a string or a number
  * </ol>
- * 
+ *
  */
 public class ConstValue extends AbstractNode {
-	
+
 	public static enum SystemConsts {
 		NULL("null"), NOT_NULL("not null");
 		private String value;
 		SystemConsts(String value){
 			this.value = value;
 		}
-		
+
 		public String value(){
 			return value;
 		}
 	}
-	
+
+	private static String QUOTE = "\"";
+
 	private Object value;
 
 	private SystemConsts sysConsts;
@@ -115,22 +117,30 @@ public class ConstValue extends AbstractNode {
 		if(!valid){
 			throw new ParserException("String constant is not quoted with <" + delim + "> : " + sb.toString());
 		}
-		return "\"" + sb.toString() + "\"";
+		return QUOTE + sb.toString() + QUOTE;
 	}
-	
+
 	public Object getValue(){
 		return value;
 	}
-	
+
 	@Override
 	public String toString(){
 		return ""+value;
 	}
-	
+
+	public String getUnquotedValue() {
+		String result = toString();
+		if (result.length() >= 2 && result.startsWith(QUOTE) && result.endsWith(QUOTE)) {
+			result = result.substring(1, result.length() - 1);
+		}
+		return result;
+	}
+
 	public boolean isSysConstant(){
 		return this.sysConsts != null;
 	}
-	
+
 	public SystemConsts getSysConstant(){
 		return this.sysConsts;
 	}

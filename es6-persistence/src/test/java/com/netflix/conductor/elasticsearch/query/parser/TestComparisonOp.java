@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 /**
- * 
+ *
  */
 package com.netflix.conductor.elasticsearch.query.parser;
 
@@ -32,7 +32,7 @@ public class TestComparisonOp extends AbstractParserTest {
 
 	@Test
 	public void test() throws Exception {
-		String[] tests = new String[]{"<",">","=","!=","IN"};
+		String[] tests = new String[]{"<",">","=","!=","IN","STARTS_WITH"};
 		for(String test : tests){
 			ComparisonOp name = new ComparisonOp(getInputStream(test));
 			String nameVal = name.getOperator();
@@ -40,7 +40,7 @@ public class TestComparisonOp extends AbstractParserTest {
 			assertEquals(test, nameVal);
 		}
 	}
-	
+
 	@Test(expected=ParserException.class)
 	public void testInvalidOp() throws Exception {
 		String test =  "AND";

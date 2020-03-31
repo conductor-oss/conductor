@@ -33,7 +33,7 @@ import java.io.InputStream;
  * @author Viren
  * <pre>
  * Represents an expression of the form as below:
- * key OPR value 
+ * key OPR value
  * OPR is the comparison operator which could be on the following:
  * 	&gt;, &lt;, = , !=, IN, BETWEEN
  * </pre>
@@ -115,6 +115,8 @@ public class NameValue extends AbstractNode implements FilterProvider {
             }
         } else if (op.getOperator().equals(Operators.LESS_THAN.value())) {
             return QueryBuilders.rangeQuery(name.getName()).to(value.getValue()).includeLower(false).includeUpper(false);
+        } else if (op.getOperator().equals(Operators.STARTS_WITH.value())) {
+            return QueryBuilders.prefixQuery(name.getName(), value.getUnquotedValue());
         }
 
         throw new IllegalStateException("Incorrect/unsupported operators");
