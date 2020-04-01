@@ -67,4 +67,5 @@ ext {
     revCuratorTest = '2.4.0'
     revPostgres = '42.2.6'
     revOtjPgEmbedded = '0.13.1'
+    revAmqpClient = '5.8.0'
 }
