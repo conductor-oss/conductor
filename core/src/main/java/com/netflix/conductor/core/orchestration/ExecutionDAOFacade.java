@@ -345,7 +345,7 @@ public class ExecutionDAOFacade {
             /*
              * Indexing a task for every update adds a lot of volume. That is ok but if async indexing
              * is enabled and tasks are stored in memory until a block has completed, we would lose a lot
-             * of tasks on a system failure. So only index for each update if async indexing is not enabled. 
+             * of tasks on a system failure. So only index for each update if async indexing is not enabled.
              * If it *is* enabled, tasks will be indexed only when a workflow is in terminal state.
              */
             if (!config.enableAsyncIndexing()) {
@@ -375,7 +375,13 @@ public class ExecutionDAOFacade {
     }
 
     public void updateTaskLastPoll(String taskName, String domain, String workerId) {
-        pollDataDAO.updateLastPollData(taskName, domain, workerId);
+        try {
+            pollDataDAO.updateLastPollData(taskName, domain, workerId);
+        } catch (Exception e) {
+            LOGGER.error("Error updating PollData for task: {} in domain: {} from worker: {}", taskName, domain,
+                workerId, e);
+            Monitors.error(this.getClass().getCanonicalName(), "updateTaskLastPoll");
+        }
     }
 
     /**
