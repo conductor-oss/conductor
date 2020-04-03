@@ -178,7 +178,7 @@ public class TestConfiguration implements CassandraConfiguration {
     }
 
     @Override
-    public int getEventExecutionsTTL() {
+    public int getEventExecutionPersistenceTTL() {
         return 5;
     }
 }

@@ -93,7 +93,7 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     public CassandraExecutionDAO(Session session, ObjectMapper objectMapper, CassandraConfiguration config, Statements statements) {
         super(session, objectMapper, config);
 
-        eventExecutionsTTL = config.getEventExecutionsTTL();
+        eventExecutionsTTL = config.getEventExecutionPersistenceTTL();
 
         this.insertWorkflowStatement = session.prepare(statements.getInsertWorkflowStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
         this.insertTaskStatement = session.prepare(statements.getInsertTaskStatement()).setConsistencyLevel(config.getWriteConsistencyLevel());
