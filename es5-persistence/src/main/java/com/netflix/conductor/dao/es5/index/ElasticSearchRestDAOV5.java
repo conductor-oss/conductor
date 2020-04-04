@@ -47,6 +47,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
@@ -56,6 +57,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import javax.annotation.Nonnull;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -805,8 +807,10 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
 
     private synchronized void indexBulkRequest(String docType) {
         if (bulkRequests.get(docType).getBulkRequest() != null && bulkRequests.get(docType).getBulkRequest().numberOfActions() > 0) {
-            indexWithRetry(bulkRequests.get(docType).getBulkRequest(), "Bulk Indexing " + docType, docType);
-            bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis(), new BulkRequest()));
+            synchronized (bulkRequests.get(docType).getBulkRequest()) {
+                indexWithRetry(bulkRequests.get(docType).getBulkRequest().get(), "Bulk Indexing " + docType, docType);
+                bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis(), new BulkRequest()));
+            }
         }
     }
 
@@ -934,19 +938,54 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
 
     private static class BulkRequests {
         private final long lastFlushTime;
-        private final BulkRequest bulkRequest;
+        private final BulkRequestWrapper bulkRequestWrapper;
 
-        public long getLastFlushTime() {
+        long getLastFlushTime() {
             return lastFlushTime;
         }
 
-        public BulkRequest getBulkRequest() {
-            return bulkRequest;
+        BulkRequestWrapper getBulkRequest() {
+            return bulkRequestWrapper;
         }
 
-        BulkRequests(long lastFlushTime, BulkRequest bulkRequest) {
+        BulkRequests(long lastFlushTime, BulkRequest bulkRequestWrapper) {
             this.lastFlushTime = lastFlushTime;
-            this.bulkRequest = bulkRequest;
+            this.bulkRequestWrapper = new BulkRequestWrapper(bulkRequestWrapper);
+        }
+
+        /**
+         * Thread-safe wrapper for {@link BulkRequest}.
+         */
+        private static class BulkRequestWrapper
+        {
+            private final BulkRequest bulkRequest;
+
+            BulkRequestWrapper(@Nonnull BulkRequest bulkRequest) {
+                this.bulkRequest = Objects.requireNonNull(bulkRequest);
+            }
+
+            public void add(@Nonnull UpdateRequest req) {
+                synchronized (bulkRequest) {
+                    bulkRequest.add(Objects.requireNonNull(req));
+                }
+            }
+
+            public void add(@Nonnull IndexRequest req) {
+                synchronized (bulkRequest) {
+                    bulkRequest.add(Objects.requireNonNull(req));
+                }
+            }
+
+            private BulkRequest get()
+            {
+                return bulkRequest;
+            }
+
+            int numberOfActions() {
+                synchronized (bulkRequest) {
+                    return bulkRequest.numberOfActions();
+                }
+            }
         }
     }
 }
