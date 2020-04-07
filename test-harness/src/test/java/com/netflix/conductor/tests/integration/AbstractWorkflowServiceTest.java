@@ -5844,6 +5844,15 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals(WorkflowStatus.RUNNING, workflow.getStatus());
         assertEquals(3, workflow.getTasks().size());
 
+        // Check if subworkflow task has external payload path copied from subworkflow
+        Task subWorkflowTask = workflow.getTasks().stream()
+                .filter(wtask -> wtask.getTaskType().equals(SUB_WORKFLOW.name()))
+                .collect(Collectors.toList()).get(0);
+
+        assertTrue(subWorkflowTask.getStatus().equals(COMPLETED));
+        assertTrue(subWorkflowTask.getOutputData().isEmpty());
+        assertNotNull(subWorkflowTask.getExternalOutputPayloadStoragePath());
+
         // Polling for the last task
         task = workflowExecutionService.poll("junit_task_2", "junit.worker.task_2");
         assertNotNull(task);
