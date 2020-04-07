@@ -829,7 +829,7 @@ public class WorkflowExecutor {
         task.setOutputData(taskResult.getOutputData());
         task.setSubWorkflowId(taskResult.getSubWorkflowId());
 
-        if (task.getOutputData() != null) {
+        if (task.getOutputData() != null && !task.getOutputData().isEmpty()) {
             deciderService.externalizeTaskData(task);
         } else {
             task.setExternalOutputPayloadStoragePath(taskResult.getExternalOutputPayloadStoragePath());
