@@ -237,12 +237,10 @@ public class ExecutionDAOFacade {
                     Monitors.recordWorkerQueueSize("delayQueue", scheduledThreadPoolExecutor.getQueue().size());
                 } else {
                 	indexWorkflow = true;
-                    indexDAO.asyncIndexWorkflow(workflow);
                 }
                 workflow.getTasks().forEach(indexDAO::asyncIndexTask);
             } else {
             	indexWorkflow = true;
-                indexDAO.indexWorkflow(workflow);
             }
         }
         
