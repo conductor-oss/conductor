@@ -210,11 +210,23 @@ public class ExecutionDAOFacade {
      * @return the id of the updated workflow
      */
     public String updateWorkflow(Workflow workflow) {
+    	return updateWorkflow(workflow, false);
+    }
+
+    /**
+     * Updates the given workflow in the data store
+     *
+     * @param workflow the workflow tp be updated
+     * @param indexRegardless whether or not to index the workflow no matter what - note that terminal workflows will already be indexed anyway
+     * @return the id of the updated workflow
+     */
+    public String updateWorkflow(Workflow workflow, boolean indexRegardless) {
         workflow.setUpdateTime(System.currentTimeMillis());
         if (workflow.getStatus().isTerminal()) {
             workflow.setEndTime(System.currentTimeMillis());
         }
         executionDAO.updateWorkflow(workflow);
+        boolean indexWorkflow = indexRegardless;
         if (workflow.getStatus().isTerminal()) {
             if (config.enableAsyncIndexing()) {
                 if (workflow.getEndTime() - workflow.getStartTime() < config.getAsyncUpdateShortRunningWorkflowDuration() * 1000) {
@@ -224,13 +236,24 @@ public class ExecutionDAOFacade {
                     scheduledThreadPoolExecutor.schedule(delayWorkflowUpdate, config.getAsyncUpdateDelay(), TimeUnit.SECONDS);
                     Monitors.recordWorkerQueueSize("delayQueue", scheduledThreadPoolExecutor.getQueue().size());
                 } else {
+                	indexWorkflow = true;
                     indexDAO.asyncIndexWorkflow(workflow);
                 }
                 workflow.getTasks().forEach(indexDAO::asyncIndexTask);
             } else {
+            	indexWorkflow = true;
                 indexDAO.indexWorkflow(workflow);
             }
         }
+        
+        if(indexWorkflow) {
+            if (config.enableAsyncIndexing()) {
+                indexDAO.asyncIndexWorkflow(workflow);
+            } else {
+                indexDAO.indexWorkflow(workflow);
+            }
+        }
+
         return workflow.getWorkflowId();
     }
 
