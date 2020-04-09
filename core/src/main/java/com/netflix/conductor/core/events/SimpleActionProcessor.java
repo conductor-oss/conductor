@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +26,7 @@ import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.JsonUtils;
 
+import com.netflix.conductor.metrics.Monitors;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -115,6 +116,7 @@ public class SimpleActionProcessor implements ActionProcessor {
             executor.updateTask(new TaskResult(task));
             logger.debug("Updated task: {} in workflow:{} with status: {} for event: {} for message:{}", taskId, workflowId, status, event, messageId);
         } catch (RuntimeException e) {
+            Monitors.recordEventActionError(action.getAction().name(), task.getTaskType(), event);
             logger.error("Error updating task: {} in workflow: {} in action: {} for event: {} for message: {}", taskDetails.getTaskRefName(), taskDetails.getWorkflowId(), action.getAction(), event, messageId, e);
             replaced.put("error", e.getMessage());
             throw e;
@@ -145,6 +147,7 @@ public class SimpleActionProcessor implements ActionProcessor {
             logger.debug("Started workflow: {}/{}/{} for event: {} for message:{}", params.getName(), params.getVersion(), workflowId, event, messageId);
 
         } catch (RuntimeException e) {
+            Monitors.recordEventActionError(action.getAction().name(), params.getName(), event);
             logger.error("Error starting workflow: {}, version: {}, for event: {} for message: {}", params.getName(), params.getVersion(), event, messageId, e);
             output.put("error", e.getMessage());
             throw e;
