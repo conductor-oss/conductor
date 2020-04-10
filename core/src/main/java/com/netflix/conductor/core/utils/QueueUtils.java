@@ -1,5 +1,5 @@
-/**
- * Copyright 2016 Netflix, Inc.
+/*
+ * Copyright 2020 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,6 @@ package com.netflix.conductor.core.utils;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import org.apache.commons.lang3.StringUtils;
 
-/**
- * @author visingh
- */
 public class QueueUtils {
 
 	public static final String DOMAIN_SEPARATOR = ":";
@@ -41,10 +38,9 @@ public class QueueUtils {
 	 * @param executionNameSpace
 	 * @return   //domain:taskType@eexecutionNameSpace-isolationGroup
 	 */
-	public static String getQueueName(
-			String taskType, String domain, String isolationGroup, String executionNameSpace) {
+	public static String getQueueName(String taskType, String domain, String isolationGroup, String executionNameSpace) {
 
-		String queueName = null;
+		String queueName;
 		if (domain == null) {
 			queueName = taskType;
 		} else {
@@ -54,7 +50,6 @@ public class QueueUtils {
 		if (executionNameSpace != null) {
 			queueName = queueName + EXECUTION_NAME_SPACE_SEPRATOR + executionNameSpace;
 		}
-
 
 		if (isolationGroup != null) {
 			queueName = queueName + ISOLATION_SEPARATOR + isolationGroup;
@@ -76,15 +71,12 @@ public class QueueUtils {
 		}
 	}
 
-
 	public static boolean isIsolatedQueue(String queue) {
 		return StringUtils.isNotBlank(getIsolationGroup(queue));
 	}
 
 	private static String getIsolationGroup(String queue) {
-
 		return StringUtils.substringAfter(queue, QueueUtils.ISOLATION_SEPARATOR);
-
 	}
 
 	public static String getTaskType(String queue) {

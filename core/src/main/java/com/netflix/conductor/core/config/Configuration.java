@@ -1,5 +1,5 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -13,7 +13,6 @@
 package com.netflix.conductor.core.config;
 
 import com.google.inject.AbstractModule;
-
 import java.util.List;
 import java.util.Map;
 
@@ -34,6 +33,21 @@ public interface Configuration {
     String DISABLE_ASYNC_WORKERS_PROPERTY_NAME = "conductor.disable.async.workers";
     // FIXME This really should be typed correctly.
     String DISABLE_ASYNC_WORKERS_DEFAULT_VALUE = "false";
+
+    String SYSTEM_TASK_WORKER_THREAD_COUNT_PROPERTY_NAME = "workflow.system.task.worker.thread.count";
+    int SYSTEM_TASK_WORKER_THREAD_COUNT_DEFAULT_VALUE = 10;
+
+    String SYSTEM_TASK_WORKER_CALLBACK_SECONDS_PROPERTY_NAME = "workflow.system.task.worker.callback.seconds";
+    int SYSTEM_TASK_WORKER_CALLBACK_SECONDS_DEFAULT_VALUE = 30;
+
+    String SYSTEM_TASK_WORKER_POLL_INTERVAL_PROPERTY_NAME = "workflow.system.task.worker.poll.interval";
+    int SYSTEM_TASK_WORKER_POLL_INTERVAL_DEFAULT_VALUE = 50;
+
+    String SYSTEM_TASK_WORKER_EXECUTION_NAMESPACE_PROPERTY_NAME = "workflow.system.task.worker.executionNameSpace";
+    String SYSTEM_TASK_WORKER_EXECUTION_NAMESPACE_DEFAULT_VALUE = "";
+
+    String SYSTEM_TASK_WORKER_ISOLATED_THREAD_COUNT_PROPERTY_NAME = "workflow.isolated.system.task.worker.thread.count";
+    int SYSTEM_TASK_WORKER_ISOLATED_THREAD_COUNT_DEFAULT_VALUE = 1;
 
     String ENVIRONMENT_PROPERTY_NAME = "environment";
     String ENVIRONMENT_DEFAULT_VALUE = "test";
@@ -138,6 +152,41 @@ public interface Configuration {
     }
 
     /**
+     * @return the number of threads to be used within the threadpool for system task workers
+     */
+    default int getSystemTaskWorkerThreadCount() {
+        return getIntProperty(SYSTEM_TASK_WORKER_THREAD_COUNT_PROPERTY_NAME, SYSTEM_TASK_WORKER_THREAD_COUNT_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return the interval (in seconds) after which a system task will be checked for completion
+     */
+    default int getSystemTaskWorkerCallbackSeconds() {
+        return getIntProperty(SYSTEM_TASK_WORKER_CALLBACK_SECONDS_PROPERTY_NAME, SYSTEM_TASK_WORKER_CALLBACK_SECONDS_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return the interval (in seconds) at which system task queues will be polled by the system task workers
+     */
+    default int getSystemTaskWorkerPollInterval() {
+        return getIntProperty(SYSTEM_TASK_WORKER_POLL_INTERVAL_PROPERTY_NAME, SYSTEM_TASK_WORKER_POLL_INTERVAL_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return the namespace for the system task workers to provide instance level isolation
+     */
+    default String getSystemTaskWorkerExecutionNamespace() {
+        return getProperty(SYSTEM_TASK_WORKER_EXECUTION_NAMESPACE_PROPERTY_NAME, SYSTEM_TASK_WORKER_EXECUTION_NAMESPACE_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return the number of threads to be used within the threadpool for system task workers in each isolation group
+     */
+    default int getSystemTaskWorkerIsolatedThreadCount() {
+        return getIntProperty(SYSTEM_TASK_WORKER_ISOLATED_THREAD_COUNT_PROPERTY_NAME, SYSTEM_TASK_WORKER_ISOLATED_THREAD_COUNT_DEFAULT_VALUE);
+    }
+
+    /**
      * @return time frequency in seconds, at which the workflow sweeper should run to evaluate running workflows.
      */
     int getSweepFrequency();
@@ -238,7 +287,6 @@ public interface Configuration {
     }
 
     /**
-     *
      * @return The time to live in seconds of the event execution persisted. Currently, only RedisExecutionDAO supports it.
      */
     default int getEventExecutionPersistenceTTL() {
