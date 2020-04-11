@@ -55,7 +55,7 @@ public class SimpleActionProcessor implements ActionProcessor {
 
     public Map<String, Object> execute(Action action, Object payloadObject, String event, String messageId) {
 
-        logger.debug("Executing action: {} for event: {} with messageId:{}", action.getAction(), event, messageId);
+        logger.debug("Executing action: {} for event: {} with messageId:{} with payload received: {}", action.getAction(), event, messageId, payloadObject);
 
         Object jsonObject = payloadObject;
         if (action.isExpandInlineJSON()) {
@@ -137,12 +137,14 @@ public class SimpleActionProcessor implements ActionProcessor {
             workflowInput.put("conductor.event.messageId", messageId);
             workflowInput.put("conductor.event.name", event);
 
+            logger.debug("Starting workflow for event: {} for message:{} with input: {}", event, messageId, workflowInput);
+
             String workflowId = executor.startWorkflow(params.getName(), params.getVersion(),
                     Optional.ofNullable(replaced.get("correlationId")).map(Object::toString)
                             .orElse(params.getCorrelationId()),
                     workflowInput, null, event, params.getTaskToDomain());
             output.put("workflowId", workflowId);
-            logger.debug("Started workflow: {}/{}/{} for event: {} for message:{}", params.getName(), params.getVersion(), workflowId, event, messageId);
+            logger.debug("Started workflow: {}/{}/{} for event: {} for message:{} with input: {}", params.getName(), params.getVersion(), workflowId, event, messageId, workflowInput);
 
         } catch (RuntimeException e) {
             logger.error("Error starting workflow: {}, version: {}, for event: {} for message: {}", params.getName(), params.getVersion(), event, messageId, e);
