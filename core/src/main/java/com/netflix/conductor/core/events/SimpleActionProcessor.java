@@ -127,6 +127,7 @@ public class SimpleActionProcessor implements ActionProcessor {
         Map<String, Object> output = new HashMap<>();
         try {
             Map<String, Object> inputParams = params.getInput();
+            logger.debug("Executing start workflow for event: {} for message: {} with inputParams: {}", event, messageId, inputParams);
             Map<String, Object> workflowInput = parametersUtils.replace(inputParams, payload);
 
             Map<String, Object> paramsMap = new HashMap<>();
