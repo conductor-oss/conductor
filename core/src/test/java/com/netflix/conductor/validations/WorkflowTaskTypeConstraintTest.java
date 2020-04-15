@@ -1,4 +1,24 @@
+/*
+ * Copyright 2020 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.conductor.validations;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.when;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
@@ -7,27 +27,20 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.core.config.ValidationModule;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.dao.MetadataDAO;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
-import javax.validation.ConstraintViolation;
-import javax.validation.Validator;
-import javax.validation.executable.ExecutableValidator;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validator;
+import javax.validation.executable.ExecutableValidator;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Mockito;
 
 public class WorkflowTaskTypeConstraintTest {
     private static Validator validator;
@@ -136,7 +149,7 @@ public class WorkflowTaskTypeConstraintTest {
         workflowTask.setLoopCondition("Test condition");
         WorkflowTask workflowTask2 = createSampleWorkflowTask();
         workflowTask2.setType("SUB_WORKFLOW");
-        workflowTask.setLoopOver(Arrays.asList(workflowTask2));
+        workflowTask.setLoopOver(Collections.singletonList(workflowTask2));
 
         when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
 
@@ -147,7 +160,7 @@ public class WorkflowTaskTypeConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("SUB_WORKFLOW task inside loopover task is not supported."));
+        assertTrue(validationErrors.contains("SUB_WORKFLOW task inside loopover task: encode is not supported."));
     }
 
     @Test
@@ -328,6 +341,20 @@ public class WorkflowTaskTypeConstraintTest {
         assertTrue(validationErrors.contains("forkTasks should have atleast one task for taskType: FORK_JOIN taskName: encode"));
     }
 
+    @Test
+    public void testWorkflowTaskTypeSubworkflowMissingSubworkflowParam() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("SUB_WORKFLOW");
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(1, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(validationErrors.contains("subWorkflowParam field is required for taskType: SUB_WORKFLOW taskName: encode"));
+    }
 
     @Test
     public void testWorkflowTaskTypeSubworkflow() {
@@ -449,7 +476,7 @@ public class WorkflowTaskTypeConstraintTest {
 
 
     @Test
-    public void testWorkflowTaskTypeKafkaPublioshWithRequestParamInTaskDefAndWorkflowTask() {
+    public void testWorkflowTaskTypeKafkaPublishWithRequestParamInTaskDefAndWorkflowTask() {
         WorkflowTask workflowTask = createSampleWorkflowTask();
         workflowTask.setType("KAFKA_PUBLISH");
         workflowTask.getInputParameters().put("kafka_request", "http://www.netflix.com");
