@@ -29,7 +29,7 @@ dependencies {
     testCompile project(':conductor-server')
     testCompile project(':conductor-grpc-client')
     testCompile project(':conductor-grpc-server')
-    testCompile "org.elasticsearch:elasticsearch:${revElasticSearch5}"
+    testCompile "org.elasticsearch:elasticsearch:${revElasticSearch6}"
     testCompile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
     testCompile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
     testCompile "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
