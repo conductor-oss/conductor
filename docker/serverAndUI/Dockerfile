@@ -22,7 +22,7 @@ RUN apt-get update -y \
   && chmod +x /app/startup.sh \
 
   # Get node
-  && curl -sL https://deb.nodesource.com/setup_6.x |  bash - \
+  && curl -sL https://deb.nodesource.com/setup_10.x |  bash - \
   && apt-get install -y nodejs build-essential
 
 # Get and install conductor

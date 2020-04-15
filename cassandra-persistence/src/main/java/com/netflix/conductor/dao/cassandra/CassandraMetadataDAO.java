@@ -24,6 +24,7 @@ import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.cassandra.CassandraConfiguration;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -44,9 +45,12 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@Singleton
+@Trace
 public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraMetadataDAO.class);

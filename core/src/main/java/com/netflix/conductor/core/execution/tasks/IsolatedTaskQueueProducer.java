@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -45,7 +45,6 @@ public class IsolatedTaskQueueProducer {
 		boolean listenForIsolationGroups = config.getBooleanProperty("workflow.isolated.system.task.enable", false);
 
 		if (listenForIsolationGroups) {
-
 			int pollingTimeOut = config.getIntProperty("workflow.isolated.system.task.poll.time.secs", 10);
 			logger.info("Listening for isolation groups");
 
@@ -54,7 +53,6 @@ public class IsolatedTaskQueueProducer {
 		} else {
 			logger.info("Isolated System Task Worker DISABLED");
 		}
-
 	}
 
 	private Set<TaskDef> getIsolationExecutionNameSpaces() {
@@ -62,8 +60,8 @@ public class IsolatedTaskQueueProducer {
 		try {
 			List<TaskDef> taskDefs = metadataService.getTaskDefs();
 			isolationExecutionNameSpaces = taskDefs.stream()
-				.filter(taskDef -> StringUtils.isNotBlank(taskDef.getIsolationGroupId()) || StringUtils
-					.isNotBlank(taskDef.getExecutionNameSpace()))
+				.filter(taskDef -> StringUtils.isNotBlank(taskDef.getIsolationGroupId())
+					|| StringUtils.isNotBlank(taskDef.getExecutionNameSpace()))
 				.collect(Collectors.toSet());
 		} catch (RuntimeException unknownException) {
 			logger.error("Unknown exception received in getting isolation groups, sleeping and retrying",
@@ -74,19 +72,17 @@ public class IsolatedTaskQueueProducer {
 
 	@VisibleForTesting
 	void addTaskQueues() {
+		Set<TaskDef> isolationTaskDefs = getIsolationExecutionNameSpaces();
+		logger.debug("Retrieved queues {}", isolationTaskDefs);
+		Set<String> taskTypes = SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.keySet();
 
-		Set<TaskDef> isolationDefs = getIsolationExecutionNameSpaces();
-		logger.debug("Retrieved queues {}", isolationDefs);
-		Set<String> taskTypes = SystemTaskWorkerCoordinator.taskNameWorkFlowTaskMapping.keySet();
-
-		for (TaskDef isolatedTaskDef : isolationDefs) {
+		for (TaskDef isolatedTaskDef : isolationTaskDefs) {
 			for (String taskType : taskTypes) {
-				String taskQueue = QueueUtils.getQueueName(taskType,null, isolatedTaskDef.getExecutionNameSpace(), isolatedTaskDef.getIsolationGroupId());
-				logger.debug("Adding task={} to coordinator queue", taskQueue);
+				String taskQueue = QueueUtils.getQueueName(taskType, null,
+					isolatedTaskDef.getExecutionNameSpace(), isolatedTaskDef.getIsolationGroupId());
+				logger.debug("Adding taskQueue:'{}' to system task worker coordinator", taskQueue);
 				SystemTaskWorkerCoordinator.queue.add(taskQueue);
-
 			}
 		}
-
 	}
 }
