@@ -210,48 +210,25 @@ public class ExecutionDAOFacade {
      * @return the id of the updated workflow
      */
     public String updateWorkflow(Workflow workflow) {
-    	return updateWorkflow(workflow, false);
-    }
-
-    /**
-     * Updates the given workflow in the data store
-     *
-     * @param workflow the workflow tp be updated
-     * @param indexRegardless whether or not to index the workflow no matter what - note that terminal workflows will already be indexed anyway
-     * @return the id of the updated workflow
-     */
-    public String updateWorkflow(Workflow workflow, boolean indexRegardless) {
         workflow.setUpdateTime(System.currentTimeMillis());
         if (workflow.getStatus().isTerminal()) {
             workflow.setEndTime(System.currentTimeMillis());
         }
         executionDAO.updateWorkflow(workflow);
-        boolean indexWorkflow = indexRegardless;
-        if (workflow.getStatus().isTerminal()) {
-            if (config.enableAsyncIndexing()) {
-                if (workflow.getEndTime() - workflow.getStartTime() < config.getAsyncUpdateShortRunningWorkflowDuration() * 1000) {
-                    final String workflowId = workflow.getWorkflowId();
-                    DelayWorkflowUpdate delayWorkflowUpdate = new DelayWorkflowUpdate(workflowId);
-                    LOGGER.debug("Delayed updating workflow: {} in the index by {} seconds", workflowId, config.getAsyncUpdateDelay());
-                    scheduledThreadPoolExecutor.schedule(delayWorkflowUpdate, config.getAsyncUpdateDelay(), TimeUnit.SECONDS);
-                    Monitors.recordWorkerQueueSize("delayQueue", scheduledThreadPoolExecutor.getQueue().size());
-                } else {
-                	indexWorkflow = true;
-                }
-                workflow.getTasks().forEach(indexDAO::asyncIndexTask);
+        if (config.enableAsyncIndexing()) {
+            if (workflow.getStatus().isTerminal() && workflow.getEndTime() - workflow.getStartTime() < config.getAsyncUpdateShortRunningWorkflowDuration() * 1000) {
+                final String workflowId = workflow.getWorkflowId();
+                DelayWorkflowUpdate delayWorkflowUpdate = new DelayWorkflowUpdate(workflowId);
+                LOGGER.debug("Delayed updating workflow: {} in the index by {} seconds", workflowId, config.getAsyncUpdateDelay());
+                scheduledThreadPoolExecutor.schedule(delayWorkflowUpdate, config.getAsyncUpdateDelay(), TimeUnit.SECONDS);
+                Monitors.recordWorkerQueueSize("delayQueue", scheduledThreadPoolExecutor.getQueue().size());
             } else {
-            	indexWorkflow = true;
-            }
-        }
-        
-        if(indexWorkflow) {
-            if (config.enableAsyncIndexing()) {
                 indexDAO.asyncIndexWorkflow(workflow);
-            } else {
-                indexDAO.indexWorkflow(workflow);
             }
+            workflow.getTasks().forEach(indexDAO::asyncIndexTask);
+        } else {
+            indexDAO.indexWorkflow(workflow);
         }
-
         return workflow.getWorkflowId();
     }
 

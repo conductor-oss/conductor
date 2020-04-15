@@ -1058,7 +1058,7 @@ public class WorkflowExecutor {
                 return;        //Already paused!
             }
             workflow.setStatus(status);
-            executionDAOFacade.updateWorkflow(workflow, true);
+            executionDAOFacade.updateWorkflow(workflow);
         } finally {
             executionLockService.releaseLock(workflowId);
         }
@@ -1075,7 +1075,7 @@ public class WorkflowExecutor {
                     "Current status is " + workflow.getStatus().name());
         }
         workflow.setStatus(WorkflowStatus.RUNNING);
-        executionDAOFacade.updateWorkflow(workflow, true);
+        executionDAOFacade.updateWorkflow(workflow);
         decide(workflowId);
     }
 
