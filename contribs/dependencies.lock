@@ -7,7 +7,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -27,11 +27,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -120,12 +120,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.luben:zstd-jni": {
             "locked": "1.3.8-1",
             "transitive": [
@@ -211,8 +205,17 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.spectator:spectator-reg-metrics3"
             ]
+        },
+        "com.netflix.spectator:spectator-reg-metrics3": {
+            "locked": "0.68.0",
+            "requested": "0.68.0"
+        },
+        "com.rabbitmq:amqp-client": {
+            "locked": "5.8.0",
+            "requested": "5.8.0"
         },
         "com.spotify:completable-futures": {
             "locked": "0.3.1",
@@ -254,6 +257,12 @@
                 "org.apache.httpcomponents:httpclient"
             ]
         },
+        "io.dropwizard.metrics:metrics-core": {
+            "locked": "3.1.2",
+            "transitive": [
+                "com.netflix.spectator:spectator-reg-metrics3"
+            ]
+        },
         "io.nats:java-nats-streaming": {
             "locked": "0.5.0",
             "requested": "0.5.0"
@@ -286,13 +295,6 @@
                 "io.swagger:swagger-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -303,8 +305,9 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "io.swagger:swagger-core",
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core",
+                "io.swagger:swagger-core"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -336,6 +339,13 @@
         "net.thisptr:jackson-jq": {
             "locked": "0.0.11",
             "requested": "0.0.11"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.2.1",
@@ -374,29 +384,10 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "org.javassist:javassist": {
             "locked": "3.18.2-GA",
             "transitive": [
                 "org.reflections:reflections"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.jruby.jcodings:jcodings": {
@@ -430,12 +421,15 @@
             ]
         },
         "org.slf4j:slf4j-api": {
-            "locked": "1.7.25",
+            "locked": "1.7.29",
             "transitive": [
                 "com.jayway.jsonpath:json-path",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
                 "com.netflix.spectator:spectator-api",
+                "com.netflix.spectator:spectator-reg-metrics3",
+                "com.rabbitmq:amqp-client",
+                "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
                 "org.apache.kafka:kafka-clients"
@@ -468,7 +462,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -488,11 +482,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -581,12 +575,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.luben:zstd-jni": {
             "locked": "1.3.8-1",
             "transitive": [
@@ -672,8 +660,17 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.spectator:spectator-reg-metrics3"
             ]
+        },
+        "com.netflix.spectator:spectator-reg-metrics3": {
+            "locked": "0.68.0",
+            "requested": "0.68.0"
+        },
+        "com.rabbitmq:amqp-client": {
+            "locked": "5.8.0",
+            "requested": "5.8.0"
         },
         "com.spotify:completable-futures": {
             "locked": "0.3.1",
@@ -715,6 +712,12 @@
                 "org.apache.httpcomponents:httpclient"
             ]
         },
+        "io.dropwizard.metrics:metrics-core": {
+            "locked": "3.1.2",
+            "transitive": [
+                "com.netflix.spectator:spectator-reg-metrics3"
+            ]
+        },
         "io.nats:java-nats-streaming": {
             "locked": "0.5.0",
             "requested": "0.5.0"
@@ -747,13 +750,6 @@
                 "io.swagger:swagger-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -764,8 +760,9 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "io.swagger:swagger-core",
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core",
+                "io.swagger:swagger-core"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -799,6 +796,13 @@
             "locked": "0.0.11",
             "requested": "0.0.11"
         },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
         "org.apache.commons:commons-lang3": {
             "locked": "3.2.1",
             "transitive": [
@@ -836,29 +840,10 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "org.javassist:javassist": {
             "locked": "3.18.2-GA",
             "transitive": [
                 "org.reflections:reflections"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.jruby.jcodings:jcodings": {
@@ -892,12 +877,15 @@
             ]
         },
         "org.slf4j:slf4j-api": {
-            "locked": "1.7.25",
+            "locked": "1.7.29",
             "transitive": [
                 "com.jayway.jsonpath:json-path",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
                 "com.netflix.spectator:spectator-api",
+                "com.netflix.spectator:spectator-reg-metrics3",
+                "com.rabbitmq:amqp-client",
+                "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
                 "org.apache.kafka:kafka-clients"
@@ -936,7 +924,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -956,11 +944,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -1049,12 +1037,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.luben:zstd-jni": {
             "locked": "1.3.8-1",
             "transitive": [
@@ -1140,8 +1122,17 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.spectator:spectator-reg-metrics3"
             ]
+        },
+        "com.netflix.spectator:spectator-reg-metrics3": {
+            "locked": "0.68.0",
+            "requested": "0.68.0"
+        },
+        "com.rabbitmq:amqp-client": {
+            "locked": "5.8.0",
+            "requested": "5.8.0"
         },
         "com.spotify:completable-futures": {
             "locked": "0.3.1",
@@ -1183,6 +1174,12 @@
                 "org.apache.httpcomponents:httpclient"
             ]
         },
+        "io.dropwizard.metrics:metrics-core": {
+            "locked": "3.1.2",
+            "transitive": [
+                "com.netflix.spectator:spectator-reg-metrics3"
+            ]
+        },
         "io.nats:java-nats-streaming": {
             "locked": "0.5.0",
             "requested": "0.5.0"
@@ -1215,13 +1212,6 @@
                 "io.swagger:swagger-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -1232,8 +1222,9 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "io.swagger:swagger-core",
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core",
+                "io.swagger:swagger-core"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -1265,6 +1256,13 @@
         "net.thisptr:jackson-jq": {
             "locked": "0.0.11",
             "requested": "0.0.11"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.2.1",
@@ -1303,29 +1301,10 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "org.javassist:javassist": {
             "locked": "3.18.2-GA",
             "transitive": [
                 "org.reflections:reflections"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.jruby.jcodings:jcodings": {
@@ -1359,12 +1338,15 @@
             ]
         },
         "org.slf4j:slf4j-api": {
-            "locked": "1.7.25",
+            "locked": "1.7.29",
             "transitive": [
                 "com.jayway.jsonpath:json-path",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
                 "com.netflix.spectator:spectator-api",
+                "com.netflix.spectator:spectator-reg-metrics3",
+                "com.rabbitmq:amqp-client",
+                "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
                 "org.apache.kafka:kafka-clients"
@@ -1460,7 +1442,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -1480,11 +1462,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -1573,12 +1555,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.luben:zstd-jni": {
             "locked": "1.3.8-1",
             "transitive": [
@@ -1664,8 +1640,17 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.spectator:spectator-reg-metrics3"
             ]
+        },
+        "com.netflix.spectator:spectator-reg-metrics3": {
+            "locked": "0.68.0",
+            "requested": "0.68.0"
+        },
+        "com.rabbitmq:amqp-client": {
+            "locked": "5.8.0",
+            "requested": "5.8.0"
         },
         "com.spotify:completable-futures": {
             "locked": "0.3.1",
@@ -1707,6 +1692,12 @@
                 "org.apache.httpcomponents:httpclient"
             ]
         },
+        "io.dropwizard.metrics:metrics-core": {
+            "locked": "3.1.2",
+            "transitive": [
+                "com.netflix.spectator:spectator-reg-metrics3"
+            ]
+        },
         "io.nats:java-nats-streaming": {
             "locked": "0.5.0",
             "requested": "0.5.0"
@@ -1739,13 +1730,6 @@
                 "io.swagger:swagger-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -1756,8 +1740,9 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "io.swagger:swagger-core",
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core",
+                "io.swagger:swagger-core"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -1789,6 +1774,13 @@
         "net.thisptr:jackson-jq": {
             "locked": "0.0.11",
             "requested": "0.0.11"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.2.1",
@@ -1827,29 +1819,10 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "org.javassist:javassist": {
             "locked": "3.18.2-GA",
             "transitive": [
                 "org.reflections:reflections"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.jruby.jcodings:jcodings": {
@@ -1883,12 +1856,15 @@
             ]
         },
         "org.slf4j:slf4j-api": {
-            "locked": "1.7.25",
+            "locked": "1.7.29",
             "transitive": [
                 "com.jayway.jsonpath:json-path",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
                 "com.netflix.spectator:spectator-api",
+                "com.netflix.spectator:spectator-reg-metrics3",
+                "com.rabbitmq:amqp-client",
+                "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
                 "org.apache.kafka:kafka-clients"
@@ -1921,7 +1897,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -1941,11 +1917,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -2034,12 +2010,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.luben:zstd-jni": {
             "locked": "1.3.8-1",
             "transitive": [
@@ -2125,8 +2095,17 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.spectator:spectator-reg-metrics3"
             ]
+        },
+        "com.netflix.spectator:spectator-reg-metrics3": {
+            "locked": "0.68.0",
+            "requested": "0.68.0"
+        },
+        "com.rabbitmq:amqp-client": {
+            "locked": "5.8.0",
+            "requested": "5.8.0"
         },
         "com.spotify:completable-futures": {
             "locked": "0.3.1",
@@ -2168,6 +2147,12 @@
                 "org.apache.httpcomponents:httpclient"
             ]
         },
+        "io.dropwizard.metrics:metrics-core": {
+            "locked": "3.1.2",
+            "transitive": [
+                "com.netflix.spectator:spectator-reg-metrics3"
+            ]
+        },
         "io.nats:java-nats-streaming": {
             "locked": "0.5.0",
             "requested": "0.5.0"
@@ -2200,13 +2185,6 @@
                 "io.swagger:swagger-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -2217,8 +2195,9 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "io.swagger:swagger-core",
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core",
+                "io.swagger:swagger-core"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -2250,6 +2229,13 @@
         "net.thisptr:jackson-jq": {
             "locked": "0.0.11",
             "requested": "0.0.11"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.2.1",
@@ -2288,29 +2274,10 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "org.javassist:javassist": {
             "locked": "3.18.2-GA",
             "transitive": [
                 "org.reflections:reflections"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.jruby.jcodings:jcodings": {
@@ -2344,12 +2311,15 @@
             ]
         },
         "org.slf4j:slf4j-api": {
-            "locked": "1.7.25",
+            "locked": "1.7.29",
             "transitive": [
                 "com.jayway.jsonpath:json-path",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
                 "com.netflix.spectator:spectator-api",
+                "com.netflix.spectator:spectator-reg-metrics3",
+                "com.rabbitmq:amqp-client",
+                "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
                 "org.apache.kafka:kafka-clients"
@@ -2382,7 +2352,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -2402,11 +2372,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -2495,12 +2465,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.luben:zstd-jni": {
             "locked": "1.3.8-1",
             "transitive": [
@@ -2586,8 +2550,17 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.spectator:spectator-reg-metrics3"
             ]
+        },
+        "com.netflix.spectator:spectator-reg-metrics3": {
+            "locked": "0.68.0",
+            "requested": "0.68.0"
+        },
+        "com.rabbitmq:amqp-client": {
+            "locked": "5.8.0",
+            "requested": "5.8.0"
         },
         "com.spotify:completable-futures": {
             "locked": "0.3.1",
@@ -2629,6 +2602,12 @@
                 "org.apache.httpcomponents:httpclient"
             ]
         },
+        "io.dropwizard.metrics:metrics-core": {
+            "locked": "3.1.2",
+            "transitive": [
+                "com.netflix.spectator:spectator-reg-metrics3"
+            ]
+        },
         "io.nats:java-nats-streaming": {
             "locked": "0.5.0",
             "requested": "0.5.0"
@@ -2661,13 +2640,6 @@
                 "io.swagger:swagger-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -2684,8 +2656,9 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "io.swagger:swagger-core",
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core",
+                "io.swagger:swagger-core"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -2739,6 +2712,13 @@
         "net.thisptr:jackson-jq": {
             "locked": "0.0.11",
             "requested": "0.0.11"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.2.1",
@@ -2820,29 +2800,10 @@
                 "junit:junit"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "org.javassist:javassist": {
             "locked": "3.18.2-GA",
             "transitive": [
                 "org.reflections:reflections"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.jruby.jcodings:jcodings": {
@@ -2892,6 +2853,9 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
                 "com.netflix.spectator:spectator-api",
+                "com.netflix.spectator:spectator-reg-metrics3",
+                "com.rabbitmq:amqp-client",
+                "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
                 "org.apache.kafka:kafka-clients",
@@ -2929,7 +2893,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -2949,11 +2913,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -3042,12 +3006,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.luben:zstd-jni": {
             "locked": "1.3.8-1",
             "transitive": [
@@ -3133,8 +3091,17 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.spectator:spectator-reg-metrics3"
             ]
+        },
+        "com.netflix.spectator:spectator-reg-metrics3": {
+            "locked": "0.68.0",
+            "requested": "0.68.0"
+        },
+        "com.rabbitmq:amqp-client": {
+            "locked": "5.8.0",
+            "requested": "5.8.0"
         },
         "com.spotify:completable-futures": {
             "locked": "0.3.1",
@@ -3176,6 +3143,12 @@
                 "org.apache.httpcomponents:httpclient"
             ]
         },
+        "io.dropwizard.metrics:metrics-core": {
+            "locked": "3.1.2",
+            "transitive": [
+                "com.netflix.spectator:spectator-reg-metrics3"
+            ]
+        },
         "io.nats:java-nats-streaming": {
             "locked": "0.5.0",
             "requested": "0.5.0"
@@ -3208,13 +3181,6 @@
                 "io.swagger:swagger-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -3231,8 +3197,9 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "io.swagger:swagger-core",
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core",
+                "io.swagger:swagger-core"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -3286,6 +3253,13 @@
         "net.thisptr:jackson-jq": {
             "locked": "0.0.11",
             "requested": "0.0.11"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.2.1",
@@ -3367,29 +3341,10 @@
                 "junit:junit"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "org.javassist:javassist": {
             "locked": "3.18.2-GA",
             "transitive": [
                 "org.reflections:reflections"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.jruby.jcodings:jcodings": {
@@ -3439,6 +3394,9 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
                 "com.netflix.spectator:spectator-api",
+                "com.netflix.spectator:spectator-reg-metrics3",
+                "com.rabbitmq:amqp-client",
+                "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
                 "org.apache.kafka:kafka-clients",
@@ -3476,7 +3434,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -3496,11 +3454,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -3589,12 +3547,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.luben:zstd-jni": {
             "locked": "1.3.8-1",
             "transitive": [
@@ -3680,8 +3632,17 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.spectator:spectator-reg-metrics3"
             ]
+        },
+        "com.netflix.spectator:spectator-reg-metrics3": {
+            "locked": "0.68.0",
+            "requested": "0.68.0"
+        },
+        "com.rabbitmq:amqp-client": {
+            "locked": "5.8.0",
+            "requested": "5.8.0"
         },
         "com.spotify:completable-futures": {
             "locked": "0.3.1",
@@ -3723,6 +3684,12 @@
                 "org.apache.httpcomponents:httpclient"
             ]
         },
+        "io.dropwizard.metrics:metrics-core": {
+            "locked": "3.1.2",
+            "transitive": [
+                "com.netflix.spectator:spectator-reg-metrics3"
+            ]
+        },
         "io.nats:java-nats-streaming": {
             "locked": "0.5.0",
             "requested": "0.5.0"
@@ -3755,13 +3722,6 @@
                 "io.swagger:swagger-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -3778,8 +3738,9 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "io.swagger:swagger-core",
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core",
+                "io.swagger:swagger-core"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -3833,6 +3794,13 @@
         "net.thisptr:jackson-jq": {
             "locked": "0.0.11",
             "requested": "0.0.11"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.2.1",
@@ -3914,29 +3882,10 @@
                 "junit:junit"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "org.javassist:javassist": {
             "locked": "3.18.2-GA",
             "transitive": [
                 "org.reflections:reflections"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.jruby.jcodings:jcodings": {
@@ -3986,6 +3935,9 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
                 "com.netflix.spectator:spectator-api",
+                "com.netflix.spectator:spectator-reg-metrics3",
+                "com.rabbitmq:amqp-client",
+                "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
                 "org.apache.kafka:kafka-clients",
@@ -4023,7 +3975,7 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -4043,11 +3995,11 @@
             ]
         },
         "com.amazonaws:aws-java-sdk-sqs": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "requested": "latest.release"
         },
         "com.amazonaws:jmespath-java": {
-            "locked": "1.11.700",
+            "locked": "1.11.781",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-kms",
                 "com.amazonaws:aws-java-sdk-s3",
@@ -4136,12 +4088,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.luben:zstd-jni": {
             "locked": "1.3.8-1",
             "transitive": [
@@ -4227,8 +4173,17 @@
         "com.netflix.spectator:spectator-api": {
             "locked": "0.68.0",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
+                "com.netflix.conductor:conductor-core",
+                "com.netflix.spectator:spectator-reg-metrics3"
             ]
+        },
+        "com.netflix.spectator:spectator-reg-metrics3": {
+            "locked": "0.68.0",
+            "requested": "0.68.0"
+        },
+        "com.rabbitmq:amqp-client": {
+            "locked": "5.8.0",
+            "requested": "5.8.0"
         },
         "com.spotify:completable-futures": {
             "locked": "0.3.1",
@@ -4270,6 +4225,12 @@
                 "org.apache.httpcomponents:httpclient"
             ]
         },
+        "io.dropwizard.metrics:metrics-core": {
+            "locked": "3.1.2",
+            "transitive": [
+                "com.netflix.spectator:spectator-reg-metrics3"
+            ]
+        },
         "io.nats:java-nats-streaming": {
             "locked": "0.5.0",
             "requested": "0.5.0"
@@ -4302,13 +4263,6 @@
                 "io.swagger:swagger-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -4325,8 +4279,9 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "io.swagger:swagger-core",
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core",
+                "io.swagger:swagger-core"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -4380,6 +4335,13 @@
         "net.thisptr:jackson-jq": {
             "locked": "0.0.11",
             "requested": "0.0.11"
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
         },
         "org.apache.commons:commons-lang3": {
             "locked": "3.2.1",
@@ -4461,29 +4423,10 @@
                 "junit:junit"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "org.javassist:javassist": {
             "locked": "3.18.2-GA",
             "transitive": [
                 "org.reflections:reflections"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.jruby.jcodings:jcodings": {
@@ -4533,6 +4476,9 @@
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
                 "com.netflix.spectator:spectator-api",
+                "com.netflix.spectator:spectator-reg-metrics3",
+                "com.rabbitmq:amqp-client",
+                "io.dropwizard.metrics:metrics-core",
                 "io.swagger:swagger-core",
                 "io.swagger:swagger-models",
                 "org.apache.kafka:kafka-clients",

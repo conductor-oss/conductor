@@ -38,6 +38,10 @@ dependencies {
     testCompile "com.google.inject.extensions:guice-servlet:${revGuiceServlet}"
     testCompile "io.swagger:swagger-jersey-jaxrs:${revSwaggerJersey}"
     testCompile "org.awaitility:awaitility:${revAwaitility}"
+    testCompile "org.elasticsearch:elasticsearch:${revElasticSearch5}"
+    testCompile "org.elasticsearch.client:transport:${revElasticSearch5}"
+    testCompile "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch5}"
+    testCompile "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch5}"
 }
 
 dockerCompose{
@@ -59,7 +63,7 @@ task intDockerStart() {
 
 task intDockerDown(dependsOn: integrationTestDockerComposeDownForced) {
     group = "Postgres and Mysql data access based Integration Test"
-    description "Stops a local db container for Artemis data access integration tests."
+    description "Stops a local db container for postgres and mysql data access integration tests."
 }
 
 test.doFirst {

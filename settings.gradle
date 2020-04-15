@@ -1,6 +1,6 @@
 rootProject.name='conductor'
 
-include 'client','common','contribs','core', 'es5-persistence','jersey', 'postgres-persistence', 'zookeeper-lock', 'redis-lock'
+include 'client','common','contribs','core','es5-persistence','es6-persistence','jersey','postgres-persistence','zookeeper-lock','redis-lock'
 include 'cassandra-persistence', 'mysql-persistence', 'redis-persistence','server','test-harness','ui'
 include 'grpc', 'grpc-server', 'grpc-client'
 

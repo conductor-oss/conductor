@@ -1,17 +1,53 @@
+plugins {
+    id 'com.github.johnrengelman.plugin-shadow' version '2.0.3'
+    id 'java'
+}
+
+configurations {
+    // Prevent shaded dependencies from being published, while keeping them available to tests
+    shadow.extendsFrom compileOnly
+    testRuntime.extendsFrom compileOnly
+}
+
 dependencies {
     compile project(':conductor-core')
 
     compile "commons-io:commons-io:${revCommonsIo}"
 
-    compile "org.elasticsearch:elasticsearch:${revElasticSearch6}"
-    compile "org.elasticsearch.client:transport:${revElasticSearch6}"
-    compile "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch6}"
-    compile "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch6}"
+    compileOnly "org.elasticsearch:elasticsearch:${revElasticSearch6}"
+    compileOnly "org.elasticsearch.client:transport:${revElasticSearch6}"
+    compileOnly "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch6}"
+    compileOnly "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch6}"
 
-    //ES6 Dependency
     compile "org.apache.logging.log4j:log4j-api:${revLog4jApi}"
     compile "org.apache.logging.log4j:log4j-core:${revLog4jCore}"
 
+    // Test dependencies
     testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
     testCompile "org.awaitility:awaitility:${revAwaitility}"
+
+    testCompile "org.elasticsearch:elasticsearch:${revElasticSearch6}"
+    testCompile "org.elasticsearch.client:transport:${revElasticSearch6}"
+    testCompile "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch6}"
+    testCompile "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch6}"
+}
+
+// Drop the classifier and delete jar task actions to replace the regular jar artifact with the shadow artifact
+shadowJar {
+    configurations = [project.configurations.shadow]
+    classifier = null
+
+    // Service files are not included by default.
+    mergeServiceFiles {
+        include 'META-INF/services/*'
+        include 'META-INF/maven/*'
+    }
+}
+
+jar.enabled = false
+jar.dependsOn shadowJar
+
+// Configure Auto Relocation
+configureRelocationShadowJar {
+    prefix = 'conductor'
 }
