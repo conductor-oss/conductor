@@ -696,6 +696,9 @@ public abstract class AbstractProtoMapper {
         if (from.getOwnerEmail() != null) {
             to.setOwnerEmail( from.getOwnerEmail() );
         }
+        if (from.getPollTimeoutSeconds() != null) {
+            to.setPollTimeoutSeconds( from.getPollTimeoutSeconds() );
+        }
         return to.build();
     }
 
@@ -722,6 +725,7 @@ public abstract class AbstractProtoMapper {
         to.setIsolationGroupId( from.getIsolationGroupId() );
         to.setExecutionNameSpace( from.getExecutionNameSpace() );
         to.setOwnerEmail( from.getOwnerEmail() );
+        to.setPollTimeoutSeconds( from.getPollTimeoutSeconds() );
         return to;
     }
 
