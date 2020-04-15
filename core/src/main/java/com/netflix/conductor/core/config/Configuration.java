@@ -108,6 +108,12 @@ public interface Configuration {
     String OWNER_EMAIL_MANDATORY_NAME = "workflow.owner.email.mandatory";
     boolean OWNER_EMAIL_MANDATORY_DEFAULT_VALUE = true;
 
+    String ELASTIC_SEARCH_AUTO_INDEX_MANAGEMENT_ENABLED_PROPERTY_NAME = "workflow.elasticsearch.auto.index.management.enabled";
+    boolean ELASTIC_SEARCH_AUTO_INDEX_MANAGEMENT_ENABLED_DEFAULT_VALUE = true;
+
+    String ELASTIC_SEARCH_DOCUMENT_TYPE_OVERRIDE_PROPERTY_NAME = "workflow.elasticsearch.document.type.override";
+    String ELASTIC_SEARCH_DOCUMENT_TYPE_OVERRIDE_DEFAULT_VALUE = "";
+
     //TODO add constants for input/output external payload related properties.
 
     default DB getDB() {
@@ -291,6 +297,24 @@ public interface Configuration {
      */
     default int getEventExecutionPersistenceTTL() {
         return getIntProperty(EVENT_EXECUTION_PERSISTENCE_TTL_SECS_PROPERTY_NAME, EVENT_EXECUTION_PERSISTENCE_TTL_SECS_DEFAULT_VALUE);
+    }
+
+    default boolean isElasticSearchAutoIndexManagementEnabled() {
+        return getBooleanProperty(ELASTIC_SEARCH_AUTO_INDEX_MANAGEMENT_ENABLED_PROPERTY_NAME,
+            ELASTIC_SEARCH_AUTO_INDEX_MANAGEMENT_ENABLED_DEFAULT_VALUE);
+    }
+
+    /**
+     * Document types are deprecated in ES6 and removed from ES7. This property can be used to disable the use of
+     * specific document types with an override. This property is currently used in ES6 module.
+     * <p>
+     * <em>Note that this property will only take effect if
+     * {@link Configuration#isElasticSearchAutoIndexManagementEnabled} is set to false and index management
+     * is handled outside of this module.</em>
+     */
+    default String getElasticSearchDocumentTypeOverride() {
+        return getProperty(ELASTIC_SEARCH_DOCUMENT_TYPE_OVERRIDE_PROPERTY_NAME,
+            ELASTIC_SEARCH_DOCUMENT_TYPE_OVERRIDE_DEFAULT_VALUE);
     }
 
     /**

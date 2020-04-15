@@ -76,7 +76,6 @@ public class TaskRunnerConfigurerTest {
         Worker worker1 = mock(Worker.class);
         when(worker1.getPollingInterval()).thenReturn(3000);
         when(worker1.getTaskDefName()).thenReturn(task1Name);
-        when(worker1.preAck(any())).thenReturn(true);
         when(worker1.getIdentity()).thenReturn("worker1");
         when(worker1.execute(any())).thenAnswer(invocation -> {
             // Sleep for 2 seconds to simulate task execution
@@ -90,7 +89,6 @@ public class TaskRunnerConfigurerTest {
         Worker worker2 = mock(Worker.class);
         when(worker2.getPollingInterval()).thenReturn(3000);
         when(worker2.getTaskDefName()).thenReturn(task2Name);
-        when(worker2.preAck(any())).thenReturn(true);
         when(worker2.getIdentity()).thenReturn("worker2");
         when(worker2.execute(any())).thenAnswer(invocation -> {
             // Sleep for 2 seconds to simulate task execution
