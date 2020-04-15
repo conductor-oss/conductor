@@ -42,7 +42,7 @@ task intDockerStart() {
 
 task intDockerDown(dependsOn: integrationTestDockerComposeDownForced) {
     group = "Mysql data access based Integration Test"
-    description "Stops a local db container for Artemis data access integration tests."
+    description "Stops a local db container for mysql data access integration tests."
 }
 
 test.doFirst {

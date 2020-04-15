@@ -43,7 +43,7 @@ task intDockerStart() {
 
 task intDockerDown(dependsOn: integrationTestDockerComposeDownForced) {
     group = "Postgres data access based Integration Test"
-    description "Stops a local db container for Artemis data access integration tests."
+    description "Stops a local db container for postgres data access integration tests."
 }
 
 test.doFirst {
