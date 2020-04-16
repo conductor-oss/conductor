@@ -1,5 +1,6 @@
 package com.netflix.conductor.core.execution;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.utils.JsonUtils;
@@ -10,6 +11,11 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
@@ -96,4 +102,43 @@ public class TestParametersUtils {
 		assertEquals("conductor", replaced.get("k4"));
 		assertEquals(2, replaced.get("k5"));
     }
+
+	@Test
+	public void testReplaceConcurrent() throws ExecutionException, InterruptedException {
+		ExecutorService executorService = Executors.newFixedThreadPool(2);
+
+    	AtomicReference<String> generatedId = new AtomicReference<>("test-0");
+		Map<String, Object> input = new HashMap<>();
+		Map<String, Object> payload = new HashMap<>();
+    	payload.put("event", "conductor:TEST_EVENT");
+    	payload.put("someId", generatedId);
+		input.put("payload", payload);
+		input.put("name", "conductor");
+		input.put("version", 2);
+
+		Map<String, Object> inputParams = new HashMap<>();
+		inputParams.put("k1", "${payload.someId}");
+		inputParams.put("k2", "${name}");
+
+		CompletableFuture.runAsync(() -> {
+			for (int i = 0; i < 10000; i++) {
+				generatedId.set("test-" + i);
+				payload.put("someId", generatedId.get());
+				Object jsonObj = null;
+				try {
+					jsonObj = objectMapper.readValue(objectMapper.writeValueAsString(input), Object.class);
+				} catch (JsonProcessingException e) {
+					e.printStackTrace();
+					return;
+				}
+				Map<String, Object> replaced = parametersUtils.replace(inputParams, jsonObj);
+				assertNotNull(replaced);
+				assertEquals(generatedId.get(), replaced.get("k1"));
+				assertEquals("conductor", replaced.get("k2"));
+				assertNull(replaced.get("k3"));
+			}
+		}, executorService).get();
+
+		executorService.shutdown();
+	}
 }

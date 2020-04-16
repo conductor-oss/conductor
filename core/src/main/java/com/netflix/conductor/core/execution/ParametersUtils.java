@@ -150,7 +150,7 @@ public class ParametersUtils {
         }
         Configuration option = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
         DocumentContext documentContext = JsonPath.parse(doc, option);
-        return replace(input, documentContext, null);
+        return replace(new HashMap<>(input), documentContext, null);
     }
 
     public Object replace(String paramString) {

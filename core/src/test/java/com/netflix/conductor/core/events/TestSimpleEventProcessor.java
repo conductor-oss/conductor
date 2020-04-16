@@ -55,6 +55,10 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyMapOf;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atMost;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
@@ -147,7 +151,7 @@ public class TestSimpleEventProcessor {
         doAnswer((Answer<String>) invocation -> {
             started.set(true);
             return id;
-        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStart_workflow().getName(), startWorkflowAction.getStart_workflow().getVersion(), startWorkflowAction.getStart_workflow().getCorrelationId(), startWorkflowAction.getStart_workflow().getInput(), null, event, taskToDomain);
+        }).when(workflowExecutor).startWorkflow(eq(startWorkflowAction.getStart_workflow().getName()), eq(startWorkflowAction.getStart_workflow().getVersion()), eq(startWorkflowAction.getStart_workflow().getCorrelationId()), anyMap(), eq(null), eq(event), anyMap());
 
         AtomicBoolean completed = new AtomicBoolean(false);
         doAnswer((Answer<String>) invocation -> {
@@ -219,7 +223,7 @@ public class TestSimpleEventProcessor {
         doAnswer((Answer<String>) invocation -> {
             started.set(true);
             return id;
-        }).when(workflowExecutor).startWorkflow(startWorkflowAction.getStart_workflow().getName(), startWorkflowAction.getStart_workflow().getVersion(), startWorkflowAction.getStart_workflow().getCorrelationId(), startWorkflowAction.getStart_workflow().getInput(), null, event, null);
+        }).when(workflowExecutor).startWorkflow(eq(startWorkflowAction.getStart_workflow().getName()), eq(startWorkflowAction.getStart_workflow().getVersion()), eq(startWorkflowAction.getStart_workflow().getCorrelationId()), anyMap(), eq(null), eq(event), eq(null));
 
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName(startWorkflowAction.getStart_workflow().getName());
