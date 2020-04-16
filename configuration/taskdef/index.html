@@ -257,6 +257,7 @@
   <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
 
   <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">1200</span><span class="p">,</span>
+  <span class="nt">&quot;pollTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">3600</span><span class="p">,</span>
   <span class="nt">&quot;inputKeys&quot;</span><span class="p">:</span> <span class="p">[</span>
     <span class="s2">&quot;sourceRequestId&quot;</span><span class="p">,</span>
     <span class="s2">&quot;qcElementType&quot;</span>
@@ -322,6 +323,11 @@
 <td>No timeouts if set to 0</td>
 </tr>
 <tr>
+<td>pollTimeoutSeconds</td>
+<td>Time in seconds, after which the task is marked as <code>TIMED_OUT</code> if not polled by a worker</td>
+<td>No timeouts if set to 0</td>
+</tr>
+<tr>
 <td>responseTimeoutSeconds</td>
 <td>Must be greater than 0 and less than timeoutSeconds. The task is rescheduled if not updated with a status after this time (heartbeat mechanism). Useful when the worker polls for the task but fails to complete due to errors/network failure.</td>
 <td>defaults to 3600</td>
@@ -377,7 +383,8 @@ If you have 1000 task executions waiting in the queue, and 1000 workers polling 
 <li><code>rateLimitPerFrequency</code>defines the number of Tasks that can be given to Workers per given "frequency window".<br />
 <strong>Example:</strong><br />
 Let's set <code>rateLimitFrequencyInSeconds = 5</code>, and <code>rateLimitPerFrequency = 12</code>. This means, our frequency window is of 5 seconds duration, and for each frequency window, Conductor would only give 12 tasks to workers. So, in a given minute, Conductor would only give 12*(60/5) = 144 tasks to workers irrespective of the number of workers that are polling for the task.<br />
-Note that unlike <code>concurrentExecLimit</code>, rate limiting doesn't take into account tasks already in progress/completed. Even if all the previous tasks are executed within 1 sec, or would take a few days, the new tasks are still given to workers at configured frequency, 144 tasks per minute in above example.</li>
+Note that unlike <code>concurrentExecLimit</code>, rate limiting doesn't take into account tasks already in progress/completed. Even if all the previous tasks are executed within 1 sec, or would take a few days, the new tasks are still given to workers at configured frequency, 144 tasks per minute in above example. <br />
+Note: Rate limiting is only supported for the Redis-persistence module and is not available with other persistence layers.</li>
 </ul>
 <h3 id="using-inputkeys-and-outputkeys">Using inputKeys and outputKeys<a class="headerlink" href="#using-inputkeys-and-outputkeys" title="Permanent link">&para;</a></h3>
 <ul>
