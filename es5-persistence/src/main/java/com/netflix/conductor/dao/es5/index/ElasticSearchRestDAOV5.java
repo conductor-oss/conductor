@@ -39,6 +39,7 @@ import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -741,7 +742,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
     @Override
     public List<String> searchArchivableWorkflows(String indexName, long archiveTtlDays) {
         QueryBuilder q = QueryBuilders.boolQuery()
-                .must(QueryBuilders.rangeQuery("endTime").lt(LocalDate.now().minusDays(archiveTtlDays).toString()).gte(LocalDate.now().minusDays(archiveTtlDays).minusDays(1).toString()))
+                .must(QueryBuilders.rangeQuery("endTime").lt(LocalDate.now(ZoneOffset.UTC).minusDays(archiveTtlDays).toString()).gte(LocalDate.now(ZoneOffset.UTC).minusDays(archiveTtlDays).minusDays(1).toString()))
                 .should(QueryBuilders.termQuery("status", "COMPLETED"))
                 .should(QueryBuilders.termQuery("status", "FAILED"))
                 .should(QueryBuilders.termQuery("status", "TIMED_OUT"))

@@ -67,6 +67,7 @@ import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.sort.FieldSortBuilder;
 import org.elasticsearch.search.sort.SortOrder;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -303,7 +304,7 @@ public class TestElasticSearchRestDAOV5 {
     @Test
     public void testSearchArchivableWorkflows() throws IOException {
         String workflowId = "search-workflow-id";
-        Long time = DateTime.now().minusDays(7).toDate().getTime();
+        Long time = DateTime.now(DateTimeZone.UTC).minusDays(7).toDate().getTime();
 
         workflow.setWorkflowId(workflowId);
         workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
