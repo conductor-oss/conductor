@@ -266,6 +266,10 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
     }
 
     private void refreshTaskDefsCache() {
+        if (session.isClosed()) {
+            LOGGER.warn("session is closed");
+            return;
+        }
         try {
             Map<String, TaskDef> map = new HashMap<>();
             getAllTaskDefsFromDB().forEach(taskDef -> map.put(taskDef.getName(), taskDef));

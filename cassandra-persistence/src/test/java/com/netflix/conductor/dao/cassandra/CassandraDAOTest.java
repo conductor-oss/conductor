@@ -57,7 +57,7 @@ public class CassandraDAOTest {
     private final ObjectMapper objectMapper = new JsonMapperProvider().get();
 
     private static EmbeddedCassandra embeddedCassandra;
-    private Session session;
+    private static Session session;
 
     private CassandraMetadataDAO metadataDAO;
     private CassandraExecutionDAO executionDAO;
@@ -69,11 +69,11 @@ public class CassandraDAOTest {
     @BeforeClass
     public static void init() throws Exception {
         embeddedCassandra = new EmbeddedCassandra();
+        session = embeddedCassandra.getSession();
     }
 
     @Before
     public void setUp() {
-        session = embeddedCassandra.getSession();
         Statements statements = new Statements(testConfiguration);
         metadataDAO = new CassandraMetadataDAO(session, objectMapper, testConfiguration, statements);
         executionDAO = new CassandraExecutionDAO(session, objectMapper, testConfiguration, statements);
@@ -83,6 +83,7 @@ public class CassandraDAOTest {
     @AfterClass
     public static void teardown() {
         embeddedCassandra.cleanupData();
+        session.close();
     }
 
     @Test

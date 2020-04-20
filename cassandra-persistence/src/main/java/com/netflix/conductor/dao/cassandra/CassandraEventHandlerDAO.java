@@ -118,6 +118,10 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
     }
 
     private void refreshEventHandlersCache() {
+        if (session.isClosed()) {
+            LOGGER.warn("session is closed");
+            return;
+        }
         try {
             Map<String, EventHandler> map = new HashMap<>();
             getAllEventHandlersFromDB().forEach(eventHandler -> map.put(eventHandler.getName(), eventHandler));
