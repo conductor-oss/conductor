@@ -5075,8 +5075,6 @@ public abstract class AbstractWorkflowServiceTest {
         task.setStatus(FAILED);
         workflowExecutionService.updateTask(task);
 
-        workflowExecutor.executeSystemTask(subworkflow, subWorkflowTaskId, 1);
-
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals(WorkflowStatus.FAILED, workflow.getStatus());
@@ -5087,9 +5085,9 @@ public abstract class AbstractWorkflowServiceTest {
         task.setStatus(COMPLETED);
         workflowExecutionService.updateTask(task);
 
-        workflow = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
-        assertNotNull(workflow);
-        assertEquals(RUNNING, workflow.getStatus());
+        subWorkflow = workflowExecutionService.getExecutionStatus(subWorkflowId, true);
+        assertNotNull(subWorkflow);
+        assertEquals(RUNNING, subWorkflow.getStatus());
 
         task = workflowExecutionService.poll("junit_task_2", "test");
         assertEquals(subWorkflowId, task.getWorkflowInstanceId());
