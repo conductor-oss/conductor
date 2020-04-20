@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
@@ -1082,6 +1083,87 @@ public class TestWorkflowExecutor {
 
         // An asyncComplete task shouldn't be executed through this logic, and the Terminate task should remain IN_PROGRESS.
         assertEquals(Status.IN_PROGRESS, task1.getStatus());
+    }
+
+    @Test
+    public void testUpdateParentWorkflow() {
+        // Case 1: When Subworkflow is in terminal state
+        // 1A: Parent Workflow is IN_PROGRESS
+        // Expectation: Parent workflow's Subworkflow task should complete
+        String workflowId = "test-workflow-Id";
+        String subWorkflowId = "test-subWorkflow-Id";
+        String parentWorkflowSubWFTaskId = "test-subworkflow-taskId";
+        WorkflowTask subWorkflowTask = new WorkflowTask();
+        subWorkflowTask.setWorkflowTaskType(TaskType.SUB_WORKFLOW);
+        subWorkflowTask.setType(TaskType.SUB_WORKFLOW.name());
+        subWorkflowTask.setTaskReferenceName("sub-workflow");
+        Task task = new Task();
+        task.setTaskType(subWorkflowTask.getType());
+        task.setTaskDefName(subWorkflowTask.getName());
+        task.setReferenceTaskName(subWorkflowTask.getTaskReferenceName());
+        task.setWorkflowInstanceId(workflowId);
+        task.setScheduledTime(System.currentTimeMillis());
+        task.setTaskId(parentWorkflowSubWFTaskId);
+        task.setStatus(Status.IN_PROGRESS);
+        task.setRetryCount(0);
+        task.setWorkflowTask(subWorkflowTask);
+        task.setOutputData(new HashMap<>());
+        task.setSubWorkflowId(subWorkflowId);
+
+        WorkflowDef def = new WorkflowDef();
+        def.setName("test");
+
+        Workflow parentWorkflow = new Workflow();
+        parentWorkflow.setWorkflowId(workflowId);
+        parentWorkflow.setWorkflowDefinition(def);
+        parentWorkflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        parentWorkflow.setTasks(Arrays.asList(task));
+
+        Workflow subWorkflow = new Workflow();
+        subWorkflow.setWorkflowId("subworkflowId");
+        subWorkflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
+        subWorkflow.setParentWorkflowTaskId(parentWorkflowSubWFTaskId);
+        subWorkflow.setWorkflowId(subWorkflowId);
+
+        when(executionDAOFacade.getTaskById(anyString())).thenReturn(task);
+        when(workflowExecutor.getWorkflow(subWorkflowId, false)).thenReturn(subWorkflow);
+
+        workflowExecutor.updateParentWorkflow(task, subWorkflow, parentWorkflow);
+        assertEquals(Status.COMPLETED, task.getStatus());
+        assertEquals(Workflow.WorkflowStatus.COMPLETED, subWorkflow.getStatus());
+        // updateParentWorkflow shouldn't call the decide on workflow, and hence it should still remain IN_PROGRESS
+        assertEquals(Workflow.WorkflowStatus.RUNNING, parentWorkflow.getStatus());
+
+        // 1B: Parent Workflow is in FAILED state
+        // Expectation: Throws IllegalStateException
+        parentWorkflow.setStatus(Workflow.WorkflowStatus.FAILED);
+        boolean thrown = false;
+        try {
+            workflowExecutor.updateParentWorkflow(task, subWorkflow, parentWorkflow);
+        } catch (IllegalStateException e) {
+            thrown = true;
+        }
+        assertTrue(thrown);
+
+        // Case 2: When Subworkflow is in non-terminal state
+        // 2A: Parent Workflow is in terminal state
+        // Expectation: Parent workflow and subworkflow task should be reset to IN_PROGRESS and RUNNING state respectively.
+        subWorkflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        parentWorkflow.setStatus(Workflow.WorkflowStatus.FAILED);
+        workflowExecutor.updateParentWorkflow(task, subWorkflow, parentWorkflow);
+        assertEquals(Workflow.WorkflowStatus.RUNNING, subWorkflow.getStatus());
+        assertEquals(Status.IN_PROGRESS, task.getStatus());
+        assertEquals(Workflow.WorkflowStatus.RUNNING, parentWorkflow.getStatus());
+
+        // 2B: Parent Workflow is in non-terminal state
+        // Expectation: Parent workflow, Subworkflow and subworkflow task should remain in same state.
+        subWorkflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        parentWorkflow.setStatus(Workflow.WorkflowStatus.RUNNING);
+        task.setStatus(Status.IN_PROGRESS);
+        workflowExecutor.updateParentWorkflow(task, subWorkflow, parentWorkflow);
+        assertEquals(Workflow.WorkflowStatus.RUNNING, subWorkflow.getStatus());
+        assertEquals(Status.IN_PROGRESS, task.getStatus());
+        assertEquals(Workflow.WorkflowStatus.RUNNING, parentWorkflow.getStatus());
     }
 
     private Workflow generateSampleWorkflow() {

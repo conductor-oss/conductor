@@ -737,11 +737,20 @@ public class Task {
     }
 
     public String getSubWorkflowId() {
-        return subWorkflowId;
+        // For backwards compatibility
+        if (StringUtils.isNotBlank(subWorkflowId)) {
+            return subWorkflowId;
+        } else {
+            return this.getOutputData() != null ? (String) this.getOutputData().get("subWorkflowId") : null;
+        }
     }
 
     public void setSubWorkflowId(String subWorkflowId) {
         this.subWorkflowId = subWorkflowId;
+        // For backwards compatibility
+        if (this.getOutputData() != null && this.getOutputData().containsKey("subWorkflowId")) {
+            this.getOutputData().put("subWorkflowId", subWorkflowId);
+        }
     }
 
 
