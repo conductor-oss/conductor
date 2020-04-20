@@ -59,6 +59,8 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         String subWorkflowName = resolvedParams.get("name").toString();
         Integer subWorkflowVersion = getSubWorkflowVersion(resolvedParams, subWorkflowName);
 
+        Object subWorkflowDefinition = resolvedParams.get("workflowDefinition");
+
         Map subWorkflowTaskToDomain = null;
         Object uncheckedTaskToDomain = resolvedParams.get("taskToDomain");
         if (uncheckedTaskToDomain instanceof Map) {
@@ -76,6 +78,7 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         subWorkflowTask.getInputData().put("subWorkflowName", subWorkflowName);
         subWorkflowTask.getInputData().put("subWorkflowVersion", subWorkflowVersion);
         subWorkflowTask.getInputData().put("subWorkflowTaskToDomain", subWorkflowTaskToDomain);
+        subWorkflowTask.getInputData().put("subWorkflowDefinition", subWorkflowDefinition);
         subWorkflowTask.getInputData().put("workflowInput", taskMapperContext.getTaskInput());
         subWorkflowTask.setTaskId(taskId);
         subWorkflowTask.setStatus(Task.Status.SCHEDULED);
@@ -108,7 +111,16 @@ public class SubWorkflowTaskMapper implements TaskMapper {
         if (taskToDomain != null) {
             params.put("taskToDomain", taskToDomain);
         }
-        return parametersUtils.getTaskInputV2(params, workflowInstance, null, null);
+
+        params = parametersUtils.getTaskInputV2(params, workflowInstance, null, null);
+
+        // do not resolve params inside subworkflow definition
+        Object subWorkflowDefinition = subWorkflowParams.getWorkflowDefinition();
+        if (subWorkflowDefinition != null) {
+            params.put("workflowDefinition", subWorkflowDefinition);
+        }
+
+        return params;
     }
 
     private Integer getSubWorkflowVersion(Map<String, Object> resolvedParams, String subWorkflowName) {

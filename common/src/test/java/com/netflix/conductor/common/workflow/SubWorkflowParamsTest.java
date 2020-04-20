@@ -1,6 +1,7 @@
 package com.netflix.conductor.common.workflow;
 
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import org.junit.Test;
 
 import javax.validation.ConstraintViolation;
@@ -37,5 +38,12 @@ public class SubWorkflowParamsTest {
         taskToDomain.put("unit", "test");
         subWorkflowParams.setTaskToDomain(taskToDomain);
         assertEquals(taskToDomain, subWorkflowParams.getTaskToDomain());
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testSetWorkflowDefinition() {
+        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();//name is null
+        subWorkflowParams.setName("dummy-name");
+        subWorkflowParams.setWorkflowDefinition(new Object());
     }
 }

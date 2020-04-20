@@ -1,6 +1,7 @@
 syntax = "proto3";
 package conductor.proto;
 
+import "google/protobuf/struct.proto";
 
 option java_package = "com.netflix.conductor.proto";
 option java_outer_classname = "SubWorkflowParamsPb";
@@ -10,4 +11,5 @@ message SubWorkflowParams {
     string name = 1;
     int32 version = 2;
     map<string, string> task_to_domain = 3;
+    google.protobuf.Value workflow_definition = 4;
 }

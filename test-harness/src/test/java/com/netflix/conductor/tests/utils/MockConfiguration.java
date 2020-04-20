@@ -113,7 +113,7 @@ public class MockConfiguration implements Configuration {
 
     @Override
     public Long getTaskInputPayloadSizeThresholdKB() {
-        return 1L;
+        return 10L;
     }
 
     @Override
