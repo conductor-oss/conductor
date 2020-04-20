@@ -74,7 +74,6 @@ public class CassandraDAOTest {
 
     @Before
     public void setUp() {
-        session = embeddedCassandra.getSession();
         Statements statements = new Statements(testConfiguration);
         metadataDAO = new CassandraMetadataDAO(session, objectMapper, testConfiguration, statements);
         executionDAO = new CassandraExecutionDAO(session, objectMapper, testConfiguration, statements);
