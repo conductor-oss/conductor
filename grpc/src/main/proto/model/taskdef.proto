@@ -34,4 +34,5 @@ message TaskDef {
     string isolation_group_id = 16;
     string execution_name_space = 17;
     string owner_email = 18;
+    int32 poll_timeout_seconds = 19;
 }
