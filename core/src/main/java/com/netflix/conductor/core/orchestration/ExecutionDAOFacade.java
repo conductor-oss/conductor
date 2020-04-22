@@ -225,7 +225,9 @@ public class ExecutionDAOFacade {
             } else {
                 indexDAO.asyncIndexWorkflow(workflow);
             }
-            workflow.getTasks().forEach(indexDAO::asyncIndexTask);
+			if (workflow.getStatus().isTerminal()) {
+				workflow.getTasks().forEach(indexDAO::asyncIndexTask);
+			}
         } else {
             indexDAO.indexWorkflow(workflow);
         }
