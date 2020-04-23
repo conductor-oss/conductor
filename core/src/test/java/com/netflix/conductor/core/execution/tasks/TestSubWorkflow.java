@@ -211,7 +211,7 @@ public class TestSubWorkflow {
         subWorkflowInstance.setStatus(Workflow.WorkflowStatus.TIMED_OUT);
         subWorkflowInstance.setReasonForIncompletion("unit2");
         assertTrue(subWorkflow.execute(workflowInstance, task, workflowExecutor));
-        assertEquals(Task.Status.FAILED, task.getStatus());
+        assertEquals(Task.Status.TIMED_OUT, task.getStatus());
         assertEquals("unit2", task.getReasonForIncompletion());
 
         subWorkflowInstance.setStatus(Workflow.WorkflowStatus.TERMINATED);
