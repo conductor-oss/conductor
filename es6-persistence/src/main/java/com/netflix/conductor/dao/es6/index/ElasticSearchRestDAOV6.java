@@ -911,8 +911,10 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
 
     private synchronized void indexBulkRequest(String docType) {
         if (bulkRequests.get(docType).getBulkRequest() != null && bulkRequests.get(docType).getBulkRequest().numberOfActions() > 0) {
-            indexWithRetry(bulkRequests.get(docType).getBulkRequest(), "Bulk Indexing " + docType, docType);
-            bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis(), new BulkRequest()));
+            synchronized (bulkRequests.get(docType).getBulkRequest()) {
+                indexWithRetry(bulkRequests.get(docType).getBulkRequest().get(), "Bulk Indexing " + docType, docType);
+                bulkRequests.put(docType, new BulkRequests(System.currentTimeMillis(), new BulkRequest()));
+            }
         }
     }
 
@@ -959,19 +961,19 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
 
     private static class BulkRequests {
         private final long lastFlushTime;
-        private final BulkRequest bulkRequest;
+        private final BulkRequestWrapper bulkRequest;
 
-        public long getLastFlushTime() {
+        long getLastFlushTime() {
             return lastFlushTime;
         }
 
-        public BulkRequest getBulkRequest() {
+        BulkRequestWrapper getBulkRequest() {
             return bulkRequest;
         }
 
         BulkRequests(long lastFlushTime, BulkRequest bulkRequest) {
             this.lastFlushTime = lastFlushTime;
-            this.bulkRequest = bulkRequest;
+            this.bulkRequest = new BulkRequestWrapper(bulkRequest);
         }
     }
 }
