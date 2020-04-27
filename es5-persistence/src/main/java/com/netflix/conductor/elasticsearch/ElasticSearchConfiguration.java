@@ -76,7 +76,7 @@ public interface ElasticSearchConfiguration extends Configuration {
     String ELASTIC_SEARCH_INDEX_REPLICAS_COUNT_PROPERTY_NAME = "workflow.elasticsearch.index.replicas.count";
     int ELASTIC_SEARCH_INDEX_REPLICAS_COUNT_DEFAULT_VALUE = 1;
 
-    String ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT = "task.elasticsearch.query.size";
+    String ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT = "tasklog.elasticsearch.query.size";
     int ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT_DEFAULT_VALUE = 10;
 
     default String getURL() {
