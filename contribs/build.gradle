@@ -21,4 +21,6 @@ dependencies {
 	testCompile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
 	testCompile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
 	testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
+
+	compile "com.netflix.spectator:spectator-reg-metrics3:${revSpectator}"
 }

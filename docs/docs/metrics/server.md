@@ -32,3 +32,194 @@ The following metrics are published by the server. You can use these metrics to 
 | external_payload_storage_usage | Counter for number of times external payload storage was used | name, operation, payloadType |
 
 [1]: https://github.com/Netflix/spectator
+
+## Collecting metrics
+
+One way of collecting metrics is to push them into the logging framework (log4j).
+Log4j supports various appenders that can print metrics into a console/file or even send them to remote metrics collectors over e.g. syslog channel.
+
+Conductor provides optional modules that connect metrics registry with the logging framework.
+To enable these modules, configure following additional modules property in config.properties:
+
+    conductor.additional.modules=com.netflix.conductor.contribs.metrics.MetricsRegistryModule,com.netflix.conductor.contribs.metrics.LoggingMetricsModule
+    com.netflix.conductor.contribs.metrics.LoggingMetricsModule.reportPeriodSeconds=15
+    
+This will push all available metrics into log4j every 15 seconds.
+
+By default, the metrics will be handled as a regular log message (just printed to console with default log4j.properties).
+In order to change that, you can use following log4j configuration that prints metrics into a dedicated file:
+
+    log4j.rootLogger=INFO,console,file
+    
+    log4j.appender.console=org.apache.log4j.ConsoleAppender
+    log4j.appender.console.layout=org.apache.log4j.PatternLayout
+    log4j.appender.console.layout.ConversionPattern=%d{ISO8601} %5p [%t] (%C) - %m%n
+    
+    log4j.appender.file=org.apache.log4j.RollingFileAppender
+    log4j.appender.file.File=/app/logs/conductor.log
+    log4j.appender.file.MaxFileSize=10MB
+    log4j.appender.file.MaxBackupIndex=10
+    log4j.appender.file.layout=org.apache.log4j.PatternLayout
+    log4j.appender.file.layout.ConversionPattern=%d{ISO8601} %5p [%t] (%C) - %m%n
+    
+    # Dedicated file appender for metrics
+    log4j.appender.fileMetrics=org.apache.log4j.RollingFileAppender
+    log4j.appender.fileMetrics.File=/app/logs/metrics.log
+    log4j.appender.fileMetrics.MaxFileSize=10MB
+    log4j.appender.fileMetrics.MaxBackupIndex=10
+    log4j.appender.fileMetrics.layout=org.apache.log4j.PatternLayout
+    log4j.appender.fileMetrics.layout.ConversionPattern=%d{ISO8601} %5p [%t] (%C) - %m%n
+    
+    log4j.logger.ConductorMetrics=INFO,console,fileMetrics
+    log4j.additivity.ConductorMetrics=false
+
+This configuration is bundled with conductor-server in file: log4j-file-appender.properties and can be utilized by setting env var:
+
+    LOG4J_PROP=log4j-file-appender.properties
+    
+This variable is used by _startup.sh_ script.
+
+### Integration with logstash using a log file
+
+The metrics collected by log4j can be further processed and pushed into a central collector such as ElasticSearch.
+One way of achieving this is to use: log4j file appender -> logstash -> ElasticSearch.
+
+Considering the above setup, you can deploy logstash to consume the contents of /app/logs/metrics.log file, process it and send further to elasticsearch.
+
+Following configuration needs to be used in logstash to achieve it:
+
+pipeline.yml:
+
+    - pipeline.id: conductor_metrics
+      path.config: "/usr/share/logstash/pipeline/logstash_metrics.conf"
+      pipeline.workers: 2
+
+logstash_metrics.conf
+
+    input {
+    
+     file {
+      path => ["/conductor-server-logs/metrics.log"]
+      codec => multiline {
+          pattern => "^%{TIMESTAMP_ISO8601} "
+          negate => true
+          what => previous
+      }
+     }
+    }
+    
+    filter {
+        kv {
+            field_split => ", "
+            include_keys => [ "name", "type", "count", "value" ]
+        }
+        mutate {
+            convert => {
+              "count" => "integer"
+              "value" => "float"
+            }
+          }
+    }
+    
+    output {
+     elasticsearch {
+      hosts => ["elasticsearch:9200"]
+     }
+    }
+
+Note: In addition to forwarding the metrics into ElasticSearch, logstash will extract following fields from each metric: name, type, count, value and set proper types
+
+### Integration with fluentd using a syslog channel
+
+Another example of metrics collection uses: log4j syslog appender -> fluentd -> prometheus.
+
+In this case, a specific log4j properties file needs to be used so that metrics are pushed into a syslog channel:
+
+    log4j.rootLogger=INFO,console,file
+    
+    log4j.appender.console=org.apache.log4j.ConsoleAppender
+    log4j.appender.console.layout=org.apache.log4j.PatternLayout
+    log4j.appender.console.layout.ConversionPattern=%d{ISO8601} %5p [%t] (%C) - %m%n
+    
+    log4j.appender.file=org.apache.log4j.RollingFileAppender
+    log4j.appender.file.File=/app/logs/conductor.log
+    log4j.appender.file.MaxFileSize=10MB
+    log4j.appender.file.MaxBackupIndex=10
+    log4j.appender.file.layout=org.apache.log4j.PatternLayout
+    log4j.appender.file.layout.ConversionPattern=%d{ISO8601} %5p [%t] (%C) - %m%n
+    
+    # Syslog based appender streaming metrics into fluentd
+    log4j.appender.server=org.apache.log4j.net.SyslogAppender
+    log4j.appender.server.syslogHost=fluentd:5170
+    log4j.appender.server.facility=LOCAL1
+    log4j.appender.server.layout=org.apache.log4j.PatternLayout
+    log4j.appender.server.layout.ConversionPattern=%d{ISO8601} %5p [%t] (%C) - %m%n
+    
+    log4j.logger.ConductorMetrics=INFO,console,server
+    log4j.additivity.ConductorMetrics=false
+
+And on the fluentd side you need following configuration:
+
+    <source>
+      @type prometheus
+    </source>
+    
+    <source>
+      @type syslog
+      port 5170
+      bind 0.0.0.0
+      tag conductor
+        <parse>
+         ; only allow TIMER metrics of workflow execution and extract tenant ID
+          @type regexp
+          expression /^.*type=TIMER, name=workflow_execution.class-WorkflowMonitor.+workflowName-(?<tenant>.*)_(?<workflow>.+), count=(?<count>\d+), min=(?<min>[\d.]+), max=(?<max>[\d.]+), mean=(?<mean>[\d.]+).*$/
+          types count:integer,min:float,max:float,mean:float
+        </parse>
+    </source>
+    
+    <filter conductor.local1.info>
+        @type prometheus
+        <metric>
+          name conductor_workflow_count
+          type gauge
+          desc The total number of executed workflows
+          key count
+          <labels>
+            workflow ${workflow}
+            tenant ${tenant}
+            user ${email}
+          </labels>
+        </metric>
+        <metric>
+          name conductor_workflow_max_duration
+          type gauge
+          desc Max duration in millis for a workflow
+          key max
+          <labels>
+            workflow ${workflow}
+            tenant ${tenant}
+            user ${email}
+          </labels>
+        </metric>
+        <metric>
+          name conductor_workflow_mean_duration
+          type gauge
+          desc Mean duration in millis for a workflow
+          key mean
+          <labels>
+            workflow ${workflow}
+            tenant ${tenant}
+            user ${email}
+          </labels>
+        </metric>
+    </filter>
+    
+    <match **>
+      @type stdout
+    </match>
+    
+With above configuration, fluentd will:
+- Listen to raw metrics on 0.0.0.0:5170
+- Collect only workflow_execution TIMER metrics
+- Process the raw metrics and expose 3 prometheus specific metrics
+- Expose prometheus metrics on http://fluentd:24231/metrics 
