@@ -976,9 +976,15 @@ public class WorkflowExecutor {
                         if (!workflowSystemTask.isAsync() && workflowSystemTask.execute(workflowInstance, task, this)) {
                             // FIXME: temporary hack to workaround TERMINATE task
                             if (TERMINATE.name().equals(task.getTaskType())) {
-                                workflow.setStatus(workflowInstance.getStatus());
-                                workflow.setOutput(workflowInstance.getOutput());
-                                deciderService.externalizeWorkflowData(workflow);
+                                deciderService.externalizeTaskData(task);
+                                executionDAOFacade.updateTask(task);
+                                if (workflowInstance.getStatus().equals(WorkflowStatus.COMPLETED)) {
+                                    completeWorkflow(workflow);
+                                } else {
+                                    workflow.setStatus(workflowInstance.getStatus());
+                                    terminateWorkflow(workflow, "Workflow is FAILED by TERMINATE task: " + task.getTaskId(), null);
+                                }
+                                return true;
                             }
                             deciderService.externalizeTaskData(task);
                             tasksToBeUpdated.add(task);

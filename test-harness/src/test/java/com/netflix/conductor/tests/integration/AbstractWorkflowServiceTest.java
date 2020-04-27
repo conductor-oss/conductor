@@ -6432,6 +6432,96 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals(WorkflowStatus.COMPLETED, workflow.getStatus());
     }
 
+    /**
+     * This test verifies that a Subworkflow with Terminate task calls decide on parent, and helps progress it immediately.
+     */
+    @Test
+    public void testTerminateTaskInASubworkflow() {
+        WorkflowDef subWorkflowDef = new WorkflowDef();
+        subWorkflowDef.setName("test_terminate_task_wf");
+        subWorkflowDef.setSchemaVersion(2);
+        subWorkflowDef.setVersion(1);
+
+        Map<String, Object> lambdaTaskInputParams = new HashMap<>();
+        lambdaTaskInputParams.put("input", "${workflow.input}");
+        lambdaTaskInputParams.put("scriptExpression", "if ($.input.a==1){return {testvalue: true}} else{return {testvalue: false}}");
+
+        WorkflowTask lambdaWorkflowTask = new WorkflowTask();
+        lambdaWorkflowTask.setWorkflowTaskType(TaskType.LAMBDA);
+        lambdaWorkflowTask.setName("lambda");
+        lambdaWorkflowTask.setInputParameters(lambdaTaskInputParams);
+        lambdaWorkflowTask.setTaskReferenceName("lambda0");
+
+        Map<String, Object> terminateTaskInputParams = new HashMap<>();
+        terminateTaskInputParams.put(Terminate.getTerminationStatusParameter(), "COMPLETED");
+        terminateTaskInputParams.put(Terminate.getTerminationWorkflowOutputParameter(), "${lambda0.output}");
+
+        WorkflowTask terminateWorkflowTask = new WorkflowTask();
+        terminateWorkflowTask.setType(TaskType.TASK_TYPE_TERMINATE);
+        terminateWorkflowTask.setName("terminate");
+        terminateWorkflowTask.setInputParameters(terminateTaskInputParams);
+        terminateWorkflowTask.setTaskReferenceName("terminate0");
+
+        WorkflowTask workflowTask2 = new WorkflowTask();
+        workflowTask2.setName("junit_task_2");
+        workflowTask2.setTaskReferenceName("t2");
+
+        subWorkflowDef.getTasks().addAll(Arrays.asList(lambdaWorkflowTask, terminateWorkflowTask, workflowTask2));
+
+        assertNotNull(subWorkflowDef);
+        metadataService.registerWorkflowDef(subWorkflowDef);
+
+        // Create Parent workflow
+        WorkflowDef parentWorkflowDef = new WorkflowDef();
+        parentWorkflowDef.setName("test_parent_wf_for_terminate_task_subwf");
+        parentWorkflowDef.setSchemaVersion(2);
+
+        WorkflowTask subWorkflowTask = new WorkflowTask();
+        subWorkflowTask.setWorkflowTaskType(SUB_WORKFLOW);
+        subWorkflowTask.setName("subWF");
+        subWorkflowTask.setTaskReferenceName("subWF");
+        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
+        subWorkflowParams.setName(subWorkflowDef.getName());
+        subWorkflowParams.setVersion(subWorkflowDef.getVersion());
+        subWorkflowTask.setSubWorkflowParam(subWorkflowParams);
+
+        parentWorkflowDef.getTasks().addAll(Arrays.asList(subWorkflowTask));
+
+        assertNotNull(parentWorkflowDef);
+        metadataService.registerWorkflowDef(parentWorkflowDef);
+
+        Map wfInput = Collections.singletonMap("a", 1);
+        String workflowId = startOrLoadWorkflowExecution(parentWorkflowDef.getName(), parentWorkflowDef.getVersion(), "", wfInput, null, null);
+        Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
+
+        assertNotNull(workflow);
+        assertEquals(1, workflow.getTasks().size());
+
+        SubWorkflow subWorkflowSystemTask = new SubWorkflow();
+        // Simulating SystemTaskWorkerCoordinator to execute async system tasks
+        String subWorkflowTaskId = workflow.getTaskByRefName("subWF").getTaskId();
+        workflowExecutor.executeSystemTask(subWorkflowSystemTask, subWorkflowTaskId, 1);
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        Task task = workflow.getTaskByRefName("subWF");
+
+        Workflow subWorkflow = workflowExecutionService.getExecutionStatus(task.getSubWorkflowId(), true);
+
+        assertNotNull(workflow);
+        assertNotNull(task);
+        assertEquals(COMPLETED, task.getStatus());
+        assertNotNull(subWorkflow);
+        assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+        assertEquals("tasks:" + subWorkflow.getTasks(), WorkflowStatus.COMPLETED, subWorkflow.getStatus());
+        assertEquals(TaskType.TASK_TYPE_LAMBDA, subWorkflow.getTasks().get(0).getTaskType());
+        assertEquals(TaskType.TASK_TYPE_TERMINATE, subWorkflow.getTasks().get(1).getTaskType());
+        assertEquals(subWorkflow.getTasks().get(1).getOutputData(), subWorkflow.getOutput());
+        assertEquals(SUB_WORKFLOW.name(), workflow.getTasks().get(0).getTaskType());
+
+        metadataService.unregisterWorkflowDef(parentWorkflowDef.getName(), parentWorkflowDef.getVersion());
+        metadataService.unregisterWorkflowDef(subWorkflowDef.getName(), subWorkflowDef.getVersion());
+    }
+
     @Test
     public void testPollWithConcurrentExecutionLimits() {
         // Create a dynamic workflow definition with one simple task
