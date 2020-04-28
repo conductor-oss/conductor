@@ -215,21 +215,21 @@ public class ExecutionDAOFacade {
             workflow.setEndTime(System.currentTimeMillis());
         }
         executionDAO.updateWorkflow(workflow);
-        if (workflow.getStatus().isTerminal()) {
-            if (config.enableAsyncIndexing()) {
-                if (workflow.getEndTime() - workflow.getStartTime() < config.getAsyncUpdateShortRunningWorkflowDuration() * 1000) {
-                    final String workflowId = workflow.getWorkflowId();
-                    DelayWorkflowUpdate delayWorkflowUpdate = new DelayWorkflowUpdate(workflowId);
-                    LOGGER.debug("Delayed updating workflow: {} in the index by {} seconds", workflowId, config.getAsyncUpdateDelay());
-                    scheduledThreadPoolExecutor.schedule(delayWorkflowUpdate, config.getAsyncUpdateDelay(), TimeUnit.SECONDS);
-                    Monitors.recordWorkerQueueSize("delayQueue", scheduledThreadPoolExecutor.getQueue().size());
-                } else {
-                    indexDAO.asyncIndexWorkflow(workflow);
-                }
-                workflow.getTasks().forEach(indexDAO::asyncIndexTask);
+        if (config.enableAsyncIndexing()) {
+            if (workflow.getStatus().isTerminal() && workflow.getEndTime() - workflow.getStartTime() < config.getAsyncUpdateShortRunningWorkflowDuration() * 1000) {
+                final String workflowId = workflow.getWorkflowId();
+                DelayWorkflowUpdate delayWorkflowUpdate = new DelayWorkflowUpdate(workflowId);
+                LOGGER.debug("Delayed updating workflow: {} in the index by {} seconds", workflowId, config.getAsyncUpdateDelay());
+                scheduledThreadPoolExecutor.schedule(delayWorkflowUpdate, config.getAsyncUpdateDelay(), TimeUnit.SECONDS);
+                Monitors.recordWorkerQueueSize("delayQueue", scheduledThreadPoolExecutor.getQueue().size());
             } else {
-                indexDAO.indexWorkflow(workflow);
+                indexDAO.asyncIndexWorkflow(workflow);
             }
+			if (workflow.getStatus().isTerminal()) {
+				workflow.getTasks().forEach(indexDAO::asyncIndexTask);
+			}
+        } else {
+            indexDAO.indexWorkflow(workflow);
         }
         return workflow.getWorkflowId();
     }
