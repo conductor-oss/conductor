@@ -3,6 +3,7 @@ import dagreD3 from 'dagre-d3'
 import d3 from 'd3'
 import {Tabs, Tab, Table} from 'react-bootstrap';
 import Clipboard from 'clipboard';
+import { Link } from 'react-router';
 
 new Clipboard('.btn');
 
@@ -202,6 +203,15 @@ class Grapher extends Component {
                         <i className="fa fa-close fa-1x close-btn" onClick={hideProps}/>
                         {this.state.selectedTask.taskType} ({this.state.selectedTask.status})
                     </h4>
+                    {this.state.selectedTask.taskType == 'SUB_WORKFLOW' &&
+                        <div>
+                            <p>
+                            <Link onClick={hideProps} to={'/workflow/id/' + this.state.selectedTask.subWorkflowId}>
+                                <u>View Subworkflow</u>
+                            </Link>
+                            </p>
+                        </div>
+                    }
                     <div style={{
                         color: '#ff0000',
                         display: this.state.selectedTask.status === 'FAILED' ? '' : 'none'
