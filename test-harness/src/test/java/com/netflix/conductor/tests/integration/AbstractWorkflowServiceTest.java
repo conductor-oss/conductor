@@ -5053,7 +5053,6 @@ public abstract class AbstractWorkflowServiceTest {
                 .filter(t -> t.getStatus().equals(SCHEDULED))
                 .findAny().orElse(null);
         assertNotNull(task);
-        assertNull("Retried task in scheduled state shouldn't have a SubworkflowId yet", task.getSubWorkflowId());
         subWorkflowTaskId = task.getTaskId();
 
         workflowExecutor.executeSystemTask(subworkflow, task.getTaskId(), 1);

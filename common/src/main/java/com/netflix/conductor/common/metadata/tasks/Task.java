@@ -784,7 +784,7 @@ public class Task {
         copy.setIteration(iteration);
         copy.setExecutionNameSpace(executionNameSpace);
         copy.setIsolationGroupId(isolationGroupId);
-        copy.setSubWorkflowId(subWorkflowId);
+        copy.setSubWorkflowId(getSubWorkflowId());
 
         return copy;
     }
