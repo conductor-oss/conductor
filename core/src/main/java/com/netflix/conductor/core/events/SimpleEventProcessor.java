@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -31,11 +31,6 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
 import com.spotify.futures.CompletableFutures;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -50,6 +45,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.inject.Inject;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Viren
@@ -167,6 +166,7 @@ public class SimpleEventProcessor implements EventProcessor {
             }
         } catch (Exception e) {
             logger.error("Error handling message: {} on queue:{}", msg, queue.getName(), e);
+            Monitors.recordEventQueueMessagesError(queue.getType(), queue.getName());
         } finally {
             Monitors.recordEventQueueMessagesHandled(queue.getType(), queue.getName());
         }
@@ -261,12 +261,14 @@ public class SimpleEventProcessor implements EventProcessor {
                 eventExecution.getOutput().putAll(output);
             }
             eventExecution.setStatus(Status.COMPLETED);
+            Monitors.recordEventExecutionSuccess(eventExecution.getEvent(), eventExecution.getName(), eventExecution.getAction().name());
         } catch (RuntimeException e) {
             logger.error("Error executing action: {} for event: {} with messageId: {}", action.getAction(), eventExecution.getEvent(), eventExecution.getMessageId(), e);
             if (!isTransientException(e.getCause())) {
                 // not a transient error, fail the event execution
                 eventExecution.setStatus(Status.FAILED);
                 eventExecution.getOutput().put("exception", e.getMessage());
+                Monitors.recordEventExecutionError(eventExecution.getEvent(), eventExecution.getName(), eventExecution.getAction().name(), e.getClass().getSimpleName());
             }
         }
         return eventExecution;
