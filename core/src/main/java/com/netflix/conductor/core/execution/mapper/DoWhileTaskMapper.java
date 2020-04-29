@@ -76,10 +76,7 @@ public class DoWhileTaskMapper implements TaskMapper {
         int retryCount = taskMapperContext.getRetryCount();
         TaskDef taskDefinition = Optional.ofNullable(taskMapperContext.getTaskDefinition())
                 .orElseGet(() -> Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
-                        .orElseThrow(() -> {
-                            String reason = String.format("Invalid task specified. Cannot find task by name %s in the task definitions", taskToSchedule.getName());
-                            return new TerminateWorkflowException(reason);
-                        }));
+                .orElseGet(() -> new TaskDef()));
 
         Task loopTask = new Task();
         loopTask.setTaskType(SystemTaskType.DO_WHILE.name());

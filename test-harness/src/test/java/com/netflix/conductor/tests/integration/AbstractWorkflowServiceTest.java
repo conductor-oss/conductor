@@ -647,7 +647,7 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testDoWhileSingleIteration() throws Exception {
         try {
-            createDoWhileWorkflowWithIteration(1, false);
+            createDoWhileWorkflowWithIteration(1, false, true);
         } catch (Exception e) {
         }
         TaskDef taskDef = new TaskDef();
@@ -718,7 +718,7 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testDoWhileTwoIteration() throws Exception {
         try {
-            createDoWhileWorkflowWithIteration(2, false);
+            createDoWhileWorkflowWithIteration(2, false, true);
         } catch (Exception e) {
         }
 
@@ -847,7 +847,91 @@ public abstract class AbstractWorkflowServiceTest {
     @Test
     public void testLoopConditionWithInputParamter() throws Exception {
         try {
-            createDoWhileWorkflowWithIteration(2, true);
+            createDoWhileWorkflowWithIteration(2, true, true);
+        } catch (Exception e) {
+        }
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("http1");
+        taskDef.setTimeoutSeconds(2);
+        taskDef.setRetryCount(1);
+        taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskDef.setRetryDelaySeconds(10);
+        metadataService.registerTaskDef(Arrays.asList(taskDef));
+
+        TaskDef taskDef2 = new TaskDef();
+        taskDef2.setName("http0");
+        taskDef2.setTimeoutSeconds(2);
+        taskDef2.setRetryCount(1);
+        taskDef2.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskDef2.setRetryDelaySeconds(10);
+        metadataService.registerTaskDef(Arrays.asList(taskDef2));
+
+        TaskDef taskDef1 = new TaskDef();
+        taskDef1.setName("http2");
+        taskDef1.setTimeoutSeconds(2);
+        taskDef1.setRetryCount(1);
+        taskDef1.setTimeoutPolicy(TimeoutPolicy.RETRY);
+        taskDef1.setRetryDelaySeconds(10);
+        metadataService.registerTaskDef(Arrays.asList(taskDef1));
+
+        Map<String, Object> input = new HashMap<>();
+        String workflowId = startOrLoadWorkflowExecution(DO_WHILE_WF + "_3", 1, "looptest", input, null, null);
+        System.out.println("testDoWhile.wfid=" + workflowId);
+        printTaskStatuses(workflowId, "initiated");
+
+        Workflow workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("Found " + workflow.getTasks(), RUNNING, workflow.getStatus());
+
+        Task task = workflowExecutionService.poll("HTTP", "test");
+        assertNotNull(task);
+        assertTrue(task.getReferenceTaskName().endsWith(TaskUtils.getLoopOverTaskRefNameSuffix(task.getIteration())));
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("FORK_JOIN", "test");
+        assertNull(task); // fork task is completed
+
+        task = workflowExecutionService.poll("HTTP", "test");
+        assertNotNull(task);
+        assertTrue(task.getReferenceTaskName().endsWith(TaskUtils.getLoopOverTaskRefNameSuffix(task.getIteration())));
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("HTTP", "test");
+        assertNotNull(task);
+        assertTrue(task.getReferenceTaskName().endsWith(TaskUtils.getLoopOverTaskRefNameSuffix(task.getIteration())));
+        assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
+
+        task.setStatus(COMPLETED);
+        workflowExecutionService.updateTask(task);
+
+        task = workflowExecutionService.poll("JOIN", "test");
+        assertNull(task); // Both HTTP task completed.
+
+        workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
+        assertNotNull(workflow);
+        assertEquals("Found " + workflow.getTasks(), WorkflowStatus.COMPLETED, workflow.getStatus());
+    }
+
+    @Test
+    public void testLoopConditionWithInputParamterWithDef() throws Exception {
+    	testLoopConditionWithInputParamter(true);
+    }
+
+    @Test
+    public void testLoopConditionWithInputParamterNoDef() throws Exception {
+    	testLoopConditionWithInputParamter(false);
+    }
+
+    private void testLoopConditionWithInputParamter(boolean useDef) throws Exception {
+        try {
+            createDoWhileWorkflowWithIteration(2, true, useDef);
         } catch (Exception e) {
         }
 
@@ -1782,7 +1866,7 @@ public abstract class AbstractWorkflowServiceTest {
         metadataService.updateWorkflowDef(workflowDef);
     }
 
-    private void createDoWhileWorkflowWithIteration(int iteration, boolean isInputParameter) {
+    private void createDoWhileWorkflowWithIteration(int iteration, boolean isInputParameter, boolean useTaskDef) {
         WorkflowDef workflowDef = new WorkflowDef();
         if (isInputParameter) {
             workflowDef.setName(DO_WHILE_WF + "_3");
@@ -1802,14 +1886,15 @@ public abstract class AbstractWorkflowServiceTest {
         input.put("value", "${workflow.input.loop}");
         loopTask.setInputParameters(input);
 
-        TaskDef taskDef = new TaskDef();
-        taskDef.setName("loopTask");
-        taskDef.setTimeoutSeconds(200);
-        taskDef.setRetryCount(1);
-        taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
-        taskDef.setRetryDelaySeconds(10);
-
-        metadataService.registerTaskDef(Arrays.asList(taskDef));
+        if(useTaskDef) {
+	        TaskDef taskDef = new TaskDef();
+	        taskDef.setName("loopTask");
+	        taskDef.setTimeoutSeconds(200);
+	        taskDef.setRetryCount(1);
+	        taskDef.setTimeoutPolicy(TimeoutPolicy.RETRY);
+	        taskDef.setRetryDelaySeconds(10);
+	        metadataService.registerTaskDef(Arrays.asList(taskDef));
+        }
 
         Map<String, Object> inputParams1 = new HashMap<>();
         inputParams1.put("p1", "workflow.input.param1");
@@ -1858,14 +1943,15 @@ public abstract class AbstractWorkflowServiceTest {
         workflowDef.getTasks().add(loopTask);
 
         if (iteration == 2 && isInputParameter == false) {
-            TaskDef taskDef2 = new TaskDef();
-            taskDef2.setName("loopTask2");
-            taskDef2.setTimeoutSeconds(200);
-            taskDef2.setRetryCount(3);
-            taskDef2.setTimeoutPolicy(TimeoutPolicy.RETRY);
-            taskDef2.setRetryDelaySeconds(10);
-
-            metadataService.registerTaskDef(Arrays.asList(taskDef2));
+        	if(useTaskDef) {
+	            TaskDef taskDef2 = new TaskDef();
+	            taskDef2.setName("loopTask2");
+	            taskDef2.setTimeoutSeconds(200);
+	            taskDef2.setRetryCount(3);
+	            taskDef2.setTimeoutPolicy(TimeoutPolicy.RETRY);
+	            taskDef2.setRetryDelaySeconds(10);
+	            metadataService.registerTaskDef(Arrays.asList(taskDef2));
+        	}
             WorkflowTask loopTask2 = new WorkflowTask();
             loopTask2.setType(TaskType.DO_WHILE.name());
             loopTask2.setTaskReferenceName("loopTask2");
