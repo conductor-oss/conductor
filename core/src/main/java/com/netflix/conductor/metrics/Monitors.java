@@ -242,6 +242,18 @@ public class Monitors {
 		counter(classQualifier, "event_queue_messages_handled", "queueType", queueType, "queueName", queueName);
 	}
 
+	public static void recordEventQueueMessagesError(String queueType, String queueName) {
+		counter(classQualifier, "event_queue_messages_error", "queueType", queueType, "queueName", queueName);
+	}
+
+	public static void recordEventExecutionSuccess(String event, String handler, String action) {
+		counter(classQualifier, "event_execution_success", "event", event, "handler", handler, "action", action);
+	}
+
+	public static void recordEventExecutionError(String event, String handler, String action, String exceptionClazz) {
+		counter(classQualifier, "event_execution_error", "event", event, "handler", handler, "action", action, "exception", exceptionClazz);
+	}
+
 	public static void recordEventActionError(String action, String entityName, String event) {
 		counter(classQualifier, "event_action_error", "action", action, "entityName", entityName, "event", event);
 	}
