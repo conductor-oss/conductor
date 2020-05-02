@@ -451,6 +451,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
             final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(logIndexPrefix + "*")
                     .setQuery(query)
                     .setTypes(LOG_DOC_TYPE)
+                    .setSize(config.getElasticSearchTasklogLimit())
                     .addSort(SortBuilders.fieldSort("createdTime").order(SortOrder.ASC));
 
             return mapTaskExecLogsResponse(srb.execute().actionGet());
