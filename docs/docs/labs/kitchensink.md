@@ -157,6 +157,7 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
     "statues": "${get_es_1.output..status}",
     "workflowIds": "${get_es_1.output..workflowId}"
   },
+  "ownerEmail": "example@email.com",
   "schemaVersion": 2
 }
 ```

@@ -249,7 +249,8 @@
       "statues": "${get_es_1.output..status}",
       "workflowIds": "${get_es_1.output..workflowId}"
     },
-    "schemaVersion": 2
+    "schemaVersion": 2,
+    "ownerEmail": "example@email.com"
   },
   "input": {
     "task2Name": "task_10005"
