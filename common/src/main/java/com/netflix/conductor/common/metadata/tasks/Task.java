@@ -741,7 +741,9 @@ public class Task {
         if (StringUtils.isNotBlank(subWorkflowId)) {
             return subWorkflowId;
         } else {
-            return this.getOutputData() != null ? (String) this.getOutputData().get("subWorkflowId") : null;
+            return 
+               	this.getOutputData() != null && (String) this.getOutputData().get("subWorkflowId") != null ? (String) this.getOutputData().get("subWorkflowId") : 
+               	this.getInputData() != null ? (String) this.getInputData().get("subWorkflowId") : null;
         }
     }
 
