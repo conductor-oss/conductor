@@ -14,6 +14,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 
 
 @SuppressWarnings("Duplicates")
@@ -24,13 +25,33 @@ public class MySQLDAOTestUtil {
     private final ObjectMapper objectMapper = new JsonMapperProvider().get();
 
     MySQLDAOTestUtil(String dbName) throws Exception {
+        //String normalizedDbName = dbName.toLowerCase();
         testConfiguration.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/" + dbName +"?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
         testConfiguration.setProperty("jdbc.username", "root");
-        testConfiguration.setProperty("jdbc.password", "");
-        // Ensure the DB starts
-        EmbeddedDatabase.INSTANCE.getDB().createDB(dbName);
-
+        testConfiguration.setProperty("jdbc.password", "root");
+        createDatabase(dbName);
         this.dataSource = getDataSource(testConfiguration);
+    }
+
+    private void createDatabase(String dbName) {
+        HikariDataSource dataSource = new HikariDataSource();
+        dataSource.setJdbcUrl("jdbc:mysql://localhost:33307/conductor");
+        dataSource.setUsername("root");
+        dataSource.setPassword("root");
+        dataSource.setAutoCommit(false);
+
+        dataSource.setMaximumPoolSize(2);
+
+        try (Connection connection = dataSource.getConnection()) {
+            try(Statement statement = connection.createStatement()) {
+                statement.execute("CREATE DATABASE IF NOT EXISTS "+dbName);
+            }
+        } catch (SQLException sqlException) {
+            logger.error("Unable to create default connection for docker mysql db", sqlException);
+            throw new RuntimeException(sqlException);
+        }finally {
+            dataSource.close();
+        }
     }
 
     private HikariDataSource getDataSource(Configuration config) {

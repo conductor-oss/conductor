@@ -18,6 +18,7 @@ import com.netflix.conductor.config.TestConfiguration;
 import com.netflix.conductor.core.config.Configuration;
 import com.zaxxer.hikari.HikariDataSource;
 import org.flywaydb.core.Flyway;
+import org.postgresql.ds.PGSimpleDataSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +36,16 @@ public class PostgresDAOTestUtil {
     private final TestConfiguration testConfiguration = new TestConfiguration();
     private final ObjectMapper objectMapper = new JsonMapperProvider().get();
     private static final String JDBC_URL_PREFIX = "jdbc:postgresql://localhost:54320/";
+    private DataSource initializationDataSource;
 
     PostgresDAOTestUtil(String dbName) throws Exception {
-        DataSource ds = EmbeddedDatabase.INSTANCE.getDataSource();
+        PGSimpleDataSource ds = new PGSimpleDataSource();
+        ds.setServerName("localhost");
+        ds.setPortNumber(54320);
+        ds.setDatabaseName("postgres");
+        ds.setUser("postgres");
+        ds.setPassword("postgres");
+        this.initializationDataSource = ds;
 
         createDb(ds, dbName);
 
@@ -108,7 +116,7 @@ public class PostgresDAOTestUtil {
 
     public void resetAllData() {
         logger.info("Resetting data for test");
-        dropDb(EmbeddedDatabase.INSTANCE.getDataSource(),"conductor");
+        dropDb(initializationDataSource,"conductor");
         flywayMigrate(dataSource);
     }
 }

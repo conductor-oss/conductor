@@ -42,7 +42,6 @@ ext {
     revJq = '0.0.11'
     revLog4jApi = '2.9.1'
     revLog4jCore = '2.9.1'
-    revMariaDB4j = '2.2.3'
     revMockito = '3.1.0'
     revMySqlConnector = '8.0.11'
     revNatsStreaming = '0.5.0'
@@ -66,6 +65,6 @@ ext {
     revCuratorRecipes = '2.4.0'
     revCuratorTest = '2.4.0'
     revPostgres = '42.2.6'
-    revOtjPgEmbedded = '0.13.1'
     revAmqpClient = '5.8.0'
+    revDockerCompose= '0.8.13'
 }

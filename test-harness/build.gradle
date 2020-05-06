@@ -1,3 +1,16 @@
+buildscript {
+
+    repositories {
+        jcenter()
+    }
+
+    dependencies {
+        classpath "com.avast.gradle:gradle-docker-compose-plugin:${revDockerCompose}"
+    }
+}
+
+apply plugin: 'docker-compose'
+
 configurations.all {
     resolutionStrategy {
         force "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
@@ -24,11 +37,37 @@ dependencies {
 
     testCompile "com.google.inject.extensions:guice-servlet:${revGuiceServlet}"
     testCompile "io.swagger:swagger-jersey-jaxrs:${revSwaggerJersey}"
-
-    testCompile "com.opentable.components:otj-pg-embedded:0.13.1"
-    testCompile "ch.vorburger.mariaDB4j:mariaDB4j:${revMariaDB4j}"
     testCompile "org.awaitility:awaitility:${revAwaitility}"
 }
+
+dockerCompose{
+    integrationTestDocker{
+        useComposeFiles = ["./docker-compose.yml"]
+        startedServices = ["mysqldb", "postgresdb"]
+        waitForTcpPorts = true
+        isRequiredBy(tasks.test)
+        projectName = project.name
+    }
+}
+
+task intDockerStart() {
+    group = "Postgres and Mysql data access based Integration Test"
+    description "Starts a local db container for postgres and mysql data access integration tests."
+    dependsOn integrationTestDockerComposeDownForced
+    dependsOn integrationTestDockerComposeUp
+}
+
+task intDockerDown(dependsOn: integrationTestDockerComposeDownForced) {
+    group = "Postgres and Mysql data access based Integration Test"
+    description "Stops a local db container for Artemis data access integration tests."
+}
+
+test.doFirst {
+    dockerCompose.exposeAsSystemProperties(test)
+}
+
+test.finalizedBy("intDockerDown")
+
 
 test {
     testLogging {

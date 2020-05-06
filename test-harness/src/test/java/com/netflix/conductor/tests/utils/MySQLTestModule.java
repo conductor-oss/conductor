@@ -31,7 +31,6 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.RateLimitingDAO;
-import com.netflix.conductor.dao.mysql.EmbeddedDatabase;
 import com.netflix.conductor.dao.mysql.MySQLExecutionDAO;
 import com.netflix.conductor.dao.mysql.MySQLMetadataDAO;
 import com.netflix.conductor.dao.mysql.MySQLQueueDAO;
@@ -54,7 +53,6 @@ public class MySQLTestModule extends AbstractModule {
     private int maxThreads = 50;
 
     private ExecutorService executorService;
-    protected final EmbeddedDatabase DB = EmbeddedDatabase.INSTANCE;
 
     @Override
     protected void configure() {

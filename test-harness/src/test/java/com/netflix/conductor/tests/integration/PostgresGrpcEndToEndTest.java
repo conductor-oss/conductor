@@ -7,7 +7,6 @@ import com.netflix.conductor.bootstrap.ModulesProvider;
 import com.netflix.conductor.client.grpc.MetadataClient;
 import com.netflix.conductor.client.grpc.TaskClient;
 import com.netflix.conductor.client.grpc.WorkflowClient;
-import com.netflix.conductor.dao.postgres.EmbeddedDatabase;
 import com.netflix.conductor.elasticsearch.EmbeddedElasticSearchProvider;
 import com.netflix.conductor.grpc.server.GRPCServer;
 import com.netflix.conductor.grpc.server.GRPCServerProvider;
@@ -22,13 +21,16 @@ import static com.netflix.conductor.elasticsearch.ElasticSearchConfiguration.ELA
 import static com.netflix.conductor.elasticsearch.ElasticSearchConfiguration.EMBEDDED_PORT_PROPERTY_NAME;
 import static com.netflix.conductor.grpc.server.GRPCServerConfiguration.ENABLED_PROPERTY_NAME;
 import static com.netflix.conductor.grpc.server.GRPCServerConfiguration.PORT_PROPERTY_NAME;
-import static com.netflix.conductor.postgres.PostgresConfiguration.*;
+import static com.netflix.conductor.postgres.PostgresConfiguration.CONNECTION_POOL_MAX_SIZE_PROPERTY_NAME;
+import static com.netflix.conductor.postgres.PostgresConfiguration.CONNECTION_POOL_MINIMUM_IDLE_PROPERTY_NAME;
+import static com.netflix.conductor.postgres.PostgresConfiguration.JDBC_PASSWORD_PROPERTY_NAME;
+import static com.netflix.conductor.postgres.PostgresConfiguration.JDBC_URL_PROPERTY_NAME;
+import static com.netflix.conductor.postgres.PostgresConfiguration.JDBC_USER_NAME_PROPERTY_NAME;
 import static org.junit.Assert.assertTrue;
 
 public class PostgresGrpcEndToEndTest extends AbstractGrpcEndToEndTest {
 
     private static final int SERVER_PORT = 8098;
-    private static final EmbeddedDatabase DB = EmbeddedDatabase.INSTANCE;
     protected static Optional<GRPCServer> server;
 
     @BeforeClass
@@ -69,7 +71,6 @@ public class PostgresGrpcEndToEndTest extends AbstractGrpcEndToEndTest {
         TestEnvironment.teardown();
         search.stop();
         server.ifPresent(GRPCServer::stop);
-        DB.getDataSource().getConnection().close();
     }
 
 }

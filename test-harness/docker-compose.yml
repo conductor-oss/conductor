@@ -1,0 +1,23 @@
+version: '3.1'
+
+services:
+
+  mysqldb:
+    image: mysql
+    restart: always
+    ports:
+      - "33307:3306"
+    volumes:
+      - ".docker/mysqldb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d"
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+
+  postgresdb:
+    image: postgres
+    restart: always
+    ports:
+      - "54320:5432"
+    volumes:
+      - ".docker/postgresdb/docker-entrypoint-initdb.d:/docker-entrypoint-initdb.d"
+    environment:
+      POSTGRES_PASSWORD: postgres

@@ -45,9 +45,9 @@ public class MySQLTestRunner extends BlockJUnit4ClassRunner {
 
         // jdbc properties
 
-        System.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/conductor?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
+        System.setProperty("jdbc.url", "jdbc:mysql://localhost:33307/conductor?useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
         System.setProperty("jdbc.username", "root");
-        System.setProperty("jdbc.password", "");
+        System.setProperty("jdbc.password", "root");
         System.setProperty("conductor.mysql.connection.pool.size.min", "8");
         System.setProperty("conductor.mysql.connection.pool.size.max", "8");
         System.setProperty("conductor.mysql.connection.pool.idle.min", "300000");
