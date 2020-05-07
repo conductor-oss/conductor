@@ -16,5 +16,6 @@
     }
   ],
   "outputParameters": {},
-  "schemaVersion": 2
+  "schemaVersion": 2,
+  "ownerEmail": "example@email.com"
 }
