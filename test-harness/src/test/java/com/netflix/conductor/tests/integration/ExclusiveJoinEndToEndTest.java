@@ -39,6 +39,7 @@ import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -46,6 +47,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
+@Ignore("This is taken care in the spock test, to de deleted once verified")
 public class ExclusiveJoinEndToEndTest {
 
 	private static TaskClient taskClient;
