@@ -471,8 +471,9 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(logIndexPrefix + "*")
                 .setQuery(fq)
                 .setTypes(LOG_DOC_TYPE)
-                .addSort(sortBuilder);
-
+                .addSort(sortBuilder)
+                .setSize(config.getElasticSearchTasklogLimit());
+            
             SearchResponse response = srb.execute().actionGet();
 
             return Arrays.stream(response.getHits().getHits())

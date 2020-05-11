@@ -510,6 +510,7 @@ public class ElasticSearchRestDAOV5 implements IndexDAO {
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
             searchSourceBuilder.query(fq);
             searchSourceBuilder.sort(new FieldSortBuilder("createdTime").order(SortOrder.ASC));
+            searchSourceBuilder.size(config.getElasticSearchTasklogLimit());
 
             // Generate the actual request to send to ES.
             SearchRequest searchRequest = new SearchRequest(logIndexPrefix + "*");
