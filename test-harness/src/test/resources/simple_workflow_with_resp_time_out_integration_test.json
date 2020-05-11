@@ -1,0 +1,52 @@
+{
+  "name" : "RTOWF",
+  "description" : "RTOWF",
+  "version" : 1,
+  "tasks" : [ {
+    "name" : "task_rt",
+    "taskReferenceName" : "task_rt_t1",
+    "inputParameters" : {
+      "p1" : "${workflow.input.param1}",
+      "p2" : "${workflow.input.param2}"
+    },
+    "type" : "SIMPLE",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ ],
+    "startDelay" : 0,
+    "joinOn" : [ ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  }, {
+    "name" : "integration_task_2",
+    "taskReferenceName" : "t2",
+    "inputParameters" : {
+      "tp1" : "${workflow.input.param1}",
+      "tp2" : "${t1.output.op}"
+    },
+    "type" : "SIMPLE",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ ],
+    "startDelay" : 0,
+    "joinOn" : [ ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  } ],
+  "inputParameters" : [ "param1", "param2" ],
+  "outputParameters" : {
+    "o1" : "${workflow.input.param1}",
+    "o2" : "${t2.output.uuid}",
+    "o3" : "${t1.output.op}"
+  },
+  "failureWorkflow" : "$workflow.input.failureWfName",
+  "schemaVersion" : 2,
+  "restartable" : true,
+  "workflowStatusListenerEnabled" : false,
+  "timeoutPolicy" : "ALERT_ONLY",
+  "timeoutSeconds" : 0
+}
