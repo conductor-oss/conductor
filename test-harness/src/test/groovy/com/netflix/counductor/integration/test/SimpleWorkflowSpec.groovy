@@ -543,7 +543,7 @@ class SimpleWorkflowSpec extends Specification {
         workflowExecutor.rewind(workflowInstanceId, true)
         def rewindWorkflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
 
-        then:"verify that the rewinded workflow is in a running state"
+        then:"verify that the rewound workflow is in a running state"
         rewindWorkflow
         rewindWorkflow.status == Workflow.WorkflowStatus.RUNNING
 
@@ -674,6 +674,106 @@ class SimpleWorkflowSpec extends Specification {
         ]*/
     }
 
+    def "Test simple workflow with retry at workflow level"() {
+        setup:"Change the task definition to ensure that it has retries and no delay between retries"
+        def integrationTask1Definition = getPersistedTaskDefinition('integration_task_1').get()
+        def modifiedTaskDefinition = new TaskDef(integrationTask1Definition.name, integrationTask1Definition.description,
+                1, integrationTask1Definition.timeoutSeconds)
+        modifiedTaskDefinition.retryDelaySeconds = 0
+        metadataService.updateTaskDef(modifiedTaskDefinition)
+
+        when:"Start a simple workflow with non null params"
+        def correlationId = 'retry_test'+ UUID.randomUUID().toString()
+        def workflowInput = new HashMap()
+        String inputParam1 = 'p1 value'
+        workflowInput['param1'] = inputParam1
+        workflowInput['param2'] = 'p2 value'
+
+        and:"start a simple workflow with input params"
+        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+                correlationId, workflowInput,
+                null, null, null)
+
+        then:"verify that the workflow has started and the next task is scheduled"
+        workflowInstanceId
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].status == Task.Status.SCHEDULED
+        }
+        with(metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1)) {
+            failureWorkflow
+            StringUtils.isNotBlank(failureWorkflow)
+        }
+
+        when:"The first task 'integration_task_1' is polled and failed"
+        Tuple polledAndFailedTask1Try1 = pollAndFailTask('integration_task_1', 'task1.integration.worker', 'failure...0', 0)
+
+        then:"verify that the task was polled and acknowledged and the workflow is still in a running state"
+        verifyPolledAndAcknowledgedTask([:], polledAndFailedTask1Try1)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 2
+            tasks[0].status == Task.Status.FAILED
+            tasks[1].status == Task.Status.SCHEDULED
+        }
+
+        when:"The first task 'integration_task_1' is polled and failed for the second time"
+        Tuple polledAndFailedTask1Try2 = pollAndFailTask('integration_task_1', 'task1.integration.worker', 'failure...0', 0)
+
+        then:"verify that the task was polled and acknowledged and the workflow is still in a running state"
+        verifyPolledAndAcknowledgedTask([:], polledAndFailedTask1Try2)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.FAILED
+            tasks.size() == 2
+            tasks[0].status == Task.Status.FAILED
+            tasks[1].status == Task.Status.FAILED
+        }
+
+        when:"The workflow is retried"
+        workflowExecutor.retry(workflowInstanceId)
+
+        then:
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 3
+            tasks[0].status == Task.Status.FAILED
+            tasks[1].status == Task.Status.FAILED
+            tasks[2].status == Task.Status.SCHEDULED
+        }
+
+        when:"The 'integration_task_1' task is polled and is completed"
+        def polledAndCompletedTry3 = pollAndCompleteTask('integration_task_1',
+                'task2.integration.worker', null, 0)
+
+        then:"verify that the task was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask([:], polledAndCompletedTry3)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 4
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].status == Task.Status.SCHEDULED
+        }
+
+        when:"The 'integration_task_2' task is polled and is completed"
+        def polledAndCompletedTaskTry1 = pollAndCompleteTask('integration_task_2',
+                'task2.integration.worker', null, 0)
+
+        then:"verify that the task was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask([:], polledAndCompletedTaskTry1)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 4
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].status == Task.Status.COMPLETED
+        }
+
+        cleanup:
+        metadataService.updateTaskDef(integrationTask1Definition)
+    }
+
+
+
     // Helper methods need to be moved to an util helper class
     def Tuple pollAndFailTask(String taskName, String workerId, String failureReason, int waitAtEndSeconds) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
@@ -716,7 +816,6 @@ class SimpleWorkflowSpec extends Specification {
                     assert polledIntegrationTask.inputData[k] == v
             }
         }
-
     }
 
 
@@ -745,9 +844,11 @@ class SimpleWorkflowSpec extends Specification {
         task.responseTimeoutSeconds = 10
         metadataService.registerTaskDef([task])
 
-
+        //LINEAR_WORKFLOW_T1_T2
         def workflowDefinition1 = JsonUtils.fromJson("simple_workflow_1_integration_test.json", WorkflowDef.class)
+        //TEST_WORKFLOW
         def workflowDefinition3 = JsonUtils.fromJson("simple_workflow_3_integration_test.json", WorkflowDef.class)
+        //RTOWF
         def workflowDefinition2 = JsonUtils.fromJson("simple_workflow_with_resp_time_out_integration_test.json", WorkflowDef.class)
         [workflowDefinition1, workflowDefinition2, workflowDefinition3].forEach {
             metadataService.updateWorkflowDef(it)
