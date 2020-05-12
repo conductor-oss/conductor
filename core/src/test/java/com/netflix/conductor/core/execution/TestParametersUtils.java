@@ -7,6 +7,7 @@ import com.netflix.conductor.core.utils.JsonUtils;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -140,5 +141,63 @@ public class TestParametersUtils {
 		}, executorService).get();
 
 		executorService.shutdown();
+	}
+
+	// Tests ParametersUtils with Map and List input values, and verifies input map is not mutated by ParametersUtils.
+	@Test
+	public void testReplaceInputWithMapAndList() throws Exception {
+		Map<String, Object> map = new HashMap<>();
+		map.put("name", "conductor");
+		map.put("version", 2);
+		map.put("externalId", "{\"taskRefName\":\"t001\",\"workflowId\":\"w002\"}");
+
+		Map<String, Object> input = new HashMap<>();
+		input.put("k1", "${$.externalId}");
+		input.put("k2", "${name}");
+		input.put("k3", "${version}");
+
+		Map<String, String> mapValue = new HashMap<>();
+		mapValue.put("name", "${name}");
+		mapValue.put("version", "${version}");
+		input.put("map", mapValue);
+
+		List<String> listValue = new ArrayList<>();
+		listValue.add("${name}");
+		listValue.add("${version}");
+		input.put("list", listValue);
+
+		Object jsonObj = objectMapper.readValue(objectMapper.writeValueAsString(map), Object.class);
+
+		Map<String, Object> replaced = parametersUtils.replace(input, jsonObj);
+		assertNotNull(replaced);
+
+		// Verify that values are replaced correctly.
+		assertEquals("{\"taskRefName\":\"t001\",\"workflowId\":\"w002\"}", replaced.get("k1"));
+		assertEquals("conductor", replaced.get("k2"));
+		assertEquals(2, replaced.get("k3"));
+
+		Map replacedMap = (Map) replaced.get("map");
+		assertEquals("conductor", replacedMap.get("name"));
+		assertEquals(2, replacedMap.get("version"));
+
+		List replacedList = (List) replaced.get("list");
+		assertEquals(2, replacedList.size());
+		assertEquals("conductor", replacedList.get(0));
+		assertEquals(2, replacedList.get(1));
+
+
+		// Verify that input map is not mutated
+		assertEquals("${$.externalId}", input.get("k1"));
+		assertEquals("${name}", input.get("k2"));
+		assertEquals("${version}", input.get("k3"));
+
+		Map inputMap = (Map) input.get("map");
+		assertEquals("${name}", inputMap.get("name"));
+		assertEquals("${version}", inputMap.get("version"));
+
+		List inputList = (List) input.get("list");
+		assertEquals(2, inputList.size());
+		assertEquals("${name}", inputList.get(0));
+		assertEquals("${version}", inputList.get(1));
 	}
 }
