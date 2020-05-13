@@ -382,20 +382,71 @@ The task takes 3 parameters:</p>
 <thead>
 <tr>
 <th>name</th>
+<th>type</th>
 <th>description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>sink</td>
+<td>String</td>
 <td>Qualified name of the event that is produced.  e.g. conductor or sqs:sqs_queue_name</td>
 </tr>
 <tr>
 <td>asyncComplete</td>
+<td>Boolean</td>
 <td><code>false</code> to mark status COMPLETED upon execution ; <code>true</code> to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it.</td>
 </tr>
 </tbody>
 </table>
+<p><strong>Outputs:</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>type</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>workflowInstanceId</td>
+<td>String</td>
+<td>Workflow id</td>
+</tr>
+<tr>
+<td>workflowType</td>
+<td>String</td>
+<td>Workflow Name</td>
+</tr>
+<tr>
+<td>workflowVersion</td>
+<td>Integer</td>
+<td>Workflow Version</td>
+</tr>
+<tr>
+<td>correlationId</td>
+<td>String</td>
+<td>Workflow CorrelationId</td>
+</tr>
+<tr>
+<td>sink</td>
+<td>String</td>
+<td>Copy of the input data "sink"</td>
+</tr>
+<tr>
+<td>asyncComplete</td>
+<td>Boolean</td>
+<td>Copy of the input data "asyncComplete</td>
+</tr>
+<tr>
+<td>event_produced</td>
+<td>String</td>
+<td>Name of the event produced</td>
+</tr>
+</tbody>
+</table>
+<p>The published event's payload is identical to the output of the task (except "event_produced").</p>
 <p><strong>Example</strong></p>
 <div class="codehilite"><pre><span></span><span class="p">{</span>
     <span class="nt">&quot;sink&quot;</span><span class="p">:</span> <span class="s2">&quot;sqs:example_sqs_queue_name&quot;</span><span class="p">,</span>
@@ -416,76 +467,126 @@ The task takes 3 parameters:</p>
 <li>Conductor</li>
 <li>SQS</li>
 </ul>
-<p><strong>Event Task Input</strong>
-The input given to the event task is made available to the published message as payload.  e.g. if a message is put into SQS queue (sink is sqs) then the message payload will be the input to the task.</p>
-<p><strong>Event Task Output</strong></p>
-<p><code>event_produced</code> Name of the event produced.</p>
 <h2 id="http">HTTP<a class="headerlink" href="#http" title="Permanent link">&para;</a></h2>
 <p>An HTTP task is used to make calls to another microservice over HTTP.</p>
 <p><strong>Parameters:</strong></p>
-<p>The task expects an input parameter named <code>http_request</code> as part of the task's input with the following details:</p>
 <table>
 <thead>
 <tr>
 <th>name</th>
+<th>type</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>http_request</td>
+<td>HttpRequest</td>
+<td>JSON object (see below)</td>
+</tr>
+</tbody>
+</table>
+<p><code>HttpRequest</code> JSON object:</p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>type</th>
 <th>description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>uri</td>
+<td>String</td>
 <td>URI for the service.  Can be a partial when using vipAddress or includes the server address.</td>
 </tr>
 <tr>
 <td>method</td>
+<td>String</td>
 <td>HTTP method.  One of the GET, PUT, POST, DELETE, OPTIONS, HEAD</td>
 </tr>
 <tr>
 <td>accept</td>
-<td>Accept header as required by server.</td>
+<td>String</td>
+<td>Accept header as required by server. Defaults to <code>application/json</code></td>
 </tr>
 <tr>
 <td>contentType</td>
-<td>Content Type - supported types are text/plain, text/html and, application/json</td>
+<td>String</td>
+<td>Content Type - supported types are <code>text/plain</code>, <code>text/html</code>, and <code>application/json</code> (Default)</td>
 </tr>
 <tr>
 <td>headers</td>
+<td>Map[String, Any]</td>
 <td>A map of additional http headers to be sent along with the request.</td>
 </tr>
 <tr>
 <td>body</td>
+<td>Map[]</td>
 <td>Request body</td>
 </tr>
 <tr>
 <td>vipAddress</td>
+<td>String</td>
 <td>When using discovery based service URLs.</td>
 </tr>
 <tr>
 <td>asyncComplete</td>
+<td>Boolean</td>
 <td><code>false</code> to mark status COMPLETED upon execution ; <code>true</code> to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it.</td>
+</tr>
+<tr>
+<td>oauthConsumerKey</td>
+<td>String</td>
+<td><a href="https://oauth.net/core/1.0/">OAuth</a> client consumer key</td>
+</tr>
+<tr>
+<td>oauthConsumerSecret</td>
+<td>String</td>
+<td><a href="https://oauth.net/core/1.0/">OAuth</a> client consumer secret</td>
+</tr>
+<tr>
+<td>connectionTimeOut</td>
+<td>Integer</td>
+<td>Connection Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 100.</td>
+</tr>
+<tr>
+<td>readTimeOut</td>
+<td>Integer</td>
+<td>Read Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 150.</td>
 </tr>
 </tbody>
 </table>
-<p><strong>HTTP Task Output</strong></p>
+<p><strong>Output:</strong></p>
 <table>
 <thead>
 <tr>
 <th>name</th>
+<th>type</th>
 <th>description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>response</td>
+<td>Map</td>
 <td>JSON body containing the response if one is present</td>
 </tr>
 <tr>
 <td>headers</td>
+<td>Map[String, Any]</td>
 <td>Response Headers</td>
 </tr>
 <tr>
 <td>statusCode</td>
-<td>Integer status code</td>
+<td>Integer</td>
+<td><a href="https://en.wikipedia.org/wiki/List_of_HTTP_status_codes">Http Status Code</a></td>
+</tr>
+<tr>
+<td>reasonPhrase</td>
+<td>String</td>
+<td>Http Status Code's reason phrase</td>
 </tr>
 </tbody>
 </table>
@@ -525,13 +626,39 @@ The input given to the event task is made available to the published message as 
 <thead>
 <tr>
 <th>name</th>
+<th>type</th>
 <th>description</th>
 </tr>
 </thead>
 <tbody>
 <tr>
 <td>subWorkflowParam</td>
-<td>name and version of the Workflow to be executed as Sub Workflow. Input to this Task will be forwarded to SubWorflow as Workflow input</td>
+<td>Map[String, Any]</td>
+<td>See below</td>
+</tr>
+</tbody>
+</table>
+<p><strong>subWorkflowParam</strong>
+|name|type|description|
+|---|---|---|
+| name | String | Name of the workflow to execute |
+| version | Integer | Version of the workflow to execute |
+| taskToDomain | Map[String, String] | Allows scheduling the sub workflow's tasks per given mappings. See <a href="configuration/taskdomains/">Task Domains</a> for instructions to configure taskDomains. | 
+| workflowInput | Map[String, Any] | Input to pass to the workflow as inputParameters. If empty or null, the inputParameters of the sub_workflow task is passed to the subworkflow directly. |</p>
+<p><strong>Outputs:</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>type</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>subWorkflowId</td>
+<td>String</td>
+<td>Subworkflow execution Id generated when running the subworkflow</td>
 </tr>
 </tbody>
 </table>
@@ -539,24 +666,25 @@ The input given to the event task is made available to the published message as 
 <div class="codehilite"><pre><span></span><span class="p">{</span>
   <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sub_workflow_task&quot;</span><span class="p">,</span>
   <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;sub1&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;requestId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.requestId}&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;file&quot;</span><span class="p">:</span> <span class="s2">&quot;${encode.output.location}&quot;</span>
-  <span class="p">},</span>
   <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SUB_WORKFLOW&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;deployment_workflow&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="nt">&quot;taskToDomain&quot;</span><span class="p">:</span> <span class="p">{</span>
-      <span class="nt">&quot;*&quot;</span><span class="p">:</span> <span class="s2">&quot;mydomain&quot;</span>
-     <span class="p">}</span>
+  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;deployment_workflow&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="nt">&quot;taskToDomain&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;*&quot;</span><span class="p">:</span> <span class="s2">&quot;mydomain&quot;</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;anythingelse&quot;</span><span class="p">:</span>  <span class="s2">&quot;value&quot;</span>
   <span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 
 
-<p>When executed, a <code>deployment_workflow</code> is executed with two input parameters requestId and <em>file</em>.  The task is marked as completed upon the completion of the spawned workflow.  If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. </p>
-<p><code>subWorkflowParam</code> can optionally accept <code>taskToDomain</code> map, which would schedule the sub workflow's tasks per given mappings. See <a href="configuration/taskdomains/">Task Domains</a> for instructions to configure taskDomains.</p>
+<p>When executed, a <code>deployment_workflow</code> is executed with its inputs parameters set
+to the inputParameters of the <code>sub_workflow_task</code>.
+The task is marked as completed upon the completion of the spawned workflow. 
+If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. </p>
 <h2 id="fork">Fork<a class="headerlink" href="#fork" title="Permanent link">&para;</a></h2>
 <p>Fork is used to schedule parallel set of tasks, specified by <code>"type":"FORK_JOIN"</code>.</p>
 <p><strong>Parameters:</strong></p>
