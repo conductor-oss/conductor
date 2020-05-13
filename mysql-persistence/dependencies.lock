@@ -62,12 +62,6 @@
                 "com.amazonaws:aws-java-sdk-core"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "transitive": [
@@ -175,13 +169,6 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -192,7 +179,8 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "joda-time:joda-time": {
@@ -215,6 +203,13 @@
             "locked": "2.2.1",
             "transitive": [
                 "com.jayway.jsonpath:json-path"
+            ]
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "org.apache.commons:commons-lang3": {
@@ -245,25 +240,6 @@
             "transitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.ow2.asm:asm": {
@@ -352,12 +328,6 @@
                 "com.amazonaws:aws-java-sdk-core"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "transitive": [
@@ -465,13 +435,6 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -482,7 +445,8 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "joda-time:joda-time": {
@@ -505,6 +469,13 @@
             "locked": "2.2.1",
             "transitive": [
                 "com.jayway.jsonpath:json-path"
+            ]
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "org.apache.commons:commons-lang3": {
@@ -535,25 +506,6 @@
             "transitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.ow2.asm:asm": {
@@ -642,12 +594,6 @@
                 "com.amazonaws:aws-java-sdk-core"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "transitive": [
@@ -755,13 +701,6 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -772,7 +711,8 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "joda-time:joda-time": {
@@ -795,6 +735,13 @@
             "locked": "2.2.1",
             "transitive": [
                 "com.jayway.jsonpath:json-path"
+            ]
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "org.apache.commons:commons-lang3": {
@@ -825,25 +772,6 @@
             "transitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.ow2.asm:asm": {
@@ -995,12 +923,6 @@
                 "com.amazonaws:aws-java-sdk-core"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.rholder:guava-retrying": {
             "locked": "2.0.0",
             "transitive": [
@@ -1108,13 +1030,6 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -1125,7 +1040,8 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "joda-time:joda-time": {
@@ -1148,6 +1064,13 @@
             "locked": "2.2.1",
             "transitive": [
                 "com.jayway.jsonpath:json-path"
+            ]
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "org.apache.commons:commons-lang3": {
@@ -1178,25 +1101,6 @@
             "transitive": [
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.ow2.asm:asm": {
@@ -1285,10 +1189,270 @@
                 "com.amazonaws:aws-java-sdk-core"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
+        "com.github.rholder:guava-retrying": {
+            "locked": "2.0.0",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common"
+            ]
+        },
+        "com.github.vmg.protogen:protogen-annotations": {
+            "locked": "1.0.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-common"
+            ]
+        },
+        "com.google.code.findbugs:jsr305": {
+            "locked": "2.0.2",
+            "transitive": [
+                "com.github.rholder:guava-retrying"
+            ]
+        },
+        "com.google.guava:guava": {
+            "locked": "19.0",
+            "transitive": [
+                "com.github.rholder:guava-retrying",
+                "com.google.inject:guice",
+                "com.netflix.servo:servo-core"
+            ]
+        },
+        "com.google.inject.extensions:guice-multibindings": {
+            "locked": "4.1.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "com.google.inject:guice": {
+            "locked": "4.1.0",
+            "requested": "4.1.0",
+            "transitive": [
+                "com.google.inject.extensions:guice-multibindings",
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "com.google.protobuf:protobuf-java": {
+            "locked": "3.5.1",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "mysql:mysql-connector-java"
+            ]
+        },
+        "com.jayway.jsonpath:json-path": {
+            "locked": "2.2.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "com.netflix.conductor:conductor-common": {
+            "project": true,
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "com.netflix.conductor:conductor-core": {
+            "project": true
+        },
+        "com.netflix.servo:servo-core": {
+            "locked": "0.12.17",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "com.netflix.spectator:spectator-api": {
+            "locked": "0.68.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "com.spotify:completable-futures": {
+            "locked": "0.3.1",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "com.zaxxer:HikariCP": {
+            "locked": "3.2.0",
+            "requested": "3.2.0"
+        },
+        "commons-codec:commons-codec": {
+            "locked": "1.9",
+            "transitive": [
+                "org.apache.httpcomponents:httpclient"
+            ]
+        },
+        "commons-io:commons-io": {
+            "locked": "2.4",
+            "requested": "2.4"
+        },
+        "commons-logging:commons-logging": {
+            "locked": "1.2",
+            "transitive": [
+                "com.amazonaws:aws-java-sdk-core",
+                "org.apache.httpcomponents:httpclient"
+            ]
+        },
+        "io.reactivex:rxjava": {
+            "locked": "1.2.2",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "javax.inject:javax.inject": {
+            "locked": "1",
+            "transitive": [
+                "com.google.inject:guice",
+                "com.netflix.conductor:conductor-common"
+            ]
+        },
+        "javax.validation:validation-api": {
+            "locked": "2.0.1.Final",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "joda-time:joda-time": {
+            "locked": "2.8.1",
+            "transitive": [
+                "com.amazonaws:aws-java-sdk-core"
+            ]
+        },
+        "mysql:mysql-connector-java": {
+            "locked": "8.0.11",
+            "requested": "8.0.11"
+        },
+        "net.minidev:accessors-smart": {
+            "locked": "1.1",
+            "transitive": [
+                "net.minidev:json-smart"
+            ]
+        },
+        "net.minidev:json-smart": {
+            "locked": "2.2.1",
+            "transitive": [
+                "com.jayway.jsonpath:json-path"
+            ]
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "org.apache.commons:commons-lang3": {
+            "locked": "3.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "org.apache.httpcomponents:httpclient": {
+            "locked": "4.5.2",
+            "transitive": [
+                "com.amazonaws:aws-java-sdk-core"
+            ]
+        },
+        "org.apache.httpcomponents:httpcore": {
+            "locked": "4.4.4",
+            "transitive": [
+                "org.apache.httpcomponents:httpclient"
+            ]
+        },
+        "org.flywaydb:flyway-core": {
+            "locked": "4.0.3",
+            "requested": "4.0.3"
+        },
+        "org.glassfish:javax.el": {
+            "locked": "3.0.0",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "org.ow2.asm:asm": {
+            "locked": "5.0.3",
+            "transitive": [
+                "net.minidev:accessors-smart"
+            ]
+        },
+        "org.slf4j:slf4j-api": {
+            "locked": "1.7.25",
+            "transitive": [
+                "com.jayway.jsonpath:json-path",
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.servo:servo-core",
+                "com.netflix.spectator:spectator-api",
+                "com.zaxxer:HikariCP"
+            ]
+        },
+        "software.amazon.ion:ion-java": {
+            "locked": "1.0.1",
+            "transitive": [
+                "com.amazonaws:aws-java-sdk-core"
+            ]
+        }
+    },
+    "testCompile": {
+        "aopalliance:aopalliance": {
+            "locked": "1.0",
+            "transitive": [
+                "com.google.inject:guice"
+            ]
+        },
+        "com.amazonaws:aws-java-sdk-core": {
+            "locked": "1.11.86",
+            "transitive": [
+                "com.amazonaws:aws-java-sdk-kms",
+                "com.amazonaws:aws-java-sdk-s3"
+            ]
+        },
+        "com.amazonaws:aws-java-sdk-kms": {
+            "locked": "1.11.86",
+            "transitive": [
+                "com.amazonaws:aws-java-sdk-s3"
+            ]
+        },
+        "com.amazonaws:aws-java-sdk-s3": {
+            "locked": "1.11.86",
+            "transitive": [
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "com.amazonaws:jmespath-java": {
+            "locked": "1.11.86",
+            "transitive": [
+                "com.amazonaws:aws-java-sdk-kms",
+                "com.amazonaws:aws-java-sdk-s3"
+            ]
+        },
+        "com.fasterxml.jackson.core:jackson-annotations": {
+            "locked": "2.10.0",
+            "transitive": [
+                "com.fasterxml.jackson.core:jackson-databind"
+            ]
+        },
+        "com.fasterxml.jackson.core:jackson-core": {
+            "locked": "2.10.0",
+            "transitive": [
+                "com.fasterxml.jackson.core:jackson-databind",
+                "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "com.fasterxml.jackson.core:jackson-databind": {
+            "locked": "2.10.0",
+            "transitive": [
+                "com.amazonaws:aws-java-sdk-core",
+                "com.amazonaws:jmespath-java",
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
+            ]
+        },
+        "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
+            "locked": "2.6.6",
+            "transitive": [
+                "com.amazonaws:aws-java-sdk-core"
             ]
         },
         "com.github.rholder:guava-retrying": {
@@ -1398,13 +1562,6 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -1415,7 +1572,8 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "joda-time:joda-time": {
@@ -1424,9 +1582,31 @@
                 "com.amazonaws:aws-java-sdk-core"
             ]
         },
+        "junit:junit": {
+            "locked": "4.12",
+            "requested": "4.12"
+        },
+        "log4j:log4j": {
+            "locked": "1.2.17",
+            "transitive": [
+                "org.slf4j:slf4j-log4j12"
+            ]
+        },
         "mysql:mysql-connector-java": {
             "locked": "8.0.11",
             "requested": "8.0.11"
+        },
+        "net.bytebuddy:byte-buddy": {
+            "locked": "1.9.10",
+            "transitive": [
+                "org.mockito:mockito-core"
+            ]
+        },
+        "net.bytebuddy:byte-buddy-agent": {
+            "locked": "1.9.10",
+            "transitive": [
+                "org.mockito:mockito-core"
+            ]
         },
         "net.minidev:accessors-smart": {
             "locked": "1.1",
@@ -1438,6 +1618,13 @@
             "locked": "2.2.1",
             "transitive": [
                 "com.jayway.jsonpath:json-path"
+            ]
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "org.apache.commons:commons-lang3": {
@@ -1470,386 +1657,10 @@
                 "com.netflix.conductor:conductor-core"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
-        "org.ow2.asm:asm": {
-            "locked": "5.0.3",
-            "transitive": [
-                "net.minidev:accessors-smart"
-            ]
-        },
-        "org.slf4j:slf4j-api": {
-            "locked": "1.7.25",
-            "transitive": [
-                "com.jayway.jsonpath:json-path",
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.servo:servo-core",
-                "com.netflix.spectator:spectator-api",
-                "com.zaxxer:HikariCP"
-            ]
-        },
-        "software.amazon.ion:ion-java": {
-            "locked": "1.0.1",
-            "transitive": [
-                "com.amazonaws:aws-java-sdk-core"
-            ]
-        }
-    },
-    "testCompile": {
-        "aopalliance:aopalliance": {
-            "locked": "1.0",
-            "transitive": [
-                "com.google.inject:guice"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j": {
-            "locked": "2.2.3",
-            "requested": "2.2.3"
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-core": {
-            "locked": "2.2.3",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-db-linux64": {
-            "locked": "10.1.13",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-db-mac64": {
-            "locked": "10.1.9",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-db-win32": {
-            "locked": "10.1.20",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "com.amazonaws:aws-java-sdk-core": {
-            "locked": "1.11.86",
-            "transitive": [
-                "com.amazonaws:aws-java-sdk-kms",
-                "com.amazonaws:aws-java-sdk-s3"
-            ]
-        },
-        "com.amazonaws:aws-java-sdk-kms": {
-            "locked": "1.11.86",
-            "transitive": [
-                "com.amazonaws:aws-java-sdk-s3"
-            ]
-        },
-        "com.amazonaws:aws-java-sdk-s3": {
-            "locked": "1.11.86",
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.amazonaws:jmespath-java": {
-            "locked": "1.11.86",
-            "transitive": [
-                "com.amazonaws:aws-java-sdk-kms",
-                "com.amazonaws:aws-java-sdk-s3"
-            ]
-        },
-        "com.fasterxml.jackson.core:jackson-annotations": {
-            "locked": "2.10.0",
-            "transitive": [
-                "com.fasterxml.jackson.core:jackson-databind"
-            ]
-        },
-        "com.fasterxml.jackson.core:jackson-core": {
-            "locked": "2.10.0",
-            "transitive": [
-                "com.fasterxml.jackson.core:jackson-databind",
-                "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor",
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.fasterxml.jackson.core:jackson-databind": {
-            "locked": "2.10.0",
-            "transitive": [
-                "com.amazonaws:aws-java-sdk-core",
-                "com.amazonaws:jmespath-java",
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.fasterxml.jackson.dataformat:jackson-dataformat-cbor": {
-            "locked": "2.6.6",
-            "transitive": [
-                "com.amazonaws:aws-java-sdk-core"
-            ]
-        },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
-        "com.github.rholder:guava-retrying": {
-            "locked": "2.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "com.github.vmg.protogen:protogen-annotations": {
-            "locked": "1.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "com.google.code.findbugs:jsr305": {
-            "locked": "2.0.2",
-            "transitive": [
-                "com.github.rholder:guava-retrying"
-            ]
-        },
-        "com.google.guava:guava": {
-            "locked": "19.0",
-            "transitive": [
-                "com.github.rholder:guava-retrying",
-                "com.google.inject:guice",
-                "com.netflix.servo:servo-core"
-            ]
-        },
-        "com.google.inject.extensions:guice-multibindings": {
-            "locked": "4.1.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.google.inject:guice": {
-            "locked": "4.1.0",
-            "requested": "4.1.0",
-            "transitive": [
-                "com.google.inject.extensions:guice-multibindings",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.google.protobuf:protobuf-java": {
-            "locked": "3.5.1",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "mysql:mysql-connector-java"
-            ]
-        },
-        "com.jayway.jsonpath:json-path": {
-            "locked": "2.2.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.netflix.conductor:conductor-common": {
-            "project": true,
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.netflix.conductor:conductor-core": {
-            "project": true
-        },
-        "com.netflix.servo:servo-core": {
-            "locked": "0.12.17",
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.netflix.spectator:spectator-api": {
-            "locked": "0.68.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.spotify:completable-futures": {
-            "locked": "0.3.1",
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "com.zaxxer:HikariCP": {
-            "locked": "3.2.0",
-            "requested": "3.2.0"
-        },
-        "commons-codec:commons-codec": {
-            "locked": "1.9",
-            "transitive": [
-                "org.apache.httpcomponents:httpclient"
-            ]
-        },
-        "commons-io:commons-io": {
-            "locked": "2.5",
-            "requested": "2.4",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
-        },
-        "commons-logging:commons-logging": {
-            "locked": "1.2",
-            "transitive": [
-                "com.amazonaws:aws-java-sdk-core",
-                "org.apache.httpcomponents:httpclient",
-                "org.springframework:spring-core"
-            ]
-        },
-        "io.reactivex:rxjava": {
-            "locked": "1.2.2",
-            "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "javax.inject:javax.inject": {
-            "locked": "1",
-            "transitive": [
-                "com.google.inject:guice",
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "javax.validation:validation-api": {
-            "locked": "2.0.1.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
-        "joda-time:joda-time": {
-            "locked": "2.8.1",
-            "transitive": [
-                "com.amazonaws:aws-java-sdk-core"
-            ]
-        },
-        "junit:junit": {
-            "locked": "4.12",
-            "requested": "4.12"
-        },
-        "log4j:log4j": {
-            "locked": "1.2.17",
-            "transitive": [
-                "org.slf4j:slf4j-log4j12"
-            ]
-        },
-        "mysql:mysql-connector-java": {
-            "locked": "8.0.11",
-            "requested": "8.0.11"
-        },
-        "net.bytebuddy:byte-buddy": {
-            "locked": "1.9.10",
-            "transitive": [
-                "org.mockito:mockito-core"
-            ]
-        },
-        "net.bytebuddy:byte-buddy-agent": {
-            "locked": "1.9.10",
-            "transitive": [
-                "org.mockito:mockito-core"
-            ]
-        },
-        "net.minidev:accessors-smart": {
-            "locked": "1.1",
-            "transitive": [
-                "net.minidev:json-smart"
-            ]
-        },
-        "net.minidev:json-smart": {
-            "locked": "2.2.1",
-            "transitive": [
-                "com.jayway.jsonpath:json-path"
-            ]
-        },
-        "org.apache.commons:commons-collections4": {
-            "locked": "4.1",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
-        },
-        "org.apache.commons:commons-exec": {
-            "locked": "1.3",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
-        },
-        "org.apache.commons:commons-lang3": {
-            "locked": "3.4",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core",
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.apache.httpcomponents:httpclient": {
-            "locked": "4.5.2",
-            "transitive": [
-                "com.amazonaws:aws-java-sdk-core"
-            ]
-        },
-        "org.apache.httpcomponents:httpcore": {
-            "locked": "4.4.4",
-            "transitive": [
-                "org.apache.httpcomponents:httpclient"
-            ]
-        },
-        "org.flywaydb:flyway-core": {
-            "locked": "4.0.3",
-            "requested": "4.0.3"
-        },
-        "org.glassfish:javax.el": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
         "org.hamcrest:hamcrest-core": {
             "locked": "1.3",
             "transitive": [
                 "junit:junit"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.mockito:mockito-core": {
@@ -1871,7 +1682,6 @@
         "org.slf4j:slf4j-api": {
             "locked": "1.8.0-alpha1",
             "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core",
                 "com.jayway.jsonpath:json-path",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
@@ -1883,12 +1693,6 @@
         "org.slf4j:slf4j-log4j12": {
             "locked": "1.8.0-alpha1",
             "requested": "1.8.0-alpha1"
-        },
-        "org.springframework:spring-core": {
-            "locked": "4.3.6.RELEASE",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
         },
         "software.amazon.ion:ion-java": {
             "locked": "1.0.1",
@@ -1904,34 +1708,6 @@
                 "com.google.inject:guice"
             ]
         },
-        "ch.vorburger.mariaDB4j:mariaDB4j": {
-            "locked": "2.2.3",
-            "requested": "2.2.3"
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-core": {
-            "locked": "2.2.3",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-db-linux64": {
-            "locked": "10.1.13",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-db-mac64": {
-            "locked": "10.1.9",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-db-win32": {
-            "locked": "10.1.20",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
         "com.amazonaws:aws-java-sdk-core": {
             "locked": "1.11.86",
             "transitive": [
@@ -1986,12 +1762,6 @@
             "locked": "2.6.6",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-core"
-            ]
-        },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "com.github.rholder:guava-retrying": {
@@ -2085,30 +1855,19 @@
             ]
         },
         "commons-io:commons-io": {
-            "locked": "2.5",
-            "requested": "2.4",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
+            "locked": "2.4",
+            "requested": "2.4"
         },
         "commons-logging:commons-logging": {
             "locked": "1.2",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-core",
-                "org.apache.httpcomponents:httpclient",
-                "org.springframework:spring-core"
+                "org.apache.httpcomponents:httpclient"
             ]
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ]
         },
@@ -2122,7 +1881,8 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "joda-time:joda-time": {
@@ -2169,22 +1929,16 @@
                 "com.jayway.jsonpath:json-path"
             ]
         },
-        "org.apache.commons:commons-collections4": {
-            "locked": "4.1",
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
             "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
-        },
-        "org.apache.commons:commons-exec": {
-            "locked": "1.3",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "org.apache.commons:commons-lang3": {
-            "locked": "3.4",
+            "locked": "3.0",
             "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ]
@@ -2218,25 +1972,6 @@
                 "junit:junit"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "org.mockito:mockito-core": {
             "locked": "3.1.0",
             "requested": "3.1.0"
@@ -2256,7 +1991,6 @@
         "org.slf4j:slf4j-api": {
             "locked": "1.8.0-alpha1",
             "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core",
                 "com.jayway.jsonpath:json-path",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
@@ -2268,12 +2002,6 @@
         "org.slf4j:slf4j-log4j12": {
             "locked": "1.8.0-alpha1",
             "requested": "1.8.0-alpha1"
-        },
-        "org.springframework:spring-core": {
-            "locked": "4.3.6.RELEASE",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
         },
         "software.amazon.ion:ion-java": {
             "locked": "1.0.1",
@@ -2289,34 +2017,6 @@
                 "com.google.inject:guice"
             ]
         },
-        "ch.vorburger.mariaDB4j:mariaDB4j": {
-            "locked": "2.2.3",
-            "requested": "2.2.3"
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-core": {
-            "locked": "2.2.3",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-db-linux64": {
-            "locked": "10.1.13",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-db-mac64": {
-            "locked": "10.1.9",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-db-win32": {
-            "locked": "10.1.20",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
         "com.amazonaws:aws-java-sdk-core": {
             "locked": "1.11.86",
             "transitive": [
@@ -2371,12 +2071,6 @@
             "locked": "2.6.6",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-core"
-            ]
-        },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "com.github.rholder:guava-retrying": {
@@ -2470,30 +2164,19 @@
             ]
         },
         "commons-io:commons-io": {
-            "locked": "2.5",
-            "requested": "2.4",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
+            "locked": "2.4",
+            "requested": "2.4"
         },
         "commons-logging:commons-logging": {
             "locked": "1.2",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-core",
-                "org.apache.httpcomponents:httpclient",
-                "org.springframework:spring-core"
+                "org.apache.httpcomponents:httpclient"
             ]
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ]
         },
@@ -2507,7 +2190,8 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "joda-time:joda-time": {
@@ -2554,22 +2238,16 @@
                 "com.jayway.jsonpath:json-path"
             ]
         },
-        "org.apache.commons:commons-collections4": {
-            "locked": "4.1",
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
             "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
-        },
-        "org.apache.commons:commons-exec": {
-            "locked": "1.3",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "org.apache.commons:commons-lang3": {
-            "locked": "3.4",
+            "locked": "3.0",
             "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ]
@@ -2603,25 +2281,6 @@
                 "junit:junit"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "org.mockito:mockito-core": {
             "locked": "3.1.0",
             "requested": "3.1.0"
@@ -2641,7 +2300,6 @@
         "org.slf4j:slf4j-api": {
             "locked": "1.8.0-alpha1",
             "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core",
                 "com.jayway.jsonpath:json-path",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
@@ -2653,12 +2311,6 @@
         "org.slf4j:slf4j-log4j12": {
             "locked": "1.8.0-alpha1",
             "requested": "1.8.0-alpha1"
-        },
-        "org.springframework:spring-core": {
-            "locked": "4.3.6.RELEASE",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
         },
         "software.amazon.ion:ion-java": {
             "locked": "1.0.1",
@@ -2674,34 +2326,6 @@
                 "com.google.inject:guice"
             ]
         },
-        "ch.vorburger.mariaDB4j:mariaDB4j": {
-            "locked": "2.2.3",
-            "requested": "2.2.3"
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-core": {
-            "locked": "2.2.3",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-db-linux64": {
-            "locked": "10.1.13",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-db-mac64": {
-            "locked": "10.1.9",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
-        "ch.vorburger.mariaDB4j:mariaDB4j-db-win32": {
-            "locked": "10.1.20",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j"
-            ]
-        },
         "com.amazonaws:aws-java-sdk-core": {
             "locked": "1.11.86",
             "transitive": [
@@ -2756,12 +2380,6 @@
             "locked": "2.6.6",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-core"
-            ]
-        },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "com.github.rholder:guava-retrying": {
@@ -2855,30 +2473,19 @@
             ]
         },
         "commons-io:commons-io": {
-            "locked": "2.5",
-            "requested": "2.4",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
+            "locked": "2.4",
+            "requested": "2.4"
         },
         "commons-logging:commons-logging": {
             "locked": "1.2",
             "transitive": [
                 "com.amazonaws:aws-java-sdk-core",
-                "org.apache.httpcomponents:httpclient",
-                "org.springframework:spring-core"
+                "org.apache.httpcomponents:httpclient"
             ]
         },
         "io.reactivex:rxjava": {
             "locked": "1.2.2",
             "transitive": [
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ]
         },
@@ -2892,7 +2499,8 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "joda-time:joda-time": {
@@ -2939,22 +2547,16 @@
                 "com.jayway.jsonpath:json-path"
             ]
         },
-        "org.apache.commons:commons-collections4": {
-            "locked": "4.1",
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
             "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
-        },
-        "org.apache.commons:commons-exec": {
-            "locked": "1.3",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
+                "com.netflix.conductor:conductor-common",
+                "com.netflix.conductor:conductor-core"
             ]
         },
         "org.apache.commons:commons-lang3": {
-            "locked": "3.4",
+            "locked": "3.0",
             "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.conductor:conductor-core"
             ]
@@ -2988,25 +2590,6 @@
                 "junit:junit"
             ]
         },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common",
-                "com.netflix.conductor:conductor-core"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "org.mockito:mockito-core": {
             "locked": "3.1.0",
             "requested": "3.1.0"
@@ -3026,7 +2609,6 @@
         "org.slf4j:slf4j-api": {
             "locked": "1.8.0-alpha1",
             "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core",
                 "com.jayway.jsonpath:json-path",
                 "com.netflix.conductor:conductor-common",
                 "com.netflix.servo:servo-core",
@@ -3038,12 +2620,6 @@
         "org.slf4j:slf4j-log4j12": {
             "locked": "1.8.0-alpha1",
             "requested": "1.8.0-alpha1"
-        },
-        "org.springframework:spring-core": {
-            "locked": "4.3.6.RELEASE",
-            "transitive": [
-                "ch.vorburger.mariaDB4j:mariaDB4j-core"
-            ]
         },
         "software.amazon.ion:ion-java": {
             "locked": "1.0.1",

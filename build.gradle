@@ -113,7 +113,9 @@ task codeCoverageReport(type: JacocoReport, group: "Coverage reports") {
         classDirectories = files(
                 classDirectories.files.collect {
                     fileTree(
-                            dir: it
+                            dir: it,
+                            // Exclude es modules from code coverage reports
+                            exclude: 'com/netflix/conductor/elasticsearch'
                     )
                 }
         )
