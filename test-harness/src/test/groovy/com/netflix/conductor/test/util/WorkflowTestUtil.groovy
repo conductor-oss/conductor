@@ -17,6 +17,24 @@ import javax.annotation.PostConstruct
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * This is a helper class used to initialize task definitions required by the tests when loaded up.
+ * The task definitions that are loaded up in {@link WorkflowTestUtil#taskDefinitions()} method as part of the post construct of the bean.
+ * This class is intended to be used in the Spock integration tests and provides helper methods to:
+ * <ul>
+ *     <li> Terminate all the  running Workflows</li>
+ *     <li> Get the persisted task definition based on the taskName</li>
+ *     <li> pollAndFailTask </li>
+ *     <li> pollAndCompleteTask </li>
+ *     <li> verifyPolledAndAcknowledgedTask </li>
+ * </ul>
+ *
+ * Usage: Inject this class in any Spock based specification:
+ * <code>
+ *      @Inject
+ *     WorkflowTestUtil workflowTestUtil
+ * </code>
+ */
 @Singleton
 class WorkflowTestUtil {
 
@@ -36,8 +54,11 @@ class WorkflowTestUtil {
         this.queueDAO = queueDAO
     }
 
+    /**
+     * This function registers all the taskDefinitions required to enable spock based integration testing
+     */
     @PostConstruct
-    def taskDefinitions() {
+    def void taskDefinitions() {
         WorkflowContext.set(new WorkflowContext("integration_app"))
 
         (0..20).collect { "integration_task_$it" }
@@ -62,6 +83,12 @@ class WorkflowTestUtil {
         metadataService.registerTaskDef([task])
     }
 
+    /**
+     * This is an helper method that enables each test feature to run from a clean state
+     * This method is intended to be used in the cleanup() or cleanupSpec() method of any spock specification.
+     * By invoking this method all the running workflows are terminated.
+     * @throws Exception When unable to terminate any running workflow
+     */
     def void clearWorkflows() throws Exception {
         List<String> workflowsWithVersion = metadataService.getWorkflowDefs()
                 .collect { workflowDef -> workflowDef.getName() + ":" + workflowDef.getVersion() }
@@ -83,6 +110,11 @@ class WorkflowTestUtil {
         new FileOutputStream(this.getClass().getResource(TEMP_FILE_PATH).getPath()).close();
     }
 
+    /**
+     * A helper method to retrieve a task definition that is persisted
+     * @param taskDefName The name of the task for which the task definition is requested
+     * @return an Optional of the TaskDefinition
+     */
     def Optional<TaskDef> getPersistedTaskDefinition(String taskDefName) {
         try {
             return Optional.of(metadataService.getTaskDef(taskDefName))
@@ -95,12 +127,25 @@ class WorkflowTestUtil {
         }
     }
 
-    def registerWorkflows(String... workflowJsonPaths) {
+    /**
+     * A helper methods that registers that workflows based on the paths of the json file representing a workflow definition
+     * @param workflowJsonPaths a comma separated var ags of the paths of the workflow definitions
+     */
+    def void registerWorkflows(String... workflowJsonPaths) {
         workflowJsonPaths.collect { JsonUtils.fromJson(it, WorkflowDef.class) }
                 .forEach { metadataService.updateWorkflowDef(it) }
     }
 
-
+    /**
+     * A helper method intended to be used in the <tt>when:</tt> block of the spock test feature
+     * This method is intended to be used to poll and update the task status as failed
+     * It also provides a delay to return if needed after the task has been updated to failed
+     * @param taskName name of the task that needs to be polled and failed
+     * @param workerId name of the worker id using which a task is polled
+     * @param failureReason the reason to fail the task that will added to the task update
+     * @param waitAtEndSeconds an optional delay before the method returns, if the value is 0 skips the delay
+     * @return A Tuple of polledTask and acknowledgement of the poll
+     */
     def Tuple pollAndFailTask(String taskName, String workerId, String failureReason, int waitAtEndSeconds) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
         def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
@@ -110,6 +155,14 @@ class WorkflowTestUtil {
         return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask, ackPolledIntegrationTask)
     }
 
+    /**
+     * A helper method to introduce delay and convert the polledIntegrationTask and ackPolledIntegrationTask
+     * into a tuple. This method is intended to be used by pollAndFailTask and pollAndCompleteTask
+     * @param waitAtEndSeconds The total seconds of delay before the method returns
+     * @param polledIntegrationTask  instance of polled task
+     * @param ackPolledIntegrationTask a acknowledgement of a poll
+     * @return A Tuple of polledTask and acknowledgement of the poll
+     */
     static def Tuple waitAtEndSecondsAndReturn(int waitAtEndSeconds, Task polledIntegrationTask, boolean ackPolledIntegrationTask) {
         if (waitAtEndSeconds > 0) {
             Thread.sleep(waitAtEndSeconds * 1000)
@@ -117,6 +170,16 @@ class WorkflowTestUtil {
         return new Tuple(polledIntegrationTask, ackPolledIntegrationTask)
     }
 
+    /**
+     * A helper method intended to be used in the <tt>when:</tt> block of the spock test feature
+     * This method is intended to be used to poll and update the task status as completed
+     * It also provides a delay to return if needed after the task has been updated to completed
+     * @param taskName name of the task that needs to be polled and completed
+     * @param workerId name of the worker id using which a task is polled
+     * @param outputParams An optional output parameters if available will be added to the task before updating to completed
+     * @param waitAtEndSeconds waitAtEndSeconds an optional delay before the method returns, if the value is 0 skips the delay
+     * @return A Tuple of polledTask and acknowledgement of the poll
+     */
     def Tuple pollAndCompleteTask(String taskName, String workerId, Map<String, String> outputParams, int waitAtEndSeconds) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
         def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
@@ -130,6 +193,12 @@ class WorkflowTestUtil {
         return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask, ackPolledIntegrationTask)
     }
 
+    /**
+     * A helper method intended to be used in the <tt>then:</tt> block of the spock test feature, ideally intended to be called after either:
+     * pollAndCompleteTask function or  pollAndFailTask function
+     * @param expectedTaskInputParams a map of input params that are verified against the polledTask that is part of the completedTaskAndAck tuple
+     * @param completedTaskAndAck A Tuple of polledTask and acknowledgement of the poll
+     */
     static def void verifyPolledAndAcknowledgedTask(Map<String, String> expectedTaskInputParams, Tuple completedTaskAndAck) {
         assert completedTaskAndAck[0] : "The task polled cannot be null"
         def polledIntegrationTask = completedTaskAndAck[0] as Task
