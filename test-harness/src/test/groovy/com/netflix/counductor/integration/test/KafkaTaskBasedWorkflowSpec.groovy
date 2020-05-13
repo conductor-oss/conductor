@@ -12,8 +12,8 @@ import com.netflix.conductor.common.utils.JsonMapperProvider
 import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
+import com.netflix.conductor.test.util.WorkflowTestUtil
 import com.netflix.conductor.tests.utils.TestModule
-import com.netflix.conductor.tests.utils.WorkflowCleanUpUtil
 import com.netflix.governator.guice.test.ModulesForTesting
 import spock.lang.Shared
 import spock.lang.Specification
@@ -33,7 +33,7 @@ class KafkaTaskBasedWorkflowSpec extends Specification {
     WorkflowExecutor workflowExecutor
 
     @Inject
-    WorkflowCleanUpUtil cleanUpUtil
+    WorkflowTestUtil registrationUtil
 
     @Shared
     ObjectMapper objectMapper = new JsonMapperProvider().get()
@@ -51,7 +51,7 @@ class KafkaTaskBasedWorkflowSpec extends Specification {
     def expectedTaskInput = "{\"kafka_request\":{\"topic\":\"test_kafka_topic\",\"bootStrapServers\":\"localhost:9092\",\"value\":{\"requestDetails\":{\"key1\":\"value1\",\"key2\":42},\"outputPath\":\"s3://bucket/outputPath\",\"inputPaths\":[\"file://path1\",\"file://path2\"]}}}"
 
     def cleanup() {
-        cleanUpUtil.clearWorkflows()
+        registrationUtil.clearWorkflows()
     }
 
     def setup() {
@@ -190,12 +190,4 @@ class KafkaTaskBasedWorkflowSpec extends Specification {
         templateWf.schemaVersion = 2
         metadataService.registerWorkflowDef(templateWf)
     }
-
-
-
-    /*def value = ['inputPaths'    : ['${workflow.input.path1}', '${workflow.input.path2}'],
-                     'requestDetails': '${workflow.input.requestDetails}',
-                     'outputPath'    : '${workflow.input.outputPath}']
-
-        def kafkaRequest = ['topic':'${STACK_KAFKA}', 'bootStrapServers':'localhost:9092', 'value':value]*/
 }
