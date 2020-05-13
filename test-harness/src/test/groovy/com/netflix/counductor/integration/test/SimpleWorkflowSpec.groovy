@@ -1,6 +1,5 @@
 package com.netflix.counductor.integration.test
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.archaius.guice.ArchaiusModule
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
@@ -9,16 +8,14 @@ import com.netflix.conductor.common.metadata.workflow.TaskType
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.common.utils.JsonMapperProvider
-import com.netflix.conductor.core.WorkflowContext
 import com.netflix.conductor.core.execution.ApplicationException
 import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
-import com.netflix.conductor.tests.utils.JsonUtils
+import com.netflix.conductor.test.util.WorkflowTestUtil
+import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 import com.netflix.conductor.tests.utils.TestModule
-import com.netflix.conductor.tests.utils.WorkflowCleanUpUtil
 import com.netflix.governator.guice.test.ModulesForTesting
 import org.apache.commons.lang3.StringUtils
 import spock.lang.Shared
@@ -41,36 +38,24 @@ class SimpleWorkflowSpec extends Specification {
     WorkflowExecutor workflowExecutor
 
     @Inject
-    WorkflowCleanUpUtil cleanUpUtil
+    WorkflowTestUtil workflowTestUtil
 
     @Inject
     QueueDAO queueDAO
 
     @Shared
-    ObjectMapper objectMapper = new JsonMapperProvider().get()
-
-    @Shared
-    def isWorkflowRegistered = false
-
-    @Shared
     def LINEAR_WORKFLOW_T1_T2 = 'integration_test_wf'
-
-    @Shared
-    def TEST_WORKFLOW = 'integration_test_wf3'
-
-    @Shared
-    def RETRY_COUNT = 1
 
 
     def setup() {
-        if (!isWorkflowRegistered) {
-            registerWorkflows()
-            isWorkflowRegistered = true
-        }
+        //Register LINEAR_WORKFLOW_T1_T2, TEST_WORKFLOW, RTOWF
+        workflowTestUtil.registerWorkflows("simple_workflow_1_integration_test.json",
+                "simple_workflow_3_integration_test.json",
+                "simple_workflow_with_resp_time_out_integration_test.json")
     }
 
     def cleanup() {
-        cleanUpUtil.clearWorkflows()
+        workflowTestUtil.clearWorkflows()
     }
 
     def "Test simple workflow completion"() {
@@ -207,7 +192,7 @@ class SimpleWorkflowSpec extends Specification {
 
     def "Test simple workflow terminal error condition"() {
         setup:
-        Optional<TaskDef> optionalTaskDefinition = getPersistedTaskDefinition('integration_task_1')
+        Optional<TaskDef> optionalTaskDefinition = workflowTestUtil.getPersistedTaskDefinition('integration_task_1')
         def integration_task_1_definition = optionalTaskDefinition.get()
         integration_task_1_definition.retryCount = 1
         metadataService.updateTaskDef(integration_task_1_definition)
@@ -249,7 +234,7 @@ class SimpleWorkflowSpec extends Specification {
 
         def failedWorkflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def failedWorkflowOutputParams = failedWorkflow.output
-        TaskDef integration_task_1 = getPersistedTaskDefinition("integration_task_1").get()
+        TaskDef integration_task_1 = workflowTestUtil.getPersistedTaskDefinition("integration_task_1").get()
         Task t1 = failedWorkflow.getTaskByRefName("t1")
 
         then:
@@ -420,7 +405,7 @@ class SimpleWorkflowSpec extends Specification {
     def "Test Simple workflow restart without using the latest definition"() {
         setup:"Register a task definition with no retries"
         def taskName = 'integration_task_1'
-        def taskDefinition = getPersistedTaskDefinition(taskName).get()
+        def taskDefinition = workflowTestUtil.getPersistedTaskDefinition(taskName).get()
         taskDefinition.retryCount = 0
         metadataService.updateTaskDef(taskDefinition)
 
@@ -496,7 +481,7 @@ class SimpleWorkflowSpec extends Specification {
 
         setup:"Register a task definition with no retries"
         def taskName = 'integration_task_1'
-        def taskDefinition = getPersistedTaskDefinition(taskName).get()
+        def taskDefinition = workflowTestUtil.getPersistedTaskDefinition(taskName).get()
         taskDefinition.retryCount = 0
         metadataService.updateTaskDef(taskDefinition)
 
@@ -596,7 +581,7 @@ class SimpleWorkflowSpec extends Specification {
 
     def "Test simple workflow with task retries"() {
         setup:"Change the task definition to ensure that it has retries and delay between retries"
-        def integrationTask2Definition = getPersistedTaskDefinition('integration_task_2').get()
+        def integrationTask2Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_2').get()
         def modifiedTaskDefinition = new TaskDef(integrationTask2Definition.name, integrationTask2Definition.description,
                 3, integrationTask2Definition.timeoutSeconds)
         modifiedTaskDefinition.retryDelaySeconds = 2
@@ -635,19 +620,19 @@ class SimpleWorkflowSpec extends Specification {
 
         //Need to figure out how to use expect and where here
         when:" 'integration_task_2'  is polled and marked as failed for the first time"
-        Tuple polledAndFailedTaskTry1 = pollAndFailTask('integration_task_2', 'task2.integration.worker', 'failure...0', 2)
+        Tuple polledAndFailedTaskTry1 = workflowTestUtil.pollAndFailTask('integration_task_2', 'task2.integration.worker', 'failure...0', 2)
 
         then:"verify that the task was polled and the input params of the tasks are as expected"
         verifyPolledAndAcknowledgedTask(['tp2': polledIntegrationTask1Output, 'tp1': 'p1 value'], polledAndFailedTaskTry1)
 
         when:" 'integration_task_2'  is polled and marked as failed for the second time"
-        Tuple polledAndFailedTaskTry2 = pollAndFailTask('integration_task_2', 'task2.integration.worker', 'failure...0', 2)
+        Tuple polledAndFailedTaskTry2 = workflowTestUtil.pollAndFailTask('integration_task_2', 'task2.integration.worker', 'failure...0', 2)
 
         then:"verify that the task was polled and the input params of the tasks are as expected"
         verifyPolledAndAcknowledgedTask(['tp2': polledIntegrationTask1Output, 'tp1': 'p1 value'], polledAndFailedTaskTry2)
 
         when:"'integration_task_2'  is polled and marked as completed for the third time"
-        def polledAndCompletedTry3 = pollAndCompleteTask('integration_task_2', 'task2.integration.worker', null, 0)
+        def polledAndCompletedTry3 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker', null, 0)
 
         then:"verify that the task was polled and the input params of the tasks are as expected"
         verifyPolledAndAcknowledgedTask(['tp2': polledIntegrationTask1Output, 'tp1': 'p1 value'], polledAndCompletedTry3)
@@ -672,7 +657,7 @@ class SimpleWorkflowSpec extends Specification {
 
     def "Test simple workflow with retry at workflow level"() {
         setup:"Change the task definition to ensure that it has retries and no delay between retries"
-        def integrationTask1Definition = getPersistedTaskDefinition('integration_task_1').get()
+        def integrationTask1Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_1').get()
         def modifiedTaskDefinition = new TaskDef(integrationTask1Definition.name, integrationTask1Definition.description,
                 1, integrationTask1Definition.timeoutSeconds)
         modifiedTaskDefinition.retryDelaySeconds = 0
@@ -703,7 +688,7 @@ class SimpleWorkflowSpec extends Specification {
         }
 
         when:"The first task 'integration_task_1' is polled and failed"
-        Tuple polledAndFailedTask1Try1 = pollAndFailTask('integration_task_1', 'task1.integration.worker', 'failure...0', 0)
+        Tuple polledAndFailedTask1Try1 = workflowTestUtil.pollAndFailTask('integration_task_1', 'task1.integration.worker', 'failure...0', 0)
 
         then:"verify that the task was polled and acknowledged and the workflow is still in a running state"
         verifyPolledAndAcknowledgedTask([:], polledAndFailedTask1Try1)
@@ -715,7 +700,7 @@ class SimpleWorkflowSpec extends Specification {
         }
 
         when:"The first task 'integration_task_1' is polled and failed for the second time"
-        Tuple polledAndFailedTask1Try2 = pollAndFailTask('integration_task_1', 'task1.integration.worker', 'failure...0', 0)
+        Tuple polledAndFailedTask1Try2 = workflowTestUtil.pollAndFailTask('integration_task_1', 'task1.integration.worker', 'failure...0', 0)
 
         then:"verify that the task was polled and acknowledged and the workflow is still in a running state"
         verifyPolledAndAcknowledgedTask([:], polledAndFailedTask1Try2)
@@ -739,7 +724,7 @@ class SimpleWorkflowSpec extends Specification {
         }
 
         when:"The 'integration_task_1' task is polled and is completed"
-        def polledAndCompletedTry3 = pollAndCompleteTask('integration_task_1',
+        def polledAndCompletedTry3 = workflowTestUtil.pollAndCompleteTask('integration_task_1',
                 'task2.integration.worker', null, 0)
 
         then:"verify that the task was polled and acknowledged"
@@ -752,7 +737,7 @@ class SimpleWorkflowSpec extends Specification {
         }
 
         when:"The 'integration_task_2' task is polled and is completed"
-        def polledAndCompletedTaskTry1 = pollAndCompleteTask('integration_task_2',
+        def polledAndCompletedTaskTry1 = workflowTestUtil.pollAndCompleteTask('integration_task_2',
                 'task2.integration.worker', null, 0)
 
         then:"verify that the task was polled and acknowledged"
@@ -768,98 +753,4 @@ class SimpleWorkflowSpec extends Specification {
         metadataService.updateTaskDef(integrationTask1Definition)
     }
 
-    // Helper methods need to be moved to an util helper class
-    def Tuple pollAndFailTask(String taskName, String workerId, String failureReason, int waitAtEndSeconds) {
-        def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
-        def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
-        polledIntegrationTask.status = Task.Status.FAILED
-        polledIntegrationTask.reasonForIncompletion = failureReason
-        workflowExecutionService.updateTask(polledIntegrationTask)
-        return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask, ackPolledIntegrationTask)
-    }
-
-    def Tuple waitAtEndSecondsAndReturn(int waitAtEndSeconds, Task polledIntegrationTask, boolean ackPolledIntegrationTask) {
-        if (waitAtEndSeconds > 0) {
-            Thread.sleep(waitAtEndSeconds * 1000)
-        }
-        return new Tuple(polledIntegrationTask, ackPolledIntegrationTask)
-    }
-
-    def Tuple pollAndCompleteTask(String taskName, String workerId, Map<String, String> outputParams, int waitAtEndSeconds) {
-        def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
-        def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
-        polledIntegrationTask.status = Task.Status.COMPLETED
-        if (outputParams) {
-            outputParams.forEach { k, v ->
-                polledIntegrationTask.outputData[k] = v
-            }
-        }
-        workflowExecutionService.updateTask(polledIntegrationTask)
-        return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask, ackPolledIntegrationTask)
-    }
-
-    void verifyPolledAndAcknowledgedTask(Map<String, String> expectedTaskInputParams, Tuple completedTaskAndAck) {
-        assert completedTaskAndAck[0] : "The task polled cannot be null"
-        def polledIntegrationTask = completedTaskAndAck[0] as Task
-        def ackPolledIntegrationTask = completedTaskAndAck[1] as boolean
-        assert polledIntegrationTask
-        assert ackPolledIntegrationTask
-        if (expectedTaskInputParams) {
-            expectedTaskInputParams.forEach {
-                k, v ->
-                    assert polledIntegrationTask.inputData.containsKey(k)
-                    assert polledIntegrationTask.inputData[k] == v
-            }
-        }
-    }
-
-
-
-    def registerWorkflows() {
-        WorkflowContext.set(new WorkflowContext("integration_app"))
-
-        (0..20).collect { "integration_task_$it" }
-                .findAll { !getPersistedTaskDefinition(it).isPresent() }
-                .collect { new TaskDef(it, it, 1, 120) }
-                .forEach { metadataService.registerTaskDef([it]) }
-
-        (0..4).collect { "integration_task_0_RT_$it" }
-                .findAll { !getPersistedTaskDefinition(it).isPresent() }
-                .collect { new TaskDef(it, it, 0, 120) }
-                .forEach { metadataService.registerTaskDef([it]) }
-
-        metadataService.registerTaskDef([new TaskDef('short_time_out', 'short_time_out', 1, 5)])
-
-        //This task is required by the integration test which exercises the response time out scenarios
-        TaskDef task = new TaskDef()
-        task.name = "task_rt"
-        task.timeoutSeconds = 120
-        task.retryCount = RETRY_COUNT
-        task.retryDelaySeconds = 0
-        task.responseTimeoutSeconds = 10
-        metadataService.registerTaskDef([task])
-
-        //LINEAR_WORKFLOW_T1_T2
-        def workflowDefinition1 = JsonUtils.fromJson("simple_workflow_1_integration_test.json", WorkflowDef.class)
-        //TEST_WORKFLOW
-        def workflowDefinition3 = JsonUtils.fromJson("simple_workflow_3_integration_test.json", WorkflowDef.class)
-        //RTOWF
-        def workflowDefinition2 = JsonUtils.fromJson("simple_workflow_with_resp_time_out_integration_test.json", WorkflowDef.class)
-        [workflowDefinition1, workflowDefinition2, workflowDefinition3].forEach {
-            metadataService.updateWorkflowDef(it)
-        }
-    }
-
-
-    def Optional<TaskDef> getPersistedTaskDefinition(String taskDefName) {
-        try {
-            return Optional.of(metadataService.getTaskDef(taskDefName))
-        } catch (ApplicationException applicationException) {
-            if (applicationException.code == ApplicationException.Code.NOT_FOUND) {
-                return Optional.empty()
-            } else {
-                throw applicationException
-            }
-        }
-    }
 }
