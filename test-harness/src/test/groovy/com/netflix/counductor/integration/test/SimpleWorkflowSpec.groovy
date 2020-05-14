@@ -1,5 +1,6 @@
 package com.netflix.counductor.integration.test
 
+
 import com.netflix.archaius.guice.ArchaiusModule
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
@@ -14,7 +15,6 @@ import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.service.ExecutionService
 import com.netflix.conductor.service.MetadataService
 import com.netflix.conductor.test.util.WorkflowTestUtil
-import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 import com.netflix.conductor.tests.utils.TestModule
 import com.netflix.governator.guice.test.ModulesForTesting
 import org.apache.commons.lang3.StringUtils
@@ -24,6 +24,7 @@ import spock.lang.Specification
 import javax.inject.Inject
 
 import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT
+import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
 @ModulesForTesting([TestModule.class, ArchaiusModule.class])
 class SimpleWorkflowSpec extends Specification {
@@ -49,12 +50,16 @@ class SimpleWorkflowSpec extends Specification {
     @Shared
     def INTEGRATION_TEST_WF_NON_RESTARTABLE = "integration_test_wf_non_restartable"
 
+    @Shared
+    def WORKFLOW_WITH_OPTIONAL_TASK = "optional_task_wf"
+
 
     def setup() {
-        //Register LINEAR_WORKFLOW_T1_T2, TEST_WORKFLOW, RTOWF
+        //Register LINEAR_WORKFLOW_T1_T2, TEST_WORKFLOW, RTOWF, WORKFLOW_WITH_OPTIONAL_TASK
         workflowTestUtil.registerWorkflows("simple_workflow_1_integration_test.json",
                 "simple_workflow_3_integration_test.json",
-                "simple_workflow_with_resp_time_out_integration_test.json")
+                "simple_workflow_with_resp_time_out_integration_test.json",
+                "simple_workflow_with_optional_task_integration_test.json")
     }
 
     def cleanup() {
@@ -1005,5 +1010,78 @@ class SimpleWorkflowSpec extends Specification {
         simpleWorkflowDefinition.name = LINEAR_WORKFLOW_T1_T2
         simpleWorkflowDefinition.restartable = true
         metadataService.updateWorkflowDef(simpleWorkflowDefinition)
+    }
+
+    def "Test simple workflow which has an optional task"() {
+
+        given:"A input parameters for a workflow with an optional task"
+        def correlationId = 'integration_test'+UUID.randomUUID().toString()
+        def workflowInput = new HashMap()
+        workflowInput['param1'] = 'p1 value'
+        workflowInput['param2'] = 'p2 value'
+
+        when:"An optional task workflow is started"
+        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_OPTIONAL_TASK, 1,
+                correlationId, workflowInput,
+                null, null, null)
+
+        then:"verify that the workflow has started and the optional task is in a scheduled state"
+        workflowInstanceId
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].taskType == 'task_optional'
+        }
+
+        when:"The first optional task is polled and failed"
+        Tuple polledAndFailedTaskTry1 = workflowTestUtil.pollAndFailTask('task_optional',
+                'task1.integration.worker', 'NETWORK ERROR', 0)
+
+        then:"Verify that the task_optional was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask([:], polledAndFailedTaskTry1)
+
+        when:"A decide is executed on the workflow"
+        workflowExecutor.decide(workflowInstanceId)
+
+        then:"verify that the workflow is still running and the first optional task has failed and the retry has kicked in"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 2
+            tasks[0].status == Task.Status.FAILED
+            tasks[0].taskType == 'task_optional'
+            tasks[1].status == Task.Status.SCHEDULED
+            tasks[1].taskType == 'task_optional'
+        }
+
+        when:"Poll the optional task again and do not complete it and run decide"
+        workflowExecutionService.poll('task_optional', 'task1.integration.worker')
+        Thread.sleep(5000)
+        workflowExecutor.decide(workflowInstanceId)
+
+        then:"Ensure that the workflow is updated"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 3
+            tasks[1].status == Task.Status.COMPLETED_WITH_ERRORS
+            tasks[1].taskType == 'task_optional'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[2].taskType == 'integration_task_2'
+        }
+
+        when:"The second task 'integration_task_2' is polled and completed"
+        def task2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker',
+                [:], 0)
+
+        then:"Verify that the task was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask([:], task2Try1)
+
+        and:"Ensure that the workflow is in completed state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 3
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[2].taskType == 'integration_task_2'
+        }
     }
 }
