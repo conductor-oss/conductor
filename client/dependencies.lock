@@ -71,12 +71,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.andrewoma.dexx:dexx-collections": {
             "locked": "0.2",
             "transitive": [
@@ -265,12 +259,6 @@
                 "com.fasterxml.jackson.module:jackson-module-jaxb-annotations"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -287,7 +275,7 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -314,6 +302,12 @@
             "locked": "3.2.1",
             "transitive": [
                 "org.antlr:antlr-runtime"
+            ]
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.apache.commons:commons-lang3": {
@@ -352,24 +346,6 @@
             "locked": "3.0.0",
             "transitive": [
                 "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.slf4j:slf4j-api": {
@@ -481,12 +457,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.andrewoma.dexx:dexx-collections": {
             "locked": "0.2",
             "transitive": [
@@ -675,12 +645,6 @@
                 "com.fasterxml.jackson.module:jackson-module-jaxb-annotations"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -697,7 +661,7 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -724,6 +688,12 @@
             "locked": "3.2.1",
             "transitive": [
                 "org.antlr:antlr-runtime"
+            ]
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.apache.commons:commons-lang3": {
@@ -762,24 +732,6 @@
             "locked": "3.0.0",
             "transitive": [
                 "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.slf4j:slf4j-api": {
@@ -891,12 +843,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.andrewoma.dexx:dexx-collections": {
             "locked": "0.2",
             "transitive": [
@@ -1085,12 +1031,6 @@
                 "com.fasterxml.jackson.module:jackson-module-jaxb-annotations"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -1107,7 +1047,7 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -1134,6 +1074,12 @@
             "locked": "3.2.1",
             "transitive": [
                 "org.antlr:antlr-runtime"
+            ]
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.apache.commons:commons-lang3": {
@@ -1172,24 +1118,6 @@
             "locked": "3.0.0",
             "transitive": [
                 "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.slf4j:slf4j-api": {
@@ -1510,12 +1438,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.andrewoma.dexx:dexx-collections": {
             "locked": "0.2",
             "transitive": [
@@ -1704,12 +1626,6 @@
                 "com.fasterxml.jackson.module:jackson-module-jaxb-annotations"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -1726,7 +1642,7 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -1753,6 +1669,12 @@
             "locked": "3.2.1",
             "transitive": [
                 "org.antlr:antlr-runtime"
+            ]
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.apache.commons:commons-lang3": {
@@ -1791,24 +1713,6 @@
             "locked": "3.0.0",
             "transitive": [
                 "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.slf4j:slf4j-api": {
@@ -1920,12 +1824,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.andrewoma.dexx:dexx-collections": {
             "locked": "0.2",
             "transitive": [
@@ -2114,12 +2012,6 @@
                 "com.fasterxml.jackson.module:jackson-module-jaxb-annotations"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -2136,7 +2028,7 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -2163,6 +2055,12 @@
             "locked": "3.2.1",
             "transitive": [
                 "org.antlr:antlr-runtime"
+            ]
+        },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "org.apache.commons:commons-lang3": {
@@ -2201,24 +2099,6 @@
             "locked": "3.0.0",
             "transitive": [
                 "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.slf4j:slf4j-api": {
@@ -2330,12 +2210,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.andrewoma.dexx:dexx-collections": {
             "locked": "0.2",
             "transitive": [
@@ -2524,12 +2398,6 @@
                 "com.fasterxml.jackson.module:jackson-module-jaxb-annotations"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -2546,7 +2414,7 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -2597,6 +2465,12 @@
                 "org.antlr:antlr-runtime"
             ]
         },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common"
+            ]
+        },
         "org.apache.commons:commons-lang3": {
             "locked": "3.0",
             "transitive": [
@@ -2639,24 +2513,6 @@
             "locked": "1.3",
             "transitive": [
                 "junit:junit"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.mockito:mockito-core": {
@@ -2783,12 +2639,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.andrewoma.dexx:dexx-collections": {
             "locked": "0.2",
             "transitive": [
@@ -2977,12 +2827,6 @@
                 "com.fasterxml.jackson.module:jackson-module-jaxb-annotations"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -2999,7 +2843,7 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -3050,6 +2894,12 @@
                 "org.antlr:antlr-runtime"
             ]
         },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common"
+            ]
+        },
         "org.apache.commons:commons-lang3": {
             "locked": "3.0",
             "transitive": [
@@ -3092,24 +2942,6 @@
             "locked": "1.3",
             "transitive": [
                 "junit:junit"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.mockito:mockito-core": {
@@ -3236,12 +3068,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.andrewoma.dexx:dexx-collections": {
             "locked": "0.2",
             "transitive": [
@@ -3430,12 +3256,6 @@
                 "com.fasterxml.jackson.module:jackson-module-jaxb-annotations"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -3452,7 +3272,7 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -3503,6 +3323,12 @@
                 "org.antlr:antlr-runtime"
             ]
         },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common"
+            ]
+        },
         "org.apache.commons:commons-lang3": {
             "locked": "3.0",
             "transitive": [
@@ -3545,24 +3371,6 @@
             "locked": "1.3",
             "transitive": [
                 "junit:junit"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.mockito:mockito-core": {
@@ -3689,12 +3497,6 @@
                 "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
             ]
         },
-        "com.fasterxml:classmate": {
-            "locked": "1.3.4",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
-            ]
-        },
         "com.github.andrewoma.dexx:dexx-collections": {
             "locked": "0.2",
             "transitive": [
@@ -3883,12 +3685,6 @@
                 "com.fasterxml.jackson.module:jackson-module-jaxb-annotations"
             ]
         },
-        "javax.el:javax.el-api": {
-            "locked": "3.0.0",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
         "javax.inject:javax.inject": {
             "locked": "1",
             "transitive": [
@@ -3905,7 +3701,7 @@
         "javax.validation:validation-api": {
             "locked": "2.0.1.Final",
             "transitive": [
-                "org.hibernate.validator:hibernate-validator"
+                "com.netflix.conductor:conductor-common"
             ]
         },
         "javax.ws.rs:jsr311-api": {
@@ -3956,6 +3752,12 @@
                 "org.antlr:antlr-runtime"
             ]
         },
+        "org.apache.bval:bval-jsr": {
+            "locked": "2.0.3",
+            "transitive": [
+                "com.netflix.conductor:conductor-common"
+            ]
+        },
         "org.apache.commons:commons-lang3": {
             "locked": "3.0",
             "transitive": [
@@ -3998,24 +3800,6 @@
             "locked": "1.3",
             "transitive": [
                 "junit:junit"
-            ]
-        },
-        "org.hibernate.validator:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "org.hibernate:hibernate-validator"
-            ]
-        },
-        "org.hibernate:hibernate-validator": {
-            "locked": "6.0.13.Final",
-            "transitive": [
-                "com.netflix.conductor:conductor-common"
-            ]
-        },
-        "org.jboss.logging:jboss-logging": {
-            "locked": "3.3.2.Final",
-            "transitive": [
-                "org.hibernate.validator:hibernate-validator"
             ]
         },
         "org.mockito:mockito-core": {

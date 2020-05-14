@@ -1,8 +1,19 @@
+/*
+ * Copyright 2020 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.elasticsearch;
 
 import com.google.common.base.Strings;
 import com.netflix.conductor.core.config.Configuration;
-
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
@@ -64,19 +75,22 @@ public interface ElasticSearchConfiguration extends Configuration {
     String ELASTIC_SEARCH_INDEX_REPLICAS_COUNT_PROPERTY_NAME = "workflow.elasticsearch.index.replicas.count";
     int ELASTIC_SEARCH_INDEX_REPLICAS_COUNT_DEFAULT_VALUE = 1;
 
+    String ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT = "tasklog.elasticsearch.query.size";
+    int ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT_DEFAULT_VALUE = 10;
 
     default String getURL() {
         return getProperty(ELASTIC_SEARCH_URL_PROPERTY_NAME, ELASTIC_SEARCH_URL_DEFAULT_VALUE);
     }
 
-    default List<URI> getURIs(){
+    default List<URI> getURIs() {
 
         String clusterAddress = getURL();
 
         String[] hosts = clusterAddress.split(",");
 
-        return Arrays.stream(hosts).map( host ->
-           (host.startsWith("http://") || host.startsWith("https://") || host.startsWith("tcp://")) ? URI.create(host) : URI.create("tcp://" + host)
+        return Arrays.stream(hosts).map(host ->
+            (host.startsWith("http://") || host.startsWith("https://") || host.startsWith("tcp://")) ? URI.create(host)
+                : URI.create("tcp://" + host)
         ).collect(Collectors.toList());
     }
 
@@ -137,11 +151,11 @@ public interface ElasticSearchConfiguration extends Configuration {
 
     default int getIndexBatchSize() {
         return getIntProperty(ELASTIC_SEARCH_INDEX_BATCH_SIZE_PROPERTY_NAME,
-                ELASTIC_SEARCH_INDEX_BATCH_SIZE_DEFAULT_VALUE);
+            ELASTIC_SEARCH_INDEX_BATCH_SIZE_DEFAULT_VALUE);
     }
 
     default int getAsyncWorkerQueueSize() {
-        return  getIntProperty(ELASTIC_SEARCH_ASYNC_DAO_WORKER_QUEUE_SIZE, DEFAULT_ASYNC_WORKER_QUEUE_SIZE);
+        return getIntProperty(ELASTIC_SEARCH_ASYNC_DAO_WORKER_QUEUE_SIZE, DEFAULT_ASYNC_WORKER_QUEUE_SIZE);
     }
 
     default int getAsyncMaxPoolSize() {
@@ -149,18 +163,22 @@ public interface ElasticSearchConfiguration extends Configuration {
     }
 
     default int getAsyncBufferFlushTimeout() {
-        return getIntProperty(ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_PROPERTY_NAME, ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_DEFAULT_VALUE);
+        return getIntProperty(ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_PROPERTY_NAME,
+            ELASTIC_SEARCH_ASYNC_BUFFER_FLUSH_TIMEOUT_DEFAULT_VALUE);
     }
 
-    default int getElasticSearchIndexShardCount()
-    {
+    default int getElasticSearchIndexShardCount() {
         return getIntProperty(ELASTIC_SEARCH_INDEX_SHARD_COUNT_PROPERTY_NAME,
-                ELASTIC_SEARCH_INDEX_SHARD_COUNT_DEFAULT_VALUE);
+            ELASTIC_SEARCH_INDEX_SHARD_COUNT_DEFAULT_VALUE);
     }
 
-    default int getElasticSearchIndexReplicationCount()
-    {
+    default int getElasticSearchIndexReplicationCount() {
         return getIntProperty(ELASTIC_SEARCH_INDEX_REPLICAS_COUNT_PROPERTY_NAME,
-                ELASTIC_SEARCH_INDEX_REPLICAS_COUNT_DEFAULT_VALUE);
+            ELASTIC_SEARCH_INDEX_REPLICAS_COUNT_DEFAULT_VALUE);
+    }
+
+    default int getElasticSearchTasklogLimit() {
+        return getIntProperty(ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT,
+                ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT_DEFAULT_VALUE);
     }
 }

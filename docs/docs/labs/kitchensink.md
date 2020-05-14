@@ -157,6 +157,7 @@ An example kitchensink workflow that demonstrates the usage of all the schema co
     "statues": "${get_es_1.output..status}",
     "workflowIds": "${get_es_1.output..workflowId}"
   },
+  "ownerEmail": "example@email.com",
   "schemaVersion": 2
 }
 ```
@@ -226,7 +227,7 @@ curl -H 'Content-Type:application/json' -H 'Accept:application/json' -X POST htt
 	"taskId": "b9eea7dd-3fbd-46b9-a9ff-b00279459476",
 	"workflowInstanceId": "b0d1a935-3d74-46fd-92b2-0ca1e388659f",
 	"status": "COMPLETED",
-	"output": {
+	"outputData": {
 	    "mod": 5,
 	    "taskToExecute": "task_1",
 	    "oddEven": 0,

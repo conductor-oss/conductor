@@ -150,7 +150,7 @@ public class ParametersUtils {
         }
         Configuration option = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
         DocumentContext documentContext = JsonPath.parse(doc, option);
-        return replace(new HashMap<>(input), documentContext, null);
+        return replace(input, documentContext, null);
     }
 
     public Object replace(String paramString) {
@@ -161,23 +161,23 @@ public class ParametersUtils {
 
     @SuppressWarnings("unchecked")
     private Map<String, Object> replace(Map<String, Object> input, DocumentContext documentContext, String taskId) {
+        Map<String, Object> result = new HashMap<>();
         for (Entry<String, Object> e : input.entrySet()) {
+            Object newValue;
             Object value = e.getValue();
             if (value instanceof String) {
-                Object replaced = replaceVariables(value.toString(), documentContext, taskId);
-                e.setValue(replaced);
+                newValue = replaceVariables(value.toString(), documentContext, taskId);
             } else if (value instanceof Map) {
                 //recursive call
-                Object replaced = replace((Map<String, Object>) value, documentContext, taskId);
-                e.setValue(replaced);
+                newValue = replace((Map<String, Object>) value, documentContext, taskId);
             } else if (value instanceof List) {
-                Object replaced = replaceList((List<?>) value, taskId, documentContext);
-                e.setValue(replaced);
+                newValue = replaceList((List<?>) value, taskId, documentContext);
             } else {
-                e.setValue(value);
+                newValue = value;
             }
+            result.put(e.getKey(), newValue);
         }
-        return input;
+        return result;
     }
 
     @SuppressWarnings("unchecked")

@@ -75,11 +75,24 @@ Event task provides ability to publish an event (message) to either Conductor or
 
 **Parameters:**
 
-|name|description|
-|---|---|
-| sink |Qualified name of the event that is produced.  e.g. conductor or sqs:sqs_queue_name|
-| asyncComplete |```false``` to mark status COMPLETED upon execution ; ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it.
+|name|type|description|
+|---|---|---|
+| sink | String | Qualified name of the event that is produced.  e.g. conductor or sqs:sqs_queue_name|
+| asyncComplete | Boolean | ```false``` to mark status COMPLETED upon execution ; ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it. |
 
+**Outputs:**
+
+|name|type|description|
+|---|---|---|
+| workflowInstanceId | String | Workflow id |
+| workflowType | String | Workflow Name | 
+| workflowVersion | Integer | Workflow Version |
+| correlationId | String | Workflow CorrelationId |
+| sink | String | Copy of the input data "sink" |
+| asyncComplete | Boolean | Copy of the input data "asyncComplete |
+| event_produced | String | Name of the event produced |
+
+The published event's payload is identical to the output of the task (except "event_produced").
 
 **Example**
 
@@ -104,40 +117,40 @@ For SQS, use the **name** of the queue and NOT the URI.  Conductor looks up the 
 * SQS
 
 
-**Event Task Input**
-The input given to the event task is made available to the published message as payload.  e.g. if a message is put into SQS queue (sink is sqs) then the message payload will be the input to the task.
-
-**Event Task Output**
-
-`event_produced` Name of the event produced.
-
-
-
 ## HTTP
 An HTTP task is used to make calls to another microservice over HTTP.
 
 **Parameters:**
 
-The task expects an input parameter named ```http_request``` as part of the task's input with the following details:
+|name|type|description|
+|---|---|---|
+| http_request | HttpRequest | JSON object (see below) |
 
-|name|description|
-|---|---|
-| uri |URI for the service.  Can be a partial when using vipAddress or includes the server address.|
-|method|HTTP method.  One of the GET, PUT, POST, DELETE, OPTIONS, HEAD|
-|accept|Accept header as required by server.|
-|contentType|Content Type - supported types are text/plain, text/html and, application/json|
-|headers|A map of additional http headers to be sent along with the request.|
-|body|Request body|
-|vipAddress|When using discovery based service URLs.|
-| asyncComplete |```false``` to mark status COMPLETED upon execution ; ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it.
+```HttpRequest``` JSON object:
 
-**HTTP Task Output**
+|name|type|description|
+|---|---|---|
+| uri | String | URI for the service.  Can be a partial when using vipAddress or includes the server address.|
+| method | String | HTTP method.  One of the GET, PUT, POST, DELETE, OPTIONS, HEAD|
+| accept | String | Accept header as required by server. Defaults to ```application/json``` |
+| contentType | String | Content Type - supported types are ```text/plain```, ```text/html```, and ```application/json``` (Default)|
+| headers| Map[String, Any] | A map of additional http headers to be sent along with the request.|
+| body| Map[] | Request body |
+| vipAddress | String | When using discovery based service URLs.|
+| asyncComplete | Boolean | ```false``` to mark status COMPLETED upon execution ; ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it.
+| oauthConsumerKey | String | [OAuth](https://oauth.net/core/1.0/) client consumer key  |
+| oauthConsumerSecret | String | [OAuth](https://oauth.net/core/1.0/) client consumer secret |
+| connectionTimeOut | Integer | Connection Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 100. |
+| readTimeOut | Integer | Read Time Out in milliseconds. If set to 0, equivalent to infinity. Default: 150. |
 
-|name|description|
-|---|---|
-|response|JSON body containing the response if one is present|
-|headers|Response Headers|
-|statusCode|Integer status code|
+**Output:**
+
+|name|type|description|
+|---|---|---|
+| response | Map |  JSON body containing the response if one is present |
+| headers | Map[String, Any] | Response Headers |
+| statusCode | Integer | [Http Status Code](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes) |
+| reasonPhrase | String | Http Status Code's reason phrase |
 
 **Example**
 
@@ -171,15 +184,28 @@ The task is marked as ```FAILED``` if the request cannot be completed or the rem
 	HTTP task currently only supports Content-Type as application/json and is able to parse the text as well as JSON response.  XML input/output is currently not supported.  However, if the response cannot be parsed as JSON or Text, a string representation is stored as a text value.
 
 
-
 ## Sub Workflow
 Sub Workflow task allows for nesting a workflow within another workflow.
 
 **Parameters:**
 
-|name|description|
-|---|---|
-| subWorkflowParam |name and version of the Workflow to be executed as Sub Workflow. Input to this Task will be forwarded to SubWorflow as Workflow input|
+|name|type|description|
+|---|---|---|
+| subWorkflowParam | Map[String, Any] | See below |
+
+**subWorkflowParam**
+|name|type|description|
+|---|---|---|
+| name | String | Name of the workflow to execute |
+| version | Integer | Version of the workflow to execute |
+| taskToDomain | Map[String, String] | Allows scheduling the sub workflow's tasks per given mappings. See [Task Domains](configuration/taskdomains/) for instructions to configure taskDomains. | 
+| workflowInput | Map[String, Any] | Input to pass to the workflow as inputParameters. If empty or null, the inputParameters of the sub_workflow task is passed to the subworkflow directly. |
+
+**Outputs:**
+
+|name|type|description|
+|---|---|---|
+| subWorkflowId | String | Subworkflow execution Id generated when running the subworkflow |
 
 **Example**
 
@@ -187,24 +213,24 @@ Sub Workflow task allows for nesting a workflow within another workflow.
 {
   "name": "sub_workflow_task",
   "taskReferenceName": "sub1",
-  "inputParameters": {
-    "requestId": "${workflow.input.requestId}",
-    "file": "${encode.output.location}"
-  },
   "type": "SUB_WORKFLOW",
-  "subWorkflowParam": {
-    "name": "deployment_workflow",
-    "version": 1,
-    "taskToDomain": {
-      "*": "mydomain"
-     }
+  "inputParameters": {
+    "subWorkflowParam": {
+      "name": "deployment_workflow",
+      "version": 1,
+      "taskToDomain": {
+        "*": "mydomain"
+      }
+    },
+    "anythingelse":  "value"
   }
 }
 ```
 
-When executed, a ```deployment_workflow``` is executed with two input parameters requestId and _file_.  The task is marked as completed upon the completion of the spawned workflow.  If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. 
-
-`subWorkflowParam` can optionally accept `taskToDomain` map, which would schedule the sub workflow's tasks per given mappings. See [Task Domains](configuration/taskdomains/) for instructions to configure taskDomains.
+When executed, a ```deployment_workflow``` is executed with its inputs parameters set
+to the inputParameters of the ```sub_workflow_task```.
+The task is marked as completed upon the completion of the spawned workflow. 
+If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. 
 
 
 ## Fork
@@ -273,7 +299,6 @@ When executed, _task_A_ and _task_Y_ are scheduled to be executed at the same ti
 	Workflow definition MUST include a Join task definition followed by FORK_JOIN task. Forked task can be a Sub Workflow, allowing for more complex execution flows.
 
 
-
 ## Dynamic Fork
 A dynamic fork is same as FORK_JOIN task.  Except that the list of tasks to be forked is provided at runtime using task's input.  Useful when number of tasks to be forked is not fixed and varies based on the input.
 
@@ -339,7 +364,6 @@ When executed, the dynamic fork task will schedule two parallel task of type "en
 	Unlike FORK, which can execute parallel flows with each fork executing a series of tasks in  sequence, FORK_JOIN_DYNAMIC is limited to only one task per fork.  However, forked task can be a Sub Workflow, allowing for more complex execution flows.
 
 
-
 ## Join
 Join task is used to wait for completion of one or more tasks spawned by fork tasks.
 
@@ -360,6 +384,7 @@ Join task is used to wait for completion of one or more tasks spawned by fork ta
 
 **Join Task Output**
 Fork task's output will be a JSON object with key being the task reference name and value as the output of the fork task.
+
 
 ## Exclusive Join
 Exclusive Join task helps capture Task output from Decision Task's flow.
@@ -435,6 +460,7 @@ GET /queue
   "externalId": "{\"taskRefName\":\"TASK_REFERENCE_NAME\",\"workflowId\":\"WORKFLOW_ID\"}"
 }
 ```
+
 
 ## Dynamic Task
 
@@ -517,6 +543,8 @@ For example, if you have a decision where the first condition is met, you want t
   "optional": false
 }
 ```
+
+
 ## Kafka Publish Task
 
 A kafka Publish task is used to push messages to another microservice via kafka

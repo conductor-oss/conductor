@@ -48,7 +48,7 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraEventHandlerDAO.class);
     private static final String CLASS_NAME = CassandraEventHandlerDAO.class.getSimpleName();
 
-    private Map<String, EventHandler> eventHandlerCache = new HashMap<>();
+    private volatile Map<String, EventHandler> eventHandlerCache = new HashMap<>();
 
     private final PreparedStatement insertEventHandlerStatement;
     private final PreparedStatement selectAllEventHandlersStatement;

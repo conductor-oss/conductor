@@ -36,7 +36,6 @@ import com.netflix.conductor.metrics.Monitors;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
-import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
@@ -471,8 +470,9 @@ public class ElasticSearchDAOV5 implements IndexDAO {
             final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(logIndexPrefix + "*")
                 .setQuery(fq)
                 .setTypes(LOG_DOC_TYPE)
-                .addSort(sortBuilder);
-
+                .addSort(sortBuilder)
+                .setSize(config.getElasticSearchTasklogLimit());
+            
             SearchResponse response = srb.execute().actionGet();
 
             return Arrays.stream(response.getHits().getHits())
