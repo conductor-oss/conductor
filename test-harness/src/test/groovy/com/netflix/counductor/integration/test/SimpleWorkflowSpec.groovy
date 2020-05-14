@@ -753,4 +753,83 @@ class SimpleWorkflowSpec extends Specification {
         metadataService.updateTaskDef(integrationTask1Definition)
     }
 
+    def "Test Long running simple workflow"() {
+        given:"A new simple workflow is started"
+        def correlationId = 'integration_test_1'
+        def workflowInput = new HashMap()
+        workflowInput['param1'] = 'p1 value'
+        workflowInput['param2'] = 'p2 value'
+
+        when:"start a new workflow with the input"
+        def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
+                correlationId, workflowInput,
+                null, null, null)
+
+        then: "verify that the workflow is in running state and the task queue has an entry for the first task of the workflow"
+        workflowInstanceId
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+        }
+        workflowExecutionService.getTaskQueueSizes(['integration_task_1']).get('integration_task_1') == 1
+
+        when: "the first task 'integration_task_1' is polled and then sent back with a callBack seconds"
+        def pollTaskTry1 = workflowExecutionService.poll('integration_task_1', 'task1.integration.worker')
+        def ackReceivedTaskTry1 = workflowExecutionService.ackTaskReceived(pollTaskTry1)
+        pollTaskTry1.outputData['op'] = 'task1.in.progress'
+        pollTaskTry1.callbackAfterSeconds = 5
+        pollTaskTry1.status = Task.Status.IN_PROGRESS
+        workflowExecutionService.updateTask(pollTaskTry1)
+
+        then:"verify that the task is polled and acknowledged"
+        pollTaskTry1
+        ackReceivedTaskTry1
+
+        and:"the input data of the data is as expected"
+        pollTaskTry1.inputData.containsKey('p1')
+        pollTaskTry1.inputData['p1'] == 'p1 value'
+        pollTaskTry1.inputData.containsKey('p2')
+        pollTaskTry1.inputData['p1'] == 'p1 value'
+
+        and:"the task queue reflects the presence of 'integration_task_1' "
+        workflowExecutionService.getTaskQueueSizes(['integration_task_1']).get('integration_task_1') == 1
+
+        when:"the 'integration_task_1' task is polled again"
+        def pollTaskTry2 = workflowExecutionService.poll('integration_task_1', 'task1.integration.worker')
+
+        then:"verify that there was no task polled"
+        !pollTaskTry2
+
+        when:"the 'integration_task_1' is polled again after a delay of 5 seconds and completed"
+        Thread.sleep(5000)
+        def task1Try3Tuple = workflowTestUtil.pollAndCompleteTask('integration_task_1',
+                'task1.integration.worker', ['op': 'task1.done'], 0)
+
+        then:"verify that the task is polled and acknowledged"
+        verifyPolledAndAcknowledgedTask([:], task1Try3Tuple)
+
+        and:"verify that the workflow is updated with the latest task"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].outputData['op'] == 'task1.done'
+        }
+
+        when:"the 'integration_task_1' is polled and completed"
+        def task2Try1Tuple = workflowTestUtil.pollAndCompleteTask('integration_task_2',
+                'task2.integration.worker', [:], 0)
+
+        then:"verify that the task was polled and completed with the expected inputData for the task that was polled"
+        verifyPolledAndAcknowledgedTask(['tp2' : 'task1.done', 'tp1': 'p1 value'], task2Try1Tuple)
+
+        and:"The workflow is in a completed state and reflects the tasks that are completed"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 2
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'integration_task_2'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].taskType == 'integration_task_1'
+        }
+
+    }
 }
