@@ -46,6 +46,9 @@ class SimpleWorkflowSpec extends Specification {
     @Shared
     def LINEAR_WORKFLOW_T1_T2 = 'integration_test_wf'
 
+    @Shared
+    def INTEGRATION_TEST_WF_NON_RESTARTABLE = "integration_test_wf_non_restartable"
+
 
     def setup() {
         //Register LINEAR_WORKFLOW_T1_T2, TEST_WORKFLOW, RTOWF
@@ -921,6 +924,86 @@ class SimpleWorkflowSpec extends Specification {
             tasks[0].status == Task.Status.COMPLETED
             tasks[0].taskType == 'integration_task_1'
         }
+    }
 
+    def "Test non restartable simple workflow"() {
+        setup:"Change the task definition to ensure that it has no retries and register a non restartable workflow"
+        def integrationTask1Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_1').get()
+        def modifiedTaskDefinition = new TaskDef(integrationTask1Definition.name, integrationTask1Definition.description,
+                0, integrationTask1Definition.timeoutSeconds)
+        metadataService.updateTaskDef(modifiedTaskDefinition)
+
+        def simpleWorkflowDefinition = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1)
+        simpleWorkflowDefinition.name = INTEGRATION_TEST_WF_NON_RESTARTABLE
+        simpleWorkflowDefinition.restartable = false
+        metadataService.updateWorkflowDef(simpleWorkflowDefinition)
+
+        when:"A non restartable workflow is started"
+        def correlationId = 'integration_test_1'
+        def workflowInput = new HashMap()
+        workflowInput['param1'] = 'p1 value'
+        workflowInput['param2'] = 'p2 value'
+
+        def workflowInstanceId = workflowExecutor.startWorkflow(INTEGRATION_TEST_WF_NON_RESTARTABLE, 1,
+                correlationId, workflowInput,
+                null, null, null)
+
+        and:"the 'integration_task_1' is polled and failed"
+        Tuple polledAndFailedTaskTry1 = workflowTestUtil.pollAndFailTask('integration_task_1',
+                'task1.integration.worker', 'failure...0', 0)
+
+        then:"verify that the task was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask([:], polledAndFailedTaskTry1)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)){
+            status == Workflow.WorkflowStatus.FAILED
+            tasks[0].status == Task.Status.FAILED
+            tasks[0].taskType == 'integration_task_1'
+        }
+
+        when:"The failed workflow is rewound"
+        workflowExecutor.rewind(workflowInstanceId, false)
+
+        and:"The first task 'integration_task_1' is polled and completed"
+        def task1Try2 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker',
+                ['op': 'task1.done'], 0)
+
+        then:"Verify that the task is polled and acknowledged"
+        verifyPolledAndAcknowledgedTask([:], task1Try2)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)){
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].taskType == 'integration_task_1'
+        }
+
+        when:"The second task 'integration_task_2' is polled and completed"
+        def task2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker',
+                [:], 0)
+
+        then:"Verify that the task was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask(['tp2': 'task1.done', 'tp1': 'p1 value'], task2Try1)
+
+        and:"The workflow is in a completed state and reflects the tasks that are completed"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 2
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'integration_task_2'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].taskType == 'integration_task_1'
+            output['o3'] == 'task1.done'
+        }
+
+        when:"The successfully completed non restartable workflow is rewound"
+        workflowExecutor.rewind(workflowInstanceId, false)
+
+        then:"Ensure that an exception is thrown"
+        def exceptionThrown = thrown(ApplicationException)
+        exceptionThrown
+
+        cleanup:"clean up the changes made to the task and worflow definition during start up"
+        metadataService.updateTaskDef(integrationTask1Definition)
+        simpleWorkflowDefinition.name = LINEAR_WORKFLOW_T1_T2
+        simpleWorkflowDefinition.restartable = true
+        metadataService.updateWorkflowDef(simpleWorkflowDefinition)
     }
 }
