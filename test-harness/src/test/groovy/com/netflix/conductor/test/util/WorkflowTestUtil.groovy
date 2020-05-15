@@ -58,7 +58,7 @@ class WorkflowTestUtil {
      * This function registers all the taskDefinitions required to enable spock based integration testing
      */
     @PostConstruct
-    def void taskDefinitions() {
+    void taskDefinitions() {
         WorkflowContext.set(new WorkflowContext("integration_app"))
 
         (0..20).collect { "integration_task_$it" }
@@ -73,14 +73,22 @@ class WorkflowTestUtil {
 
         metadataService.registerTaskDef([new TaskDef('short_time_out', 'short_time_out', 1, 5)])
 
-        //This task is required by the integration test which exercises the response time out scenarios
-        TaskDef task = new TaskDef()
-        task.name = "task_rt"
-        task.timeoutSeconds = 120
-        task.retryCount = RETRY_COUNT
-        task.retryDelaySeconds = 0
-        task.responseTimeoutSeconds = 10
-        metadataService.registerTaskDef([task])
+        //This taskWithResponseTimeOut is required by the integration test which exercises the response time out scenarios
+        TaskDef taskWithResponseTimeOut = new TaskDef()
+        taskWithResponseTimeOut.name = "task_rt"
+        taskWithResponseTimeOut.timeoutSeconds = 120
+        taskWithResponseTimeOut.retryCount = RETRY_COUNT
+        taskWithResponseTimeOut.retryDelaySeconds = 0
+        taskWithResponseTimeOut.responseTimeoutSeconds = 10
+
+        TaskDef optionalTask = new TaskDef()
+        optionalTask.setName("task_optional")
+        optionalTask.setTimeoutSeconds(5)
+        optionalTask.setRetryCount(1)
+        optionalTask.setTimeoutPolicy(TaskDef.TimeoutPolicy.RETRY)
+        optionalTask.setRetryDelaySeconds(0)
+
+        metadataService.registerTaskDef([taskWithResponseTimeOut, optionalTask])
     }
 
     /**
@@ -89,7 +97,7 @@ class WorkflowTestUtil {
      * By invoking this method all the running workflows are terminated.
      * @throws Exception When unable to terminate any running workflow
      */
-    def void clearWorkflows() throws Exception {
+    void clearWorkflows() throws Exception {
         List<String> workflowsWithVersion = metadataService.getWorkflowDefs()
                 .collect { workflowDef -> workflowDef.getName() + ":" + workflowDef.getVersion() }
         for (String workflowWithVersion : workflowsWithVersion) {
@@ -107,7 +115,7 @@ class WorkflowTestUtil {
         queueDAO.queuesDetail().keySet()
                 .forEach { queueDAO.flush(it) }
 
-        new FileOutputStream(this.getClass().getResource(TEMP_FILE_PATH).getPath()).close();
+        new FileOutputStream(this.getClass().getResource(TEMP_FILE_PATH).getPath()).close()
     }
 
     /**
@@ -115,7 +123,7 @@ class WorkflowTestUtil {
      * @param taskDefName The name of the task for which the task definition is requested
      * @return an Optional of the TaskDefinition
      */
-    def Optional<TaskDef> getPersistedTaskDefinition(String taskDefName) {
+    Optional<TaskDef> getPersistedTaskDefinition(String taskDefName) {
         try {
             return Optional.of(metadataService.getTaskDef(taskDefName))
         } catch (ApplicationException applicationException) {
@@ -131,7 +139,7 @@ class WorkflowTestUtil {
      * A helper methods that registers that workflows based on the paths of the json file representing a workflow definition
      * @param workflowJsonPaths a comma separated var ags of the paths of the workflow definitions
      */
-    def void registerWorkflows(String... workflowJsonPaths) {
+    void registerWorkflows(String... workflowJsonPaths) {
         workflowJsonPaths.collect { JsonUtils.fromJson(it, WorkflowDef.class) }
                 .forEach { metadataService.updateWorkflowDef(it) }
     }
@@ -146,7 +154,7 @@ class WorkflowTestUtil {
      * @param waitAtEndSeconds an optional delay before the method returns, if the value is 0 skips the delay
      * @return A Tuple of polledTask and acknowledgement of the poll
      */
-    def Tuple pollAndFailTask(String taskName, String workerId, String failureReason, int waitAtEndSeconds) {
+    Tuple pollAndFailTask(String taskName, String workerId, String failureReason, int waitAtEndSeconds) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
         def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
         polledIntegrationTask.status = Task.Status.FAILED
@@ -163,7 +171,7 @@ class WorkflowTestUtil {
      * @param ackPolledIntegrationTask a acknowledgement of a poll
      * @return A Tuple of polledTask and acknowledgement of the poll
      */
-    static def Tuple waitAtEndSecondsAndReturn(int waitAtEndSeconds, Task polledIntegrationTask, boolean ackPolledIntegrationTask) {
+    static Tuple waitAtEndSecondsAndReturn(int waitAtEndSeconds, Task polledIntegrationTask, boolean ackPolledIntegrationTask) {
         if (waitAtEndSeconds > 0) {
             Thread.sleep(waitAtEndSeconds * 1000)
         }
@@ -180,7 +188,7 @@ class WorkflowTestUtil {
      * @param waitAtEndSeconds waitAtEndSeconds an optional delay before the method returns, if the value is 0 skips the delay
      * @return A Tuple of polledTask and acknowledgement of the poll
      */
-    def Tuple pollAndCompleteTask(String taskName, String workerId, Map<String, String> outputParams, int waitAtEndSeconds) {
+    Tuple pollAndCompleteTask(String taskName, String workerId, Map<String, String> outputParams, int waitAtEndSeconds) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
         def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
         polledIntegrationTask.status = Task.Status.COMPLETED
@@ -199,7 +207,7 @@ class WorkflowTestUtil {
      * @param expectedTaskInputParams a map of input params that are verified against the polledTask that is part of the completedTaskAndAck tuple
      * @param completedTaskAndAck A Tuple of polledTask and acknowledgement of the poll
      */
-    static def void verifyPolledAndAcknowledgedTask(Map<String, String> expectedTaskInputParams, Tuple completedTaskAndAck) {
+    static void verifyPolledAndAcknowledgedTask(Map<String, String> expectedTaskInputParams, Tuple completedTaskAndAck) {
         assert completedTaskAndAck[0] : "The task polled cannot be null"
         def polledIntegrationTask = completedTaskAndAck[0] as Task
         def ackPolledIntegrationTask = completedTaskAndAck[1] as boolean

@@ -39,6 +39,7 @@ dependencies {
     testCompile "com.google.inject.extensions:guice-servlet:${revGuiceServlet}"
     testCompile "io.swagger:swagger-jersey-jaxrs:${revSwaggerJersey}"
     testCompile "org.awaitility:awaitility:${revAwaitility}"
+
     testCompile "org.codehaus.groovy:groovy-all:${revGroovy}"
     testCompile "org.spockframework:spock-core:${revSpock}"
     testCompile 'com.netflix.governator:governator-test-spock:latest.release'
