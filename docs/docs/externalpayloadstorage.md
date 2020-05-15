@@ -29,6 +29,7 @@ In such cases, conductor will reject such payloads and will terminate/fail the w
 Set the following properties to the desired values in the JVM system properties:
 
 | Property | Description | default value |
+| -- | -- | -- |
 | conductor.workflow.input.payload.threshold.kb | Soft barrier for workflow input payload in KB | 5120 |
 | conductor.max.workflow.input.payload.threshold.kb | Hard barrier for workflow input payload in KB | 10240 |
 | conductor.workflow.output.payload.threshold.kb | Soft barrier for workflow output payload in KB | 5120 |
