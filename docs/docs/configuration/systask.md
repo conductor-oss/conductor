@@ -194,12 +194,12 @@ Sub Workflow task allows for nesting a workflow within another workflow.
 | subWorkflowParam | Map[String, Any] | See below |
 
 **subWorkflowParam**
+
 |name|type|description|
 |---|---|---|
 | name | String | Name of the workflow to execute |
 | version | Integer | Version of the workflow to execute |
 | taskToDomain | Map[String, String] | Allows scheduling the sub workflow's tasks per given mappings. See [Task Domains](configuration/taskdomains/) for instructions to configure taskDomains. | 
-| workflowInput | Map[String, Any] | Input to pass to the workflow as inputParameters. If empty or null, the inputParameters of the sub_workflow task is passed to the subworkflow directly. |
 
 **Outputs:**
 
