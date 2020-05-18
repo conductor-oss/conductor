@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * @author Viren
@@ -126,5 +127,20 @@ public class SubWorkflowParams {
     @JsonSetter("workflowDefinition")
     public void setWorkflowDef(WorkflowDef workflowDef) {
         this.workflowDefinition = workflowDef;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        SubWorkflowParams that = (SubWorkflowParams) o;
+        return Objects.equals(getName(), that.getName()) &&
+            Objects.equals(getVersion(), that.getVersion()) &&
+            Objects.equals(getTaskToDomain(), that.getTaskToDomain()) &&
+            Objects.equals(getWorkflowDefinition(), that.getWorkflowDefinition());
     }
 }

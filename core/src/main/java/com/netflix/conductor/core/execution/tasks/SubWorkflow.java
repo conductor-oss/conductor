@@ -39,8 +39,9 @@ import java.util.Map;
 public class SubWorkflow extends WorkflowSystemTask {
 
 	private static final Logger logger = LoggerFactory.getLogger(SubWorkflow.class);
+	private static final String SUB_WORKFLOW_ID = "subWorkflowId";
+
 	public static final String NAME = "SUB_WORKFLOW";
-	public static final String SUB_WORKFLOW_ID = "subWorkflowId";
 
 	private final ObjectMapper objectMapper;
 
@@ -108,7 +109,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 
 			task.setSubWorkflowId(subWorkflowId);
 			// For backwards compatibility
-			task.getOutputData().put("subWorkflowId", subWorkflowId);
+			task.getOutputData().put(SUB_WORKFLOW_ID, subWorkflowId);
 
 			// Set task status based on current sub-workflow status, as the status can change in recursion by the time we update here.
 			Workflow subWorkflow = provider.getWorkflow(subWorkflowId, false);
