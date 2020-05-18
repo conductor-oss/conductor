@@ -37,23 +37,6 @@ gulp.task('clean', cb => {
   rimraf('dist', cb);
 });
 
-gulp.task('browserSync', ['serve'], () => {
-  const bundler = webpack(config[0]);
-  browserSync({
-    proxy: {
-      target: 'localhost:5000',
-      middleware: [
-        webpackDevMiddleware(bundler, {
-          publicPath: '/',
-          stats: config[0].stats
-        }),
-        webpackHotMiddleware(bundler)
-      ]
-    },
-    files: ['dist/public/**/*.css', 'dist/public/**/*.html']
-  });
-});
-
 const webpackConfig = {};
 
 gulp.task('serve', done => {
@@ -94,6 +77,29 @@ gulp.task('serve', done => {
   bundler.watch(200, bundle);
 });
 
+gulp.task(
+  'browserSync',
+  gulp.series(gulp.parallel('serve'), cb => {
+    const bundler = webpack(config[0]);
+    browserSync(
+      {
+        proxy: {
+          target: 'localhost:5000',
+          middleware: [
+            webpackDevMiddleware(bundler, {
+              publicPath: '/',
+              stats: config[0].stats
+            }),
+            webpackHotMiddleware(bundler)
+          ]
+        },
+        files: ['dist/public/**/*.css', 'dist/public/**/*.html']
+      },
+      cb
+    );
+  })
+);
+
 gulp.task('server-bundle', done => {
   webpack(config, (err, stats) => {
     // eslint-disable-next-line no-undef
@@ -108,7 +114,7 @@ gulp.task('server-bundle', done => {
 });
 
 gulp.task('styles', () => {
-  gulp
+  return gulp
     .src(paths.srcCss)
     .pipe(sourcemaps.init())
     .pipe(postcss([vars, extend, nested, autoprefixer, cssnano]))
@@ -122,39 +128,34 @@ gulp.task('public', () => {
 });
 
 gulp.task('fonts', () => {
-  gulp.src(paths.srcFonts).pipe(gulp.dest(`${paths.dist}/fonts`));
+  return gulp.src(paths.srcFonts).pipe(gulp.dest(`${paths.dist}/fonts`));
 });
 
 gulp.task('images', () => {
-  gulp.src(paths.srcImg).pipe(gulp.dest(`${paths.dist}/images`));
+  return gulp.src(paths.srcImg).pipe(gulp.dest(`${paths.dist}/images`));
 });
 
 // There are too many linting error. this needs to be disabled
 // for now. It is causing watch to fail.
 // After we fix all of the linting errors, we can enable it.
 gulp.task('lint', () => {
-  gulp
+  return gulp
     .src(paths.srcLint)
     .pipe(eslint())
     .pipe(eslint.format());
 });
 
 gulp.task('watchTask', () => {
-  gulp.watch(paths.srcFonts, ['fonts']);
-  gulp.watch(paths.srcCss, ['styles']);
-  gulp.watch(paths.srcPublic, ['public']);
+  gulp.watch(paths.srcFonts, gulp.series('fonts'));
+  gulp.watch(paths.srcCss, gulp.series('styles'));
+  gulp.watch(paths.srcPublic, gulp.series('public'));
   paths.srcLint.forEach(src => {
-    gulp.watch(src, ['lint']);
+    gulp.watch(src, gulp.series('lint'));
   });
 });
-
 gulp.task('deploy', () => gulp.src(paths.distDeploy).pipe(ghPages()));
 
-gulp.task('watch', cb => {
-  runSequence('clean', ['set-env', 'browserSync', 'watchTask', 'public', 'styles', 'fonts', 'images'], cb);
-});
-
-gulp.task('set-env', () => {
+gulp.task('set-env', done => {
   // Only use localhost if WF_SERVER is not set
   const wfServer = process.env.WF_SERVER || 'http://localhost:8080/api/';
   env({
@@ -162,9 +163,12 @@ gulp.task('set-env', () => {
       WF_SERVER: wfServer
     }
   });
+  done();
 });
 
-gulp.task('build', cb => {
-  process.env.DEBUG = false;
-  runSequence('clean', ['server-bundle', 'styles', 'fonts', 'public', 'images'], cb);
-});
+gulp.task(
+  'watch',
+  gulp.series('clean', gulp.parallel('set-env', 'browserSync', 'watchTask', 'public', 'styles', 'fonts', 'images'))
+);
+
+gulp.task('build', gulp.series('clean', gulp.parallel('server-bundle', 'styles', 'fonts', 'public', 'images')));
