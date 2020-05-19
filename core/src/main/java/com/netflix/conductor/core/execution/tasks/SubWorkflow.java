@@ -17,6 +17,8 @@ package com.netflix.conductor.core.execution.tasks;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -43,18 +45,18 @@ public class SubWorkflow extends WorkflowSystemTask {
 
 	public static final String NAME = "SUB_WORKFLOW";
 
-	private final ObjectMapper objectMapper;
+	private final Supplier<ObjectMapper> objectMapperSupplier;
 
 	@VisibleForTesting
-	SubWorkflow() {
+	public SubWorkflow() {
 		super(NAME);
-		this.objectMapper = new JsonMapperProvider().get();
+		this.objectMapperSupplier = Suppliers.memoize(() -> new JsonMapperProvider().get());
 	}
 
 	@Inject
 	public SubWorkflow(ObjectMapper objectMapper) {
 		super(NAME);
-		this.objectMapper = objectMapper;
+		this.objectMapperSupplier =  Suppliers.memoize(() -> objectMapper);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -68,7 +70,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 		WorkflowDef workflowDefinition = null;
 		if (input.get("subWorkflowDefinition") != null) {
 			// convert the value back to workflow definition object
-			workflowDefinition = objectMapper.convertValue(input.get("subWorkflowDefinition"), WorkflowDef.class);
+			workflowDefinition = objectMapperSupplier.get().convertValue(input.get("subWorkflowDefinition"), WorkflowDef.class);
 		}
 
 		Map taskToDomain = workflow.getTaskToDomain();
