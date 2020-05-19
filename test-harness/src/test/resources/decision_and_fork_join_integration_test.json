@@ -1,0 +1,145 @@
+{
+  "name" : "ForkConditionalTest",
+  "description" : "ForkConditionalTest",
+  "version" : 1,
+  "tasks" : [ {
+    "name" : "forkTask",
+    "taskReferenceName" : "forkTask",
+    "inputParameters" : { },
+    "type" : "FORK_JOIN",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ [ {
+      "name" : "decisionTask",
+      "taskReferenceName" : "decisionTask",
+      "inputParameters" : {
+        "case" : "${workflow.input.case}"
+      },
+      "type" : "DECISION",
+      "caseValueParam" : "case",
+      "decisionCases" : {
+        "c" : [ {
+          "name" : "integration_task_1",
+          "taskReferenceName" : "t1",
+          "inputParameters" : {
+            "p1" : "${workflow.input.param1}",
+            "p2" : "${workflow.input.param2}"
+          },
+          "type" : "SIMPLE",
+          "decisionCases" : { },
+          "defaultCase" : [ ],
+          "forkTasks" : [ ],
+          "startDelay" : 0,
+          "joinOn" : [ ],
+          "optional" : false,
+          "defaultExclusiveJoinTask" : [ ],
+          "asyncComplete" : false,
+          "loopOver" : [ ]
+        }, {
+          "name" : "integration_task_2",
+          "taskReferenceName" : "t2",
+          "inputParameters" : {
+            "p1" : "${workflow.input.param1}",
+            "p2" : "${workflow.input.param2}"
+          },
+          "type" : "SIMPLE",
+          "decisionCases" : { },
+          "defaultCase" : [ ],
+          "forkTasks" : [ ],
+          "startDelay" : 0,
+          "joinOn" : [ ],
+          "optional" : false,
+          "defaultExclusiveJoinTask" : [ ],
+          "asyncComplete" : false,
+          "loopOver" : [ ]
+        } ]
+      },
+      "defaultCase" : [ {
+        "name" : "integration_task_5",
+        "taskReferenceName" : "t5",
+        "inputParameters" : {
+          "p1" : "${workflow.input.param1}",
+          "p2" : "${workflow.input.param2}"
+        },
+        "type" : "SIMPLE",
+        "decisionCases" : { },
+        "defaultCase" : [ ],
+        "forkTasks" : [ ],
+        "startDelay" : 0,
+        "joinOn" : [ ],
+        "optional" : false,
+        "defaultExclusiveJoinTask" : [ ],
+        "asyncComplete" : false,
+        "loopOver" : [ ]
+      } ],
+      "forkTasks" : [ ],
+      "startDelay" : 0,
+      "joinOn" : [ ],
+      "optional" : false,
+      "defaultExclusiveJoinTask" : [ ],
+      "asyncComplete" : false,
+      "loopOver" : [ ]
+    }, {
+      "name" : "integration_task_20",
+      "taskReferenceName" : "t20",
+      "inputParameters" : {
+        "p1" : "${workflow.input.param1}",
+        "p2" : "${workflow.input.param2}"
+      },
+      "type" : "SIMPLE",
+      "decisionCases" : { },
+      "defaultCase" : [ ],
+      "forkTasks" : [ ],
+      "startDelay" : 0,
+      "joinOn" : [ ],
+      "optional" : false,
+      "defaultExclusiveJoinTask" : [ ],
+      "asyncComplete" : false,
+      "loopOver" : [ ]
+    } ], [ {
+      "name" : "integration_task_10",
+      "taskReferenceName" : "t10",
+      "inputParameters" : {
+        "p1" : "${workflow.input.param1}",
+        "p2" : "${workflow.input.param2}"
+      },
+      "type" : "SIMPLE",
+      "decisionCases" : { },
+      "defaultCase" : [ ],
+      "forkTasks" : [ ],
+      "startDelay" : 0,
+      "joinOn" : [ ],
+      "optional" : false,
+      "defaultExclusiveJoinTask" : [ ],
+      "asyncComplete" : false,
+      "loopOver" : [ ]
+    } ] ],
+    "startDelay" : 0,
+    "joinOn" : [ ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  }, {
+    "name" : "joinTask",
+    "taskReferenceName" : "joinTask",
+    "inputParameters" : { },
+    "type" : "JOIN",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ ],
+    "startDelay" : 0,
+    "joinOn" : [ "t20", "t10" ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  } ],
+  "inputParameters" : [ ],
+  "outputParameters" : { },
+  "schemaVersion" : 2,
+  "restartable" : true,
+  "workflowStatusListenerEnabled" : false,
+  "timeoutPolicy" : "ALERT_ONLY",
+  "timeoutSeconds" : 0
+}
