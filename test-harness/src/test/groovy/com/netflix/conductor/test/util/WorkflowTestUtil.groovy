@@ -88,7 +88,11 @@ class WorkflowTestUtil {
         optionalTask.setTimeoutPolicy(TaskDef.TimeoutPolicy.RETRY)
         optionalTask.setRetryDelaySeconds(0)
 
-        metadataService.registerTaskDef([taskWithResponseTimeOut, optionalTask])
+        TaskDef simpleSubWorkflowTask = new TaskDef()
+        simpleSubWorkflowTask.setName('simple_task_in_sub_wf')
+        simpleSubWorkflowTask.setRetryCount(0)
+
+        metadataService.registerTaskDef([taskWithResponseTimeOut, optionalTask, simpleSubWorkflowTask])
     }
 
     /**

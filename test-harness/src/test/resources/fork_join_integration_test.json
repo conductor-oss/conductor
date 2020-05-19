@@ -1,0 +1,105 @@
+{
+  "name" : "FanInOutTest",
+  "description" : "FanInOutTest",
+  "version" : 1,
+  "tasks" : [ {
+    "taskReferenceName" : "fanouttask",
+    "inputParameters" : { },
+    "type" : "FORK_JOIN",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ [ {
+      "name" : "integration_task_1",
+      "taskReferenceName" : "t1",
+      "inputParameters" : {
+        "p1" : "workflow.input.param1",
+        "p2" : "workflow.input.param2"
+      },
+      "type" : "SIMPLE",
+      "decisionCases" : { },
+      "defaultCase" : [ ],
+      "forkTasks" : [ ],
+      "startDelay" : 0,
+      "joinOn" : [ ],
+      "optional" : false,
+      "defaultExclusiveJoinTask" : [ ],
+      "asyncComplete" : false,
+      "loopOver" : [ ]
+    }, {
+      "name" : "integration_task_3",
+      "taskReferenceName" : "t3",
+      "inputParameters" : {
+        "p1" : "workflow.input.param1",
+        "p2" : "workflow.input.param2"
+      },
+      "type" : "SIMPLE",
+      "decisionCases" : { },
+      "defaultCase" : [ ],
+      "forkTasks" : [ ],
+      "startDelay" : 0,
+      "joinOn" : [ ],
+      "optional" : false,
+      "defaultExclusiveJoinTask" : [ ],
+      "asyncComplete" : false,
+      "loopOver" : [ ]
+    } ], [ {
+      "name" : "integration_task_2",
+      "taskReferenceName" : "t2",
+      "inputParameters" : {
+        "tp1" : "workflow.input.param1"
+      },
+      "type" : "SIMPLE",
+      "decisionCases" : { },
+      "defaultCase" : [ ],
+      "forkTasks" : [ ],
+      "startDelay" : 0,
+      "joinOn" : [ ],
+      "optional" : false,
+      "defaultExclusiveJoinTask" : [ ],
+      "asyncComplete" : false,
+      "loopOver" : [ ]
+    } ] ],
+    "startDelay" : 0,
+    "joinOn" : [ ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  }, {
+    "taskReferenceName" : "fanouttask_join",
+    "inputParameters" : { },
+    "type" : "JOIN",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ ],
+    "startDelay" : 0,
+    "joinOn" : [ "t3", "t2" ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  }, {
+    "name" : "integration_task_4",
+    "taskReferenceName" : "t4",
+    "inputParameters" : {
+      "tp1" : "workflow.input.param1"
+    },
+    "type" : "SIMPLE",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ ],
+    "startDelay" : 0,
+    "joinOn" : [ ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  } ],
+  "inputParameters" : [ "param1", "param2" ],
+  "outputParameters" : { },
+  "schemaVersion" : 2,
+  "restartable" : true,
+  "workflowStatusListenerEnabled" : false,
+  "timeoutPolicy" : "ALERT_ONLY",
+  "timeoutSeconds" : 0
+}

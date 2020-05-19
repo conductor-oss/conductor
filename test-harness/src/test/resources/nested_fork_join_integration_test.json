@@ -1,0 +1,304 @@
+{
+  "name" : "FanInOutNestedTest",
+  "description" : "FanInOutNestedTest",
+  "version" : 1,
+  "tasks" : [ {
+    "taskReferenceName" : "fork1",
+    "inputParameters" : { },
+    "type" : "FORK_JOIN",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ [ {
+      "name" : "integration_task_11",
+      "taskReferenceName" : "t11",
+      "inputParameters" : {
+        "p1" : "${workflow.input.param1}",
+        "p2" : "${workflow.input.param2}",
+        "case" : "${workflow.input.case}"
+      },
+      "type" : "SIMPLE",
+      "decisionCases" : { },
+      "defaultCase" : [ ],
+      "forkTasks" : [ ],
+      "startDelay" : 0,
+      "joinOn" : [ ],
+      "optional" : false,
+      "defaultExclusiveJoinTask" : [ ],
+      "asyncComplete" : false,
+      "loopOver" : [ ]
+    } ], [ {
+      "name" : "fork2",
+      "taskReferenceName" : "fork2",
+      "inputParameters" : { },
+      "type" : "FORK_JOIN",
+      "decisionCases" : { },
+      "defaultCase" : [ ],
+      "forkTasks" : [ [ {
+        "name" : "integration_task_12",
+        "taskReferenceName" : "t12",
+        "inputParameters" : {
+          "p1" : "${workflow.input.param1}",
+          "p2" : "${workflow.input.param2}",
+          "case" : "${workflow.input.case}"
+        },
+        "type" : "SIMPLE",
+        "decisionCases" : { },
+        "defaultCase" : [ ],
+        "forkTasks" : [ ],
+        "startDelay" : 0,
+        "joinOn" : [ ],
+        "optional" : false,
+        "defaultExclusiveJoinTask" : [ ],
+        "asyncComplete" : false,
+        "loopOver" : [ ]
+      }, {
+        "name" : "integration_task_14",
+        "taskReferenceName" : "t14",
+        "inputParameters" : {
+          "p1" : "${workflow.input.param1}",
+          "p2" : "${workflow.input.param2}",
+          "case" : "${workflow.input.case}"
+        },
+        "type" : "SIMPLE",
+        "decisionCases" : { },
+        "defaultCase" : [ ],
+        "forkTasks" : [ ],
+        "startDelay" : 0,
+        "joinOn" : [ ],
+        "optional" : false,
+        "defaultExclusiveJoinTask" : [ ],
+        "asyncComplete" : false,
+        "loopOver" : [ ]
+      } ], [ {
+        "name" : "integration_task_13",
+        "taskReferenceName" : "t13",
+        "inputParameters" : {
+          "p1" : "${workflow.input.param1}",
+          "p2" : "${workflow.input.param2}",
+          "case" : "${workflow.input.case}"
+        },
+        "type" : "SIMPLE",
+        "decisionCases" : { },
+        "defaultCase" : [ ],
+        "forkTasks" : [ ],
+        "startDelay" : 0,
+        "joinOn" : [ ],
+        "optional" : false,
+        "defaultExclusiveJoinTask" : [ ],
+        "asyncComplete" : false,
+        "loopOver" : [ ]
+      }, {
+        "name" : "Decision",
+        "taskReferenceName" : "d1",
+        "inputParameters" : {
+          "p1" : "${workflow.input.param1}",
+          "p2" : "${workflow.input.param2}",
+          "case" : "${workflow.input.case}"
+        },
+        "type" : "DECISION",
+        "caseValueParam" : "case",
+        "decisionCases" : {
+          "a" : [ {
+            "name" : "integration_task_16",
+            "taskReferenceName" : "t16",
+            "inputParameters" : {
+              "p1" : "${workflow.input.param1}",
+              "p2" : "${workflow.input.param2}",
+              "case" : "${workflow.input.case}"
+            },
+            "type" : "SIMPLE",
+            "decisionCases" : { },
+            "defaultCase" : [ ],
+            "forkTasks" : [ ],
+            "startDelay" : 0,
+            "joinOn" : [ ],
+            "optional" : false,
+            "defaultExclusiveJoinTask" : [ ],
+            "asyncComplete" : false,
+            "loopOver" : [ ]
+          }, {
+            "name" : "integration_task_19",
+            "taskReferenceName" : "t19",
+            "inputParameters" : {
+              "p1" : "${workflow.input.param1}",
+              "p2" : "${workflow.input.param2}",
+              "case" : "${workflow.input.case}"
+            },
+            "type" : "SIMPLE",
+            "decisionCases" : { },
+            "defaultCase" : [ ],
+            "forkTasks" : [ ],
+            "startDelay" : 0,
+            "joinOn" : [ ],
+            "optional" : false,
+            "defaultExclusiveJoinTask" : [ ],
+            "asyncComplete" : false,
+            "loopOver" : [ ]
+          }, {
+            "name" : "integration_task_20",
+            "taskReferenceName" : "t20",
+            "inputParameters" : {
+              "p1" : "${workflow.input.param1}",
+              "p2" : "${workflow.input.param2}",
+              "case" : "${workflow.input.case}"
+            },
+            "type" : "SIMPLE",
+            "decisionCases" : { },
+            "defaultCase" : [ ],
+            "forkTasks" : [ ],
+            "startDelay" : 0,
+            "joinOn" : [ ],
+            "optional" : false,
+            "defaultExclusiveJoinTask" : [ ],
+            "asyncComplete" : false,
+            "loopOver" : [ ]
+          } ],
+          "b" : [ {
+            "name" : "integration_task_17",
+            "taskReferenceName" : "t17",
+            "inputParameters" : {
+              "p1" : "${workflow.input.param1}",
+              "p2" : "${workflow.input.param2}",
+              "case" : "${workflow.input.case}"
+            },
+            "type" : "SIMPLE",
+            "decisionCases" : { },
+            "defaultCase" : [ ],
+            "forkTasks" : [ ],
+            "startDelay" : 0,
+            "joinOn" : [ ],
+            "optional" : false,
+            "defaultExclusiveJoinTask" : [ ],
+            "asyncComplete" : false,
+            "loopOver" : [ ]
+          }, {
+            "name" : "integration_task_20",
+            "taskReferenceName" : "t20",
+            "inputParameters" : {
+              "p1" : "${workflow.input.param1}",
+              "p2" : "${workflow.input.param2}",
+              "case" : "${workflow.input.case}"
+            },
+            "type" : "SIMPLE",
+            "decisionCases" : { },
+            "defaultCase" : [ ],
+            "forkTasks" : [ ],
+            "startDelay" : 0,
+            "joinOn" : [ ],
+            "optional" : false,
+            "defaultExclusiveJoinTask" : [ ],
+            "asyncComplete" : false,
+            "loopOver" : [ ]
+          } ]
+        },
+        "defaultCase" : [ {
+          "name" : "integration_task_18",
+          "taskReferenceName" : "t18",
+          "inputParameters" : {
+            "p1" : "${workflow.input.param1}",
+            "p2" : "${workflow.input.param2}",
+            "case" : "${workflow.input.case}"
+          },
+          "type" : "SIMPLE",
+          "decisionCases" : { },
+          "defaultCase" : [ ],
+          "forkTasks" : [ ],
+          "startDelay" : 0,
+          "joinOn" : [ ],
+          "optional" : false,
+          "defaultExclusiveJoinTask" : [ ],
+          "asyncComplete" : false,
+          "loopOver" : [ ]
+        }, {
+          "name" : "integration_task_20",
+          "taskReferenceName" : "t20",
+          "inputParameters" : {
+            "p1" : "${workflow.input.param1}",
+            "p2" : "${workflow.input.param2}",
+            "case" : "${workflow.input.case}"
+          },
+          "type" : "SIMPLE",
+          "decisionCases" : { },
+          "defaultCase" : [ ],
+          "forkTasks" : [ ],
+          "startDelay" : 0,
+          "joinOn" : [ ],
+          "optional" : false,
+          "defaultExclusiveJoinTask" : [ ],
+          "asyncComplete" : false,
+          "loopOver" : [ ]
+        } ],
+        "forkTasks" : [ ],
+        "startDelay" : 0,
+        "joinOn" : [ ],
+        "optional" : false,
+        "defaultExclusiveJoinTask" : [ ],
+        "asyncComplete" : false,
+        "loopOver" : [ ]
+      } ] ],
+      "startDelay" : 0,
+      "joinOn" : [ ],
+      "optional" : false,
+      "defaultExclusiveJoinTask" : [ ],
+      "asyncComplete" : false,
+      "loopOver" : [ ]
+    }, {
+      "taskReferenceName" : "join2",
+      "inputParameters" : { },
+      "type" : "JOIN",
+      "decisionCases" : { },
+      "defaultCase" : [ ],
+      "forkTasks" : [ ],
+      "startDelay" : 0,
+      "joinOn" : [ "t14", "t20" ],
+      "optional" : false,
+      "defaultExclusiveJoinTask" : [ ],
+      "asyncComplete" : false,
+      "loopOver" : [ ]
+    } ] ],
+    "startDelay" : 0,
+    "joinOn" : [ ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  }, {
+    "taskReferenceName" : "join1",
+    "inputParameters" : { },
+    "type" : "JOIN",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ ],
+    "startDelay" : 0,
+    "joinOn" : [ "t11", "join2" ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  }, {
+    "name" : "integration_task_15",
+    "taskReferenceName" : "t15",
+    "inputParameters" : {
+      "p1" : "${workflow.input.param1}",
+      "p2" : "${workflow.input.param2}",
+      "case" : "${workflow.input.case}"
+    },
+    "type" : "SIMPLE",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ ],
+    "startDelay" : 0,
+    "joinOn" : [ ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  } ],
+  "inputParameters" : [ "param1", "param2" ],
+  "outputParameters" : { },
+  "schemaVersion" : 2,
+  "restartable" : true,
+  "workflowStatusListenerEnabled" : false,
+  "timeoutPolicy" : "ALERT_ONLY",
+  "timeoutSeconds" : 0
+}

@@ -1,0 +1,27 @@
+{
+  "name" : "sub_workflow",
+  "description" : "sub_workflow",
+  "version" : 1,
+  "tasks" : [ {
+    "name" : "simple_task_in_sub_wf",
+    "taskReferenceName" : "t1",
+    "inputParameters" : { },
+    "type" : "SIMPLE",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ ],
+    "startDelay" : 0,
+    "joinOn" : [ ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  } ],
+  "inputParameters" : [ ],
+  "outputParameters" : { },
+  "schemaVersion" : 2,
+  "restartable" : true,
+  "workflowStatusListenerEnabled" : false,
+  "timeoutPolicy" : "ALERT_ONLY",
+  "timeoutSeconds" : 0
+}
