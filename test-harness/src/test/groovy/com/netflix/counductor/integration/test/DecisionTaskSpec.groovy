@@ -1,7 +1,22 @@
+/**
+ * Copyright 2020 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package com.netflix.counductor.integration.test
 
 
-import com.netflix.archaius.guice.ArchaiusModule
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.WorkflowExecutor
@@ -18,7 +33,7 @@ import javax.inject.Inject
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
-@ModulesForTesting([TestModule.class, ArchaiusModule.class])
+@ModulesForTesting([TestModule.class])
 class DecisionTaskSpec extends Specification {
 
     @Inject
@@ -79,7 +94,7 @@ class DecisionTaskSpec extends Specification {
         when: "the task 'integration_task_1' is polled and completed"
         def polledAndCompletedTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', null, 0)
 
-        then:"verify that the task is completed and acknowledged"
+        then: "verify that the task is completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask1Try1)
 
         and: "verify that the 'integration_task_1' is COMPLETED and the workflow has progressed"
@@ -95,7 +110,7 @@ class DecisionTaskSpec extends Specification {
         when: "the task 'integration_task_2' is polled and completed"
         def polledAndCompletedTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.integration.worker', null, 0)
 
-        then:"verify that the task is completed and acknowledged"
+        then: "verify that the task is completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask2Try1)
 
         and: "verify that the 'integration_task_2' is COMPLETED and the workflow has progressed"
@@ -111,7 +126,7 @@ class DecisionTaskSpec extends Specification {
         when: "the task 'integration_task_20' is polled and completed"
         def polledAndCompletedTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task1.integration.worker', null, 0)
 
-        then:"verify that the task is completed and acknowledged"
+        then: "verify that the task is completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask20Try1)
 
         and: "verify that the 'integration_task_20' is COMPLETED and the workflow has progressed"
@@ -155,7 +170,7 @@ class DecisionTaskSpec extends Specification {
         def polledAndCompletedTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', null, 0)
         def polledAndCompletedTask10Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_10', 'task1.integration.worker', null, 0)
 
-        then:"verify that the tasks are completed and acknowledged"
+        then: "verify that the tasks are completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask1Try1)
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask10Try1)
 
@@ -177,7 +192,7 @@ class DecisionTaskSpec extends Specification {
         when: "the task 'integration_task_2' is polled and completed"
         def polledAndCompletedTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.integration.worker', null, 0)
 
-        then:"verify that the task is completed and acknowledged"
+        then: "verify that the task is completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask2Try1)
 
         and: "verify that the 'integration_task_2' is COMPLETED and the workflow has progressed"
@@ -196,7 +211,7 @@ class DecisionTaskSpec extends Specification {
         when: "the task 'integration_task_20' is polled and completed"
         def polledAndCompletedTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task1.integration.worker', null, 0)
 
-        then:"verify that the task is completed and acknowledged"
+        then: "verify that the task is completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask20Try1)
 
         and: "verify that the 'integration_task_2' is COMPLETED and the workflow has progressed"
@@ -222,7 +237,7 @@ class DecisionTaskSpec extends Specification {
                 'conditional_default', input,
                 null, null, null)
 
-        then:"verify that the workflow is running and the default condition case was executed"
+        then: "verify that the workflow is running and the default condition case was executed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2
@@ -236,10 +251,10 @@ class DecisionTaskSpec extends Specification {
         when: "the task 'integration_task_10' is polled and completed"
         def polledAndCompletedTask10Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_10', 'task1.integration.worker', null, 0)
 
-        then:"verify that the tasks are completed and acknowledged"
+        then: "verify that the tasks are completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask10Try1)
 
-        and:"verify that the workflow is in a completed state"
+        and: "verify that the workflow is in a completed state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 3
@@ -263,7 +278,7 @@ class DecisionTaskSpec extends Specification {
                 workflowCorrelationId, input,
                 null, null, null)
 
-        then:"verify that the workflow is running and the 'nested' and '#caseValue' condition case was executed"
+        then: "verify that the workflow is running and the 'nested' and '#caseValue' condition case was executed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 3
@@ -280,7 +295,7 @@ class DecisionTaskSpec extends Specification {
         when: "the task '#expectedTaskName' is polled and completed"
         def polledAndCompletedTaskTry1 = workflowTestUtil.pollAndCompleteTask(expectedTaskName, 'task.integration.worker', null, 0)
 
-        then:"verify that the tasks are completed and acknowledged"
+        then: "verify that the tasks are completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTaskTry1)
 
         and:
@@ -295,9 +310,9 @@ class DecisionTaskSpec extends Specification {
         }
 
         where:
-        caseValue | expectedTaskName       | workflowCorrelationId      || endTaskStatus
-        'two'     | 'integration_task_2'   | 'conditional_nested_two'   || Task.Status.COMPLETED
-        'one'     | 'integration_task_1'   | 'conditional_nested_one'   || Task.Status.COMPLETED
+        caseValue | expectedTaskName     | workflowCorrelationId    || endTaskStatus
+        'two'     | 'integration_task_2' | 'conditional_nested_two' || Task.Status.COMPLETED
+        'one'     | 'integration_task_1' | 'conditional_nested_one' || Task.Status.COMPLETED
     }
 
     def "Test 'three' case condition execution of a conditional workflow"() {
@@ -312,7 +327,7 @@ class DecisionTaskSpec extends Specification {
                 'conditional_three', input,
                 null, null, null)
 
-        then:"verify that the workflow is running and the 'three' condition case was executed"
+        then: "verify that the workflow is running and the 'three' condition case was executed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2
@@ -326,10 +341,10 @@ class DecisionTaskSpec extends Specification {
         when: "the task 'integration_task_3' is polled and completed"
         def polledAndCompletedTask3Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'task1.integration.worker', null, 0)
 
-        then:"verify that the tasks are completed and acknowledged"
+        then: "verify that the tasks are completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask3Try1)
 
-        and:"verify that the workflow is in a running state"
+        and: "verify that the workflow is in a running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -345,10 +360,10 @@ class DecisionTaskSpec extends Specification {
         when: "the task 'integration_task_4' is polled and completed"
         def polledAndCompletedTask4Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_4', 'task1.integration.worker', null, 0)
 
-        then:"verify that the tasks are completed and acknowledged"
+        then: "verify that the tasks are completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask4Try1)
 
-        and:"verify that the workflow is in a completed state"
+        and: "verify that the workflow is in a completed state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 4
