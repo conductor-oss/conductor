@@ -15,18 +15,23 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
+import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.execution.ApplicationException;
-import com.netflix.conductor.core.execution.Code;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import java.util.Optional;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.inject.Inject;
 import java.util.Map;
 
 /**
@@ -36,11 +41,22 @@ import java.util.Map;
 public class SubWorkflow extends WorkflowSystemTask {
 
 	private static final Logger logger = LoggerFactory.getLogger(SubWorkflow.class);
-	public static final String NAME = "SUB_WORKFLOW";
-    public static final String SUB_WORKFLOW_ID = "subWorkflowId";
+	private static final String SUB_WORKFLOW_ID = "subWorkflowId";
 
+	public static final String NAME = "SUB_WORKFLOW";
+
+	private final Supplier<ObjectMapper> objectMapperSupplier;
+
+	@VisibleForTesting
 	public SubWorkflow() {
 		super(NAME);
+		this.objectMapperSupplier = Suppliers.memoize(() -> new JsonMapperProvider().get());
+	}
+
+	@Inject
+	public SubWorkflow(ObjectMapper objectMapper) {
+		super(NAME);
+		this.objectMapperSupplier =  Suppliers.memoize(() -> objectMapper);
 	}
 
 	@SuppressWarnings("unchecked")
@@ -50,6 +66,13 @@ public class SubWorkflow extends WorkflowSystemTask {
 		Map<String, Object> input = task.getInputData();
 		String name = input.get("subWorkflowName").toString();
 		int version = (int) input.get("subWorkflowVersion");
+
+		WorkflowDef workflowDefinition = null;
+		if (input.get("subWorkflowDefinition") != null) {
+			// convert the value back to workflow definition object
+			workflowDefinition = objectMapperSupplier.get().convertValue(input.get("subWorkflowDefinition"), WorkflowDef.class);
+		}
+
 		Map taskToDomain = workflow.getTaskToDomain();
 		if (input.get("subWorkflowTaskToDomain") instanceof Map) {
 			taskToDomain = (Map) input.get("subWorkflowTaskToDomain");
@@ -61,11 +84,34 @@ public class SubWorkflow extends WorkflowSystemTask {
 		String correlationId = workflow.getCorrelationId();
 
 		try {
-			String subWorkflowId = provider.startWorkflow(name, version, wfInput, null, correlationId, workflow.getWorkflowId(), task.getTaskId(), null, taskToDomain);
+			String subWorkflowId = null;
+			if (workflowDefinition != null) {
+				subWorkflowId = provider.startWorkflow(
+						workflowDefinition,
+						wfInput,
+						null,
+						correlationId,
+						0,
+						workflow.getWorkflowId(),
+						task.getTaskId(),
+						null,
+						taskToDomain);
+			} else {
+				subWorkflowId = provider.startWorkflow(
+						name,
+						version,
+						wfInput,
+						null,
+						correlationId,
+						workflow.getWorkflowId(),
+						task.getTaskId(),
+						null,
+						taskToDomain);
+			}
 
-            task.setSubWorkflowId(subWorkflowId);
+			task.setSubWorkflowId(subWorkflowId);
 			// For backwards compatibility
-			task.getOutputData().put("subWorkflowId", subWorkflowId);
+			task.getOutputData().put(SUB_WORKFLOW_ID, subWorkflowId);
 
 			// Set task status based on current sub-workflow status, as the status can change in recursion by the time we update here.
 			Workflow subWorkflow = provider.getWorkflow(subWorkflowId, false);
