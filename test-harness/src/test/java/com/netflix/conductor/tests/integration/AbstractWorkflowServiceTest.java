@@ -1968,7 +1968,6 @@ public abstract class AbstractWorkflowServiceTest {
             loopTask2.getLoopOver().add(http3);
             workflowDef.getTasks().add(loopTask2);
         }
-
         metadataService.registerWorkflowDef(workflowDef);
     }
 

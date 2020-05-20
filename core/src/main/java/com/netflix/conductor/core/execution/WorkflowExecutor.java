@@ -537,7 +537,8 @@ public class WorkflowExecutor {
                     retriableMap.put(task.getReferenceTaskName(), task);
                     break;
                 case CANCELED:
-                    if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString())) {
+                    if (task.getTaskType().equalsIgnoreCase(TaskType.JOIN.toString()) ||
+                        task.getTaskType().equalsIgnoreCase(TaskType.DO_WHILE.toString())) {
                         task.setStatus(IN_PROGRESS);
                         // Task doesn't have to be updated yet. Will be updated along with other Workflow tasks downstream.
                     } else {
