@@ -1,6 +1,21 @@
+/**
+ * Copyright 2020 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.counductor.integration.test
 
-import com.netflix.archaius.guice.ArchaiusModule
+
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.run.Workflow
@@ -16,7 +31,7 @@ import spock.lang.Specification
 
 import javax.inject.Inject
 
-@ModulesForTesting([TestModule.class, ArchaiusModule.class])
+@ModulesForTesting([TestModule.class])
 class ForkJoinSpec extends Specification {
 
     @Inject
@@ -75,25 +90,6 @@ class ForkJoinSpec extends Specification {
      *             End
      */
     def "Test a simple workflow with fork join success flow"() {
-        setup: "Ensure that all the tasks involved in the workflow have a retry count of 0"
-        def persistedIntegrationTask1Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_1').get()
-        def modifiedIntegrationTask1Definition = new TaskDef(persistedIntegrationTask1Definition.name,
-                persistedIntegrationTask1Definition.description, 0, 0)
-        def persistedIntegrationTask2Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_2').get()
-        def modifiedIntegrationTask2Definition = new TaskDef(persistedIntegrationTask2Definition.name,
-                persistedIntegrationTask2Definition.description, 0, 0)
-        def persistedIntegrationTask3Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_3').get()
-        def modifiedIntegrationTask3Definition = new TaskDef(persistedIntegrationTask3Definition.name,
-                persistedIntegrationTask3Definition.description, 0, 0)
-        def persistedIntegrationTask4Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_4').get()
-        def modifiedIntegrationTask4Definition = new TaskDef(persistedIntegrationTask4Definition.name,
-                persistedIntegrationTask4Definition.description, 0, 0)
-
-        metadataService.updateTaskDef(modifiedIntegrationTask1Definition)
-        metadataService.updateTaskDef(modifiedIntegrationTask2Definition)
-        metadataService.updateTaskDef(modifiedIntegrationTask3Definition)
-        metadataService.updateTaskDef(modifiedIntegrationTask4Definition)
-
         when: "A fork join workflow is started"
         def workflowInstanceId = workflowExecutor.startWorkflow(FORK_JOIN_WF, 1,
                 'fanoutTest', [:],
@@ -186,12 +182,6 @@ class ForkJoinSpec extends Specification {
             tasks[5].status == Task.Status.COMPLETED
             tasks[5].taskType == 'integration_task_4'
         }
-
-        cleanup: "Restore the task definitions that were modified as part of this feature testing"
-        metadataService.updateTaskDef(persistedIntegrationTask1Definition)
-        metadataService.updateTaskDef(persistedIntegrationTask2Definition)
-        metadataService.updateTaskDef(persistedIntegrationTask3Definition)
-        metadataService.updateTaskDef(persistedIntegrationTask4Definition)
     }
 
 
@@ -267,7 +257,7 @@ class ForkJoinSpec extends Specification {
         metadataService.updateTaskDef(persistedIntegrationTask2Definition)
     }
 
-    def "Test restarting a failed fork join workflow"() {
+    def "Test retrying a failed fork join workflow"() {
 
         when: "A fork join workflow is started"
         def workflowInstanceId = workflowExecutor.startWorkflow(FORK_JOIN_WF + '_2', 1,
@@ -333,7 +323,7 @@ class ForkJoinSpec extends Specification {
         when: "The workflow is retried"
         workflowExecutor.retry(workflowInstanceId)
 
-        then: "verify that all the workflow is restarted and new tasks are added in place of the failed tasks"
+        then: "verify that all the workflow is retried and new tasks are added in place of the failed tasks"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 7
@@ -564,11 +554,11 @@ class ForkJoinSpec extends Specification {
                 'fork_join_nested_test', input,
                 null, null, null)
 
-        then:"The workflow is in the running template"
+        then: "The workflow is in the running template"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 8
-            tasks.findAll { it.referenceTaskName in ['t11', 't12', 't13', 'fork1', 'fork2','sw1'] }.size() == 6
+            tasks.findAll { it.referenceTaskName in ['t11', 't12', 't13', 'fork1', 'fork2', 'sw1'] }.size() == 6
             tasks.findAll { it.referenceTaskName in ['t1', 't2', 't16'] }.size() == 0
             tasks[0].taskType == 'FORK'
             tasks[0].status == Task.Status.COMPLETED
@@ -584,7 +574,7 @@ class ForkJoinSpec extends Specification {
             tasks[5].status == Task.Status.SCHEDULED
             tasks[6].taskType == 'JOIN'
             tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t11', 'join2','sw1']
+            tasks[6].inputData['joinOn'] == ['t11', 'join2', 'sw1']
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.IN_PROGRESS
             tasks[7].inputData['joinOn'] == ['t14', 't20']
@@ -620,7 +610,7 @@ class ForkJoinSpec extends Specification {
             tasks[5].status == Task.Status.SCHEDULED
             tasks[6].taskType == 'JOIN'
             tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t11', 'join2','sw1']
+            tasks[6].inputData['joinOn'] == ['t11', 'join2', 'sw1']
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.IN_PROGRESS
             tasks[7].inputData['joinOn'] == ['t14', 't20']
@@ -636,7 +626,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask16Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_16', 'task16.worker', [:], 0)
         def polledAndAckTask14Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_14', 'task14.worker', [:], 0)
 
-        and:"Get the sub workflow id associated with the SubWorkflow Task sw1 and start the system task"
+        and: "Get the sub workflow id associated with the SubWorkflow Task sw1 and start the system task"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowTaskId = workflow.getTaskByRefName("sw1").getTaskId()
         workflowExecutor.executeSystemTask(new SubWorkflow(), subWorkflowTaskId, 1)
@@ -653,7 +643,7 @@ class ForkJoinSpec extends Specification {
             tasks[5].status == Task.Status.IN_PROGRESS
             tasks[6].taskType == 'JOIN'
             tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t11', 'join2','sw1']
+            tasks[6].inputData['joinOn'] == ['t11', 'join2', 'sw1']
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.IN_PROGRESS
             tasks[7].inputData['joinOn'] == ['t14', 't20']
@@ -667,7 +657,7 @@ class ForkJoinSpec extends Specification {
             tasks[11].status == Task.Status.SCHEDULED
         }
 
-        and:"verify that the simple Sub Workflow is in running state and the first task related to it is scheduled"
+        and: "verify that the simple Sub Workflow is in running state and the first task related to it is scheduled"
         with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1
@@ -675,7 +665,7 @@ class ForkJoinSpec extends Specification {
             tasks[0].status == Task.Status.SCHEDULED
         }
 
-        when:"Poll and complete all the tasks associated with the sub workflow"
+        when: "Poll and complete all the tasks associated with the sub workflow"
         def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.worker', [:], 0)
         def polledAndAckTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.worker', [:], 0)
 
@@ -683,7 +673,7 @@ class ForkJoinSpec extends Specification {
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask1Try1)
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask2Try1)
 
-        and:"verify that the simple Sub Workflow is in a COMPLETED state"
+        and: "verify that the simple Sub Workflow is in a COMPLETED state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 2
@@ -693,7 +683,7 @@ class ForkJoinSpec extends Specification {
             tasks[1].status == Task.Status.COMPLETED
         }
 
-        and:" verify that the sub workflow task is completed and other preceding tasks are added to the workflow task list"
+        and: " verify that the sub workflow task is completed and other preceding tasks are added to the workflow task list"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 12
@@ -701,7 +691,7 @@ class ForkJoinSpec extends Specification {
             tasks[5].status == Task.Status.COMPLETED
             tasks[6].taskType == 'JOIN'
             tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t11', 'join2','sw1']
+            tasks[6].inputData['joinOn'] == ['t11', 'join2', 'sw1']
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.IN_PROGRESS
             tasks[7].inputData['joinOn'] == ['t14', 't20']
@@ -709,19 +699,19 @@ class ForkJoinSpec extends Specification {
             tasks[11].status == Task.Status.SCHEDULED
         }
 
-        when:"Also the poll and complete the 'integration_task_19'"
+        when: "Also the poll and complete the 'integration_task_19'"
         def polledAndAckTask19Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_19', 'task19.worker', [:], 0)
 
-        then:"verify that the task was polled and acknowledged"
+        then: "verify that the task was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask19Try1)
 
-        and:"verify that the integration_task_19 is completed and the next task is scheduled"
+        and: "verify that the integration_task_19 is completed and the next task is scheduled"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 13
             tasks[6].taskType == 'JOIN'
             tasks[6].status == Task.Status.IN_PROGRESS
-            tasks[6].inputData['joinOn'] == ['t11', 'join2','sw1']
+            tasks[6].inputData['joinOn'] == ['t11', 'join2', 'sw1']
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.IN_PROGRESS
             tasks[7].inputData['joinOn'] == ['t14', 't20']
@@ -731,19 +721,19 @@ class ForkJoinSpec extends Specification {
             tasks[12].status == Task.Status.SCHEDULED
         }
 
-        when:"poll and complete the 'integration_task_20'"
+        when: "poll and complete the 'integration_task_20'"
         def polledAndAckTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task20.worker', [:], 0)
 
-        then:"verify that the task was polled and acknowledged"
+        then: "verify that the task was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask20Try1)
 
-        and:"verify that the integration_task_20 is completed and the next task is scheduled"
+        and: "verify that the integration_task_20 is completed and the next task is scheduled"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 14
             tasks[6].taskType == 'JOIN'
             tasks[6].status == Task.Status.COMPLETED
-            tasks[6].inputData['joinOn'] == ['t11', 'join2','sw1']
+            tasks[6].inputData['joinOn'] == ['t11', 'join2', 'sw1']
             tasks[7].taskType == 'JOIN'
             tasks[7].status == Task.Status.COMPLETED
             tasks[7].inputData['joinOn'] == ['t14', 't20']
@@ -753,10 +743,10 @@ class ForkJoinSpec extends Specification {
             tasks[13].status == Task.Status.SCHEDULED
         }
 
-        when:"poll and complete the 'integration_task_15'"
+        when: "poll and complete the 'integration_task_15'"
         def polledAndAckTask15Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_15', 'task15.worker', [:], 0)
 
-        then:"verify that the task was polled and acknowledged"
+        then: "verify that the task was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask15Try1)
 
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -792,14 +782,14 @@ class ForkJoinSpec extends Specification {
             tasks[3].status == Task.Status.IN_PROGRESS
         }
 
-        when:"both the sub workflows are started by issuing a system task call"
+        when: "both the sub workflows are started by issuing a system task call"
         def workflowWithScheduledSubWorkflows = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowTaskId1 = workflowWithScheduledSubWorkflows.getTaskByRefName('st1').taskId
         workflowExecutor.executeSystemTask(new SubWorkflow(), subWorkflowTaskId1, 1)
         def subWorkflowTaskId2 = workflowWithScheduledSubWorkflows.getTaskByRefName('st2').taskId
         workflowExecutor.executeSystemTask(new SubWorkflow(), subWorkflowTaskId2, 1)
 
-        then:"verify that the sub workflow tasks are in a IN PROGRESS state"
+        then: "verify that the sub workflow tasks are in a IN PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 4
@@ -812,7 +802,7 @@ class ForkJoinSpec extends Specification {
             tasks[3].status == Task.Status.IN_PROGRESS
         }
 
-        and:"Also verify that the sub workflows are in a RUNNING state"
+        and: "Also verify that the sub workflows are in a RUNNING state"
         def workflowWithRunningSubWorkflows = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowInstanceId1 = workflowWithRunningSubWorkflows.getTaskByRefName('st1').subWorkflowId
         with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId1, true)) {
@@ -830,17 +820,17 @@ class ForkJoinSpec extends Specification {
             tasks[0].taskType == 'simple_task_in_sub_wf'
         }
 
-        when:"The 'simple_task_in_sub_wf' belonging to both the sub workflows is polled and failed"
+        when: "The 'simple_task_in_sub_wf' belonging to both the sub workflows is polled and failed"
         def polledAndAckSubWorkflowTask1 = workflowTestUtil.pollAndFailTask('simple_task_in_sub_wf',
-            'task1.worker', 'Failed....', 0)
+                'task1.worker', 'Failed....', 0)
         def polledAndAckSubWorkflowTask2 = workflowTestUtil.pollAndFailTask('simple_task_in_sub_wf',
-            'task1.worker', 'Failed....', 0)
+                'task1.worker', 'Failed....', 0)
 
-        then:"verify that both the tasks were polled and failed"
+        then: "verify that both the tasks were polled and failed"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckSubWorkflowTask1)
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckSubWorkflowTask2)
 
-        and:"verify that both the sub workflows are in failed state"
+        and: "verify that both the sub workflows are in failed state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId1, true)) {
             status == Workflow.WorkflowStatus.FAILED
             tasks.size() == 1
@@ -868,7 +858,6 @@ class ForkJoinSpec extends Specification {
             tasks[3].taskType == 'JOIN'
             tasks[3].status == Task.Status.COMPLETED
         }
-
     }
 
 }
