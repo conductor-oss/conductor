@@ -111,7 +111,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "The first task of the fork is polled and completed"
-        def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.worker', [:], 0)
+        def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.worker')
 
         then: "verify that the 'integration_task_1' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask1Try1)
@@ -131,8 +131,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "The 'integration_task_3' is polled and completed"
-        def polledAndAckTask3Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_3',
-                'task1.worker', [:], 0)
+        def polledAndAckTask3Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'task1.worker')
 
         then: "verify that the 'integration_task_3' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask3Try1)
@@ -150,8 +149,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "The other node of the fork is completed by completing 'integration_task_2'"
-        def polledAndAckTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2',
-                'task1.worker', [:], 0)
+        def polledAndAckTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.worker')
 
         then: "verify that the 'integration_task_2' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask2Try1)
@@ -169,8 +167,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "The last task of the workflow is then polled and completed integration_task_4'"
-        def polledAndAckTask4Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_4',
-                'task1.worker', [:], 0)
+        def polledAndAckTask4Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_4', 'task1.worker')
 
         then: "verify that the 'integration_task_4' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask4Try1)
@@ -213,7 +210,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "The first task of the fork is polled and completed"
-        def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.worker', [:], 0)
+        def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.worker')
 
         then: "verify that the 'integration_task_1' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask1Try1)
@@ -234,7 +231,7 @@ class ForkJoinSpec extends Specification {
 
         when: "The other node of the fork is completed by completing 'integration_task_2'"
         def polledAndAckTask2Try1 = workflowTestUtil.pollAndFailTask('integration_task_2',
-                'task1.worker', 'Failed....', 0)
+                'task1.worker', 'Failed....')
 
         then: "verify that the 'integration_task_2' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask2Try1)
@@ -280,7 +277,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "The first task of the fork is polled and completed"
-        def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_1', 'task1.worker', [:], 0)
+        def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_1', 'task1.worker')
 
         then: "verify that the 'integration_task_0_RT_1' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask1Try1)
@@ -301,7 +298,7 @@ class ForkJoinSpec extends Specification {
 
         when: "The other node of the fork is completed by completing 'integration_task_0_RT_2'"
         def polledAndAckTask2Try1 = workflowTestUtil.pollAndFailTask('integration_task_0_RT_2',
-                'task1.worker', 'Failed....', 0)
+                'task1.worker', 'Failed....')
 
         then: "verify that the 'integration_task_0_RT_1' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask2Try1)
@@ -342,23 +339,20 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "The 'integration_task_0_RT_3' is polled and completed"
-        def polledAndAckTask3Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_3',
-                'task1.worker', [:], 0)
+        def polledAndAckTask3Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_3', 'task1.worker')
 
         then: "verify that the 'integration_task_3' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask3Try1)
 
 
         when: "The other node of the fork is completed by completing 'integration_task_0_RT_2'"
-        def polledAndAckTask2Try2 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_2',
-                'task1.worker', [:], 0)
+        def polledAndAckTask2Try2 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_2', 'task1.worker')
 
         then: "verify that the 'integration_task_2' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask2Try2)
 
         when: "The last task of the workflow is then polled and completed integration_task_0_RT_4'"
-        def polledAndAckTask4Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_4',
-                'task1.worker', [:], 0)
+        def polledAndAckTask4Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_4', 'task1.worker')
 
         then: "verify that the 'integration_task_0_RT_4' was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask4Try1)
@@ -419,9 +413,9 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "Poll and Complete tasks: 'integration_task_11', 'integration_task_12' and 'integration_task_13'"
-        def polledAndAckTask11Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_11', 'task11.worker', [:], 0)
-        def polledAndAckTask12Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_12', 'task12.worker', [:], 0)
-        def polledAndAckTask13Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_13', 'task13.worker', [:], 0)
+        def polledAndAckTask11Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_11', 'task11.worker')
+        def polledAndAckTask12Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_12', 'task12.worker')
+        def polledAndAckTask13Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_13', 'task13.worker')
 
 
         then: "verify that tasks 'integration_task_11', 'integration_task_12' and 'integration_task_13' were polled and acknowledged"
@@ -458,8 +452,8 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "Poll and Complete tasks: 'integration_task_16' and 'integration_task_14'"
-        def polledAndAckTask16Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_16', 'task16.worker', [:], 0)
-        def polledAndAckTask14Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_14', 'task14.worker', [:], 0)
+        def polledAndAckTask16Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_16', 'task16.worker')
+        def polledAndAckTask14Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_14', 'task14.worker')
 
         then: "verify that tasks 'integration_task_16' and 'integration_task_14'were polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask16Try1)
@@ -486,7 +480,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "Poll and Complete tasks: 'integration_task_19'"
-        def polledAndAckTask19Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_19', 'task19.worker', [:], 0)
+        def polledAndAckTask19Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_19', 'task19.worker')
 
         then: "verify that tasks 'integration_task_19' polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask19Try1)
@@ -508,7 +502,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "Poll and Complete tasks: 'integration_task_20'"
-        def polledAndAckTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task20.worker', [:], 0)
+        def polledAndAckTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task20.worker')
 
         then: "verify that tasks 'integration_task_20'polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask20Try1)
@@ -530,7 +524,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "Poll and Complete tasks: 'integration_task_15'"
-        def polledAndAckTask15Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_15', 'task15.worker', [:], 0)
+        def polledAndAckTask15Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_15', 'task15.worker')
 
         then: "verify that tasks 'integration_task_15' polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask15Try1)
@@ -581,9 +575,9 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "Poll and Complete tasks: 'integration_task_11', 'integration_task_12' and 'integration_task_13'"
-        def polledAndAckTask11Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_11', 'task11.worker', [:], 0)
-        def polledAndAckTask12Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_12', 'task12.worker', [:], 0)
-        def polledAndAckTask13Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_13', 'task13.worker', [:], 0)
+        def polledAndAckTask11Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_11', 'task11.worker')
+        def polledAndAckTask12Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_12', 'task12.worker')
+        def polledAndAckTask13Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_13', 'task13.worker')
         workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
 
 
@@ -666,8 +660,8 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "Poll and complete all the tasks associated with the sub workflow"
-        def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.worker', [:], 0)
-        def polledAndAckTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.worker', [:], 0)
+        def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.worker')
+        def polledAndAckTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.worker')
 
         then: "verify that tasks 'integration_task_1' and 'integration_task_2'were polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask1Try1)
@@ -700,7 +694,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "Also the poll and complete the 'integration_task_19'"
-        def polledAndAckTask19Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_19', 'task19.worker', [:], 0)
+        def polledAndAckTask19Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_19', 'task19.worker')
 
         then: "verify that the task was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask19Try1)
@@ -722,7 +716,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "poll and complete the 'integration_task_20'"
-        def polledAndAckTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task20.worker', [:], 0)
+        def polledAndAckTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task20.worker')
 
         then: "verify that the task was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask20Try1)
@@ -744,7 +738,7 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "poll and complete the 'integration_task_15'"
-        def polledAndAckTask15Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_15', 'task15.worker', [:], 0)
+        def polledAndAckTask15Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_15', 'task15.worker')
 
         then: "verify that the task was polled and acknowledged"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask15Try1)
@@ -822,9 +816,9 @@ class ForkJoinSpec extends Specification {
 
         when: "The 'simple_task_in_sub_wf' belonging to both the sub workflows is polled and failed"
         def polledAndAckSubWorkflowTask1 = workflowTestUtil.pollAndFailTask('simple_task_in_sub_wf',
-                'task1.worker', 'Failed....', 0)
+                'task1.worker', 'Failed....')
         def polledAndAckSubWorkflowTask2 = workflowTestUtil.pollAndFailTask('simple_task_in_sub_wf',
-                'task1.worker', 'Failed....', 0)
+                'task1.worker', 'Failed....')
 
         then: "verify that both the tasks were polled and failed"
         workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckSubWorkflowTask1)

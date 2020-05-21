@@ -186,14 +186,20 @@ class WorkflowTestUtil {
      * @param taskName name of the task that needs to be polled and failed
      * @param workerId name of the worker id using which a task is polled
      * @param failureReason the reason to fail the task that will added to the task update
+     * @param outputParams An optional output parameters if available will be added to the task before updating to failed
      * @param waitAtEndSeconds an optional delay before the method returns, if the value is 0 skips the delay
      * @return A Tuple of polledTask and acknowledgement of the poll
      */
-    Tuple pollAndFailTask(String taskName, String workerId, String failureReason, int waitAtEndSeconds) {
+    Tuple pollAndFailTask(String taskName, String workerId, String failureReason, Map<String, Object> outputParams = null, int waitAtEndSeconds = 0) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
         def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
         polledIntegrationTask.status = Task.Status.FAILED
         polledIntegrationTask.reasonForIncompletion = failureReason
+        if (outputParams) {
+            outputParams.forEach { k, v ->
+                polledIntegrationTask.outputData[k] = v
+            }
+        }
         workflowExecutionService.updateTask(polledIntegrationTask)
         return waitAtEndSecondsAndReturn(waitAtEndSeconds, polledIntegrationTask, ackPolledIntegrationTask)
     }
@@ -223,7 +229,7 @@ class WorkflowTestUtil {
      * @param waitAtEndSeconds waitAtEndSeconds an optional delay before the method returns, if the value is 0 skips the delay
      * @return A Tuple of polledTask and acknowledgement of the poll
      */
-    Tuple pollAndCompleteTask(String taskName, String workerId, Map<String, Object> outputParams, int waitAtEndSeconds) {
+    Tuple pollAndCompleteTask(String taskName, String workerId, Map<String, Object> outputParams = null, int waitAtEndSeconds = 0) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
         def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
         polledIntegrationTask.status = Task.Status.COMPLETED
