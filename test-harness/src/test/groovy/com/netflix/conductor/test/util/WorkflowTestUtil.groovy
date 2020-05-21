@@ -223,7 +223,7 @@ class WorkflowTestUtil {
      * @param waitAtEndSeconds waitAtEndSeconds an optional delay before the method returns, if the value is 0 skips the delay
      * @return A Tuple of polledTask and acknowledgement of the poll
      */
-    Tuple pollAndCompleteTask(String taskName, String workerId, Map<String, String> outputParams, int waitAtEndSeconds) {
+    Tuple pollAndCompleteTask(String taskName, String workerId, Map<String, Object> outputParams, int waitAtEndSeconds) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
         def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
         polledIntegrationTask.status = Task.Status.COMPLETED
