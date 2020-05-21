@@ -1,5 +1,5 @@
-/**
- * Copyright 2016 Netflix, Inc.
+/*
+ * Copyright 2020 Netflix, Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,32 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-/**
- * 
- */
 package com.netflix.conductor.core.execution.tasks;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.script.ScriptException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
+import javax.script.ScriptException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * @author Manan
@@ -63,7 +57,7 @@ public class DoWhile extends WorkflowSystemTask {
 	@Override
 	@SuppressWarnings("unchecked")
 	public boolean execute(Workflow workflow, Task task, WorkflowExecutor workflowExecutor) {
-		
+
 		boolean allDone = true;
 		boolean hasFailures = false;
 		StringBuilder failureReason = new StringBuilder();
@@ -77,7 +71,7 @@ public class DoWhile extends WorkflowSystemTask {
 		Map<String, Task> relevantTasks = new HashMap<String, Task>();
 		Task relevantTask = null;
 		for(Task t : workflow.getTasks()) {
-			if(task.getWorkflowTask().has(TaskUtils.removeIterationFromTaskRefName(t.getReferenceTaskName())) 
+			if(task.getWorkflowTask().has(TaskUtils.removeIterationFromTaskRefName(t.getReferenceTaskName()))
 			&& !task.getReferenceTaskName().equals(t.getReferenceTaskName())) {
 				relevantTask = relevantTasks.get(t.getReferenceTaskName());
 				if(relevantTask == null || t.getRetryCount() > relevantTask.getRetryCount()) {
@@ -163,11 +157,10 @@ public class DoWhile extends WorkflowSystemTask {
 		String condition = task.getWorkflowTask().getLoopCondition();
 		boolean shouldContinue = false;
 		if (condition != null) {
-			logger.debug("Condition {} is being evaluated{}", condition);
+			logger.debug("Condition: {} is being evaluated", condition);
 			//Evaluate the expression by using the Nashhorn based script evaluator
 			shouldContinue = ScriptEvaluator.evalBool(condition, taskInput);
 		}
 		return shouldContinue;
 	}
-
 }
