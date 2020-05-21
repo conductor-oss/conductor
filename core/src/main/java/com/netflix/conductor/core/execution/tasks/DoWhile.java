@@ -27,6 +27,7 @@ import com.netflix.conductor.core.execution.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -68,7 +69,7 @@ public class DoWhile extends WorkflowSystemTask {
 		 * Get the latest set of tasks (the ones that have the highest retry count). We don't want to evaluate any tasks
 		 * that have already failed if there is a more current one (a later retry count).
 		 */
-		Map<String, Task> relevantTasks = new HashMap<String, Task>();
+		Map<String, Task> relevantTasks = new LinkedHashMap<String, Task>();
 		Task relevantTask = null;
 		for(Task t : workflow.getTasks()) {
 			if(task.getWorkflowTask().has(TaskUtils.removeIterationFromTaskRefName(t.getReferenceTaskName()))
