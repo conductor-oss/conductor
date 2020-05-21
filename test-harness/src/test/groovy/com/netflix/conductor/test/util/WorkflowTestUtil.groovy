@@ -245,10 +245,10 @@ class WorkflowTestUtil {
     /**
      * A helper method intended to be used in the <tt>then:</tt> block of the spock test feature, ideally intended to be called after either:
      * pollAndCompleteTask function or  pollAndFailTask function
-     * @param expectedTaskInputParams a map of input params that are verified against the polledTask that is part of the completedTaskAndAck tuple
      * @param completedTaskAndAck A Tuple of polledTask and acknowledgement of the poll
+     * @param expectedTaskInputParams a map of input params that are verified against the polledTask that is part of the completedTaskAndAck tuple
      */
-    static void verifyPolledAndAcknowledgedTask(Map<String, String> expectedTaskInputParams, Tuple completedTaskAndAck) {
+    static void verifyPolledAndAcknowledgedTask(Tuple completedTaskAndAck, Map<String, String> expectedTaskInputParams = null) {
         assert completedTaskAndAck[0] : "The task polled cannot be null"
         def polledIntegrationTask = completedTaskAndAck[0] as Task
         def ackPolledIntegrationTask = completedTaskAndAck[1] as boolean

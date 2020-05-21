@@ -114,7 +114,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.worker')
 
         then: "verify that the 'integration_task_1' was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask1Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask1Try1)
 
         and: "The workflow has been updated and has all the required tasks in the right status to move forward"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -134,7 +134,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask3Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'task1.worker')
 
         then: "verify that the 'integration_task_3' was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask3Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask3Try1)
 
         and: "The workflow has been updated with the task status and task list"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -152,7 +152,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.worker')
 
         then: "verify that the 'integration_task_2' was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask2Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask2Try1)
 
         and: "The workflow has been updated with the task status and task list"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -170,7 +170,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask4Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_4', 'task1.worker')
 
         then: "verify that the 'integration_task_4' was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask4Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask4Try1)
 
         and: "Then verify that the workflow is completed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -213,7 +213,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.worker')
 
         then: "verify that the 'integration_task_1' was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask1Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask1Try1)
 
         and: "The workflow has been updated and has all the required tasks in the right status to move forward"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -234,7 +234,7 @@ class ForkJoinSpec extends Specification {
                 'task1.worker', 'Failed....')
 
         then: "verify that the 'integration_task_2' was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask2Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask2Try1)
 
         and: "the workflow is in the failed state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -280,7 +280,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_1', 'task1.worker')
 
         then: "verify that the 'integration_task_0_RT_1' was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask1Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask1Try1)
 
         and: "The workflow has been updated and has all the required tasks in the right status to move forward"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -301,7 +301,7 @@ class ForkJoinSpec extends Specification {
                 'task1.worker', 'Failed....')
 
         then: "verify that the 'integration_task_0_RT_1' was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask2Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask2Try1)
 
         and: "the workflow is in the failed state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -342,20 +342,20 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask3Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_3', 'task1.worker')
 
         then: "verify that the 'integration_task_3' was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask3Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask3Try1)
 
 
         when: "The other node of the fork is completed by completing 'integration_task_0_RT_2'"
         def polledAndAckTask2Try2 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_2', 'task1.worker')
 
         then: "verify that the 'integration_task_2' was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask2Try2)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask2Try2)
 
         when: "The last task of the workflow is then polled and completed integration_task_0_RT_4'"
         def polledAndAckTask4Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_0_RT_4', 'task1.worker')
 
         then: "verify that the 'integration_task_0_RT_4' was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask4Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask4Try1)
 
         and: "Then verify that the workflow is completed and the task list of execution is as expected"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -419,9 +419,9 @@ class ForkJoinSpec extends Specification {
 
 
         then: "verify that tasks 'integration_task_11', 'integration_task_12' and 'integration_task_13' were polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask11Try1)
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask12Try1)
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask13Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask11Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask12Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask13Try1)
 
         and: "verify the state of the workflow"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -456,8 +456,8 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask14Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_14', 'task14.worker')
 
         then: "verify that tasks 'integration_task_16' and 'integration_task_14'were polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask16Try1)
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask14Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask16Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask14Try1)
 
         and: "verify the state of the workflow"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -483,7 +483,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask19Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_19', 'task19.worker')
 
         then: "verify that tasks 'integration_task_19' polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask19Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask19Try1)
 
         and: "verify the state of the workflow"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -505,7 +505,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task20.worker')
 
         then: "verify that tasks 'integration_task_20'polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask20Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask20Try1)
 
         and: "verify the state of the workflow"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -527,7 +527,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask15Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_15', 'task15.worker')
 
         then: "verify that tasks 'integration_task_15' polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask15Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask15Try1)
 
         and: "verify that the workflow is in a complete state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -582,9 +582,9 @@ class ForkJoinSpec extends Specification {
 
 
         then: "verify that tasks 'integration_task_11', 'integration_task_12' and 'integration_task_13' were polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask11Try1)
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask12Try1)
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask13Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask11Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask12Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask13Try1)
 
         and: "verify the state of the workflow"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -617,8 +617,8 @@ class ForkJoinSpec extends Specification {
         }
 
         when: "Poll and Complete tasks: 'integration_task_16' and 'integration_task_14'"
-        def polledAndAckTask16Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_16', 'task16.worker', [:], 0)
-        def polledAndAckTask14Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_14', 'task14.worker', [:], 0)
+        def polledAndAckTask16Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_16', 'task16.worker')
+        def polledAndAckTask14Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_14', 'task14.worker')
 
         and: "Get the sub workflow id associated with the SubWorkflow Task sw1 and start the system task"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
@@ -628,8 +628,8 @@ class ForkJoinSpec extends Specification {
         def subWorkflowInstanceId = updatedWorkflow.getTaskByRefName('sw1').subWorkflowId
 
         then: "verify that tasks 'integration_task_16' and 'integration_task_14'were polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask16Try1)
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask14Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask16Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask14Try1)
         with(updatedWorkflow) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 12
@@ -664,8 +664,8 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.worker')
 
         then: "verify that tasks 'integration_task_1' and 'integration_task_2'were polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask1Try1)
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask2Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask1Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask2Try1)
 
         and: "verify that the simple Sub Workflow is in a COMPLETED state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {
@@ -697,7 +697,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask19Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_19', 'task19.worker')
 
         then: "verify that the task was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask19Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask19Try1)
 
         and: "verify that the integration_task_19 is completed and the next task is scheduled"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -719,7 +719,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task20.worker')
 
         then: "verify that the task was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask20Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask20Try1)
 
         and: "verify that the integration_task_20 is completed and the next task is scheduled"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -741,7 +741,7 @@ class ForkJoinSpec extends Specification {
         def polledAndAckTask15Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_15', 'task15.worker')
 
         then: "verify that the task was polled and acknowledged"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckTask15Try1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckTask15Try1)
 
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
@@ -821,8 +821,8 @@ class ForkJoinSpec extends Specification {
                 'task1.worker', 'Failed....')
 
         then: "verify that both the tasks were polled and failed"
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckSubWorkflowTask1)
-        workflowTestUtil.verifyPolledAndAcknowledgedTask([:], polledAndAckSubWorkflowTask2)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckSubWorkflowTask1)
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndAckSubWorkflowTask2)
 
         and: "verify that both the sub workflows are in failed state"
         with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId1, true)) {
