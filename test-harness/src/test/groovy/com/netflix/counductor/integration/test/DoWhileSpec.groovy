@@ -78,7 +78,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing first task"
-        Tuple polledAndCompletedTask0 = workflowTestUtil.pollAndCompleteTask('integration_task_0', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedTask0 = workflowTestUtil.pollAndCompleteTask('integration_task_0', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in running state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask0)
@@ -101,7 +101,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing second task"
-        Tuple polledAndCompletedTask1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedTask1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in running state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask1)
@@ -124,7 +124,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing third task"
-        Tuple polledAndCompletedTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in completed state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask2)
@@ -167,7 +167,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing first task"
-        Tuple polledAndCompletedTask0 = workflowTestUtil.pollAndCompleteTask('integration_task_0', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedTask0 = workflowTestUtil.pollAndCompleteTask('integration_task_0', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in running state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask0)
@@ -190,7 +190,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing second task"
-        Tuple polledAndCompletedTask1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedTask1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in running state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask1)
@@ -213,7 +213,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing third task"
-        Tuple polledAndCompletedTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in running state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask2)
@@ -238,7 +238,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing second iteration of first task"
-        Tuple polledAndCompletedSecondIterationTask0 = workflowTestUtil.pollAndCompleteTask('integration_task_0', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedSecondIterationTask0 = workflowTestUtil.pollAndCompleteTask('integration_task_0', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in running state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedSecondIterationTask0)
@@ -271,7 +271,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing second iteration of second task"
-        Tuple polledAndCompletedSecondIterationTask1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedSecondIterationTask1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in running state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedSecondIterationTask1)
@@ -304,7 +304,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing second iteration of third task"
-        Tuple polledAndCompletedSecondIterationTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedSecondIterationTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in running state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedSecondIterationTask2)
@@ -341,7 +341,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing task within the second do while"
-        Tuple polledAndCompletedIntegrationTask3 = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedIntegrationTask3 = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in completed state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedIntegrationTask3)
@@ -402,7 +402,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and failing first task"
-        Tuple polledAndFailedTask0 = workflowTestUtil.pollAndFailTask('integration_task_0', 'integration.test.worker', "induced..failure", 0)
+        Tuple polledAndFailedTask0 = workflowTestUtil.pollAndFailTask('integration_task_0', 'integration.test.worker', "induced..failure")
 
         then: "Verify that the task was polled and acknowledged and workflow is in failed state"
         verifyPolledAndAcknowledgedTask([:], polledAndFailedTask0)
@@ -432,7 +432,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing first task"
-        Tuple polledAndCompletedTask0 = workflowTestUtil.pollAndCompleteTask('integration_task_0', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedTask0 = workflowTestUtil.pollAndCompleteTask('integration_task_0', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in running state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask0)
@@ -457,7 +457,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing second task"
-        Tuple polledAndCompletedTask1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedTask1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in running state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask1)
@@ -482,7 +482,7 @@ class DoWhileSpec extends Specification {
         }
 
         when: "Polling and completing third task"
-        Tuple polledAndCompletedTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker', null, 0)
+        Tuple polledAndCompletedTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker')
 
         then: "Verify that the task was polled and acknowledged and workflow is in completed state"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask2)

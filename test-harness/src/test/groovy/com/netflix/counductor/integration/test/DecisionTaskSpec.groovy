@@ -92,7 +92,7 @@ class DecisionTaskSpec extends Specification {
         }
 
         when: "the task 'integration_task_1' is polled and completed"
-        def polledAndCompletedTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', null, 0)
+        def polledAndCompletedTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker')
 
         then: "verify that the task is completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask1Try1)
@@ -108,7 +108,7 @@ class DecisionTaskSpec extends Specification {
         }
 
         when: "the task 'integration_task_2' is polled and completed"
-        def polledAndCompletedTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.integration.worker', null, 0)
+        def polledAndCompletedTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.integration.worker')
 
         then: "verify that the task is completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask2Try1)
@@ -124,7 +124,7 @@ class DecisionTaskSpec extends Specification {
         }
 
         when: "the task 'integration_task_20' is polled and completed"
-        def polledAndCompletedTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task1.integration.worker', null, 0)
+        def polledAndCompletedTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task1.integration.worker')
 
         then: "verify that the task is completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask20Try1)
@@ -167,8 +167,8 @@ class DecisionTaskSpec extends Specification {
         }
 
         when: "the tasks 'integration_task_1' and 'integration_task_10' are polled and completed"
-        def polledAndCompletedTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', null, 0)
-        def polledAndCompletedTask10Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_10', 'task1.integration.worker', null, 0)
+        def polledAndCompletedTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker')
+        def polledAndCompletedTask10Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_10', 'task1.integration.worker')
 
         then: "verify that the tasks are completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask1Try1)
@@ -190,7 +190,7 @@ class DecisionTaskSpec extends Specification {
         }
 
         when: "the task 'integration_task_2' is polled and completed"
-        def polledAndCompletedTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.integration.worker', null, 0)
+        def polledAndCompletedTask2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.integration.worker')
 
         then: "verify that the task is completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask2Try1)
@@ -209,7 +209,7 @@ class DecisionTaskSpec extends Specification {
         }
 
         when: "the task 'integration_task_20' is polled and completed"
-        def polledAndCompletedTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task1.integration.worker', null, 0)
+        def polledAndCompletedTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task1.integration.worker')
 
         then: "verify that the task is completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask20Try1)
@@ -249,7 +249,7 @@ class DecisionTaskSpec extends Specification {
         }
 
         when: "the task 'integration_task_10' is polled and completed"
-        def polledAndCompletedTask10Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_10', 'task1.integration.worker', null, 0)
+        def polledAndCompletedTask10Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_10', 'task1.integration.worker')
 
         then: "verify that the tasks are completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask10Try1)
@@ -293,7 +293,7 @@ class DecisionTaskSpec extends Specification {
         }
 
         when: "the task '#expectedTaskName' is polled and completed"
-        def polledAndCompletedTaskTry1 = workflowTestUtil.pollAndCompleteTask(expectedTaskName, 'task.integration.worker', null, 0)
+        def polledAndCompletedTaskTry1 = workflowTestUtil.pollAndCompleteTask(expectedTaskName, 'task.integration.worker')
 
         then: "verify that the tasks are completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTaskTry1)
@@ -339,7 +339,7 @@ class DecisionTaskSpec extends Specification {
         }
 
         when: "the task 'integration_task_3' is polled and completed"
-        def polledAndCompletedTask3Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'task1.integration.worker', null, 0)
+        def polledAndCompletedTask3Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_3', 'task1.integration.worker')
 
         then: "verify that the tasks are completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask3Try1)
@@ -358,7 +358,7 @@ class DecisionTaskSpec extends Specification {
         }
 
         when: "the task 'integration_task_4' is polled and completed"
-        def polledAndCompletedTask4Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_4', 'task1.integration.worker', null, 0)
+        def polledAndCompletedTask4Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_4', 'task1.integration.worker')
 
         then: "verify that the tasks are completed and acknowledged"
         verifyPolledAndAcknowledgedTask([:], polledAndCompletedTask4Try1)
