@@ -25,6 +25,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -122,7 +123,7 @@ public class DecisionTaskMapper implements TaskMapper {
     String getEvaluatedCaseValue(WorkflowTask taskToSchedule, Map<String, Object> taskInput) {
         String expression = taskToSchedule.getCaseExpression();
         String caseValue;
-        if (expression != null) {
+        if (StringUtils.isNotBlank(expression)) {
             logger.debug("Case being evaluated using decision expression: {}", expression);
             try {
                 //Evaluate the expression by using the Nashhorn based script evaluator

@@ -62,7 +62,7 @@ public class RedisPollDataDAO extends BaseDynoDAO implements PollDataDAO {
         recordRedisDaoPayloadSize("getPollData", StringUtils.length(pollDataJsonString), "n/a", "n/a");
 
         PollData pollData = null;
-        if (pollDataJsonString != null) {
+        if (StringUtils.isNotBlank(pollDataJsonString)) {
             pollData = readValue(pollDataJsonString, PollData.class);
         }
         return pollData;

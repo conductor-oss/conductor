@@ -28,7 +28,6 @@ import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.booleanThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
@@ -836,6 +835,12 @@ public class TestWorkflowExecutor {
 
         activeDomain = workflowExecutor.getActiveDomain(taskType, null);
         assertNull(activeDomain);
+
+        domains = new String[]{"test-domain"};
+        when(executionDAOFacade.getTaskPollDataByDomain(anyString(), anyString())).thenReturn(null);
+        activeDomain = workflowExecutor.getActiveDomain(taskType, domains);
+        assertNotNull(activeDomain);
+        assertEquals("test-domain", activeDomain);
     }
 
     @Test
@@ -859,7 +864,7 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getTaskPollDataByDomain(taskType, domains[0])).thenReturn(pollData1);
         when(executionDAOFacade.getTaskPollDataByDomain(taskType, domains[1])).thenReturn(null);
         String activeDomain = workflowExecutor.getActiveDomain(taskType, domains);
-        assertEquals(null, activeDomain);
+        assertNull(activeDomain);
     }
 
     @Test

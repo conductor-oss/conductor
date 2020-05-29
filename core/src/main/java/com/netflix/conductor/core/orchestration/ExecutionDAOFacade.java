@@ -371,7 +371,12 @@ public class ExecutionDAOFacade {
     }
 
     public PollData getTaskPollDataByDomain(String taskName, String domain) {
-        return pollDataDAO.getPollData(taskName, domain);
+        try {
+            return pollDataDAO.getPollData(taskName, domain);
+        } catch (Exception e) {
+            LOGGER.error("Error fetching pollData for task: '{}', domain: '{}'", taskName, domain, e);
+            return null;
+        }
     }
 
     public void updateTaskLastPoll(String taskName, String domain, String workerId) {
