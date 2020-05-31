@@ -25,6 +25,7 @@ import com.netflix.conductor.core.events.queue.ObservableQueue;
 import io.nats.client.ConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Scheduler;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -40,11 +41,13 @@ public class NATSEventQueueProvider implements EventQueueProvider {
     private static Logger logger = LoggerFactory.getLogger(NATSEventQueueProvider.class);
     protected Map<String, NATSObservableQueue> queues = new ConcurrentHashMap<>();
     private ConnectionFactory factory;
+    private final Scheduler scheduler;
     
     @Inject
-    public NATSEventQueueProvider(Configuration config) {
+    public NATSEventQueueProvider(Configuration config, Scheduler scheduler) {
+        this.scheduler = scheduler;
         logger.info("NATS Event Queue Provider init");
-        
+
         // Init NATS API. Handle "io_nats" and "io.nats" ways to specify parameters
         Properties props = new Properties();
         Properties temp = new Properties();
@@ -67,7 +70,7 @@ public class NATSEventQueueProvider implements EventQueueProvider {
     
     @Override
     public ObservableQueue getQueue(String queueURI) {
-        NATSObservableQueue queue = queues.computeIfAbsent(queueURI, q -> new NATSObservableQueue(factory, queueURI));
+        NATSObservableQueue queue = queues.computeIfAbsent(queueURI, q -> new NATSObservableQueue(factory, queueURI, scheduler));
         if (queue.isClosed()) {
             queue.open();
         }

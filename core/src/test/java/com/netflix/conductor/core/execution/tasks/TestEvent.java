@@ -34,12 +34,16 @@ import com.netflix.conductor.dao.QueueDAO;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.stubbing.Answer;
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -195,7 +199,7 @@ public class TestEvent {
         }).when(dao).remove(any(), any());
 
         Map<String, EventQueueProvider> providers = new HashMap<>();
-        providers.put("conductor", new DynoEventQueueProvider(dao, new TestConfiguration()));
+        providers.put("conductor", new DynoEventQueueProvider(dao, new TestConfiguration(), Schedulers.from(Executors.newSingleThreadExecutor())));
         eventQueues = new EventQueues(providers, parametersUtils);
         Event event = new Event(eventQueues, parametersUtils, objectMapper);
         event.start(workflow, task, null);
@@ -320,7 +324,7 @@ public class TestEvent {
         }).when(dao).remove(any(), any());
 
         Map<String, EventQueueProvider> providers = new HashMap<>();
-        providers.put("conductor", new DynoEventQueueProvider(dao, new TestConfiguration()));
+        providers.put("conductor", new DynoEventQueueProvider(dao, new TestConfiguration(), Schedulers.from(Executors.newSingleThreadExecutor())));
         eventQueues = new EventQueues(providers, parametersUtils);
         Event event = new Event(eventQueues, parametersUtils, objectMapper);
         event.start(workflow, task, null);

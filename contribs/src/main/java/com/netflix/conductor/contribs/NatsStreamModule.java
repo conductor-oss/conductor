@@ -30,6 +30,7 @@ import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.nats.NATSStreamEventQueueProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import rx.Scheduler;
 
 
 /**
@@ -48,8 +49,8 @@ public class NatsStreamModule extends AbstractModule {
 	@StringMapKey("nats_stream")
 	@Singleton
 	@Named(EVENT_QUEUE_PROVIDERS_QUALIFIER)
-	public EventQueueProvider geNATSStreamEventQueueProvider(Configuration configuration) {
-		return new NATSStreamEventQueueProvider(configuration);
+	public EventQueueProvider geNATSStreamEventQueueProvider(Configuration configuration, Scheduler scheduler) {
+		return new NATSStreamEventQueueProvider(configuration, scheduler);
 	}
 	
 }

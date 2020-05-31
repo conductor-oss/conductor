@@ -28,19 +28,20 @@ import io.nats.streaming.StreamingConnection;
 import io.nats.streaming.StreamingConnectionFactory;
 import io.nats.streaming.Subscription;
 import io.nats.streaming.SubscriptionOptions;
+import rx.Scheduler;
 
 /**
  * @author Oleksiy Lysak
  */
 public class NATSStreamObservableQueue extends NATSAbstractQueue {
-    private static Logger logger = LoggerFactory.getLogger(NATSStreamObservableQueue.class);
-    private StreamingConnectionFactory fact;
+    private static final  Logger logger = LoggerFactory.getLogger(NATSStreamObservableQueue.class);
+    private final StreamingConnectionFactory fact;
     private StreamingConnection conn;
     private Subscription subs;
-    private String durableName;
-    
-    public NATSStreamObservableQueue(String clusterId, String natsUrl, String durableName, String queueURI) {
-        super(queueURI, "nats_stream");
+    private final String durableName;
+
+    public NATSStreamObservableQueue(String clusterId, String natsUrl, String durableName, String queueURI, Scheduler scheduler) {
+        super(queueURI, "nats_stream", scheduler);
         this.fact = new StreamingConnectionFactory();
         this.fact.setClusterId(clusterId);
         this.fact.setClientId(UUID.randomUUID().toString());
