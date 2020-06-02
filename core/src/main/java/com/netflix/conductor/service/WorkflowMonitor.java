@@ -18,6 +18,7 @@ package com.netflix.conductor.service;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
@@ -45,8 +46,6 @@ public class WorkflowMonitor {
 	private final QueueDAO queueDAO;
 	private final ExecutionDAOFacade executionDAOFacade;
 
-	private ScheduledExecutorService scheduledExecutorService;
-
 	private List<TaskDef> taskDefs;
 	private List<WorkflowDef> workflowDefs;
 
@@ -65,8 +64,8 @@ public class WorkflowMonitor {
 	}
 
 	public void init() {
-		this.scheduledExecutorService = Executors.newScheduledThreadPool(1);
-		this.scheduledExecutorService.scheduleWithFixedDelay(() -> {
+		ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(1);
+		scheduledExecutorService.scheduleWithFixedDelay(() -> {
 			try {
 				if (refreshCounter <= 0) {
 					workflowDefs = metadataDAO.getAllWorkflowDefs();
@@ -90,6 +89,16 @@ public class WorkflowMonitor {
 						Monitors.recordTaskInProgress(taskDef.getName(), inProgressCount, taskDef.getOwnerApp());
 					}
 				});
+
+				WorkflowSystemTask.all()
+						.stream()
+						.filter(WorkflowSystemTask::isAsync)
+						.forEach(workflowSystemTask -> {
+							long size = queueDAO.getSize(workflowSystemTask.getName());
+							long inProgressCount = executionDAOFacade.getInProgressTaskCount(workflowSystemTask.getName());
+							Monitors.recordQueueDepth(workflowSystemTask.getName(), size, "system");
+							Monitors.recordTaskInProgress(workflowSystemTask.getName(), inProgressCount, "system");
+						});
 
 				refreshCounter--;
 			} catch (Exception e) {
