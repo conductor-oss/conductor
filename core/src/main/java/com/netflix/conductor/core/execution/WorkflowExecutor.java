@@ -1245,12 +1245,12 @@ public class WorkflowExecutor {
     }
 
     @VisibleForTesting
-    void setTaskDomains(List<Task> tasks, Workflow wf) {
-        Map<String, String> taskToDomain = wf.getTaskToDomain();
+    void setTaskDomains(List<Task> tasks, Workflow workflow) {
+        Map<String, String> taskToDomain = workflow.getTaskToDomain();
         if (taskToDomain != null) {
             // Step 1: Apply * mapping to all tasks, if present.
             String domainstr = taskToDomain.get("*");
-            if (domainstr != null) {
+            if (StringUtils.isNotBlank(domainstr)) {
                 String[] domains = domainstr.split(",");
                 tasks.forEach(task -> {
                     // Filter out SystemTask
@@ -1260,7 +1260,6 @@ public class WorkflowExecutor {
                         task.setDomain(getActiveDomain(task.getTaskType(), domains));
                     }
                 });
-
             }
             // Step 2: Override additional mappings.
             tasks.forEach(task -> {
