@@ -52,6 +52,7 @@ dependencies {
 }
 
 shadowJar {
+    zip64 true
     mergeServiceFiles()
     configurations = [project.configurations.compile]
     manifest {
