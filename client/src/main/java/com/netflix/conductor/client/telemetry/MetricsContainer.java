@@ -37,7 +37,7 @@ public class MetricsContainer {
     private static final String WORFLOW_TYPE = "workflowType";
     private static final String WORKFLOW_VERSION = "version";
     private static final String EXCEPTION = "exception";
-    private static final String NAME = "name";
+    private static final String ENTITY_NAME = "entityName";
     private static final String OPERATION = "operation";
     private static final String PAYLOAD_TYPE = "payload_type";
 
@@ -162,7 +162,7 @@ public class MetricsContainer {
     }
 
     public static void incrementExternalPayloadUsedCount(String name, String operation, String payloadType) {
-        incrementCount(EXTERNAL_PAYLOAD_USED, NAME, name, OPERATION, operation, PAYLOAD_TYPE, payloadType);
+        incrementCount(EXTERNAL_PAYLOAD_USED, ENTITY_NAME, name, OPERATION, operation, PAYLOAD_TYPE, payloadType);
     }
 
     public static void incrementWorkflowStartErrorCount(String workflowType, Throwable t) {
@@ -177,6 +177,6 @@ public class MetricsContainer {
      * @param className the name of the class which initialized the client
      */
     public static void incrementInitializationCount(String className) {
-        incrementCount(CLIENT_INITIALIZED, NAME, className);
+        incrementCount(CLIENT_INITIALIZED, ENTITY_NAME, className);
     }
 }
