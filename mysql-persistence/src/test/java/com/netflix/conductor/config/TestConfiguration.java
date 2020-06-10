@@ -57,6 +57,11 @@ public class TestConfiguration implements MySQLConfiguration {
 	}
 
 	@Override
+	public boolean isEventExecutionIndexingEnabled() {
+		return true;
+	}
+
+	@Override
 	public String getServerId() {
 		try {
 			return InetAddress.getLocalHost().getHostName();

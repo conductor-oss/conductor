@@ -57,6 +57,11 @@ public class SystemPropertiesConfiguration implements Configuration {
     }
 
     @Override
+    public boolean isEventExecutionIndexingEnabled() {
+        return getBooleanProperty(EVENT_EXECUTION_INDEXING_ENABLED_PROPERTY_NAME, EVENT_EXECUTION_INDEXING_ENABLED_DEFAULT_VALUE);
+    }
+
+    @Override
     public String getServerId() {
         try {
             return InetAddress.getLocalHost().getHostName();

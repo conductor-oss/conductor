@@ -411,12 +411,13 @@ public class ExecutionDAOFacade {
         indexEventExecution(eventExecution);
     }
 
-    private void indexEventExecution(EventExecution eventExecution)
-    {
-        if (config.enableAsyncIndexing()) {
-            indexDAO.asyncAddEventExecution(eventExecution);
-        } else {
-            indexDAO.addEventExecution(eventExecution);
+    private void indexEventExecution(EventExecution eventExecution) {
+        if (config.isEventExecutionIndexingEnabled()) {
+            if (config.enableAsyncIndexing()) {
+                indexDAO.asyncAddEventExecution(eventExecution);
+            } else {
+                indexDAO.addEventExecution(eventExecution);
+            }
         }
     }
 

@@ -90,6 +90,9 @@ public interface Configuration {
     String EVENT_MESSAGE_INDEXING_ENABLED_PROPERTY_NAME = "workflow.event.message.indexing.enabled";
     boolean EVENT_MESSAGE_INDEXING_ENABLED_DEFAULT_VALUE = true;
 
+    String EVENT_EXECUTION_INDEXING_ENABLED_PROPERTY_NAME = "workflow.event.execution.indexing.enabled";
+    boolean EVENT_EXECUTION_INDEXING_ENABLED_DEFAULT_VALUE = true;
+
     String TASKEXECLOG_INDEXING_ENABLED_PROPERTY_NAME = "workflow.taskExecLog.indexing.enabled";
     boolean TASKEXECLOG_INDEXING_ENABLED_DEFAULT_VALUE = true;
 
@@ -213,6 +216,11 @@ public interface Configuration {
      * @return when set to true, message from the event processing are indexed
      */
     boolean isEventMessageIndexingEnabled();
+
+    /**
+     * @return when set to true, event execution results are indexed
+     */
+    boolean isEventExecutionIndexingEnabled();
 
     /**
      * @return ID of the server.  Can be host name, IP address or any other meaningful identifier.  Used for logging

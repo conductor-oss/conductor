@@ -57,6 +57,11 @@ public class TestConfiguration implements PostgresConfiguration {
     }
 
     @Override
+    public boolean isEventExecutionIndexingEnabled() {
+        return true;
+    }
+
+    @Override
     public String getServerId() {
         try {
             return InetAddress.getLocalHost().getHostName();
