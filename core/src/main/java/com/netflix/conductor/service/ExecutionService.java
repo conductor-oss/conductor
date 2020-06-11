@@ -140,13 +140,14 @@ public class ExecutionService {
 				if (task == null || task.getStatus().isTerminal()) {
 					// Remove taskId(s) without a valid Task/terminal state task from the queue
 					queueDAO.remove(queueName, taskId);
-					logger.debug("Removed taskId from the queue: {}, {}", queueName, taskId);
+					logger.debug("Removed task: {} from the queue: {}", taskId, queueName);
 					continue;
 				}
 
 				if (executionDAOFacade.exceedsInProgressLimit(task)) {
 					// Postpone a message, so that it would be available for poll again.
 					queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSeconds);
+					logger.debug("Postponed task: {} in queue: {} by {} seconds", taskId, queueName, queueTaskMessagePostponeSeconds);
 					continue;
 				}
 
