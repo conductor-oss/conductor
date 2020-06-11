@@ -124,7 +124,7 @@ gulp.task('styles', () => {
 });
 
 gulp.task('public', () => {
-  gulp.src(paths.srcPublic).pipe(gulp.dest(paths.dist));
+  return gulp.src(paths.srcPublic).pipe(gulp.dest(paths.dist));
 });
 
 gulp.task('fonts', () => {
