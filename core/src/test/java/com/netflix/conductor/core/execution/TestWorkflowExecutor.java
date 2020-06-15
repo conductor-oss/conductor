@@ -1,17 +1,14 @@
 /*
- * Copyright 2017 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.core.execution;
 
@@ -47,6 +44,7 @@ import com.netflix.conductor.common.metadata.workflow.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
@@ -880,6 +878,7 @@ public class TestWorkflowExecutor {
         when(executionDAOFacade.getTaskPollDataByDomain(anyString(), anyString())).thenReturn(pollData1);
         workflowExecutor.setTaskDomains(tasks, workflow);
 
+        assertNotNull(tasks);
         tasks.forEach(task -> assertEquals("mydomain", task.getDomain()));
     }
 
@@ -1163,6 +1162,55 @@ public class TestWorkflowExecutor {
         assertEquals(Workflow.WorkflowStatus.RUNNING, subWorkflow.getStatus());
         assertEquals(Status.IN_PROGRESS, task.getStatus());
         assertEquals(Workflow.WorkflowStatus.RUNNING, parentWorkflow.getStatus());
+    }
+
+    @Test
+    public void testResetCallbacksForWorkflowTasks() {
+        String workflowId = "test-workflow-id";
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId(workflowId);
+        workflow.setStatus(WorkflowStatus.RUNNING);
+
+        Task completedTask = new Task();
+        completedTask.setTaskType(TaskType.SIMPLE.name());
+        completedTask.setReferenceTaskName("completedTask");
+        completedTask.setWorkflowInstanceId(workflowId);
+        completedTask.setScheduledTime(System.currentTimeMillis());
+        completedTask.setCallbackAfterSeconds(300);
+        completedTask.setTaskId("simple-task-id");
+        completedTask.setStatus(Status.COMPLETED);
+
+        Task systemTask = new Task();
+        systemTask.setTaskType(TaskType.WAIT.name());
+        systemTask.setReferenceTaskName("waitTask");
+        systemTask.setWorkflowInstanceId(workflowId);
+        systemTask.setScheduledTime(System.currentTimeMillis());
+        systemTask.setTaskId("system-task-id");
+        systemTask.setStatus(Status.SCHEDULED);
+
+        Task simpleTask = new Task();
+        simpleTask.setTaskType(TaskType.SIMPLE.name());
+        simpleTask.setReferenceTaskName("simpleTask");
+        simpleTask.setWorkflowInstanceId(workflowId);
+        simpleTask.setScheduledTime(System.currentTimeMillis());
+        simpleTask.setCallbackAfterSeconds(300);
+        simpleTask.setTaskId("simple-task-id");
+        simpleTask.setStatus(Status.SCHEDULED);
+
+        Task noCallbackTask = new Task();
+        noCallbackTask.setTaskType(TaskType.SIMPLE.name());
+        noCallbackTask.setReferenceTaskName("noCallbackTask");
+        noCallbackTask.setWorkflowInstanceId(workflowId);
+        noCallbackTask.setScheduledTime(System.currentTimeMillis());
+        noCallbackTask.setCallbackAfterSeconds(0);
+        noCallbackTask.setTaskId("no-callback-task-id");
+        noCallbackTask.setStatus(Status.SCHEDULED);
+
+        workflow.getTasks().addAll(Arrays.asList(completedTask, systemTask, simpleTask, noCallbackTask));
+        when(executionDAOFacade.getWorkflowById(workflowId, true)).thenReturn(workflow);
+
+        workflowExecutor.resetCallbacksForWorkflow(workflowId);
+        verify(queueDAO, times(1)).resetOffsetTime(anyString(), anyString());
     }
 
     private Workflow generateSampleWorkflow() {

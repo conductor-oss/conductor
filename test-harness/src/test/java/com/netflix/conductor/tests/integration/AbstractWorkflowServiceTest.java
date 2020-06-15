@@ -3341,7 +3341,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertNull(task);
 
         // Reset the callbackAfterSeconds
-        workflowExecutor.resetCallbacksForInProgressTasks(workflowId);
+        workflowExecutor.resetCallbacksForWorkflow(workflowId);
 
         // Now Polling for the first task should return the same task as before
         task = workflowExecutionService.poll("junit_task_1", "task1.junit.worker");
