@@ -49,6 +49,9 @@ public interface Configuration {
     String SYSTEM_TASK_WORKER_ISOLATED_THREAD_COUNT_PROPERTY_NAME = "workflow.isolated.system.task.worker.thread.count";
     int SYSTEM_TASK_WORKER_ISOLATED_THREAD_COUNT_DEFAULT_VALUE = 1;
 
+    String SYSTEM_TASK_MAX_POLL_COUNT_PROPERTY_NAME = "workflow.system.task.queue.pollCount";
+    int SYSTEM_TASK_MAX_POLL_COUNT_DEFAULT_VALUE = 1;
+
     String ENVIRONMENT_PROPERTY_NAME = "environment";
     String ENVIRONMENT_DEFAULT_VALUE = "test";
 
@@ -193,6 +196,13 @@ public interface Configuration {
      */
     default int getSystemTaskWorkerIsolatedThreadCount() {
         return getIntProperty(SYSTEM_TASK_WORKER_ISOLATED_THREAD_COUNT_PROPERTY_NAME, SYSTEM_TASK_WORKER_ISOLATED_THREAD_COUNT_DEFAULT_VALUE);
+    }
+
+    /**
+     * @return the max number of system task to poll from queues
+     */
+    default int getSystemTaskMaxPollCount() {
+        return getIntProperty(SYSTEM_TASK_MAX_POLL_COUNT_PROPERTY_NAME, SYSTEM_TASK_MAX_POLL_COUNT_DEFAULT_VALUE);
     }
 
     /**

@@ -43,6 +43,7 @@ class SystemTaskExecutor {
     ExecutionConfig defaultExecutionConfig;
     private final WorkflowExecutor workflowExecutor;
     private final Configuration config;
+    private final int maxPollCount;
 
     ConcurrentHashMap<String, ExecutionConfig> queueExecutionConfigMap = new ConcurrentHashMap<>();
 
@@ -55,6 +56,7 @@ class SystemTaskExecutor {
         this.defaultExecutionConfig = new ExecutionConfig(threadCount, threadNameFormat);
         this.workflowExecutor = workflowExecutor;
         this.queueDAO = queueDAO;
+        this.maxPollCount = config.getSystemTaskMaxPollCount();
 
         LOGGER.info("Initialized the SystemTaskExecutor with {} threads and callback time: {} seconds", threadCount,
             callbackTime);
@@ -67,33 +69,57 @@ class SystemTaskExecutor {
         ExecutorService executorService = executionConfig.getExecutorService();
         String taskName = QueueUtils.getTaskType(queueName);
 
-        if (!semaphoreUtil.canProcess()) {
+        if (!semaphoreUtil.acquireSlots(1)) {
             // no available permits, do not poll
             Monitors.recordSystemTaskWorkerPollingLimited(queueName);
             return;
         }
+
+        int acquiredSlots = 1;
+
         try {
-            List<String> polledTaskIds = queueDAO.pop(queueName, 1, 200);
+            //Since already one slot is acquired, now try if maxSlot-1 is available
+            int slotsToAcquire = Math.min(semaphoreUtil.availableSlots(), maxPollCount - 1);
+
+            // Try to acquires remaining permits to achieve maxPollCount
+            if (slotsToAcquire > 0 && semaphoreUtil.acquireSlots(slotsToAcquire)) {
+                acquiredSlots += slotsToAcquire;
+            }
+            LOGGER.debug("Polling queue: {} with {} slots acquired", queueName, acquiredSlots);
+
+            List<String> polledTaskIds = queueDAO.pop(queueName, acquiredSlots, 200);
+
             Monitors.recordTaskPoll(queueName);
             LOGGER.debug("Polling queue:{}, got {} tasks", queueName, polledTaskIds.size());
-            if (polledTaskIds.size() == 1 && StringUtils.isNotBlank(polledTaskIds.get(0))) {
-                String taskId = polledTaskIds.get(0);
-                LOGGER.debug("Task: {} from queue: {} being sent to the workflow executor", taskId, queueName);
-                Monitors.recordTaskPollCount(queueName, "", 1);
 
-                WorkflowSystemTask systemTask = SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.get(taskName);
-                CompletableFuture<Void> taskCompletableFuture = CompletableFuture.runAsync(() ->
-                    workflowExecutor.executeSystemTask(systemTask, taskId, callbackTime), executorService);
+            if (polledTaskIds.size() > 0) {
+                // Immediately release unused permits when polled no. of messages are less than acquired permits
+                if (polledTaskIds.size() < acquiredSlots) {
+                    semaphoreUtil.completeProcessing(acquiredSlots - polledTaskIds.size());
+                }
 
-                // release permit after processing is complete
-                taskCompletableFuture.whenComplete((r, e) -> semaphoreUtil.completeProcessing());
+                for (String taskId : polledTaskIds) {
+                    if (StringUtils.isNotBlank(taskId)) {
+                        LOGGER.debug("Task: {} from queue: {} being sent to the workflow executor", taskId, queueName);
+                        Monitors.recordTaskPollCount(queueName, "", 1);
+
+                        WorkflowSystemTask systemTask = SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.get(taskName);
+                        CompletableFuture<Void> taskCompletableFuture = CompletableFuture.runAsync(() ->
+                                workflowExecutor.executeSystemTask(systemTask, taskId, callbackTime), executorService);
+
+                        // release permit after processing is complete
+                        taskCompletableFuture.whenComplete((r, e) -> semaphoreUtil.completeProcessing(1));
+                    } else {
+                        semaphoreUtil.completeProcessing(1);
+                    }
+                }
             } else {
                 // no task polled, release permit
-                semaphoreUtil.completeProcessing();
+                semaphoreUtil.completeProcessing(acquiredSlots);
             }
         } catch (Exception e) {
             // release the permit if exception is thrown during polling, because the thread would not be busy
-            semaphoreUtil.completeProcessing();
+            semaphoreUtil.completeProcessing(acquiredSlots);
             Monitors.recordTaskPollError(taskName, "", e.getClass().getSimpleName());
             LOGGER.error("Error polling system task in queue:{}", queueName, e);
         }

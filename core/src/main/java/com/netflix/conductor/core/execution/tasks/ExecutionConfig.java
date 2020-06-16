@@ -25,7 +25,7 @@ class ExecutionConfig {
     private ExecutorService executorService;
     private SemaphoreUtil semaphoreUtil;
 
-    public ExecutionConfig(int threadCount, String threadNameFormat) {
+    ExecutionConfig(int threadCount, String threadNameFormat) {
 
         this.executorService = Executors.newFixedThreadPool(threadCount,
             new ThreadFactoryBuilder().setNameFormat(threadNameFormat).build());

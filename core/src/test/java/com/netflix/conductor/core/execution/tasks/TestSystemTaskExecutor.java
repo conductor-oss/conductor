@@ -38,6 +38,7 @@ import java.util.concurrent.TimeUnit;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 @SuppressWarnings("UnstableApiUsage")
 public class TestSystemTaskExecutor {
@@ -84,7 +85,7 @@ public class TestSystemTaskExecutor {
     }
 
     @Test
-    public void testPollAndExecuteSytemTask() {
+    public void testPollAndExecuteSystemTask() {
         System.setProperty("workflow.system.task.worker.thread.count", "1");
         Configuration configuration = new SystemPropertiesConfiguration();
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(Collections.singletonList("taskId"));
@@ -102,6 +103,36 @@ public class TestSystemTaskExecutor {
 
         Uninterruptibles.awaitUninterruptibly(latch);
         verify(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+    }
+
+    @Test
+    public void testBatchPollAndExecuteSystemTask() {
+        try
+        {
+            System.setProperty("workflow.system.task.worker.thread.count", "2");
+            System.setProperty("workflow.system.task.queue.pollCount", "2");
+            Configuration configuration = new SystemPropertiesConfiguration();
+
+            when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(Collections.nCopies(2, "taskId"));
+            systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration);
+
+            CountDownLatch latch = new CountDownLatch(10);
+            doAnswer(invocation -> {
+                        latch.countDown();
+                        return null;
+                    }
+            ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+
+            scheduledExecutorService.scheduleAtFixedRate(
+                    () -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+
+            Uninterruptibles.awaitUninterruptibly(latch);
+            verify(workflowExecutor, Mockito.times(10)).executeSystemTask(any(), anyString(), anyInt());
+        }
+        finally {
+            //Revert the batch poll settings
+            System.setProperty("workflow.system.task.queue.pollCount", "1");
+        }
     }
 
     @Test
@@ -146,6 +177,37 @@ public class TestSystemTaskExecutor {
 
         Uninterruptibles.awaitUninterruptibly(latch);
         verify(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+    }
+
+    @Test
+    public void testBatchPollException() {
+        try
+        {
+            System.setProperty("workflow.system.task.queue.pollCount", "2");
+            System.setProperty("workflow.system.task.worker.thread.count", "2");
+            Configuration configuration = new SystemPropertiesConfiguration();
+            when(queueDAO.pop(anyString(), anyInt(), anyInt()))
+                    .thenThrow(RuntimeException.class)
+                    .thenReturn(Collections.nCopies(2,"taskId"));
+            systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration);
+
+            CountDownLatch latch = new CountDownLatch(2);
+            doAnswer(invocation -> {
+                        latch.countDown();
+                        return null;
+                    }
+            ).when(workflowExecutor).executeSystemTask(any(), anyString(), anyInt());
+
+            scheduledExecutorService.scheduleAtFixedRate(
+                    () -> systemTaskExecutor.pollAndExecute(TEST_TASK), 0, 1, TimeUnit.SECONDS);
+
+            Uninterruptibles.awaitUninterruptibly(latch);
+            verify(workflowExecutor, Mockito.times(2)).executeSystemTask(any(), anyString(), anyInt());
+        }
+        finally {
+            //Revert the batch poll settings
+            System.setProperty("workflow.system.task.queue.pollCount", "1");
+        }
     }
 
     @Test

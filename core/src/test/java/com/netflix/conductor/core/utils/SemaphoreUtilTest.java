@@ -35,7 +35,7 @@ public class SemaphoreUtilTest {
 
         List<CompletableFuture<Void>> futuresList = new ArrayList<>();
         IntStream.range(0, threads).forEach(
-            t -> futuresList.add(CompletableFuture.runAsync(semaphoreUtil::canProcess, executorService)));
+            t -> futuresList.add(CompletableFuture.runAsync(()-> semaphoreUtil.acquireSlots(1), executorService)));
 
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(
             futuresList.toArray(new CompletableFuture[futuresList.size()]));
@@ -43,7 +43,7 @@ public class SemaphoreUtilTest {
         allFutures.get();
 
         assertEquals(0, semaphoreUtil.availableSlots());
-        assertFalse(semaphoreUtil.canProcess());
+        assertFalse(semaphoreUtil.acquireSlots(1));
 
         executorService.shutdown();
     }
@@ -56,17 +56,17 @@ public class SemaphoreUtilTest {
 
         List<CompletableFuture<Void>> futuresList = new ArrayList<>();
         IntStream.range(0, threads).forEach(
-            t -> futuresList.add(CompletableFuture.runAsync(semaphoreUtil::canProcess, executorService)));
+            t -> futuresList.add(CompletableFuture.runAsync(()-> semaphoreUtil.acquireSlots(1), executorService)));
 
         CompletableFuture<Void> allFutures = CompletableFuture.allOf(
             futuresList.toArray(new CompletableFuture[futuresList.size()]));
         allFutures.get();
 
         assertEquals(0, semaphoreUtil.availableSlots());
-        semaphoreUtil.completeProcessing();
+        semaphoreUtil.completeProcessing(1);
 
         assertTrue(semaphoreUtil.availableSlots() > 0);
-        assertTrue(semaphoreUtil.canProcess());
+        assertTrue(semaphoreUtil.acquireSlots(1));
 
         executorService.shutdown();
     }
