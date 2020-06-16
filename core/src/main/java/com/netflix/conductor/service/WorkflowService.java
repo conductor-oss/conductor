@@ -209,7 +209,7 @@ public interface WorkflowService {
     void retryWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
 
     /**
-     * Resets callback times of all in_progress tasks to 0.
+     * Resets callback times of all non-terminal SIMPLE tasks to 0.
      *
      * @param workflowId WorkflowId of the workflow.
      */

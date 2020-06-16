@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
  * the License. You may obtain a copy of the License at
@@ -425,24 +425,26 @@ public class WorkflowExecutor {
 
 
     /**
-     * @param workflowId the id of the workflow for which callbacks are to be reset
+     * @param workflowId the id of the workflow for which task callbacks are to be reset
      * @throws ApplicationException if the workflow is in terminal state
      */
-    public void resetCallbacksForInProgressTasks(String workflowId) {
+    public void resetCallbacksForWorkflow(String workflowId) {
         Workflow workflow = executionDAOFacade.getWorkflowById(workflowId, true);
         if (workflow.getStatus().isTerminal()) {
             throw new ApplicationException(CONFLICT, "Workflow is in terminal state. Status =" + workflow.getStatus());
         }
 
-        // Get tasks that have callbackAfterSeconds > 0 and set the callbackAfterSeconds to 0
-        for (Task task : workflow.getTasks()) {
-            if (task.getCallbackAfterSeconds() > 0) {
+        // Get SIMPLE tasks in SCHEDULED state that have callbackAfterSeconds > 0 and set the callbackAfterSeconds to 0
+        workflow.getTasks().stream()
+            .filter(task -> !isSystemTask.test(task)
+                && SCHEDULED.equals(task.getStatus())
+                && task.getCallbackAfterSeconds() > 0)
+            .forEach(task -> {
                 if (queueDAO.resetOffsetTime(QueueUtils.getQueueName(task), task.getTaskId())) {
                     task.setCallbackAfterSeconds(0);
                     executionDAOFacade.updateTask(task);
                 }
-            }
-        }
+            });
     }
 
     public String rerun(RerunWorkflowRequest request) {

@@ -852,7 +852,7 @@ class SimpleWorkflowSpec extends Specification {
         !pollTaskTry3
 
         when:"The callbackSeconds of the tasks in progress for the workflow are reset"
-        workflowExecutor.resetCallbacksForInProgressTasks(workflowInstanceId)
+        workflowExecutor.resetCallbacksForWorkflow(workflowInstanceId)
 
         and:"the 'integration_task_1' is polled again after all the in progress tasks are reset"
         def task1Try4Tuple = workflowTestUtil.pollAndCompleteTask('integration_task_1',
