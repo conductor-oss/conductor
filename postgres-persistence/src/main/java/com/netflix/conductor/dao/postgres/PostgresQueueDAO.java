@@ -248,19 +248,16 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
             return messages;
         }
 
-        final String POP_MESSAGES = "UPDATE queue_message SET popped = true WHERE queue_name = ? AND message_id IN (%s) AND popped = false";
+        List<Message> poppedMessages = new ArrayList<>();
+        for (Message message: messages) {
+            final String POP_MESSAGE = "UPDATE queue_message SET popped = true WHERE queue_name = ? AND message_id = ? AND popped = false";
+            int result = query(connection, POP_MESSAGE, q -> q.addParameter(queueName).addParameter(message.getId()).executeUpdate());
 
-        final List<String> Ids = messages.stream().map(Message::getId).collect(Collectors.toList());
-        final String query = String.format(POP_MESSAGES, Query.generateInBindings(messages.size()));
-
-        int result = query(connection, query, q -> q.addParameter(queueName).addParameters(Ids).executeUpdate());
-
-        if (result != messages.size()) {
-            String message = String.format("Could not pop all messages for given ids: %s (%d messages were popped)",
-                    Ids, result);
-            throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, message);
+            if (result == 1) {
+                poppedMessages.add(message);
+            }
         }
-        return messages;
+        return poppedMessages;
     }
 
 
