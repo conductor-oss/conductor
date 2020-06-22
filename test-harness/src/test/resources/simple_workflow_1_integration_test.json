@@ -8,6 +8,7 @@
     "inputParameters" : {
       "p1" : "${workflow.input.param1}",
       "p2" : "${workflow.input.param2}",
+      "p3" : "${CPEWF_TASK_ID}",
       "someNullKey" : null
     },
     "type" : "SIMPLE",
@@ -25,7 +26,8 @@
     "taskReferenceName" : "t2",
     "inputParameters" : {
       "tp1" : "${workflow.input.param1}",
-      "tp2" : "${t1.output.op}"
+      "tp2" : "${t1.output.op}",
+      "tp3" : "${CPEWF_TASK_ID}"
     },
     "type" : "SIMPLE",
     "decisionCases" : { },

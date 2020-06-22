@@ -79,7 +79,7 @@ public class DoWhileTest {
         executionLockService = Mockito.mock(ExecutionLockService.class);
         config = Mockito.mock(Configuration.class);
         provider = spy(new WorkflowExecutor(deciderService, metadataDAO, queueDAO, metadataMapperService,
-                workflowStatusListener, executionDAOFacade, config, executionLockService));
+                workflowStatusListener, executionDAOFacade, config, executionLockService, parametersUtils));
         loopWorkflowTask1 = new WorkflowTask();
         loopWorkflowTask1.setTaskReferenceName("task1");
         loopWorkflowTask1.setName("task1");
