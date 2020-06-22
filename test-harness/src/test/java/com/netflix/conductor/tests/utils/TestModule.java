@@ -21,7 +21,7 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
 import com.netflix.conductor.core.execution.WorkflowStatusListener;
 import com.netflix.conductor.core.execution.WorkflowStatusListenerStub;
-import com.netflix.conductor.core.utils.NoopLockModule;
+import com.netflix.conductor.core.utils.LocalOnlyLockModule;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.IndexDAO;
@@ -36,10 +36,12 @@ import com.netflix.conductor.dao.dynomite.RedisPollDataDAO;
 import com.netflix.conductor.dao.dynomite.RedisRateLimitingDAO;
 import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
 import com.netflix.conductor.dyno.RedisQueuesProvider;
+import com.netflix.conductor.dyno.RedisQueuesShardingStrategyProvider;
 import com.netflix.conductor.server.LocalRedisModule;
 import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.service.MetadataServiceImpl;
 import com.netflix.dyno.queues.redis.RedisQueues;
+import com.netflix.dyno.queues.redis.sharding.ShardingStrategy;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -63,6 +65,7 @@ public class TestModule extends AbstractModule {
         MockConfiguration config = new MockConfiguration();
         bind(Configuration.class).toInstance(config);
         install(new LocalRedisModule());
+        bind(ShardingStrategy.class).toProvider(RedisQueuesShardingStrategyProvider.class).asEagerSingleton();
         bind(RedisQueues.class).toProvider(RedisQueuesProvider.class);
 
         bind(MetadataDAO.class).to(RedisMetadataDAO.class);
@@ -81,7 +84,7 @@ public class TestModule extends AbstractModule {
         bind(UserTask.class).asEagerSingleton();
         bind(ObjectMapper.class).toProvider(JsonMapperProvider.class);
         bind(ExternalPayloadStorage.class).to(MockExternalPayloadStorage.class);
-        install(new NoopLockModule());
+        install(new LocalOnlyLockModule());
     }
 
     @Provides

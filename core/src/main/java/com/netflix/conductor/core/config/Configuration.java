@@ -436,6 +436,6 @@ public interface Configuration {
     }
 
     enum LOCKING_SERVER {
-        NOOP_LOCK, REDIS, ZOOKEEPER
+        NOOP_LOCK, REDIS, ZOOKEEPER, LOCAL_ONLY
     }
 }

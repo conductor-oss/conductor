@@ -14,6 +14,7 @@ package com.netflix.conductor.dyno;
 
 import com.netflix.dyno.queues.ShardSupplier;
 import com.netflix.dyno.queues.redis.RedisQueues;
+import com.netflix.dyno.queues.redis.sharding.ShardingStrategy;
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
@@ -31,18 +32,21 @@ public class RedisQueuesProvider implements Provider<RedisQueues> {
     private final JedisCommands dynoClientRead;
     private final ShardSupplier shardSupplier;
     private final DynomiteConfiguration configuration;
+    private final ShardingStrategy shardingStrategy;
 
     @Inject
     public RedisQueuesProvider(
             JedisCommands dynoClient,
             @Named(READ_CLIENT_INJECTION_NAME) JedisCommands dynoClientRead,
             ShardSupplier ss,
-            DynomiteConfiguration config
+            DynomiteConfiguration config,
+            ShardingStrategy shardingStrategy
     ) {
         this.dynoClient = dynoClient;
         this.dynoClientRead = dynoClientRead;
         this.shardSupplier = ss;
         this.configuration = config;
+        this.shardingStrategy = shardingStrategy;
     }
 
     @Override
@@ -53,7 +57,8 @@ public class RedisQueuesProvider implements Provider<RedisQueues> {
                 configuration.getQueuePrefix(),
                 shardSupplier,
                 60_000,
-                60_000
+                60_000,
+                shardingStrategy
         );
 
         logger.info("DynoQueueDAO initialized with prefix " + configuration.getQueuePrefix() + "!");

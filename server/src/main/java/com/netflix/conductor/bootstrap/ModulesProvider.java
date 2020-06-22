@@ -25,6 +25,7 @@ import com.netflix.conductor.contribs.kafka.KafkaProducerManager;
 import com.netflix.conductor.contribs.kafka.KafkaPublishTask;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.JacksonModule;
+import com.netflix.conductor.core.utils.LocalOnlyLockModule;
 import com.netflix.conductor.core.utils.NoopLockModule;
 import com.netflix.conductor.core.execution.WorkflowExecutorModule;
 import com.netflix.conductor.core.utils.DummyPayloadStorage;
@@ -159,6 +160,10 @@ public class ModulesProvider implements Provider<List<AbstractModule>> {
                 case ZOOKEEPER:
                     modules.add(new ZookeeperModule());
                     logger.info("Starting locking module using Zookeeper cluster.");
+                    break;
+                case LOCAL_ONLY:
+                    modules.add(new LocalOnlyLockModule());
+                    logger.info("Starting locking module using local only JVM locking.");
                     break;
                 default:
                     break;
