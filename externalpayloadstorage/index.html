@@ -276,15 +276,57 @@ In such cases, conductor will reject such payloads and will terminate/fail the w
 <h2 id="usage">Usage<a class="headerlink" href="#usage" title="Permanent link">&para;</a></h2>
 <h3 id="barriers-setup">Barriers setup<a class="headerlink" href="#barriers-setup" title="Permanent link">&para;</a></h3>
 <p>Set the following properties to the desired values in the JVM system properties:</p>
-<p>| Property | Description | default value |
-| conductor.workflow.input.payload.threshold.kb | Soft barrier for workflow input payload in KB | 5120 |
-| conductor.max.workflow.input.payload.threshold.kb | Hard barrier for workflow input payload in KB | 10240 |
-| conductor.workflow.output.payload.threshold.kb | Soft barrier for workflow output payload in KB | 5120 |
-| conductor.max.workflow.output.payload.threshold.kb | Hard barrier for workflow output payload in KB | 10240 |
-| conductor.task.input.payload.threshold.kb | Soft barrier for task input payload in KB | 3072 |
-| conductor.max.task.input.payload.threshold.kb | Hard barrier for task input payload in KB | 10240 |
-| conductor.task.output.payload.threshold.kb | Soft barrier for task output payload in KB | 3072 |
-| conductor.max.task.output.payload.threshold.kb | Hard barrier for task output payload in KB | 10240 |</p>
+<table>
+<thead>
+<tr>
+<th>Property</th>
+<th>Description</th>
+<th>default value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>conductor.workflow.input.payload.threshold.kb</td>
+<td>Soft barrier for workflow input payload in KB</td>
+<td>5120</td>
+</tr>
+<tr>
+<td>conductor.max.workflow.input.payload.threshold.kb</td>
+<td>Hard barrier for workflow input payload in KB</td>
+<td>10240</td>
+</tr>
+<tr>
+<td>conductor.workflow.output.payload.threshold.kb</td>
+<td>Soft barrier for workflow output payload in KB</td>
+<td>5120</td>
+</tr>
+<tr>
+<td>conductor.max.workflow.output.payload.threshold.kb</td>
+<td>Hard barrier for workflow output payload in KB</td>
+<td>10240</td>
+</tr>
+<tr>
+<td>conductor.task.input.payload.threshold.kb</td>
+<td>Soft barrier for task input payload in KB</td>
+<td>3072</td>
+</tr>
+<tr>
+<td>conductor.max.task.input.payload.threshold.kb</td>
+<td>Hard barrier for task input payload in KB</td>
+<td>10240</td>
+</tr>
+<tr>
+<td>conductor.task.output.payload.threshold.kb</td>
+<td>Soft barrier for task output payload in KB</td>
+<td>3072</td>
+</tr>
+<tr>
+<td>conductor.max.task.output.payload.threshold.kb</td>
+<td>Hard barrier for task output payload in KB</td>
+<td>10240</td>
+</tr>
+</tbody>
+</table>
 <h3 id="amazon-s3">Amazon S3<a class="headerlink" href="#amazon-s3" title="Permanent link">&para;</a></h3>
 <p>Conductor provides an implementation of <a href="https://aws.amazon.com/s3/">Amazon S3</a> used to externalize large payload storage.<br />
 Set the following property in the JVM system properties:</p>

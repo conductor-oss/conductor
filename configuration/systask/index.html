@@ -638,13 +638,38 @@ The task takes 3 parameters:</p>
 </tr>
 </tbody>
 </table>
-<p><strong>subWorkflowParam</strong>
-|name|type|description|
-|---|---|---|
-| name | String | Name of the workflow to execute |
-| version | Integer | Version of the workflow to execute |
-| taskToDomain | Map[String, String] | Allows scheduling the sub workflow's tasks per given mappings. See <a href="configuration/taskdomains/">Task Domains</a> for instructions to configure taskDomains. | 
-| workflowInput | Map[String, Any] | Input to pass to the workflow as inputParameters. If empty or null, the inputParameters of the sub_workflow task is passed to the subworkflow directly. |</p>
+<p><strong>subWorkflowParam</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>type</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>name</td>
+<td>String</td>
+<td>Name of the workflow to execute</td>
+</tr>
+<tr>
+<td>version</td>
+<td>Integer</td>
+<td>Version of the workflow to execute</td>
+</tr>
+<tr>
+<td>taskToDomain</td>
+<td>Map[String, String]</td>
+<td>Allows scheduling the sub workflow's tasks per given mappings. See <a href="configuration/taskdomains/">Task Domains</a> for instructions to configure taskDomains.</td>
+</tr>
+<tr>
+<td>workflowDefinition</td>
+<td><a href="configuration/workflowdef/">WorkflowDefinition</a></td>
+<td>Allows starting a subworkflow with a dynamic workflow definition.</td>
+</tr>
+</tbody>
+</table>
 <p><strong>Outputs:</strong></p>
 <table>
 <thead>
@@ -664,25 +689,45 @@ The task takes 3 parameters:</p>
 </table>
 <p><strong>Example</strong></p>
 <div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sub_workflow_task&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;sub1&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SUB_WORKFLOW&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span> <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;deployment_workflow&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-      <span class="nt">&quot;taskToDomain&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;*&quot;</span><span class="p">:</span> <span class="s2">&quot;mydomain&quot;</span>
-      <span class="p">}</span>
-    <span class="p">},</span>
-    <span class="nt">&quot;anythingelse&quot;</span><span class="p">:</span>  <span class="s2">&quot;value&quot;</span>
-  <span class="p">}</span>
+    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;sub_workflow_task&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;sub1&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SUB_WORKFLOW&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;subWorkflowParam&quot;</span><span class="p">:</span> <span class="p">{</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;deployment_workflow&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+            <span class="nt">&quot;taskToDomain&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;*&quot;</span><span class="p">:</span> <span class="s2">&quot;mydomain&quot;</span>
+            <span class="p">},</span>
+            <span class="nt">&quot;workflowDefinition&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;deployment_workflow&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Deploys to CDN&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+                <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[{</span>
+                    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;deploy&quot;</span><span class="p">,</span>
+                    <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;d1&quot;</span><span class="p">,</span>
+                    <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span><span class="p">,</span>
+                    <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+                        <span class="nt">&quot;fileLocation&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.encodeLocation}&quot;</span>
+                    <span class="p">}</span>
+                <span class="p">}],</span>
+                <span class="nt">&quot;outputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+                    <span class="nt">&quot;cdn_url&quot;</span><span class="p">:</span> <span class="s2">&quot;${d1.output.location}&quot;</span>
+                <span class="p">},</span>
+                <span class="nt">&quot;failureWorkflow&quot;</span><span class="p">:</span> <span class="s2">&quot;cleanup_encode_resources&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;restartable&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+                <span class="nt">&quot;workflowStatusListenerEnabled&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+                <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;anythingelse&quot;</span><span class="p">:</span> <span class="s2">&quot;value&quot;</span>
+    <span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 
 
 <p>When executed, a <code>deployment_workflow</code> is executed with its inputs parameters set
-to the inputParameters of the <code>sub_workflow_task</code>.
+to the inputParameters of the <code>sub_workflow_task</code> and the workflow definition specified.<br />
 The task is marked as completed upon the completion of the spawned workflow. 
 If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. </p>
 <h2 id="fork">Fork<a class="headerlink" href="#fork" title="Permanent link">&para;</a></h2>

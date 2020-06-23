@@ -211,6 +211,8 @@
         
             <li><a class="toctree-l3" href="#setting-up-desired-level-of-consistency">Setting up desired level of consistency</a></li>
         
+            <li><a class="toctree-l3" href="#alternative-solution-to-distributed-decide-evaluation">Alternative solution to distributed "decide" evaluation</a></li>
+        
         </ul>
     
 
@@ -301,6 +303,73 @@ While the locking service helps to run one decide at a time, it might still be p
 <p><em>At Netflix, we use Cassandra. Considering the tradeoffs of Cassandra’s Lightweight Transactions (LWT) and the probability of this stale updates happening, and our testing results, we’ve decided to first only rollout distributed locking with Zookeeper. We'll monitor our system and add C</em> LWT if needed.</p>
 <h4 id="setting-up-desired-level-of-consistency">Setting up desired level of consistency<a class="headerlink" href="#setting-up-desired-level-of-consistency" title="Permanent link">&para;</a></h4>
 <p>Based on your requirements, it is possible to use none, one or both of the distributed locking and fencing tokens implementations.</p>
+<h4 id="alternative-solution-to-distributed-decide-evaluation">Alternative solution to distributed "decide" evaluation<a class="headerlink" href="#alternative-solution-to-distributed-decide-evaluation" title="Permanent link">&para;</a></h4>
+<p>As mentioned in the previous section, the "decide" logic is triggered from multiple places in a conductor instance. Either a direct trigger such as user starting a workflow or a timed trigger from the Sweeper service.</p>
+<blockquote>
+<p>Sweeper service is responsible for continually checking state of all workflows executions and trigger the "decide" logic which in turn can time the workflow out.</p>
+</blockquote>
+<p>In a single node deployment (single dynomite rack and single conductor server) this shouldn't be a problem. But when running multiple replicated dynomite racks and a conductor server on top of each rack, this might trigger the race condition described in previous section.</p>
+<blockquote>
+<p>Dynomite rack is a single or multiple instance dynomite setup that holds all the data.</p>
+<p>More on dynomite HA setup: (https://netflixtechblog.com/introducing-dynomite-making-non-distributed-databases-distributed-c7bce3d89404)</p>
+</blockquote>
+<p>In a cluster deployment, the default behavior for Dyno Queues is such, that it distributes the workload (round-robin style) to all the conductor servers.
+This can create a situation where the first task to be executed is queued for conductor server #1 but the sweeper service is queued for conductor server #2.</p>
+<h5 id="more-on-dyno-queues">More on dyno queues<a class="headerlink" href="#more-on-dyno-queues" title="Permanent link">&para;</a></h5>
+<p>Dyno queues are the default queuing mechanism of conductor.</p>
+<p>Queues are allocated and used for:
+<em> Task execution - each task type gets a queue
+</em> Workflow execution - single queue with all currently executing workflows (deciderQueue)
+  * This queue is used by SweeperService</p>
+<p><strong>Each conductor server instance gets its own set of queues</strong>. Or more precisely a queue shard of its own.
+This means that if you have 2 task types, you end up with 6 queues altogether e.g.</p>
+<div class="codehilite"><pre><span></span>conductor_queues.test.QUEUE._deciderQueue.c
+conductor_queues.test.QUEUE._deciderQueue.d
+conductor_queues.test.QUEUE.HTTP.c
+conductor_queues.test.QUEUE.HTTP.d
+conductor_queues.test.QUEUE.LAMBDA.c
+conductor_queues.test.QUEUE.LAMBDA.d
+</pre></div>
+
+
+<blockquote>
+<p>The "c" and "d" suffixes are the shards identifying conductor server instace #1 and instance #2 respectively.</p>
+<p>The shard names are extracted from dynomite rack name such as us-east-1c that is set in "LOCAL_RACK" or "EC2_AVAILABILTY_ZONE"</p>
+</blockquote>
+<p>Considering an execution of a simple workflow with just 2 tasks: [HTTP, LAMBDA], you should end up with queues being filled as follows:</p>
+<div class="codehilite"><pre><span></span>Workflow execution    -&gt; conductor_queues.test.QUEUE._deciderQueue.c
+HTTP taks execution   -&gt; conductor_queues.test.QUEUE.HTTP.d
+LAMBDA task execution -&gt; conductor_queues.test.QUEUE.LAMBDA.c
+</pre></div>
+
+
+<p>Which means that SweeperService in conductor instance #1 is responsible for sweeping the workflow, conductor #2 is responsible for executing HTTP task and conductor #1 again responsible for executing LAMBDA task.</p>
+<p>This illustrates the race condition: If the HTTP task completion in instance #2 happens at the same time as sweep in instance #1 ... you can end up with 2 different updates to a workflow execution: one update timing workflow out while the other completing the task and scheduling next.</p>
+<blockquote>
+<p>The round-robin strategy responsible for work distribution is defined <a href="https://github.com/Netflix/dyno-queues/blob/1cde55bbb69acd631c671a0cb2f9db2419163e33/dyno-queues-redis/src/main/java/com/netflix/dyno/queues/redis/sharding/RoundRobinStrategy.java">here</a></p>
+</blockquote>
+<h5 id="back-to-alternative-solution">Back to alternative solution<a class="headerlink" href="#back-to-alternative-solution" title="Permanent link">&para;</a></h5>
+<p>The alternative solution here is <strong>Switching round-robin queue allocation for a local-only strategy</strong>.
+Meaning that a workflow and its task executions are queued only for the conductor instance which started the workflow.</p>
+<p>This completely avoids the race condition for the price of removing task execution distribution.</p>
+<p>Since all tasks and the sweeper service read/write only from/to "local" queues, it is impossible to run into a race condition between conductor instances.</p>
+<p>The downside here is that the workload is not distributed across all conductor servers. Which might be an advantage in active-standby deployments.</p>
+<p>Considering other downsides ...</p>
+<p>Considering a situation where a conductor instance goes down:
+<em> With local-only strategy, the workflow executions from failed conductor instance will not progress until:
+  * The conductor instance is restarted or
+  * The executions are manually terminated and restarted from a different node
+</em> With round-robin strategy, there is a chance the tasks will be rescheduled on a different conductor node
+  * This is nondeterministic though</p>
+<p><strong>Enabling local only queue allocation strategy for dyno queues:</strong></p>
+<p>Just enable following setting the config.properties:</p>
+<div class="codehilite"><pre><span></span>workflow.dyno.queue.sharding.strategy=localOnly
+</pre></div>
+
+
+<blockquote>
+<p>The default is roundRobin</p>
+</blockquote>
               
             </div>
           </div>
