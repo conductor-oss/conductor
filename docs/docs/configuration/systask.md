@@ -199,7 +199,8 @@ Sub Workflow task allows for nesting a workflow within another workflow.
 |---|---|---|
 | name | String | Name of the workflow to execute |
 | version | Integer | Version of the workflow to execute |
-| taskToDomain | Map[String, String] | Allows scheduling the sub workflow's tasks per given mappings. See [Task Domains](configuration/taskdomains/) for instructions to configure taskDomains. | 
+| taskToDomain | Map[String, String] | Allows scheduling the sub workflow's tasks per given mappings. See [Task Domains](configuration/taskdomains/) for instructions to configure taskDomains. |
+| workflowDefinition | [WorkflowDefinition](configuration/workflowdef/) | Allows starting a subworkflow with a dynamic workflow definition. |
 
 **Outputs:**
 
@@ -211,24 +212,44 @@ Sub Workflow task allows for nesting a workflow within another workflow.
 
 ```json
 {
-  "name": "sub_workflow_task",
-  "taskReferenceName": "sub1",
-  "type": "SUB_WORKFLOW",
-  "inputParameters": {
-    "subWorkflowParam": {
-      "name": "deployment_workflow",
-      "version": 1,
-      "taskToDomain": {
-        "*": "mydomain"
-      }
-    },
-    "anythingelse":  "value"
-  }
+	"name": "sub_workflow_task",
+	"taskReferenceName": "sub1",
+	"type": "SUB_WORKFLOW",
+	"inputParameters": {
+		"subWorkflowParam": {
+			"name": "deployment_workflow",
+			"version": 1,
+			"taskToDomain": {
+				"*": "mydomain"
+			},
+			"workflowDefinition": {
+				"name": "deployment_workflow",
+				"description": "Deploys to CDN",
+				"version": 1,
+				"tasks": [{
+					"name": "deploy",
+					"taskReferenceName": "d1",
+					"type": "SIMPLE",
+					"inputParameters": {
+						"fileLocation": "${workflow.input.encodeLocation}"
+					}
+				}],
+				"outputParameters": {
+					"cdn_url": "${d1.output.location}"
+				},
+				"failureWorkflow": "cleanup_encode_resources",
+				"restartable": true,
+				"workflowStatusListenerEnabled": true,
+				"schemaVersion": 2
+			}
+		},
+		"anythingelse": "value"
+	}
 }
 ```
 
 When executed, a ```deployment_workflow``` is executed with its inputs parameters set
-to the inputParameters of the ```sub_workflow_task```.
+to the inputParameters of the ```sub_workflow_task``` and the workflow definition specified.  
 The task is marked as completed upon the completion of the spawned workflow. 
 If the sub-workflow is terminated or fails the task is marked as failure and retried if configured. 
 
