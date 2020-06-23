@@ -22,8 +22,8 @@ import java.util.concurrent.Executors;
 
 class ExecutionConfig {
 
-    private ExecutorService executorService;
-    private SemaphoreUtil semaphoreUtil;
+    private final ExecutorService executorService;
+    private final SemaphoreUtil semaphoreUtil;
 
     ExecutionConfig(int threadCount, String threadNameFormat) {
 

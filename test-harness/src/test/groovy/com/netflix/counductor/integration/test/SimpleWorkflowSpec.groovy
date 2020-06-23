@@ -647,6 +647,7 @@ class SimpleWorkflowSpec extends Specification {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1
             tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].getInputData().get("p3") == tasks[0].getTaskId()
         }
         with(metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1)) {
             failureWorkflow
@@ -663,6 +664,7 @@ class SimpleWorkflowSpec extends Specification {
             tasks.size() == 2
             tasks[0].status == Task.Status.FAILED
             tasks[1].status == Task.Status.SCHEDULED
+            tasks[1].getInputData().get("p3") == tasks[1].getTaskId()
         }
 
         when:"The first task 'integration_task_1' is polled and failed for the second time"
@@ -687,6 +689,7 @@ class SimpleWorkflowSpec extends Specification {
             tasks[0].status == Task.Status.FAILED
             tasks[1].status == Task.Status.FAILED
             tasks[2].status == Task.Status.SCHEDULED
+            tasks[2].getInputData().get("p3") == tasks[2].getTaskId()
         }
 
         when:"The 'integration_task_1' task is polled and is completed"
