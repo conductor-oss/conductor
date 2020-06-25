@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicLong;
 public class MetricsContainer {
 
     private static final String TASK_TYPE = "taskType";
-    private static final String WORFLOW_TYPE = "workflowType";
+    private static final String WORKFLOW_TYPE = "workflowType";
     private static final String WORKFLOW_VERSION = "version";
     private static final String EXCEPTION = "exception";
     private static final String ENTITY_NAME = "entityName";
@@ -158,7 +158,7 @@ public class MetricsContainer {
     }
 
     public static void recordWorkflowInputPayloadSize(String workflowType, String version, long payloadSize) {
-        getGauge(WORKFLOW_INPUT_SIZE, WORFLOW_TYPE, workflowType, WORKFLOW_VERSION, version).getAndSet(payloadSize);
+        getGauge(WORKFLOW_INPUT_SIZE, WORKFLOW_TYPE, workflowType, WORKFLOW_VERSION, version).getAndSet(payloadSize);
     }
 
     public static void incrementExternalPayloadUsedCount(String name, String operation, String payloadType) {
@@ -166,7 +166,7 @@ public class MetricsContainer {
     }
 
     public static void incrementWorkflowStartErrorCount(String workflowType, Throwable t) {
-        incrementCount(WORKFLOW_START_ERROR, WORFLOW_TYPE, workflowType, EXCEPTION, t.getClass().getSimpleName());
+        incrementCount(WORKFLOW_START_ERROR, WORKFLOW_TYPE, workflowType, EXCEPTION, t.getClass().getSimpleName());
     }
 
     /**
