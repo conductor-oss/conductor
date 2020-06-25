@@ -120,7 +120,7 @@ public interface Configuration {
     String ELASTIC_SEARCH_DOCUMENT_TYPE_OVERRIDE_PROPERTY_NAME = "workflow.elasticsearch.document.type.override";
     String ELASTIC_SEARCH_DOCUMENT_TYPE_OVERRIDE_DEFAULT_VALUE = "";
 
-    String EVENT_QUEUE_POLL_SCHEDULER_THREAD_COUNT_PROPERTY_NAME = "worklfow.event.queue.scheduler.poll.thread.count";
+    String EVENT_QUEUE_POLL_SCHEDULER_THREAD_COUNT_PROPERTY_NAME = "workflow.event.queue.scheduler.poll.thread.count";
 
     //TODO add constants for input/output external payload related properties.
 
