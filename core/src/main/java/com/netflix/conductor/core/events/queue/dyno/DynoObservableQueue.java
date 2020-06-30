@@ -116,7 +116,7 @@ public class DynoObservableQueue implements ObservableQueue {
         try {
             List<Message> messages = queueDAO.pollMessages(queueName, pollCount, longPollTimeout);
             Monitors.recordEventQueueMessagesProcessed(QUEUE_TYPE, queueName, messages.size());
-            Monitors.recordQueuePollSize(queueName, messages.size());
+            Monitors.recordEventQueuePollSize(queueName, messages.size());
             return messages;
         } catch (Exception exception) {
             logger.error("Exception while getting messages from  queueDAO", exception);
