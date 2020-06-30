@@ -764,8 +764,8 @@ public class WorkflowExecutor {
                     workflow.getOutput().put("conductor.failure_workflow", "Error workflow " + failureWorkflow + " failed to start.  reason: " + e.getMessage());
                     Monitors.recordWorkflowStartError(failureWorkflow, WorkflowContext.get().getClientApp());
                 }
+                executionDAOFacade.updateWorkflow(workflow);
             }
-
             queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
             executionDAOFacade.removeFromPendingWorkflow(workflow.getWorkflowName(), workflow.getWorkflowId());
 
@@ -985,33 +985,29 @@ public class WorkflowExecutor {
                 if (isSystemTask.and(isNonTerminalTask).test(task)) {
                     WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
                     Workflow workflowInstance = deciderService.populateWorkflowAndTaskData(workflow);
-                    try {
-                        if (!workflowSystemTask.isAsync() && workflowSystemTask.execute(workflowInstance, task, this)) {
-                            // FIXME: temporary hack to workaround TERMINATE task
-                            if (TERMINATE.name().equals(task.getTaskType())) {
-                                deciderService.externalizeTaskData(task);
-                                executionDAOFacade.updateTask(task);
-                                if (workflowInstance.getStatus().equals(WorkflowStatus.COMPLETED)) {
-                                    completeWorkflow(workflow);
-                                } else {
-                                    workflow.setStatus(workflowInstance.getStatus());
-                                    terminateWorkflow(workflow, "Workflow is FAILED by TERMINATE task: " + task.getTaskId(), null);
-                                }
-                                return true;
-                            }
+                    if (!workflowSystemTask.isAsync() && workflowSystemTask.execute(workflowInstance, task, this)) {
+                        // FIXME: temporary hack to workaround TERMINATE task
+                        if (TERMINATE.name().equals(task.getTaskType())) {
                             deciderService.externalizeTaskData(task);
+                            executionDAOFacade.updateTask(task);
+                            if (workflowInstance.getStatus().equals(WorkflowStatus.COMPLETED)) {
+                                completeWorkflow(workflow);
+                            } else {
+                                workflow.setStatus(workflowInstance.getStatus());
+                                terminate(workflow, new TerminateWorkflowException("Workflow is FAILED by TERMINATE task: " + task.getTaskId()));
+                            }
+                            return true;
+                        }
+                        deciderService.externalizeTaskData(task);
+                        tasksToBeUpdated.add(task);
+                        stateChanged = true;
+                    } else if (SUB_WORKFLOW.name().equals(task.getTaskType()) && task.getStatus().equals(IN_PROGRESS)) {
+                        // Verifies and updates the task inplace, based on the Subworkflow and parent Workflow state,
+                        // and continues with the current decide.
+                        if (updateParentWorkflow(task, workflow)) {
                             tasksToBeUpdated.add(task);
                             stateChanged = true;
-                        } else if (SUB_WORKFLOW.name().equals(task.getTaskType()) && task.getStatus().equals(IN_PROGRESS)) {
-                            // Verifies and updates the task inplace, based on the Subworkflow and parent Workflow state,
-                            // and continues with the current decide.
-                            if (updateParentWorkflow(task, workflow)) {
-                                tasksToBeUpdated.add(task);
-                                stateChanged = true;
-                            }
                         }
-                    } catch (Exception e) {
-                        throw new ApplicationException(Code.INTERNAL_ERROR, String.format("Unable to start system task: %s", workflowSystemTask.getName()), e);
                     }
                 }
             }

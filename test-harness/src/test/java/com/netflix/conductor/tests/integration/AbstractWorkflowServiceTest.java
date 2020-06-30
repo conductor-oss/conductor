@@ -35,6 +35,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Uninterruptibles;
@@ -5380,7 +5381,8 @@ public abstract class AbstractWorkflowServiceTest {
         assertNotNull(workflowDef);
         metadataService.registerWorkflowDef(workflowDef);
 
-        Map wfInput = Collections.singletonMap("a", 1);
+        Map<String, Object> wfInput = new HashMap<>();
+        wfInput.put("a", 1);
         String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", wfInput, null, null);
         Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
 
@@ -5401,6 +5403,7 @@ public abstract class AbstractWorkflowServiceTest {
 
     @Test
     public void testTerminateTaskWithFailedStatus() {
+        String failureWorkflowName = "failure_workflow";
         WorkflowDef workflowDef = new WorkflowDef();
         workflowDef.setName("test_terminate_task_wf");
         workflowDef.setSchemaVersion(2);
@@ -5431,11 +5434,17 @@ public abstract class AbstractWorkflowServiceTest {
 
         workflowDef.getTasks().addAll(Arrays.asList(lambdaWorkflowTask, terminateWorkflowTask, workflowTask2));
 
-        assertNotNull(workflowDef);
+        WorkflowDef failureWorkflowDef = new WorkflowDef();
+        failureWorkflowDef.setName(failureWorkflowName);
+        failureWorkflowDef.setTasks(Collections.singletonList(lambdaWorkflowTask));
+
+        workflowDef.setFailureWorkflow(failureWorkflowName);
+
+        metadataService.registerWorkflowDef(failureWorkflowDef);
         metadataService.registerWorkflowDef(workflowDef);
 
-        Map wfInput = Collections.singletonMap("a", 1);
-        //noinspection unchecked
+        Map<String, Object> wfInput = new HashMap<>();
+        wfInput.put("a", 1);
         String workflowId = startOrLoadWorkflowExecution(workflowDef.getName(), workflowDef.getVersion(), "", wfInput, null, null);
         Workflow workflow = workflowExecutor.getWorkflow(workflowId, true);
 
@@ -5449,9 +5458,20 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals("tasks:" + workflow.getTasks(), WorkflowStatus.FAILED, workflow.getStatus());
         assertEquals(TaskType.TASK_TYPE_LAMBDA, workflow.getTasks().get(0).getTaskType());
         assertEquals(TaskType.TASK_TYPE_TERMINATE, workflow.getTasks().get(1).getTaskType());
-        assertEquals(workflow.getTasks().get(1).getOutputData(), workflow.getOutput());
+        assertNotNull(workflow.getOutput());
+        assertNotNull(workflow.getOutput().get("conductor.failure_workflow"));
+
+        String failureWorkflowId = (String)workflow.getOutput().get("conductor.failure_workflow");
+        Workflow failureWorkflow = workflowExecutionService.getExecutionStatus(failureWorkflowId, true);
+        assertNotNull(failureWorkflow);
+        assertEquals(failureWorkflowName, failureWorkflow.getWorkflowName());
+        assertEquals(workflowId, failureWorkflow.getInput().get("workflowId"));
+        assertEquals(WorkflowStatus.COMPLETED, failureWorkflow.getStatus());
+        assertEquals(1, failureWorkflow.getTasks().size());
+        assertEquals(TaskType.TASK_TYPE_LAMBDA, failureWorkflow.getTasks().get(0).getTaskType());
 
         metadataService.unregisterWorkflowDef("test_terminate_task_wf", 1);
+        metadataService.unregisterWorkflowDef(failureWorkflowName, 1);
     }
 
     @Test

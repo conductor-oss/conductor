@@ -294,7 +294,7 @@ public class TaskResult {
 
     /**
      * Copy the given task result object
-     * @return a deep copy of the task result object
+     * @return a deep copy of the task result object except the externalOutputPayloadStoragePath field
      */
     public TaskResult copy() {
         TaskResult taskResult = new TaskResult();
@@ -307,7 +307,6 @@ public class TaskResult {
         taskResult.setOutputData(outputData);
         taskResult.setOutputMessage(outputMessage);
         taskResult.setLogs(logs);
-        taskResult.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
         taskResult.setSubWorkflowId(subWorkflowId);
         return taskResult;
     }
