@@ -310,7 +310,7 @@ public class Monitors {
 		counter(classQualifier, "system_task_worker_polling_limited", "queueName", queueName);
 	}
 
-	public static void recordQueuePollSize(String queueType, int val) {
+	public static void recordEventQueuePollSize(String queueType, int val) {
 		getGauge(Monitors.classQualifier, "event_queue_poll", "queueType", queueType).set(val);
 	}
 }
