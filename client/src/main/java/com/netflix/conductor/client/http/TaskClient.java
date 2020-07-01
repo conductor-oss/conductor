@@ -27,6 +27,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
+import com.netflix.conductor.common.utils.ExternalPayloadStorage.PayloadType;
 import com.sun.jersey.api.client.ClientHandler;
 import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.config.ClientConfig;
@@ -124,7 +125,7 @@ public class TaskClient extends ClientBase {
         Object[] params = new Object[]{"workerid", workerId, "domain", domain};
         Task task = Optional.ofNullable(getForEntity("tasks/poll/{taskType}", params, Task.class, taskType))
             .orElse(new Task());
-        populateTaskInput(task);
+        populateTaskPayloads(task);
         return task;
     }
 
@@ -144,7 +145,7 @@ public class TaskClient extends ClientBase {
 
         Object[] params = new Object[]{"workerid", workerId, "count", count, "timeout", timeoutInMillisecond};
         List<Task> tasks = getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
-        tasks.forEach(this::populateTaskInput);
+        tasks.forEach(this::populateTaskPayloads);
         return tasks;
     }
 
@@ -165,20 +166,25 @@ public class TaskClient extends ClientBase {
 
         Object[] params = new Object[]{"workerid", workerId, "count", count, "timeout", timeoutInMillisecond, "domain", domain};
         List<Task> tasks = getForEntity("tasks/poll/batch/{taskType}", params, taskList, taskType);
-        tasks.forEach(this::populateTaskInput);
+        tasks.forEach(this::populateTaskPayloads);
         return tasks;
     }
 
     /**
-     * Populates the task input from external payload storage if the external storage path is specified.
+     * Populates the task input/output from external payload storage if the external storage path is specified.
      *
      * @param task the task for which the input is to be populated.
      */
-    private void populateTaskInput(Task task) {
+    private void populateTaskPayloads(Task task) {
         if (StringUtils.isNotBlank(task.getExternalInputPayloadStoragePath())) {
             MetricsContainer.incrementExternalPayloadUsedCount(task.getTaskDefName(), ExternalPayloadStorage.Operation.READ.name(), ExternalPayloadStorage.PayloadType.TASK_INPUT.name());
             task.setInputData(downloadFromExternalStorage(ExternalPayloadStorage.PayloadType.TASK_INPUT, task.getExternalInputPayloadStoragePath()));
             task.setExternalInputPayloadStoragePath(null);
+        }
+        if (StringUtils.isNotBlank(task.getExternalOutputPayloadStoragePath())) {
+            MetricsContainer.incrementExternalPayloadUsedCount(task.getTaskDefName(), ExternalPayloadStorage.Operation.READ.name(), PayloadType.TASK_OUTPUT.name());
+            task.setOutputData(downloadFromExternalStorage(ExternalPayloadStorage.PayloadType.TASK_OUTPUT, task.getExternalOutputPayloadStoragePath()));
+            task.setExternalOutputPayloadStoragePath(null);
         }
     }
 
