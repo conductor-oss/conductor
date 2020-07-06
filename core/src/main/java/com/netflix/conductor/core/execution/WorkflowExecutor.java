@@ -400,9 +400,16 @@ public class WorkflowExecutor {
             decide(workflowId);
             return workflowId;
         } catch (Exception e) {
-            executionDAOFacade.removeWorkflow(workflowId, false);
             Monitors.recordWorkflowStartError(workflowDefinition.getName(), WorkflowContext.get().getClientApp());
             LOGGER.error("Unable to start workflow: {}", workflowDefinition.getName(), e);
+
+            // It's possible the remove workflow call hits an exception as well, in that case we want to log both
+            // errors to help diagnosis.
+            try {
+                executionDAOFacade.removeWorkflow(workflowId, false);
+            } catch (Exception rwe) {
+                LOGGER.error("Could not remove the workflowId: " + workflowId, rwe);
+            }
             throw e;
         }
     }
