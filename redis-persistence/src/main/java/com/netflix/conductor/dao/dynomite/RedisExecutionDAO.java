@@ -234,6 +234,17 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		return rateLimited;
 	}
 
+	private void removeTaskMappings(Task task)
+	{
+		String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
+
+		dynoClient.hdel(nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()), taskKey);
+		dynoClient.srem(nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getTaskId());
+		dynoClient.srem(nsKey(WORKFLOW_TO_TASKS, task.getWorkflowInstanceId()), task.getTaskId());
+		dynoClient.srem(nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
+		dynoClient.zrem(nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName()), task.getTaskId());
+	}
+
 	@Override
 	public boolean removeTask(String taskId) {
 		Task task = getTask(taskId);
@@ -241,14 +252,22 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 			logger.warn("No such task found by id {}", taskId);
 			return false;
 		}
-		String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
+		removeTaskMappings(task);
 
-		dynoClient.hdel(nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()), taskKey);
-		dynoClient.srem(nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getTaskId());
-		dynoClient.srem(nsKey(WORKFLOW_TO_TASKS, task.getWorkflowInstanceId()), task.getTaskId());
-		dynoClient.srem(nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
 		dynoClient.del(nsKey(TASK, task.getTaskId()));
-		dynoClient.zrem(nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName()), task.getTaskId());
+		recordRedisDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
+		return true;
+	}
+
+	private boolean removeTaskWithExpiry(String taskId, int ttlSeconds) {
+		Task task = getTask(taskId);
+		if(task == null) {
+			logger.warn("No such task found by id {}", taskId);
+			return false;
+		}
+		removeTaskMappings(task);
+
+		dynoClient.expire(nsKey(TASK, task.getTaskId()), ttlSeconds);
 		recordRedisDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
 		return true;
 	}
@@ -328,6 +347,29 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		}
 		return false;
 	}
+
+	public boolean removeWorkflowWithExpiry(String workflowId, int ttlSeconds)
+	{
+		Workflow workflow = getWorkflow(workflowId, true);
+		if (workflow != null) {
+			recordRedisDaoRequests("removeWorkflow");
+
+			// Remove from lists
+			String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, workflow.getWorkflowName(), dateStr(workflow.getCreateTime()));
+			dynoClient.srem(key, workflowId);
+			dynoClient.srem(nsKey(CORR_ID_TO_WORKFLOWS, workflow.getCorrelationId()), workflowId);
+			dynoClient.srem(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflowId);
+
+			// Remove the object
+			dynoClient.expire(nsKey(WORKFLOW, workflowId), ttlSeconds);
+			for (Task task : workflow.getTasks()) {
+				removeTaskWithExpiry(task.getTaskId(), ttlSeconds);
+			}
+			return true;
+		}
+		return false;
+	}
+
 
 	@Override
 	public void removeFromPendingWorkflow(String workflowType, String workflowId) {

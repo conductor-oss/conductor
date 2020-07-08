@@ -306,6 +306,17 @@ public class Monitors {
 		counter(classQualifier, "acquire_lock_failure", "exceptionType", exceptionClassName);
 	}
 
+	public static void recordWorkflowArchived(String workflowType, WorkflowStatus status) {
+		counter(classQualifier, "workflow_archived", "workflowName", workflowType, "workflowStatus", status.name());
+	}
+
+	public static void recordArchivalDelayQueueSize(int val) {
+		getGauge(classQualifier, "workflow_archival_delay_queue_size").set(val);
+	}
+	public static void recordDiscardedArchivalCount() {
+		counter(classQualifier, "discarded_archival_count");
+	}
+
 	public static void recordSystemTaskWorkerPollingLimited(String queueName) {
 		counter(classQualifier, "system_task_worker_polling_limited", "queueName", queueName);
 	}
