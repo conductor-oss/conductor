@@ -276,6 +276,14 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
         return removed;
     }
 
+    /**
+     * This is a dummy implementation and this feature is not supported for Postgres backed Conductor
+     */
+    @Override
+    public boolean removeWorkflowWithExpiry(String workflowId, int ttlSeconds) {
+        throw new UnsupportedOperationException("This method is not implemented in MySQLExecutionDAO. Please use RedisDAO mode instead for using TTLs.");
+    }
+
     @Override
     public void removeFromPendingWorkflow(String workflowType, String workflowId) {
         withTransaction(connection -> removePendingWorkflow(connection, workflowType, workflowId));

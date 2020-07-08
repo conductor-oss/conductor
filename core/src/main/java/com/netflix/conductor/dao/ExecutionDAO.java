@@ -135,7 +135,17 @@ public interface ExecutionDAO {
 	 * @return true if the deletion is successful, false otherwise
 	 */
 	boolean removeWorkflow(String workflowId);
-	
+
+
+	/**
+	 * Removes the workflow with ttl seconds
+	 *
+	 * @param workflowId workflowId workflow instance id
+	 * @param ttlSeconds time to live in seconds.
+	 * @return
+	 */
+	boolean removeWorkflowWithExpiry(String workflowId, int ttlSeconds);
+
 	/**
 	 * 
 	 * @param workflowType Workflow Type

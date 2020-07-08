@@ -16,7 +16,6 @@
 package com.netflix.conductor.contribs;
 
 import com.google.inject.AbstractModule;
-import com.netflix.conductor.contribs.listener.ArchivingWorkflowStatusListener;
 import com.netflix.conductor.core.execution.WorkflowStatusListener;
 
 /**
@@ -26,6 +25,6 @@ public class ArchivingWorkflowModule extends AbstractModule {
 
     @Override
     protected void configure() {
-        bind(WorkflowStatusListener.class).to(ArchivingWorkflowStatusListener.class);
+        bind(WorkflowStatusListener.class).toProvider(ArchiveWorkflowStatusListenerProvider.class);
     }
 }

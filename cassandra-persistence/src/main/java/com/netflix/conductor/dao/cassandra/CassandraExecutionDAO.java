@@ -375,6 +375,15 @@ public class CassandraExecutionDAO extends CassandraBaseDAO implements Execution
     }
 
     /**
+     * This is a dummy implementation and this feature is not yet implemented
+     * for Cassandra backed Conductor
+     */
+    @Override
+    public boolean removeWorkflowWithExpiry(String workflowId, int ttlSeconds) {
+        throw new UnsupportedOperationException("This method is not currently implemented in CassandraExecutionDAO. Please use RedisDAO mode instead now for using TTLs.");
+    }
+
+    /**
      * This is a dummy implementation and this feature is not implemented
      * for Cassandra backed Conductor
      */
