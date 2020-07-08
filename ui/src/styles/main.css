@@ -2,19 +2,19 @@
   font-family: 'Source Sans Pro';
   font-style: normal;
   font-weight: 300;
-  src: local('Source Sans Pro Light'), local('SourceSansPro-Light'), url('../fonts/sourcesanspro-light.woff') format('woff');
+  src: local('Source Sans Pro Light'), local('SourceSansPro-Light'), url('../fonts/sourcesanspro-light.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Source Sans Pro';
   font-style: normal;
   font-weight: 400;
-  src: local('Source Sans Pro'), local('SourceSansPro-Regular'), url('../fonts/sourcesanspro.woff') format('woff');
+  src: local('Source Sans Pro'), local('SourceSansPro-Regular'), url('../fonts/sourcesanspro.woff2') format('woff2');
 }
 @font-face {
   font-family: 'Source Sans Pro';
   font-style: normal;
   font-weight: 700;
-  src: local('Source Sans Pro Bold'), local('SourceSansPro-Bold'), url('../fonts/sourcesanspro-bold.woff') format('woff');
+  src: local('Source Sans Pro Bold'), local('SourceSansPro-Bold'), url('../fonts/sourcesanspro-bold.woff2') format('woff2');
 }
 
 *, *:before, *:after {
@@ -450,7 +450,7 @@ a:hover {
   color: #ffffff;
   font-size: 1.2em;
   line-height: 50px;
-  padding: 5px 20px;
+  padding: 5px 0 5px 20px;
   text-decoration: none;
   xborder-right: 1px solid #ccc;
   xbox-shadow: 0 0 5px #1fa67a;
@@ -494,8 +494,18 @@ a:hover {
   cursor: pointer;
 }
 
-.menuList {
-  margin-top: 70px;
+.user-text {
+  padding: 10px;
+  background: rgba(255,255,255,0.1);
+  color: rgba(255, 255, 255, 255);
+  font-size: 0.9em;
+  letter-spacing: 1px;
+}
+.user-text i {
+  margin-right: 10px;
+}
+.user-text a {
+  color: #41a0f3 !important;
 }
 
 .menuHeader {

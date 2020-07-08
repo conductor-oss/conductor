@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+
+  <title>Workflow UI - Login</title>
+  <link rel="stylesheet" href="/styles/bootstrap.min.css">
+  <link rel="stylesheet" href="/styles/bootstrap-theme.min.css">
+
+  <link rel="stylesheet" href="/styles/main.css">
+  <link rel="stylesheet" href="/styles/react-bootstrap-table-all.css">
+  <link rel="stylesheet" href="/styles/font-awesome.min.css">
+
+
+</head>
+<body>
+
+<div class="container-fluid" id="content">
+  <div class="panel panel-default" style="width:360px; margin: 100px auto;">
+    <div class="panel-heading">Workflow UI - Login</div>
+    <div class="panel-body">
+      <form action="/login" method="post">
+        <div class="col-md-12">
+          <div class="form-group">
+            <div class="input-group">
+              <span class="input-group-addon"><i class="fa fa-user"></i></span>
+              <input class="form-control" autofocus type="text" required="required" name="username"
+                     placeholder="Username"/>
+            </div>
+          </div>
+        </div>
+        &nbsp;
+        <div class="col-md-12">
+          <div class="form-group">
+            <div class="input-group">
+              <span class="input-group-addon"><i class="fa fa-lock"></i></span>
+              <input class="form-control" type="password" required="required" name="password" placeholder="Password"/>
+            </div>
+          </div>
+        </div>
+        &nbsp;
+        <div class="col-md-12">
+          <p class="text-danger" role="alert"></p>
+        </div>
+        <div class="col-md-12">
+          <button type="submit" class="btn btn-success btn-block">Login</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+<script>
+  const urlParams = new URLSearchParams(window.location.search);
+  const error = urlParams.get('error');
+  if (error) {
+    document.getElementsByClassName('text-danger')[0].innerText = error;
+  }
+  // preserve hash to allow return url
+  document.getElementsByTagName('form')[0].action += location.hash;
+</script>
+</body>
+</html>
