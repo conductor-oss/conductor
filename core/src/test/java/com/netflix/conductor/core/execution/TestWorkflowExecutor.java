@@ -1236,6 +1236,31 @@ public class TestWorkflowExecutor {
         verify(queueDAO, times(1)).resetOffsetTime(anyString(), anyString());
     }
 
+    @Test
+    public void testUpdateParentWorkflowTask() {
+        String parentWorkflowTaskId = "parent_workflow_task_id";
+        String workflowId = "workflow_id";
+
+        Workflow subWorkflow = new Workflow();
+        subWorkflow.setWorkflowId(workflowId);
+        subWorkflow.setParentWorkflowTaskId(parentWorkflowTaskId);
+        subWorkflow.setStatus(WorkflowStatus.COMPLETED);
+
+        Task subWorkflowTask = new Task();
+        subWorkflowTask.setSubWorkflowId(workflowId);
+        subWorkflowTask.setStatus(Status.IN_PROGRESS);
+        subWorkflowTask.setExternalOutputPayloadStoragePath(null);
+
+        when(executionDAOFacade.getTaskById(parentWorkflowTaskId)).thenReturn(subWorkflowTask);
+        when(executionDAOFacade.getWorkflowById(workflowId, false)).thenReturn(subWorkflow);
+
+        workflowExecutor.updateParentWorkflowTask(subWorkflow);
+        ArgumentCaptor<Task> argumentCaptor = ArgumentCaptor.forClass(Task.class);
+        verify(executionDAOFacade, times(1)).updateTask(argumentCaptor.capture());
+        assertEquals(Status.COMPLETED, argumentCaptor.getAllValues().get(0).getStatus());
+        assertEquals(workflowId, argumentCaptor.getAllValues().get(0).getSubWorkflowId());
+    }
+
     private Workflow generateSampleWorkflow() {
         //setup
         Workflow workflow = new Workflow();

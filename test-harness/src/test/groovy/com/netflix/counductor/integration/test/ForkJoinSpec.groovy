@@ -58,6 +58,9 @@ class ForkJoinSpec extends Specification {
     @Shared
     def WORKFLOW_FORK_JOIN_OPTIONAL_SW = "integration_test_fork_join_optional_sw"
 
+    @Shared
+    def FORK_JOIN_SUB_WORKFLOW = 'integration_test_fork_join_sw'
+
     def cleanup() {
         workflowTestUtil.clearWorkflows()
     }
@@ -69,7 +72,8 @@ class ForkJoinSpec extends Specification {
                 'simple_workflow_1_integration_test.json',
                 'nested_fork_join_with_sub_workflow_integration_test.json',
                 'simple_one_task_sub_workflow_integration_test.json',
-                'fork_join_with_optional_sub_workflow_forks_integration_test.json'
+                'fork_join_with_optional_sub_workflow_forks_integration_test.json',
+                'fork_join_sub_workflow.json'
         )
     }
 
@@ -854,4 +858,181 @@ class ForkJoinSpec extends Specification {
         }
     }
 
+    def "Test fork join with sub workflow task using task definition"() {
+        given: "A input to the workflow that has fork with sub workflow task"
+        Map workflowInput = new HashMap<String, Object>()
+        workflowInput['param1'] = 'p1 value'
+        workflowInput['param2'] = 'p2 value'
+
+        when: "A workflow that has fork with sub workflow task is started"
+        def workflowInstanceId = workflowExecutor.startWorkflow(FORK_JOIN_SUB_WORKFLOW, 1, '', workflowInput, null,
+                null, null)
+
+        then: "verify that the workflow is in a RUNNING state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 4
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].status == Task.Status.SCHEDULED
+            tasks[2].taskType == 'integration_task_2'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[3].taskType == 'JOIN'
+            tasks[3].inputData['joinOn'] == ['st1', 't2']
+            tasks[3].status == Task.Status.IN_PROGRESS
+        }
+
+        when: "the subworkflow is started by issuing a system task call"
+        def parentWorkflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+        def subWorkflowTaskId = parentWorkflow.getTaskByRefName('st1').taskId
+        workflowExecutor.executeSystemTask(new SubWorkflow(), subWorkflowTaskId, 1)
+
+        then: "verify that the sub workflow task is in a IN_PROGRESS state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 4
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].status == Task.Status.IN_PROGRESS
+            tasks[2].taskType == 'integration_task_2'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[3].taskType == 'JOIN'
+            tasks[3].inputData['joinOn'] == ['st1', 't2']
+            tasks[3].status == Task.Status.IN_PROGRESS
+        }
+
+        when: "sub workflow is retrieved"
+        def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+        def subWorkflowInstanceId = workflow.getTaskByRefName('st1').subWorkflowId
+
+        then: "verify that the sub workflow is in a RUNNING state"
+        with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].taskType == 'simple_task_in_sub_wf'
+        }
+
+        when: "the 'simple_task_in_sub_wf' belonging to the sub workflow is polled and failed"
+        def polledAndFailSubWorkflowTask = workflowTestUtil.pollAndFailTask('simple_task_in_sub_wf',
+                'task1.worker', 'Failed....')
+
+        then: "verify that the task was polled and failed"
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndFailSubWorkflowTask)
+
+        and: "verify that the sub workflow is in failed state"
+        with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.FAILED
+            tasks.size() == 1
+            tasks[0].status == Task.Status.FAILED
+            tasks[0].taskType == 'simple_task_in_sub_wf'
+        }
+
+        and: "verify that the workflow is in a RUNNING state and sub workflow task is retried"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 5
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].status == Task.Status.FAILED
+            tasks[2].taskType == 'integration_task_2'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[3].taskType == 'JOIN'
+            tasks[3].inputData['joinOn'] == ['st1', 't2']
+            tasks[3].status == Task.Status.IN_PROGRESS
+            tasks[4].taskType == 'SUB_WORKFLOW'
+            tasks[4].status == Task.Status.SCHEDULED
+        }
+
+        when: "the sub workflow is started by issuing a system task call"
+        parentWorkflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+        subWorkflowTaskId = parentWorkflow.getTaskByRefName('st1').taskId
+        workflowExecutor.executeSystemTask(new SubWorkflow(), subWorkflowTaskId, 1)
+
+        then: "verify that the sub workflow task is in a IN PROGRESS state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 5
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].status == Task.Status.FAILED
+            tasks[2].taskType == 'integration_task_2'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[3].taskType == 'JOIN'
+            tasks[3].inputData['joinOn'] == ['st1', 't2']
+            tasks[3].status == Task.Status.IN_PROGRESS
+            tasks[4].taskType == 'SUB_WORKFLOW'
+            tasks[4].status == Task.Status.IN_PROGRESS
+        }
+
+        when: "sub workflow is retrieved"
+        workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+        subWorkflowInstanceId = workflow.getTaskByRefName('st1').subWorkflowId
+
+        then: "verify that the sub workflow is in a RUNNING state"
+        with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].status == Task.Status.SCHEDULED
+            tasks[0].taskType == 'simple_task_in_sub_wf'
+        }
+
+        when: "the 'simple_task_in_sub_wf' belonging to the sub workflow is polled and completed"
+        def polledAndCompletedSubWorkflowTask = workflowTestUtil.pollAndCompleteTask('simple_task_in_sub_wf', 'subworkflow.task.worker')
+
+        then: "verify that the task was polled and acknowledged"
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndCompletedSubWorkflowTask)
+
+        and: "verify that the sub workflow is in COMPLETED state"
+        with(workflowExecutionService.getExecutionStatus(subWorkflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 1
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[0].taskType == 'simple_task_in_sub_wf'
+        }
+
+        and: "verify that the workflow is in a RUNNING state and sub workflow task is completed"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 5
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].status == Task.Status.FAILED
+            tasks[2].taskType == 'integration_task_2'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[3].taskType == 'JOIN'
+            tasks[3].inputData['joinOn'] == ['st1', 't2']
+            tasks[3].status == Task.Status.IN_PROGRESS
+            tasks[4].taskType == 'SUB_WORKFLOW'
+            tasks[4].status == Task.Status.COMPLETED
+        }
+
+        when: "the simple task is polled and completed"
+        def polledAndCompletedSimpleTask = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.worker')
+
+        then: "verify that the task was polled and acknowledged"
+        workflowTestUtil.verifyPolledAndAcknowledgedTask(polledAndCompletedSimpleTask)
+
+        and: "verify that the workflow is in a COMPLETED state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 5
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].status == Task.Status.FAILED
+            tasks[2].taskType == 'integration_task_2'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].taskType == 'JOIN'
+            tasks[3].inputData['joinOn'] == ['st1', 't2']
+            tasks[3].status == Task.Status.COMPLETED
+            tasks[4].taskType == 'SUB_WORKFLOW'
+            tasks[4].status == Task.Status.COMPLETED
+        }
+    }
 }

@@ -667,8 +667,8 @@ public class WorkflowExecutor {
         executionDAOFacade.updateTasks(workflow.getTasks());
         LOGGER.debug("Completed workflow execution for {}", workflow.getWorkflowId());
 
-        // If the following task, for some reason fails, the sweep will take care of this again!
         if (StringUtils.isNotEmpty(workflow.getParentWorkflowId())) {
+            updateParentWorkflowTask(workflow);
             decide(workflow.getParentWorkflowId());
         }
         Monitors.recordWorkflowCompletion(workflow.getWorkflowName(), workflow.getEndTime() - workflow.getStartTime(), workflow.getOwnerApp());
@@ -738,9 +738,8 @@ public class WorkflowExecutor {
                 }
             }
 
-            // If the following lines, for some reason fails, the sweep will take
-            // care of this again!
             if (workflow.getParentWorkflowId() != null) {
+                updateParentWorkflowTask(workflow);
                 decide(workflow.getParentWorkflowId());
             }
 
@@ -1001,20 +1000,14 @@ public class WorkflowExecutor {
                                 completeWorkflow(workflow);
                             } else {
                                 workflow.setStatus(workflowInstance.getStatus());
-                                terminate(workflow, new TerminateWorkflowException("Workflow is FAILED by TERMINATE task: " + task.getTaskId()));
+                                terminate(workflow, new TerminateWorkflowException(
+                                    "Workflow is FAILED by TERMINATE task: " + task.getTaskId()));
                             }
                             return true;
                         }
                         deciderService.externalizeTaskData(task);
                         tasksToBeUpdated.add(task);
                         stateChanged = true;
-                    } else if (SUB_WORKFLOW.name().equals(task.getTaskType()) && task.getStatus().equals(IN_PROGRESS)) {
-                        // Verifies and updates the task inplace, based on the Subworkflow and parent Workflow state,
-                        // and continues with the current decide.
-                        if (updateParentWorkflow(task, workflow)) {
-                            tasksToBeUpdated.add(task);
-                            stateChanged = true;
-                        }
                     }
                 }
             }
@@ -1568,11 +1561,6 @@ public class WorkflowExecutor {
         return updateParentWorkflow(subWorkflowTask, subWorkflow, parentWorkflow);
     }
 
-    private boolean updateParentWorkflow(Task subWorkflowTask, Workflow parentWorkflow) {
-        Workflow subWorkflow = executionDAOFacade.getWorkflowById(subWorkflowTask.getSubWorkflowId(), false);
-        return updateParentWorkflow(subWorkflowTask, subWorkflow, parentWorkflow);
-    }
-
     /**
      * Update parent Workflow based on Subworkflow state.
      * Updates the provided subWorkflowTask and/or parentWorkflow inplace, where applicable.
@@ -1641,5 +1629,19 @@ public class WorkflowExecutor {
             }
         }
         return false;
+    }
+
+    @VisibleForTesting
+    void updateParentWorkflowTask(Workflow subWorkflow) {
+        SubWorkflow subWorkflowSystemTask = new SubWorkflow();
+        Task subWorkflowTask = executionDAOFacade.getTaskById(subWorkflow.getParentWorkflowTaskId());
+        subWorkflowSystemTask.execute(subWorkflow, subWorkflowTask, this);
+        if (subWorkflowTask.getStatus().isTerminal() && subWorkflowTask.getExternalOutputPayloadStoragePath() != null && !subWorkflowTask.getOutputData().isEmpty()) {
+            Map<String, Object> parentWorkflowTaskOutputData = subWorkflowTask.getOutputData();
+            deciderService.populateTaskData(subWorkflowTask);
+            subWorkflowTask.getOutputData().putAll(parentWorkflowTaskOutputData);
+            deciderService.externalizeTaskData(subWorkflowTask);
+        }
+        executionDAOFacade.updateTask(subWorkflowTask);
     }
 }

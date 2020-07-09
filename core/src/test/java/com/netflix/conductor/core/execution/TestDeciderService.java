@@ -866,9 +866,14 @@ public class TestDeciderService {
         task.setTaskDefName("test_rt");
         task.setStatus(Status.IN_PROGRESS);
         task.setTaskId("aa");
+        task.setTaskType(TaskType.TASK_TYPE_SIMPLE);
         task.setUpdateTime(System.currentTimeMillis() - TimeUnit.SECONDS.toMillis(11));
 
         assertTrue(deciderService.isResponseTimedOut(taskDef, task));
+
+        // verify that sub workflow tasks are not response timed out
+        task.setTaskType(TaskType.TASK_TYPE_SUB_WORKFLOW);
+        assertFalse(deciderService.isResponseTimedOut(taskDef, task));
     }
 
     @Test
