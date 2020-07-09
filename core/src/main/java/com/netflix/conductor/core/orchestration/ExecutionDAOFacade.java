@@ -142,16 +142,18 @@ public class ExecutionDAOFacade {
     }
 
     /**
-     * Retrieve all workflow executions with the given correlationId
+     * Retrieve all workflow executions with the given correlationId and workflow type
      * Uses the {@link IndexDAO} to search across workflows if the {@link ExecutionDAO} cannot perform searches across workflows.
      *
+     * @param workflowName, workflow type to be queried
      * @param correlationId the correlation id to be queried
      * @param includeTasks  if true, fetches the {@link Task} data within the workflows
      * @return the list of {@link Workflow} executions matching the correlationId
      */
-    public List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks) {
+    public List<Workflow> getWorkflowsByCorrelationId(String workflowName, String correlationId, boolean includeTasks) {
         if (!executionDAO.canSearchAcrossWorkflows()) {
-            SearchResult<String> result = indexDAO.searchWorkflows("correlationId='" + correlationId + "'", "*", 0, 1000, null);
+        	String query = "correlationId='" + correlationId + "' and workflowType='" + workflowName + "'";
+            SearchResult<String> result = indexDAO.searchWorkflows(query, "*", 0, 1000, null);
             return result.getResults().stream()
                 .parallel()
                 .map(workflowId -> {
@@ -166,7 +168,7 @@ public class ExecutionDAOFacade {
                 .filter(Objects::nonNull)
                 .collect(Collectors.toList());
         }
-        return executionDAO.getWorkflowsByCorrelationId(correlationId, includeTasks);
+        return executionDAO.getWorkflowsByCorrelationId(workflowName,correlationId, includeTasks);
     }
 
     public List<Workflow> getWorkflowsByName(String workflowName, Long startTime, Long endTime) {

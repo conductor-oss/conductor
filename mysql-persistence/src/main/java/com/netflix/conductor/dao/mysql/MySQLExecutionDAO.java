@@ -385,13 +385,12 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, Rat
     }
 
     @Override
-    public List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks) {
+    public List<Workflow> getWorkflowsByCorrelationId(String workflowName, String correlationId, boolean includeTasks) {
         Preconditions.checkNotNull(correlationId, "correlationId cannot be null");
-        String GET_WORKFLOWS_BY_CORRELATION_ID = "SELECT workflow_id FROM workflow WHERE correlation_id = ?";
+        String GET_WORKFLOWS_BY_CORRELATION_ID = "SELECT w.json_data FROM workflow w left join workflow_def_to_workflow wd on w.workflow_id = wd.workflow_id  WHERE w.correlation_id = ? and wd.workflow_def = ?";
 
         return queryWithTransaction(GET_WORKFLOWS_BY_CORRELATION_ID,
-                q -> q.addParameter(correlationId).executeScalarList(String.class).stream()
-                        .map(workflowId -> getWorkflow(workflowId, includeTasks)).collect(Collectors.toList()));
+                q -> q.addParameter(correlationId).addParameter(workflowName).executeAndFetch(Workflow.class));
     }
 
     @Override

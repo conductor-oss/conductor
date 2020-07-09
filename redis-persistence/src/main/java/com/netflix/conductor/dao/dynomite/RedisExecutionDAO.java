@@ -461,7 +461,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 	}
 
 	@Override
-	public List<Workflow> getWorkflowsByCorrelationId(String correlationId, boolean includeTasks) {
+	public List<Workflow> getWorkflowsByCorrelationId(String workflowName, String correlationId, boolean includeTasks) {
 		throw new UnsupportedOperationException("This method is not implemented in RedisExecutionDAO. Please use ExecutionDAOFacade instead.");
 	}
 

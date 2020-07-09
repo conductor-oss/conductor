@@ -44,6 +44,7 @@ import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.utils.ServiceUtils;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -342,14 +343,21 @@ public class ExecutionService {
 
 	public List<Workflow> getWorkflowInstances(String workflowName, String correlationId, boolean includeClosed, boolean includeTasks) {
 
-		List<Workflow> workflows = executionDAOFacade.getWorkflowsByCorrelationId(correlationId, includeTasks);
+		List<Workflow> workflows = executionDAOFacade.getWorkflowsByCorrelationId(workflowName, correlationId, false);
 		List<Workflow> result = new LinkedList<>();
-		for (Workflow wf : workflows) {
-			if (wf.getWorkflowName().equals(workflowName) && (includeClosed || wf.getStatus().equals(Workflow.WorkflowStatus.RUNNING))) {
-				result.add(wf);
+		result = workflows.stream().parallel().filter(wf -> {
+			if (includeClosed || wf.getStatus().equals(Workflow.WorkflowStatus.RUNNING)) {
+				// including tasks for subset of workflows to increase performance
+				if (includeTasks) {
+					List<Task> tasks = executionDAOFacade.getTasksForWorkflow(wf.getWorkflowId());
+					tasks.sort(Comparator.comparingInt(Task::getSeq));
+					wf.setTasks(tasks);
+				}
+				return true;
+			} else {
+				return false;
 			}
-		}
-
+		}).collect(Collectors.toList());
 		return result;
 	}
 

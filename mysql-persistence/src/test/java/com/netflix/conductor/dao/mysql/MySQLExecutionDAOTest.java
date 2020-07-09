@@ -63,7 +63,7 @@ public class MySQLExecutionDAOTest extends ExecutionDAOTest {
 
         generateWorkflows(workflow, 10);
 
-        List<Workflow> bycorrelationId = getExecutionDAO().getWorkflowsByCorrelationId("corr001", true);
+        List<Workflow> bycorrelationId = getExecutionDAO().getWorkflowsByCorrelationId("pending_count_correlation_jtest", "corr001", true);
         assertNotNull(bycorrelationId);
         assertEquals(10, bycorrelationId.size());
     }
