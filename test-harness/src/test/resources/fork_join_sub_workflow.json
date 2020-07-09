@@ -1,0 +1,75 @@
+{
+  "name": "integration_test_fork_join_sw",
+  "description": "integration_test_fork_join_sw",
+  "version": 1,
+  "tasks": [{
+    "taskReferenceName": "fanouttask",
+    "inputParameters": {},
+    "type": "FORK_JOIN",
+    "decisionCases": {},
+    "defaultCase": [],
+    "forkTasks": [
+      [{
+        "name": "sub_workflow_task",
+        "taskReferenceName": "st1",
+        "inputParameters": {},
+        "type": "SUB_WORKFLOW",
+        "decisionCases": {},
+        "defaultCase": [],
+        "forkTasks": [],
+        "startDelay": 0,
+        "subWorkflowParam": {
+          "name": "sub_workflow"
+        },
+        "joinOn": [],
+        "optional": false,
+        "defaultExclusiveJoinTask": [],
+        "asyncComplete": false,
+        "loopOver": []
+      }], [{
+        "name" : "integration_task_2",
+        "taskReferenceName" : "t2",
+        "inputParameters" : {
+          "p1" : "${workflow.input.param1}",
+          "p2" : "${workflow.input.param2}"
+        },
+        "type" : "SIMPLE",
+        "decisionCases" : { },
+        "defaultCase" : [ ],
+        "forkTasks" : [ ],
+        "startDelay" : 0,
+        "joinOn" : [ ],
+        "optional" : false,
+        "defaultExclusiveJoinTask" : [ ],
+        "asyncComplete" : false,
+        "loopOver" : [ ]
+      }]
+    ],
+    "startDelay": 0,
+    "joinOn": [],
+    "optional": false,
+    "defaultExclusiveJoinTask": [],
+    "asyncComplete": false,
+    "loopOver": []
+  }, {
+    "taskReferenceName": "fanouttask_join",
+    "inputParameters": {},
+    "type": "JOIN",
+    "decisionCases": {},
+    "defaultCase": [],
+    "forkTasks": [],
+    "startDelay": 0,
+    "joinOn": ["st1", "t2"],
+    "optional": false,
+    "defaultExclusiveJoinTask": [],
+    "asyncComplete": false,
+    "loopOver": []
+  }],
+  "inputParameters": ["param1", "param2"],
+  "outputParameters": {},
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0
+}
