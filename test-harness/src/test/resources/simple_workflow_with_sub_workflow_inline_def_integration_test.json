@@ -1,0 +1,98 @@
+{
+  "name": "WorkflowWithInlineSubWorkflow",
+  "description": "WorkflowWithInlineSubWorkflow",
+  "version": 1,
+  "tasks": [{
+    "name": "integration_task_1",
+    "taskReferenceName": "t1",
+    "inputParameters": {
+      "tp11": "${workflow.input.param1}",
+      "tp12": "${workflow.input.param2}"
+    },
+    "type": "SIMPLE",
+    "decisionCases": {},
+    "defaultCase": [],
+    "forkTasks": [],
+    "startDelay": 0,
+    "joinOn": [],
+    "optional": false,
+    "defaultExclusiveJoinTask": [],
+    "asyncComplete": false,
+    "loopOver": []
+  }, {
+    "taskReferenceName": "swt",
+    "inputParameters": {
+      "op": "${t1.output.op}",
+      "imageType": "${t1.output.imageType}"
+    },
+    "type": "SUB_WORKFLOW",
+    "decisionCases": {},
+    "defaultCase": [],
+    "forkTasks": [],
+    "startDelay": 0,
+    "subWorkflowParam": {
+      "name": "one_task_workflow",
+      "version": 1,
+      "workflowDefinition": {
+        "name": "one_task_workflow",
+        "version": 1,
+        "tasks": [{
+          "name": "integration_task_3",
+          "taskReferenceName": "t3",
+          "inputParameters": {
+            "p1": "${workflow.input.imageType}"
+          },
+          "type": "SIMPLE",
+          "decisionCases": {},
+          "defaultCase": [],
+          "forkTasks": [],
+          "startDelay": 0,
+          "joinOn": [],
+          "optional": false,
+          "defaultExclusiveJoinTask": [],
+          "asyncComplete": false,
+          "loopOver": []
+        }],
+        "inputParameters": ["imageType", "op"],
+        "outputParameters": {
+          "op": "${t3.output.op}"
+        },
+        "schemaVersion": 2,
+        "restartable": true,
+        "workflowStatusListenerEnabled": false,
+        "timeoutPolicy": "ALERT_ONLY",
+        "timeoutSeconds": 0
+      }
+    },
+    "joinOn": [],
+    "optional": false,
+    "defaultExclusiveJoinTask": [],
+    "asyncComplete": false,
+    "loopOver": []
+  }, {
+    "name": "integration_task_2",
+    "taskReferenceName": "t2",
+    "inputParameters": {
+      "op": "${t1.output.op}"
+    },
+    "type": "SIMPLE",
+    "decisionCases": {},
+    "defaultCase": [],
+    "forkTasks": [],
+    "startDelay": 0,
+    "joinOn": [],
+    "optional": false,
+    "defaultExclusiveJoinTask": [],
+    "asyncComplete": false,
+    "loopOver": []
+  }],
+  "inputParameters": ["param1", "param2"],
+  "outputParameters": {
+    "o3": "${t1.output.op}"
+  },
+  "schemaVersion": 2,
+  "restartable": true,
+  "workflowStatusListenerEnabled": false,
+  "timeoutPolicy": "ALERT_ONLY",
+  "timeoutSeconds": 0
+}
