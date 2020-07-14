@@ -1,0 +1,26 @@
+{
+  "name" : "test_concurrency_limits_workflow",
+  "version" : 1,
+  "tasks" : [ {
+    "name" : "test_task_with_concurrency_limit",
+    "taskReferenceName" : "test_task_with_concurrency_limit",
+    "inputParameters" : { },
+    "type" : "SIMPLE",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ ],
+    "startDelay" : 0,
+    "joinOn" : [ ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  } ],
+  "inputParameters" : [ ],
+  "outputParameters" : { },
+  "schemaVersion" : 2,
+  "restartable" : true,
+  "workflowStatusListenerEnabled" : false,
+  "timeoutPolicy" : "ALERT_ONLY",
+  "timeoutSeconds" : 0
+}
