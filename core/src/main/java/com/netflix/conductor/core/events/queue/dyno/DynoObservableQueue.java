@@ -28,11 +28,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import rx.Observable;
 import rx.Observable.OnSubscribe;
+import rx.Scheduler;
+import rx.schedulers.Schedulers;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -52,15 +55,18 @@ public class DynoObservableQueue implements ObservableQueue {
     private final int pollTimeInMS;
     private final int longPollTimeout;
     private final int pollCount;
+    private final Scheduler scheduler;
 
     @Inject
-    DynoObservableQueue(String queueName, QueueDAO queueDAO, Configuration config) {
+    DynoObservableQueue(String queueName, QueueDAO queueDAO, Configuration config, Scheduler scheduler) {
         this.queueName = queueName;
         this.queueDAO = queueDAO;
         this.pollTimeInMS = config.getIntProperty("workflow.dyno.queues.pollingInterval", 100);
         this.pollCount = config.getIntProperty("workflow.dyno.queues.pollCount", 10);
         this.longPollTimeout = config.getIntProperty("workflow.dyno.queues.longPollTimeout", 1000);
+        this.scheduler = scheduler;
     }
+
 
     @Override
     public Observable<Message> observe() {
@@ -110,6 +116,7 @@ public class DynoObservableQueue implements ObservableQueue {
         try {
             List<Message> messages = queueDAO.pollMessages(queueName, pollCount, longPollTimeout);
             Monitors.recordEventQueueMessagesProcessed(QUEUE_TYPE, queueName, messages.size());
+            Monitors.recordEventQueuePollSize(queueName, messages.size());
             return messages;
         } catch (Exception exception) {
             logger.error("Exception while getting messages from  queueDAO", exception);
@@ -121,7 +128,7 @@ public class DynoObservableQueue implements ObservableQueue {
     @VisibleForTesting
     private OnSubscribe<Message> getOnSubscribe() {
         return subscriber -> {
-            Observable<Long> interval = Observable.interval(pollTimeInMS, TimeUnit.MILLISECONDS);
+            Observable<Long> interval = Observable.interval(pollTimeInMS, TimeUnit.MILLISECONDS, scheduler);
             interval.flatMap((Long x) -> {
                 List<Message> msgs = receiveMessages();
                 return Observable.from(msgs);

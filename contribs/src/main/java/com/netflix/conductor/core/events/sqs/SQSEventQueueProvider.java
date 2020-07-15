@@ -24,6 +24,7 @@ import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
+import rx.Scheduler;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -42,13 +43,15 @@ public class SQSEventQueueProvider implements EventQueueProvider {
 	private final int batchSize;
 	private final int pollTimeInMS;
 	private final int visibilityTimeoutInSeconds;
+	private final Scheduler scheduler;
 	
 	@Inject
-	public SQSEventQueueProvider(AmazonSQSClient client, Configuration config) {
+	public SQSEventQueueProvider(AmazonSQSClient client, Configuration config, Scheduler scheduler) {
 		this.client = client;
 		this.batchSize = config.getIntProperty("workflow.event.queues.sqs.batchSize", 1);
 		this.pollTimeInMS = config.getIntProperty("workflow.event.queues.sqs.pollTimeInMS", 100);
 		this.visibilityTimeoutInSeconds = config.getIntProperty("workflow.event.queues.sqs.visibilityTimeoutInSeconds", 60);
+		this.scheduler = scheduler;
 	}
 	
 	@Override
@@ -60,6 +63,7 @@ public class SQSEventQueueProvider implements EventQueueProvider {
 					.withPollTimeInMS(this.pollTimeInMS)
 					.withQueueName(queueURI)
 					.withVisibilityTimeout(this.visibilityTimeoutInSeconds)
+					.withScheduler(scheduler)
 					.build();
 		});
 	}

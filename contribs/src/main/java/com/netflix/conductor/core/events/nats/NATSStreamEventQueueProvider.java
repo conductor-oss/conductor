@@ -33,21 +33,24 @@ import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 
 import io.nats.client.Nats;
+import rx.Scheduler;
 
 /**
  * @author Oleksiy Lysak
  */
 @Singleton
 public class NATSStreamEventQueueProvider implements EventQueueProvider {
-    private static Logger logger = LoggerFactory.getLogger(NATSStreamEventQueueProvider.class);
-    protected Map<String, NATSStreamObservableQueue> queues = new ConcurrentHashMap<>();
-    private String durableName;
-    private String clusterId;
-    private String natsUrl;
+    private static final Logger logger = LoggerFactory.getLogger(NATSStreamEventQueueProvider.class);
+    protected final Map<String, NATSStreamObservableQueue> queues = new ConcurrentHashMap<>();
+    private final String durableName;
+    private final String clusterId;
+    private final String natsUrl;
+    private final Scheduler scheduler;
     
     @Inject
-    public NATSStreamEventQueueProvider(Configuration config) {
+    public NATSStreamEventQueueProvider(Configuration config, Scheduler scheduler) {
         logger.info("NATS Stream Event Queue Provider init");
+        this.scheduler = scheduler;
         
         // Get NATS Streaming options
         clusterId = config.getProperty("io.nats.streaming.clusterId", "test-cluster");
@@ -61,7 +64,7 @@ public class NATSStreamEventQueueProvider implements EventQueueProvider {
     
     @Override
     public ObservableQueue getQueue(String queueURI) {
-        NATSStreamObservableQueue queue = queues.computeIfAbsent(queueURI, q -> new NATSStreamObservableQueue(clusterId, natsUrl, durableName, queueURI));
+        NATSStreamObservableQueue queue = queues.computeIfAbsent(queueURI, q -> new NATSStreamObservableQueue(clusterId, natsUrl, durableName, queueURI, scheduler));
         if (queue.isClosed()) {
             queue.open();
         }

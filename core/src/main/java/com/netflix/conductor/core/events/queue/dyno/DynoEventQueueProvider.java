@@ -22,6 +22,7 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
 import com.netflix.conductor.dao.QueueDAO;
+import rx.Scheduler;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -38,15 +39,17 @@ public class DynoEventQueueProvider implements EventQueueProvider {
 	private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
 	private final QueueDAO queueDAO;
 	private final Configuration config;
+	private final  Scheduler scheduler;
 	
 	@Inject
-	public DynoEventQueueProvider(QueueDAO queueDAO, Configuration config) {
+	public DynoEventQueueProvider(QueueDAO queueDAO, Configuration config, Scheduler scheduler) {
 		this.queueDAO = queueDAO;
 		this.config = config;
+		this.scheduler = scheduler;
 	}
 	
 	@Override
 	public ObservableQueue getQueue(String queueURI) {
-		return queues.computeIfAbsent(queueURI, q -> new DynoObservableQueue(queueURI, queueDAO, config));
+		return queues.computeIfAbsent(queueURI, q -> new DynoObservableQueue(queueURI, queueDAO, config, scheduler));
 	}
 }
