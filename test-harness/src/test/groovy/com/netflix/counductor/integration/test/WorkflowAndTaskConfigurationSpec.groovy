@@ -19,7 +19,9 @@ import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest
+import com.netflix.conductor.common.metadata.workflow.TaskType
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.core.execution.WorkflowSweeper
@@ -739,7 +741,89 @@ class WorkflowAndTaskConfigurationSpec extends Specification {
             tasks[1].taskType == 'integration_task_2'
             tasks[1].status == Task.Status.COMPLETED
         }
+    }
 
+    def "Test workflow with no tasks"() {
+        setup: "Create a workflow definition with no tasks"
+        WorkflowDef emptyWorkflowDef = new WorkflowDef()
+        emptyWorkflowDef.setName("empty_workflow")
+        emptyWorkflowDef.setSchemaVersion(2)
+
+        when: "a workflow is started with this definition"
+        def input = new HashMap()
+        def correlationId = 'empty_workflow'
+        def workflowInstanceId = workflowExecutor.startWorkflow(emptyWorkflowDef, input, null, correlationId, null, null)
+
+        then: "the workflow is completed"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 0
+        }
+    }
+
+    def "Test task def template"() {
+        setup: "Register a task definition with input template"
+        TaskDef templatedTask = new TaskDef()
+        templatedTask.setName('templated_task')
+        def httpRequest = new HashMap<>()
+        httpRequest['method'] = 'GET'
+        httpRequest['vipStack'] = '${STACK2}'
+        httpRequest['uri'] = '/get/something'
+        def body = new HashMap<>()
+        body['inputPaths'] = Arrays.asList('${workflow.input.path1}', '${workflow.input.path2}')
+        body['requestDetails'] = '${workflow.input.requestDetails}'
+        body['outputPath'] = '${workflow.input.outputPath}'
+        httpRequest['body'] = body
+        templatedTask.inputTemplate['http_request'] = httpRequest
+        metadataService.registerTaskDef(Arrays.asList(templatedTask))
+
+        and: "set a system property for STACK2"
+        System.setProperty('STACK2', 'test_stack')
+
+        and: "a workflow definition using this task is created"
+        WorkflowTask workflowTask = new WorkflowTask()
+        workflowTask.setName(templatedTask.getName())
+        workflowTask.setWorkflowTaskType(TaskType.SIMPLE)
+        workflowTask.setTaskReferenceName("t0")
+
+        WorkflowDef templateWorkflowDef = new WorkflowDef()
+        templateWorkflowDef.setName("template_workflow")
+        templateWorkflowDef.getTasks().add(workflowTask)
+        templateWorkflowDef.setSchemaVersion(2)
+        metadataService.registerWorkflowDef(templateWorkflowDef)
+
+        and: "the input to the workflow is curated"
+        def requestDetails = new HashMap<>()
+        requestDetails['key1'] = 'value1'
+        requestDetails['key2'] = 42
+
+        def input = new HashMap<>()
+        input['path1'] = 'file://path1'
+        input['path2'] = 'file://path2'
+        input['outputPath'] = 's3://bucket/outputPath'
+        input['requestDetails'] = requestDetails
+
+        when: "the workflow is started"
+        def correlationId = 'workflow_taskdef_template'
+        def workflowInstanceId = workflowExecutor.startWorkflow(templateWorkflowDef, input, null, correlationId, null, null)
+
+        then: "the workflow is in running state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].inputData.get('http_request') instanceof Map
+            tasks[0].inputData.get('http_request')['method'] == 'GET'
+            tasks[0].inputData.get('http_request')['vipStack'] == 'test_stack'
+            tasks[0].inputData.get('http_request')['body'] instanceof Map
+            tasks[0].inputData.get('http_request')['body']['requestDetails'] instanceof Map
+            tasks[0].inputData.get('http_request')['body']['requestDetails']['key1'] == 'value1'
+            tasks[0].inputData.get('http_request')['body']['requestDetails']['key2'] == 42
+            tasks[0].inputData.get('http_request')['body']['outputPath'] == 's3://bucket/outputPath'
+            tasks[0].inputData.get('http_request')['body']['inputPaths'] instanceof List
+            tasks[0].inputData.get('http_request')['body']['inputPaths'][0] == 'file://path1'
+            tasks[0].inputData.get('http_request')['body']['inputPaths'][1] == 'file://path2'
+            tasks[0].inputData.get('http_request')['uri'] == '/get/something'
+        }
     }
 
 }
