@@ -129,8 +129,25 @@ class WorkflowTestUtil {
         userTask.setTimeoutPolicy(TaskDef.TimeoutPolicy.RETRY)
         userTask.setRetryDelaySeconds(10)
 
-        metadataService.registerTaskDef([taskWithResponseTimeOut, optionalTask, simpleSubWorkflowTask,
-                                         subWorkflowTask, waitTimeOutTask, userTask])
+
+        TaskDef concurrentExecutionLimitedTask = new TaskDef()
+        concurrentExecutionLimitedTask.name = "test_task_with_concurrency_limit"
+        concurrentExecutionLimitedTask.concurrentExecLimit = 1
+
+        TaskDef rateLimitedTask = new TaskDef()
+        rateLimitedTask.name = 'test_task_with_rateLimits'
+        rateLimitedTask.rateLimitFrequencyInSeconds = 600
+        rateLimitedTask.rateLimitPerFrequency = 1
+
+        TaskDef eventTaskX = new TaskDef()
+        eventTaskX.name = 'eventX'
+        eventTaskX.timeoutSeconds = 1
+
+        metadataService.registerTaskDef(
+                [taskWithResponseTimeOut, optionalTask, simpleSubWorkflowTask,
+                 subWorkflowTask, waitTimeOutTask, userTask, eventTaskX,
+                 rateLimitedTask, concurrentExecutionLimitedTask]
+        )
     }
 
     /**

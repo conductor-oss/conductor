@@ -1,0 +1,40 @@
+{
+  "name" : "test_wait_workflow",
+  "version" : 1,
+  "tasks" : [ {
+    "name" : "wait",
+    "taskReferenceName" : "wait0",
+    "inputParameters" : { },
+    "type" : "WAIT",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ ],
+    "startDelay" : 0,
+    "joinOn" : [ ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  }, {
+    "name" : "integration_task_1",
+    "taskReferenceName" : "t1",
+    "inputParameters" : { },
+    "type" : "SIMPLE",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ ],
+    "startDelay" : 0,
+    "joinOn" : [ ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  } ],
+  "inputParameters" : [ ],
+  "outputParameters" : { },
+  "schemaVersion" : 2,
+  "restartable" : true,
+  "workflowStatusListenerEnabled" : false,
+  "timeoutPolicy" : "ALERT_ONLY",
+  "timeoutSeconds" : 0
+}
