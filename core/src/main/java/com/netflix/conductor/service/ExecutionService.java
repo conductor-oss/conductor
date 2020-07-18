@@ -1,17 +1,14 @@
 /*
- * Copyright 2016 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2020 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.service;
 
@@ -344,8 +341,7 @@ public class ExecutionService {
 	public List<Workflow> getWorkflowInstances(String workflowName, String correlationId, boolean includeClosed, boolean includeTasks) {
 
 		List<Workflow> workflows = executionDAOFacade.getWorkflowsByCorrelationId(workflowName, correlationId, false);
-		List<Workflow> result = new LinkedList<>();
-		result = workflows.stream().parallel().filter(wf -> {
+		return workflows.stream().parallel().filter(wf -> {
 			if (includeClosed || wf.getStatus().equals(Workflow.WorkflowStatus.RUNNING)) {
 				// including tasks for subset of workflows to increase performance
 				if (includeTasks) {
@@ -358,7 +354,6 @@ public class ExecutionService {
 				return false;
 			}
 		}).collect(Collectors.toList());
-		return result;
 	}
 
 	public Workflow getExecutionStatus(String workflowId, boolean includeTasks) {
