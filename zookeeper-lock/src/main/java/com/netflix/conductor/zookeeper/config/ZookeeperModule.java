@@ -18,8 +18,8 @@ package com.netflix.conductor.zookeeper.config;
 
 import com.google.inject.AbstractModule;
 import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import com.netflix.conductor.core.utils.Lock;
-import com.netflix.conductor.service.ExecutionLockService;
 import com.netflix.conductor.zookeeper.ZookeeperLock;
 
 public class ZookeeperModule extends AbstractModule {
@@ -30,6 +30,7 @@ public class ZookeeperModule extends AbstractModule {
     }
 
     @Provides
+    @Singleton
     protected Lock provideLock(ZookeeperConfiguration config) {
         return new ZookeeperLock(config);
     }
