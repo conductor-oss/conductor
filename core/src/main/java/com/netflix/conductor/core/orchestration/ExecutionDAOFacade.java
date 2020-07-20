@@ -152,7 +152,7 @@ public class ExecutionDAOFacade {
      */
     public List<Workflow> getWorkflowsByCorrelationId(String workflowName, String correlationId, boolean includeTasks) {
         if (!executionDAO.canSearchAcrossWorkflows()) {
-        	String query = "correlationId='" + correlationId + "' and workflowType='" + workflowName + "'";
+        	String query = "correlationId='" + correlationId + "' AND workflowType='" + workflowName + "'";
             SearchResult<String> result = indexDAO.searchWorkflows(query, "*", 0, 1000, null);
             return result.getResults().stream()
                 .parallel()
