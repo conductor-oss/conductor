@@ -27,6 +27,7 @@ import com.netflix.conductor.common.utils.RetryUtil;
 import com.netflix.discovery.EurekaClient;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
@@ -51,15 +52,17 @@ class TaskPollExecutor {
     private int updateRetryCount;
     private ExecutorService executorService;
     private PollingSemaphore pollingSemaphore;
+    private Map<String/*taskType*/, String/*domain*/> taskToDomain;
 
     private static final String DOMAIN = "domain";
     private static final String ALL_WORKERS = "all";
 
     TaskPollExecutor(EurekaClient eurekaClient, TaskClient taskClient, int threadCount, int updateRetryCount,
-        String workerNamePrefix) {
+        Map<String, String> taskToDomain, String workerNamePrefix) {
         this.eurekaClient = eurekaClient;
         this.taskClient = taskClient;
         this.updateRetryCount = updateRetryCount;
+        this.taskToDomain = taskToDomain;
 
         LOGGER.info("Initialized the TaskPollExecutor with {} threads", threadCount);
 
@@ -94,7 +97,8 @@ class TaskPollExecutor {
 
             String taskType = worker.getTaskDefName();
             String domain = Optional.ofNullable(PropertyFactory.getString(taskType, DOMAIN, null))
-                .orElse(PropertyFactory.getString(ALL_WORKERS, DOMAIN, null));
+                .orElseGet(() -> Optional.ofNullable(PropertyFactory.getString(ALL_WORKERS, DOMAIN, null))
+                    .orElse(taskToDomain.get(taskType)));
 
             LOGGER.debug("Polling task of type: {} in domain: '{}'", taskType, domain);
             task = MetricsContainer.getPollTimer(taskType)

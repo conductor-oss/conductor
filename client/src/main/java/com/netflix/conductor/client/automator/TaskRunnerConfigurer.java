@@ -20,8 +20,10 @@ import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.telemetry.MetricsContainer;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.discovery.EurekaClient;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +42,7 @@ public class TaskRunnerConfigurer {
     private final int updateRetryCount;
     private final int threadCount;
     private final String workerNamePrefix;
+    private final Map<String/*taskType*/, String/*domain*/> taskToDomain;
 
     private TaskPollExecutor taskPollExecutor;
 
@@ -53,6 +56,7 @@ public class TaskRunnerConfigurer {
         this.sleepWhenRetry = builder.sleepWhenRetry;
         this.updateRetryCount = builder.updateRetryCount;
         this.workerNamePrefix = builder.workerNamePrefix;
+        this.taskToDomain = builder.taskToDomain;
         builder.workers.forEach(workers::add);
         this.threadCount = (builder.threadCount == -1) ? workers.size() : builder.threadCount;
     }
@@ -69,6 +73,7 @@ public class TaskRunnerConfigurer {
         private Iterable<Worker> workers;
         private EurekaClient eurekaClient;
         private TaskClient taskClient;
+        private Map<String/*taskType*/, String/*domain*/> taskToDomain = new HashMap<>();
 
         public Builder(TaskClient taskClient, Iterable<Worker> workers) {
             Preconditions.checkNotNull(taskClient, "TaskClient cannot be null");
@@ -130,6 +135,11 @@ public class TaskRunnerConfigurer {
             return this;
         }
 
+        public Builder withTaskToDomain(Map<String, String> taskToDomain) {
+            this.taskToDomain = taskToDomain;
+            return this;
+        }
+
         /**
          * Builds an instance of the TaskRunnerConfigurer.
          * <p>
@@ -176,7 +186,7 @@ public class TaskRunnerConfigurer {
     public synchronized void init() {
         MetricsContainer.incrementInitializationCount(this.getClass().getCanonicalName());
         this.taskPollExecutor = new TaskPollExecutor(eurekaClient, taskClient, threadCount,
-            updateRetryCount, workerNamePrefix);
+            updateRetryCount, taskToDomain, workerNamePrefix);
 
         this.scheduledExecutorService = Executors.newScheduledThreadPool(workers.size());
         workers.forEach(
