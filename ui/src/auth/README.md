@@ -69,12 +69,11 @@ See example of use:
   },
   "audit": true,
   "acl": [
-    "GET /favicon.ico                   *",
-    "GET /(styles|js|images|fonts)/(.*) *",
-    "GET /(.*)                          viewer",
-    "PUT /(.*)                          admin",
     "POST /(.*)                         admin",
-    "DELETE /(.*)                       admin"
+    "PUT /(.*)                          admin",
+    "DELETE /(.*)                       admin",
+    "GET /api/(.*)                      viewer",
+    "GET /(.*)                          *"
   ]
 }
 ```
@@ -115,12 +114,11 @@ See example of use:
   },
   "audit": true,
   "acl": [
-    "GET /favicon.ico                   *",
-    "GET /(styles|js|images|fonts)/(.*) *",
-    "GET /(.*)                          viewer",
-    "PUT /(.*)                          admin",
     "POST /(.*)                         admin",
-    "DELETE /(.*)                       admin"
+    "PUT /(.*)                          admin",
+    "DELETE /(.*)                       admin",
+    "GET /api/(.*)                      viewer",
+    "GET /(.*)                          *"
   ]
 }
 ```
