@@ -536,9 +536,15 @@ public class AMQPObservableQueue implements ObservableQueue {
 			if (useExchange) {
 				// Consume messages from an exchange
 				getOrCreateExchange();
-				// Declare an exclusive not durable with auto-delete queue
+				/**
+				 * Create queue if not present based on the settings provided in the queue URI or configuration properties.
+				 * Sample URI format: amqp-exchange:myExchange?exchangeType=topic&routingKey=myRoutingKey&exclusive=false&autoDelete=false&durable=true
+				 * Default settings if not provided in the queue URI or properties: isDurable: true, autoDelete: false, isExclusive: false
+				 * The same settings are currently used during creation of exchange as well as queue.
+				 * TODO: This can be enhanced further to get the settings separately for exchange and queue from the URI
+				*/
 				final AMQP.Queue.DeclareOk declareOk = getOrCreateQueue(
-						String.format("bound_to_%s", settings.getQueueOrExchangeName()), false, true, true,
+						String.format("bound_to_%s", settings.getQueueOrExchangeName()), settings.isDurable(), settings.isExclusive(), settings.autoDelete(),
 						Maps.newHashMap());
 				// Bind the declared queue to exchange
 				queueName = declareOk.getQueue();

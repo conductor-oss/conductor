@@ -248,6 +248,30 @@ public class AMQPObservableQueueTest {
 	}
 
 	@Test
+	public void testGetMessagesFromExistingExchangeWithDurableExclusiveAutoDeleteQueueConfiguration() throws IOException, TimeoutException {
+		// Mock channel and connection
+		Channel channel = mockBaseChannel();
+		Connection connection = mockGoodConnection(channel);
+		testGetMessagesFromExchangeAndCustomConfigurationFromURI(channel, connection, true, true, true, true, true);
+	}
+
+	@Test
+	public void testGetMessagesFromNotExistingExchangeWithNonDurableNonExclusiveNonAutoDeleteQueueConfiguration() throws IOException, TimeoutException {
+		// Mock channel and connection
+		Channel channel = mockBaseChannel();
+		Connection connection = mockGoodConnection(channel);
+		testGetMessagesFromExchangeAndCustomConfigurationFromURI(channel, connection, false, true, false, false, false);
+	}
+
+	@Test
+	public void testGetMessagesFromNotExistingExchangeWithDurableExclusiveNonAutoDeleteQueueConfiguration() throws IOException, TimeoutException {
+		// Mock channel and connection
+		Channel channel = mockBaseChannel();
+		Connection connection = mockGoodConnection(channel);
+		testGetMessagesFromExchangeAndCustomConfigurationFromURI(channel, connection, false, true, true, true, false);
+	}
+
+	@Test
 	public void testPublishMessagesToNotExistingExchangeAndDefaultConfiguration() throws IOException, TimeoutException {
 		// Mock channel and connection
 		Channel channel = mockBaseChannel();
@@ -287,6 +311,30 @@ public class AMQPObservableQueueTest {
 		testPublishMessagesToExchangeAndDefaultConfiguration(channel, connection, true, false);
 	}
 
+	@Test
+	public void testAck() throws IOException, TimeoutException {
+		// Mock channel and connection
+		Channel channel = mockBaseChannel();
+		Connection connection = mockGoodConnection(channel);
+		final Random random = new Random();
+
+		final String name = RandomStringUtils.randomAlphabetic(30), type = "topic",
+				routingKey = RandomStringUtils.randomAlphabetic(30);
+
+		final AMQPSettings settings = new AMQPSettings(configuration).fromURI("amqp_exchange:" + name + "?exchangeType="
+				+ type + "&routingKey=" + routingKey);
+		AMQPObservableQueue observableQueue = new AMQPObservableQueue(mockConnectionFactory(connection), addresses,
+				true, settings, batchSize, pollTimeMs);
+		List<Message> messages = new LinkedList<>();
+		Message msg = new Message();
+		msg.setId("0e3eef8f-ebb1-4244-9665-759ab5bdf433");
+		msg.setPayload("Payload");
+		msg.setReceipt("1");
+		messages.add(msg);
+		List<String> deliveredTags = observableQueue.ack(messages);
+		assertNotNull(deliveredTags);
+	}
+
 	private void testGetMessagesFromExchangeAndDefaultConfiguration(Channel channel, Connection connection,
 			boolean exists, boolean useWorkingChannel) throws IOException, TimeoutException {
 
@@ -297,10 +345,10 @@ public class AMQPObservableQueueTest {
 		final String queueName = String.format("bound_to_%s", name);
 
 		final AMQPSettings settings = new AMQPSettings(configuration).fromURI("amqp_exchange:" + name + "?exchangeType="
-				+ type + "&routingKey=" + routingKey + "&deliveryMode=2&durable=true&exclusive=false&autoDelete=true");
+				+ type + "&routingKey=" + routingKey);
 		assertEquals(true, settings.isDurable());
 		assertEquals(false, settings.isExclusive());
-		assertEquals(true, settings.autoDelete());
+		assertEquals(false, settings.autoDelete());
 		assertEquals(2, settings.getDeliveryMode());
 		assertEquals(name, settings.getQueueOrExchangeName());
 		assertEquals(type, settings.getExchangeType());
@@ -315,7 +363,7 @@ public class AMQPObservableQueueTest {
 		assertArrayEquals(addresses, observableQueue.getAddresses());
 		assertEquals(AMQPConstants.AMQP_EXCHANGE_TYPE, observableQueue.getType());
 		assertEquals(AMQPConstants.AMQP_EXCHANGE_TYPE+":"+name+"?exchangeType="
-				+ type + "&routingKey=" + routingKey + "&deliveryMode=2&durable=true&exclusive=false&autoDelete=true", observableQueue.getName());
+				+ type + "&routingKey=" + routingKey, observableQueue.getName());
 		assertEquals(name, observableQueue.getURI());
 		assertEquals(batchSize, observableQueue.getBatchSize());
 		assertEquals(pollTimeMs, observableQueue.getPollTimeInMS());
@@ -329,7 +377,59 @@ public class AMQPObservableQueueTest {
 			} else {
 				verify(channel, atLeastOnce()).exchangeDeclare(eq(name), eq(type), eq(settings.isDurable()),
 						eq(settings.autoDelete()), eq(Collections.emptyMap()));
-				verify(channel, atLeastOnce()).queueDeclare(eq(queueName), Mockito.anyBoolean(), Mockito.anyBoolean(), Mockito.anyBoolean(),
+				verify(channel, atLeastOnce()).queueDeclare(eq(queueName), eq(settings.isDurable()), eq(settings.isExclusive()), eq(settings.autoDelete()),
+						anyMap());
+			}
+			verify(channel, atLeastOnce()).queueBind(eq(queueName), eq(name), eq(routingKey));
+		}
+	}
+
+	private void testGetMessagesFromExchangeAndCustomConfigurationFromURI(Channel channel, Connection connection,
+			boolean exists, boolean useWorkingChannel, boolean durable, boolean exclusive, boolean autoDelete) throws IOException, TimeoutException {
+
+		final Random random = new Random();
+
+		final String name = RandomStringUtils.randomAlphabetic(30), type = "topic",
+				routingKey = RandomStringUtils.randomAlphabetic(30);
+		final String queueName = String.format("bound_to_%s", name);
+
+		final AMQPSettings settings = new AMQPSettings(configuration).fromURI("amqp_exchange:" + name + "?exchangeType="
+				+ type + "&routingKey=" + routingKey + "&deliveryMode=2"
+				+ "&durable=" + durable + "&exclusive=" + exclusive + "&autoDelete=" + autoDelete);
+		assertEquals(durable, settings.isDurable());
+		assertEquals(exclusive, settings.isExclusive());
+		assertEquals(autoDelete, settings.autoDelete());
+		assertEquals(2, settings.getDeliveryMode());
+		assertEquals(name, settings.getQueueOrExchangeName());
+		assertEquals(type, settings.getExchangeType());
+		assertEquals(routingKey, settings.getRoutingKey());
+
+		List<GetResponse> queue = buildQueue(random, batchSize);
+		channel = mockChannelForExchange(channel, useWorkingChannel, exists, queueName, name, type, routingKey, queue);
+
+		AMQPObservableQueue observableQueue = new AMQPObservableQueue(mockConnectionFactory(connection), addresses,
+				true, settings, batchSize, pollTimeMs);
+
+		assertArrayEquals(addresses, observableQueue.getAddresses());
+		assertEquals(AMQPConstants.AMQP_EXCHANGE_TYPE, observableQueue.getType());
+		assertEquals(AMQPConstants.AMQP_EXCHANGE_TYPE+":"+name+"?exchangeType="
+						+ type + "&routingKey=" + routingKey + "&deliveryMode=2"
+						+ "&durable="+ durable + "&exclusive=" + exclusive + "&autoDelete=" + autoDelete,
+				observableQueue.getName());
+		assertEquals(name, observableQueue.getURI());
+		assertEquals(batchSize, observableQueue.getBatchSize());
+		assertEquals(pollTimeMs, observableQueue.getPollTimeInMS());
+		assertEquals(queue.size(), observableQueue.size());
+
+		runObserve(channel, observableQueue, queueName, useWorkingChannel, batchSize);
+
+		if (useWorkingChannel) {
+			if (exists) {
+				verify(channel, atLeastOnce()).exchangeDeclarePassive(eq(name));
+			} else {
+				verify(channel, atLeastOnce()).exchangeDeclare(eq(name), eq(type), eq(settings.isDurable()),
+						eq(settings.autoDelete()), eq(Collections.emptyMap()));
+				verify(channel, atLeastOnce()).queueDeclare(eq(queueName), eq(settings.isDurable()), eq(settings.isExclusive()), eq(settings.autoDelete()),
 						anyMap());
 			}
 			verify(channel, atLeastOnce()).queueBind(eq(queueName), eq(name), eq(routingKey));
