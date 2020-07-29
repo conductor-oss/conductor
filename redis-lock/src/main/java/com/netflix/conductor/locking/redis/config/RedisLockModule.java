@@ -53,6 +53,7 @@ public class RedisLockModule extends AbstractModule{
         }
         String redisServerAddress = clusterConfiguration.getRedisServerAddress();
         String redisServerPassword = clusterConfiguration.getRedisServerPassword();
+        String masterName = clusterConfiguration.getRedisServerMasterName();
 
         Config redisConfig = new Config();
 
@@ -74,6 +75,7 @@ public class RedisLockModule extends AbstractModule{
             case SENTINEL:
                 redisConfig.useSentinelServers()
                         .setScanInterval(2000)
+                        .setMasterName(masterName)
                         .addSentinelAddress(redisServerAddress)
                         .setPassword(redisServerPassword)
                         .setTimeout(connectionTimeout);
