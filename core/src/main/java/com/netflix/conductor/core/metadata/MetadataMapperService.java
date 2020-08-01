@@ -41,8 +41,10 @@ import java.util.stream.Collectors;
 /**
  * Populates metadata definitions within workflow objects.
  * Benefits of loading and populating metadata definitions upfront could be:
- * - Immutable definitions within a workflow execution with the added benefit of guaranteeing consistency at runtime.
- * - Stress is reduced on the storage layer
+ * <ul>
+ *  <li> Immutable definitions within a workflow execution with the added benefit of guaranteeing consistency at runtime.</li>
+ *  <li> Stress is reduced on the storage layer</li>
+ * </ul>
  */
 @Singleton
 public class MetadataMapperService {
