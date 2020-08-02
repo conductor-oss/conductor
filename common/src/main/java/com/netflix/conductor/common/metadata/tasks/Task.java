@@ -810,6 +810,7 @@ public class Task {
     deepCopy.setEndTime(endTime);
     deepCopy.setWorkerId(workerId);
     deepCopy.setReasonForIncompletion(reasonForIncompletion);
+    deepCopy.setSeq(seq);
 
     return deepCopy;
   }
