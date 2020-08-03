@@ -49,7 +49,7 @@ Conductor maintains a registry of worker tasks.  A task MUST be registered befor
 ### Retry Logic
 
 * FIXED : Reschedule the task after the ```retryDelaySeconds```
-* EXPONENTIAL_BACKOFF : reschedule after ```retryDelaySeconds  * attemptNumber```
+* EXPONENTIAL_BACKOFF : Reschedule after ```retryDelaySeconds  * attemptNumber```
  
 ### Timeout Policy
 
