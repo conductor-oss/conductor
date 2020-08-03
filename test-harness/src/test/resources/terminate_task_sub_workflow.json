@@ -1,0 +1,12 @@
+{
+  "name": "test_terminate_task_sub_wf",
+  "version": 1,
+  "tasks": [
+	{
+		"name": "test_third_wait_task",
+		"taskReferenceName": "basicJavaC",
+		"type": "WAIT"
+	}
+  ],
+  "schemaVersion": 2
+}

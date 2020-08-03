@@ -1,0 +1,76 @@
+{
+  "name": "test_terminate_task_parent_wf",
+  "version": 1,
+  "tasks": [
+      {
+         "name": "test_forkjoin",
+         "taskReferenceName": "forkx",
+         "type": "FORK_JOIN",
+         "forkTasks": [
+			[
+				{
+				   "name": "test_lambda_task1",
+				   "taskReferenceName": "lambdaTask1",
+				   "inputParameters": {
+					    "lambdaValue": "${workflow.input.lambdaValue}",
+					   	"scriptExpression": "var i = 10; if ($.lambdaValue == 1){ return {testvalue: 'Lambda value was 1', iValue: i} } else { return {testvalue: 'Lambda value was NOT 1', iValue: i + 3} }"
+				    },
+				   "type": "LAMBDA"
+				},
+				{
+				  "name": "test_terminate_subworkflow",
+				  "taskReferenceName": "test_terminate_subworkflow",
+				  "inputParameters": {
+				  },
+				  "type": "SUB_WORKFLOW",
+				  "subWorkflowParam": {
+				    "name": "test_terminate_task_sub_wf"
+				  }
+				}
+			],
+			[				
+				{
+				   "name": "test_lambda_task2",
+				   "taskReferenceName": "lambdaTask2",
+				   "inputParameters": {
+						"lambdaValue": "${workflow.input.lambdaValue}",
+						"scriptExpression": "var i = 10; if ($.lambdaValue == 1){ return {testvalue: 'Lambda value was 1', iValue: i} } else { return {testvalue: 'Lambda value was NOT 1', iValue: i + 3} }"
+				    },
+				   "type": "LAMBDA"
+				},
+				{
+					"name": "test_wait_task",
+					"taskReferenceName": "basicJavaA",
+					"type": "WAIT"
+				},
+				{
+					"name": "terminate",
+					"taskReferenceName": "terminate0",
+					"inputParameters": {
+						"terminationStatus": "COMPLETED",
+						"workflowOutput": "some output"
+					},
+					"type": "TERMINATE",
+					"startDelay": 0,
+					"optional": false 
+				},
+				{
+					"name": "test_second_wait_task",
+					"taskReferenceName": "basicJavaB",
+					"type": "WAIT"
+				}
+		     ]
+		 ]
+      },
+      {
+		"name": "join",
+		"taskReferenceName": "thejoin",
+		"type": "JOIN",
+		"joinOn": [
+			"basicJavaA",
+			"basicJavaB"
+		]
+      }
+  ],
+  "schemaVersion": 2
+}
