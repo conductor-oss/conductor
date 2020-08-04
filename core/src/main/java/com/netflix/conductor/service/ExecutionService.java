@@ -17,6 +17,7 @@ import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
 import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -143,9 +144,16 @@ public class ExecutionService {
 				}
 
 				if (executionDAOFacade.exceedsInProgressLimit(task)) {
-					// Postpone a message, so that it would be available for poll again.
+					// Postpone this message, so that it would be available for poll again.
 					queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSeconds);
 					logger.debug("Postponed task: {} in queue: {} by {} seconds", taskId, queueName, queueTaskMessagePostponeSeconds);
+					continue;
+				}
+				TaskDef taskDef = task.getTaskDefinition().isPresent() ? task.getTaskDefinition().get() : null;
+				if (task.getRateLimitPerFrequency() > 0 && executionDAOFacade.exceedsRateLimitPerFrequency(task, taskDef)) {
+					// Postpone this message, so that it would be available for poll again.
+					queueDAO.postpone(queueName, taskId, task.getWorkflowPriority(), queueTaskMessagePostponeSeconds);
+					logger.debug("RateLimit Execution limited for {}:{}, limit:{}", taskId, task.getTaskDefName(), task.getRateLimitPerFrequency());
 					continue;
 				}
 

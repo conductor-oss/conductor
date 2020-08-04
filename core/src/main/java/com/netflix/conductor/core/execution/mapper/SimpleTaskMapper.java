@@ -1,20 +1,15 @@
-/**
- * Copyright 2018 Netflix, Inc.
+/*
+ * Copyright 2020 Netflix, Inc.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
-
-
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -25,14 +20,12 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.TerminateWorkflowException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#SIMPLE}
@@ -42,7 +35,7 @@ public class SimpleTaskMapper implements TaskMapper {
 
     public static final Logger logger = LoggerFactory.getLogger(SimpleTaskMapper.class);
 
-    private ParametersUtils parametersUtils;
+    private final ParametersUtils parametersUtils;
 
     public SimpleTaskMapper(ParametersUtils parametersUtils) {
         this.parametersUtils = parametersUtils;
@@ -91,6 +84,8 @@ public class SimpleTaskMapper implements TaskMapper {
         simpleTask.setWorkflowTask(taskToSchedule);
         simpleTask.setRetriedTaskId(retriedTaskId);
         simpleTask.setWorkflowPriority(workflowInstance.getPriority());
+        simpleTask.setRateLimitPerFrequency(taskDefinition.getRateLimitPerFrequency());
+        simpleTask.setRateLimitFrequencyInSeconds(taskDefinition.getRateLimitFrequencyInSeconds());
         return Collections.singletonList(simpleTask);
     }
 }

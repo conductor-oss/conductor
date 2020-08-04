@@ -136,8 +136,13 @@ class WorkflowTestUtil {
 
         TaskDef rateLimitedTask = new TaskDef()
         rateLimitedTask.name = 'test_task_with_rateLimits'
-        rateLimitedTask.rateLimitFrequencyInSeconds = 600
+        rateLimitedTask.rateLimitFrequencyInSeconds = 10
         rateLimitedTask.rateLimitPerFrequency = 1
+
+        TaskDef rateLimitedSimpleTask = new TaskDef()
+        rateLimitedSimpleTask.name = 'test_simple_task_with_rateLimits'
+        rateLimitedSimpleTask.rateLimitFrequencyInSeconds = 10
+        rateLimitedSimpleTask.rateLimitPerFrequency = 1
 
         TaskDef eventTaskX = new TaskDef()
         eventTaskX.name = 'eventX'
@@ -146,7 +151,7 @@ class WorkflowTestUtil {
         metadataService.registerTaskDef(
                 [taskWithResponseTimeOut, optionalTask, simpleSubWorkflowTask,
                  subWorkflowTask, waitTimeOutTask, userTask, eventTaskX,
-                 rateLimitedTask, concurrentExecutionLimitedTask]
+                 rateLimitedTask, rateLimitedSimpleTask, concurrentExecutionLimitedTask]
         )
     }
 

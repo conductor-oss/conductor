@@ -1,17 +1,14 @@
 /*
  * Copyright 2020 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.metrics;
 
@@ -21,6 +18,7 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.servo.monitor.BasicStopwatch;
 import com.netflix.servo.monitor.Stopwatch;
 import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.Gauge;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
@@ -30,7 +28,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Viren
@@ -38,18 +35,17 @@ import java.util.concurrent.atomic.AtomicLong;
  */
 public class Monitors {
 
-	private static Registry registry = Spectator.globalRegistry();
+	private static final Registry registry = Spectator.globalRegistry();
 
-	private static Map<String, Map<Map<String, String>, Counter>> counters = new ConcurrentHashMap<>();
+	private static final Map<String, Map<Map<String, String>, Counter>> counters = new ConcurrentHashMap<>();
 
-	private static Map<String, Map<Map<String, String>, PercentileTimer>> timers = new ConcurrentHashMap<>();
+	private static final Map<String, Map<Map<String, String>, PercentileTimer>> timers = new ConcurrentHashMap<>();
 
-	private static Map<String, Map<Map<String, String>, AtomicLong>> gauges = new ConcurrentHashMap<>();
+	private static final Map<String, Map<Map<String, String>, Gauge>> gauges = new ConcurrentHashMap<>();
 
 	public static final String classQualifier = "WorkflowMonitor";
 
 	private Monitors() {
-
 	}
 
 	/**
@@ -91,10 +87,10 @@ public class Monitors {
 	 * @param additionalTags
 	 */
 	private static void gauge(String className, String name, long measurement, String... additionalTags) {
-		getGauge(className, name, additionalTags).getAndSet(measurement);
+		getGauge(className, name, additionalTags).set(measurement);
 	}
 
-	public static Timer getTimer(String className, String name, String... additionalTags) {
+	private static Timer getTimer(String className, String name, String... additionalTags) {
 		Map<String, String> tags = toMap(className, additionalTags);
 		return timers.computeIfAbsent(name, s -> new ConcurrentHashMap<>()).computeIfAbsent(tags, t -> {
 			Id id = registry.createId(name, tags);
@@ -111,12 +107,12 @@ public class Monitors {
 		});
 	}
 
-	private static AtomicLong getGauge(String className, String name, String... additionalTags) {
+	private static Gauge getGauge(String className, String name, String... additionalTags) {
 		Map<String, String> tags = toMap(className, additionalTags);
 
 		return gauges.computeIfAbsent(name, s -> new ConcurrentHashMap<>()).computeIfAbsent(tags, t -> {
 			Id id = registry.createId(name, tags);
-			return registry.gauge(id, new AtomicLong(0));
+			return registry.gauge(id);
 		});
 	}
 
@@ -291,7 +287,7 @@ public class Monitors {
 	}
 
 	public static void recordWorkerQueueSize(String queueType, int val) {
-		getGauge(Monitors.classQualifier, "indexing_worker_queue", "queueType", queueType).set(val);
+		gauge(Monitors.classQualifier, "indexing_worker_queue", val, "queueType", queueType);
 	}
 
 	public static void recordDiscardedIndexingCount(String queueType) {
@@ -311,7 +307,7 @@ public class Monitors {
 	}
 
 	public static void recordArchivalDelayQueueSize(int val) {
-		getGauge(classQualifier, "workflow_archival_delay_queue_size").set(val);
+		gauge(classQualifier, "workflow_archival_delay_queue_size", val);
 	}
 	public static void recordDiscardedArchivalCount() {
 		counter(classQualifier, "discarded_archival_count");
@@ -322,6 +318,6 @@ public class Monitors {
 	}
 
 	public static void recordEventQueuePollSize(String queueType, int val) {
-		getGauge(Monitors.classQualifier, "event_queue_poll", "queueType", queueType).set(val);
+		gauge(Monitors.classQualifier, "event_queue_poll", val, "queueType", queueType);
 	}
 }
