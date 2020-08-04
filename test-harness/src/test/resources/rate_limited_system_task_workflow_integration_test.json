@@ -1,5 +1,5 @@
 {
-  "name" : "test_rate_limit_task_workflow",
+  "name" : "test_rate_limit_system_task_workflow",
   "version" : 1,
   "tasks" : [ {
     "name" : "test_task_with_rateLimits",
