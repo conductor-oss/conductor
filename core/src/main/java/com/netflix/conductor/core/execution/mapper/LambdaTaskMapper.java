@@ -17,16 +17,19 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.tasks.Lambda;
+import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * @author x-ultra
@@ -34,10 +37,12 @@ import java.util.Map;
 public class LambdaTaskMapper implements TaskMapper {
 
     public static final Logger logger = LoggerFactory.getLogger(LambdaTaskMapper.class);
-    private ParametersUtils parametersUtils;
+    private final ParametersUtils parametersUtils;
+    private final MetadataDAO metadataDAO;
 
-    public LambdaTaskMapper(ParametersUtils parametersUtils) {
+    public LambdaTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
         this.parametersUtils = parametersUtils;
+        this.metadataDAO = metadataDAO;
     }
 
 
@@ -50,7 +55,11 @@ public class LambdaTaskMapper implements TaskMapper {
         Workflow workflowInstance = taskMapperContext.getWorkflowInstance();
         String taskId = taskMapperContext.getTaskId();
 
-        Map<String, Object> taskInput = parametersUtils.getTaskInputV2(taskMapperContext.getTaskToSchedule().getInputParameters(), workflowInstance, taskId, null);
+        TaskDef taskDefinition = Optional.ofNullable(taskMapperContext.getTaskDefinition())
+                .orElseGet(() -> Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
+                        .orElse(null));
+
+        Map<String, Object> taskInput = parametersUtils.getTaskInputV2(taskMapperContext.getTaskToSchedule().getInputParameters(), workflowInstance, taskId, taskDefinition);
 
         Task task = new Task();
         task.setTaskType(Lambda.TASK_NAME);

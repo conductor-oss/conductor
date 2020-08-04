@@ -222,8 +222,8 @@ public class CoreModule extends AbstractModule {
     @StringMapKey(TASK_TYPE_LAMBDA)
     @Singleton
     @Named(TASK_MAPPERS_QUALIFIER)
-    public TaskMapper getLambdaTaskMapper(ParametersUtils parametersUtils) {
-        return new LambdaTaskMapper(parametersUtils);
+    public TaskMapper getLambdaTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+        return new LambdaTaskMapper(parametersUtils, metadataDAO);
     }
 
     @ProvidesIntoMap
