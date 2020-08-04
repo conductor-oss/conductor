@@ -558,11 +558,16 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, Rat
 
     private void addPendingWorkflow(Connection connection, String workflowType, String workflowId) {
 
-        String INSERT_PENDING_WORKFLOW = "INSERT IGNORE INTO workflow_pending (workflow_type, workflow_id) VALUES (?, ?)";
+        String EXISTS_PENDING_WORKFLOW = "SELECT EXISTS(SELECT 1 FROM workflow_pending WHERE workflow_type = ? AND workflow_id = ?)";
 
-        execute(connection, INSERT_PENDING_WORKFLOW,
-                q -> q.addParameter(workflowType).addParameter(workflowId).executeUpdate());
+        boolean exists  = query(connection, EXISTS_PENDING_WORKFLOW, q -> q.addParameter(workflowType).addParameter(workflowId).exists());
 
+        if(!exists) {
+	        String INSERT_PENDING_WORKFLOW = "INSERT IGNORE INTO workflow_pending (workflow_type, workflow_id) VALUES (?, ?)";
+
+            execute(connection, INSERT_PENDING_WORKFLOW,
+                    q -> q.addParameter(workflowType).addParameter(workflowId).executeUpdate());
+        }
     }
 
     private void removePendingWorkflow(Connection connection, String workflowType, String workflowId) {
@@ -573,10 +578,17 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, Rat
     }
 
     private void insertOrUpdateTaskData(Connection connection, Task task) {
-
-        String INSERT_TASK = "INSERT INTO task (task_id, json_data, modified_on) VALUES (?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE json_data=VALUES(json_data), modified_on=VALUES(modified_on)";
-        execute(connection, INSERT_TASK, q -> q.addParameter(task.getTaskId()).addJsonParameter(task).executeUpdate());
-
+		/*
+		 * Most times the row will be updated so let's try the update first. This used to be an 'INSERT/ON DUPLICATE KEY update' sql statement. The problem with that
+		 * is that if we try the INSERT first, the sequence will be increased even if the ON DUPLICATE KEY happens.
+		 */
+		String UPDATE_TASK = "UPDATE task SET json_data=?, modified_on=CURRENT_TIMESTAMP WHERE task_id=?";
+		int rowsUpdated = query(connection, UPDATE_TASK, q -> q.addJsonParameter(task).addParameter(task.getTaskId()).executeUpdate());
+		
+		if(rowsUpdated == 0) {
+	        String INSERT_TASK = "INSERT INTO task (task_id, json_data, modified_on) VALUES (?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE json_data=VALUES(json_data), modified_on=VALUES(modified_on)";
+	        execute(connection, INSERT_TASK, q -> q.addParameter(task.getTaskId()).addJsonParameter(task).executeUpdate());
+		}
     }
 
     private void removeTaskData(Connection connection, Task task) {
@@ -586,11 +598,16 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, Rat
 
     private void addWorkflowToTaskMapping(Connection connection, Task task) {
 
-        String INSERT_WORKFLOW_TO_TASK = "INSERT IGNORE INTO workflow_to_task (workflow_id, task_id) VALUES (?, ?)";
+        String EXISTS_WORKFLOW_TO_TASK = "SELECT EXISTS(SELECT 1 FROM workflow_to_task WHERE workflow_id = ? AND task_id = ?)";
 
-        execute(connection, INSERT_WORKFLOW_TO_TASK,
-                q -> q.addParameter(task.getWorkflowInstanceId()).addParameter(task.getTaskId()).executeUpdate());
+        boolean exists  = query(connection, EXISTS_WORKFLOW_TO_TASK, q -> q.addParameter(task.getWorkflowInstanceId()).addParameter(task.getTaskId()).exists());
 
+        if(!exists) {
+	        String INSERT_WORKFLOW_TO_TASK = "INSERT IGNORE INTO workflow_to_task (workflow_id, task_id) VALUES (?, ?)";
+	
+	        execute(connection, INSERT_WORKFLOW_TO_TASK,
+	                q -> q.addParameter(task.getWorkflowInstanceId()).addParameter(task.getTaskId()).executeUpdate());
+        }
     }
 
     private void removeWorkflowToTaskMapping(Connection connection, Task task) {
@@ -619,11 +636,20 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, Rat
     @VisibleForTesting
     boolean addScheduledTask(Connection connection, Task task, String taskKey) {
 
-        final String INSERT_IGNORE_SCHEDULED_TASK = "INSERT IGNORE INTO task_scheduled (workflow_id, task_key, task_id) VALUES (?, ?, ?)";
+        final String EXISTS_SCHEDULED_TASK = "SELECT EXISTS(SELECT 1 FROM task_scheduled where workflow_id = ? AND task_key = ?)";
 
-        int count = query(connection, INSERT_IGNORE_SCHEDULED_TASK, q -> q.addParameter(task.getWorkflowInstanceId())
-                .addParameter(taskKey).addParameter(task.getTaskId()).executeUpdate());
-        return count > 0;
+        boolean exists = query(connection, EXISTS_SCHEDULED_TASK, q -> q.addParameter(task.getWorkflowInstanceId())
+                .addParameter(taskKey).exists());
+
+        if(!exists) {
+            final String INSERT_IGNORE_SCHEDULED_TASK = "INSERT IGNORE INTO task_scheduled (workflow_id, task_key, task_id) VALUES (?, ?, ?)";
+
+            int count = query(connection, INSERT_IGNORE_SCHEDULED_TASK, q -> q.addParameter(task.getWorkflowInstanceId())
+                    .addParameter(taskKey).addParameter(task.getTaskId()).executeUpdate());
+            return count > 0;
+        } else {
+        	return false;
+        }
 
     }
 
@@ -636,10 +662,10 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, Rat
     private void addTaskInProgress(Connection connection, Task task) {
         String EXISTS_IN_PROGRESS_TASK = "SELECT EXISTS(SELECT 1 FROM task_in_progress WHERE task_def_name = ? AND task_id = ?)";
 
-        boolean exist = query(connection, EXISTS_IN_PROGRESS_TASK,
+        boolean exists = query(connection, EXISTS_IN_PROGRESS_TASK,
                 q -> q.addParameter(task.getTaskDefName()).addParameter(task.getTaskId()).exists());
 
-        if (!exist) {
+        if (!exists) {
             String INSERT_IN_PROGRESS_TASK = "INSERT INTO task_in_progress (task_def_name, task_id, workflow_id) VALUES (?, ?, ?)";
 
             execute(connection, INSERT_IN_PROGRESS_TASK, q -> q.addParameter(task.getTaskDefName())
@@ -708,9 +734,19 @@ public class MySQLExecutionDAO extends MySQLBaseDAO implements ExecutionDAO, Rat
 
     private void insertOrUpdatePollData(Connection connection, PollData pollData, String domain) {
 
-        String INSERT_POLL_DATA = "INSERT INTO poll_data (queue_name, domain, json_data, modified_on) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE json_data=VALUES(json_data), modified_on=VALUES(modified_on)";
-        execute(connection, INSERT_POLL_DATA, q -> q.addParameter(pollData.getQueueName()).addParameter(domain)
-                .addJsonParameter(pollData).executeUpdate());
+    	/*
+    	 * Most times the row will be updated so let's try the update first. This used to be an 'INSERT/ON DUPLICATE KEY update' sql statement. The problem with that
+    	 * is that if we try the INSERT first, the sequence will be increased even if the ON DUPLICATE KEY happens. Since polling happens *a lot*, the sequence can increase 
+    	 * dramatically even though it won't be used.
+    	 */
+        String UPDATE_POLL_DATA = "UPDATE poll_data SET json_data=?, modified_on=CURRENT_TIMESTAMP WHERE queue_name=? AND domain=?";
+        int rowsUpdated = query(connection, UPDATE_POLL_DATA, q -> q.addJsonParameter(pollData).addParameter(pollData.getQueueName()).addParameter(domain).executeUpdate());
+        
+       if(rowsUpdated == 0) {
+           String INSERT_POLL_DATA = "INSERT INTO poll_data (queue_name, domain, json_data, modified_on) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ON DUPLICATE KEY UPDATE json_data=VALUES(json_data), modified_on=VALUES(modified_on)";
+           execute(connection, INSERT_POLL_DATA, q -> q.addParameter(pollData.getQueueName()).addParameter(domain)
+                  .addJsonParameter(pollData).executeUpdate());
+        }
     }
 
     private PollData readPollData(Connection connection, String queueName, String domain) {

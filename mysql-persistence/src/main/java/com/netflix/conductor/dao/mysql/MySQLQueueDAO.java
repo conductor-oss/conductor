@@ -188,13 +188,18 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
     private void pushMessage(Connection connection, String queueName, String messageId, String payload, Integer priority,
                              long offsetTimeInSecond) {
 
-        String PUSH_MESSAGE = "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES (TIMESTAMPADD(SECOND,?,CURRENT_TIMESTAMP), ?, ?,?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload), deliver_on=VALUES(deliver_on)";
-
         createQueueIfNotExists(connection, queueName);
 
-        execute(connection, PUSH_MESSAGE, q -> q.addParameter(offsetTimeInSecond).addParameter(queueName)
-                .addParameter(messageId).addParameter(priority).addParameter(offsetTimeInSecond)
-                .addParameter(payload).executeUpdate());
+        String UPDATE_MESSAGE = "UPDATE queue_message SET payload=?, deliver_on=TIMESTAMPADD(SECOND,?,CURRENT_TIMESTAMP) WHERE queue_name = ? AND message_id = ?";
+        int rowsUpdated = query(connection, UPDATE_MESSAGE, q -> q.addParameter(payload).addParameter(offsetTimeInSecond)
+        	.addParameter(queueName).addParameter(messageId).executeUpdate());
+        		
+        if(rowsUpdated == 0) {
+            String PUSH_MESSAGE = "INSERT INTO queue_message (deliver_on, queue_name, message_id, priority, offset_time_seconds, payload) VALUES (TIMESTAMPADD(SECOND,?,CURRENT_TIMESTAMP), ?, ?,?,?,?) ON DUPLICATE KEY UPDATE payload=VALUES(payload), deliver_on=VALUES(deliver_on)";
+	        execute(connection, PUSH_MESSAGE, q -> q.addParameter(offsetTimeInSecond).addParameter(queueName)
+	                .addParameter(messageId).addParameter(priority).addParameter(offsetTimeInSecond)
+	                .addParameter(payload).executeUpdate());
+        }
     }
 
     private boolean removeMessage(Connection connection, String queueName, String messageId) {
@@ -256,7 +261,11 @@ public class MySQLQueueDAO extends MySQLBaseDAO implements QueueDAO {
 
     private void createQueueIfNotExists(Connection connection, String queueName) {
         logger.trace("Creating new queue '{}'", queueName);
-        final String CREATE_QUEUE = "INSERT IGNORE INTO queue (queue_name) VALUES (?)";
-        execute(connection, CREATE_QUEUE, q -> q.addParameter(queueName).executeUpdate());
+        final String EXISTS_QUEUE = "SELECT EXISTS(SELECT 1 FROM queue WHERE queue_name = ?)";
+        boolean exists = query(connection, EXISTS_QUEUE, q -> q.addParameter(queueName).exists());
+        if(!exists) {
+            final String CREATE_QUEUE = "INSERT IGNORE INTO queue (queue_name) VALUES (?)";
+	        execute(connection, CREATE_QUEUE, q -> q.addParameter(queueName).executeUpdate());
+        }
     }
 }
