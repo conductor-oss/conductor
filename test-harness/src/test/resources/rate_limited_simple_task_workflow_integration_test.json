@@ -1,0 +1,26 @@
+{
+  "name" : "test_rate_limit_simple_task_workflow",
+  "version" : 1,
+  "tasks" : [ {
+    "name" : "test_simple_task_with_rateLimits",
+    "taskReferenceName" : "test_simple_task_with_rateLimits",
+    "inputParameters" : { },
+    "type" : "SIMPLE",
+    "decisionCases" : { },
+    "defaultCase" : [ ],
+    "forkTasks" : [ ],
+    "startDelay" : 0,
+    "joinOn" : [ ],
+    "optional" : false,
+    "defaultExclusiveJoinTask" : [ ],
+    "asyncComplete" : false,
+    "loopOver" : [ ]
+  } ],
+  "inputParameters" : [ ],
+  "outputParameters" : { },
+  "schemaVersion" : 2,
+  "restartable" : true,
+  "workflowStatusListenerEnabled" : false,
+  "timeoutPolicy" : "ALERT_ONLY",
+  "timeoutSeconds" : 0
+}
