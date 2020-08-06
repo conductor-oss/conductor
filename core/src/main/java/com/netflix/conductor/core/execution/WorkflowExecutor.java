@@ -60,6 +60,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -1510,6 +1511,9 @@ public class WorkflowExecutor {
             workflow.getTasks().forEach(task -> executionDAOFacade.removeTask(task.getTaskId()));
             // Set workflow as RUNNING
             workflow.setStatus(WorkflowStatus.RUNNING);
+            // Reset failure reason from previous run to default
+            workflow.setReasonForIncompletion(null);
+            workflow.setFailedReferenceTaskNames(new HashSet<>());
             if (correlationId != null) {
                 workflow.setCorrelationId(correlationId);
             }
