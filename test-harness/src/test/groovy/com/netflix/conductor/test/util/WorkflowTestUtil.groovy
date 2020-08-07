@@ -260,6 +260,9 @@ class WorkflowTestUtil {
      */
     Tuple pollAndCompleteTask(String taskName, String workerId, Map<String, Object> outputParams = null, int waitAtEndSeconds = 0) {
         def polledIntegrationTask = workflowExecutionService.poll(taskName, workerId)
+        if (polledIntegrationTask == null) {
+            return new Tuple(null, null)
+        }
         def ackPolledIntegrationTask = workflowExecutionService.ackTaskReceived(polledIntegrationTask.taskId)
         polledIntegrationTask.status = COMPLETED
         if (outputParams) {

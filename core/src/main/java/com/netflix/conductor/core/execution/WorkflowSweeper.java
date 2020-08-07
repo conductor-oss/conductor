@@ -54,13 +54,13 @@ public class WorkflowSweeper {
 	private static final String className = WorkflowSweeper.class.getSimpleName();
 
 	@Inject
-	public WorkflowSweeper(WorkflowExecutor workflowExecutor, Configuration config, QueueDAO queueDAO) {
+	public WorkflowSweeper(WorkflowExecutor workflowExecutor, WorkflowRepairService workflowRepairService, Configuration config, QueueDAO queueDAO) {
 		this.config = config;
 		this.queueDAO = queueDAO;
 		this.executorThreadPoolSize = config.getIntProperty("workflow.sweeper.thread.count", 5);
 		if(this.executorThreadPoolSize > 0) {
 			this.executorService = Executors.newFixedThreadPool(executorThreadPoolSize);
-			init(workflowExecutor);
+			init(workflowExecutor, workflowRepairService);
 			logger.info("Workflow Sweeper Initialized");
 		} else {
 			logger.warn("Workflow sweeper is DISABLED");
@@ -68,7 +68,7 @@ public class WorkflowSweeper {
 
 	}
 
-	public void init(WorkflowExecutor workflowExecutor) {
+	public void init(WorkflowExecutor workflowExecutor, WorkflowRepairService workflowRepairService) {
 		ScheduledExecutorService deciderPool = Executors.newScheduledThreadPool(1);
 		deciderPool.scheduleWithFixedDelay(() -> {
 			try {
@@ -83,7 +83,7 @@ public class WorkflowSweeper {
 				int retrievedWorkflows = (workflowIds != null) ? workflowIds.size() : 0;
 				logger.debug("Sweeper retrieved {} workflows from the decider queue.", retrievedWorkflows);
 
-				sweep(workflowIds, workflowExecutor);
+				sweep(workflowIds, workflowExecutor, workflowRepairService);
 			} catch (Exception e) {
 				Monitors.error(className, "sweep");
 				logger.error("Error when sweeping workflow", e);
@@ -91,7 +91,7 @@ public class WorkflowSweeper {
 		}, 500, 500, TimeUnit.MILLISECONDS);
 	}
 
-	public void sweep(List<String> workflowIds, WorkflowExecutor workflowExecutor) throws Exception {
+	public void sweep(List<String> workflowIds, WorkflowExecutor workflowExecutor, WorkflowRepairService workflowRepairService) throws Exception {
 
 		List<Future<?>> futures = new LinkedList<>();
 		for (String workflowId : workflowIds) {
@@ -103,6 +103,12 @@ public class WorkflowSweeper {
 					if(logger.isDebugEnabled()) {
 						logger.debug("Running sweeper for workflow {}", workflowId);
 					}
+
+					if (config.isWorkflowRepairServiceEnabled()) {
+						// Verify and repair tasks in the workflow.
+						workflowRepairService.verifyAndRepairWorkflowTasks(workflowId);
+					}
+
 					boolean done = workflowExecutor.decide(workflowId);
 					if(!done) {
 						queueDAO.setUnackTimeout(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency() * 1000);
@@ -117,6 +123,7 @@ public class WorkflowSweeper {
 					}
 
 				} catch (Exception e) {
+					queueDAO.setUnackTimeout(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency() * 1000);
 					Monitors.error(className, "sweep");
 					logger.error("Error running sweep for " + workflowId, e);
 				}

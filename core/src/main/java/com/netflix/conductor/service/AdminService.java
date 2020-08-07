@@ -47,4 +47,11 @@ public interface AdminService {
      */
     List<Task> getListOfPendingTask(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType,
                                     Integer start, Integer count);
+
+    /**
+     * Verify that the Workflow is consistent, and run repairs as needed.
+     * @param workflowId
+     * @return
+     */
+    boolean verifyAndRepairWorkflowConsistency(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId);
 }

@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.dao.dynomite.queue;
 
+import com.netflix.conductor.common.constraints.FaultInjectionInterceptor;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.discovery.DiscoveryClient;
@@ -29,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
@@ -143,6 +145,7 @@ public class DynoQueueDAO implements QueueDAO {
         push(queueName, id, -1, offsetTimeInSecond);
     }
 
+    @FaultInjectionInterceptor
     @Override
     public void push(String queueName, String id, int priority, long offsetTimeInSecond) {
         Message msg = new Message(id, null);
@@ -253,5 +256,12 @@ public class DynoQueueDAO implements QueueDAO {
         DynoQueue queue = queues.get(queueName);
         return queue.setTimeout(id, 0);
 
+    }
+
+    @Override
+    public boolean containsMessage(String queueName, String messageId) {
+        DynoQueue queue = queues.get(queueName);
+        Message message = queue.get(messageId);
+        return Objects.nonNull(message);
     }
 }

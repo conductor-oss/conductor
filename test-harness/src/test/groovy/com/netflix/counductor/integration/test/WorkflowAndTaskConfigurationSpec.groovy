@@ -24,6 +24,7 @@ import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.WorkflowExecutor
+import com.netflix.conductor.core.execution.WorkflowRepairService
 import com.netflix.conductor.core.execution.WorkflowSweeper
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.service.ExecutionService
@@ -52,6 +53,9 @@ class WorkflowAndTaskConfigurationSpec extends Specification {
 
     @Inject
     WorkflowSweeper workflowSweeper
+
+    @Inject
+    WorkflowRepairService workflowRepairService
 
     @Inject
     WorkflowTestUtil workflowTestUtil
@@ -203,7 +207,7 @@ class WorkflowAndTaskConfigurationSpec extends Specification {
 
         when: "There is a delay of 3 seconds introduced and the workflow is sweeped to run the evaluation"
         Thread.sleep(3000)
-        workflowSweeper.sweep([workflowInstanceId], workflowExecutor)
+        workflowSweeper.sweep([workflowInstanceId], workflowExecutor, workflowRepairService)
 
         then: "Ensure that the first task has been TIMED OUT and the next task is SCHEDULED"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -226,7 +230,7 @@ class WorkflowAndTaskConfigurationSpec extends Specification {
 
         when: "There is a delay of 3 seconds introduced and the workflow is swept to run the evaluation"
         Thread.sleep(3000)
-        workflowSweeper.sweep([workflowInstanceId], workflowExecutor)
+        workflowSweeper.sweep([workflowInstanceId], workflowExecutor, workflowRepairService)
 
         then: "Ensure that the first task has been TIMED OUT and the next task is SCHEDULED"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -280,7 +284,7 @@ class WorkflowAndTaskConfigurationSpec extends Specification {
 
         when: "There is a delay of 6 seconds introduced and the workflow is swept to run the evaluation"
         Thread.sleep(6000)
-        workflowSweeper.sweep([workflowInstanceId], workflowExecutor)
+        workflowSweeper.sweep([workflowInstanceId], workflowExecutor, workflowRepairService)
 
         then: "Ensure that the workflow has timed out"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -332,7 +336,7 @@ class WorkflowAndTaskConfigurationSpec extends Specification {
 
         when: "There is a delay of 6 seconds introduced and the workflow is swept to run the evaluation"
         Thread.sleep(6000)
-        workflowSweeper.sweep([workflowInstanceId], workflowExecutor)
+        workflowSweeper.sweep([workflowInstanceId], workflowExecutor, workflowRepairService)
 
         then: "Ensure that the workflow has timed out"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {

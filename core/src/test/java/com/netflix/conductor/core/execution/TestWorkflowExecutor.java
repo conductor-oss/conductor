@@ -28,6 +28,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -273,6 +274,32 @@ public class TestWorkflowExecutor {
 
         when(executionDAOFacade.createTasks(tasks)).thenThrow(new RuntimeException());
         workflowExecutor.scheduleTask(workflow, tasks);
+    }
+
+    /**
+     * Simulate Queue push failures and assert that scheduleTask doesn't throw an exception.
+     */
+    @Test
+    public void testQueueFailuresDuringScheduleTask() {
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowId("wid_01");
+
+        List<Task> tasks = new LinkedList<>();
+
+        Task task1 = new Task();
+        task1.setTaskType(TaskType.TASK_TYPE_SIMPLE);
+        task1.setTaskDefName("task_1");
+        task1.setReferenceTaskName("task_1");
+        task1.setWorkflowInstanceId(workflow.getWorkflowId());
+        task1.setTaskId("tid_01");
+        task1.setStatus(Status.SCHEDULED);
+        task1.setRetryCount(0);
+
+        tasks.add(task1);
+
+        when(executionDAOFacade.createTasks(tasks)).thenReturn(tasks);
+        doThrow(new RuntimeException()).when(queueDAO).push(anyString(), anyString(), anyInt(), anyLong());
+        assertFalse(workflowExecutor.scheduleTask(workflow, tasks));
     }
 
     @Test
