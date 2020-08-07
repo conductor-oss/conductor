@@ -55,6 +55,7 @@ import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.execution.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.WorkflowRepairService;
 import com.netflix.conductor.core.execution.WorkflowSweeper;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.Terminate;
@@ -139,6 +140,9 @@ public abstract class AbstractWorkflowServiceTest {
 
     @Inject
     protected WorkflowExecutor workflowExecutor;
+
+    @Inject
+    protected WorkflowRepairService workflowRepairService;
 
     @Inject
     protected MetadataMapperService metadataMapperService;
@@ -4446,7 +4450,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertEquals(1, size);
 
         Uninterruptibles.sleepUninterruptibly(3, TimeUnit.SECONDS);
-        workflowSweeper.sweep(Collections.singletonList(workflowId), workflowExecutor);
+        workflowSweeper.sweep(Collections.singletonList(workflowId), workflowExecutor, workflowRepairService);
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);
         assertEquals("found: " + workflow.getTasks().stream().map(Task::toString).collect(Collectors.toList()), 2, workflow.getTasks().size());
@@ -4504,7 +4508,7 @@ public abstract class AbstractWorkflowServiceTest {
         assertTrue(workflowExecutionService.ackTaskReceived(task.getTaskId()));
 
         Uninterruptibles.sleepUninterruptibly(6, TimeUnit.SECONDS);
-        workflowSweeper.sweep(Collections.singletonList(workflowId), workflowExecutor);
+        workflowSweeper.sweep(Collections.singletonList(workflowId), workflowExecutor, workflowRepairService);
 
         workflow = workflowExecutionService.getExecutionStatus(workflowId, true);
         assertNotNull(workflow);

@@ -20,6 +20,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.inject.Singleton;
 import com.netflix.conductor.annotations.Trace;
+import com.netflix.conductor.common.constraints.FaultInjectionInterceptor;
 import com.netflix.conductor.common.metadata.events.EventExecution;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
@@ -115,6 +116,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		return tasks;
 	}
 
+	@FaultInjectionInterceptor
 	@Override
 	public List<Task> createTasks(List<Task> tasks) {
 
@@ -316,6 +318,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 		return getTasks(new ArrayList<>(taskIds));
 	}
 
+	@FaultInjectionInterceptor
 	@Override
 	public String createWorkflow(Workflow workflow) {
 		return insertOrUpdateWorkflow(workflow, false);
