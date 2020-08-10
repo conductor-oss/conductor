@@ -122,7 +122,7 @@ public class TestWorkflowExecutor {
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
         taskMappers.put("HTTP", new HTTPTaskMapper(parametersUtils, metadataDAO));
-        taskMappers.put("LAMBDA", new LambdaTaskMapper(parametersUtils));
+        taskMappers.put("LAMBDA", new LambdaTaskMapper(parametersUtils, metadataDAO));
 
         DeciderService deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, taskMappers, config);
         MetadataMapperService metadataMapperService = new MetadataMapperService(metadataDAO);
