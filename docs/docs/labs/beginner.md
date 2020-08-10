@@ -113,7 +113,8 @@ curl -X POST \
 	  "retryDelaySeconds": 10,
 	  "timeoutSeconds": 300,
 	  "timeoutPolicy": "TIME_OUT_WF",
-	  "responseTimeoutSeconds": 180
+	  "responseTimeoutSeconds": 180,
+	  "ownerEmail": "type your email here"
 	},
 	{
 	  "name": "add_idents",
@@ -122,7 +123,8 @@ curl -X POST \
 	  "retryDelaySeconds": 10,
 	  "timeoutSeconds": 300,
 	  "timeoutPolicy": "TIME_OUT_WF",
-	  "responseTimeoutSeconds": 180
+	  "responseTimeoutSeconds": 180,
+	  "ownerEmail": "type your email here"
 	}
 ]'
 ```
