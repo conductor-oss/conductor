@@ -1548,6 +1548,9 @@ public class WorkflowExecutor {
         if (rerunFromTask != null) {
             // set workflow as RUNNING
             workflow.setStatus(WorkflowStatus.RUNNING);
+            // Reset failure reason from previous run to default
+            workflow.setReasonForIncompletion(null);
+            workflow.setFailedReferenceTaskNames(new HashSet<>());
             if (correlationId != null) {
                 workflow.setCorrelationId(correlationId);
             }
