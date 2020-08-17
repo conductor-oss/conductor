@@ -389,7 +389,8 @@ public class DeciderService {
             taskDefinition = metadataDAO.getTaskDef(task.getTaskDefName());
         }
 
-        if (!task.getStatus().isRetriable() || SystemTaskType.isBuiltIn(task.getTaskType()) || taskDefinition == null || taskDefinition.getRetryCount() <= retryCount) {
+        final int expectedRetryCount = taskDefinition == null ? 0 : Optional.ofNullable(workflowTask).map(WorkflowTask::getRetryCount).orElse(taskDefinition.getRetryCount());
+        if (!task.getStatus().isRetriable() || SystemTaskType.isBuiltIn(task.getTaskType()) || expectedRetryCount <= retryCount) {
             if (workflowTask != null && workflowTask.isOptional()) {
                 return Optional.empty();
             }

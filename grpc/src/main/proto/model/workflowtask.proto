@@ -38,4 +38,5 @@ message WorkflowTask {
     bool async_complete = 23;
     string loop_condition = 24;
     repeated WorkflowTask loop_over = 25;
+    int32 retry_count = 26;
 }

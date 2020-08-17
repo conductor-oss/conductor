@@ -18,7 +18,6 @@ package com.netflix.conductor.common.metadata.workflow;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.run.Workflow;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -164,6 +163,9 @@ public class WorkflowTask {
 	@ProtoField(id = 25)
 	private List<WorkflowTask> loopOver = new LinkedList<>();
 
+	@ProtoField(id = 26)
+	private Integer retryCount;
+
 	/**
 	 * @return the name
 	 */
@@ -294,7 +296,22 @@ public class WorkflowTask {
 		this.startDelay = startDelay;
 	}
 
-	
+	/**
+	 *
+	 * @return the retryCount
+	 */
+	public Integer getRetryCount() {
+		return retryCount;
+	}
+
+	/**
+	 *
+	 * @param retryCount the retryCount to set
+	 */
+	public void setRetryCount(final Integer retryCount) {
+		this.retryCount = retryCount;
+	}
+
 	/**
 	 * @return the dynamicTaskNameParam
 	 */
@@ -686,8 +703,9 @@ public class WorkflowTask {
                 Objects.equals(getSubWorkflowParam(), that.getSubWorkflowParam()) &&
                 Objects.equals(getJoinOn(), that.getJoinOn()) &&
                 Objects.equals(getSink(), that.getSink()) &&
-				Objects.equals(isAsyncComplete(), that.isAsyncComplete()) &&
-                Objects.equals(getDefaultExclusiveJoinTask(), that.getDefaultExclusiveJoinTask());
+								Objects.equals(isAsyncComplete(), that.isAsyncComplete()) &&
+                Objects.equals(getDefaultExclusiveJoinTask(), that.getDefaultExclusiveJoinTask()) &&
+		            Objects.equals(getRetryCount(), that.getRetryCount());
     }
 
     @Override
@@ -714,7 +732,8 @@ public class WorkflowTask {
                 getSink(),
                 isAsyncComplete(),
                 isOptional(),
-                getDefaultExclusiveJoinTask()
+                getDefaultExclusiveJoinTask(),
+                getRetryCount()
         );
     }
 }

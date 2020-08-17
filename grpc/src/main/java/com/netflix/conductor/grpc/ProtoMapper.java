@@ -21,6 +21,7 @@ import java.util.stream.Collectors;
  */
 public final class ProtoMapper extends AbstractProtoMapper {
     public static final ProtoMapper INSTANCE = new ProtoMapper();
+    private static final int NO_RETRY_VALUE = -1;
 
     private ProtoMapper() {}
 
@@ -121,6 +122,24 @@ public final class ProtoMapper extends AbstractProtoMapper {
     public List<WorkflowTask> fromProto(WorkflowTaskPb.WorkflowTask.WorkflowTaskList list) {
         return list.getTasksList().stream().map(this::fromProto).collect(Collectors.toList());
     }
+
+    @Override public WorkflowTaskPb.WorkflowTask toProto(final WorkflowTask from) {
+        final WorkflowTaskPb.WorkflowTask.Builder to = WorkflowTaskPb.WorkflowTask.newBuilder(super.toProto(from));
+        if (from.getRetryCount() == null) {
+            to.setRetryCount(NO_RETRY_VALUE);
+        }
+        return to.build();
+    }
+
+    @Override public WorkflowTask fromProto(final WorkflowTaskPb.WorkflowTask from) {
+        final WorkflowTask workflowTask = super.fromProto(from);
+        if (from.getRetryCount() == NO_RETRY_VALUE) {
+            workflowTask.setRetryCount(null);
+        }
+        return workflowTask;
+    }
+
+
 
     /**
      * Convert a list of {@link WorkflowTask} instances into a ProtoBuf wrapper object.
