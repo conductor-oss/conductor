@@ -43,7 +43,8 @@ class Workflow2Graph {
     let nodes = [];
     let vertices = {};
     wfe.tasks.forEach(t => {
-      this.executedTasks[t.referenceTaskName] = {status: t.status, input: t.inputData, output: t.outputData, taskType: t.taskType, reasonForIncompletion: t.reasonForIncompletion, task: t};
+      // remove __N suffix because DO_WHILE has this suffix in referenceTaskName
+      this.executedTasks[t.referenceTaskName.split('__')[0]] = {status: t.status, input: t.inputData, output: t.outputData, taskType: t.taskType, reasonForIncompletion: t.reasonForIncompletion, task: t};
     })
     // Go through each JOIN in the workflow and build up a mapping to their joinOn data
     this.joinOnTaskMapping = {};
@@ -275,7 +276,42 @@ class Workflow2Graph {
         }
         nodes.push({type: 'simple', from: t1.taskReferenceName, to: t2.taskReferenceName, label: '', style: style});
 
+      } else if(t1.type == 'DO_WHILE'){
+
+      // vertice for DO_WHILE task
+      vertices[t1.taskReferenceName] = {name: 'DO_WHILE', ref: t1.taskReferenceName, type: 'simple', style: 'fill: #ff0', shape: 'circle', system: true, description: t1.description};
+
+      let tasks = t1.loopOver || [];
+
+      // vertice for the first task in DO_WHILE
+      vertices[tasks[0].taskReferenceName] = {name: tasks[0].name, ref: tasks[0].taskReferenceName, type: tasks[0].type, style: '', shape: 'rect', description: tasks[0].description};
+
+      let style = defstyle;
+      if(this.executedTasks[tasks[0].taskReferenceName] != null && this.executedTasks[t1.taskReferenceName] != null){
+        style = executed;
       } else {
+        isExecuting = false;
+      }
+
+      // edge from DO_WHILE task to the first task in DO_WHILE
+      nodes.push({type: 'simple', from: t1.taskReferenceName, to: tasks[0].taskReferenceName, label: '', style: style});
+
+      // go into DO_WHILE inner tasks
+      this.getTaskNodes(vertices, nodes, tasks, forks, subworkflows);
+      // vertice for the last task in DO_WHILE, and edge from the last task in DO_WHILE to DO_WHILE
+      this.getNodes(vertices, nodes, tasks[tasks.length-1], t1, forks, subworkflows);
+
+      style = defstyle;
+      if(this.executedTasks[tasks[tasks.length-1].taskReferenceName] != null && this.executedTasks[t2.taskReferenceName] != null){
+        style = executed;
+      } else {
+        isExecuting = false;
+      }
+
+      // edge from the last task in DO_WHILE to t2
+      nodes.push({type: 'simple', from: tasks[tasks.length-1].taskReferenceName, to: t2.taskReferenceName, label: '', style: style});
+
+    } else {
         vertices[t1.taskReferenceName] = {name: t1.name, ref: t1.taskReferenceName, type: 'simple', style: '', shape: 'rect', description: t1.description};
 
         let style = defstyle;
