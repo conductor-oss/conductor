@@ -153,7 +153,7 @@ public class JettyServer implements Lifecycle {
     /**
      * Enabled JMX reporting:
      * https://docs.newrelic.com/docs/agents/java-agent/troubleshooting/application-server-jmx-setup
-     * https://www.eclipse.org/jetty/documentation/current/jmx-chapter
+     * https://www.eclipse.org/jetty/documentation/current/jmx-chapter.html
      */
     private void configureMBeanContainer(final Server server){
         final MBeanContainer mbContainer = new MBeanContainer(getPlatformMBeanServer());
