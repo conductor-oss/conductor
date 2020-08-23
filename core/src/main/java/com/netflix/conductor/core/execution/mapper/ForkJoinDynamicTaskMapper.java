@@ -69,7 +69,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
     }
 
     /**
-     * This method gets the list of tasks that need to scheduled when the the task to scheduled is of type {@link TaskType#FORK_JOIN_DYNAMIC}.
+     * This method gets the list of tasks that need to scheduled when the task to scheduled is of type {@link TaskType#FORK_JOIN_DYNAMIC}.
      * Creates a Fork Task, followed by the Dynamic tasks and a final JOIN task.
      * <p>The definitions of the dynamic forks that need to be scheduled are available in the {@link WorkflowTask#getInputParameters()}
      * which are accessed using the {@link TaskMapperContext#getTaskToSchedule()}. The dynamic fork task definitions are referred by a key value either by

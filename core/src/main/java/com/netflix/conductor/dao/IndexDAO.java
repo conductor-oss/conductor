@@ -67,7 +67,7 @@ public interface IndexDAO {
      *
      * @param query SQL like query for workflow search parameters.
      * @param freeText    Additional query in free text.  Lucene syntax
-     * @param start    start start index for pagination
+     * @param start    start index for pagination
      * @param count    count # of workflow ids to be returned
      * @param sort sort options
      * @return List of workflow ids for the matching query
@@ -78,7 +78,7 @@ public interface IndexDAO {
      *
      * @param query SQL like query for task search parameters.
      * @param freeText    Additional query in free text.  Lucene syntax
-     * @param start    start start index for pagination
+     * @param start    start index for pagination
      * @param count    count # of task ids to be returned
      * @param sort sort options
      * @return List of workflow ids for the matching query

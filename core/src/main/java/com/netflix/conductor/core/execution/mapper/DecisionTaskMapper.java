@@ -46,7 +46,7 @@ public class DecisionTaskMapper implements TaskMapper {
     private static final Logger logger = LoggerFactory.getLogger(DecisionTaskMapper.class);
 
     /**
-     * This method gets the list of tasks that need to scheduled when the the task to scheduled is of type {@link TaskType#DECISION}.
+     * This method gets the list of tasks that need to scheduled when the task to scheduled is of type {@link TaskType#DECISION}.
      *
      * @param taskMapperContext: A wrapper class containing the {@link WorkflowTask}, {@link WorkflowDef}, {@link Workflow} and a string representation of the TaskId
      * @return List of tasks in the following order:
