@@ -229,7 +229,7 @@ public interface ExecutionDAO {
 	/**
 	 * 
 	 * @param ee Event Execution to be stored
-	 * @return true if the event was added.  false otherwise when the event by id is already already stored.
+	 * @return true if the event was added.  false otherwise when the event by id is already stored.
 	 */
 	boolean addEventExecution(EventExecution ee);
 

@@ -4406,7 +4406,7 @@ SuperagentHttpClient.prototype.execute = function (obj) {
     } else if (res && obj.on && obj.on.response) {
       var possibleObj;
 
-      // Already parsed by by superagent?
+      // Already parsed by superagent?
       if (res.body && _.keys(res.body).length > 0) {
         possibleObj = res.body;
       } else {
@@ -18240,7 +18240,7 @@ var array_reduce = uncurryThis(
         // concerning the initial value, if one is not provided
         if (arguments.length === 1) {
             // seek to the first value in the array, accounting
-            // for the possibility that is is a sparse array
+            // for the possibility that it is a sparse array
             do {
                 if (index in this) {
                     basis = this[index++];
