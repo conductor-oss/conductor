@@ -26,6 +26,7 @@
 * https://github.com/ggrcha/conductor-go-client - Conductor Golang client for writing Workers in Golang
 
 * https://github.com/courosh12/conductor-dotnet-client - Conductor DOTNET client for writing Workers in DOTNET
+  * https://github.com/TwoUnderscorez/serilog-sinks-conductor-task-log - Serilog sink for sending worker log events to Netflix Conductor
 
 * https://github.com/davidwadden/conductor-workers - Various ready made Conductor workers for common operations on some platforms (ex.: Jira, Github, Concourse)
 
