@@ -95,6 +95,9 @@ public @interface WorkflowTaskTypeConstraint {
                 case TaskType.TASK_TYPE_SUB_WORKFLOW:
                     valid = isSubWorkflowTaskValid(workflowTask, context);
                     break;
+                case TaskType.TASK_TYPE_JSON_JQ_TRANSFORM:
+                    valid = isJSONJQTransformTaskValid(workflowTask, context);
+                    break;
             }
 
             return valid;
@@ -279,6 +282,30 @@ public @interface WorkflowTaskTypeConstraint {
                 context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
                 valid = false;
             }
+            return valid;
+        }
+        private boolean isJSONJQTransformTaskValid(WorkflowTask workflowTask, ConstraintValidatorContext context) {
+            boolean valid = true;
+            boolean isInputParameterSet = false;
+            boolean isInputTemplateSet = false;
+
+            //Either queryExpression in WorkflowTask inputParam should be set or in inputTemplate Taskdef should be set
+            if (workflowTask.getInputParameters() != null && workflowTask.getInputParameters().containsKey("queryExpression")) {
+                isInputParameterSet = true;
+            }
+
+            TaskDef taskDef = Optional.ofNullable(workflowTask.getTaskDefinition()).orElse(ValidationContext.getMetadataDAO().getTaskDef(workflowTask.getName()));
+
+            if (taskDef != null && taskDef.getInputTemplate() != null  && taskDef.getInputTemplate().containsKey("queryExpression")) {
+                isInputTemplateSet = true;
+            }
+
+            if (!(isInputParameterSet || isInputTemplateSet)) {
+                String message = String.format(PARAM_REQUIRED_STRING_FORMAT, "inputParameters.queryExpression", TaskType.JSON_JQ_TRANSFORM, workflowTask.getName());
+                context.buildConstraintViolationWithTemplate(message).addConstraintViolation();
+                valid = false;
+            }
+
             return valid;
         }
     }

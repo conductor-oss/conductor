@@ -48,6 +48,7 @@ import com.netflix.conductor.core.execution.mapper.TerminateTaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
+import com.netflix.conductor.core.execution.mapper.JsonJQTransformTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Event;
 import com.netflix.conductor.core.execution.tasks.IsolatedTaskQueueProducer;
 import com.netflix.conductor.core.execution.tasks.Lambda;
@@ -76,6 +77,7 @@ import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_USER_DEFINED;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_WAIT;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_DO_WHILE;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_JSON_JQ_TRANSFORM;
 import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
 /**
  * @author Viren
@@ -248,6 +250,14 @@ public class CoreModule extends AbstractModule {
     @Named(TASK_MAPPERS_QUALIFIER)
     public TaskMapper getKafkaPublishTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
         return new KafkaPublishTaskMapper(parametersUtils, metadataDAO);
+    }
+
+    @ProvidesIntoMap
+    @StringMapKey(TASK_TYPE_JSON_JQ_TRANSFORM)
+    @Singleton
+    @Named(TASK_MAPPERS_QUALIFIER)
+    public TaskMapper getJsonJQTransformTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
+        return new JsonJQTransformTaskMapper(parametersUtils, metadataDAO);
     }
 
 }

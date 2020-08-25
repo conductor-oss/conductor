@@ -675,3 +675,42 @@ Do while task does NOT support domain or isolation group execution. Nesting of D
 ```
 If any of loopover task will be failed then do while task will be failed. In such case retry will start iteration from 1. TaskType SUB_WORKFLOW is not supported as a part of loopover task. Since loopover tasks will be executed in loop inside scope of parent do while task, crossing branching outside of DO_WHILE task will not be respected. Branching inside loopover task will be supported.
 In case of exception while evaluating loopCondition, do while task will be failed with FAILED_WITH_TERMINAL_ERROR.
+
+## JSON JQ Transform Task
+
+JSON JQ Transform task allows transforming a JSON input to another JSON structure using a query expression.
+
+The input for the query (`.`) will be the `inputParameters` of the task.
+
+For JQ playground go to https://jqplay.org/
+
+**Parameters:**
+
+|name|description|
+|---|---|
+|queryExpression|JQ query expression
+
+**Example**
+
+```json
+ {
+      "name": "jq_1",
+      "taskReferenceName": "jq_1",
+      "type": "JSON_JQ_TRANSFORM",
+      "inputParameters": {
+        "in1": {
+          "arr": [ "a", "b" ]
+        },
+        "in2": {
+          "arr": [ "c", "d" ]
+        },
+        "queryExpression": "{ out: (.in1.arr + .in2.arr) }"
+      }
+}
+```
+
+In the example above the value of `jq_1.output.result` will be `{ "out": ["a","b","c","d"] }`
+
+The task output can then be referenced in downstream tasks like:
+`"${jq_1.output.result.out}"`
+ 

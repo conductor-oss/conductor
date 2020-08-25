@@ -491,6 +491,50 @@ public class WorkflowTaskTypeConstraintTest {
         assertEquals(0, result.size());
     }
 
+    @Test
+    public void testWorkflowTaskTypeJSONJQTransform() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("JSON_JQ_TRANSFORM");
+        workflowTask.getInputParameters().put("queryExpression", ".");
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
+   }
+
+    @Test
+    public void testWorkflowTaskTypeJSONJQTransformWithQueryParamMissing() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("JSON_JQ_TRANSFORM");
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(1, result.size());
+
+        List<String> validationErrors = new ArrayList<>();
+
+        result.forEach(e -> validationErrors.add(e.getMessage()));
+
+        assertTrue(validationErrors.contains("inputParameters.queryExpression field is required for taskType: JSON_JQ_TRANSFORM taskName: encode"));
+    }
+
+    @Test
+    public void testWorkflowTaskTypeJSONJQTransformWithQueryParamInTaskDef() {
+        WorkflowTask workflowTask = createSampleWorkflowTask();
+        workflowTask.setType("JSON_JQ_TRANSFORM");
+
+        TaskDef taskDef = new TaskDef();
+        taskDef.setName("encode");
+        taskDef.getInputTemplate().put("queryExpression", ".");
+
+        when(mockMetadataDao.getTaskDef(anyString())).thenReturn(taskDef);
+
+        Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
+        assertEquals(0, result.size());
+    }
+
     private List<String> getErrorMessages(WorkflowTask workflowTask) {
         Set<ConstraintViolation<WorkflowTask>> result = validator.validate(workflowTask);
         List<String> validationErrors = new ArrayList<>();
