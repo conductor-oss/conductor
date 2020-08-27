@@ -501,7 +501,8 @@ public class DeciderService {
 
         long timeout = 1000L * workflowDef.getTimeoutSeconds();
         long now = System.currentTimeMillis();
-        long elapsedTime = now - workflow.getStartTime();
+        long elapsedTime = workflow.getLastRetriedTime() > 0 ? now - workflow.getLastRetriedTime() :
+            now - workflow.getStartTime();
 
         if (elapsedTime < timeout) {
             return;

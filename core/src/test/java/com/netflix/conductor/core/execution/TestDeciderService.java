@@ -1036,7 +1036,7 @@ public class TestDeciderService {
         workflowDef.setName("test");
         Workflow workflow = new Workflow();
         workflow.setOwnerApp("junit");
-        workflow.setStartTime(System.currentTimeMillis() - 5_000);
+        workflow.setStartTime(System.currentTimeMillis() - 10_000);
         workflow.setWorkflowId("workflow_id");
 
         // no-op
@@ -1057,10 +1057,19 @@ public class TestDeciderService {
         // time out
         workflowDef.setTimeoutPolicy(WorkflowDef.TimeoutPolicy.TIME_OUT_WF);
         workflow.setWorkflowDefinition(workflowDef);
-        exception.expect(TerminateWorkflowException.class);
-        exception.expectMessage("Workflow 'workflow_id' timed out");
-        deciderService.checkWorkflowTimeout(workflow);
-        assertEquals(1, counter.count());
+        try {
+            deciderService.checkWorkflowTimeout(workflow);
+        } catch (TerminateWorkflowException twe) {
+            assertTrue(twe.getMessage().contains("Workflow 'workflow_id' timed out"));
+        }
+
+        // for a retried workflow
+        workflow.setLastRetriedTime(System.currentTimeMillis() - 5_000);
+        try {
+            deciderService.checkWorkflowTimeout(workflow);
+        } catch (TerminateWorkflowException twe) {
+            assertTrue(twe.getMessage().contains("Workflow 'workflow_id' timed out"));
+        }
     }
 
     private WorkflowDef createConditionalWF() {

@@ -979,6 +979,7 @@ public abstract class AbstractProtoMapper {
         for (Map.Entry<String, Object> pair : from.getVariables().entrySet()) {
             to.putVariables( pair.getKey(), toProto( pair.getValue() ) );
         }
+        to.setLastRetriedTime( from.getLastRetriedTime() );
         return to.build();
     }
 
@@ -1020,6 +1021,7 @@ public abstract class AbstractProtoMapper {
             variablesMap.put( pair.getKey(), fromProto( pair.getValue() ) );
         }
         to.setVariables(variablesMap);
+        to.setLastRetriedTime( from.getLastRetriedTime() );
         return to;
     }
 

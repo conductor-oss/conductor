@@ -33,7 +33,7 @@ import java.util.stream.Collectors;
 @ProtoMessage
 public class Workflow extends Auditable{
 
-    @ProtoEnum
+	@ProtoEnum
 	public enum  WorkflowStatus {
 		RUNNING(false, false),
 		COMPLETED(true, true),
@@ -130,9 +130,12 @@ public class Workflow extends Auditable{
 	@ProtoField(id = 23)
 	private Map<String, Object> variables = new HashMap<>();
 
-	public Workflow(){
+	@ProtoField(id = 24)
+	private long lastRetriedTime;
 
+	public Workflow(){
 	}
+
 	/**
 	 * @return the status
 	 */
@@ -460,6 +463,21 @@ public class Workflow extends Auditable{
 		this.externalOutputPayloadStoragePath = externalOutputPayloadStoragePath;
 	}
 
+	/**
+	 * Captures the last time the workflow was retried
+	 * @return the last retried time of the workflow
+	 */
+	public long getLastRetriedTime() {
+		return lastRetriedTime;
+	}
+
+	/**
+	 * @param lastRetriedTime time in milliseconds when the workflow is retried
+	 */
+	public void setLastRetriedTime(long lastRetriedTime) {
+		this.lastRetriedTime = lastRetriedTime;
+	}
+
 	public Task getTaskByRefName(String refName) {
 		if (refName == null) {
 			throw new RuntimeException("refName passed is null.  Check the workflow execution.  For dynamic tasks, make sure referenceTaskName is set to a not null value");
@@ -481,14 +499,6 @@ public class Workflow extends Auditable{
 
 	/**
 	 * @return a deep copy of the workflow instance
-	 * Note: This does not copy the following fields:
-	 * <ul>
-	 * <li>endTime</li>
-	 * <li>taskToDomain</li>
-	 * <li>failedReferenceTaskNames</li>
-	 * <li>externalInputPayloadStoragePath</li>
-	 * <li>externalOutputPayloadStoragePath</li>
-	 * </ul>
 	 */
 	public Workflow copy() {
 		Workflow copy = new Workflow();
@@ -508,6 +518,12 @@ public class Workflow extends Auditable{
 				.map(Task::deepCopy)
 				.collect(Collectors.toList()));
 		copy.setVariables(variables);
+		copy.setEndTime(endTime);
+		copy.setLastRetriedTime(lastRetriedTime);
+		copy.setTaskToDomain(taskToDomain);
+		copy.setFailedReferenceTaskNames(failedReferenceTaskNames);
+		copy.setExternalInputPayloadStoragePath(externalInputPayloadStoragePath);
+		copy.setExternalOutputPayloadStoragePath(externalOutputPayloadStoragePath);
 		return copy;
 	}
 
@@ -542,7 +558,8 @@ public class Workflow extends Auditable{
                 Objects.equals(getExternalOutputPayloadStoragePath(), workflow.getExternalOutputPayloadStoragePath()) &&
 				Objects.equals(getPriority(), workflow.getPriority()) &&
                 Objects.equals(getWorkflowDefinition(), workflow.getWorkflowDefinition()) &&
-				Objects.equals(getVariables(), workflow.getVariables());
+				Objects.equals(getVariables(), workflow.getVariables()) &&
+				Objects.equals(getLastRetriedTime(), workflow.getLastRetriedTime());
     }
 
     @Override
@@ -569,7 +586,8 @@ public class Workflow extends Auditable{
                 getExternalInputPayloadStoragePath(),
                 getExternalOutputPayloadStoragePath(),
 				getPriority(),
-				getVariables()
+				getVariables(),
+				getLastRetriedTime()
         );
     }
 
