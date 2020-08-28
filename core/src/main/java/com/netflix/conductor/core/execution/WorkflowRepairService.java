@@ -4,6 +4,7 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,8 +45,10 @@ public class WorkflowRepairService {
 
     private boolean verifyAndRepairWorkflow(Workflow workflow) {
         if (workflow.getStatus().equals(Workflow.WorkflowStatus.RUNNING)) {
-            if (!queueDAO.containsMessage("_deciderQueue", workflow.getWorkflowId())) {
-                queueDAO.push("_deciderQueue", workflow.getWorkflowId(), 30);
+            String queueName = WorkflowExecutor.DECIDER_QUEUE;
+            if (!queueDAO.containsMessage(queueName, workflow.getWorkflowId())) {
+                queueDAO.push(queueName, workflow.getWorkflowId(), 30);
+                Monitors.recordQueueMessageRepushFromRepairService(queueName);
                 return true;
             }
         }
@@ -60,8 +63,11 @@ public class WorkflowRepairService {
     private boolean verifyAndRepairTask(Task task) {
         if (task.getStatus().equals(Task.Status.SCHEDULED)) {
             // Ensure QueueDAO contains this taskId
+            // TODO handle exception in these queue operations here?
+            // TODO how to keep track of these exceptions?
             if (!queueDAO.containsMessage(task.getTaskDefName(), task.getTaskId())) {
                 queueDAO.push(task.getTaskDefName(), task.getTaskId(), task.getCallbackAfterSeconds());
+                Monitors.recordQueueMessageRepushFromRepairService(task.getTaskDefName());
                 return true;
             }
         }
