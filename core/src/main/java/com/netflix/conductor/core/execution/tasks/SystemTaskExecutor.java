@@ -26,6 +26,8 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
+
+import com.netflix.conductor.service.ExecutionService;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,10 +46,11 @@ class SystemTaskExecutor {
     private final WorkflowExecutor workflowExecutor;
     private final Configuration config;
     private final int maxPollCount;
+    private final ExecutionService executionService;
 
     ConcurrentHashMap<String, ExecutionConfig> queueExecutionConfigMap = new ConcurrentHashMap<>();
 
-    SystemTaskExecutor(QueueDAO queueDAO, WorkflowExecutor workflowExecutor, Configuration config) {
+    SystemTaskExecutor(QueueDAO queueDAO, WorkflowExecutor workflowExecutor, Configuration config, ExecutionService executionService) {
         this.config = config;
         int threadCount = config.getSystemTaskWorkerThreadCount();
         this.callbackTime = config.getSystemTaskWorkerCallbackSeconds();
@@ -57,6 +60,7 @@ class SystemTaskExecutor {
         this.workflowExecutor = workflowExecutor;
         this.queueDAO = queueDAO;
         this.maxPollCount = config.getSystemTaskMaxPollCount();
+        this.executionService = executionService;
 
         LOGGER.info("Initialized the SystemTaskExecutor with {} threads and callback time: {} seconds", threadCount,
             callbackTime);
@@ -104,6 +108,8 @@ class SystemTaskExecutor {
                         Monitors.recordTaskPollCount(queueName, "", 1);
 
                         WorkflowSystemTask systemTask = SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.get(taskName);
+                        executionService.ackTaskReceived(taskId);
+
                         CompletableFuture<Void> taskCompletableFuture = CompletableFuture.runAsync(() ->
                                 workflowExecutor.executeSystemTask(systemTask, taskId, callbackTime), executorService);
 

@@ -77,7 +77,7 @@ public class DynoObservableQueue implements ObservableQueue {
     @Override
     public List<String> ack(List<Message> messages) {
         for (Message msg : messages) {
-            queueDAO.remove(queueName, msg.getId());
+            queueDAO.ack(queueName, msg.getId());
         }
         return messages.stream().map(Message::getId).collect(Collectors.toList());
     }

@@ -24,6 +24,7 @@ import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.SystemPropertiesConfiguration;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.service.ExecutionService;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -35,18 +36,20 @@ public class TestSystemTaskWorkerCoordinator {
 
     private QueueDAO queueDAO;
     private WorkflowExecutor workflowExecutor;
+    private ExecutionService executionService;
 
     @Before
     public void setUp() {
         queueDAO = mock(QueueDAO.class);
         workflowExecutor = mock(WorkflowExecutor.class);
+        executionService = mock(ExecutionService.class);
     }
 
     @Test
     public void isSystemTask() {
         createTaskMapping();
         SystemTaskWorkerCoordinator systemTaskWorkerCoordinator = new SystemTaskWorkerCoordinator(queueDAO,
-            workflowExecutor, mock(Configuration.class));
+            workflowExecutor, mock(Configuration.class), executionService);
         assertTrue(systemTaskWorkerCoordinator.isAsyncSystemTask(TEST_QUEUE + ISOLATION_CONSTANT));
     }
 
@@ -54,7 +57,7 @@ public class TestSystemTaskWorkerCoordinator {
     public void isSystemTaskNotPresent() {
         createTaskMapping();
         SystemTaskWorkerCoordinator systemTaskWorkerCoordinator = new SystemTaskWorkerCoordinator(queueDAO,
-            workflowExecutor, mock(Configuration.class));
+            workflowExecutor, mock(Configuration.class), executionService);
         assertFalse(systemTaskWorkerCoordinator.isAsyncSystemTask(null));
     }
 
@@ -63,7 +66,7 @@ public class TestSystemTaskWorkerCoordinator {
         System.setProperty("workflow.system.task.worker.executionNameSpace", "exeNS");
         Configuration configuration = new SystemPropertiesConfiguration();
         SystemTaskWorkerCoordinator systemTaskWorkerCoordinator = new SystemTaskWorkerCoordinator(queueDAO,
-            workflowExecutor, configuration);
+            workflowExecutor, configuration, executionService);
         assertTrue(systemTaskWorkerCoordinator.isFromCoordinatorExecutionNameSpace(TEST_QUEUE + EXECUTION_NAMESPACE_CONSTANT));
     }
 

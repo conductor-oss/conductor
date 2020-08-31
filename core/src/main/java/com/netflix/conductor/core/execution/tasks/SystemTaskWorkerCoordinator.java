@@ -21,6 +21,13 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
+import com.netflix.conductor.service.ExecutionService;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Singleton;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
@@ -30,11 +37,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
-import javax.inject.Inject;
-import javax.inject.Singleton;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 @Singleton
 public class SystemTaskWorkerCoordinator {
@@ -54,14 +56,14 @@ public class SystemTaskWorkerCoordinator {
     private static final String CLASS_NAME = SystemTaskWorkerCoordinator.class.getName();
 
     @Inject
-    public SystemTaskWorkerCoordinator(QueueDAO queueDAO, WorkflowExecutor workflowExecutor, Configuration config) {
+    public SystemTaskWorkerCoordinator(QueueDAO queueDAO, WorkflowExecutor workflowExecutor, Configuration config, ExecutionService executionService) {
         this.config = config;
 
         this.executionNameSpace = config.getSystemTaskWorkerExecutionNamespace();
         this.pollInterval = config.getSystemTaskWorkerPollInterval();
         int threadCount = config.getSystemTaskWorkerThreadCount();
         if (threadCount > 0) {
-            this.systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, config);
+            this.systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, config, executionService);
             new Thread(this::listen).start();
             LOGGER.info("System Task Worker Coordinator initialized with poll interval: {}", pollInterval);
         } else {

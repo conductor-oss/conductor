@@ -35,6 +35,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+
+import com.netflix.conductor.service.ExecutionService;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -47,6 +49,7 @@ public class TestSystemTaskExecutor {
     private static final String ISOLATED_TASK = "system_task-isolated";
 
     private WorkflowExecutor workflowExecutor;
+    private ExecutionService executionService;
     private QueueDAO queueDAO;
     private ScheduledExecutorService scheduledExecutorService;
 
@@ -55,6 +58,7 @@ public class TestSystemTaskExecutor {
     @Before
     public void setUp() {
         workflowExecutor = mock(WorkflowExecutor.class);
+        executionService = mock(ExecutionService.class);
         queueDAO = mock(QueueDAO.class);
         scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         createTaskMapping();
@@ -72,7 +76,7 @@ public class TestSystemTaskExecutor {
     public void testGetExecutionConfigForSystemTask() {
         System.setProperty("workflow.system.task.worker.thread.count", "5");
         Configuration configuration = new SystemPropertiesConfiguration();
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration);
+        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration, executionService);
         assertEquals(systemTaskExecutor.getExecutionConfig("").getSemaphoreUtil().availableSlots(), 5);
     }
 
@@ -80,7 +84,7 @@ public class TestSystemTaskExecutor {
     public void testGetExecutionConfigForIsolatedSystemTask() {
         System.setProperty("workflow.isolated.system.task.worker.thread.count", "7");
         Configuration configuration = new SystemPropertiesConfiguration();
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration);
+        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration, executionService);
         assertEquals(systemTaskExecutor.getExecutionConfig("test-iso").getSemaphoreUtil().availableSlots(), 7);
     }
 
@@ -89,7 +93,7 @@ public class TestSystemTaskExecutor {
         System.setProperty("workflow.system.task.worker.thread.count", "1");
         Configuration configuration = new SystemPropertiesConfiguration();
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(Collections.singletonList("taskId"));
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration);
+        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration, executionService);
 
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(invocation -> {
@@ -114,7 +118,7 @@ public class TestSystemTaskExecutor {
             Configuration configuration = new SystemPropertiesConfiguration();
 
             when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(Collections.nCopies(2, "taskId"));
-            systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration);
+            systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration, executionService);
 
             CountDownLatch latch = new CountDownLatch(10);
             doAnswer(invocation -> {
@@ -140,7 +144,7 @@ public class TestSystemTaskExecutor {
         System.setProperty("workflow.isolated.system.task.worker.thread.count", "1");
         Configuration configuration = new SystemPropertiesConfiguration();
         when(queueDAO.pop(anyString(), anyInt(), anyInt())).thenReturn(Collections.singletonList("isolated_taskId"));
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration);
+        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration, executionService);
 
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(invocation -> {
@@ -163,7 +167,7 @@ public class TestSystemTaskExecutor {
         when(queueDAO.pop(anyString(), anyInt(), anyInt()))
             .thenThrow(RuntimeException.class)
             .thenReturn(Collections.singletonList("taskId"));
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration);
+        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration, executionService);
 
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(invocation -> {
@@ -189,7 +193,7 @@ public class TestSystemTaskExecutor {
             when(queueDAO.pop(anyString(), anyInt(), anyInt()))
                     .thenThrow(RuntimeException.class)
                     .thenReturn(Collections.nCopies(2,"taskId"));
-            systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration);
+            systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration, executionService);
 
             CountDownLatch latch = new CountDownLatch(2);
             doAnswer(invocation -> {
@@ -219,7 +223,7 @@ public class TestSystemTaskExecutor {
         Configuration configuration = new SystemPropertiesConfiguration();
         when(queueDAO.pop(TEST_TASK, 1, 200)).thenReturn(Collections.singletonList(sysTask));
         when(queueDAO.pop(ISOLATED_TASK, 1, 200)).thenReturn(Collections.singletonList(isolatedTask));
-        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration);
+        systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, configuration, executionService);
 
         CountDownLatch sysTaskLatch = new CountDownLatch(1);
         CountDownLatch isolatedTaskLatch = new CountDownLatch(1);
