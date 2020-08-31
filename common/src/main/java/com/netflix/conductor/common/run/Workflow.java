@@ -127,6 +127,9 @@ public class Workflow extends Auditable{
 	@Max(value = 99, message = "workflow priority: ${validatedValue} should be maximum {value}")
 	private int priority;
 
+	@ProtoField(id = 23)
+	private Map<String, Object> variables = new HashMap<>();
+
 	public Workflow(){
 
 	}
@@ -208,6 +211,18 @@ public class Workflow extends Auditable{
 	 */
 	public void setInput(Map<String, Object> input) {
 		this.input = input;
+	}
+	/**
+	 * @return the global workflow variables
+	 */
+	public Map<String, Object> getVariables() {
+		return variables;
+	}
+	/**
+	 * @param vars the set of global workflow variables to set
+	 */
+	public void setVariables(Map<String, Object> vars) {
+		this.variables = vars;
 	}
 	/**
 	 * @return the task to domain map
@@ -492,6 +507,7 @@ public class Workflow extends Auditable{
 		copy.setTasks(tasks.stream()
 				.map(Task::deepCopy)
 				.collect(Collectors.toList()));
+		copy.setVariables(variables);
 		return copy;
 	}
 
@@ -525,7 +541,8 @@ public class Workflow extends Auditable{
                 Objects.equals(getExternalInputPayloadStoragePath(), workflow.getExternalInputPayloadStoragePath()) &&
                 Objects.equals(getExternalOutputPayloadStoragePath(), workflow.getExternalOutputPayloadStoragePath()) &&
 				Objects.equals(getPriority(), workflow.getPriority()) &&
-                Objects.equals(getWorkflowDefinition(), workflow.getWorkflowDefinition());
+                Objects.equals(getWorkflowDefinition(), workflow.getWorkflowDefinition()) &&
+				Objects.equals(getVariables(), workflow.getVariables());
     }
 
     @Override
@@ -551,7 +568,8 @@ public class Workflow extends Auditable{
                 getWorkflowDefinition(),
                 getExternalInputPayloadStoragePath(),
                 getExternalOutputPayloadStoragePath(),
-				getPriority()
+				getPriority(),
+				getVariables()
         );
     }
 

@@ -116,6 +116,11 @@ public class TestConfiguration implements Configuration {
 	}
 
 	@Override
+	public Long getMaxWorkflowVariablesPayloadSizeThresholdKB() {
+		return 256L;
+	}
+
+	@Override
 	public Long getTaskInputPayloadSizeThresholdKB() {
 		return 3072L;
 	}

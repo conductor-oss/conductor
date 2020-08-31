@@ -49,9 +49,11 @@ import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
 import com.netflix.conductor.core.execution.mapper.DoWhileTaskMapper;
 import com.netflix.conductor.core.execution.mapper.JsonJQTransformTaskMapper;
+import com.netflix.conductor.core.execution.mapper.SetVariableTaskMapper;
 import com.netflix.conductor.core.execution.tasks.Event;
 import com.netflix.conductor.core.execution.tasks.IsolatedTaskQueueProducer;
 import com.netflix.conductor.core.execution.tasks.Lambda;
+import com.netflix.conductor.core.execution.tasks.SetVariable;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator;
 import com.netflix.conductor.core.execution.tasks.Terminate;
@@ -78,6 +80,7 @@ import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_WAIT;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_DO_WHILE;
 import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_JSON_JQ_TRANSFORM;
+import static com.netflix.conductor.common.metadata.workflow.TaskType.TASK_TYPE_SET_VARIABLE;
 import static com.netflix.conductor.core.events.EventQueues.EVENT_QUEUE_PROVIDERS_QUALIFIER;
 /**
  * @author Viren
@@ -97,6 +100,7 @@ public class CoreModule extends AbstractModule {
         bind(Lambda.class).asEagerSingleton();
         bind(Terminate.class).asEagerSingleton();
         bind(IsolatedTaskQueueProducer.class).asEagerSingleton();
+        bind(SetVariable.class).asEagerSingleton();
         // start processing events when instance starts
         bind(ActionProcessor.class).to(SimpleActionProcessor.class);
         bind(EventProcessor.class).to(SimpleEventProcessor.class).asEagerSingleton();
@@ -260,4 +264,11 @@ public class CoreModule extends AbstractModule {
         return new JsonJQTransformTaskMapper(parametersUtils, metadataDAO);
     }
 
+    @ProvidesIntoMap
+    @StringMapKey(TASK_TYPE_SET_VARIABLE)
+    @Singleton
+    @Named(TASK_MAPPERS_QUALIFIER)
+    public TaskMapper getSetVariableTaskMapper() {
+        return new SetVariableTaskMapper();
+    }
 }

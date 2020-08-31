@@ -26,4 +26,5 @@ message WorkflowDef {
     string owner_email = 11;
     WorkflowDef.TimeoutPolicy timeout_policy = 12;
     int64 timeout_seconds = 13;
+    map<string, google.protobuf.Value> variables = 14;
 }

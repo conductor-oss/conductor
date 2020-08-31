@@ -107,6 +107,7 @@ public class SubWorkflowParamsTest {
             "    } ],\n" +
             "    \"timeoutPolicy\" : \"ALERT_ONLY\",\n" +
             "    \"timeoutSeconds\" : 0,\n" +
+            "    \"variables\" : { },\n" +
             "    \"version\" : 1,\n" +
             "    \"workflowStatusListenerEnabled\" : false\n" +
             "  }\n" +

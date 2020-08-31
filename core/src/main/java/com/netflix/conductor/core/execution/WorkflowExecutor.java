@@ -386,6 +386,7 @@ public class WorkflowExecutor {
         workflow.setUpdateTime(null);
         workflow.setEvent(event);
         workflow.setTaskToDomain(taskToDomain);
+        workflow.setVariables(workflowDefinition.getVariables());
 
         workflow.setInput(workflowInput);
         if (workflow.getInput() != null) {

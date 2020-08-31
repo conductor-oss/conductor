@@ -136,6 +136,11 @@ public class SystemPropertiesConfiguration implements Configuration {
     }
 
     @Override
+    public Long getMaxWorkflowVariablesPayloadSizeThresholdKB() {
+        return getLongProperty("conductor.max.workflow.variables.payload.threshold.kb", 256L);
+    }
+
+    @Override
     public Long getTaskInputPayloadSizeThresholdKB() {
         return getLongProperty("conductor.task.input.payload.threshold.kb", 3072L);
     }

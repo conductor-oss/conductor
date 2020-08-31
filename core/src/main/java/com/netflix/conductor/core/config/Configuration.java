@@ -447,7 +447,13 @@ public interface Configuration {
 	 */
 	Long getMaxWorkflowOutputPayloadSizeThresholdKB();
 
-	/**
+    /**
+     *
+     * @return The maximum threshold of the workflow variables payload size in KB beyond which the task changes will be rejected and the task will be marked as FAILED_WITH_TERMINAL_ERROR
+     */
+    Long getMaxWorkflowVariablesPayloadSizeThresholdKB();
+
+    /**
 	 *
 	 * @return The threshold of the task input payload size in KB beyond which the payload will be stored in {@link com.netflix.conductor.common.utils.ExternalPayloadStorage}
 	 */
@@ -470,7 +476,6 @@ public interface Configuration {
 	 * @return The maximum threshold of the task output payload size in KB beyond which the task input will be rejected and the task will be marked as FAILED_WITH_TERMINAL_ERROR
 	 */
 	Long getMaxTaskOutputPayloadSizeThresholdKB();
-
 
     enum DB {
         REDIS, DYNOMITE, MEMORY, REDIS_CLUSTER, MYSQL, POSTGRES, CASSANDRA, REDIS_SENTINEL

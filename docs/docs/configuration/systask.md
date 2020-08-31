@@ -713,4 +713,31 @@ In the example above the value of `jq_1.output.result` will be `{ "out": ["a","b
 
 The task output can then be referenced in downstream tasks like:
 `"${jq_1.output.result.out}"`
- 
+
+
+## Set Variable Task
+
+This task allows to set workflow variables by creating or updating them with new values.
+Variables can be initialized in the workflow definition as well as during the workflow run.
+Once a variable was initialized it can be read or overwritten with a new value by any other task.
+
+!!!warning
+	There is a hard barrier for variables payload size in KB defined in the JVM system properties (`conductor.max.workflow.variables.payload.threshold.kb`) the default value is `256`. Passing this barrier will fail the task and the workflow.
+
+**Parameters:**
+
+The parameters for this task are the variable names with their respective values.
+
+**Example**
+```json
+{
+  "type": "SET_VARIABLE",
+  "name": "set_stage_start",
+  "taskReferenceName": "set_stage_start",
+  "inputParameters": {
+    "stage": "START"
+  }
+}
+```
+
+Later in that workflow, the variable can be referenced by `"${workflow.variables.stage}"`

@@ -88,6 +88,7 @@ public class ParametersUtils {
         workflowParams.put("correlationId", workflow.getCorrelationId());
         workflowParams.put("reasonForIncompletion", workflow.getReasonForIncompletion());
         workflowParams.put("schemaVersion", workflow.getSchemaVersion());
+        workflowParams.put("variables", workflow.getVariables());
 
         inputMap.put("workflow", workflowParams);
 

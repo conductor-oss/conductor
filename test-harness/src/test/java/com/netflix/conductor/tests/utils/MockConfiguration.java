@@ -117,6 +117,11 @@ public class MockConfiguration implements Configuration {
     }
 
     @Override
+    public Long getMaxWorkflowVariablesPayloadSizeThresholdKB() {
+        return 2L;
+    }
+
+    @Override
     public Long getTaskInputPayloadSizeThresholdKB() {
         return 10L;
     }

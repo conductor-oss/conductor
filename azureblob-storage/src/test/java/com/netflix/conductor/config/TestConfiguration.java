@@ -129,6 +129,11 @@ public class TestConfiguration implements AzureBlobConfiguration {
     }
 
     @Override
+    public Long getMaxWorkflowVariablesPayloadSizeThresholdKB() {
+        return 256L;
+    }
+
+    @Override
     public Long getTaskInputPayloadSizeThresholdKB() {
         return 10L;
     }
