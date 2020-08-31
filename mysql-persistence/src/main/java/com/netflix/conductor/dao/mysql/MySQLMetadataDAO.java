@@ -143,11 +143,18 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO, Event
     public void removeWorkflowDef(String name, Integer version) {
         final String DELETE_WORKFLOW_QUERY = "DELETE from meta_workflow_def WHERE name = ? AND version = ?";
 
-        executeWithTransaction(DELETE_WORKFLOW_QUERY, q -> {
-            if (!q.addParameter(name).addParameter(version).executeDelete()) {
-                throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
-                        String.format("No such workflow definition: %s version: %d", name, version));
-            }
+        withTransaction( tx -> {
+            // remove specified workflow
+            execute(tx, DELETE_WORKFLOW_QUERY, q -> {
+                if (!q.addParameter(name).addParameter(version).executeDelete()) {
+                    throw new ApplicationException(ApplicationException.Code.NOT_FOUND,
+                            String.format("No such workflow definition: %s version: %d", name, version));
+                }
+            });
+            // reset latest version based on remaining rows for this workflow
+            Optional<Integer> maxVersion = getLatestVersion(tx, name);
+            maxVersion.ifPresent(newVersion -> updateLatestVersion(tx, name, newVersion));
+
         });
     }
 
@@ -316,18 +323,18 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO, Event
     }
 
     /**
-     * Return the latest version that exists for the provided {@link WorkflowDef}.
+     * Return the latest version that exists for the provided {@code name}.
      *
      * @param tx  The {@link Connection} to use for queries.
-     * @param def The {@code WorkflowDef} to check for.
+     * @param name The {@code name} to check for.
      * @return {@code Optional.empty()} if no versions exist, otherwise the max {@link WorkflowDef#getVersion} found.
      */
-    private Optional<Integer> getLatestVersion(Connection tx, WorkflowDef def) {
+    private Optional<Integer> getLatestVersion(Connection tx, String name) {
         final String GET_LATEST_WORKFLOW_DEF_VERSION = "SELECT max(version) AS version FROM meta_workflow_def WHERE " +
                 "name = ?";
 
         Integer val = query(tx, GET_LATEST_WORKFLOW_DEF_VERSION, q -> {
-            q.addParameter(def.getName());
+            q.addParameter(name);
             return q.executeAndFetch(rs -> {
                 if (!rs.next()) {
                     return null;
@@ -341,25 +348,26 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO, Event
     }
 
     /**
-     * Update the latest version for the {@link WorkflowDef} to the version provided in {@literal def}.
+     * Update the latest version for the workflow with name {@code WorkflowDef} to the version provided in {@literal version}.
      *
      * @param tx  The {@link Connection} to use for queries.
-     * @param def The {@code WorkflowDef} data to update to.
+     * @param name Workflow def name to update
+     * @param version The new latest {@code version} value.
      */
-    private void updateLatestVersion(Connection tx, WorkflowDef def) {
+    private void updateLatestVersion(Connection tx, String name, int version) {
         final String UPDATE_WORKFLOW_DEF_LATEST_VERSION_QUERY = "UPDATE meta_workflow_def SET latest_version = ? " +
                 "WHERE name = ?";
 
         execute(tx, UPDATE_WORKFLOW_DEF_LATEST_VERSION_QUERY,
-                q -> q.addParameter(def.getVersion()).addParameter(def.getName()).executeUpdate());
+                q -> q.addParameter(version).addParameter(name).executeUpdate());
     }
 
     private void insertOrUpdateWorkflowDef(Connection tx, WorkflowDef def) {
         final String INSERT_WORKFLOW_DEF_QUERY = "INSERT INTO meta_workflow_def (name, version, json_data) VALUES (?," +
                 " ?, ?)";
 
-        Optional<Integer> version = getLatestVersion(tx, def);
-        if (!version.isPresent() || version.get() < def.getVersion()) {
+        Optional<Integer> version = getLatestVersion(tx, def.getName());
+        if (!workflowExists(tx, def)) {
             execute(tx, INSERT_WORKFLOW_DEF_QUERY, q -> q.addParameter(def.getName())
                     .addParameter(def.getVersion())
                     .addJsonParameter(def)
@@ -377,8 +385,12 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO, Event
                     .addParameter(def.getVersion())
                     .executeUpdate());
         }
+        int maxVersion = def.getVersion();
+        if (version.isPresent() && version.get() > def.getVersion()) {
+            maxVersion = version.get();
+        }
 
-        updateLatestVersion(tx, def);
+        updateLatestVersion(tx, def.getName(), maxVersion);
     }
 
     /**

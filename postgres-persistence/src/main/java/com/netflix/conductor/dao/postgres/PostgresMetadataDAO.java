@@ -349,6 +349,7 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
      * Update the latest version for the workflow with name {@code WorkflowDef} to the version provided in {@literal version}.
      *
      * @param tx  The {@link Connection} to use for queries.
+     * @param name Workflow def name to update
      * @param version The new latest {@code version} value.
      */
     private void updateLatestVersion(Connection tx, String name, int version) {

@@ -80,7 +80,7 @@ public class MySQLMetadataDAOTest {
         WorkflowDef found = dao.getWorkflowDef("test", 1).get();
         assertTrue(EqualsBuilder.reflectionEquals(def, found));
 
-        def.setVersion(2);
+        def.setVersion(3);
         dao.createWorkflowDef(def);
 
         all = dao.getAllWorkflowDefs();
@@ -92,13 +92,13 @@ public class MySQLMetadataDAOTest {
         found = dao.getLatestWorkflowDef(def.getName()).get();
         assertEquals(def.getName(), found.getName());
         assertEquals(def.getVersion(), found.getVersion());
-        assertEquals(2, found.getVersion());
+        assertEquals(3, found.getVersion());
 
         all = dao.getAllLatest();
         assertNotNull(all);
         assertEquals(1, all.size());
         assertEquals("test", all.get(0).getName());
-        assertEquals(2, all.get(0).getVersion());
+        assertEquals(3, all.get(0).getVersion());
 
         all = dao.getAllVersions(def.getName());
         assertNotNull(all);
@@ -106,7 +106,7 @@ public class MySQLMetadataDAOTest {
         assertEquals("test", all.get(0).getName());
         assertEquals("test", all.get(1).getName());
         assertEquals(1, all.get(0).getVersion());
-        assertEquals(2, all.get(1).getVersion());
+        assertEquals(3, all.get(1).getVersion());
 
         def.setDescription("updated");
         dao.updateWorkflowDef(def);
@@ -118,9 +118,28 @@ public class MySQLMetadataDAOTest {
         assertEquals(1, allnames.size());
         assertEquals(def.getName(), allnames.get(0));
 
-        dao.removeWorkflowDef("test", 1);
-        Optional<WorkflowDef> deleted = dao.getWorkflowDef("test", 1);
+        def.setVersion(2);
+        dao.createWorkflowDef(def);
+
+        found = dao.getLatestWorkflowDef(def.getName()).get();
+        assertEquals(def.getName(), found.getName());
+        assertEquals(3, found.getVersion());
+
+        dao.removeWorkflowDef("test", 3);
+        Optional<WorkflowDef> deleted = dao.getWorkflowDef("test", 3);
         assertFalse(deleted.isPresent());
+
+        found = dao.getLatestWorkflowDef(def.getName()).get();
+        assertEquals(def.getName(), found.getName());
+        assertEquals(2, found.getVersion());
+
+        dao.removeWorkflowDef("test", 1);
+        deleted = dao.getWorkflowDef("test", 1);
+        assertFalse(deleted.isPresent());
+
+        found = dao.getLatestWorkflowDef(def.getName()).get();
+        assertEquals(def.getName(), found.getName());
+        assertEquals(2, found.getVersion());
     }
 
     @Test
