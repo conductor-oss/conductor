@@ -137,6 +137,12 @@
     <li class="toctree-l3"><a href="#do-while-task">Do While Task</a></li>
     
 
+    <li class="toctree-l3"><a href="#json-jq-transform-task">JSON JQ Transform Task</a></li>
+    
+
+    <li class="toctree-l3"><a href="#set-variable-task">Set Variable Task</a></li>
+    
+
     </ul>
                 </li>
                 <li class="">
@@ -1224,6 +1230,69 @@ Do while task does NOT support domain or isolation group execution. Nesting of D
 
 <p>If any of loopover task will be failed then do while task will be failed. In such case retry will start iteration from 1. TaskType SUB_WORKFLOW is not supported as a part of loopover task. Since loopover tasks will be executed in loop inside scope of parent do while task, crossing branching outside of DO_WHILE task will not be respected. Branching inside loopover task will be supported.
 In case of exception while evaluating loopCondition, do while task will be failed with FAILED_WITH_TERMINAL_ERROR.</p>
+<h2 id="json-jq-transform-task">JSON JQ Transform Task<a class="headerlink" href="#json-jq-transform-task" title="Permanent link">&para;</a></h2>
+<p>JSON JQ Transform task allows transforming a JSON input to another JSON structure using a query expression.</p>
+<p>The input for the query (<code>.</code>) will be the <code>inputParameters</code> of the task.</p>
+<p>For JQ playground go to https://jqplay.org/</p>
+<p><strong>Parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>name</th>
+<th>description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>queryExpression</td>
+<td>JQ query expression</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span> <span class="p">{</span>
+      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;jq_1&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;jq_1&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;JSON_JQ_TRANSFORM&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;in1&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;arr&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="s2">&quot;a&quot;</span><span class="p">,</span> <span class="s2">&quot;b&quot;</span> <span class="p">]</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;in2&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;arr&quot;</span><span class="p">:</span> <span class="p">[</span> <span class="s2">&quot;c&quot;</span><span class="p">,</span> <span class="s2">&quot;d&quot;</span> <span class="p">]</span>
+        <span class="p">},</span>
+        <span class="nt">&quot;queryExpression&quot;</span><span class="p">:</span> <span class="s2">&quot;{ out: (.in1.arr + .in2.arr) }&quot;</span>
+      <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>In the example above the value of <code>jq_1.output.result</code> will be <code>{ "out": ["a","b","c","d"] }</code></p>
+<p>The task output can then be referenced in downstream tasks like:
+<code>"${jq_1.output.result.out}"</code></p>
+<h2 id="set-variable-task">Set Variable Task<a class="headerlink" href="#set-variable-task" title="Permanent link">&para;</a></h2>
+<p>This task allows to set workflow variables by creating or updating them with new values.
+Variables can be initialized in the workflow definition as well as during the workflow run.
+Once a variable was initialized it can be read or overwritten with a new value by any other task.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>There is a hard barrier for variables payload size in KB defined in the JVM system properties (<code>conductor.max.workflow.variables.payload.threshold.kb</code>) the default value is <code>256</code>. Passing this barrier will fail the task and the workflow.</p>
+</div>
+<p><strong>Parameters:</strong></p>
+<p>The parameters for this task are the variable names with their respective values.</p>
+<p><strong>Example</strong></p>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SET_VARIABLE&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;set_stage_start&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;set_stage_start&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;stage&quot;</span><span class="p">:</span> <span class="s2">&quot;START&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+
+
+<p>Later in that workflow, the variable can be referenced by <code>"${workflow.variables.stage}"</code></p>
               
             </div>
           </div>
