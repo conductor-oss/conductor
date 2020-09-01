@@ -40,4 +40,5 @@ message Workflow {
     string external_output_payload_storage_path = 21;
     int32 priority = 22;
     map<string, google.protobuf.Value> variables = 23;
+    int64 last_retried_time = 24;
 }

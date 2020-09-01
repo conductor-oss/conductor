@@ -126,7 +126,7 @@ queues.dynomite.nonQuorum.port=server_port
 
 ## Setting up Zookeeper to enable Distributed Locking Service.
 
-See [Technical Details](/technicaldetails/#maintaining-workflow-consistency-with-distributed-locking-and-fencing-tokens) for more details about this.
+See [Technical Details](../technicaldetails/#maintaining-workflow-consistency-with-distributed-locking-and-fencing-tokens) for more details about this.
 
 Locking Service is disabled by default. Enable this by setting:
 
