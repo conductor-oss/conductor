@@ -14,6 +14,7 @@ package com.netflix.conductor.elasticsearch;
 
 import org.apache.http.HttpHost;
 import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 
 import javax.inject.Inject;
 import javax.inject.Provider;
@@ -32,7 +33,14 @@ public class ElasticSearchRestClientProvider implements Provider<RestClient> {
 
     @Override
     public RestClient get() {
-        return RestClient.builder(convertToHttpHosts(configuration.getURIs())).build();
+        RestClientBuilder restClientBuilder = RestClient.builder(convertToHttpHosts(configuration.getURIs()));
+
+        if (configuration.getElasticsearchRestClientConnectionRequestTimeout() > 0) {
+            restClientBuilder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder.setConnectionRequestTimeout(configuration.getElasticsearchRestClientConnectionRequestTimeout()));
+        }
+
+        return restClientBuilder.build();
+
     }
 
     private HttpHost[] convertToHttpHosts(List<URI> hosts) {

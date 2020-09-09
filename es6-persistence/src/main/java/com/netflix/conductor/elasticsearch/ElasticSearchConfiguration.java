@@ -78,6 +78,9 @@ public interface ElasticSearchConfiguration extends Configuration {
     String ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT = "tasklog.elasticsearch.query.size";
     int ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT_DEFAULT_VALUE = 10;
 
+    String ELASTIC_SEARCH_REST_CLIENT_CONNECTION_REQUEST_TIMEOUT_PROPERTY_NAME = "workflow.elasticsearch.rest.client.connectionRequestTimeout.milliseconds";
+    int ELASTIC_SEARCH_REST_CLIENT_CONNECTION_REQUEST_TIMEOUT_DEFAULT_VALUE = -1;
+
     default String getURL() {
         return getProperty(ELASTIC_SEARCH_URL_PROPERTY_NAME, ELASTIC_SEARCH_URL_DEFAULT_VALUE);
     }
@@ -180,5 +183,10 @@ public interface ElasticSearchConfiguration extends Configuration {
     default int getElasticSearchTasklogLimit() {
         return getIntProperty(ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT,
                 ELASTIC_SEARCH_TASK_LOG_RESULT_LIMIT_DEFAULT_VALUE);
+    }
+
+    default int getElasticsearchRestClientConnectionRequestTimeout() {
+        return getIntProperty(ELASTIC_SEARCH_REST_CLIENT_CONNECTION_REQUEST_TIMEOUT_PROPERTY_NAME,
+                ELASTIC_SEARCH_REST_CLIENT_CONNECTION_REQUEST_TIMEOUT_DEFAULT_VALUE);
     }
 }
