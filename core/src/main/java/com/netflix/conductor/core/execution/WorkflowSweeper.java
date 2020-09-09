@@ -103,8 +103,12 @@ public class WorkflowSweeper {
 					if(logger.isDebugEnabled()) {
 						logger.debug("Running sweeper for workflow {}", workflowId);
 					}
-					// Verify and repair tasks in the workflow.
-					workflowRepairService.verifyAndRepairWorkflowTasks(workflowId);
+
+					if (config.isWorkflowRepairServiceEnabled()) {
+						// Verify and repair tasks in the workflow.
+						workflowRepairService.verifyAndRepairWorkflowTasks(workflowId);
+					}
+
 					boolean done = workflowExecutor.decide(workflowId);
 					if(!done) {
 						queueDAO.setUnackTimeout(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency() * 1000);

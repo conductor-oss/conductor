@@ -128,39 +128,4 @@ class TaskResiliencySpec extends Specification {
             tasks[1].status == Task.Status.COMPLETED
         }
     }
-
-    def "Verify that a workflow recovers and completes on schedule task failure from persistence failure"() {
-        // TODO WIP
-        when: "Start a simple workflow"
-        def workflowInstanceId = workflowExecutor.startWorkflow(SIMPLE_TWO_TASK_WORKFLOW, 1,
-                '', [:], null, null, null)
-
-        then: "Retrieve the workflow"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
-            status == Workflow.WorkflowStatus.RUNNING
-            tasks.size() == 1
-            tasks[0].taskType == 'integration_task_1'
-            tasks[0].status == Task.Status.SCHEDULED
-        }
-
-        and: "The decider queue has one task that is ready to be polled"
-        queueDAO.getSize(WorkflowExecutor.DECIDER_QUEUE) == 1
-
-        // Simulate persistence failure when creating a new task, after completing first task
-        when: "The first task 'integration_task_1' is polled and completed"
-        dynamicFailureProbability.setMethodName("createTasks")
-        dynamicFailureProbability.setFailureProbability(1)
-        def task1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker')
-
-        then: "Verify that the task was polled and acknowledged"
-        verifyPolledAndAcknowledgedTask(task1Try1)
-
-        and: "Ensure that the workflow is TERMINATED"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
-            status == Workflow.WorkflowStatus.FAILED
-            tasks[0].taskType == 'integration_task_1'
-            tasks[0].status == Task.Status.COMPLETED
-        }
-    }
-
 }
