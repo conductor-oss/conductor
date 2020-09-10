@@ -11,6 +11,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 /**
@@ -38,12 +39,16 @@ public class WorkflowRepairService {
         this.queueDAO = queueDAO;
     }
 
-    public void verifyAndRepairWorkflow(String workflowId, boolean includeTasks) {
+    public boolean verifyAndRepairWorkflow(String workflowId, boolean includeTasks) {
         Workflow workflow = executionDAO.getWorkflow(workflowId, includeTasks);
-        verifyAndRepairDeciderQueue(workflow);
+        AtomicBoolean repaired = new AtomicBoolean(false);
+        repaired.set(verifyAndRepairDeciderQueue(workflow));
         if (includeTasks) {
-            workflow.getTasks().forEach(task -> verifyAndRepairTask(task));
+            workflow.getTasks().forEach(task -> {
+                repaired.set(verifyAndRepairTask(task));
+            });
         }
+        return repaired.get();
     }
 
     public void verifyAndRepairWorkflowTasks(String workflowId) {

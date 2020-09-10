@@ -21,12 +21,14 @@ import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import com.netflix.conductor.core.execution.WorkflowRepairService;
 import com.netflix.conductor.dao.QueueDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.validation.constraints.NotEmpty;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
@@ -46,15 +48,21 @@ public class AdminServiceImpl implements AdminService {
 
     private final QueueDAO queueDAO;
 
+    private final WorkflowRepairService workflowRepairService;
+
     private String version;
 
     private String buildDate;
 
     @Inject
-    public AdminServiceImpl(Configuration config, ExecutionService executionService, QueueDAO queueDAO) {
+    public AdminServiceImpl(Configuration config,
+                            ExecutionService executionService,
+                            QueueDAO queueDAO,
+                            WorkflowRepairService workflowRepairService) {
         this.config = config;
         this.executionService = executionService;
         this.queueDAO = queueDAO;
+        this.workflowRepairService = workflowRepairService;
         this.version = "UNKNOWN";
         this.buildDate = "UNKNOWN";
 
@@ -95,6 +103,11 @@ public class AdminServiceImpl implements AdminService {
         total = (tasks.size() > total) ? total : tasks.size();
         if (start > tasks.size()) start = tasks.size();
         return tasks.subList(start, total);
+    }
+
+    @Override
+    public boolean verifyAndRepairWorkflowConsistency(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId) {
+        return workflowRepairService.verifyAndRepairWorkflow(workflowId, true);
     }
 
     /**
