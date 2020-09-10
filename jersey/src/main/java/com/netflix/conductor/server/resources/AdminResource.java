@@ -86,8 +86,8 @@ public class AdminResource {
 	@ApiOperation("Verify and repair workflow consistency")
 	@Consumes({ MediaType.WILDCARD })
 	@Produces({ MediaType.TEXT_PLAIN })
-	public boolean verifyAndRepairWorkflowConsistency(@PathParam("workflowId") String workflowId) {
-		return adminService.verifyAndRepairWorkflowConsistency(workflowId);
+	public String verifyAndRepairWorkflowConsistency(@PathParam("workflowId") String workflowId) {
+		return String.valueOf(adminService.verifyAndRepairWorkflowConsistency(workflowId));
 	}
 
 }

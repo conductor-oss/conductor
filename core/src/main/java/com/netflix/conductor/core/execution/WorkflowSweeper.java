@@ -123,6 +123,7 @@ public class WorkflowSweeper {
 					}
 
 				} catch (Exception e) {
+					queueDAO.setUnackTimeout(WorkflowExecutor.DECIDER_QUEUE, workflowId, config.getSweepFrequency() * 1000);
 					Monitors.error(className, "sweep");
 					logger.error("Error running sweep for " + workflowId, e);
 				}
