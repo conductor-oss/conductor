@@ -2,14 +2,13 @@ package com.netflix.conductor.core.execution;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.core.execution.tasks.Decision;
-import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -29,15 +28,6 @@ public class TestWorkflowRepairService {
         executionDAO = mock(ExecutionDAO.class);
         queueDAO = mock(QueueDAO.class);
         workflowRepairService = new WorkflowRepairService(executionDAO, queueDAO);
-    }
-
-
-    @Test
-    public void verifyAndRepairWorkflow() {
-    }
-
-    @Test
-    public void verifyAndRepairWorkflowTasks() {
     }
 
     @Test

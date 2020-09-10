@@ -383,7 +383,7 @@ public interface Configuration {
      * Configuration to enable {@link com.netflix.conductor.core.execution.WorkflowRepairService}, that tries to keep
      * ExecutionDAO and QueueDAO in sync, based on the task or workflow state.
      *
-     * This is disabled by default. To enable this, the Queueing layer must implement QueueDAO.containsMessage method.
+     * This is disabled by default; To enable, the Queueing layer must implement QueueDAO.containsMessage method.
      * @return
      */
     default boolean isWorkflowRepairServiceEnabled() {
