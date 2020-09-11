@@ -50,7 +50,7 @@ public class StartWorkflowRequest {
 	@ProtoField(id = 8)
 	@Min(value = 0, message = "priority: ${validatedValue} should be minimum {value}")
 	@Max(value = 99, message = "priority: ${validatedValue} should be maximum {value}")
-	private Integer priority;
+	private Integer priority = 0;
 
     public String getName() {
 		return name;
