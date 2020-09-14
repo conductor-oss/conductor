@@ -720,8 +720,15 @@ public class WorkflowExecutor {
             executionDAOFacade.updateWorkflow(workflow);
 
             List<Task> tasks = workflow.getTasks();
-            // Remove from the task queue if they were there
-            tasks.forEach(task -> queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId()));
+
+            try {
+                // Remove from the task queue if they were there
+                tasks.forEach(task -> queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId()));
+                // Remove from the sweep queue
+                queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());
+            } catch (Exception e) {
+                LOGGER.warn("Error removing the message(s) from queue during Workflow termination", e);
+            }
 
             // Update non-terminal tasks' status to CANCELED
             for (Task task : tasks) {
@@ -776,7 +783,6 @@ public class WorkflowExecutor {
                 }
                 executionDAOFacade.updateWorkflow(workflow);
             }
-            queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());    //remove from the sweep queue
             executionDAOFacade.removeFromPendingWorkflow(workflow.getWorkflowName(), workflow.getWorkflowId());
 
             // Send to atlas
@@ -1018,7 +1024,7 @@ public class WorkflowExecutor {
                             	if(TaskType.SUB_WORKFLOW.name().equals(workflowTask.getTaskType()) && StringUtils.isNotBlank(workflowTask.getSubWorkflowId())) {
                                		Workflow subWorkflow = executionDAOFacade.getWorkflowById(workflowTask.getSubWorkflowId(), true);
                             		if(subWorkflow != null) {
-                            			skipTasksAffectedByTerminateTask(subWorkflow);                                		
+                            			skipTasksAffectedByTerminateTask(subWorkflow);
                             		}
                             	}
                             }
@@ -1072,7 +1078,7 @@ public class WorkflowExecutor {
     }
 
     /**
-     * When a TERMINATE task runs, it only affects the workflow in which it runs; it does not do anything with 
+     * When a TERMINATE task runs, it only affects the workflow in which it runs; it does not do anything with
      * in-progress tasks and subworkflows that are still running. This recursive method will ensure that all tasks within
      * all subworkflows are set to SKIPPED status so they can complete.
      * @param workflow a subworkflow within the hierarchy of the original workflow containing the TERMINATE task
