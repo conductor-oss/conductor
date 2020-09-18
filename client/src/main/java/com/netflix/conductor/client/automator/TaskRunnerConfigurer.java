@@ -66,7 +66,7 @@ public class TaskRunnerConfigurer {
      */
     public static class Builder {
 
-        private String workerNamePrefix = "workflow-worker-";
+        private String workerNamePrefix = "workflow-worker-%d";
         private int sleepWhenRetry = 500;
         private int updateRetryCount = 3;
         private int threadCount = -1;

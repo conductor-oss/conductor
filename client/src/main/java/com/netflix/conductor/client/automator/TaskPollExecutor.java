@@ -66,11 +66,9 @@ class TaskPollExecutor {
 
         LOGGER.info("Initialized the TaskPollExecutor with {} threads", threadCount);
 
-        AtomicInteger count = new AtomicInteger(0);
-
         this.executorService = Executors.newFixedThreadPool(threadCount,
             new BasicThreadFactory.Builder()
-                .namingPattern(workerNamePrefix + count.getAndIncrement())
+                .namingPattern(workerNamePrefix)
                 .uncaughtExceptionHandler(uncaughtExceptionHandler)
                 .build());
 
