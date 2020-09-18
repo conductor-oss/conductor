@@ -188,4 +188,14 @@ public interface QueueDAO {
 		push(queueName, messageId, priority, postponeDurationInSeconds);
 		return true;
 	}
+
+	/**
+	 * Check if the message with given messageId exists in the Queue.
+	 * @param queueName
+	 * @param messageId
+	 * @return
+	 */
+	default boolean containsMessage(String queueName, String messageId) {
+		throw new UnsupportedOperationException("Please ensure your provided Queue implementation overrides and implements this method.");
+	}
 }

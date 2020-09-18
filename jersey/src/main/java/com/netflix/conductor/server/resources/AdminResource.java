@@ -60,7 +60,7 @@ public class AdminResource {
 	public Map<String, Object> getAllConfig() {
         return adminService.getAllConfig();
 	}
-	
+
 	@GET
 	@Path("/task/{tasktype}")
 	@ApiOperation("Get the list of pending tasks for a given task type")
@@ -78,6 +78,16 @@ public class AdminResource {
 	@Produces({ MediaType.TEXT_PLAIN })
 	public String requeueSweep(@PathParam("workflowId") String workflowId) {
         return adminService.requeueSweep(workflowId);
+	}
+
+
+	@POST
+	@Path("/consistency/verifyAndRepair/{workflowId}")
+	@ApiOperation("Verify and repair workflow consistency")
+	@Consumes({ MediaType.WILDCARD })
+	@Produces({ MediaType.TEXT_PLAIN })
+	public String verifyAndRepairWorkflowConsistency(@PathParam("workflowId") String workflowId) {
+		return String.valueOf(adminService.verifyAndRepairWorkflowConsistency(workflowId));
 	}
 
 }

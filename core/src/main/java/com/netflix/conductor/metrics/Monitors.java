@@ -320,4 +320,8 @@ public class Monitors {
 	public static void recordEventQueuePollSize(String queueType, int val) {
 		gauge(Monitors.classQualifier, "event_queue_poll", val, "queueType", queueType);
 	}
+
+	public static void recordQueueMessageRepushFromRepairService(String queueName) {
+		counter(classQualifier, "queue_message_repushed", "queueName", queueName);
+	}
 }

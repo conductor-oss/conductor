@@ -73,8 +73,8 @@ public class TestModule extends AbstractModule {
         bind(RateLimitingDAO.class).to(RedisRateLimitingDAO.class);
         bind(EventHandlerDAO.class).to(RedisEventHandlerDAO.class);
         bind(PollDataDAO.class).to(RedisPollDataDAO.class);
-        bind(QueueDAO.class).to(DynoQueueDAO.class);
         bind(IndexDAO.class).to(MockIndexDAO.class);
+        configureQueueDAO();
 
         bind(WorkflowStatusListener.class).to(WorkflowStatusListenerStub.class);
 
@@ -99,5 +99,9 @@ public class TestModule extends AbstractModule {
             workflowWorkerThread.setName(String.format("workflow-worker-%d", count.getAndIncrement()));
             return workflowWorkerThread;
         });
+    }
+
+    public void configureQueueDAO() {
+        bind(QueueDAO.class).to(DynoQueueDAO.class);
     }
 }

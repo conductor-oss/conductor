@@ -1383,6 +1383,8 @@ public class WorkflowExecutor {
     @VisibleForTesting
     boolean scheduleTask(Workflow workflow, List<Task> tasks) {
         List<Task> createdTasks;
+        List<Task> tasksToBeQueued;
+        boolean startedSystemTasks = false;
 
         try {
             if (tasks == null || tasks.isEmpty()) {
@@ -1408,11 +1410,9 @@ public class WorkflowExecutor {
                     .filter(isSystemTask)
                     .collect(Collectors.toList());
 
-            List<Task> tasksToBeQueued = createdTasks.stream()
+            tasksToBeQueued = createdTasks.stream()
                     .filter(isSystemTask.negate())
                     .collect(Collectors.toList());
-
-            boolean startedSystemTasks = false;
 
             // Traverse through all the system tasks, start the sync tasks, in case of async queue the tasks
             for (Task task : systemTasks) {
@@ -1438,9 +1438,6 @@ public class WorkflowExecutor {
                     tasksToBeQueued.add(task);
                 }
             }
-
-            addTaskToQueue(tasksToBeQueued);
-            return startedSystemTasks;
         } catch (Exception e) {
             List<String> taskIds = tasks.stream()
                     .map(Task::getTaskId)
@@ -1453,6 +1450,19 @@ public class WorkflowExecutor {
             // rollbackTasks(workflow.getWorkflowId(), createdTasks);
             throw new TerminateWorkflowException(errorMsg);
         }
+
+        // On addTaskToQueue failures, ignore the exceptions and let WorkflowRepairService take care of republishing the messages to the queue.
+        try {
+            addTaskToQueue(tasksToBeQueued);
+        } catch (Exception e) {
+            List<String> taskIds = tasksToBeQueued.stream()
+                    .map(Task::getTaskId)
+                    .collect(Collectors.toList());
+            String errorMsg = String.format("Error pushing tasks to the queue: %s, for workflow: %s", taskIds, workflow.getWorkflowId());
+            LOGGER.warn(errorMsg, e);
+            Monitors.error(className, "scheduleTask");
+        }
+        return startedSystemTasks;
     }
 
     /**
