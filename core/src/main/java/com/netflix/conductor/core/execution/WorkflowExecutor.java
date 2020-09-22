@@ -1688,6 +1688,7 @@ public class WorkflowExecutor {
                 subWorkflowTask.setStatus(IN_PROGRESS);
                 executionDAOFacade.updateTask(subWorkflowTask);
                 parentWorkflow.setStatus(WorkflowStatus.RUNNING);
+                parentWorkflow.setLastRetriedTime(System.currentTimeMillis());
                 executionDAOFacade.updateWorkflow(parentWorkflow);
                 return true;
             } else if (parentWorkflow.getStatus().equals(WorkflowStatus.RUNNING)) {
