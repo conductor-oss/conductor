@@ -1551,8 +1551,12 @@ public class WorkflowExecutor {
             if (task.getTaskId().equals(taskId)) {
                 rerunFromTask = task;
                 break;
-            } else {
-                // If not found look into sub workflows
+            }
+        }
+
+        // If not found look into sub workflows
+        if(rerunFromTask == null) { 
+	        for (Task task : workflow.getTasks()) {
                 if (task.getTaskType().equalsIgnoreCase(SubWorkflow.NAME)) {
                     String subWorkflowId = task.getSubWorkflowId();
                     if (rerunWF(subWorkflowId, taskId, taskInput, null, null)) {
