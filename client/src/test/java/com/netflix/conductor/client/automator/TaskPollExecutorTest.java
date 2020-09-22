@@ -52,13 +52,13 @@ public class TaskPollExecutorTest {
             throw new NoSuchMethodError();
         });
         TaskClient taskClient = Mockito.mock(TaskClient.class);
-        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 1, new HashMap<>(), "test-worker-");
+        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 1, new HashMap<>(), "test-worker-%d");
 
         when(taskClient.pollTask(any(), any(), any())).thenReturn(testTask());
         when(taskClient.ack(any(), any())).thenReturn(true);
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(invocation -> {
-                assertEquals("test-worker-0", Thread.currentThread().getName());
+                assertEquals("test-worker-1", Thread.currentThread().getName());
                 Object[] args = invocation.getArguments();
                 TaskResult result = (TaskResult) args[0];
                 assertEquals(TaskResult.Status.FAILED, result.getStatus());
