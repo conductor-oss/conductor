@@ -34,6 +34,7 @@ RUN chmod +x /app/startup.sh
 
 # Get and install conductor UI
 RUN cd /app/ui \
+  && rm package-lock.json \
   && npm install \
   && npm run build --server
 
