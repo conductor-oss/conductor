@@ -47,7 +47,7 @@ class BaseClient(object):
         if headers is not None:
             theHeader = self.mergeTwoDicts(self.headers, headers)
         if body is not None:
-            jsonBody = json.dumps(body, ensure_ascii=False)
+            jsonBody = json.dumps(body, ensure_ascii=False).encode('utf8')
             resp = requests.post(theUrl, params=queryParams, data=jsonBody, headers=theHeader)
         else:
             resp = requests.post(theUrl, params=queryParams, headers=theHeader)
@@ -62,7 +62,7 @@ class BaseClient(object):
             theHeader = self.mergeTwoDicts(self.headers, headers)
 
         if body is not None:
-            jsonBody = json.dumps(body, ensure_ascii=False)
+            jsonBody = json.dumps(body, ensure_ascii=False).encode('utf8')
             resp = requests.put(theUrl, params=queryParams, data=jsonBody, headers=theHeader)
         else:
             resp = requests.put(theUrl, params=queryParams, headers=theHeader)
