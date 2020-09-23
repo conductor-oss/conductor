@@ -398,6 +398,10 @@ public class ExecutionDAOFacade {
         return pollDataDAO.getPollData(taskName);
     }
 
+    public List<PollData> getAllPollData() {
+        return pollDataDAO.getAllPollData();
+    }
+
     public PollData getTaskPollDataByDomain(String taskName, String domain) {
         try {
             return pollDataDAO.getPollData(taskName, domain);

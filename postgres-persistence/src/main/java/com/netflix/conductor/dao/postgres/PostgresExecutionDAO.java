@@ -26,7 +26,11 @@ import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.metrics.Monitors;
+
+import static com.netflix.conductor.core.execution.ApplicationException.Code.BACKEND_ERROR;
+
 import java.sql.Connection;
+import java.sql.SQLException;
 import java.sql.Date;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -470,6 +474,24 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
     public List<PollData> getPollData(String taskDefName) {
         Preconditions.checkNotNull(taskDefName, "taskDefName name cannot be null");
         return readAllPollData(taskDefName);
+    }
+
+    @Override
+    public List<PollData> getAllPollData() {
+        try(Connection tx = dataSource.getConnection()) {
+            boolean previousAutoCommitMode = tx.getAutoCommit();
+            tx.setAutoCommit(true);
+            try {
+                String GET_ALL_POLL_DATA = "SELECT json_data FROM poll_data ORDER BY queue_name";
+                return query(tx, GET_ALL_POLL_DATA, q -> q.executeAndFetch(PollData.class));
+            } catch (Throwable th) {
+                throw new ApplicationException(BACKEND_ERROR, th.getMessage(), th);
+            } finally {
+                tx.setAutoCommit(previousAutoCommitMode);
+            }
+        } catch (SQLException ex) {
+            throw new ApplicationException(BACKEND_ERROR, ex.getMessage(), ex);
+        }
     }
 
     private List<Task> getTasks(Connection connection, List<String> taskIds) {
