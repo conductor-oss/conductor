@@ -375,7 +375,7 @@ public class WorkflowExecutor {
         Workflow workflow = new Workflow();
         workflow.setWorkflowId(workflowId);
         workflow.setCorrelationId(correlationId);
-        workflow.setPriority(priority);
+        workflow.setPriority(priority == null ? 0 : priority);
         workflow.setWorkflowDefinition(workflowDefinition);
         workflow.setStatus(WorkflowStatus.RUNNING);
         workflow.setParentWorkflowId(parentWorkflowId);
@@ -1555,7 +1555,7 @@ public class WorkflowExecutor {
         }
 
         // If not found look into sub workflows
-        if(rerunFromTask == null) { 
+        if(rerunFromTask == null) {
 	        for (Task task : workflow.getTasks()) {
                 if (task.getTaskType().equalsIgnoreCase(SubWorkflow.NAME)) {
                     String subWorkflowId = task.getSubWorkflowId();
