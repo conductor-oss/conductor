@@ -10,7 +10,7 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.counductor.integration.test
+package com.netflix.conductor.test.integration
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
@@ -198,7 +198,7 @@ class ExternalPayloadStorageSpec extends Specification {
         def taskId = workflow.getTaskByRefName('user_task').getTaskId()
         workflowExecutor.executeSystemTask(userTask, taskId, 1)
 
-        then: "verify that the user task is in a  state"
+        then: "verify that the user task is in a COMPLETED state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             input.isEmpty()

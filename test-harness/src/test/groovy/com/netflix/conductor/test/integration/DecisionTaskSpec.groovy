@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.counductor.integration.test
+package com.netflix.conductor.test.integration
 
 
 import com.netflix.conductor.common.metadata.tasks.Task

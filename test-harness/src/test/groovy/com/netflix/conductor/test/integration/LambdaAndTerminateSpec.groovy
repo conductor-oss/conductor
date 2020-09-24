@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.netflix.counductor.integration.test
+package com.netflix.conductor.test.integration
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskResult
@@ -30,7 +30,7 @@ import spock.lang.Specification
 import javax.inject.Inject
 
 @ModulesForTesting([TestModule.class])
-class LambdaAndTerminalTaskSpec extends Specification {
+class LambdaAndTerminateSpec extends Specification {
 
     @Inject
     ExecutionService workflowExecutionService

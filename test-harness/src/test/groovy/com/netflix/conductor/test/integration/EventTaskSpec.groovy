@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.counductor.integration.test
+package com.netflix.conductor.test.integration
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.workflow.TaskType
@@ -31,7 +31,7 @@ import javax.inject.Inject
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
 @ModulesForTesting([TestModule.class])
-class EventWorkflowSpec extends Specification {
+class EventTaskSpec extends Specification {
 
     @Inject
     ExecutionService workflowExecutionService

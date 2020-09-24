@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.netflix.counductor.integration.test
+package com.netflix.conductor.test.integration
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.netflix.archaius.guice.ArchaiusModule
@@ -36,7 +36,7 @@ import spock.lang.Specification
 import javax.inject.Inject
 
 @ModulesForTesting([TestModule.class, ArchaiusModule.class])
-class KafkaTaskBasedWorkflowSpec extends Specification {
+class KafkaTaskSpec extends Specification {
 
     @Inject
     ExecutionService workflowExecutionService
