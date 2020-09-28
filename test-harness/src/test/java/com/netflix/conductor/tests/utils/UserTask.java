@@ -24,7 +24,6 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -39,7 +38,7 @@ public class UserTask extends WorkflowSystemTask {
 
 	public static final String NAME = "USER_TASK";
 
-	private ObjectMapper objectMapper = new JsonMapperProvider().get();
+	private final ObjectMapper objectMapper = new JsonMapperProvider().get();
 
 	private static final TypeReference<Map<String, Map<String, List<Object>>>> mapStringListObjects =
 		new TypeReference<Map<String, Map<String, List<Object>>>>() {};
@@ -52,13 +51,17 @@ public class UserTask extends WorkflowSystemTask {
 	public void start(Workflow workflow, Task task, WorkflowExecutor executor) {
 		Uninterruptibles.sleepUninterruptibly(1, TimeUnit.SECONDS);
 
-		Map<String, Map<String, List<Object>>> map = objectMapper.convertValue(task.getInputData(), mapStringListObjects);
-		Map<String, Object> output = new HashMap<>();
-		Map<String, List<Object>> defaultLargeInput = new HashMap<>();
-		defaultLargeInput.put("TEST_SAMPLE", Collections.singletonList("testDefault"));
-		output.put("size", map.getOrDefault("largeInput", defaultLargeInput).get("TEST_SAMPLE").size());
-		task.setOutputData(output);
-		task.setStatus(Status.COMPLETED);
+		if (task.getWorkflowTask().isAsyncComplete()) {
+			task.setStatus(Status.IN_PROGRESS);
+		} else {
+			Map<String, Map<String, List<Object>>> map = objectMapper.convertValue(task.getInputData(), mapStringListObjects);
+			Map<String, Object> output = new HashMap<>();
+			Map<String, List<Object>> defaultLargeInput = new HashMap<>();
+			defaultLargeInput.put("TEST_SAMPLE", Collections.singletonList("testDefault"));
+			output.put("size", map.getOrDefault("largeInput", defaultLargeInput).get("TEST_SAMPLE").size());
+			task.setOutputData(output);
+			task.setStatus(Status.COMPLETED);
+		}
 	}
 
 	@Override
