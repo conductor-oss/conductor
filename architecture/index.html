@@ -257,16 +257,14 @@
 <p>!!!warning:
     In-Memory server is meant for a quick demonstration purpose and does not store the data on disk.  All the data is lost once the server dies.</p>
 <h4 id="checkout-the-source-from-github">Checkout the source from github<a class="headerlink" href="#checkout-the-source-from-github" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre><span></span>git clone git@github.com:Netflix/conductor.git
-</pre></div>
+<pre class="codehilite"><code>git clone git@github.com:Netflix/conductor.git</code></pre>
 
 
 <h4 id="start-local-server">Start Local Server<a class="headerlink" href="#start-local-server" title="Permanent link">&para;</a></h4>
 <p>The server is in the directory <code>conductor/server</code>.</p>
-<div class="codehilite"><pre><span></span><span class="nb">cd</span> server
+<pre class="codehilite"><code class="language-shell">cd server
 ../gradlew server
-<span class="c1"># wait for the server to come online</span>
-</pre></div>
+# wait for the server to come online</code></pre>
 
 
 <p>Swagger APIs can be accessed at <a href="http://localhost:8080/">http://localhost:8080/</a></p>
@@ -274,17 +272,15 @@
 <p>The UI Server is in the directory <code>conductor/ui</code>.</p>
 <p>To run it, you need <a href="https://nodejs.org">Node.js</a> installed and gulp installed with <code>npm i -g gulp</code>.</p>
 <p>In a terminal other than the one running the Conductor server: </p>
-<div class="codehilite"><pre><span></span><span class="nb">cd</span> ui
+<pre class="codehilite"><code class="language-shell">cd ui
 npm i
-gulp watch
-</pre></div>
+gulp watch</code></pre>
 
 
 <p>If you get an error message <code>ReferenceError: primordials is not defined</code>, you need to use an earlier version of Node (pre-12). See <a href="https://github.com/Netflix/conductor/issues/1232">this issue for more details</a>.</p>
 <h4 id="or-start-all-the-services-using-docker-compose">Or Start all the services using <a href="https://github.com/Netflix/conductor/blob/master/docker/docker-compose.yaml">docker-compose</a><a class="headerlink" href="#or-start-all-the-services-using-docker-compose" title="Permanent link">&para;</a></h4>
-<div class="codehilite"><pre><span></span><span class="nb">cd</span> docker
-docker-compose up
-</pre></div>
+<pre class="codehilite"><code class="language-shell">cd docker
+docker-compose up</code></pre>
 
 
 <p>If you ran it locally, launch UI at <a href="http://localhost:3000/">http://localhost:3000/</a> OR if you ran it using docker-compose launch the UI at <a href="http://localhost:5000/">http://localhost:5000/</a></p>
@@ -310,29 +306,26 @@ docker-compose up
 <li>Create task worker(s) that polls for scheduled tasks at regular interval</li>
 </ol>
 <p><strong>Trigger Workflow Execution</strong></p>
-<div class="codehilite"><pre><span></span><span class="err">POST /workflow/{name}</span>
-<span class="err">{</span>
-<span class="err">    ... //json payload as workflow input</span>
-<span class="err">}</span>
-</pre></div>
+<pre class="codehilite"><code>POST /workflow/{name}
+{
+    ... //json payload as workflow input
+}</code></pre>
 
 
 <p><strong>Polling for a task</strong></p>
-<div class="codehilite"><pre><span></span><span class="err">GET /tasks/poll/batch/{taskType}</span>
-</pre></div>
+<pre class="codehilite"><code>GET /tasks/poll/batch/{taskType}</code></pre>
 
 
 <p><strong>Update task status</strong></p>
-<div class="codehilite"><pre><span></span><span class="err">POST /tasks</span>
-<span class="err">{</span>
-<span class="err">    &quot;outputData&quot;: {</span>
-<span class="err">        &quot;encodeResult&quot;:&quot;success&quot;,</span>
-<span class="err">        &quot;location&quot;: &quot;http://cdn.example.com/file/location.png&quot;</span>
-<span class="err">        //any task specific output</span>
-<span class="err">     },</span>
-<span class="err">     &quot;status&quot;: &quot;COMPLETED&quot;</span>
-<span class="err">}</span>
-</pre></div>
+<pre class="codehilite"><code>POST /tasks
+{
+    &quot;outputData&quot;: {
+        &quot;encodeResult&quot;:&quot;success&quot;,
+        &quot;location&quot;: &quot;http://cdn.example.com/file/location.png&quot;
+        //any task specific output
+     },
+     &quot;status&quot;: &quot;COMPLETED&quot;
+}</code></pre>
               
             </div>
           </div>

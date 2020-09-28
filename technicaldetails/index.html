@@ -323,13 +323,12 @@ This can create a situation where the first task to be executed is queued for co
   * This queue is used by SweeperService</p>
 <p><strong>Each conductor server instance gets its own set of queues</strong>. Or more precisely a queue shard of its own.
 This means that if you have 2 task types, you end up with 6 queues altogether e.g.</p>
-<div class="codehilite"><pre><span></span>conductor_queues.test.QUEUE._deciderQueue.c
+<pre class="codehilite"><code>conductor_queues.test.QUEUE._deciderQueue.c
 conductor_queues.test.QUEUE._deciderQueue.d
 conductor_queues.test.QUEUE.HTTP.c
 conductor_queues.test.QUEUE.HTTP.d
 conductor_queues.test.QUEUE.LAMBDA.c
-conductor_queues.test.QUEUE.LAMBDA.d
-</pre></div>
+conductor_queues.test.QUEUE.LAMBDA.d</code></pre>
 
 
 <blockquote>
@@ -337,10 +336,9 @@ conductor_queues.test.QUEUE.LAMBDA.d
 <p>The shard names are extracted from dynomite rack name such as us-east-1c that is set in "LOCAL_RACK" or "EC2_AVAILABILTY_ZONE"</p>
 </blockquote>
 <p>Considering an execution of a simple workflow with just 2 tasks: [HTTP, LAMBDA], you should end up with queues being filled as follows:</p>
-<div class="codehilite"><pre><span></span>Workflow execution    -&gt; conductor_queues.test.QUEUE._deciderQueue.c
+<pre class="codehilite"><code>Workflow execution    -&gt; conductor_queues.test.QUEUE._deciderQueue.c
 HTTP taks execution   -&gt; conductor_queues.test.QUEUE.HTTP.d
-LAMBDA task execution -&gt; conductor_queues.test.QUEUE.LAMBDA.c
-</pre></div>
+LAMBDA task execution -&gt; conductor_queues.test.QUEUE.LAMBDA.c</code></pre>
 
 
 <p>Which means that SweeperService in conductor instance #1 is responsible for sweeping the workflow, conductor #2 is responsible for executing HTTP task and conductor #1 again responsible for executing LAMBDA task.</p>
@@ -363,8 +361,7 @@ Meaning that a workflow and its task executions are queued only for the conducto
   * This is nondeterministic though</p>
 <p><strong>Enabling local only queue allocation strategy for dyno queues:</strong></p>
 <p>Just enable following setting the config.properties:</p>
-<div class="codehilite"><pre><span></span>workflow.dyno.queue.sharding.strategy=localOnly
-</pre></div>
+<pre class="codehilite"><code>workflow.dyno.queue.sharding.strategy=localOnly</code></pre>
 
 
 <blockquote>

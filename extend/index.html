@@ -244,24 +244,20 @@
                 <h2 id="backend">Backend<a class="headerlink" href="#backend" title="Permanent link">&para;</a></h2>
 <p>Conductor provides a pluggable backend.  The current implementation uses Dynomite.</p>
 <p>There are 4 interfaces that needs to be implemented for each backend:</p>
-<div class="codehilite"><pre><span></span><span class="c1">//Store for workflow and task definitions</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">MetadataDAO</span>
-</pre></div>
+<pre class="codehilite"><code class="language-java">//Store for workflow and task definitions
+com.netflix.conductor.dao.MetadataDAO</code></pre>
 
 
-<div class="codehilite"><pre><span></span><span class="c1">//Store for workflow executions</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">ExecutionDAO</span>
-</pre></div>
+<pre class="codehilite"><code class="language-java">//Store for workflow executions
+com.netflix.conductor.dao.ExecutionDAO</code></pre>
 
 
-<div class="codehilite"><pre><span></span><span class="c1">//Index for workflow executions</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">IndexDAO</span>
-</pre></div>
+<pre class="codehilite"><code class="language-java">//Index for workflow executions
+com.netflix.conductor.dao.IndexDAO</code></pre>
 
 
-<div class="codehilite"><pre><span></span><span class="c1">//Queue provider for tasks</span>
-<span class="n">com</span><span class="o">.</span><span class="na">netflix</span><span class="o">.</span><span class="na">conductor</span><span class="o">.</span><span class="na">dao</span><span class="o">.</span><span class="na">QueueDAO</span>
-</pre></div>
+<pre class="codehilite"><code class="language-java">//Queue provider for tasks
+com.netflix.conductor.dao.QueueDAO</code></pre>
 
 
 <p>It is possible to mix and match different implementations for each of these.<br />

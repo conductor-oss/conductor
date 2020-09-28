@@ -242,59 +242,57 @@
 <p>When we set isolationGroupId,  the executor(SystemTaskWorkerCoordinator) will allocate an isolated queue and an isolated thread pool for execution of those tasks.</p>
 <p>If no isolationgroupId is specified in taskdef, then fallback is default behaviour where the executor executes the task in shared threadpool for all tasks. </p>
 <p>Example taskdef  </p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_task&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;encode_task&quot;,
+  &quot;retryCount&quot;: 3,
 
-  <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">1200</span><span class="p">,</span>
-  <span class="nt">&quot;inputKeys&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="s2">&quot;sourceRequestId&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;qcElementType&quot;</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;outputKeys&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="s2">&quot;state&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;skipped&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;result&quot;</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;TIME_OUT_WF&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span>
-  <span class="nt">&quot;responseTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">3600</span><span class="p">,</span>
-  <span class="nt">&quot;concurrentExecLimit&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
-  <span class="nt">&quot;rateLimitFrequencyInSeconds&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-  <span class="nt">&quot;rateLimitPerFrequency&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
-  <span class="nt">&quot;isolationgroupId&quot;</span><span class="p">:</span> <span class="s2">&quot;myIsolationGroupId&quot;</span>
-<span class="p">}</span>
-</pre></div>
+  &quot;timeoutSeconds&quot;: 1200,
+  &quot;inputKeys&quot;: [
+    &quot;sourceRequestId&quot;,
+    &quot;qcElementType&quot;
+  ],
+  &quot;outputKeys&quot;: [
+    &quot;state&quot;,
+    &quot;skipped&quot;,
+    &quot;result&quot;
+  ],
+  &quot;timeoutPolicy&quot;: &quot;TIME_OUT_WF&quot;,
+  &quot;retryLogic&quot;: &quot;FIXED&quot;,
+  &quot;retryDelaySeconds&quot;: 600,
+  &quot;responseTimeoutSeconds&quot;: 3600,
+  &quot;concurrentExecLimit&quot;: 100,
+  &quot;rateLimitFrequencyInSeconds&quot;: 60,
+  &quot;rateLimitPerFrequency&quot;: 50,
+  &quot;isolationgroupId&quot;: &quot;myIsolationGroupId&quot;
+}</code></pre>
 
 
 <p>Example Workflow task </p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_and_deploy&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Encodes a file and deploys to CDN&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-  <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;encode&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;HTTP&quot;</span><span class="p">,</span> 
-      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
-          <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:9200/conductor/_search?size=10&quot;</span><span class="p">,</span>
-          <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;GET&quot;</span>
-        <span class="p">}</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;outputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;cdn_url&quot;</span><span class="p">:</span> <span class="s2">&quot;${d1.output.location}&quot;</span>
-  <span class="p">},</span>
-  <span class="nt">&quot;failureWorkflow&quot;</span><span class="p">:</span> <span class="s2">&quot;cleanup_encode_resources&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;restartable&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-  <span class="nt">&quot;workflowStatusListenerEnabled&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-  <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;encode_and_deploy&quot;,
+  &quot;description&quot;: &quot;Encodes a file and deploys to CDN&quot;,
+  &quot;version&quot;: 1,
+  &quot;tasks&quot;: [
+    {
+      &quot;name&quot;: &quot;encode&quot;,
+      &quot;taskReferenceName&quot;: &quot;encode&quot;,
+      &quot;type&quot;: &quot;HTTP&quot;, 
+      &quot;inputParameters&quot;: {
+        &quot;http_request&quot;: {
+          &quot;uri&quot;: &quot;http://localhost:9200/conductor/_search?size=10&quot;,
+          &quot;method&quot;: &quot;GET&quot;
+        }
+      }
+    }
+  ],
+  &quot;outputParameters&quot;: {
+    &quot;cdn_url&quot;: &quot;${d1.output.location}&quot;
+  },
+  &quot;failureWorkflow&quot;: &quot;cleanup_encode_resources&quot;,
+  &quot;restartable&quot;: true,
+  &quot;workflowStatusListenerEnabled&quot;: true,
+  &quot;schemaVersion&quot;: 2
+}</code></pre>
 
 
 <ul>
@@ -309,59 +307,57 @@
 <p>To support JVM isolation, and also allow the executors to scale horizontally, we can use <code>executionNameSpace</code> property in taskdef.</p>
 <p>Executor consumes tasks whose executionNameSpace matches with the configuration property <code>workflow.system.task.worker.executionNameSpace</code></p>
 <p>If the property is not set, the executor executes tasks without any executionNameSpace set. </p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_task&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;encode_task&quot;,
+  &quot;retryCount&quot;: 3,
 
-  <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">1200</span><span class="p">,</span>
-  <span class="nt">&quot;inputKeys&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="s2">&quot;sourceRequestId&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;qcElementType&quot;</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;outputKeys&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="s2">&quot;state&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;skipped&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;result&quot;</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;TIME_OUT_WF&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span>
-  <span class="nt">&quot;responseTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">3600</span><span class="p">,</span>
-  <span class="nt">&quot;concurrentExecLimit&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
-  <span class="nt">&quot;rateLimitFrequencyInSeconds&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
-  <span class="nt">&quot;rateLimitPerFrequency&quot;</span><span class="p">:</span> <span class="mi">50</span><span class="p">,</span>
-  <span class="nt">&quot;executionNameSpace&quot;</span><span class="p">:</span> <span class="s2">&quot;myExecutionNameSpace&quot;</span>
-<span class="p">}</span>
-</pre></div>
+  &quot;timeoutSeconds&quot;: 1200,
+  &quot;inputKeys&quot;: [
+    &quot;sourceRequestId&quot;,
+    &quot;qcElementType&quot;
+  ],
+  &quot;outputKeys&quot;: [
+    &quot;state&quot;,
+    &quot;skipped&quot;,
+    &quot;result&quot;
+  ],
+  &quot;timeoutPolicy&quot;: &quot;TIME_OUT_WF&quot;,
+  &quot;retryLogic&quot;: &quot;FIXED&quot;,
+  &quot;retryDelaySeconds&quot;: 600,
+  &quot;responseTimeoutSeconds&quot;: 3600,
+  &quot;concurrentExecLimit&quot;: 100,
+  &quot;rateLimitFrequencyInSeconds&quot;: 60,
+  &quot;rateLimitPerFrequency&quot;: 50,
+  &quot;executionNameSpace&quot;: &quot;myExecutionNameSpace&quot;
+}</code></pre>
 
 
 <p>Example Workflow task</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span> 
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_and_deploy&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Encodes a file and deploys to CDN&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-  <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span> 
-      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;encode&quot;</span><span class="p">,</span>
-      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;HTTP&quot;</span><span class="p">,</span> 
-      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
-          <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;http://localhost:9200/conductor/_search?size=10&quot;</span><span class="p">,</span>
-          <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;GET&quot;</span>
-        <span class="p">}</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
-  <span class="nt">&quot;outputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;cdn_url&quot;</span><span class="p">:</span> <span class="s2">&quot;${d1.output.location}&quot;</span>
-  <span class="p">},</span>
-  <span class="nt">&quot;failureWorkflow&quot;</span><span class="p">:</span> <span class="s2">&quot;cleanup_encode_resources&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;restartable&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-  <span class="nt">&quot;workflowStatusListenerEnabled&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
-  <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{ 
+  &quot;name&quot;: &quot;encode_and_deploy&quot;,
+  &quot;description&quot;: &quot;Encodes a file and deploys to CDN&quot;,
+  &quot;version&quot;: 1,
+  &quot;tasks&quot;: [
+    { 
+      &quot;name&quot;: &quot;encode&quot;,
+      &quot;taskReferenceName&quot;: &quot;encode&quot;,
+      &quot;type&quot;: &quot;HTTP&quot;, 
+      &quot;inputParameters&quot;: {
+        &quot;http_request&quot;: {
+          &quot;uri&quot;: &quot;http://localhost:9200/conductor/_search?size=10&quot;,
+          &quot;method&quot;: &quot;GET&quot;
+        }
+      }
+    }
+  ],
+  &quot;outputParameters&quot;: {
+    &quot;cdn_url&quot;: &quot;${d1.output.location}&quot;
+  },
+  &quot;failureWorkflow&quot;: &quot;cleanup_encode_resources&quot;,
+  &quot;restartable&quot;: true,
+  &quot;workflowStatusListenerEnabled&quot;: true,
+  &quot;schemaVersion&quot;: 2
+}</code></pre>
 
 
 <ul>

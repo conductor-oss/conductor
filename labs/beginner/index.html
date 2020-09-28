@@ -285,60 +285,55 @@ Learn more about them <a href="https://partnerhelp.netflixstudios.com/hc/en-us/a
 <h3 id="creating-task-definitions">Creating Task definitions<a class="headerlink" href="#creating-task-definitions" title="Permanent link">&para;</a></h3>
 <p>Let's create the <a href="/configuration/taskdef">task definition</a> for <code>verify_if_idents_are_added</code> in JSON. This task will be a <em>SIMPLE</em> task which is supposed to be executed by an Idents microservice. We'll be mocking the Idents microservice part.</p>
 <p><strong>Note</strong> that at this point, we don't have to specify whether it is a System task or Worker task. We are only specifying the required configurations for the task, like number of times it should be retried, timeouts etc. We shall start by using <code>name</code> parameter for task name.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;verify_if_idents_are_added&quot;
+}</code></pre>
 
 
 <p>We'd like this task to be retried 3 times on failure.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
-  <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">10</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;verify_if_idents_are_added&quot;,
+  &quot;retryCount&quot;: 3,
+  &quot;retryLogic&quot;: &quot;FIXED&quot;,
+  &quot;retryDelaySeconds&quot;: 10
+}</code></pre>
 
 
 <p>And to timeout after 300 seconds.<br />
 i.e. if the task doesn't finish execution within this time limit after transitioning to <code>IN_PROGRESS</code> state, the Conductor server cancels this task and schedules a new execution of this task in the queue.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
-  <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-  <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
-  <span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;TIME_OUT_WF&quot;</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;verify_if_idents_are_added&quot;,
+  &quot;retryCount&quot;: 3,
+  &quot;retryLogic&quot;: &quot;FIXED&quot;,
+  &quot;retryDelaySeconds&quot;: 10,
+  &quot;timeoutSeconds&quot;: 300,
+  &quot;timeoutPolicy&quot;: &quot;TIME_OUT_WF&quot;
+}</code></pre>
 
 
 <p>And a <a href="/tasklifecycle/#response-timeout-seconds">responseTimeout</a> of 180 seconds.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
-  <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-  <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
-  <span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;TIME_OUT_WF&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;responseTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">180</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;verify_if_idents_are_added&quot;,
+  &quot;retryCount&quot;: 3,
+  &quot;retryLogic&quot;: &quot;FIXED&quot;,
+  &quot;retryDelaySeconds&quot;: 10,
+  &quot;timeoutSeconds&quot;: 300,
+  &quot;timeoutPolicy&quot;: &quot;TIME_OUT_WF&quot;,
+  &quot;responseTimeoutSeconds&quot;: 180
+}</code></pre>
 
 
 <p>We can define several other fields defined <a href="/configuration/taskdef">here</a>, but this is a good place to start with.</p>
 <p>Similarly, create another task definition: <code>add_idents</code>.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_idents&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
-  <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">10</span><span class="p">,</span>
-  <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">300</span><span class="p">,</span>
-  <span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;TIME_OUT_WF&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;responseTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">180</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;name&quot;: &quot;add_idents&quot;,
+  &quot;retryCount&quot;: 3,
+  &quot;retryLogic&quot;: &quot;FIXED&quot;,
+  &quot;retryDelaySeconds&quot;: 10,
+  &quot;timeoutSeconds&quot;: 300,
+  &quot;timeoutPolicy&quot;: &quot;TIME_OUT_WF&quot;,
+  &quot;responseTimeoutSeconds&quot;: 180
+}</code></pre>
 
 
 <p>Send a <code>POST</code> request to <code>/metadata/taskdefs</code> endpoint to register these tasks. You can use Swagger, Postman, CURL or similar tools.</p>
@@ -351,10 +346,10 @@ i.e. if the task doesn't finish execution within this time limit after transitio
 <p>Task and Workflow Definition names are unique. The names we use below might have already been registered. For this lab, add a prefix with your username, <code>{my_username}_verify_if_idents_are_added</code> for example. This is definitely not recommended for Production usage though.</p>
 </div>
 <p><strong>Example</strong></p>
-<div class="codehilite"><pre><span></span>curl -X POST \
+<pre class="codehilite"><code>curl -X POST \
   http://localhost:8080/api/metadata/taskdefs \
-  -H &#39;Content-Type: application/json&#39; \
-  -d &#39;[
+  -H 'Content-Type: application/json' \
+  -d '[
     {
       &quot;name&quot;: &quot;verify_if_idents_are_added&quot;,
       &quot;retryCount&quot;: 3,
@@ -375,41 +370,38 @@ i.e. if the task doesn't finish execution within this time limit after transitio
       &quot;responseTimeoutSeconds&quot;: 180,
       &quot;ownerEmail&quot;: &quot;type your email here&quot;
     }
-]&#39;
-</pre></div>
+]'</code></pre>
 
 
 <h3 id="creating-workflow-definition">Creating Workflow Definition<a class="headerlink" href="#creating-workflow-definition" title="Permanent link">&para;</a></h3>
 <p>Creating Workflow definition is almost similar. We shall use the Task definitions created above. Note that same Task definitions can be used in multiple workflows, or for multipe times in same Workflow (that's where <code>taskReferenceName</code> is useful).</p>
 <p>A workflow without any tasks looks like this:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_netflix_identation&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Adds Netflix Identation to video files.&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[]</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+    &quot;name&quot;: &quot;add_netflix_identation&quot;,
+    &quot;description&quot;: &quot;Adds Netflix Identation to video files.&quot;,
+    &quot;version&quot;: 1,
+    &quot;schemaVersion&quot;: 2,
+    &quot;tasks&quot;: []
+}</code></pre>
 
 
 <p>Add the first task that this workflow has to execute. All the tasks must be added to the <code>tasks</code> array.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_netflix_identation&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Adds Netflix Identation to video files.&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-    <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="p">{</span>
-            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;ident_verification&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="nt">&quot;contentId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.contentId}&quot;</span>
-            <span class="p">},</span>
-            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-        <span class="p">}</span>
-    <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+    &quot;name&quot;: &quot;add_netflix_identation&quot;,
+    &quot;description&quot;: &quot;Adds Netflix Identation to video files.&quot;,
+    &quot;version&quot;: 1,
+    &quot;schemaVersion&quot;: 2,
+    &quot;tasks&quot;: [
+        {
+            &quot;name&quot;: &quot;verify_if_idents_are_added&quot;,
+            &quot;taskReferenceName&quot;: &quot;ident_verification&quot;,
+            &quot;inputParameters&quot;: {
+                &quot;contentId&quot;: &quot;${workflow.input.contentId}&quot;
+            },
+            &quot;type&quot;: &quot;SIMPLE&quot;
+        }
+    ]
+}</code></pre>
 
 
 <p><strong>Wiring Input/Outputs</strong></p>
@@ -419,85 +411,7 @@ i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs f
 <p>Let's define <code>decisionCases</code> now. Checkout the Decision task structure <a href="/configuration/systask/#decision">here</a>.</p>
 <p>A Decision task is specified by <code>type:"DECISION"</code>, <code>caseValueParam</code> and <code>decisionCases</code> which lists all the branches of Decision task. This is similar to a <code>switch..case</code> but written in Conductor JSON DSL.</p>
 <p>Adding the decision task:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_netflix_identation&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Adds Netflix Identation to video files.&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="p">{</span>
-            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;ident_verification&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="nt">&quot;contentId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.contentId}&quot;</span>
-            <span class="p">},</span>
-            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-        <span class="p">},</span>
-        <span class="p">{</span>
-            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;decide_task&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;is_idents_added&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="nt">&quot;case_value_param&quot;</span><span class="p">:</span> <span class="s2">&quot;${ident_verification.output.is_idents_added}&quot;</span>
-            <span class="p">},</span>
-            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;DECISION&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;caseValueParam&quot;</span><span class="p">:</span> <span class="s2">&quot;case_value_param&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;decisionCases&quot;</span><span class="p">:</span> <span class="p">{</span>
-
-            <span class="p">}</span>
-        <span class="p">}</span>
-    <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
-
-
-<p>Each decision branch could have multiple tasks, so it has to be defined as an array.</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_netflix_identation&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Adds Netflix Identation to video files.&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
-        <span class="p">{</span>
-            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;verify_if_idents_are_added&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;ident_verification&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="nt">&quot;contentId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.contentId}&quot;</span>
-            <span class="p">},</span>
-            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-        <span class="p">},</span>
-        <span class="p">{</span>
-            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;decide_task&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;is_idents_added&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="nt">&quot;case_value_param&quot;</span><span class="p">:</span> <span class="s2">&quot;${ident_verification.output.is_idents_added}&quot;</span>
-            <span class="p">},</span>
-            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;DECISION&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;caseValueParam&quot;</span><span class="p">:</span> <span class="s2">&quot;case_value_param&quot;</span><span class="p">,</span>
-            <span class="nt">&quot;decisionCases&quot;</span><span class="p">:</span> <span class="p">{</span>
-                <span class="nt">&quot;false&quot;</span><span class="p">:</span> <span class="p">[</span>
-                    <span class="p">{</span>
-                        <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_idents&quot;</span><span class="p">,</span>
-                        <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;add_idents_by_type&quot;</span><span class="p">,</span>
-                        <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
-                            <span class="nt">&quot;identType&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.identType}&quot;</span><span class="p">,</span>
-                            <span class="nt">&quot;contentId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.contentId}&quot;</span>
-                        <span class="p">},</span>
-                        <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span>
-                    <span class="p">}</span>
-                <span class="p">]</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-    <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
-
-
-<p>Just like the task definitions, register this workflow definition by sending a POST request to <code>/workflow</code> endpoint.</p>
-<p><strong>Example</strong></p>
-<div class="codehilite"><pre><span></span>curl -X POST \
-  http://localhost:8080/api/metadata/workflow \
-  -H &#39;Content-Type: application/json&#39; \
-  -d &#39;{
+<pre class="codehilite"><code class="language-json">{
     &quot;name&quot;: &quot;add_netflix_identation&quot;,
     &quot;description&quot;: &quot;Adds Netflix Identation to video files.&quot;,
     &quot;version&quot;: 2,
@@ -507,7 +421,7 @@ i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs f
             &quot;name&quot;: &quot;verify_if_idents_are_added&quot;,
             &quot;taskReferenceName&quot;: &quot;ident_verification&quot;,
             &quot;inputParameters&quot;: {
-                &quot;contentId&quot;: &quot;<span class="cp">${</span><span class="n">workflow</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">contentId</span><span class="cp">}</span>&quot;
+                &quot;contentId&quot;: &quot;${workflow.input.contentId}&quot;
             },
             &quot;type&quot;: &quot;SIMPLE&quot;
         },
@@ -515,7 +429,38 @@ i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs f
             &quot;name&quot;: &quot;decide_task&quot;,
             &quot;taskReferenceName&quot;: &quot;is_idents_added&quot;,
             &quot;inputParameters&quot;: {
-                &quot;case_value_param&quot;: &quot;<span class="cp">${</span><span class="n">ident_verification</span><span class="o">.</span><span class="n">output</span><span class="o">.</span><span class="n">is_idents_added</span><span class="cp">}</span>&quot;
+                &quot;case_value_param&quot;: &quot;${ident_verification.output.is_idents_added}&quot;
+            },
+            &quot;type&quot;: &quot;DECISION&quot;,
+            &quot;caseValueParam&quot;: &quot;case_value_param&quot;,
+            &quot;decisionCases&quot;: {
+
+            }
+        }
+    ]
+}</code></pre>
+
+
+<p>Each decision branch could have multiple tasks, so it has to be defined as an array.</p>
+<pre class="codehilite"><code class="language-json">{
+    &quot;name&quot;: &quot;add_netflix_identation&quot;,
+    &quot;description&quot;: &quot;Adds Netflix Identation to video files.&quot;,
+    &quot;version&quot;: 2,
+    &quot;schemaVersion&quot;: 2,
+    &quot;tasks&quot;: [
+        {
+            &quot;name&quot;: &quot;verify_if_idents_are_added&quot;,
+            &quot;taskReferenceName&quot;: &quot;ident_verification&quot;,
+            &quot;inputParameters&quot;: {
+                &quot;contentId&quot;: &quot;${workflow.input.contentId}&quot;
+            },
+            &quot;type&quot;: &quot;SIMPLE&quot;
+        },
+        {
+            &quot;name&quot;: &quot;decide_task&quot;,
+            &quot;taskReferenceName&quot;: &quot;is_idents_added&quot;,
+            &quot;inputParameters&quot;: {
+                &quot;case_value_param&quot;: &quot;${ident_verification.output.is_idents_added}&quot;
             },
             &quot;type&quot;: &quot;DECISION&quot;,
             &quot;caseValueParam&quot;: &quot;case_value_param&quot;,
@@ -525,8 +470,8 @@ i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs f
                         &quot;name&quot;: &quot;add_idents&quot;,
                         &quot;taskReferenceName&quot;: &quot;add_idents_by_type&quot;,
                         &quot;inputParameters&quot;: {
-                            &quot;identType&quot;: &quot;<span class="cp">${</span><span class="n">workflow</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">identType</span><span class="cp">}</span>&quot;,
-                            &quot;contentId&quot;: &quot;<span class="cp">${</span><span class="n">workflow</span><span class="o">.</span><span class="n">input</span><span class="o">.</span><span class="n">contentId</span><span class="cp">}</span>&quot;
+                            &quot;identType&quot;: &quot;${workflow.input.identType}&quot;,
+                            &quot;contentId&quot;: &quot;${workflow.input.contentId}&quot;
                         },
                         &quot;type&quot;: &quot;SIMPLE&quot;
                     }
@@ -534,33 +479,75 @@ i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs f
             }
         }
     ]
-}&#39;
-</pre></div>
+}</code></pre>
+
+
+<p>Just like the task definitions, register this workflow definition by sending a POST request to <code>/workflow</code> endpoint.</p>
+<p><strong>Example</strong></p>
+<pre class="codehilite"><code>curl -X POST \
+  http://localhost:8080/api/metadata/workflow \
+  -H 'Content-Type: application/json' \
+  -d '{
+    &quot;name&quot;: &quot;add_netflix_identation&quot;,
+    &quot;description&quot;: &quot;Adds Netflix Identation to video files.&quot;,
+    &quot;version&quot;: 2,
+    &quot;schemaVersion&quot;: 2,
+    &quot;tasks&quot;: [
+        {
+            &quot;name&quot;: &quot;verify_if_idents_are_added&quot;,
+            &quot;taskReferenceName&quot;: &quot;ident_verification&quot;,
+            &quot;inputParameters&quot;: {
+                &quot;contentId&quot;: &quot;${workflow.input.contentId}&quot;
+            },
+            &quot;type&quot;: &quot;SIMPLE&quot;
+        },
+        {
+            &quot;name&quot;: &quot;decide_task&quot;,
+            &quot;taskReferenceName&quot;: &quot;is_idents_added&quot;,
+            &quot;inputParameters&quot;: {
+                &quot;case_value_param&quot;: &quot;${ident_verification.output.is_idents_added}&quot;
+            },
+            &quot;type&quot;: &quot;DECISION&quot;,
+            &quot;caseValueParam&quot;: &quot;case_value_param&quot;,
+            &quot;decisionCases&quot;: {
+                &quot;false&quot;: [
+                    {
+                        &quot;name&quot;: &quot;add_idents&quot;,
+                        &quot;taskReferenceName&quot;: &quot;add_idents_by_type&quot;,
+                        &quot;inputParameters&quot;: {
+                            &quot;identType&quot;: &quot;${workflow.input.identType}&quot;,
+                            &quot;contentId&quot;: &quot;${workflow.input.contentId}&quot;
+                        },
+                        &quot;type&quot;: &quot;SIMPLE&quot;
+                    }
+                ]
+            }
+        }
+    ]
+}'</code></pre>
 
 
 <h3 id="starting-the-workflow">Starting the Workflow<a class="headerlink" href="#starting-the-workflow" title="Permanent link">&para;</a></h3>
 <p>Send a <code>POST</code> request to <code>/workflow</code> with:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;add_netflix_identation&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">2</span><span class="p">,</span>
-    <span class="nt">&quot;correlationId&quot;</span><span class="p">:</span> <span class="s2">&quot;my_netflix_identation_workflows&quot;</span><span class="p">,</span>
-    <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
-        <span class="nt">&quot;identType&quot;</span><span class="p">:</span> <span class="s2">&quot;animation&quot;</span><span class="p">,</span>
-        <span class="nt">&quot;contentId&quot;</span><span class="p">:</span> <span class="s2">&quot;my_unique_content_id&quot;</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+    &quot;name&quot;: &quot;add_netflix_identation&quot;,
+    &quot;version&quot;: 2,
+    &quot;correlationId&quot;: &quot;my_netflix_identation_workflows&quot;,
+    &quot;input&quot;: {
+        &quot;identType&quot;: &quot;animation&quot;,
+        &quot;contentId&quot;: &quot;my_unique_content_id&quot;
+    }
+}</code></pre>
 
 
 <p>Example:</p>
-<div class="codehilite"><pre><span></span>curl -X POST \
+<pre class="codehilite"><code>curl -X POST \
   http://localhost:8080/api/workflow/add_netflix_identation \
-  -H &#39;Content-Type: application/json&#39; \
-  -d &#39;{
+  -H 'Content-Type: application/json' \
+  -d '{
     &quot;identType&quot;: &quot;animation&quot;,
     &quot;contentId&quot;: &quot;my_unique_content_id&quot;
-}&#39;
-</pre></div>
+}'</code></pre>
 
 
 <p>Successful POST request should return a workflow Id, which you can use to find the execution in the UI.</p>
@@ -578,9 +565,8 @@ i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs f
 <p>Ideally, the workers implementing the <a href="/gettingstarted/client/#worker">Client</a> interface would do this process, executing the tasks on real microservices. But, let's mock this part.</p>
 <p>Send a <code>GET</code> request to <code>/poll</code> endpoint with your task type.</p>
 <p>For example:</p>
-<div class="codehilite"><pre><span></span>curl -X GET \
-    http://localhost:8080/api/tasks/poll/verify_if_idents_are_added
-</pre></div>
+<pre class="codehilite"><code>curl -X GET \
+    http://localhost:8080/api/tasks/poll/verify_if_idents_are_added</code></pre>
 
 
 <h3 id="return-response-add-logs">Return response, add logs<a class="headerlink" href="#return-response-add-logs" title="Permanent link">&para;</a></h3>
@@ -591,25 +577,24 @@ i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs f
 <li>Call back after seconds [Process the task at a later time].</li>
 </ul>
 <p>Considering our Ident Service has verified that the Ident's are not yet added to given Content Id, let's return the task status by sending the below <code>POST</code> request to <code>/tasks</code> endpoint, with payload:</p>
-<div class="codehilite"><pre><span></span><span class="p">{</span>
-  <span class="nt">&quot;workflowInstanceId&quot;</span><span class="p">:</span> <span class="s2">&quot;{workflowId}&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;taskId&quot;</span><span class="p">:</span> <span class="s2">&quot;{taskId}&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;reasonForIncompletion&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;callbackAfterSeconds&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
-  <span class="nt">&quot;workerId&quot;</span><span class="p">:</span> <span class="s2">&quot;localhost&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;COMPLETED&quot;</span><span class="p">,</span>
-  <span class="nt">&quot;outputData&quot;</span><span class="p">:</span> <span class="p">{</span>
-    <span class="nt">&quot;is_idents_added&quot;</span><span class="p">:</span> <span class="kc">false</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
+<pre class="codehilite"><code class="language-json">{
+  &quot;workflowInstanceId&quot;: &quot;{workflowId}&quot;,
+  &quot;taskId&quot;: &quot;{taskId}&quot;,
+  &quot;reasonForIncompletion&quot;: &quot;&quot;,
+  &quot;callbackAfterSeconds&quot;: 0,
+  &quot;workerId&quot;: &quot;localhost&quot;,
+  &quot;status&quot;: &quot;COMPLETED&quot;,
+  &quot;outputData&quot;: {
+    &quot;is_idents_added&quot;: false
+  }
+}</code></pre>
 
 
 <p>Example:</p>
-<div class="codehilite"><pre><span></span>curl -X POST \
+<pre class="codehilite"><code>curl -X POST \
   http://localhost:8080/api/tasks \
-  -H &#39;Content-Type: application/json&#39; \
-  -d &#39;{
+  -H 'Content-Type: application/json' \
+  -d '{
     &quot;workflowInstanceId&quot;: &quot;cb7c5041-aa85-4940-acb4-3bdcfa9f5c5c&quot;,
     &quot;taskId&quot;: &quot;741f362b-ee9a-47b6-81b5-9bbbd5c4c992&quot;,
     &quot;reasonForIncompletion&quot;: &quot;&quot;,
@@ -625,8 +610,7 @@ i.e The task <code>verify_if_idents_are_added</code> is wired to accept inputs f
             &quot;createdTime&quot;: 1550178825
         }   
     ]
-  }&#39;
-</pre></div>
+  }'</code></pre>
 
 
 <div class="admonition info">
