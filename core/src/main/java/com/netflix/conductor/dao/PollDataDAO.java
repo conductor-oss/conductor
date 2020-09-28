@@ -48,4 +48,13 @@ public interface PollDataDAO {
      * @return the {@link PollData} for the given task queue in all domains
      */
     List<PollData> getPollData(String taskDefName);
+
+    /**
+     * Retrieve the {@link PollData} for all task types
+     *
+     * @return the {@link PollData} for all task types
+     */
+    default List<PollData> getAllPollData() {
+    	throw new UnsupportedOperationException("The selected PollDataDAO (" + this.getClass().getSimpleName() + ") does not implement the getAllPollData() method");
+    }
 }

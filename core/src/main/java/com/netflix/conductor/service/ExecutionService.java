@@ -196,19 +196,22 @@ public class ExecutionService {
 	}
 
 	public List<PollData> getAllPollData() {
-		Map<String, Long> queueSizes = queueDAO.queuesDetail();
-		List<PollData> allPollData = new ArrayList<>();
-		queueSizes.keySet().forEach(k -> {
-			try {
-				if(!k.contains(QueueUtils.DOMAIN_SEPARATOR)){
-					allPollData.addAll(getPollData(QueueUtils.getQueueNameWithoutDomain(k)));
+		try {
+			return executionDAOFacade.getAllPollData();
+		} catch(UnsupportedOperationException uoe) {
+			List<PollData> allPollData = new ArrayList<>();
+			Map<String, Long> queueSizes = queueDAO.queuesDetail();
+			queueSizes.keySet().forEach(k -> {
+				try {
+					if(!k.contains(QueueUtils.DOMAIN_SEPARATOR)){
+						allPollData.addAll(getPollData(QueueUtils.getQueueNameWithoutDomain(k)));
+					}
+				} catch (Exception e) {
+					logger.error("Unable to fetch all poll data!", e);
 				}
-			} catch (Exception e) {
-				logger.error("Unable to fetch all poll data!", e);
-			}
-		});
-		return allPollData;
-
+			});
+			return allPollData;
+		}
 	}
 
 	public void terminateWorkflow(String workflowId, String reason) {
