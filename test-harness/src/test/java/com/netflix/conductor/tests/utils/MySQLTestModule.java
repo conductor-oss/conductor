@@ -21,6 +21,7 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.config.CoreModule;
+import com.netflix.conductor.core.config.EventModule;
 import com.netflix.conductor.core.execution.WorkflowStatusListener;
 import com.netflix.conductor.core.execution.WorkflowStatusListenerStub;
 import com.netflix.conductor.core.utils.NoopLockModule;
@@ -39,11 +40,10 @@ import com.netflix.conductor.mysql.MySQLDataSourceProvider;
 import com.netflix.conductor.mysql.SystemPropertiesMySQLConfiguration;
 import com.netflix.conductor.service.MetadataService;
 import com.netflix.conductor.service.MetadataServiceImpl;
+
+import javax.sql.DataSource;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
-import javax.sql.DataSource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author jvemugunta
@@ -72,6 +72,7 @@ public class MySQLTestModule extends AbstractModule {
         bind(WorkflowStatusListener.class).to(WorkflowStatusListenerStub.class);
 
         install(new CoreModule());
+        install(new EventModule());
         bind(UserTask.class).asEagerSingleton();
         bind(ObjectMapper.class).toProvider(JsonMapperProvider.class);
         bind(ExternalPayloadStorage.class).to(MockExternalPayloadStorage.class);
