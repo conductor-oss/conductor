@@ -32,6 +32,7 @@ func NewConductorHttpClient(baseUrl string) *ConductorHttpClient {
     return conductorClient
 }
 
+
 /**********************/
 /* Metadata Functions */
 /**********************/
@@ -44,7 +45,7 @@ func (c *ConductorHttpClient) GetWorkflowDef(workflowName string, version int) (
     if version > 0 {
         versionString = strconv.Itoa(version)
     }
-    params := map[string]string{"version": versionString}
+    params := map[string]string{"version":versionString}
     outputString, err := c.httpClient.Get(url, params, nil)
     if err != nil {
         log.Println("Error while trying to Get Workflow Definition", err)
@@ -93,7 +94,7 @@ func (c *ConductorHttpClient) UnRegisterWorkflowDef(workflowDefName string, vers
     versionString = strconv.Itoa(version)
 
     url := c.httpClient.MakeUrl("/metadata/workflow/{workflowDefName}/{version}", "{workflowDefName}",
-        workflowDefName, "{version}", versionString)
+     workflowDefName, "{version}", versionString)
 
     outputString, err := c.httpClient.Delete(url, nil, nil, "")
 
@@ -159,6 +160,7 @@ func (c *ConductorHttpClient) GetAllTaskDefs() (string, error) {
         return outputString, nil
     }
 }
+
 
 /**********************/
 /* Task Functions	  */
@@ -247,6 +249,7 @@ func (c *ConductorHttpClient) GetTaskQueueSizes(taskNames string) (string, error
     }
 }
 
+
 /**********************/
 /* Workflow Functions */
 /**********************/
@@ -257,7 +260,7 @@ func (c *ConductorHttpClient) GetWorkflow(workflowId string, includeTasks bool) 
     if includeTasks {
         includeTasksString = "true"
     }
-    params := map[string]string{"includeTasks": includeTasksString}
+    params := map[string]string{"includeTasks":includeTasksString}
     outputString, err := c.httpClient.Get(url, params, nil)
     if err != nil {
         log.Println("Error while trying to Get Workflow", workflowId, err)
@@ -274,7 +277,7 @@ func (c *ConductorHttpClient) GetRunningWorkflows(workflowName string, version i
     if version > 0 {
         versionString = strconv.Itoa(version)
     }
-    params := map[string]string{"version": versionString}
+    params := map[string]string{"version":versionString}
     if startTime != 0 {
         params["startTime"] = strconv.FormatFloat(startTime, 'f', -1, 64)
     }
@@ -307,7 +310,7 @@ func (c *ConductorHttpClient) StartWorkflow(workflowName string, version int, co
         inputJson = "{}"
     }
 
-    headers := map[string]string{"Accept": "text/plain"}
+    headers := map[string]string{"Accept":"text/plain"}
 
     outputString, err := c.httpClient.Post(url, params, headers, inputJson)
     if err != nil {

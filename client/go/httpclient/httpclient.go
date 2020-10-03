@@ -23,8 +23,8 @@ import (
 )
 
 type HttpClient struct {
-    BaseUrl   string
-    Headers   map[string]string
+    BaseUrl string
+    Headers map[string]string
     PrintLogs bool
     client    *http.Client
 }
@@ -135,7 +135,7 @@ func (c *HttpClient) Put(url string, queryParamsMap map[string]string, headers m
     urlString := url + genParamString(queryParamsMap)
     resp, err := c.httpRequest(urlString, "PUT", headers, body)
     if err != nil {
-        log.Println("Http PUT Error for URL: ", urlString)
+        log.Println("Http PUT Error for URL: ", urlString, )
         return "", err
     }
     return resp, nil
