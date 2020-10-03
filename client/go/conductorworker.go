@@ -47,10 +47,14 @@ func NewConductorWorker(baseUrl string, threadCount int, pollingInterval int) *C
 
 func (c *ConductorWorker) Execute(t *task.Task, executeFunction func(t *task.Task) (*task.TaskResult, error)) {
 	taskResult, err := executeFunction(t)
+	if taskResult == nil {
+		log.Println("TaskResult cannot be nil: ", t.TaskId)
+		return
+	}
 	if err != nil {
 		log.Println("Error Executing task:", err.Error())
 		taskResult.Status = task.FAILED
-    taskResult.ReasonForIncompletion = err.Error()
+		taskResult.ReasonForIncompletion = err.Error()
 	}
 
 	taskResultJsonString, err := taskResult.ToJSONString()
@@ -59,15 +63,15 @@ func (c *ConductorWorker) Execute(t *task.Task, executeFunction func(t *task.Tas
 		log.Println("Error Forming TaskResult JSON body")
 		return
 	}
-	c.ConductorHttpClient.UpdateTask(taskResultJsonString)
+	_, _ = c.ConductorHttpClient.UpdateTask(taskResultJsonString)
 }
 
-func (c *ConductorWorker) PollAndExecute(taskType string, executeFunction func(t *task.Task) (*task.TaskResult, error)) {
+func (c *ConductorWorker) PollAndExecute(taskType string, domain string, executeFunction func(t *task.Task) (*task.TaskResult, error)) {
 	for {
 		time.Sleep(time.Duration(c.PollingInterval) * time.Millisecond)
-		
+
 		// Poll for Task taskType
-		polled, err := c.ConductorHttpClient.PollForTask(taskType, hostname)
+		polled, err := c.ConductorHttpClient.PollForTask(taskType, hostname, domain)
 		if err != nil {
 			log.Println("Error Polling task:", err.Error())
 			continue
@@ -76,7 +80,7 @@ func (c *ConductorWorker) PollAndExecute(taskType string, executeFunction func(t
 			log.Println("No task found for:", taskType)
 			continue
 		}
-		
+
 		// Parse Http response into Task
 		parsedTask, err := task.ParseTask(polled)
 		if err != nil {
@@ -85,7 +89,7 @@ func (c *ConductorWorker) PollAndExecute(taskType string, executeFunction func(t
 		}
 
 		// Found a task, so we send an Ack
-		_, ackErr := c.ConductorHttpClient.AckTask(parsedTask.TaskId, hostname)
+		_, ackErr := c.ConductorHttpClient.AckTask(parsedTask.TaskId)
 		if ackErr != nil {
 			log.Println("Error Acking task:", ackErr.Error())
 			continue
@@ -96,10 +100,10 @@ func (c *ConductorWorker) PollAndExecute(taskType string, executeFunction func(t
 	}
 }
 
-func (c *ConductorWorker) Start(taskType string, executeFunction func(t *task.Task) (*task.TaskResult, error), wait bool) {
+func (c *ConductorWorker) Start(taskType string, domain string, executeFunction func(t *task.Task) (*task.TaskResult, error), wait bool) {
 	log.Println("Polling for task:", taskType, "with a:", c.PollingInterval, "(ms) polling interval with", c.ThreadCount, "goroutines for task execution, with workerid as", hostname)
 	for i := 1; i <= c.ThreadCount; i++ {
-		go c.PollAndExecute(taskType, executeFunction)
+		go c.PollAndExecute(taskType, domain, executeFunction)
 	}
 
 	// wait infinitely while the go routines are running
