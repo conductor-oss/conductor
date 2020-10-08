@@ -262,6 +262,7 @@ curl -X POST \
     "description": "Adds Netflix Identation to video files.",
     "version": 2,
     "schemaVersion": 2,
+    "ownerEmail": "type your email here",
     "tasks": [
     	{
     		"name": "verify_if_idents_are_added",
