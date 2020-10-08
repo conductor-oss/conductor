@@ -8,6 +8,5 @@ public class BootstrapModule extends AbstractModule {
     @Override
     protected void configure() {
         bind(Configuration.class).to(SystemPropertiesConfiguration.class);
-        bind(ModulesProvider.class);
     }
 }
