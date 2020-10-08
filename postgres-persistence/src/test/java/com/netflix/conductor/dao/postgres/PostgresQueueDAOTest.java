@@ -116,6 +116,7 @@ public class PostgresQueueDAOTest {
 
 		for(int i = 0; i < 10; i++) {
 			String messageId = "msg" + i;
+			assertTrue(dao.containsMessage(queueName, messageId));
 			dao.remove(queueName, messageId);
 		}
 
@@ -186,6 +187,33 @@ public class PostgresQueueDAOTest {
 		}
 	}
 
+
+	/**
+	 * Test fix for https://github.com/Netflix/conductor/issues/1892
+	 *
+	 * */
+	@Test
+	public void containsMessageTest() {
+		String queueName = "TestQueue";
+		long offsetTimeInSecond = 0;
+
+		for(int i = 0; i < 10; i++) {
+			String messageId = "msg" + i;
+			dao.push(queueName, messageId, offsetTimeInSecond);
+		}
+		int size = dao.getSize(queueName);
+		assertEquals(10, size);
+
+		for(int i = 0; i < 10; i++) {
+			String messageId = "msg" + i;
+			assertTrue(dao.containsMessage(queueName, messageId));
+			dao.remove(queueName, messageId);
+		}
+		for(int i = 0; i < 10; i++) {
+			String messageId = "msg" + i;
+			assertFalse(dao.containsMessage(queueName, messageId));
+		}
+	}
 	/**
 	 * Test fix for https://github.com/Netflix/conductor/issues/448
 	 * @since 1.8.2-rc5

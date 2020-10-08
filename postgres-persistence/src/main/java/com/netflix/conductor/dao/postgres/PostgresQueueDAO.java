@@ -276,4 +276,11 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 	        execute(connection, CREATE_QUEUE, q -> q.addParameter(queueName).executeUpdate());
         }
     }
+
+    @Override
+    public boolean containsMessage(String queueName, String messageId) {
+        final String EXISTS_QUEUE = "SELECT EXISTS(SELECT 1 FROM queue_message WHERE queue_name = ? AND message_id = ? )";
+        boolean exists = queryWithTransaction(EXISTS_QUEUE, q -> q.addParameter(queueName).addParameter(messageId).exists());
+        return exists;
+    }
 }
