@@ -329,14 +329,14 @@ public class MySQLQueueDAOTest {
 		Map<String, Map<String, Map<String, Long>>> details = dao.queuesDetailVerbose();
 		uacked = details.get(queueName).get("a").get("uacked");
 		assertNotNull(uacked);
-		assertEquals("There should be no unacked messages", uacked.longValue(), 0);
+		assertEquals("The messages that were polled should be unacked still", uacked.longValue(), unackedCount - 1);
 
 		Long otherUacked = details.get(otherQueueName).get("a").get("uacked");
 		assertNotNull(otherUacked);
-		assertEquals("Other queue should have unacked messages", otherUacked.longValue(), count);
+		assertEquals("Other queue should have all unacked messages", otherUacked.longValue(), count);
 
 		Long size = dao.queuesDetail().get(queueName);
 		assertNotNull(size);
-		assertEquals(size.longValue(), count - 1);
+		assertEquals(size.longValue(), count - unackedCount);
 	}
 }
