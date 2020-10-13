@@ -99,8 +99,8 @@ import (
 func main() {
     c := conductor.NewConductorWorker("http://localhost:8080", 1, 10000)
 
-    c.Start("task_1", sample.Task_1_Execution_Function, false)
-    c.Start("task_2", sample.Task_2_Execution_Function, true)
+    c.Start("task_1", "", sample.Task_1_Execution_Function, false)
+    c.Start("task_2", "mydomain", sample.Task_2_Execution_Function, true)
 }
 
 ```

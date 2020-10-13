@@ -14,10 +14,10 @@
 package conductor
 
 import (
-    "github.com/netflix/conductor/client/go/httpclient"
-    "strconv"
-    "log"
     "fmt"
+    "github.com/netflix/conductor/client/go/httpclient"
+    "log"
+    "strconv"
 )
 
 type ConductorHttpClient struct {
@@ -188,9 +188,12 @@ func (c *ConductorHttpClient) UpdateTask(taskBody string) (string, error) {
     }
 }
 
-func (c *ConductorHttpClient) PollForTask(taskType string, workerid string) (string, error) {
+func (c *ConductorHttpClient) PollForTask(taskType string, workerid string, domain string) (string, error) {
     url := c.httpClient.MakeUrl("/tasks/poll/{taskType}", "{taskType}", taskType)
-    params := map[string]string{"workerid":workerid}
+    params := map[string]string{
+        "workerid": workerid,
+        "domain":   domain,
+    }
     outputString, err := c.httpClient.Get(url, params, nil)
     if err != nil {
         log.Println("Error while trying to Poll For Task taskType:", taskType, ",workerid:", workerid, err)
@@ -200,11 +203,10 @@ func (c *ConductorHttpClient) PollForTask(taskType string, workerid string) (str
     }
 }
 
-func (c *ConductorHttpClient) AckTask(taskId string, workerid string) (string, error) {
+func (c *ConductorHttpClient) AckTask(taskId string) (string, error) {
     url := c.httpClient.MakeUrl("/tasks/{taskId}/ack", "{taskId}", taskId)
-    params := map[string]string{"workerid":workerid}
-    headers := map[string]string{"Accept":"application/json"}
-    outputString, err := c.httpClient.Post(url, params, headers, "")
+    headers := map[string]string{"Accept": "application/json"}
+    outputString, err := c.httpClient.Post(url, nil, headers, "")
     if err != nil {
         return "", err
     }
