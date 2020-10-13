@@ -115,7 +115,7 @@ public class SubWorkflow extends WorkflowSystemTask {
 
 			// Set task status based on current sub-workflow status, as the status can change in recursion by the time we update here.
 			Workflow subWorkflow = provider.getWorkflow(subWorkflowId, false);
-			updateTaskStatus(subWorkflow.getStatus(), task);
+			updateTaskStatus(subWorkflow, task);
 		} catch (Exception e) {
 			task.setStatus(Status.FAILED);
 			task.setReasonForIncompletion(e.getMessage());
@@ -140,10 +140,8 @@ public class SubWorkflow extends WorkflowSystemTask {
 		} else {
 			task.getOutputData().putAll(subWorkflow.getOutput());
 		}
-		if (!subWorkflowStatus.isSuccessful()) {
-			task.setReasonForIncompletion(subWorkflow.getReasonForIncompletion());
-		}
-		updateTaskStatus(subWorkflowStatus, task);
+
+		updateTaskStatus(subWorkflow, task);
 		return true;
 	}
 
@@ -175,7 +173,8 @@ public class SubWorkflow extends WorkflowSystemTask {
         return true;
     }
 
-	private void updateTaskStatus(WorkflowStatus status, Task task) {
+	private void updateTaskStatus(Workflow subworkflow, Task task) {
+    	WorkflowStatus status = subworkflow.getStatus();
 		switch (status) {
 			case RUNNING:
 			case PAUSED:
@@ -185,14 +184,20 @@ public class SubWorkflow extends WorkflowSystemTask {
 				task.setStatus(Status.COMPLETED);
 				break;
 			case FAILED:
-			case TERMINATED:
 				task.setStatus(Status.FAILED);
+				break;
+			case TERMINATED:
+				task.setStatus(Status.CANCELED);
 				break;
 			case TIMED_OUT:
 				task.setStatus(Status.TIMED_OUT);
 				break;
 			default:
 				throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, "Subworkflow status does not conform to relevant task status.");
+		}
+
+		if (status.isTerminal() && !status.isSuccessful()) {
+			task.setReasonForIncompletion(subworkflow.getReasonForIncompletion());
 		}
 	}
 }

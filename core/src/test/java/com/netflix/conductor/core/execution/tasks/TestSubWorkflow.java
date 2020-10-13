@@ -63,7 +63,7 @@ public class TestSubWorkflow {
         workflow.setStatus(Workflow.WorkflowStatus.TERMINATED);
         subWorkflow.start(workflowInstance, task, workflowExecutor);
         assertEquals("workflow_1", task.getSubWorkflowId());
-        assertEquals(Task.Status.FAILED, task.getStatus());
+        assertEquals(Task.Status.CANCELED, task.getStatus());
 
         workflow.setStatus(Workflow.WorkflowStatus.COMPLETED);
         subWorkflow.start(workflowInstance, task, workflowExecutor);
@@ -217,7 +217,7 @@ public class TestSubWorkflow {
         subWorkflowInstance.setStatus(Workflow.WorkflowStatus.TERMINATED);
         subWorkflowInstance.setReasonForIncompletion("unit3");
         assertTrue(subWorkflow.execute(workflowInstance, task, workflowExecutor));
-        assertEquals(Task.Status.FAILED, task.getStatus());
+        assertEquals(Task.Status.CANCELED, task.getStatus());
         assertEquals("unit3", task.getReasonForIncompletion());
     }
 

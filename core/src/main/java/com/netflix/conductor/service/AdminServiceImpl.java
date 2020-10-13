@@ -66,8 +66,9 @@ public class AdminServiceImpl implements AdminService {
         this.version = "UNKNOWN";
         this.buildDate = "UNKNOWN";
 
-        try {
+        try (
             InputStream propertiesIs = this.getClass().getClassLoader().getResourceAsStream("META-INF/conductor-core.properties");
+        ) {
             Properties prop = new Properties();
             prop.load(propertiesIs);
             this.version = prop.getProperty("Implementation-Version");

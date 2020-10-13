@@ -228,4 +228,95 @@ class SubWorkflowSpec extends Specification {
         cleanup: "Ensure that the changes to the workflow def are reverted"
         metadataService.updateWorkflowDef([persistedWorkflowDefinition])
     }
+
+    def "Test terminating a subworkflow terminates parent workflow"() {
+        given: "Existing workflow and subworkflow definitions"
+        metadataService.getWorkflowDef(SUB_WORKFLOW, 1)
+        metadataService.getWorkflowDef(WORKFLOW_WITH_SUBWORKFLOW, 1)
+
+        and: "input required to start the workflow execution"
+        String correlationId = 'wf_with_subwf_test_1'
+        def input = new HashMap()
+        String inputParam1 = 'p1 value'
+        input['param1'] = inputParam1
+        input['param2'] = 'p2 value'
+
+        when: "Start a workflow with subworkflow based on the registered definition"
+        def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_SUBWORKFLOW, 1,
+                correlationId, input,
+                null, null, null)
+
+        then: "verify that the workflow is in a running state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.SCHEDULED
+        }
+
+        when: "Polled for integration_task_1 task"
+        def pollAndCompleteTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker', ['op': 'task1.done'])
+
+        then: "verify that the 'integration_task_1' was polled and acknowledged"
+        verifyPolledAndAcknowledgedTask(pollAndCompleteTask1Try1)
+
+        and: "verify that the 'integration_task1' is complete and the next task (subworkflow) is in scheduled state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 2
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].status == Task.Status.SCHEDULED
+        }
+
+        when: "Polled for and executed subworkflow task"
+        List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200);
+        WorkflowSystemTask systemTask = SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.get("SUB_WORKFLOW")
+        workflowExecutor.executeSystemTask(systemTask, polledTaskIds.get(0), 30)
+        def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
+        def subWorkflowId = workflow.tasks[1].subWorkflowId
+
+        then: "verify that the 'sub_workflow_task' is polled and IN_PROGRESS"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 2
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].status == Task.Status.IN_PROGRESS
+        }
+
+        and: "verify that the sub workflow is RUNNING, and first task is in SCHEDULED state"
+        with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 1
+            tasks[0].taskType == 'simple_task_in_sub_wf'
+            tasks[0].status == Task.Status.SCHEDULED
+        }
+
+        when: "subworkflow is terminated"
+        def terminateReason =  "terminating from a test case"
+        workflowExecutor.terminateWorkflow(subWorkflowId, terminateReason)
+
+        then: "verify that sub workflow is in terminated state"
+        with(workflowExecutionService.getExecutionStatus(subWorkflowId, true)) {
+            status == Workflow.WorkflowStatus.TERMINATED
+            tasks.size() == 1
+            tasks[0].taskType == 'simple_task_in_sub_wf'
+            tasks[0].status == Task.Status.CANCELED
+            reasonForIncompletion == terminateReason
+        }
+
+        and: "verify that parent workflow is in terminated state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.TERMINATED
+            tasks.size() == 2
+            tasks[0].taskType == 'integration_task_1'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'SUB_WORKFLOW'
+            tasks[1].status == Task.Status.CANCELED
+            reasonForIncompletion == terminateReason
+        }
+    }
 }

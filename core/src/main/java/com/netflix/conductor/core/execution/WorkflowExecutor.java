@@ -919,14 +919,14 @@ public class WorkflowExecutor {
         taskResult.getLogs().forEach(taskExecLog -> taskExecLog.setTaskId(task.getTaskId()));
         executionDAOFacade.addTaskExecLog(taskResult.getLogs());
 
-        decide(workflowId);
-
         if (task.getStatus().isTerminal()) {
             long duration = getTaskDuration(0, task);
             long lastDuration = task.getEndTime() - task.getStartTime();
             Monitors.recordTaskExecutionTime(task.getTaskDefName(), duration, true, task.getStatus());
             Monitors.recordTaskExecutionTime(task.getTaskDefName(), lastDuration, false, task.getStatus());
         }
+
+        decide(workflowId);
     }
 
     public Task getTask(String taskId) {
@@ -1686,7 +1686,7 @@ public class WorkflowExecutor {
             }
         } else {
             // On workflow retry or restart..
-            if (StringUtils.isBlank(parentDef.getFailureWorkflow()) && parentWorkflow.getStatus().isTerminal() && subWorkflowTask.getStatus().isTerminal()) {
+            if (parentWorkflow.getStatus().isTerminal() && subWorkflowTask.getStatus().isTerminal()) {
                 LOGGER.debug("Subworkflow: {} is {}, resetting failed parent workflow: {}, and Subworkflow task: {} status to IN_PROGRESS",
                         subWorkflow.getWorkflowId(), subWorkflow.getStatus().name(), parentWorkflow.getWorkflowId(), subWorkflow.getParentWorkflowTaskId());
                 subWorkflowTask.setStatus(IN_PROGRESS);

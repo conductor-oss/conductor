@@ -135,6 +135,7 @@ Another example of metrics collection uses: log4j syslog appender -> fluentd -> 
 
 In this case, a specific log4j properties file needs to be used so that metrics are pushed into a syslog channel:
 
+```
     log4j.rootLogger=INFO,console,file
     
     log4j.appender.console=org.apache.log4j.ConsoleAppender
@@ -157,9 +158,11 @@ In this case, a specific log4j properties file needs to be used so that metrics 
     
     log4j.logger.ConductorMetrics=INFO,console,server
     log4j.additivity.ConductorMetrics=false
+```
 
 And on the fluentd side you need following configuration:
 
+```
     <source>
       @type prometheus
     </source>
@@ -217,7 +220,8 @@ And on the fluentd side you need following configuration:
     <match **>
       @type stdout
     </match>
-    
+```
+
 With above configuration, fluentd will:
 - Listen to raw metrics on 0.0.0.0:5170
 - Collect only workflow_execution TIMER metrics
