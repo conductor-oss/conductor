@@ -136,6 +136,53 @@ public class TestWorkflowDef {
 		assertEquals("junit_task_1", nextTask.getTaskReferenceName());
 	}
 
+	@Test
+	public void testGetNextTask_DoWhile_In_Fork() {
+		String FORK_DOWHILE_TASK_WF = "FORK_DOWHILE_TASK_WF";
+		List<WorkflowTask> workflowTasks = new ArrayList<>(10);
+		for(int i = 0; i < 10; i++){
+			workflowTasks.add(createWorkflowTask("junit_task_" + i));
+		}
+
+		WorkflowDef workflowDef = new WorkflowDef();
+		workflowDef.setName(FORK_DOWHILE_TASK_WF);
+		workflowDef.setDescription(FORK_DOWHILE_TASK_WF);
+
+		WorkflowTask doWhileTask = new WorkflowTask();
+		doWhileTask.setType(TaskType.DO_WHILE.name());
+		doWhileTask.setName("loopTask");
+		doWhileTask.setTaskReferenceName("loopTask");
+		doWhileTask.setLoopCondition("$.loopTask.iteration < 10");
+		doWhileTask.setLoopOver(workflowTasks.subList(0, 2));
+
+		WorkflowTask forkTask = new WorkflowTask();
+		forkTask.setType(TaskType.FORK_JOIN.name());
+		forkTask.setName("fork");
+		forkTask.setTaskReferenceName("fork");
+		List<List<WorkflowTask>> wtList = new ArrayList<>();
+		wtList.add(Arrays.asList(doWhileTask, workflowTasks.get(2)));
+		wtList.add(Collections.singletonList(workflowTasks.get(3)));
+		forkTask.setForkTasks(wtList);
+
+		WorkflowTask joinTask = new WorkflowTask();
+		joinTask.setType(TaskType.JOIN.name());
+		joinTask.setName("join");
+		joinTask.setTaskReferenceName("join");
+		joinTask.setJoinOn(Arrays.asList(workflowTasks.get(2).getTaskReferenceName(), workflowTasks.get(3).getTaskReferenceName()));
+
+		workflowDef.getTasks().add(forkTask);
+		workflowDef.getTasks().add(joinTask);
+
+		WorkflowTask nextTask = workflowDef.getNextTask("junit_task_0");
+		assertEquals("junit_task_1", nextTask.getTaskReferenceName());
+
+		WorkflowTask nextTask1 = workflowDef.getNextTask("junit_task_1");
+		assertEquals("loopTask", nextTask1.getTaskReferenceName());
+
+		WorkflowTask nextTask2 = workflowDef.getNextTask("loopTask");
+		assertEquals("junit_task_2", nextTask2.getTaskReferenceName());
+	}
+
 	private WorkflowTask createWorkflowTask(String name) {
 		WorkflowTask task = new WorkflowTask();
 		task.setName(name);

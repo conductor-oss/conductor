@@ -40,18 +40,7 @@ import com.netflix.conductor.common.utils.JsonMapperProvider;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.config.Configuration;
 import com.netflix.conductor.core.execution.DeciderService.DeciderOutcome;
-import com.netflix.conductor.core.execution.mapper.DecisionTaskMapper;
-import com.netflix.conductor.core.execution.mapper.DynamicTaskMapper;
-import com.netflix.conductor.core.execution.mapper.EventTaskMapper;
-import com.netflix.conductor.core.execution.mapper.ForkJoinDynamicTaskMapper;
-import com.netflix.conductor.core.execution.mapper.ForkJoinTaskMapper;
-import com.netflix.conductor.core.execution.mapper.HTTPTaskMapper;
-import com.netflix.conductor.core.execution.mapper.JoinTaskMapper;
-import com.netflix.conductor.core.execution.mapper.SimpleTaskMapper;
-import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
-import com.netflix.conductor.core.execution.mapper.TaskMapper;
-import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
-import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
+import com.netflix.conductor.core.execution.mapper.*;
 import com.netflix.conductor.core.utils.ExternalPayloadStorageUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.spectator.api.Counter;
@@ -132,6 +121,7 @@ public class TestDeciderService {
         taskMappers.put("EVENT", new EventTaskMapper(parametersUtils));
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
         taskMappers.put("HTTP", new HTTPTaskMapper(parametersUtils, metadataDAO));
+        taskMappers.put("LAMBDA", new LambdaTaskMapper(parametersUtils, metadataDAO));
 
         deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils, taskMappers, config);
     }
@@ -1072,6 +1062,67 @@ public class TestDeciderService {
         }
     }
 
+    @Test
+    public void testDeciderGetNextTask() {
+        WorkflowDef workflowDef = createDoWhileInForkWorkflow();
+        Workflow workflow = new Workflow();
+        workflow.setWorkflowDefinition(workflowDef);
+
+        Task task1 = new Task();
+        task1.setReferenceTaskName("fork");
+        task1.setStatus(Status.COMPLETED);
+        task1.setTaskId("task1");
+
+        Task task2 = new Task();
+        task2.setReferenceTaskName("loopTask");
+        task2.setStatus(Status.SCHEDULED);
+        task2.setTaskId("task2");
+        task2.setIteration(1);
+
+        Task task3 = new Task();
+        task3.setReferenceTaskName("junit_task_0__1");
+        task3.setStatus(Status.COMPLETED);
+        task3.setTaskId("task3");
+        task3.setIteration(1);
+
+        Task task4 = new Task();
+        task4.setReferenceTaskName("junit_task_3");
+        task4.setStatus(Status.COMPLETED);
+        task4.setTaskId("task4");
+
+        Task task5 = new Task();
+        task5.setReferenceTaskName("join");
+        task5.setStatus(Status.IN_PROGRESS);
+        task5.setTaskId("task5");
+
+        workflow.setTasks(Arrays.asList(task1, task2, task3, task4, task5));
+
+        // verify the next task of first task in DoWhile
+        List<Task> nextTask1 = deciderService.getNextTask(workflow, task3);
+        assertEquals(1, nextTask1.size());
+        assertEquals("junit_task_1", nextTask1.get(0).getReferenceTaskName());
+
+        Task task6 = new Task();
+        task6.setReferenceTaskName("junit_task_1__1");
+        task6.setStatus(Status.COMPLETED);
+        task6.setTaskId("task6");
+        task6.setIteration(1);
+
+        workflow.setTasks(Arrays.asList(task1, task2, task3, task4, task5, task6));
+
+        // verify the next task of last task in DoWhile
+        List<Task> nextTask2 = deciderService.getNextTask(workflow, task6);
+        assertEquals(0, nextTask2.size());
+
+        task2.setStatus(Status.COMPLETED);
+        task2.setIteration(10);
+
+        // verify the next task of DoWhile
+        List<Task> nextTask3 = deciderService.getNextTask(workflow, task2);
+        assertEquals(1, nextTask3.size());
+        assertEquals("junit_task_2", nextTask3.get(0).getReferenceTaskName());
+    }
+
     private WorkflowDef createConditionalWF() {
 
         WorkflowTask workflowTask1 = new WorkflowTask();
@@ -1296,4 +1347,46 @@ public class TestDeciderService {
         return workflowDef;
     }
 
+    private WorkflowDef createDoWhileInForkWorkflow() {
+        String FORK_DOWHILE_TASK_WF = "FORK_DOWHILE_TASK_WF";
+        List<WorkflowTask> workflowTasks = new ArrayList<>(10);
+        for(int i = 0; i < 10; i++){
+            WorkflowTask workflowTask = new WorkflowTask();
+            workflowTask.setTaskReferenceName("junit_task_" + i);
+            workflowTask.setName("junit_task_" + i);
+            workflowTask.setType(TaskType.LAMBDA.name());
+            workflowTasks.add(workflowTask);
+        }
+
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setName(FORK_DOWHILE_TASK_WF);
+        workflowDef.setDescription(FORK_DOWHILE_TASK_WF);
+
+        WorkflowTask doWhileTask = new WorkflowTask();
+        doWhileTask.setType(TaskType.DO_WHILE.name());
+        doWhileTask.setName("loopTask");
+        doWhileTask.setTaskReferenceName("loopTask");
+        doWhileTask.setLoopCondition("$.loopTask.iteration < 10");
+        doWhileTask.setLoopOver(workflowTasks.subList(0, 2));
+
+        WorkflowTask forkTask = new WorkflowTask();
+        forkTask.setType(TaskType.FORK_JOIN.name());
+        forkTask.setName("fork");
+        forkTask.setTaskReferenceName("fork");
+        List<List<WorkflowTask>> wtList = new ArrayList<>();
+        wtList.add(Arrays.asList(doWhileTask, workflowTasks.get(2)));
+        wtList.add(Collections.singletonList(workflowTasks.get(3)));
+        forkTask.setForkTasks(wtList);
+
+        WorkflowTask joinTask = new WorkflowTask();
+        joinTask.setType(TaskType.JOIN.name());
+        joinTask.setName("join");
+        joinTask.setTaskReferenceName("join");
+        joinTask.setJoinOn(Arrays.asList(workflowTasks.get(2).getTaskReferenceName(), workflowTasks.get(3).getTaskReferenceName()));
+
+        workflowDef.getTasks().add(forkTask);
+        workflowDef.getTasks().add(joinTask);
+
+        return workflowDef;
+    }
 }

@@ -52,7 +52,8 @@ class DoWhileSpec extends Specification {
 
     def setup() {
         workflowTestUtil.registerWorkflows("do_while_integration_test.json",
-                "do_while_multiple_integration_test.json")
+                "do_while_multiple_integration_test.json",
+                "do_while_as_subtask_integration_test.json")
     }
 
     def cleanup() {
@@ -508,6 +509,222 @@ class DoWhileSpec extends Specification {
 
         cleanup: "Reset the task definition"
         metadataService.updateTaskDef(persistedTaskDefinition)
+    }
+
+    def "Test auto retrying a failed do while workflow"() {
+        setup: "Update the task definition with retryCount to 1 and retryDelaySeconds to 0"
+        def taskName = 'integration_task_0'
+        def persistedTaskDefinition = workflowTestUtil.getPersistedTaskDefinition(taskName).get()
+        def modifiedTaskDefinition = new TaskDef(persistedTaskDefinition.name, persistedTaskDefinition.description,
+                1, persistedTaskDefinition.timeoutSeconds)
+        modifiedTaskDefinition.setRetryDelaySeconds(0)
+        metadataService.updateTaskDef(modifiedTaskDefinition)
+
+        when: "A do while workflow is started"
+        def workflowInput = new HashMap()
+        workflowInput['loop'] = 1
+        def workflowInstanceId = workflowExecutor.startWorkflow("Do_While_Workflow", 1, "looptest", workflowInput, null, null)
+
+        then: "Verify that the workflow has started"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 2
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.IN_PROGRESS
+            tasks[1].taskType == 'integration_task_0'
+            tasks[1].status == Task.Status.SCHEDULED
+        }
+
+        when: "Polling and failing first task"
+        Tuple polledAndFailedTask0 = workflowTestUtil.pollAndFailTask('integration_task_0', 'integration.test.worker', "induced..failure")
+
+        then: "Verify that the task was polled and acknowledged and retried task was generated and workflow is in running state"
+        verifyPolledAndAcknowledgedTask(polledAndFailedTask0)
+        verifyTaskIteration(polledAndFailedTask0[0] as Task, 1)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 3
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.IN_PROGRESS
+            tasks[1].taskType == 'integration_task_0'
+            tasks[1].status == Task.Status.FAILED
+            tasks[1].retried == true
+            tasks[2].taskType == 'integration_task_0'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[2].retryCount == 1
+            tasks[2].retriedTaskId == tasks[1].taskId
+        }
+
+        when: "Polling and completing first task"
+        Tuple polledAndCompletedTask0 = workflowTestUtil.pollAndCompleteTask('integration_task_0', 'integration.test.worker')
+
+        then: "Verify that the task was polled and acknowledged and workflow is in running state"
+        verifyPolledAndAcknowledgedTask(polledAndCompletedTask0)
+        verifyTaskIteration(polledAndCompletedTask0[0] as Task, 1)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 7
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.IN_PROGRESS
+            tasks[1].taskType == 'integration_task_0'
+            tasks[1].status == Task.Status.FAILED
+            tasks[2].taskType == 'integration_task_0'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].taskType == 'FORK'
+            tasks[3].status == Task.Status.COMPLETED
+            tasks[4].taskType == 'integration_task_1'
+            tasks[4].status == Task.Status.SCHEDULED
+            tasks[5].taskType == 'integration_task_2'
+            tasks[5].status == Task.Status.SCHEDULED
+            tasks[6].taskType == 'JOIN'
+            tasks[6].status == Task.Status.IN_PROGRESS
+        }
+
+        when: "Polling and completing second task"
+        Tuple polledAndCompletedTask1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'integration.test.worker')
+
+        then: "Verify that the task was polled and acknowledged and workflow is in running state"
+        verifyPolledAndAcknowledgedTask(polledAndCompletedTask1)
+        verifyTaskIteration(polledAndCompletedTask1[0] as Task, 1)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 7
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.IN_PROGRESS
+            tasks[1].taskType == 'integration_task_0'
+            tasks[1].status == Task.Status.FAILED
+            tasks[2].taskType == 'integration_task_0'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].taskType == 'FORK'
+            tasks[3].status == Task.Status.COMPLETED
+            tasks[4].taskType == 'integration_task_1'
+            tasks[4].status == Task.Status.COMPLETED
+            tasks[5].taskType == 'integration_task_2'
+            tasks[5].status == Task.Status.SCHEDULED
+            tasks[6].taskType == 'JOIN'
+            tasks[6].status == Task.Status.IN_PROGRESS
+        }
+
+        when: "Polling and completing third task"
+        Tuple polledAndCompletedTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker')
+
+        then: "Verify that the task was polled and acknowledged and workflow is in completed state"
+        verifyPolledAndAcknowledgedTask(polledAndCompletedTask2)
+        verifyTaskIteration(polledAndCompletedTask2[0] as Task, 1)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 7
+            tasks[0].taskType == 'DO_WHILE'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'integration_task_0'
+            tasks[1].status == Task.Status.FAILED
+            tasks[2].taskType == 'integration_task_0'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].taskType == 'FORK'
+            tasks[3].status == Task.Status.COMPLETED
+            tasks[4].taskType == 'integration_task_1'
+            tasks[4].status == Task.Status.COMPLETED
+            tasks[5].taskType == 'integration_task_2'
+            tasks[5].status == Task.Status.COMPLETED
+            tasks[6].taskType == 'JOIN'
+            tasks[6].status == Task.Status.COMPLETED
+        }
+
+        cleanup: "Reset the task definition"
+        metadataService.updateTaskDef(persistedTaskDefinition)
+    }
+
+    def "Test workflow with a iteration Do While task as subtask of a forkjoin task"() {
+        given: "Number of iterations of the loop is set to 1"
+        def workflowInput = new HashMap()
+        workflowInput['loop'] = 1
+
+        when: "A do_while workflow is started"
+        def workflowInstanceId = workflowExecutor.startWorkflow("Do_While_SubTask", 1, "looptest", workflowInput, null, null)
+
+        then: "Verify that the workflow has started"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 5
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'DO_WHILE'
+            tasks[1].status == Task.Status.IN_PROGRESS
+            tasks[2].taskType == 'integration_task_0'
+            tasks[2].status == Task.Status.SCHEDULED
+            tasks[3].taskType == 'integration_task_2'
+            tasks[3].status == Task.Status.SCHEDULED
+            tasks[4].taskType == 'JOIN'
+            tasks[4].status == Task.Status.IN_PROGRESS
+        }
+
+        when: "Polling and completing first task in DO While"
+        Tuple polledAndCompletedTask0 = workflowTestUtil.pollAndCompleteTask('integration_task_0', 'integration.test.worker')
+
+        then: "Verify that the task was polled and acknowledged and workflow is in running state"
+        verifyPolledAndAcknowledgedTask(polledAndCompletedTask0)
+        verifyTaskIteration(polledAndCompletedTask0[0] as Task, 1)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 6
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'DO_WHILE'
+            tasks[1].status == Task.Status.IN_PROGRESS
+            tasks[2].taskType == 'integration_task_0'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].taskType == 'integration_task_2'
+            tasks[3].status == Task.Status.SCHEDULED
+            tasks[4].taskType == 'JOIN'
+            tasks[4].status == Task.Status.IN_PROGRESS
+            tasks[5].taskType == 'integration_task_1'
+            tasks[5].status == Task.Status.SCHEDULED
+        }
+
+        when: "Polling and completing second task in DO While"
+        Tuple polledAndCompletedTask1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'integration.test.worker')
+
+        then: "Verify that the task was polled and acknowledged and workflow is in running state"
+        verifyPolledAndAcknowledgedTask(polledAndCompletedTask1)
+        verifyTaskIteration(polledAndCompletedTask1[0] as Task, 1)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.RUNNING
+            tasks.size() == 6
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'DO_WHILE'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[2].taskType == 'integration_task_0'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].taskType == 'integration_task_2'
+            tasks[3].status == Task.Status.SCHEDULED
+            tasks[4].taskType == 'JOIN'
+            tasks[4].status == Task.Status.IN_PROGRESS
+            tasks[5].taskType == 'integration_task_1'
+            tasks[5].status == Task.Status.COMPLETED
+        }
+
+        when: "Polling and completing third task"
+        Tuple polledAndCompletedTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'integration.test.worker')
+
+        then: "Verify that the task was polled and acknowledged and workflow is in completed state"
+        verifyPolledAndAcknowledgedTask(polledAndCompletedTask2)
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+            status == Workflow.WorkflowStatus.COMPLETED
+            tasks.size() == 6
+            tasks[0].taskType == 'FORK'
+            tasks[0].status == Task.Status.COMPLETED
+            tasks[1].taskType == 'DO_WHILE'
+            tasks[1].status == Task.Status.COMPLETED
+            tasks[2].taskType == 'integration_task_0'
+            tasks[2].status == Task.Status.COMPLETED
+            tasks[3].taskType == 'integration_task_2'
+            tasks[3].status == Task.Status.COMPLETED
+            tasks[4].taskType == 'JOIN'
+            tasks[4].status == Task.Status.COMPLETED
+            tasks[5].taskType == 'integration_task_1'
+            tasks[5].status == Task.Status.COMPLETED
+        }
     }
 
     void verifyTaskIteration(Task task, int iteration) {

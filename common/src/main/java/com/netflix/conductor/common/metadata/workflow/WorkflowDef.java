@@ -314,6 +314,10 @@ public class WorkflowDef extends Auditable {
 		Iterator<WorkflowTask> it = tasks.iterator();
 		while(it.hasNext()){
 			 WorkflowTask task = it.next();
+			 if (task.getTaskReferenceName().equals(taskReferenceName)) {
+			 	// If taskReferenceName matches, break out
+			 	break;
+			 }
 			 WorkflowTask nextTask = task.next(taskReferenceName, null);
 			 if(nextTask != null){
 				 return nextTask;
@@ -322,7 +326,7 @@ public class WorkflowDef extends Auditable {
 			 	return null;
 			 }
 
-			 if(task.getTaskReferenceName().equals(taskReferenceName) || task.has(taskReferenceName)){
+			 if(task.has(taskReferenceName)){
 				 break;
 			 }
 		}
