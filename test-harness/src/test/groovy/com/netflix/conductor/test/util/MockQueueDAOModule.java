@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.test.util;
 
+import com.netflix.conductor.core.execution.WorkflowExecutorModule;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.dao.dynomite.queue.DynoQueueDAO;
 import com.netflix.conductor.jedis.JedisMock;
@@ -55,5 +56,7 @@ public class MockQueueDAOModule extends TestModule {
         DynoQueueDAO dynoQueueDAO = new DynoQueueDAO(redisQueues);
 
         bind(QueueDAO.class).toInstance(detachedMockFactory.Spy(dynoQueueDAO));
+
+        install(new WorkflowExecutorModule());
     }
 }

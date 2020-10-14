@@ -214,6 +214,10 @@ public class Monitors {
 		counter(classQualifier, "task_update_error", "workflowName", workflowType, "taskType", taskType);
 	}
 
+	public static void recordTaskQueueOpError(String taskType, String workflowType) {
+		counter(classQualifier, "task_queue_op_error", "workflowName", workflowType, "taskType", taskType);
+	}
+
 	public static void recordWorkflowCompletion(String workflowType, long duration, String ownerApp) {
 		getTimer(classQualifier, "workflow_execution", "workflowName", workflowType, "ownerApp", ""+ownerApp).record(duration, TimeUnit.MILLISECONDS);
 	}

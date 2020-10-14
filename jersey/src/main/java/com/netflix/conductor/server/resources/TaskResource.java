@@ -187,6 +187,7 @@ public class TaskResource {
 		return taskService.getAllPollData();
 	}
 
+	@Deprecated
 	@POST
 	@Path("/queue/requeue")
 	@ApiOperation("Requeue pending tasks for all the running workflows")
