@@ -64,7 +64,7 @@ public @interface TaskReferenceNameUniqueConstraint {
 
             //check if taskReferenceNames are unique across tasks or not
             HashMap<String, Integer> taskReferenceMap = new HashMap<>();
-            for (WorkflowTask workflowTask : workflowDef.getTasks()) {
+            for (WorkflowTask workflowTask : workflowDef.collectTasks()) {
                 if (taskReferenceMap.containsKey(workflowTask.getTaskReferenceName())) {
                     String message = String.format("taskReferenceName: %s should be unique across tasks for a given workflowDefinition: %s",
                             workflowTask.getTaskReferenceName(), workflowDef.getName());
