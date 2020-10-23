@@ -18,6 +18,7 @@ import com.netflix.conductor.common.run.Workflow.WorkflowStatus;
 import com.netflix.servo.monitor.BasicStopwatch;
 import com.netflix.servo.monitor.Stopwatch;
 import com.netflix.spectator.api.Counter;
+import com.netflix.spectator.api.DistributionSummary;
 import com.netflix.spectator.api.Gauge;
 import com.netflix.spectator.api.Id;
 import com.netflix.spectator.api.Registry;
@@ -42,6 +43,8 @@ public class Monitors {
 	private static final Map<String, Map<Map<String, String>, PercentileTimer>> timers = new ConcurrentHashMap<>();
 
 	private static final Map<String, Map<Map<String, String>, Gauge>> gauges = new ConcurrentHashMap<>();
+
+	private static final Map<String, Map<Map<String, String>, DistributionSummary>> distributionSummaries = new ConcurrentHashMap<>();
 
 	public static final String classQualifier = "WorkflowMonitor";
 
@@ -90,6 +93,18 @@ public class Monitors {
 		getGauge(className, name, additionalTags).set(measurement);
 	}
 
+	/**
+	 * Records a value for an event as a distribution summary. Unlike a gauge, this is sampled multiple times during a
+	 * minute or everytime a new value is recorded.
+	 *
+	 * @param className
+	 * @param name
+	 * @param additionalTags
+	 */
+	private static void distributionSummary(String className, String name, long value, String... additionalTags) {
+		getDistributionSummary(className, name, additionalTags).record(value);
+	}
+
 	private static Timer getTimer(String className, String name, String... additionalTags) {
 		Map<String, String> tags = toMap(className, additionalTags);
 		return timers.computeIfAbsent(name, s -> new ConcurrentHashMap<>()).computeIfAbsent(tags, t -> {
@@ -113,6 +128,15 @@ public class Monitors {
 		return gauges.computeIfAbsent(name, s -> new ConcurrentHashMap<>()).computeIfAbsent(tags, t -> {
 			Id id = registry.createId(name, tags);
 			return registry.gauge(id);
+		});
+	}
+
+	private static DistributionSummary getDistributionSummary(String className, String name, String... additionalTags) {
+		Map<String, String> tags = toMap(className, additionalTags);
+
+		return distributionSummaries.computeIfAbsent(name, s -> new ConcurrentHashMap<>()).computeIfAbsent(tags, t -> {
+			Id id = registry.createId(name, tags);
+			return registry.distributionSummary(id);
 		});
 	}
 
@@ -180,6 +204,10 @@ public class Monitors {
 
 	public static void recordRunningWorkflows(long count, String name, String version, String ownerApp) {
 		gauge(classQualifier, "workflow_running", count, "workflowName", name, "version", version, "ownerApp", ""+ownerApp);
+	}
+
+	public static void recordNumTasksInWorkflow(long count, String name, String version) {
+		distributionSummary(classQualifier, "tasks_in_workflow", count, "workflowName", name, "version", version);
 	}
 
 	public static void recordTaskTimeout(String taskType) {

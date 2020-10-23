@@ -1415,6 +1415,10 @@ public class WorkflowExecutor {
                 }
             }
 
+            // metric to track the distribution of number of tasks within a workflow
+            Monitors.recordNumTasksInWorkflow(workflow.getTasks().size() + tasks.size(), workflow.getWorkflowName(),
+                String.valueOf(workflow.getWorkflowVersion()));
+
             // Save the tasks in the DAO
             createdTasks = executionDAOFacade.createTasks(tasks);
 
