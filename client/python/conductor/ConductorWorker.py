@@ -129,7 +129,7 @@ class ConductorWorker:
 
 def exc(taskType, inputData, startTime, retryCount, status, callbackAfterSeconds, pollCount):
     print('Executing the function')
-    return {'status': 'COMPLETED', 'output': {}}
+    return {'status': 'COMPLETED', 'output': {}, 'logs': []}
 
 
 def main():
