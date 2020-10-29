@@ -13,6 +13,7 @@
 package com.netflix.conductor.core.execution;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.inject.Singleton;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.config.Configuration;
@@ -35,6 +36,7 @@ import java.util.function.Predicate;
  * This service expects that the underlying Queueing layer implements QueueDAO.containsMessage method. This can be controlled
  * with {@link com.netflix.conductor.core.config.Configuration#isWorkflowRepairServiceEnabled()} property.
  */
+@Singleton
 public class WorkflowRepairService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowRepairService.class);
@@ -43,7 +45,17 @@ public class WorkflowRepairService {
     private final QueueDAO queueDAO;
     private final Configuration configuration;
 
-    private final Predicate<Task> isSystemTask = task -> WorkflowSystemTask.is(task.getTaskType());
+    // For system task -> Verify the task isAsync(), not isAsyncComplete() and in SCHEDULED or IN_PROGRESS state
+    // For simple task -> Verify the task is in SCHEDULED state
+    private final Predicate<Task> isTaskRepairable = task -> {
+        if (WorkflowSystemTask.is(task.getTaskType())) {    // If system task
+            WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
+            return workflowSystemTask.isAsync() && !workflowSystemTask.isAsyncComplete(task) &&
+                    (task.getStatus() == Task.Status.IN_PROGRESS || task.getStatus() == Task.Status.SCHEDULED);
+        } else {    // Else if simple task
+            return task.getStatus() == Task.Status.SCHEDULED;
+        }
+    };
 
     @Inject
     public WorkflowRepairService(
@@ -108,11 +120,7 @@ public class WorkflowRepairService {
      */
     @VisibleForTesting
     protected boolean verifyAndRepairTask(Task task) {
-        WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
-        if (task.getStatus() == Task.Status.SCHEDULED) {
-            if (isSystemTask.test(task) && !workflowSystemTask.isAsync()) {
-                return false;
-            }
+        if (isTaskRepairable.test(task)) {
             // Ensure QueueDAO contains this taskId
             String taskQueueName = QueueUtils.getQueueName(task);
             if (!queueDAO.containsMessage(taskQueueName, task.getTaskId())) {
