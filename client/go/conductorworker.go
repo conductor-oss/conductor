@@ -89,7 +89,7 @@ func (c *ConductorWorker) PollAndExecute(taskType string, domain string, execute
 		}
 
 		// Found a task, so we send an Ack
-		_, ackErr := c.ConductorHttpClient.AckTask(parsedTask.TaskId)
+		_, ackErr := c.ConductorHttpClient.AckTask(parsedTask.TaskId, hostname, domain)
 		if ackErr != nil {
 			log.Println("Error Acking task:", ackErr.Error())
 			continue
