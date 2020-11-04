@@ -16,7 +16,7 @@
 
 package com.netflix.conductor.core.execution.mapper;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -57,13 +57,13 @@ public class ExclusiveJoinTaskMapper implements TaskMapper {
 		joinTask.setCorrelationId(workflowInstance.getCorrelationId());
 		joinTask.setWorkflowType(workflowInstance.getWorkflowName());
 		joinTask.setScheduledTime(System.currentTimeMillis());
-		joinTask.setEndTime(System.currentTimeMillis());
+		joinTask.setStartTime(System.currentTimeMillis());
 		joinTask.setInputData(joinInput);
 		joinTask.setTaskId(taskId);
 		joinTask.setStatus(Task.Status.IN_PROGRESS);
 		joinTask.setWorkflowPriority(workflowInstance.getPriority());
 		joinTask.setWorkflowTask(taskToSchedule);
 
-		return Arrays.asList(joinTask);
+		return Collections.singletonList(joinTask);
 	}
 }
