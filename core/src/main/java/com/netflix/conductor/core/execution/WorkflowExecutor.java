@@ -1637,6 +1637,7 @@ public class WorkflowExecutor {
     public void scheduleNextIteration(Task loopTask, Workflow workflow) {
         //Schedule only first loop over task. Rest will be taken care in Decider Service when this task will get completed.
         List<Task> scheduledLoopOverTasks = deciderService.getTasksToBeScheduled(workflow, loopTask.getWorkflowTask().getLoopOver().get(0), loopTask.getRetryCount(), null);
+        setTaskDomains(scheduledLoopOverTasks, workflow);
         scheduledLoopOverTasks.stream().forEach(t -> {
             t.setReferenceTaskName(TaskUtils.appendIteration(t.getReferenceTaskName(), loopTask.getIteration()));
             t.setIteration(loopTask.getIteration());
