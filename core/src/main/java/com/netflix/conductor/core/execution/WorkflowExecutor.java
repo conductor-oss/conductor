@@ -677,7 +677,6 @@ public class WorkflowExecutor {
         workflow.setOutput(wf.getOutput());
         workflow.setExternalOutputPayloadStoragePath(wf.getExternalOutputPayloadStoragePath());
         executionDAOFacade.updateWorkflow(workflow);
-        executionDAOFacade.updateTasks(workflow.getTasks());
         LOGGER.debug("Completed workflow execution for {}", workflow.getWorkflowId());
 
         if (StringUtils.isNotEmpty(workflow.getParentWorkflowId())) {
