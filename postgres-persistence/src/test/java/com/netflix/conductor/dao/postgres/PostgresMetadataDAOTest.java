@@ -21,6 +21,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -32,6 +33,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT;
+import static com.netflix.conductor.core.execution.ApplicationException.Code.NOT_FOUND;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertFalse;
@@ -47,6 +52,9 @@ public class PostgresMetadataDAOTest {
     @Rule
     public TestName name = new TestName();
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     @Before
     public void setup() throws Exception {
         testUtil = new PostgresDAOTestUtil(name.getMethodName().toLowerCase());
@@ -59,14 +67,29 @@ public class PostgresMetadataDAOTest {
         testUtil.getDataSource().close();
     }
 
-    @Test(expected=ApplicationException.class)
-    public void testDuplicate() throws Exception {
+    @Test
+    public void testDuplicateWorkflowDef() throws Exception {
+
+        expectedException.expect(ApplicationException.class);
+        expectedException.expectMessage("Workflow with testDuplicate.1 already exists!");
+        expectedException.expect(hasProperty("code", is(CONFLICT)));
+
         WorkflowDef def = new WorkflowDef();
         def.setName("testDuplicate");
         def.setVersion(1);
 
         dao.createWorkflowDef(def);
         dao.createWorkflowDef(def);
+    }
+
+    @Test
+    public void testRemoveNotExistingWorkflowDef() throws Exception {
+
+        expectedException.expect(ApplicationException.class);
+        expectedException.expectMessage("No such workflow definition: test version: 1");
+        expectedException.expect(hasProperty("code", is(NOT_FOUND)));
+
+        dao.removeWorkflowDef("test", 1);
     }
 
     @Test
@@ -207,8 +230,13 @@ public class PostgresMetadataDAOTest {
         assertEquals(def.getName(), all.get(0).getName());
     }
 
-    @Test(expected=ApplicationException.class)
-    public void testRemoveTaskDef() throws Exception {
+    @Test
+    public void testRemoveNotExistingTaskDef() {
+
+        expectedException.expect(ApplicationException.class);
+        expectedException.expectMessage("No such task definition");
+        expectedException.expect(hasProperty("code", is(NOT_FOUND)));
+
         dao.removeTaskDef("test" + UUID.randomUUID().toString());
     }
 
