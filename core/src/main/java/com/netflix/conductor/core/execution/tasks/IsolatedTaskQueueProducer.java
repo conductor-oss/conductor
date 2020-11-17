@@ -79,7 +79,7 @@ public class IsolatedTaskQueueProducer {
 		for (TaskDef isolatedTaskDef : isolationTaskDefs) {
 			for (String taskType : taskTypes) {
 				String taskQueue = QueueUtils.getQueueName(taskType, null,
-					isolatedTaskDef.getExecutionNameSpace(), isolatedTaskDef.getIsolationGroupId());
+					isolatedTaskDef.getIsolationGroupId(), isolatedTaskDef.getExecutionNameSpace());
 				logger.debug("Adding taskQueue:'{}' to system task worker coordinator", taskQueue);
 				SystemTaskWorkerCoordinator.queue.add(taskQueue);
 			}
