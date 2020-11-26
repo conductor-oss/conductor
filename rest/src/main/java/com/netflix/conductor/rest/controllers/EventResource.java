@@ -12,9 +12,13 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import static com.netflix.conductor.rest.config.RequestMappingConstants.EVENT;
+
 import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.List;
+import java.util.Map;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,11 +28,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
-
-import static com.netflix.conductor.rest.config.RequestMappingConstants.EVENT;
 
 @RestController
 @RequestMapping(EVENT)
@@ -67,13 +66,14 @@ public class EventResource {
     @GetMapping("/{event}")
     @Operation(summary = "Get event handlers for a given event")
     public List<EventHandler> getEventHandlersForEvent(@PathVariable("event") String event,
-        @RequestParam(value = "activeOnly", defaultValue = "true") boolean activeOnly) {
+        @RequestParam(value = "activeOnly", defaultValue = "true", required = false) boolean activeOnly) {
         return eventService.getEventHandlersForEvent(event, activeOnly);
     }
 
     @GetMapping("/queues")
     @Operation(summary = "Get registered queues")
-    public Map<String, ?> getEventQueues(@RequestParam(value = "verbose", defaultValue = "false") boolean verbose) {
+    public Map<String, ?> getEventQueues(
+        @RequestParam(value = "verbose", defaultValue = "false", required = false) boolean verbose) {
         return eventService.getEventQueues(verbose);
     }
 

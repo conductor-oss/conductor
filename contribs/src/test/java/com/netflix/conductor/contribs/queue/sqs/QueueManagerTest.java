@@ -105,7 +105,6 @@ public class QueueManagerTest {
 
         doAnswer((Answer<Void>) invocation -> {
             List<Message> msgs = invocation.getArgument(0, List.class);
-            System.out.println("got messages to publish: " + msgs);
             messages.addAll(msgs);
             return null;
         }).when(queue).publish(any());
@@ -118,7 +117,6 @@ public class QueueManagerTest {
         doReturn(workflow2).when(executionService).getExecutionStatus(eq("v_2"), anyBoolean());
 
         doAnswer((Answer<Void>) invocation -> {
-            System.out.println("Updating task: " + invocation.getArgument(0, Task.class));
             updatedTasks.add(invocation.getArgument(0, Task.class));
             return null;
         }).when(executionService).updateTask(any(Task.class));

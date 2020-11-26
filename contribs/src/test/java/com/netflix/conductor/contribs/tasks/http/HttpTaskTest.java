@@ -375,15 +375,12 @@ public class HttpTaskTest {
                 writer.flush();
                 writer.close();
             } else if (request.getMethod().equals("POST") && request.getRequestURI().equals("/post2")) {
-                System.out.println("==================================== received request from client");
                 response.addHeader("Content-Type", "application/json");
                 response.setStatus(204);
                 BufferedReader reader = request.getReader();
                 Map<String, Object> input = objectMapper.readValue(reader, mapOfObj);
                 Set<String> keys = input.keySet();
-                System.out.println(keys);
                 response.getWriter().close();
-
             } else if (request.getMethod().equals("GET") && request.getRequestURI().equals("/numeric")) {
                 PrintWriter writer = response.getWriter();
                 writer.print(NUM_RESPONSE);

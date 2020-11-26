@@ -1,17 +1,14 @@
 /*
  * Copyright 2020 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.test.resiliency
 
@@ -20,16 +17,11 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.ApplicationException
-import com.netflix.conductor.dao.QueueDAO
-import com.netflix.conductor.server.resources.TaskResource
-import com.netflix.conductor.server.resources.WorkflowResource
-import com.netflix.conductor.test.util.MockQueueDAOModule
-import com.netflix.conductor.test.util.WorkflowTestUtil
-import spock.guice.UseModules
-import spock.lang.Specification
-
-import javax.inject.Inject
+import com.netflix.conductor.core.exception.ApplicationException
+import com.netflix.conductor.rest.controllers.TaskResource
+import com.netflix.conductor.rest.controllers.WorkflowResource
+import com.netflix.conductor.test.base.AbstractResiliencySpecification
+import org.springframework.beans.factory.annotation.Autowired
 
 /**
  * When QueueDAO is unavailable,
@@ -38,19 +30,12 @@ import javax.inject.Inject
  * 2. Succeeds
  * 3. Doesn't involve QueueDAO
  */
-@UseModules(MockQueueDAOModule)
-class QueueResiliencySpec extends Specification {
+class QueueResiliencySpec extends AbstractResiliencySpecification {
 
-    @Inject
-    WorkflowTestUtil workflowTestUtil
-
-    @Inject
-    QueueDAO queueDAO
-
-    @Inject
+    @Autowired
     WorkflowResource workflowResource
 
-    @Inject
+    @Autowired
     TaskResource taskResource
 
     def SIMPLE_TWO_TASK_WORKFLOW = 'integration_test_wf'
@@ -61,11 +46,7 @@ class QueueResiliencySpec extends Specification {
                 'simple_workflow_1_integration_test.json'
         )
     }
-
-    def cleanup() {
-        workflowTestUtil.clearWorkflows()
-    }
-
+    
     /// Workflow Resource endpoints
 
     def "Verify Start workflow fails when QueueDAO is unavailable"() {
@@ -570,20 +551,6 @@ class QueueResiliencySpec extends Specification {
 
         then:
         1 * queueDAO.queuesDetail() >> { throw new IllegalStateException("Queue queuesDetail failed from Spy") }
-        thrown(Exception)
-    }
-
-    def "Verify requeue fails when QueueDAO is unavailable"() {
-        when: "Start a simple workflow"
-        def workflowInstanceId = workflowResource.startWorkflow(new StartWorkflowRequest()
-                .withName(SIMPLE_TWO_TASK_WORKFLOW)
-                .withVersion(1))
-
-        and:
-        taskResource.requeue()
-
-        then:
-        1 * queueDAO.pushIfNotExists(*_) >> { throw new IllegalStateException("Queue pushIfNotExists failed from Spy") }
         thrown(Exception)
     }
 

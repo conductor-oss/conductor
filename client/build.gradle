@@ -8,7 +8,6 @@ dependencies {
     // SBMTODO: remove guava dep
     implementation "com.google.guava:guava:${revGuava}"
 
-    // SBMTODO: remove jersey dep
     implementation "com.sun.jersey:jersey-client:1.19.4"
 
     implementation "com.netflix.spectator:spectator-api:${revSpectator}"
@@ -17,8 +16,8 @@ dependencies {
 
     implementation "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
 
-    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
-    implementation "commons-io:commons-io:${revCommonsIo}"
+    implementation "org.apache.commons:commons-lang3"
+    implementation "commons-io:commons-io"
 
     implementation "org.slf4j:slf4j-api"
 }

@@ -69,7 +69,6 @@ public class ParametersUtilsTest {
 
         Map<String, Object> replaced = parametersUtils.replace(input, jsonObj);
         assertNotNull(replaced);
-        System.out.println("testNoExpand(): " + replaced);
 
         assertEquals("{\"taskRefName\":\"t001\",\"workflowId\":\"w002\"}", replaced.get("k1"));
         assertEquals("conductor", replaced.get("k4"));

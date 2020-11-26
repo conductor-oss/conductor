@@ -31,19 +31,12 @@ abstract class ElasticSearchDaoBaseTest extends ElasticSearchTest {
         elasticSearchClient = new PreBuiltTransportClient(settings)
                 .addTransportAddress(new TransportAddress(InetAddress.getByName("localhost"), mappedPort));
 
-        elasticSearchClient.admin()
-                .cluster()
-                .prepareHealth()
-                .setWaitForGreenStatus()
-                .execute()
-                .get();
-
         indexDAO = new ElasticSearchDAOV6(elasticSearchClient, properties, objectMapper);
         indexDAO.setup();
     }
 
     @AfterClass
-    public static void closeClient() throws Exception {
+    public static void closeClient() {
         container.stop();
     }
 

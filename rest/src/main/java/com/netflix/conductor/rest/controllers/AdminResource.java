@@ -12,22 +12,21 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import static com.netflix.conductor.rest.config.RequestMappingConstants.ADMIN;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
+
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.List;
+import java.util.Map;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
-
-import static com.netflix.conductor.rest.config.RequestMappingConstants.ADMIN;
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 @RestController
 @RequestMapping(ADMIN)
@@ -48,8 +47,8 @@ public class AdminResource {
     @GetMapping("/task/{tasktype}")
     @Operation(summary = "Get the list of pending tasks for a given task type")
     public List<Task> view(@PathVariable("tasktype") String taskType,
-        @RequestParam(value = "start", defaultValue = "0") int start,
-        @RequestParam(value = "count", defaultValue = "100") int count) {
+        @RequestParam(value = "start", defaultValue = "0", required = false) int start,
+        @RequestParam(value = "count", defaultValue = "100", required = false) int count) {
         return adminService.getListOfPendingTask(taskType, start, count);
     }
 

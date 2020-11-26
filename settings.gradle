@@ -23,6 +23,6 @@ include 'grpc'
 include 'grpc-server'
 include 'grpc-client'
 
-//include 'test-harness'
+include 'test-harness'
 
 rootProject.children.each {it.name="conductor-${it.name}"}

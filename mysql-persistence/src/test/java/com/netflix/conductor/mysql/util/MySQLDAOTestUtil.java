@@ -12,22 +12,22 @@
  */
 package com.netflix.conductor.mysql.util;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.mysql.config.MySQLProperties;
 import com.zaxxer.hikari.HikariDataSource;
-import org.flywaydb.core.Flyway;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import javax.sql.DataSource;
+import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.configuration.FluentConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class MySQLDAOTestUtil {
 
@@ -84,9 +84,11 @@ public class MySQLDAOTestUtil {
     }
 
     private void flywayMigrate(DataSource dataSource) {
-        Flyway flyway = new Flyway();
-        flyway.setDataSource(dataSource);
-        flyway.setPlaceholderReplacement(false);
+        FluentConfiguration fluentConfiguration = Flyway.configure()
+            .dataSource(dataSource)
+            .placeholderReplacement(false);
+
+        Flyway flyway = new Flyway(fluentConfiguration);
         flyway.migrate();
     }
 

@@ -14,43 +14,22 @@ package com.netflix.conductor.test.integration
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
-import com.netflix.conductor.common.metadata.workflow.TaskType
+import com.netflix.conductor.common.metadata.tasks.TaskType
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.core.execution.tasks.SubWorkflow
-import com.netflix.conductor.dao.QueueDAO
-import com.netflix.conductor.service.ExecutionService
-import com.netflix.conductor.service.MetadataService
-import com.netflix.conductor.test.util.WorkflowTestUtil
-import com.netflix.conductor.tests.utils.TestModule
-import com.netflix.conductor.tests.utils.UserTask
-import com.netflix.governator.guice.test.ModulesForTesting
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
+import com.netflix.conductor.test.base.AbstractSpecification
+import com.netflix.conductor.test.utils.UserTask
 import spock.lang.Shared
-import spock.lang.Specification
-
-import javax.inject.Inject
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedLargePayloadTask
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
-import static com.netflix.conductor.tests.utils.MockExternalPayloadStorage.*
+import static com.netflix.conductor.test.utils.MockExternalPayloadStorage.INITIAL_WORKFLOW_INPUT_PATH
+import static com.netflix.conductor.test.utils.MockExternalPayloadStorage.INPUT_PAYLOAD_PATH
+import static com.netflix.conductor.test.utils.MockExternalPayloadStorage.TASK_OUTPUT_PATH
+import static com.netflix.conductor.test.utils.MockExternalPayloadStorage.WORKFLOW_OUTPUT_PATH
 
-@ModulesForTesting([TestModule.class])
-class ExternalPayloadStorageSpec extends Specification {
-
-    @Inject
-    ExecutionService workflowExecutionService
-
-    @Inject
-    MetadataService metadataService
-
-    @Inject
-    WorkflowExecutor workflowExecutor
-
-    @Inject
-    WorkflowTestUtil workflowTestUtil
-
-    @Inject
-    UserTask userTask
+class ExternalPayloadStorageSpec extends AbstractSpecification {
 
     @Shared
     def LINEAR_WORKFLOW_T1_T2 = 'integration_test_wf'
@@ -64,18 +43,11 @@ class ExternalPayloadStorageSpec extends Specification {
     @Shared
     def WORKFLOW_WITH_INLINE_SUB_WF = "WorkflowWithInlineSubWorkflow"
 
-    @Inject
-    QueueDAO queueDAO
-
     def setup() {
         workflowTestUtil.registerWorkflows('simple_workflow_1_integration_test.json',
                 'conditional_system_task_workflow_integration_test.json',
                 'fork_join_integration_test.json',
                 'simple_workflow_with_sub_workflow_inline_def_integration_test.json')
-    }
-
-    def cleanup() {
-        workflowTestUtil.clearWorkflows()
     }
 
     def "Test simple workflow using external payload storage"() {
@@ -196,7 +168,7 @@ class ExternalPayloadStorageSpec extends Specification {
         when: "the system task 'USER_TASK' is started by issuing a system task call"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def taskId = workflow.getTaskByRefName('user_task').getTaskId()
-        workflowExecutor.executeSystemTask(userTask, taskId, 1)
+        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(UserTask.NAME), taskId, 1)
 
         then: "verify that the user task is in a COMPLETED state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -440,7 +412,7 @@ class ExternalPayloadStorageSpec extends Specification {
         when: "the subworkflow is started by issuing a system task call"
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowTaskId = workflow.getTaskByRefName('swt').taskId
-        workflowExecutor.executeSystemTask(new SubWorkflow(), subWorkflowTaskId, 1)
+        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(SubWorkflow.NAME), subWorkflowTaskId, 1)
 
         then: "verify that the sub workflow task is in a IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -552,7 +524,8 @@ class ExternalPayloadStorageSpec extends Specification {
         setup: "Modify the task definition"
         def persistedTask2Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_2').get()
         def modifiedTask2Definition = new TaskDef(persistedTask2Definition.name, persistedTask2Definition.description,
-                2, persistedTask2Definition.timeoutSeconds)
+                persistedTask2Definition.ownerEmail, 2, persistedTask2Definition.timeoutSeconds,
+                persistedTask2Definition.responseTimeoutSeconds)
         modifiedTask2Definition.setRetryDelaySeconds(0)
         metadataService.updateTaskDef(modifiedTask2Definition)
 

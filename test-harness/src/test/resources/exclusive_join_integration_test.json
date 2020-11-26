@@ -1,0 +1,114 @@
+{
+  "name": "ExclusiveJoinTestWorkflow",
+  "description": "Exclusive Join Test Workflow",
+  "version": 1,
+  "tasks": [
+    {
+      "name": "integration_task_1",
+      "taskReferenceName": "task1",
+      "inputParameters": {
+        "payload": "${workflow.input.payload}"
+      },
+      "type": "SIMPLE",
+      "startDelay": 0,
+      "optional": false
+    },
+    {
+      "name": "decide_task",
+      "taskReferenceName": "decision1",
+      "inputParameters": {
+        "decision_1": "${workflow.input.decision_1}"
+      },
+      "type": "DECISION",
+      "caseValueParam": "decision_1",
+      "decisionCases": {
+        "true": [
+          {
+            "name": "integration_task_2",
+            "taskReferenceName": "task2",
+            "inputParameters": {
+              "payload": "${task1.output.payload}"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "optional": false
+          },
+          {
+            "name": "decide_task",
+            "taskReferenceName": "decision2",
+            "inputParameters": {
+              "decision_2": "${workflow.input.decision_2}"
+            },
+            "type": "DECISION",
+            "caseValueParam": "decision_2",
+            "decisionCases": {
+              "true": [
+                {
+                  "name": "integration_task_3",
+                  "taskReferenceName": "task3",
+                  "inputParameters": {
+                    "payload": "${task2.output.payload}"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0,
+                  "optional": false
+                }
+              ]
+            }
+          }
+        ],
+        "false": [
+          {
+            "name": "integration_task_4",
+            "taskReferenceName": "task4",
+            "inputParameters": {
+              "payload": "${task1.output.payload}"
+            },
+            "type": "SIMPLE",
+            "startDelay": 0,
+            "optional": false
+          },
+          {
+            "name": "decide_task",
+            "taskReferenceName": "decision3",
+            "inputParameters": {
+              "decision_3": "${workflow.input.decision_3}"
+            },
+            "type": "DECISION",
+            "caseValueParam": "decision_3",
+            "decisionCases": {
+              "true": [
+                {
+                  "name": "integration_task_5",
+                  "taskReferenceName": "task5",
+                  "inputParameters": {
+                    "payload": "${task4.output.payload}"
+                  },
+                  "type": "SIMPLE",
+                  "startDelay": 0,
+                  "optional": false
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "exclusive_join",
+      "taskReferenceName": "exclusiveJoin",
+      "type": "EXCLUSIVE_JOIN",
+      "joinOn": [
+        "task3",
+        "task5"
+      ],
+      "defaultExclusiveJoinTask": [
+        "task2",
+        "task4",
+        "task1"
+      ]
+    }
+  ],
+  "schemaVersion": 2,
+  "ownerEmail": "test@harness.com"
+}

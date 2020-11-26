@@ -12,15 +12,7 @@
  */
 package com.netflix.conductor.redis.config.utils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.stereotype.Component;
-import redis.clients.jedis.ScanParams;
-import redis.clients.jedis.ScanResult;
-import redis.clients.jedis.Tuple;
-import redis.clients.jedis.commands.JedisCommands;
-import redis.clients.jedis.params.ZAddParams;
+import static com.netflix.conductor.redis.config.utils.RedisQueuesProvider.DEFAULT_CLIENT_INJECTION_NAME;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -29,13 +21,18 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-
-import static com.netflix.conductor.redis.config.utils.RedisQueuesProvider.DEFAULT_CLIENT_INJECTION_NAME;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import redis.clients.jedis.ScanParams;
+import redis.clients.jedis.ScanResult;
+import redis.clients.jedis.Tuple;
+import redis.clients.jedis.commands.JedisCommands;
+import redis.clients.jedis.params.ZAddParams;
 
 /**
  * Proxy for the Dynomite client
  */
-@Component
 public class JedisProxy {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JedisProxy.class);

@@ -12,30 +12,33 @@
  */
 package com.netflix.conductor.zookeeper.lock;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.service.ExecutionLockService;
 import com.netflix.conductor.zookeeper.config.ZookeeperProperties;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import javax.inject.Provider;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.test.TestingServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import javax.inject.Provider;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ZookeeperLockTest {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(ZookeeperLockTest.class);
 
     TestingServer zkServer;
     ZookeeperProperties properties;
@@ -187,7 +190,7 @@ public class ZookeeperLockTest {
                     lock.releaseLock(lockID);
                     iterations++;
                     if (iterations % 10 == 0) {
-                        System.out.println("Finished iterations:" + iterations);
+                        LOGGER.info("Finished iterations: {}", iterations);
                     }
                 }
                 finishedSuccessfully = true;

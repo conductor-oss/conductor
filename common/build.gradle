@@ -11,17 +11,17 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
+    implementation "org.apache.commons:commons-lang3"
 
     implementation "com.github.rholder:guava-retrying:${revGuavaRetrying}"
 
-    implementation "org.apache.bval:bval-jsr:${revBval}"
+    implementation "org.apache.bval:bval-jsr"
 
     implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
     implementation "com.github.vmg.protogen:protogen-annotations:${revProtogenAnnotations}"
 
-    implementation "com.fasterxml.jackson.core:jackson-databind:${revJackson}"
-    implementation "com.fasterxml.jackson.core:jackson-core:${revJackson}"
+    implementation "com.fasterxml.jackson.core:jackson-databind"
+    implementation "com.fasterxml.jackson.core:jackson-core"
 }
 
 import com.github.vmg.protogen.ProtoGenTask

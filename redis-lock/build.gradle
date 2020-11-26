@@ -3,7 +3,7 @@ dependencies {
     implementation project(':conductor-core')
     implementation 'org.springframework.boot:spring-boot-starter'
 
-    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
+    implementation "org.apache.commons:commons-lang3"
     implementation "org.redisson:redisson:${revRedisson}"
 
     testImplementation "com.github.kstyrc:embedded-redis:${revEmbeddedRedis}"

@@ -4,7 +4,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter'
 
     implementation "com.datastax.cassandra:cassandra-driver-core:${revCassandra}"
-    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
+    implementation "org.apache.commons:commons-lang3"
     implementation "javax.inject:javax.inject:1"
 
     testImplementation("org.cassandraunit:cassandra-unit:${revCassandraUnit}") {

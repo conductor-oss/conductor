@@ -253,7 +253,6 @@ public class TestWorkflowExecutor {
         AtomicInteger queuedTaskCount = new AtomicInteger(0);
         final Answer answer = invocation -> {
             String queueName = invocation.getArgument(0, String.class);
-            System.out.println(queueName);
             queuedTaskCount.incrementAndGet();
             return null;
         };

@@ -13,20 +13,16 @@
 package com.netflix.conductor.postgres.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.postgres.dao.PostgresExecutionDAO;
 import com.netflix.conductor.postgres.dao.PostgresMetadataDAO;
 import com.netflix.conductor.postgres.dao.PostgresQueueDAO;
+import javax.sql.DataSource;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import javax.sql.DataSource;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)
@@ -39,34 +35,18 @@ public class PostgresConfiguration {
     }
 
     @Bean
-    public MetadataDAO mySqlMetadataDAO(ObjectMapper objectMapper, DataSource dataSource,
+    public MetadataDAO postgresMetadataDAO(ObjectMapper objectMapper, DataSource dataSource,
         PostgresProperties properties) {
         return new PostgresMetadataDAO(objectMapper, dataSource, properties);
     }
 
     @Bean
-    public EventHandlerDAO mySqlEventHandlerDAO(ObjectMapper objectMapper, DataSource dataSource,
-        PostgresProperties properties) {
-        return new PostgresMetadataDAO(objectMapper, dataSource, properties);
-    }
-
-    @Bean
-    public ExecutionDAO mySqlExecutionDAO(ObjectMapper objectMapper, DataSource dataSource) {
+    public ExecutionDAO postgresExecutionDAO(ObjectMapper objectMapper, DataSource dataSource) {
         return new PostgresExecutionDAO(objectMapper, dataSource);
     }
 
     @Bean
-    public RateLimitingDAO mySqlRateLimitingDAO(ObjectMapper objectMapper, DataSource dataSource) {
-        return new PostgresExecutionDAO(objectMapper, dataSource);
-    }
-
-    @Bean
-    public PollDataDAO mySqlPollDataDAO(ObjectMapper objectMapper, DataSource dataSource) {
-        return new PostgresExecutionDAO(objectMapper, dataSource);
-    }
-
-    @Bean
-    public QueueDAO mySqlQueueDAO(ObjectMapper objectMapper, DataSource dataSource) {
+    public QueueDAO postgresQueueDAO(ObjectMapper objectMapper, DataSource dataSource) {
         return new PostgresQueueDAO(objectMapper, dataSource);
     }
 }

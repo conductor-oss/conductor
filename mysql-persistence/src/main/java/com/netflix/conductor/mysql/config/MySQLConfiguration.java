@@ -13,20 +13,16 @@
 package com.netflix.conductor.mysql.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
-import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.mysql.dao.MySQLExecutionDAO;
 import com.netflix.conductor.mysql.dao.MySQLMetadataDAO;
 import com.netflix.conductor.mysql.dao.MySQLQueueDAO;
+import javax.sql.DataSource;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
-import javax.sql.DataSource;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)
@@ -44,23 +40,7 @@ public class MySQLConfiguration {
     }
 
     @Bean
-    public EventHandlerDAO mySqlEventHandlerDAO(ObjectMapper objectMapper, DataSource dataSource,
-        MySQLProperties properties) {
-        return new MySQLMetadataDAO(objectMapper, dataSource, properties);
-    }
-
-    @Bean
     public ExecutionDAO mySqlExecutionDAO(ObjectMapper objectMapper, DataSource dataSource) {
-        return new MySQLExecutionDAO(objectMapper, dataSource);
-    }
-
-    @Bean
-    public RateLimitingDAO mySqlRateLimitingDAO(ObjectMapper objectMapper, DataSource dataSource) {
-        return new MySQLExecutionDAO(objectMapper, dataSource);
-    }
-
-    @Bean
-    public PollDataDAO mySqlPollDataDAO(ObjectMapper objectMapper, DataSource dataSource) {
         return new MySQLExecutionDAO(objectMapper, dataSource);
     }
 

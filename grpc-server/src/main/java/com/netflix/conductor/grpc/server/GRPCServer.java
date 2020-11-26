@@ -25,7 +25,7 @@ import java.util.List;
 
 public class GRPCServer {
 
-    private static final Logger logger = LoggerFactory.getLogger(GRPCServer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(GRPCServer.class);
 
     private final Server server;
 
@@ -38,13 +38,13 @@ public class GRPCServer {
     @PostConstruct
     public void start() throws IOException {
         server.start();
-        logger.info("grpc: Server started, listening on " + server.getPort());
+        LOGGER.info("grpc: Server started, listening on " + server.getPort());
     }
 
     @PreDestroy
     public void stop() {
         if (server != null) {
-            logger.info("grpc: server shutting down");
+            LOGGER.info("grpc: server shutting down");
             server.shutdown();
         }
     }

@@ -13,50 +13,30 @@
 package com.netflix.conductor.test.integration
 
 import com.netflix.conductor.common.metadata.tasks.Task
-import com.netflix.conductor.common.metadata.workflow.TaskType
+import com.netflix.conductor.common.metadata.tasks.TaskType
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.core.execution.WorkflowRepairService
 import com.netflix.conductor.core.execution.WorkflowSweeper
-import com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator
+import com.netflix.conductor.core.execution.tasks.SubWorkflow
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
 import com.netflix.conductor.dao.QueueDAO
-import com.netflix.conductor.service.ExecutionService
-import com.netflix.conductor.service.MetadataService
-import com.netflix.conductor.test.util.WorkflowTestUtil
-import com.netflix.conductor.tests.utils.TestModule
-import com.netflix.governator.guice.test.ModulesForTesting
+import com.netflix.conductor.test.base.AbstractSpecification
+import org.springframework.beans.factory.annotation.Autowired
 import spock.lang.Shared
-import spock.lang.Specification
-
-import javax.inject.Inject
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
-@ModulesForTesting([TestModule.class])
-class SubWorkflowSpec extends Specification {
+class SubWorkflowSpec extends AbstractSpecification {
 
-    @Inject
-    ExecutionService workflowExecutionService
+    @Autowired
+    QueueDAO queueDAO
 
-    @Inject
-    MetadataService metadataService
-
-    @Inject
-    WorkflowExecutor workflowExecutor
-
-    @Inject
+    @Autowired
     WorkflowSweeper workflowSweeper
 
-    @Inject
+    @Autowired
     WorkflowRepairService workflowRepairService
-
-    @Inject
-    WorkflowTestUtil workflowTestUtil
-
-    @Inject
-    QueueDAO queueDAO
 
     @Shared
     def WORKFLOW_WITH_SUBWORKFLOW = 'integration_test_wf_with_sub_wf'
@@ -67,10 +47,6 @@ class SubWorkflowSpec extends Specification {
     def setup() {
         workflowTestUtil.registerWorkflows('simple_one_task_sub_workflow_integration_test.json',
                 'workflow_with_sub_workflow_1_integration_test.json')
-    }
-
-    def cleanup() {
-        workflowTestUtil.clearWorkflows()
     }
 
     def "Test retrying a subworkflow where parent workflow timed out due to workflowTimeout"() {
@@ -85,6 +61,7 @@ class SubWorkflowSpec extends Specification {
         modifiedWorkflowDefinition.outputParameters = persistedWorkflowDefinition.outputParameters
         modifiedWorkflowDefinition.timeoutPolicy = WorkflowDef.TimeoutPolicy.TIME_OUT_WF
         modifiedWorkflowDefinition.timeoutSeconds = 10
+        modifiedWorkflowDefinition.ownerEmail = persistedWorkflowDefinition.ownerEmail
         metadataService.updateWorkflowDef([modifiedWorkflowDefinition])
 
         and: "an existing workflow with subworkflow and registered definitions"
@@ -128,8 +105,7 @@ class SubWorkflowSpec extends Specification {
 
         when: "the subworkflow is started by issuing a system task call"
         List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
-        WorkflowSystemTask systemTask = SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.get("SUB_WORKFLOW")
-        workflowExecutor.executeSystemTask(systemTask, polledTaskIds.get(0), 30)
+        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(SubWorkflow.NAME), polledTaskIds.get(0), 30)
 
         then: "verify that the 'sub_workflow_task' is in a IN_PROGRESS"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -271,9 +247,8 @@ class SubWorkflowSpec extends Specification {
         }
 
         when: "Polled for and executed subworkflow task"
-        List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200);
-        WorkflowSystemTask systemTask = SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.get("SUB_WORKFLOW")
-        workflowExecutor.executeSystemTask(systemTask, polledTaskIds.get(0), 30)
+        List<String> polledTaskIds = queueDAO.pop("SUB_WORKFLOW", 1, 200)
+        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(SubWorkflow.NAME), polledTaskIds.get(0), 30)
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         def subWorkflowId = workflow.tasks[1].subWorkflowId
 
@@ -296,7 +271,7 @@ class SubWorkflowSpec extends Specification {
         }
 
         when: "subworkflow is terminated"
-        def terminateReason =  "terminating from a test case"
+        def terminateReason = "terminating from a test case"
         workflowExecutor.terminateWorkflow(subWorkflowId, terminateReason)
 
         then: "verify that sub workflow is in terminated state"

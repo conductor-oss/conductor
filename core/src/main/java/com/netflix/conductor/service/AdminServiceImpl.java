@@ -53,17 +53,18 @@ public class AdminServiceImpl implements AdminService {
         this.version = "UNKNOWN";
         this.buildDate = "UNKNOWN";
 
-        try (
-            InputStream propertiesIs = this.getClass().getClassLoader()
-                .getResourceAsStream("META-INF/conductor-core.properties")
-        ) {
-            Properties prop = new Properties();
-            prop.load(propertiesIs);
-            this.version = prop.getProperty("Implementation-Version");
-            this.buildDate = prop.getProperty("Build-Date");
-        } catch (Exception e) {
-            LOGGER.error("Error loading properties", e);
-        }
+        // SBMTODO: remove
+//        try (
+//            InputStream propertiesIs = this.getClass().getClassLoader()
+//                .getResourceAsStream("META-INF/conductor-core.properties")
+//        ) {
+//            Properties prop = new Properties();
+//            prop.load(propertiesIs);
+//            this.version = prop.getProperty("Implementation-Version");
+//            this.buildDate = prop.getProperty("Build-Date");
+//        } catch (Exception e) {
+//            LOGGER.error("Error loading properties", e);
+//        }
     }
 
     /**
