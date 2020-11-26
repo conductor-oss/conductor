@@ -1,64 +1,64 @@
 /*
- * Copyright (c) 2019 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *   http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Copyright 2020 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
-
 package com.netflix.conductor.service;
 
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.utils.Lock;
+import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.metrics.Monitors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
 import javax.inject.Provider;
 import java.util.concurrent.TimeUnit;
 
+@Service
 public class ExecutionLockService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionLockService.class);
-    private final Configuration config;
+    private final ConductorProperties properties;
     private final Provider<Lock> lockProvider;
-    private static long LOCK_TIME_TO_TRY;
-    private static long LOCK_LEASE_TIME;
+    private final long lockLeaseTime;
+    private final long lockTimeToTry;
 
-    @Inject
-    public ExecutionLockService(Configuration config, Provider<Lock> lockProvider) {
-        this.config = config;
+    @Autowired
+    public ExecutionLockService(ConductorProperties properties, Provider<Lock> lockProvider) {
+        this.properties = properties;
         this.lockProvider = lockProvider;
-        LOCK_LEASE_TIME = config.getLongProperty("workflow.locking.lease.time.ms", 60000);
-        LOCK_TIME_TO_TRY = config.getLongProperty("workflow.locking.time.to.try.ms", 500);
+        this.lockLeaseTime = properties.getLockLeaseTimeMs();
+        this.lockTimeToTry = properties.getLockTimeToTryMs();
     }
 
     /**
      * Tries to acquire lock with reasonable timeToTry duration and lease time. Exits if a lock cannot be acquired.
-     * Considering that the workflow decide can be triggered through multiple entry points, and periodically through the sweeper service,
-     * do not block on acquiring the lock, as the order of execution of decides on a workflow doesn't matter.
+     * Considering that the workflow decide can be triggered through multiple entry points, and periodically through the
+     * sweeper service, do not block on acquiring the lock, as the order of execution of decides on a workflow doesn't
+     * matter.
+     *
      * @param lockId
      * @return
      */
     public boolean acquireLock(String lockId) {
-        return acquireLock(lockId, LOCK_TIME_TO_TRY, LOCK_LEASE_TIME);
+        return acquireLock(lockId, lockTimeToTry, lockLeaseTime);
     }
 
     public boolean acquireLock(String lockId, long timeToTryMs) {
-        return acquireLock(lockId, timeToTryMs, LOCK_LEASE_TIME);
+        return acquireLock(lockId, timeToTryMs, lockLeaseTime);
     }
 
     public boolean acquireLock(String lockId, long timeToTryMs, long leaseTimeMs) {
-        if (config.enableWorkflowExecutionLock()) {
+        if (properties.isWorkflowExecutionLockEnabled()) {
             Lock lock = lockProvider.get();
             if (!lock.acquireLock(lockId, timeToTryMs, leaseTimeMs, TimeUnit.MILLISECONDS)) {
                 LOGGER.debug("Thread {} failed to acquire lock to lockId {}.", Thread.currentThread().getId(), lockId);
@@ -72,18 +72,19 @@ public class ExecutionLockService {
 
     /**
      * Blocks until it gets the lock for workflowId
+     *
      * @param lockId
      */
     public void waitForLock(String lockId) {
-        if (config.enableWorkflowExecutionLock()) {
-            Lock  lock = lockProvider.get();
+        if (properties.isWorkflowExecutionLockEnabled()) {
+            Lock lock = lockProvider.get();
             lock.acquireLock(lockId);
             LOGGER.debug("Thread {} acquired lock to lockId {}.", Thread.currentThread().getId(), lockId);
         }
     }
 
     public void releaseLock(String lockId) {
-        if (config.enableWorkflowExecutionLock()) {
+        if (properties.isWorkflowExecutionLockEnabled()) {
             Lock lock = lockProvider.get();
             lock.releaseLock(lockId);
             LOGGER.debug("Thread {} released lock to lockId {}.", Thread.currentThread().getId(), lockId);
@@ -91,7 +92,7 @@ public class ExecutionLockService {
     }
 
     public void deleteLock(String lockId) {
-        if (config.enableWorkflowExecutionLock()) {
+        if (properties.isWorkflowExecutionLockEnabled()) {
             lockProvider.get().deleteLock(lockId);
             LOGGER.debug("Thread {} deleted lockId {}.", Thread.currentThread().getId(), lockId);
         }

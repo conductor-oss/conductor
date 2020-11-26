@@ -19,34 +19,33 @@ package com.netflix.conductor.client.config;
 public interface ConductorClientConfiguration {
 
     /**
-     * @return the workflow input payload size threshold in KB,
-     * beyond which the payload will be processed based on {@link ConductorClientConfiguration#isExternalPayloadStorageEnabled()}.
+     * @return the workflow input payload size threshold in KB, beyond which the payload will be processed based on
+     * {@link ConductorClientConfiguration#isExternalPayloadStorageEnabled()}.
      */
     int getWorkflowInputPayloadThresholdKB();
 
     /**
-     * @return the max value of workflow input payload size threshold in KB,
-     * beyond which the payload will be rejected regardless external payload storage is enabled.
+     * @return the max value of workflow input payload size threshold in KB, beyond which the payload will be rejected
+     * regardless external payload storage is enabled.
      */
     int getWorkflowInputMaxPayloadThresholdKB();
 
     /**
-     * @return the task output payload size threshold in KB,
-     * beyond which the payload will be processed based on {@link ConductorClientConfiguration#isExternalPayloadStorageEnabled()}.
+     * @return the task output payload size threshold in KB, beyond which the payload will be processed based on {@link
+     * ConductorClientConfiguration#isExternalPayloadStorageEnabled()}.
      */
     int getTaskOutputPayloadThresholdKB();
 
     /**
-     * @return the max value of task output payload size threshold in KB,
-     * beyond which the payload will be rejected regardless external payload storage is enabled.
+     * @return the max value of task output payload size threshold in KB, beyond which the payload will be rejected
+     * regardless external payload storage is enabled.
      */
     int getTaskOutputMaxPayloadThresholdKB();
 
     /**
-     * @return the flag which controls the use of external storage for storing workflow/task
-     * input and output JSON payloads with size greater than threshold.
-     * If it is set to true, the payload is stored in external location.
-     * If it is set to false, the payload is rejected and the task/workflow execution fails.
+     * @return the flag which controls the use of external storage for storing workflow/task input and output JSON
+     * payloads with size greater than threshold. If it is set to true, the payload is stored in external location. If
+     * it is set to false, the payload is rejected and the task/workflow execution fails.
      */
     boolean isExternalPayloadStorageEnabled();
 }

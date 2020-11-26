@@ -1,17 +1,14 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.service;
 
@@ -22,6 +19,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult;
 import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
+import org.springframework.validation.annotation.Validated;
 
 import javax.validation.Valid;
 import javax.validation.constraints.NotEmpty;
@@ -29,8 +27,10 @@ import javax.validation.constraints.NotNull;
 import java.util.List;
 import java.util.Map;
 
+@Validated
 public interface TaskService {
-    /*
+
+    /**
      * Poll for a task of a certain type.
      *
      * @param taskType Task name
@@ -50,7 +50,8 @@ public interface TaskService {
      * @param timeout  Timeout for polling in milliseconds
      * @return list of {@link Task}
      */
-    List<Task> batchPoll(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType, String workerId, String domain, Integer count, Integer timeout);
+    List<Task> batchPoll(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType, String workerId,
+        String domain, Integer count, Integer timeout);
 
     /**
      * Get in progress tasks. The results are paginated.
@@ -60,7 +61,8 @@ public interface TaskService {
      * @param count    Number of entries
      * @return list of {@link Task}
      */
-    List<Task> getTasks(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType, String startKey, Integer count);
+    List<Task> getTasks(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType, String startKey,
+        Integer count);
 
     /**
      * Get in progress task for a given workflow id.
@@ -70,7 +72,7 @@ public interface TaskService {
      * @return instance of {@link Task}
      */
     Task getPendingTaskForWorkflow(@NotEmpty(message = "WorkflowId cannot be null or empty.") String workflowId,
-                                   @NotEmpty(message = "TaskReferenceName cannot be null or empty.") String taskReferenceName);
+        @NotEmpty(message = "TaskReferenceName cannot be null or empty.") String taskReferenceName);
 
     /**
      * Updates a task.
@@ -128,7 +130,7 @@ public interface TaskService {
      * @param taskId   ID of the task
      */
     void removeTaskFromQueue(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType,
-                             @NotEmpty(message = "TaskId cannot be null or empty.") String taskId);
+        @NotEmpty(message = "TaskId cannot be null or empty.") String taskId);
 
     /**
      * Remove Task from a Task type queue.
@@ -175,13 +177,6 @@ public interface TaskService {
     List<PollData> getAllPollData();
 
     /**
-     * Requeue pending tasks for all the running workflows.
-     *
-     * @return number of tasks requeued.
-     */
-    String requeue();
-
-    /**
      * Requeue pending tasks.
      *
      * @param taskType Task name.
@@ -190,8 +185,8 @@ public interface TaskService {
     String requeuePendingTask(@NotEmpty(message = "TaskType cannot be null or empty.") String taskType);
 
     /**
-     * Search for tasks based in payload and other parameters. Use sort options as ASC or DESC e.g.
-     * sort=name or sort=workflowId. If order is not specified, defaults to ASC.
+     * Search for tasks based in payload and other parameters. Use sort options as ASC or DESC e.g. sort=name or
+     * sort=workflowId. If order is not specified, defaults to ASC.
      *
      * @param start    Start index of pagination
      * @param size     Number of entries
@@ -208,7 +203,8 @@ public interface TaskService {
      * @param path        the path for which the external storage location is to be populated
      * @param operation   the operation to be performed (read or write)
      * @param payloadType the type of payload (input or output)
-     * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external storage
+     * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external
+     * storage
      */
     ExternalStorageLocation getExternalStorageLocation(String path, String operation, String payloadType);
 }

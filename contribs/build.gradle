@@ -1,26 +1,32 @@
 dependencies {
-	
-	compile project(':conductor-common')
-	compile project(':conductor-core')
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
 
-	compile 'com.amazonaws:aws-java-sdk-sqs:latest.release'
-	compile "com.google.inject:guice:${revGuice}"
+    implementation "com.amazonaws:aws-java-sdk-s3:${revAwsSdk}"
+    implementation "com.amazonaws:aws-java-sdk-sqs:${revAwsSdk}"
 
-	compile "net.thisptr:jackson-jq:${revJq}"
+    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
 
-	compile "com.sun.jersey.contribs.jersey-oauth:oauth-client:${revOauthClient}"
-	compile "com.sun.jersey.contribs.jersey-oauth:oauth-signature:${revOauthSignature}"
+    implementation "net.thisptr:jackson-jq:${revJq}"
+    // SBMTODO: remove guava dep
+    implementation "com.google.guava:guava:${revGuava}"
 
-	compile "io.nats:java-nats-streaming:${revNatsStreaming}"
+    implementation "javax.ws.rs:jsr311-api:${revJsr311Api}"
 
-	compile "com.rabbitmq:amqp-client:${revAmqpClient}"
-	compileOnly "javax.ws.rs:jsr311-api:${revJsr311Api}"
-	compile "io.swagger:swagger-jaxrs:${revSwagger}"
+    implementation "org.apache.kafka:kafka-clients:${revKafka}"
 
-	compile "org.apache.kafka:kafka-clients:2.2.0"
-	testCompile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
-	testCompile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
-	testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
+    implementation "com.rabbitmq:amqp-client:${revAmqpClient}"
 
-	compile "com.netflix.spectator:spectator-reg-metrics3:${revSpectator}"
+    implementation "io.nats:java-nats-streaming:${revNatsStreaming}"
+
+    implementation "io.reactivex:rxjava:${revRxJava}"
+
+    implementation "javax.inject:javax.inject:1"
+
+    implementation "com.netflix.spectator:spectator-reg-metrics3:${revSpectator}"
+
+    testImplementation "org.eclipse.jetty:jetty-server:${revJettyServer}"
+    testImplementation "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
 }

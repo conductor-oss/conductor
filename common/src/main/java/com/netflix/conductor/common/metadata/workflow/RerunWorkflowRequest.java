@@ -1,21 +1,19 @@
-/**
- * Copyright 2016 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+/*
+ * Copyright 2020 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.common.metadata.workflow;
 
-import com.github.vmg.protogen.annotations.*;
+import com.github.vmg.protogen.annotations.ProtoField;
+import com.github.vmg.protogen.annotations.ProtoMessage;
 
 import java.util.Map;
 
@@ -23,57 +21,57 @@ import java.util.Map;
 public class RerunWorkflowRequest {
 
     @ProtoField(id = 1)
-	private String reRunFromWorkflowId;
+    private String reRunFromWorkflowId;
 
     @ProtoField(id = 2)
-	private Map<String, Object> workflowInput;
+    private Map<String, Object> workflowInput;
 
     @ProtoField(id = 3)
-	private String reRunFromTaskId;
+    private String reRunFromTaskId;
 
     @ProtoField(id = 4)
-	private Map<String, Object> taskInput;
+    private Map<String, Object> taskInput;
 
     @ProtoField(id = 5)
-	private String correlationId;
+    private String correlationId;
 
-	public String getReRunFromWorkflowId() {
-		return reRunFromWorkflowId;
-	}
+    public String getReRunFromWorkflowId() {
+        return reRunFromWorkflowId;
+    }
 
-	public void setReRunFromWorkflowId(String reRunFromWorkflowId) {
-		this.reRunFromWorkflowId = reRunFromWorkflowId;
-	}
+    public void setReRunFromWorkflowId(String reRunFromWorkflowId) {
+        this.reRunFromWorkflowId = reRunFromWorkflowId;
+    }
 
-	public Map<String, Object> getWorkflowInput() {
-		return workflowInput;
-	}
+    public Map<String, Object> getWorkflowInput() {
+        return workflowInput;
+    }
 
-	public void setWorkflowInput(Map<String, Object> workflowInput) {
-		this.workflowInput = workflowInput;
-	}
+    public void setWorkflowInput(Map<String, Object> workflowInput) {
+        this.workflowInput = workflowInput;
+    }
 
-	public String getReRunFromTaskId() {
-		return reRunFromTaskId;
-	}
+    public String getReRunFromTaskId() {
+        return reRunFromTaskId;
+    }
 
-	public void setReRunFromTaskId(String reRunFromTaskId) {
-		this.reRunFromTaskId = reRunFromTaskId;
-	}
+    public void setReRunFromTaskId(String reRunFromTaskId) {
+        this.reRunFromTaskId = reRunFromTaskId;
+    }
 
-	public Map<String, Object> getTaskInput() {
-		return taskInput;
-	}
+    public Map<String, Object> getTaskInput() {
+        return taskInput;
+    }
 
-	public void setTaskInput(Map<String, Object> taskInput) {
-		this.taskInput = taskInput;
-	}
+    public void setTaskInput(Map<String, Object> taskInput) {
+        this.taskInput = taskInput;
+    }
 
-	public String getCorrelationId() {
-		return correlationId;
-	}
+    public String getCorrelationId() {
+        return correlationId;
+    }
 
-	public void setCorrelationId(String correlationId) {
-		this.correlationId = correlationId;
-	}
+    public void setCorrelationId(String correlationId) {
+        this.correlationId = correlationId;
+    }
 }

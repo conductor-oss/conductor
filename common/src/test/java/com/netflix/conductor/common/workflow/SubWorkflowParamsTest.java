@@ -1,24 +1,49 @@
+/*
+ * Copyright 2020 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.common.workflow;
 
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.common.utils.JsonMapperProvider;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.validation.ConstraintViolation;
 import javax.validation.Validation;
 import javax.validation.Validator;
 import javax.validation.ValidatorFactory;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+@ContextConfiguration(classes = {ObjectMapperConfiguration.class})
+@RunWith(SpringRunner.class)
 public class SubWorkflowParamsTest {
+
+    @Autowired
+    private ObjectMapper objectMapper;
 
     @Test
     public void testWorkflowTaskName() {
@@ -38,7 +63,7 @@ public class SubWorkflowParamsTest {
 
     @Test
     public void testWorkflowSetTaskToDomain() {
-        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();//name is null
+        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         Map<String, String> taskToDomain = new HashMap<>();
         taskToDomain.put("unit", "test");
         subWorkflowParams.setTaskToDomain(taskToDomain);
@@ -47,14 +72,14 @@ public class SubWorkflowParamsTest {
 
     @Test(expected = IllegalArgumentException.class)
     public void testSetWorkflowDefinition() {
-        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();//name is null
+        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         subWorkflowParams.setName("dummy-name");
         subWorkflowParams.setWorkflowDefinition(new Object());
     }
 
     @Test
     public void testGetWorkflowDef() {
-        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();//name is null
+        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         subWorkflowParams.setName("dummy-name");
         WorkflowDef def = new WorkflowDef();
         def.setName("test_workflow");
@@ -70,7 +95,7 @@ public class SubWorkflowParamsTest {
 
     @Test
     public void testWorkflowDefJson() throws Exception {
-        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();//name is null
+        SubWorkflowParams subWorkflowParams = new SubWorkflowParams();
         subWorkflowParams.setName("dummy-name");
         WorkflowDef def = new WorkflowDef();
         def.setName("test_workflow");
@@ -81,38 +106,38 @@ public class SubWorkflowParamsTest {
         def.getTasks().add(task);
         subWorkflowParams.setWorkflowDefinition(def);
 
-        String expected = "{\n" +
-            "  \"name\" : \"test_workflow\",\n" +
-            "  \"version\" : 1,\n" +
-            "  \"workflowDefinition\" : {\n" +
-            "    \"inputParameters\" : [ ],\n" +
-            "    \"name\" : \"test_workflow\",\n" +
-            "    \"outputParameters\" : { },\n" +
-            "    \"restartable\" : true,\n" +
-            "    \"schemaVersion\" : 2,\n" +
-            "    \"tasks\" : [ {\n" +
-            "      \"asyncComplete\" : false,\n" +
-            "      \"decisionCases\" : { },\n" +
-            "      \"defaultCase\" : [ ],\n" +
-            "      \"defaultExclusiveJoinTask\" : [ ],\n" +
-            "      \"forkTasks\" : [ ],\n" +
-            "      \"inputParameters\" : { },\n" +
-            "      \"joinOn\" : [ ],\n" +
-            "      \"loopOver\" : [ ],\n" +
-            "      \"name\" : \"test_task\",\n" +
-            "      \"optional\" : false,\n" +
-            "      \"startDelay\" : 0,\n" +
-            "      \"taskReferenceName\" : \"t1\",\n" +
-            "      \"type\" : \"SIMPLE\"\n" +
-            "    } ],\n" +
-            "    \"timeoutPolicy\" : \"ALERT_ONLY\",\n" +
-            "    \"timeoutSeconds\" : 0,\n" +
-            "    \"variables\" : { },\n" +
-            "    \"version\" : 1,\n" +
-            "    \"workflowStatusListenerEnabled\" : false\n" +
-            "  }\n" +
-            "}";
-        ObjectMapper objectMapper = new JsonMapperProvider().get();
+        String expected = "{\n"
+            + "  \"name\" : \"test_workflow\",\n"
+            + "  \"version\" : 1,\n"
+            + "  \"workflowDefinition\" : {\n"
+            + "    \"inputParameters\" : [ ],\n"
+            + "    \"name\" : \"test_workflow\",\n"
+            + "    \"outputParameters\" : { },\n"
+            + "    \"restartable\" : true,\n"
+            + "    \"schemaVersion\" : 2,\n"
+            + "    \"tasks\" : [ {\n"
+            + "      \"asyncComplete\" : false,\n"
+            + "      \"decisionCases\" : { },\n"
+            + "      \"defaultCase\" : [ ],\n"
+            + "      \"defaultExclusiveJoinTask\" : [ ],\n"
+            + "      \"forkTasks\" : [ ],\n"
+            + "      \"inputParameters\" : { },\n"
+            + "      \"joinOn\" : [ ],\n"
+            + "      \"loopOver\" : [ ],\n"
+            + "      \"name\" : \"test_task\",\n"
+            + "      \"optional\" : false,\n"
+            + "      \"startDelay\" : 0,\n"
+            + "      \"taskReferenceName\" : \"t1\",\n"
+            + "      \"type\" : \"SIMPLE\"\n"
+            + "    } ],\n"
+            + "    \"timeoutPolicy\" : \"ALERT_ONLY\",\n"
+            + "    \"timeoutSeconds\" : 0,\n"
+            + "    \"variables\" : { },\n"
+            + "    \"version\" : 1,\n"
+            + "    \"workflowStatusListenerEnabled\" : false\n"
+            + "  }\n"
+            + "}";
+
         objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
         objectMapper.enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
         objectMapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);

@@ -12,16 +12,24 @@ buildscript {
 apply plugin: 'docker-compose'
 
 dependencies {
-    compile project(':conductor-core')
-    compile "com.google.inject:guice:${revGuice}"
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation 'org.springframework.boot:spring-boot-starter'
 
-    compile "commons-io:commons-io:${revCommonsIo}"
-    compile "org.postgresql:postgresql:${revPostgres}"
-    compile "com.zaxxer:HikariCP:${revHikariCP}"
-    compile "org.flywaydb:flyway-core:${revFlywayCore}"
+    implementation "javax.inject:javax.inject:1"
 
-    testCompile project(':conductor-core').sourceSets.test.output
-    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
+    // SBMTODO: remove guava dep
+    implementation "com.google.guava:guava:${revGuava}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind:${revJackson}"
+    implementation "com.fasterxml.jackson.core:jackson-core:${revJackson}"
+
+    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
+    implementation "org.postgresql:postgresql:${revPostgres}"
+    implementation "com.zaxxer:HikariCP:${revHikariCP}"
+    implementation "org.flywaydb:flyway-core:${revFlywayCore}"
+
+    testImplementation project(':conductor-core').sourceSets.test.output
 }
 
 dockerCompose{

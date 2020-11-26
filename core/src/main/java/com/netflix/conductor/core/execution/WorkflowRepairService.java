@@ -13,37 +13,33 @@
 package com.netflix.conductor.core.execution;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.inject.Singleton;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.config.Configuration;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 /**
- * A helper service that tries to keep ExecutionDAO and QueueDAO in sync, based on the
- * task or workflow state.
- *
- * This service expects that the underlying Queueing layer implements QueueDAO.containsMessage method. This can be controlled
- * with {@link com.netflix.conductor.core.config.Configuration#isWorkflowRepairServiceEnabled()} property.
+ * A helper service that tries to keep ExecutionDAO and QueueDAO in sync, based on the task or workflow state.
+ * <p>
+ * This service expects that the underlying Queueing layer implements QueueDAO.containsMessage method. This can be
+ * controlled with {@link com.netflix.conductor.core.config.ConductorProperties#isWorkflowRepairServiceEnabled()}
+ * property.
  */
-@Singleton
+@Service
 public class WorkflowRepairService {
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(WorkflowRepairService.class);
 
     private final ExecutionDAO executionDAO;
     private final QueueDAO queueDAO;
-    private final Configuration configuration;
+    private final ConductorProperties properties;
 
     // For system task -> Verify the task isAsync(), not isAsyncComplete() and in SCHEDULED or IN_PROGRESS state
     // For simple task -> Verify the task is in SCHEDULED state
@@ -51,26 +47,23 @@ public class WorkflowRepairService {
         if (WorkflowSystemTask.is(task.getTaskType())) {    // If system task
             WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
             return workflowSystemTask.isAsync() && !workflowSystemTask.isAsyncComplete(task) &&
-                    (task.getStatus() == Task.Status.IN_PROGRESS || task.getStatus() == Task.Status.SCHEDULED);
+                (task.getStatus() == Task.Status.IN_PROGRESS || task.getStatus() == Task.Status.SCHEDULED);
         } else {    // Else if simple task
             return task.getStatus() == Task.Status.SCHEDULED;
         }
     };
 
-    @Inject
-    public WorkflowRepairService(
-            ExecutionDAO executionDAO,
-            QueueDAO queueDAO,
-            Configuration configuration
-    ) {
+    @Autowired
+    public WorkflowRepairService(ExecutionDAO executionDAO, QueueDAO queueDAO, ConductorProperties properties) {
         this.executionDAO = executionDAO;
         this.queueDAO = queueDAO;
-        this.configuration = configuration;
+        this.properties = properties;
     }
 
     /**
      * Verify and repair if the workflowId exists in deciderQueue, and then if each scheduled task has relevant message
      * in the queue.
+     *
      * @param workflowId
      * @param includeTasks
      * @return
@@ -89,15 +82,17 @@ public class WorkflowRepairService {
 
     /**
      * Verify and repair tasks in a workflow
+     *
      * @param workflowId
      */
     public void verifyAndRepairWorkflowTasks(String workflowId) {
         Workflow workflow = executionDAO.getWorkflow(workflowId, true);
-        workflow.getTasks().forEach(task -> verifyAndRepairTask(task));
+        workflow.getTasks().forEach(this::verifyAndRepairTask);
     }
 
     /**
      * Verify and fix if Workflow decider queue contains this workflowId.
+     *
      * @param workflow
      * @return
      */
@@ -105,7 +100,7 @@ public class WorkflowRepairService {
         if (!workflow.getStatus().isTerminal()) {
             String queueName = WorkflowExecutor.DECIDER_QUEUE;
             if (!queueDAO.containsMessage(queueName, workflow.getWorkflowId())) {
-                queueDAO.push(queueName, workflow.getWorkflowId(), configuration.getSweepFrequency());
+                queueDAO.push(queueName, workflow.getWorkflowId(), properties.getSweepFrequency());
                 Monitors.recordQueueMessageRepushFromRepairService(queueName);
                 return true;
             }
@@ -115,6 +110,7 @@ public class WorkflowRepairService {
 
     /**
      * Verify if ExecutionDAO and QueueDAO agree for the provided task.
+     *
      * @param task
      * @return
      */

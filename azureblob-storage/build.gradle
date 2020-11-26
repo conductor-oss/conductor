@@ -1,7 +1,8 @@
 dependencies {
-    compile project(':conductor-common')
-    compile project(':conductor-core')
-    compile "com.google.inject:guice:${revGuice}"
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation 'org.springframework.boot:spring-boot-starter'
 
-    compile "com.azure:azure-storage-blob:${revAzureStorageBlobSdk}"
+    implementation "com.azure:azure-storage-blob:${revAzureStorageBlobSdk}"
+    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
 }

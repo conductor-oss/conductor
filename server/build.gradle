@@ -1,100 +1,28 @@
-buildscript {
-    dependencies {
-        classpath "org.akhikhl.gretty:gretty:1.2.4"
-    }
-}
-
 plugins {
-    id 'com.github.johnrengelman.shadow' version '2.0.4'
-    id "com.github.ManifestClasspath" version "0.1.0-RELEASE"
+    id 'application'
+    id 'org.springframework.boot'
 }
-
-configurations.all {
-    resolutionStrategy {
-        force "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
-        force "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
-        force "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:${revJaxrsJackson}"
-    }
-}
-
-apply plugin: 'war'
-apply plugin: "org.akhikhl.gretty"
 
 dependencies {
 
-    //Conductor
-    compile project(':conductor-core')
-    compile project(':conductor-jersey')
-    compile project(':conductor-redis-persistence')
-    compile project(':conductor-mysql-persistence')
-    compile project(':conductor-postgres-persistence')
-    compile project(':conductor-cassandra-persistence')
-    compile project(':conductor-contribs')
-    compile project(':conductor-es5-persistence')
-    compile project(':conductor-es6-persistence')
-    compile project(':conductor-grpc-server')
-    compile project(':conductor-zookeeper-lock')
-    compile project(':conductor-redis-lock')
+    implementation project(':conductor-rest')
+    implementation project(':conductor-core')
+    implementation project(':conductor-contribs')
+    implementation project(':conductor-redis-persistence')
+    implementation project(':conductor-cassandra-persistence')
+    implementation project(':conductor-es6-persistence')
+    implementation project(':conductor-grpc-server')
 
-    compile "com.netflix.runtime:health-guice:${revHealth}"
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-log4j2'
 
-    //Jetty
-    compile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
-    compile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
-    compile "org.eclipse.jetty:jetty-jmx:${revJettyServlet}"
-
-    //Guice
-    compile "com.sun.jersey.contribs:jersey-guice:${revJerseyGuice}"
-    compile "com.google.inject:guice:${revGuice}"
-    compile "com.google.inject.extensions:guice-servlet:${revGuiceServlet}"
-
-    //Swagger
-    compile "io.swagger:swagger-jersey-jaxrs:${revSwagger}"
+    implementation 'org.apache.logging.log4j:log4j-web'
 }
 
-shadowJar {
-    zip64 true
-    mergeServiceFiles()
-    configurations = [project.configurations.compile]
-    manifest {
-        attributes 'Description': 'Self contained Conductor server jar'
-        attributes 'Main-Class': 'com.netflix.conductor.bootstrap.Main'
-    }
-}
-publishing {
-    publications {
-        nebula(MavenPublication) {
-            artifact shadowJar
-        }
-    }
+application {
+    mainClass = 'com.netflix.conductor.Conductor'
 }
 
-gretty {
-    contextPath = '/'
-    servletContainer = 'tomcat8'
-    scanDirs = ['**/src/main/resources/**']
-    scanDependencies = true
-    port = 8080
-    // More properties can be found here:
-    // http://akhikhl.github.io/gretty-doc/Gretty-configuration.html
-}
-configurations.grettyRunnerTomcat8 {
-    exclude group: 'org.slf4j', module: 'log4j-over-slf4j'
-}
-
-
-build.dependsOn('shadowJar')
-
-task server(type: JavaExec) {
-    systemProperty 'workflow.elasticsearch.url', 'localhost:9300'
-    // Switch between Elasticsearch versions 2 & 5 with major version number.
-    systemProperty 'loadSample', 'true'
-    // Unlink Jetty logger to reduce clutter in local server.
-    systemProperty 'org.eclipse.jetty.util.log.class', 'org.eclipse.jetty.util.log.StdErrLog'
-    // Set Jetty logger level to INFO.
-    systemProperty 'org.eclipse.jetty.LEVEL', 'INFO'
-    systemProperties System.properties
-    main = 'com.netflix.conductor.bootstrap.Main'
-    args  'src/main/resources/server.properties', 'src/main/resources/log4j.properties'
-    classpath = sourceSets.test.runtimeClasspath
+bootJar {
+    mainClassName = 'com.netflix.conductor.Conductor'
 }

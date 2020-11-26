@@ -1,125 +1,76 @@
 buildscript {
-	repositories {
+    repositories {
+        mavenCentral()
         jcenter()
     }
-
     dependencies {
-        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:4.0.1'
-        classpath 'org.apache.ant:ant:1.9.7'
+        classpath 'com.netflix.nebula:gradle-extra-configurations-plugin:5.0.2'
+        classpath 'org.springframework.boot:spring-boot-gradle-plugin:2.3.1.RELEASE'
     }
 }
+
 plugins {
-    id 'nebula.netflixoss' version '5.1.1'
+//    id 'org.springframework.boot' version '2.3.1.RELEASE'
+    id 'io.spring.dependency-management' version '1.0.9.RELEASE'
+    id 'java'
+    id 'application'
+    id 'nebula.netflixoss' version '8.8.1'
     id 'com.github.kt3k.coveralls' version '2.8.2'
 }
 
 // Establish version and status
 ext.githubProjectName = rootProject.name // Change if github project name is not the same as the root project's name
 
-apply plugin: 'project-report'
-apply from: "$rootDir/versionsOfDependencies.gradle"
-
-allprojects {
-    apply plugin: 'idea'
-    apply plugin: 'jacoco'
-    apply plugin: 'eclipse'
-
-    repositories {
-        jcenter()
-
-        // oss-candidate for -rc.* verions:
-        maven {
-            url "https://dl.bintray.com/netflixoss/oss-candidate"
-        }
-    }
-}
-
 def javaProjects = subprojects.findAll {
     it.name != "ui"
 }
 
-configure(javaProjects) {
+apply from: "$rootDir/dependencies.gradle"
+
+// change the ES version used by Spring Boot Dependency Management plugin
+ext['elasticsearch.version'] = revElasticSearch6
+
+allprojects {
     apply plugin: 'nebula.netflixoss'
-    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+    apply plugin: 'java-library'
     apply plugin: 'project-report'
 
     sourceCompatibility = 1.8
     targetCompatibility = 1.8
 
+    group = 'com.netflix.conductor'
+
+    configurations.all {
+        exclude group: 'ch.qos.logback', module: 'logback-classic'
+        exclude group: 'ch.qos.logback', module: 'logback-core'
+        exclude group: 'org.apache.logging.log4j', module: 'log4j-to-slf4j'
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
+
+    repositories {
+        mavenCentral()
+        jcenter()
+    }
+
+    dependencyManagement {
+        imports {
+            mavenBom("org.springframework.boot:spring-boot-dependencies:2.3.1.RELEASE")
+        }
+    }
+
     dependencies {
-        testCompile "junit:junit:${revJUnit}"
-        testCompile("org.mockito:mockito-core:${revMockito}") {
-            exclude group: 'org.hamcrest', module: 'hamcrest-core'
-        }
+        testImplementation('org.springframework.boot:spring-boot-starter-test')
     }
 
-    group = "com.netflix.${githubProjectName}"
-
-    tasks.withType(Test)  {
-        maxParallelForks = 100
-    }
-
-    license {
-		excludes(['**/*.txt', '**/*.conf', '**/*.properties', '**/*.json', '**/swagger-ui/*'])
-	}
-
-	task licenseFormatTests (type:nl.javadude.gradle.plugins.license.License) {
-    	source = fileTree(dir: "src/test").include("**/*")
-	}
-	licenseFormat.dependsOn licenseFormatTests
-
-
-
-    tasks.withType(Test) {
-        task ->
-            // set heap size for the test JVM(s)
-            minHeapSize = "256m"
-            maxHeapSize = "2g"
-
-            jacocoTestReport.executionData += files("$buildDir/jacoco/${task.name}.exec")
-    }
-
-    jacocoTestReport {
-        reports {
-            html.enabled = true
-            xml.enabled = true
-            csv.enabled = false
-        }
+    test {
+        useJUnitPlatform()
     }
 }
 
-
-
-/**********************************
- * Coverage Tasks
- **********************************/
-task codeCoverageReport(type: JacocoReport, group: "Coverage reports") {
-    executionData fileTree(project.rootDir.absolutePath).include("**/build/jacoco/*.exec")
-    dependsOn subprojects*.test
-
-    subprojects.each {
-        sourceSets it.sourceSets.main
-    }
-
-    reports {
-        xml.enabled = true
-        xml.destination new File("${buildDir}/reports/jacoco/report.xml")
-        html.enabled = true
-        html.destination new File("${buildDir}/reports/jacoco/html")
-        csv.enabled = false
-    }
-    afterEvaluate {
-        // Exclude generated files from top-level coverage report
-        classDirectories = files(
-                classDirectories.files.collect {
-                    fileTree(
-                            dir: it,
-                            // Exclude es modules from code coverage reports
-                            exclude: 'com/netflix/conductor/elasticsearch'
-                    )
-                }
-        )
-    }
+dependencies {
+    // annotation processor
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 }
 
 coveralls {
@@ -130,6 +81,12 @@ coveralls {
 tasks.coveralls {
     group = "Coverage reports"
     description = "Uploads the aggregated coverage report to Coveralls"
-    dependsOn codeCoverageReport
 }
 
+task runApp {
+    dependsOn ':conductor-server:bootRun'
+}
+
+task server {
+    dependsOn ':conductor-server:bootRun'
+}

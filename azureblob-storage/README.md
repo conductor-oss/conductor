@@ -7,74 +7,7 @@ went over the thresholds defined in properties named `conductor.[workflow|task].
 You may encounter deprecated issues, or conflicts and need to adapt the code if the module is not maintained along with `conductor`.
 It has only been tested with **v12.2.0**.
 
-## Build
-
-### Gradle Configuration
-
-Modify the following files
-
-[versionsOfDependencies.gradle](https://github.com/Netflix/conductor/blob/master/versionsOfDependencies.gradle)
-
-```diff
-@@ -5,6 +5,7 @@ ext {
-     revApacheCommons='2.6'
-     revAwaitility = '3.1.2'
-     revAwsSdk = '1.11.86'
-+    revAzureStorageBlobSdk = '12.2.0'
-     revArchaius = '0.7.5'
-     revCassandra = '3.6.0'
-     revCassandraUnit = '3.5.0.1'
-
-
-```
-
-[settings.gradle](https://github.com/Netflix/conductor/blob/master/settings.gradle)
-
-```diff
-@@ -3,6 +3,7 @@ rootProject.name='conductor'
- include 'client','common','contribs','core', 'es5-persistence','jersey', 'postgres-persistence', 'zookeeper-lock', 'redis-lock'
- include 'cassandra-persistence', 'mysql-persistence', 'redis-persistence','server','test-harness','ui'
- include 'grpc', 'grpc-server', 'grpc-client'
-+include 'azureblob-storage'
-
- rootProject.children.each {it.name="conductor-${it.name}"}
-
-```
-
-[server/build.gradle](https://github.com/Netflix/conductor/blob/master/server/build.gradle)
-
-```diff
-@@ -23,6 +23,7 @@ dependencies {
-
-     //Conductor
-     compile project(':conductor-core')
-+    compile project(':conductor-azureblob-storage')
-     compile project(':conductor-jersey')
-     compile project(':conductor-redis-persistence')
-     compile project(':conductor-mysql-persistence')
-
-```
- 
-Delete all dependencies.lock files of all modules and then run at the root folder of the project: 
-
-```
-./gradlew generateLock saveLock -PdependencyLock.includeTransitives=true
-```
-
-Run Build along with the tests
-
-```
-./gradlew conductor:azureblob-storage build
-```
-
 ## Configuration
-
-In the `.properties` file of conductor `server` you must add the following configurations.
-
-* Add the AzureBlob module. If you have several modules, separate them with a comma.
-```
-conductor.additional.modules=com.netflix.conductor.azureblob.AzureBlobModule
-```
 
 ### Usage
 

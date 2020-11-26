@@ -1,27 +1,26 @@
 /*
- * Copyright 2019 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.validations;
 
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
-import com.netflix.conductor.common.metadata.workflow.TaskType;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.core.config.ValidationModule;
 import com.netflix.conductor.dao.MetadataDAO;
+import org.apache.bval.jsr.ApacheValidationProvider;
+import org.junit.AfterClass;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.mockito.Mockito;
 
@@ -37,17 +36,30 @@ import java.util.Set;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyString;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 public class WorkflowDefConstraintTest {
 
-    private Validator validator;
+    private static Validator validator;
+    private static ValidatorFactory validatorFactory;
     private MetadataDAO mockMetadataDao;
 
+    @BeforeClass
+    public static void init() {
+        validatorFactory = Validation.byProvider(ApacheValidationProvider.class)
+            .configure()
+            .buildValidatorFactory();
+        validator = validatorFactory.getValidator();
+    }
+
+    @AfterClass
+    public static void close() {
+        validatorFactory.close();
+    }
+
     @Before
-    public void init() {
-        validator = new ValidationModule().getValidator();
+    public void setUp() {
         mockMetadataDao = Mockito.mock(MetadataDAO.class);
         when(mockMetadataDao.getTaskDef(anyString())).thenReturn(new TaskDef());
         ValidationContext.initialize(mockMetadataDao);
@@ -120,7 +132,8 @@ public class WorkflowDefConstraintTest {
         when(mockMetadataDao.getTaskDef("work1")).thenReturn(new TaskDef());
         Set<ConstraintViolation<WorkflowDef>> result = validator.validate(workflowDef);
         assertEquals(1, result.size());
-        assertEquals(result.iterator().next().getMessage(), "taskReferenceName: work for given task: task_1 input value: fileLocation of input parameter: ${work.input.fileLocation} is not defined in workflow definition.");
+        assertEquals(result.iterator().next().getMessage(),
+            "taskReferenceName: work for given task: task_1 input value: fileLocation of input parameter: ${work.input.fileLocation} is not defined in workflow definition.");
     }
 
     @Test
@@ -165,9 +178,11 @@ public class WorkflowDefConstraintTest {
 
         result.forEach(e -> validationErrors.add(e.getMessage()));
 
-        assertTrue(validationErrors.contains("taskReferenceName: task_2 for given task: task_2 input value: fileLocation of input parameter: ${task_2.input.fileLocation} is not defined in workflow definition."));
-        assertTrue(validationErrors.contains("taskReferenceName: task_2 for given task: task_1 input value: fileLocation of input parameter: ${task_2.input.fileLocation} is not defined in workflow definition."));
-        assertTrue(validationErrors.contains("taskReferenceName: task_1 should be unique across tasks for a given workflowDefinition: sampleWorkflow"));
+        assertTrue(validationErrors.contains(
+            "taskReferenceName: task_2 for given task: task_2 input value: fileLocation of input parameter: ${task_2.input.fileLocation} is not defined in workflow definition."));
+        assertTrue(validationErrors.contains(
+            "taskReferenceName: task_2 for given task: task_1 input value: fileLocation of input parameter: ${task_2.input.fileLocation} is not defined in workflow definition."));
+        assertTrue(validationErrors.contains(
+            "taskReferenceName: task_1 should be unique across tasks for a given workflowDefinition: sampleWorkflow"));
     }
-
 }

@@ -1,18 +1,19 @@
-plugins {
-    // FIXME This is temporary until the server module refactoring is completed.
-    id 'com.github.johnrengelman.shadow' version '1.2.3'
-}
+//plugins {
+//    // FIXME This is temporary until the server module refactoring is completed.
+//    id 'com.github.johnrengelman.shadow' version '1.2.3'
+//}
 
 dependencies {
-    compile project(':conductor-common')
-    compile project(':conductor-core')
-    compile project(':conductor-grpc')
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation project(':conductor-grpc')
 
-    compile "io.grpc:grpc-netty:${revGrpc}"
-    compile "io.grpc:grpc-services:${revGrpc}"
-    compile "log4j:log4j:1.2.17"
+    implementation 'org.springframework.boot:spring-boot-starter'
 
-    testCompile "io.grpc:grpc-testing:${revGrpc}"
-    testCompile 'org.testinfected.hamcrest-matchers:all-matchers:1.8'
-    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
+    implementation "io.grpc:grpc-netty:${revGrpc}"
+    implementation "io.grpc:grpc-services:${revGrpc}"
+    implementation "org.apache.commons:commons-lang3"
+
+    testImplementation "io.grpc:grpc-testing:${revGrpc}"
+    testImplementation 'org.testinfected.hamcrest-matchers:all-matchers:1.8'
 }

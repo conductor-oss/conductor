@@ -1,11 +1,14 @@
-apply plugin: 'java'
-
 dependencies {
-    compile project(':conductor-core')
-    compile "com.datastax.cassandra:cassandra-driver-core:${revCassandra}"
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation 'org.springframework.boot:spring-boot-starter'
 
-    testCompile("org.cassandraunit:cassandra-unit:${revCassandraUnit}") {
+    implementation "com.datastax.cassandra:cassandra-driver-core:${revCassandra}"
+    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
+    implementation "javax.inject:javax.inject:1"
+
+    testImplementation("org.cassandraunit:cassandra-unit:${revCassandraUnit}") {
         exclude group: "com.datastax.cassandra", module: "cassandra-driver-core"
     }
-    testCompile project(':conductor-core').sourceSets.test.output
+    testImplementation project(':conductor-core').sourceSets.test.output
 }

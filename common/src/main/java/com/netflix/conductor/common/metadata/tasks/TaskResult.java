@@ -1,34 +1,30 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
-
 package com.netflix.conductor.common.metadata.tasks;
 
 import com.github.vmg.protogen.annotations.ProtoEnum;
 import com.github.vmg.protogen.annotations.ProtoField;
 import com.github.vmg.protogen.annotations.ProtoMessage;
 import com.google.protobuf.Any;
+import org.apache.commons.lang3.StringUtils;
+
+import javax.validation.constraints.NotEmpty;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
-import javax.validation.constraints.NotEmpty;
-import org.apache.commons.lang3.StringUtils;
 
 /**
- * @author Viren
  * Result of the task execution.
  */
 @ProtoMessage
@@ -132,10 +128,12 @@ public class TaskResult {
     }
 
     /**
-     * When set to non-zero values, the task remains in the queue for the specified seconds before sent back to the worker when polled.
-     * Useful for the long running task, where the task is updated as IN_PROGRESS and should not be polled out of the queue for a specified amount of time.  (delayed queue implementation)
+     * When set to non-zero values, the task remains in the queue for the specified seconds before sent back to the
+     * worker when polled. Useful for the long running task, where the task is updated as IN_PROGRESS and should not be
+     * polled out of the queue for a specified amount of time.  (delayed queue implementation)
      *
-     * @param callbackAfterSeconds Amount of time in seconds the task should be held in the queue before giving it to a polling worker.
+     * @param callbackAfterSeconds Amount of time in seconds the task should be held in the queue before giving it to a
+     *                             polling worker.
      */
     public void setCallbackAfterSeconds(long callbackAfterSeconds) {
         this.callbackAfterSeconds = callbackAfterSeconds;
@@ -146,8 +144,9 @@ public class TaskResult {
     }
 
     /**
-     * @param workerId a free form string identifying the worker host.
-     *                 Could be hostname, IP Address or any other meaningful identifier that can help identify the host/process which executed the task, in case of troubleshooting.
+     * @param workerId a free form string identifying the worker host. Could be hostname, IP Address or any other
+     *                 meaningful identifier that can help identify the host/process which executed the task, in case of
+     *                 troubleshooting.
      */
     public void setWorkerId(String workerId) {
         this.workerId = workerId;
@@ -163,10 +162,12 @@ public class TaskResult {
     /**
      * @param status Status of the task
      *               <p>
-     *               <b>IN_PROGRESS</b>: Use this for long running tasks, indicating the task is still in progress and should be checked again at a later time.
-     *               e.g. the worker checks the status of the job in the DB, while the job is being executed by another process.
+     *               <b>IN_PROGRESS</b>: Use this for long running tasks, indicating the task is still in progress and
+     *               should be checked again at a later time. e.g. the worker checks the status of the job in the DB,
+     *               while the job is being executed by another process.
      *               </p><p>
-     *               <b>FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED</b>: Terminal statuses for the task. Use FAILED_WITH_TERMINAL_ERROR when you do not want the task to be retried.
+     *               <b>FAILED, FAILED_WITH_TERMINAL_ERROR, COMPLETED</b>: Terminal statuses for the task. Use
+     *               FAILED_WITH_TERMINAL_ERROR when you do not want the task to be retried.
      *               </p>
      * @see #setCallbackAfterSeconds(long)
      */
@@ -254,18 +255,18 @@ public class TaskResult {
     @Override
     public String toString() {
         return "TaskResult{" +
-                "workflowInstanceId='" + workflowInstanceId + '\'' +
-                ", taskId='" + taskId + '\'' +
-                ", reasonForIncompletion='" + reasonForIncompletion + '\'' +
-                ", callbackAfterSeconds=" + callbackAfterSeconds +
-                ", workerId='" + workerId + '\'' +
-                ", status=" + status +
-                ", outputData=" + outputData +
-                ", outputMessage=" + outputMessage +
-                ", logs=" + logs +
-                ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
-                ", subWorkflowId='" + subWorkflowId + '\'' +
-                '}';
+            "workflowInstanceId='" + workflowInstanceId + '\'' +
+            ", taskId='" + taskId + '\'' +
+            ", reasonForIncompletion='" + reasonForIncompletion + '\'' +
+            ", callbackAfterSeconds=" + callbackAfterSeconds +
+            ", workerId='" + workerId + '\'' +
+            ", status=" + status +
+            ", outputData=" + outputData +
+            ", outputMessage=" + outputMessage +
+            ", logs=" + logs +
+            ", externalOutputPayloadStoragePath='" + externalOutputPayloadStoragePath + '\'' +
+            ", subWorkflowId='" + subWorkflowId + '\'' +
+            '}';
     }
 
     public static TaskResult complete() {
@@ -294,6 +295,7 @@ public class TaskResult {
 
     /**
      * Copy the given task result object
+     *
      * @return a deep copy of the task result object except the externalOutputPayloadStoragePath field
      */
     public TaskResult copy() {

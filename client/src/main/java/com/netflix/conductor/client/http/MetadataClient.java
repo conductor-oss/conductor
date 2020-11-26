@@ -1,19 +1,15 @@
 /*
- * Copyright 2016 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
-
 package com.netflix.conductor.client.http;
 
 import com.google.common.base.Preconditions;
@@ -22,7 +18,6 @@ import com.netflix.conductor.client.config.DefaultConductorClientConfiguration;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.sun.jersey.api.client.ClientHandler;
-import com.sun.jersey.api.client.GenericType;
 import com.sun.jersey.api.client.config.ClientConfig;
 import com.sun.jersey.api.client.config.DefaultClientConfig;
 import com.sun.jersey.api.client.filter.ClientFilter;
@@ -31,12 +26,6 @@ import org.apache.commons.lang.StringUtils;
 import java.util.List;
 
 public class MetadataClient extends ClientBase {
-
-    private static GenericType<List<WorkflowDef>> workflowDefList = new GenericType<List<WorkflowDef>>() {
-    };
-
-    private static GenericType<List<TaskDef>> taskDefList = new GenericType<List<TaskDef>>() {
-    };
 
     /**
      * Creates a default metadata client
@@ -54,7 +43,8 @@ public class MetadataClient extends ClientBase {
 
     /**
      * @param clientConfig  REST Client configuration
-     * @param clientHandler Jersey client handler. Useful when plugging in various http client interaction modules (e.g. ribbon)
+     * @param clientHandler Jersey client handler. Useful when plugging in various http client interaction modules (e.g.
+     *                      ribbon)
      */
     public MetadataClient(ClientConfig clientConfig, ClientHandler clientHandler) {
         this(clientConfig, new DefaultConductorClientConfiguration(), clientHandler);
@@ -62,7 +52,8 @@ public class MetadataClient extends ClientBase {
 
     /**
      * @param config  config REST Client configuration
-     * @param handler handler Jersey client handler. Useful when plugging in various http client interaction modules (e.g. ribbon)
+     * @param handler handler Jersey client handler. Useful when plugging in various http client interaction modules
+     *                (e.g. ribbon)
      * @param filters Chain of client side filters to be applied per request
      */
     public MetadataClient(ClientConfig config, ClientHandler handler, ClientFilter... filters) {
@@ -72,16 +63,17 @@ public class MetadataClient extends ClientBase {
     /**
      * @param config              REST Client configuration
      * @param clientConfiguration Specific properties configured for the client, see {@link ConductorClientConfiguration}
-     * @param handler             Jersey client handler. Useful when plugging in various http client interaction modules (e.g. ribbon)
+     * @param handler             Jersey client handler. Useful when plugging in various http client interaction modules
+     *                            (e.g. ribbon)
      * @param filters             Chain of client side filters to be applied per request
      */
-    public MetadataClient(ClientConfig config, ConductorClientConfiguration clientConfiguration, ClientHandler handler, ClientFilter... filters) {
+    public MetadataClient(ClientConfig config, ConductorClientConfiguration clientConfiguration, ClientHandler handler,
+        ClientFilter... filters) {
         super(config, clientConfiguration, handler);
         for (ClientFilter filter : filters) {
             super.client.addFilter(filter);
         }
     }
-
 
     // Workflow Metadata Operations
 
@@ -118,8 +110,8 @@ public class MetadataClient extends ClientBase {
     }
 
     /**
-     * Removes the workflow definition of a workflow from the conductor server.
-     * It does not remove associated workflows. Use with caution.
+     * Removes the workflow definition of a workflow from the conductor server. It does not remove associated workflows.
+     * Use with caution.
      *
      * @param name    Name of the workflow to be unregistered.
      * @param version Version of the workflow definition to be unregistered.
@@ -164,8 +156,7 @@ public class MetadataClient extends ClientBase {
     }
 
     /**
-     * Removes the task definition of a task type from the conductor server.
-     * Use with caution.
+     * Removes the task definition of a task type from the conductor server. Use with caution.
      *
      * @param taskType Task type to be unregistered.
      */

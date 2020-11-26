@@ -1,0 +1,53 @@
+/*
+ * Copyright 2020 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package com.netflix.conductor.redis.jedis;
+
+import com.netflix.conductor.redis.config.utils.RedisProperties;
+import com.netflix.dyno.connectionpool.Host;
+import com.netflix.dyno.connectionpool.HostSupplier;
+import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import redis.clients.jedis.JedisSentinelPool;
+import redis.clients.jedis.commands.JedisCommands;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import java.util.HashSet;
+import java.util.Set;
+
+@SuppressWarnings("rawtypes")
+public class RedisSentinelJedisProvider implements Provider<JedisCommands> {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RedisSentinelJedisProvider.class);
+    private final JedisSentinel jedisSentinel;
+
+    @Inject
+    public RedisSentinelJedisProvider(HostSupplier hostSupplier, RedisProperties properties) {
+        GenericObjectPoolConfig genericObjectPoolConfig = new GenericObjectPoolConfig();
+        genericObjectPoolConfig.setMinIdle(5);
+        genericObjectPoolConfig.setMaxTotal(properties.getMaxConnectionsPerHost());
+        LOGGER.info("Starting conductor server using redis_sentinel and cluster " + properties.getClusterName());
+        Set<String> sentinels = new HashSet<>();
+        for (Host host : hostSupplier.getHosts()) {
+            sentinels.add(host.getHostName() + ":" + host.getPort());
+        }
+        this.jedisSentinel = new JedisSentinel(
+            new JedisSentinelPool(properties.getClusterName(), sentinels, genericObjectPoolConfig));
+    }
+
+    @Override
+    public JedisCommands get() {
+        return jedisSentinel;
+    }
+}

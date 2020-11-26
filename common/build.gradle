@@ -8,21 +8,23 @@ buildscript {
 }
 
 dependencies {
-    compile "com.github.rholder:guava-retrying:${revGuavaRetrying}"
-    compile "org.slf4j:slf4j-api:${revSlf4j}"
-    compile "com.google.protobuf:protobuf-java:${revProtoBuf}"
-    compile "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
-    compile "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
-    compile "javax.inject:javax.inject:${revJavaxInject}"
-    compile "com.github.vmg.protogen:protogen-annotations:${revProtogenAnnotations}"
-    compile "org.apache.bval:bval-jsr:${revBval}"
-    compile "javax.validation:validation-api:${revValidationApi}"
-    compile "org.apache.commons:commons-lang3:${revCommonsLang3}"
-    // https://mvnrepository.com/artifact/org.glassfish/javax.el
-    compile group: 'org.glassfish', name: 'javax.el', version: "${revJavaElApi}"
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+
+    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
+
+    implementation "com.github.rholder:guava-retrying:${revGuavaRetrying}"
+
+    implementation "org.apache.bval:bval-jsr:${revBval}"
+
+    implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
+    implementation "com.github.vmg.protogen:protogen-annotations:${revProtogenAnnotations}"
+
+    implementation "com.fasterxml.jackson.core:jackson-databind:${revJackson}"
+    implementation "com.fasterxml.jackson.core:jackson-core:${revJackson}"
 }
 
-import com.github.vmg.protogen.ProtoGenTask;
+import com.github.vmg.protogen.ProtoGenTask
 
 task protogen(dependsOn: jar, type: ProtoGenTask) {
     protoPackage = "conductor.proto"

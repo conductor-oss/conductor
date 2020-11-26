@@ -1,19 +1,15 @@
-/**
- * Copyright 2018 Netflix, Inc.
+/*
+ * Copyright 2020 Netflix, Inc.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
-
 package com.netflix.conductor.common.utils;
 
 import com.github.rholder.retry.Attempt;
@@ -33,7 +29,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
-
 
 import static java.lang.String.format;
 
@@ -62,22 +57,24 @@ import static java.lang.String.format;
  *
  * @param <T> The type of the object that will be returned by the flaky supplier function
  */
+@SuppressWarnings("UnstableApiUsage")
 public class RetryUtil<T> {
 
-    private static final Logger logger = LoggerFactory.getLogger(RetryUtil.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RetryUtil.class);
 
-    private AtomicInteger internalNumberOfRetries = new AtomicInteger();
+    private final AtomicInteger internalNumberOfRetries = new AtomicInteger();
 
     /**
      * A helper method which has the ability to execute a flaky supplier function and retry in case of failures.
      *
      * @param supplierCommand:      Any function that is flaky and needs multiple retries.
-     * @param throwablePredicate:   A Guava {@link Predicate} housing the exceptional
-     *                              criteria to perform informed filtering before retrying.
+     * @param throwablePredicate:   A Guava {@link Predicate} housing the exceptional criteria to perform informed
+     *                              filtering before retrying.
      * @param resultRetryPredicate: a predicate to be evaluated for a valid condition of the expected result
      * @param retryCount:           Number of times the function is to be retried before failure
-     * @param shortDescription:     A short description of the function that will be used in logging and error propagation.
-     *                              The intention of this description is to provide context for Operability.
+     * @param shortDescription:     A short description of the function that will be used in logging and error
+     *                              propagation. The intention of this description is to provide context for
+     *                              Operability.
      * @param operationName:        The name of the function for traceability in logs
      * @return an instance of return type of the supplierCommand
      * @throws RuntimeException in case of failed attempts to get T, which needs to be returned by the supplierCommand.
@@ -89,41 +86,43 @@ public class RetryUtil<T> {
      */
     @SuppressWarnings("Guava")
     public T retryOnException(Supplier<T> supplierCommand,
-                              Predicate<Throwable> throwablePredicate,
-                              Predicate<T> resultRetryPredicate,
-                              int retryCount,
-                              String shortDescription, String operationName) throws RuntimeException {
+        Predicate<Throwable> throwablePredicate,
+        Predicate<T> resultRetryPredicate,
+        int retryCount,
+        String shortDescription, String operationName) throws RuntimeException {
 
         Retryer<T> retryer = RetryerBuilder.<T>newBuilder()
-                .retryIfException(Optional.ofNullable(throwablePredicate).orElse(exception -> true))
-                .retryIfResult(Optional.ofNullable(resultRetryPredicate).orElse(result -> false))
-                .withWaitStrategy(WaitStrategies.join(
-                        WaitStrategies.exponentialWait(1000, 90, TimeUnit.SECONDS),
-                        WaitStrategies.randomWait(100, TimeUnit.MILLISECONDS, 500, TimeUnit.MILLISECONDS)
-                ))
-                .withStopStrategy(StopStrategies.stopAfterAttempt(retryCount))
-                .withBlockStrategy(BlockStrategies.threadSleepStrategy())
-                .withRetryListener(new RetryListener() {
-                    @Override
-                    public <V> void onRetry(Attempt<V> attempt) {
-                        logger.debug("Attempt # {}, {} millis since first attempt. Operation: {}, description:{}",
-                                attempt.getAttemptNumber(), attempt.getDelaySinceFirstAttempt(), operationName, shortDescription);
-                        internalNumberOfRetries.incrementAndGet();
-                    }
-                })
-                .build();
+            .retryIfException(Optional.ofNullable(throwablePredicate).orElse(exception -> true))
+            .retryIfResult(Optional.ofNullable(resultRetryPredicate).orElse(result -> false))
+            .withWaitStrategy(WaitStrategies.join(
+                WaitStrategies.exponentialWait(1000, 90, TimeUnit.SECONDS),
+                WaitStrategies.randomWait(100, TimeUnit.MILLISECONDS, 500, TimeUnit.MILLISECONDS)
+            ))
+            .withStopStrategy(StopStrategies.stopAfterAttempt(retryCount))
+            .withBlockStrategy(BlockStrategies.threadSleepStrategy())
+            .withRetryListener(new RetryListener() {
+                @Override
+                public <V> void onRetry(Attempt<V> attempt) {
+                    LOGGER.debug("Attempt # {}, {} millis since first attempt. Operation: {}, description:{}",
+                        attempt.getAttemptNumber(), attempt.getDelaySinceFirstAttempt(), operationName,
+                        shortDescription);
+                    internalNumberOfRetries.incrementAndGet();
+                }
+            })
+            .build();
 
         try {
             return retryer.call(supplierCommand::get);
         } catch (ExecutionException executionException) {
             String errorMessage = format("Operation '%s:%s' failed for the %d time in RetryUtil", operationName,
-                    shortDescription, internalNumberOfRetries.get());
-            logger.debug(errorMessage);
+                shortDescription, internalNumberOfRetries.get());
+            LOGGER.debug(errorMessage);
             throw new RuntimeException(errorMessage, executionException.getCause());
         } catch (RetryException retryException) {
-            String errorMessage = format("Operation '%s:%s' failed after retrying %d times, retry limit %d", operationName,
-                    shortDescription, internalNumberOfRetries.get(), 3);
-            logger.error(errorMessage, retryException.getLastFailedAttempt().getExceptionCause());
+            String errorMessage = format("Operation '%s:%s' failed after retrying %d times, retry limit %d",
+                operationName,
+                shortDescription, internalNumberOfRetries.get(), 3);
+            LOGGER.error(errorMessage, retryException.getLastFailedAttempt().getExceptionCause());
             throw new RuntimeException(errorMessage, retryException.getLastFailedAttempt().getExceptionCause());
         }
     }

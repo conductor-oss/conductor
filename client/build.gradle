@@ -1,27 +1,24 @@
-apply plugin: 'findbugs'
-apply plugin: 'pmd'
-
 configurations.all {
     exclude group: 'amazon', module: 'aws-java-sdk'
 }
 
 dependencies {
+    implementation project(':conductor-common')
 
-    compile project(':conductor-common')
-    compile "com.sun.jersey:jersey-client:${revJerseyClient}"
-    compile "com.netflix.spectator:spectator-api:${revSpectator}"
-    compile "com.netflix.eureka:eureka-client:${revEurekaClient}"
-    compile "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:${revJaxrsJackson}"
-    compile "com.netflix.archaius:archaius-core:${revArchaius}"
-    compile "com.amazonaws:aws-java-sdk-core:${revAwsSdk}"
-    compile "commons-io:commons-io:${revApacheCommons}"
+    // SBMTODO: remove guava dep
+    implementation "com.google.guava:guava:${revGuava}"
 
-    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
-}
+    // SBMTODO: remove jersey dep
+    implementation "com.sun.jersey:jersey-client:1.19.4"
 
-tasks.withType(FindBugs) {
-    reports {
-        xml.enabled false
-        html.enabled true
-    }
+    implementation "com.netflix.spectator:spectator-api:${revSpectator}"
+    implementation "com.netflix.eureka:eureka-client:${revEurekaClient}"
+    implementation "com.amazonaws:aws-java-sdk-core:${revAwsSdk}"
+
+    implementation "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
+
+    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
+    implementation "commons-io:commons-io:${revCommonsIo}"
+
+    implementation "org.slf4j:slf4j-api"
 }

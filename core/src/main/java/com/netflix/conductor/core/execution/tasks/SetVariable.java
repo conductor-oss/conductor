@@ -12,38 +12,43 @@
  */
 package com.netflix.conductor.core.execution.tasks;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.util.*;
-import javax.inject.Inject;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.config.Configuration;
-import com.netflix.conductor.core.execution.ApplicationException;
+import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+
+@Component(SetVariable.NAME)
 public class SetVariable extends WorkflowSystemTask {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(SetVariable.class);
     public static final String NAME = "SET_VARIABLE";
 
-    private final Configuration configuration;
+    private final ConductorProperties properties;
     private final ObjectMapper objectMapper;
 
-    @Inject
-    public SetVariable(Configuration configuration, ObjectMapper objectMapper) {
+    @Autowired
+    public SetVariable(ConductorProperties properties, ObjectMapper objectMapper) {
         super(NAME);
-        this.configuration = configuration;
+        this.properties = properties;
         this.objectMapper = objectMapper;
         LOGGER.info(NAME + " task initialized...");
     }
 
     private boolean validateVariablesSize(Workflow workflow, Task task, Map<String, Object> variables) {
         String workflowId = workflow.getWorkflowId();
-        long maxThreshold = configuration.getMaxWorkflowVariablesPayloadSizeThresholdKB();
+        long maxThreshold = properties.getMaxWorkflowVariablesPayloadSizeThresholdKB();
 
         try (ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream()) {
             this.objectMapper.writeValue(byteArrayOutputStream, variables);
@@ -51,7 +56,9 @@ public class SetVariable extends WorkflowSystemTask {
             long payloadSize = payloadBytes.length;
 
             if (payloadSize > maxThreshold * 1024) {
-                String errorMsg = String.format("The variables payload size: %dB of workflow: %s is greater than the permissible limit: %dKB", payloadSize, workflowId, maxThreshold);
+                String errorMsg = String.format(
+                    "The variables payload size: %dB of workflow: %s is greater than the permissible limit: %dKB",
+                    payloadSize, workflowId, maxThreshold);
                 LOGGER.error(errorMsg);
                 task.setReasonForIncompletion(errorMsg);
                 return false;

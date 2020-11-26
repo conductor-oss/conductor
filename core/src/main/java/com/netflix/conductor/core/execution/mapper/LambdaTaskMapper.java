@@ -14,21 +14,25 @@ package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
-import com.netflix.conductor.core.execution.ParametersUtils;
 import com.netflix.conductor.core.execution.tasks.Lambda;
+import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * @author x-ultra
  */
+@Component
 public class LambdaTaskMapper implements TaskMapper {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(LambdaTaskMapper.class);
@@ -41,6 +45,11 @@ public class LambdaTaskMapper implements TaskMapper {
     }
 
     @Override
+    public String getTaskType() {
+        return TaskType.LAMBDA.name();
+    }
+
+    @Override
     public List<Task> getMappedTasks(TaskMapperContext taskMapperContext) {
 
         LOGGER.debug("TaskMapperContext {} in LambdaTaskMapper", taskMapperContext);
@@ -50,14 +59,15 @@ public class LambdaTaskMapper implements TaskMapper {
         String taskId = taskMapperContext.getTaskId();
 
         TaskDef taskDefinition = Optional.ofNullable(taskMapperContext.getTaskDefinition())
-                .orElseGet(() -> Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
-                        .orElse(null));
+            .orElseGet(() -> Optional.ofNullable(metadataDAO.getTaskDef(taskToSchedule.getName()))
+                .orElse(null));
 
         Map<String, Object> taskInput = parametersUtils
-                .getTaskInputV2(taskMapperContext.getTaskToSchedule().getInputParameters(), workflowInstance, taskId, taskDefinition);
+            .getTaskInputV2(taskMapperContext.getTaskToSchedule().getInputParameters(), workflowInstance, taskId,
+                taskDefinition);
 
         Task lambdaTask = new Task();
-        lambdaTask.setTaskType(Lambda.TASK_NAME);
+        lambdaTask.setTaskType(Lambda.NAME);
         lambdaTask.setTaskDefName(taskMapperContext.getTaskToSchedule().getName());
         lambdaTask.setReferenceTaskName(taskMapperContext.getTaskToSchedule().getTaskReferenceName());
         lambdaTask.setWorkflowInstanceId(workflowInstance.getWorkflowId());

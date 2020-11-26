@@ -1,23 +1,17 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.service;
 
-import com.netflix.conductor.annotations.Audit;
-import com.netflix.conductor.annotations.Service;
-import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -32,9 +26,8 @@ import com.netflix.conductor.metrics.Monitors;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
-import javax.inject.Inject;
-import javax.inject.Singleton;
 import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -43,18 +36,15 @@ import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-@Audit
-@Singleton
-@Trace
+//@Audit
+//@Trace
+@Service
 public class TaskServiceImpl implements TaskService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(TaskServiceImpl.class);
-
     private final ExecutionService executionService;
-
     private final QueueDAO queueDAO;
 
-    @Inject
     public TaskServiceImpl(ExecutionService executionService, QueueDAO queueDAO) {
         this.executionService = executionService;
         this.queueDAO = queueDAO;
@@ -68,7 +58,6 @@ public class TaskServiceImpl implements TaskService {
      * @param domain   Domain of the workflow
      * @return polled {@link Task}
      */
-    @Service
     public Task poll(String taskType, String workerId, String domain) {
         LOGGER.debug("Task being polled: /tasks/poll/{}?{}&{}", taskType, workerId, domain);
         Task task = executionService.getLastPollTask(taskType, workerId, domain);
@@ -89,13 +78,12 @@ public class TaskServiceImpl implements TaskService {
      * @param timeout  Timeout for polling in milliseconds
      * @return list of {@link Task}
      */
-    @Service
     public List<Task> batchPoll(String taskType, String workerId, String domain, Integer count, Integer timeout) {
         List<Task> polledTasks = executionService.poll(taskType, workerId, domain, count, timeout);
         LOGGER.debug("The Tasks {} being returned for /tasks/poll/{}?{}&{}",
-                polledTasks.stream()
-                        .map(Task::getTaskId)
-                        .collect(Collectors.toList()), taskType, workerId, domain);
+            polledTasks.stream()
+                .map(Task::getTaskId)
+                .collect(Collectors.toList()), taskType, workerId, domain);
         Monitors.recordTaskPollCount(taskType, domain, polledTasks.size());
         return polledTasks;
     }
@@ -108,7 +96,6 @@ public class TaskServiceImpl implements TaskService {
      * @param count    Number of entries
      * @return list of {@link Task}
      */
-    @Service
     public List<Task> getTasks(String taskType, String startKey, Integer count) {
         return executionService.getTasks(taskType, startKey, count);
     }
@@ -120,7 +107,6 @@ public class TaskServiceImpl implements TaskService {
      * @param taskReferenceName Task reference name.
      * @return instance of {@link Task}
      */
-    @Service
     public Task getPendingTaskForWorkflow(String workflowId, String taskReferenceName) {
         return executionService.getPendingTaskForWorkflow(taskReferenceName, workflowId);
     }
@@ -131,11 +117,11 @@ public class TaskServiceImpl implements TaskService {
      * @param taskResult Instance of {@link TaskResult}
      * @return task Id of the updated task.
      */
-    @Service
     public String updateTask(TaskResult taskResult) {
         LOGGER.debug("Update Task: {} with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
         executionService.updateTask(taskResult);
-        LOGGER.debug("Task: {} updated successfully with callback time: {}", taskResult, taskResult.getCallbackAfterSeconds());
+        LOGGER.debug("Task: {} updated successfully with callback time: {}", taskResult,
+            taskResult.getCallbackAfterSeconds());
         return taskResult.getTaskId();
     }
 
@@ -146,7 +132,6 @@ public class TaskServiceImpl implements TaskService {
      * @param workerId Id of the worker
      * @return `true|false` if task if received or not
      */
-    @Service
     public String ackTaskReceived(String taskId, String workerId) {
         LOGGER.debug("Ack received for task: {} from worker: {}", taskId, workerId);
         return String.valueOf(ackTaskReceived(taskId));
@@ -158,7 +143,6 @@ public class TaskServiceImpl implements TaskService {
      * @param taskId Id of the task
      * @return `true|false` if task if received or not
      */
-    @Service
     public boolean ackTaskReceived(String taskId) {
         LOGGER.debug("Ack received for task: {}", taskId);
         String ackTaskDesc = "Ack Task with taskId: " + taskId;
@@ -184,6 +168,7 @@ public class TaskServiceImpl implements TaskService {
 
     /**
      * Updates the task with FAILED status; On exception, fails the workflow.
+     *
      * @param task
      * @param errorMsg
      */
@@ -207,7 +192,6 @@ public class TaskServiceImpl implements TaskService {
      * @param taskId Id of the task
      * @param log    Details you want to log
      */
-    @Service
     public void log(String taskId, String log) {
         executionService.log(taskId, log);
     }
@@ -218,7 +202,6 @@ public class TaskServiceImpl implements TaskService {
      * @param taskId Id of the task.
      * @return list of {@link TaskExecLog}
      */
-    @Service
     public List<TaskExecLog> getTaskLogs(String taskId) {
         return executionService.getTaskLogs(taskId);
     }
@@ -229,7 +212,6 @@ public class TaskServiceImpl implements TaskService {
      * @param taskId Id of the task.
      * @return instance of {@link Task}
      */
-    @Service
     public Task getTask(String taskId) {
         return executionService.getTask(taskId);
     }
@@ -240,7 +222,6 @@ public class TaskServiceImpl implements TaskService {
      * @param taskType Task Name
      * @param taskId   ID of the task
      */
-    @Service
     public void removeTaskFromQueue(String taskType, String taskId) {
         executionService.removeTaskfromQueue(taskId);
     }
@@ -250,7 +231,6 @@ public class TaskServiceImpl implements TaskService {
      *
      * @param taskId ID of the task
      */
-    @Service
     public void removeTaskFromQueue(String taskId) {
         executionService.removeTaskfromQueue(taskId);
     }
@@ -261,7 +241,6 @@ public class TaskServiceImpl implements TaskService {
      * @param taskTypes List of task types.
      * @return map of task type as Key and queue size as value.
      */
-    @Service
     public Map<String, Integer> getTaskQueueSizes(List<String> taskTypes) {
         return executionService.getTaskQueueSizes(taskTypes);
     }
@@ -282,8 +261,8 @@ public class TaskServiceImpl implements TaskService {
      */
     public Map<String, Long> getAllQueueDetails() {
         return queueDAO.queuesDetail().entrySet().stream()
-                .sorted(Comparator.comparing(Entry::getKey))
-                .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (v1, v2) -> v1, LinkedHashMap::new));
+            .sorted(Comparator.comparing(Entry::getKey))
+            .collect(Collectors.toMap(Entry::getKey, Entry::getValue, (v1, v2) -> v1, LinkedHashMap::new));
     }
 
     /**
@@ -292,9 +271,7 @@ public class TaskServiceImpl implements TaskService {
      * @param taskType Task Name
      * @return list of {@link PollData}
      */
-    @Service
     public List<PollData> getPollData(String taskType) {
-        //TODO: check task type is valid or not
         return executionService.getPollData(taskType);
     }
 
@@ -308,28 +285,18 @@ public class TaskServiceImpl implements TaskService {
     }
 
     /**
-     * Requeue pending tasks for all the running workflows.
-     *
-     * @return number of tasks requeued.
-     */
-    public String requeue() {
-        return String.valueOf(executionService.requeuePendingTasks());
-    }
-
-    /**
      * Requeue pending tasks.
      *
      * @param taskType Task name.
      * @return number of tasks requeued.
      */
-    @Service
     public String requeuePendingTask(String taskType) {
         return String.valueOf(executionService.requeuePendingTasks(taskType));
     }
 
     /**
-     * Search for tasks based in payload and other parameters. Use sort options as ASC or DESC e.g.
-     * sort=name or sort=workflowId. If order is not specified, defaults to ASC.
+     * Search for tasks based in payload and other parameters. Use sort options as ASC or DESC e.g. sort=name or
+     * sort=workflowId. If order is not specified, defaults to ASC.
      *
      * @param start    Start index of pagination
      * @param size     Number of entries
@@ -348,17 +315,22 @@ public class TaskServiceImpl implements TaskService {
      * @param path      the path for which the external storage location is to be populated
      * @param operation the operation to be performed (read or write)
      * @param type      the type of payload (input or output)
-     * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external storage
+     * @return {@link ExternalStorageLocation} containing the uri and the path to the payload is stored in external
+     * storage
      */
     public ExternalStorageLocation getExternalStorageLocation(String path, String operation, String type) {
         try {
-            ExternalPayloadStorage.Operation payloadOperation = ExternalPayloadStorage.Operation.valueOf(StringUtils.upperCase(operation));
-            ExternalPayloadStorage.PayloadType payloadType = ExternalPayloadStorage.PayloadType.valueOf(StringUtils.upperCase(type));
+            ExternalPayloadStorage.Operation payloadOperation = ExternalPayloadStorage.Operation
+                .valueOf(StringUtils.upperCase(operation));
+            ExternalPayloadStorage.PayloadType payloadType = ExternalPayloadStorage.PayloadType
+                .valueOf(StringUtils.upperCase(type));
             return executionService.getExternalStorageLocation(payloadOperation, payloadType, path);
         } catch (Exception e) {
             // FIXME: for backwards compatibility
-            LOGGER.error("Invalid input - Operation: {}, PayloadType: {}, defaulting to WRITE/TASK_OUTPUT", operation, type);
-            return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE, ExternalPayloadStorage.PayloadType.TASK_OUTPUT, path);
+            LOGGER.error("Invalid input - Operation: {}, PayloadType: {}, defaulting to WRITE/TASK_OUTPUT", operation,
+                type);
+            return executionService.getExternalStorageLocation(ExternalPayloadStorage.Operation.WRITE,
+                ExternalPayloadStorage.PayloadType.TASK_OUTPUT, path);
         }
     }
 }

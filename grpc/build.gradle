@@ -1,13 +1,13 @@
 buildscript {
     dependencies {
-        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.5'
+        classpath 'com.google.protobuf:protobuf-gradle-plugin:0.8.13'
     }
 }
 
 plugins {
     id 'java'
     id 'idea'
-    id "com.google.protobuf" version "0.8.5"
+    id "com.google.protobuf" version "0.8.13"
 }
 
 repositories{
@@ -15,15 +15,12 @@ repositories{
 }
 
 dependencies {
-    compile project(':conductor-common')
-    compile project(':conductor-core')
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
 
-    protobuf 'io.chaossystems.grpc:grpc-healthcheck:1.0.+:protos'
-    compile "com.google.api.grpc:proto-google-common-protos:1.0.0"
-    compile "io.grpc:grpc-protobuf:${revGrpc}"
-    compile "io.grpc:grpc-stub:${revGrpc}"
-
-    compile "com.netflix.runtime:health-api:${revHealth}"
+    implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
+    implementation "io.grpc:grpc-protobuf:${revGrpc}"
+    implementation "io.grpc:grpc-stub:${revGrpc}"
 }
 
 protobuf {
@@ -50,4 +47,4 @@ idea {
     }
 }
 
-compileJava.dependsOn(tasks.getByPath(":conductor-common:protogen"))
+compileJava.dependsOn(tasks.getByPath(':conductor-common:protogen'))

@@ -1,0 +1,74 @@
+package com.netflix.conductor.es6.dao.index;
+
+import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
+import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.cluster.metadata.IndexMetaData;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
+import org.elasticsearch.common.settings.Settings;
+import org.elasticsearch.common.transport.TransportAddress;
+import org.elasticsearch.transport.client.PreBuiltTransportClient;
+import org.junit.After;
+import org.junit.AfterClass;
+import org.junit.Before;
+
+import java.net.InetAddress;
+import java.util.concurrent.ExecutionException;
+
+abstract class ElasticSearchDaoBaseTest extends ElasticSearchTest {
+
+    protected TransportClient elasticSearchClient;
+    protected ElasticSearchDAOV6 indexDAO;
+
+    @Before
+    public void setup() throws Exception {
+        int mappedPort = container.getMappedPort(9300);
+        properties.setURL("tcp://localhost:" + mappedPort);
+
+        Settings settings = Settings.builder()
+                .put("client.transport.ignore_cluster_name", true)
+                .build();
+
+        elasticSearchClient = new PreBuiltTransportClient(settings)
+                .addTransportAddress(new TransportAddress(InetAddress.getByName("localhost"), mappedPort));
+
+        elasticSearchClient.admin()
+                .cluster()
+                .prepareHealth()
+                .setWaitForGreenStatus()
+                .execute()
+                .get();
+
+        indexDAO = new ElasticSearchDAOV6(elasticSearchClient, properties, objectMapper);
+        indexDAO.setup();
+    }
+
+    @AfterClass
+    public static void closeClient() throws Exception {
+        container.stop();
+    }
+
+    @After
+    public void tearDown() {
+        deleteAllIndices();
+
+        if (elasticSearchClient != null) {
+            elasticSearchClient.close();
+        }
+    }
+
+    private void deleteAllIndices() {
+        ImmutableOpenMap<String, IndexMetaData> indices = elasticSearchClient.admin().cluster()
+                .prepareState().get().getState()
+                .getMetaData().getIndices();
+        indices.forEach(cursor -> {
+            try {
+                elasticSearchClient.admin()
+                        .indices()
+                        .delete(new DeleteIndexRequest(cursor.value.getIndex().getName()))
+                        .get();
+            } catch (InterruptedException | ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        });
+    }
+}

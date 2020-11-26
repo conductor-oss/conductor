@@ -1,25 +1,22 @@
 /*
  * Copyright 2020 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.client.automator;
 
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.client.http.TaskClient;
-import com.netflix.conductor.client.telemetry.MetricsContainer;
 import com.netflix.conductor.client.worker.Worker;
 import com.netflix.discovery.EurekaClient;
+
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -37,7 +34,7 @@ public class TaskRunnerConfigurer {
 
     private final EurekaClient eurekaClient;
     private final TaskClient taskClient;
-    private List<Worker> workers = new LinkedList<>();
+    private final List<Worker> workers = new LinkedList<>();
     private final int sleepWhenRetry;
     private final int updateRetryCount;
     private final int threadCount;
@@ -70,9 +67,9 @@ public class TaskRunnerConfigurer {
         private int sleepWhenRetry = 500;
         private int updateRetryCount = 3;
         private int threadCount = -1;
-        private Iterable<Worker> workers;
+        private final Iterable<Worker> workers;
         private EurekaClient eurekaClient;
-        private TaskClient taskClient;
+        private final TaskClient taskClient;
         private Map<String/*taskType*/, String/*domain*/> taskToDomain = new HashMap<>();
 
         public Builder(TaskClient taskClient, Iterable<Worker> workers) {
@@ -184,7 +181,6 @@ public class TaskRunnerConfigurer {
      * Starts the polling. Must be called after {@link TaskRunnerConfigurer.Builder#build()} method.
      */
     public synchronized void init() {
-        MetricsContainer.incrementInitializationCount(this.getClass().getCanonicalName());
         this.taskPollExecutor = new TaskPollExecutor(eurekaClient, taskClient, threadCount,
             updateRetryCount, taskToDomain, workerNamePrefix);
 

@@ -1,0 +1,11 @@
+dependencies {
+
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+
+    implementation "com.netflix.runtime:health-api:${revHealth}"
+
+    implementation "org.springdoc:springdoc-openapi-ui:${revOpenapi}"
+}

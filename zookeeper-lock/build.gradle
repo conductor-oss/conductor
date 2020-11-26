@@ -1,10 +1,11 @@
-
 dependencies {
+    implementation project(':conductor-common')
+    implementation project(':conductor-core')
+    implementation 'org.springframework.boot:spring-boot-starter'
 
-    compile project(':conductor-core')
-    
-    compile "org.apache.curator:curator-recipes:${revCuratorRecipes}"
-    testCompile "org.apache.curator:curator-test:${revCuratorTest}"
+    implementation "javax.inject:javax.inject:1"
+    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
+    implementation "org.apache.curator:curator-recipes:${revCuratorRecipes}"
 
-    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
+    testImplementation "org.apache.curator:curator-test:${revCuratorTest}"
 }

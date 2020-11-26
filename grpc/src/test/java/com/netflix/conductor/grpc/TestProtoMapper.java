@@ -1,11 +1,11 @@
 package com.netflix.conductor.grpc;
 
+import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
+import com.netflix.conductor.proto.WorkflowTaskPb;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import com.netflix.conductor.proto.WorkflowTaskPb;
 
 public class TestProtoMapper {
   private final ProtoMapper mapper = ProtoMapper.INSTANCE;

@@ -1,19 +1,34 @@
 /*
  * Copyright 2020 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.client.automator;
+
+import com.google.common.util.concurrent.Uninterruptibles;
+import com.netflix.conductor.client.exception.ConductorClientException;
+import com.netflix.conductor.client.http.TaskClient;
+import com.netflix.conductor.client.worker.Worker;
+import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskResult;
+import org.junit.Test;
+import org.mockito.Mockito;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static com.netflix.conductor.common.metadata.tasks.TaskResult.Status.IN_PROGRESS;
 import static org.junit.Assert.assertEquals;
@@ -25,23 +40,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.google.common.util.concurrent.Uninterruptibles;
-import com.netflix.conductor.client.exceptions.ConductorClientException;
-import com.netflix.conductor.client.http.TaskClient;
-import com.netflix.conductor.client.worker.Worker;
-import com.netflix.conductor.common.metadata.tasks.Task;
-import com.netflix.conductor.common.metadata.tasks.TaskResult;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import org.junit.Test;
-import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
-
 public class TaskPollExecutorTest {
 
     private static final String TEST_TASK_DEF_NAME = "test";
@@ -52,7 +50,8 @@ public class TaskPollExecutorTest {
             throw new NoSuchMethodError();
         });
         TaskClient taskClient = Mockito.mock(TaskClient.class);
-        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 1, new HashMap<>(), "test-worker-%d");
+        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 1, new HashMap<>(),
+            "test-worker-%d");
 
         when(taskClient.pollTask(any(), any(), any())).thenReturn(testTask());
         when(taskClient.ack(any(), any())).thenReturn(true);
@@ -97,7 +96,8 @@ public class TaskPollExecutorTest {
         });
 
         TaskClient taskClient = Mockito.mock(TaskClient.class);
-        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 1, new HashMap<>(), "test-worker-");
+        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 1, new HashMap<>(),
+            "test-worker-");
         when(taskClient.pollTask(any(), any(), any())).thenReturn(task);
         when(taskClient.ack(any(), any())).thenReturn(true);
         CountDownLatch latch = new CountDownLatch(3);
@@ -146,7 +146,8 @@ public class TaskPollExecutorTest {
             throw new ConductorClientException();
         }).when(taskClient).evaluateAndUploadLargePayload(any(TaskResult.class), any());
 
-        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 3, new HashMap<>(), "test-worker-");
+        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 3, new HashMap<>(),
+            "test-worker-");
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(invocation -> {
                 latch.countDown();
@@ -176,7 +177,8 @@ public class TaskPollExecutorTest {
             .thenThrow(ConductorClientException.class)
             .thenReturn(task);
 
-        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 1, new HashMap<>(), "test-worker-");
+        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 1, new HashMap<>(),
+            "test-worker-");
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(invocation -> {
                 Object[] args = invocation.getArguments();
@@ -209,7 +211,8 @@ public class TaskPollExecutorTest {
             .thenReturn(new Task())
             .thenReturn(task);
 
-        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 1, new HashMap<>(), "test-worker-");
+        TaskPollExecutor taskPollExecutor = new TaskPollExecutor(null, taskClient, 1, 1, new HashMap<>(),
+            "test-worker-");
         CountDownLatch latch = new CountDownLatch(1);
         doAnswer(invocation -> {
                 Object[] args = invocation.getArguments();

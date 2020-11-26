@@ -1,17 +1,14 @@
 /*
  * Copyright 2020 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.client.telemetry;
 
@@ -24,6 +21,7 @@ import com.netflix.spectator.api.Spectator;
 import com.netflix.spectator.api.Tag;
 import com.netflix.spectator.api.Timer;
 import com.netflix.spectator.api.patterns.PolledMeter;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -56,13 +54,12 @@ public class MetricsContainer {
     private static final String EXTERNAL_PAYLOAD_USED = "external_payload_used";
     private static final String WORKFLOW_START_ERROR = "workflow_start_error";
     private static final String THREAD_UNCAUGHT_EXCEPTION = "thread_uncaught_exceptions";
-    private static final String CLIENT_INITIALIZED = "client_initialized";
 
-    private static Registry registry = Spectator.globalRegistry();
-    private static ConcurrentHashMap<String, Timer> monitors = new ConcurrentHashMap<>();
-    private static ConcurrentHashMap<String, Counter> errors = new ConcurrentHashMap<>();
-    private static Map<String, AtomicLong> gauges = new ConcurrentHashMap<>();
-    private static final String className = MetricsContainer.class.getSimpleName();
+    private static final Registry REGISTRY = Spectator.globalRegistry();
+    private static final Map<String, Timer> TIMERS = new ConcurrentHashMap<>();
+    private static final Map<String, Counter> COUNTERS = new ConcurrentHashMap<>();
+    private static final Map<String, AtomicLong> GAUGES = new ConcurrentHashMap<>();
+    private static final String CLASS_NAME = MetricsContainer.class.getSimpleName();
 
     private MetricsContainer() {
     }
@@ -76,18 +73,18 @@ public class MetricsContainer {
     }
 
     private static Timer getTimer(String name, String... additionalTags) {
-        String key = className + "." + name + "." + Joiner.on(",").join(additionalTags);
-        return monitors.computeIfAbsent(key, k -> {
+        String key = CLASS_NAME + "." + name + "." + Joiner.on(",").join(additionalTags);
+        return TIMERS.computeIfAbsent(key, k -> {
             List<Tag> tagList = getTags(additionalTags);
             tagList.add(new BasicTag("unit", TimeUnit.MILLISECONDS.name()));
-            return registry.timer(name, tagList);
+            return REGISTRY.timer(name, tagList);
         });
     }
 
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static List<Tag> getTags(String[] additionalTags) {
         List<Tag> tagList = new ArrayList();
-        tagList.add(new BasicTag("class", className));
+        tagList.add(new BasicTag("class", CLASS_NAME));
         for (int j = 0; j < additionalTags.length - 1; j++) {
             tagList.add(new BasicTag(additionalTags[j], additionalTags[j + 1]));
             j++;
@@ -100,18 +97,18 @@ public class MetricsContainer {
     }
 
     private static Counter getCounter(String name, String... additionalTags) {
-        String key = className + "." + name + "." + Joiner.on(",").join(additionalTags);
-        return errors.computeIfAbsent(key, k -> {
+        String key = CLASS_NAME + "." + name + "." + Joiner.on(",").join(additionalTags);
+        return COUNTERS.computeIfAbsent(key, k -> {
             List<Tag> tags = getTags(additionalTags);
-            return registry.counter(name, tags);
+            return REGISTRY.counter(name, tags);
         });
     }
 
     private static AtomicLong getGauge(String name, String... additionalTags) {
-        String key = className + "." + name + "." + Joiner.on(",").join(additionalTags);
-        return gauges.computeIfAbsent(key, pollTimer -> {
-            Id id = registry.createId(name, getTags(additionalTags));
-            return PolledMeter.using(registry)
+        String key = CLASS_NAME + "." + name + "." + Joiner.on(",").join(additionalTags);
+        return GAUGES.computeIfAbsent(key, pollTimer -> {
+            Id id = REGISTRY.createId(name, getTags(additionalTags));
+            return PolledMeter.using(REGISTRY)
                 .withId(id)
                 .monitorValue(new AtomicLong(0));
         });
@@ -167,16 +164,5 @@ public class MetricsContainer {
 
     public static void incrementWorkflowStartErrorCount(String workflowType, Throwable t) {
         incrementCount(WORKFLOW_START_ERROR, WORKFLOW_TYPE, workflowType, EXCEPTION, t.getClass().getSimpleName());
-    }
-
-    /**
-     * This metric is used for tracking client upgrades from the deprecated class
-     * {@link com.netflix.conductor.client.task.WorkflowTaskCoordinator} to
-     * {@link com.netflix.conductor.client.automator.TaskRunnerConfigurer}
-     *
-     * @param className the name of the class which initialized the client
-     */
-    public static void incrementInitializationCount(String className) {
-        incrementCount(CLIENT_INITIALIZED, ENTITY_NAME, className);
     }
 }

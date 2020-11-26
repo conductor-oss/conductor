@@ -1,19 +1,15 @@
 /*
- * Copyright 2018 Netflix, Inc.
+ * Copyright 2020 Netflix, Inc.
  * <p>
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
  * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
  * <p>
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
-
 package com.netflix.conductor.common.utils;
 
 import com.netflix.conductor.common.run.ExternalStorageLocation;
@@ -34,8 +30,8 @@ public interface ExternalPayloadStorage {
      *
      * @param operation   the type of {@link Operation} to be performed with the uri
      * @param payloadType the {@link PayloadType} that is being accessed at the uri
-     * @param path (optional) the relative path for which the external storage location object is to be populated.
-     *             If path is not specified, it will be computed and populated.
+     * @param path        (optional) the relative path for which the external storage location object is to be
+     *                    populated. If path is not specified, it will be computed and populated.
      * @return a {@link ExternalStorageLocation} object which contains the uri and the path for the json payload
      */
     ExternalStorageLocation getLocation(Operation operation, PayloadType payloadType, String path);

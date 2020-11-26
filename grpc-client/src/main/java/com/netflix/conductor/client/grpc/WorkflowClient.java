@@ -1,3 +1,15 @@
+/*
+ * Copyright 2020 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.client.grpc;
 
 import com.google.common.base.Preconditions;
@@ -14,11 +26,13 @@ import org.apache.commons.lang3.StringUtils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class WorkflowClient extends ClientBase {
-    private WorkflowServiceGrpc.WorkflowServiceBlockingStub stub;
+
+    private final WorkflowServiceGrpc.WorkflowServiceBlockingStub stub;
 
     public WorkflowClient(String address, int port) {
         super(address, port);
@@ -34,7 +48,7 @@ public class WorkflowClient extends ClientBase {
     public String startWorkflow(StartWorkflowRequest startWorkflowRequest) {
         Preconditions.checkNotNull(startWorkflowRequest, "StartWorkflowRequest cannot be null");
         return stub.startWorkflow(
-                protoMapper.toProto(startWorkflowRequest)
+            protoMapper.toProto(startWorkflowRequest)
         ).getWorkflowId();
     }
 
@@ -48,10 +62,10 @@ public class WorkflowClient extends ClientBase {
     public Workflow getWorkflow(String workflowId, boolean includeTasks) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
         WorkflowPb.Workflow workflow = stub.getWorkflowStatus(
-                WorkflowServicePb.GetWorkflowStatusRequest.newBuilder()
-                        .setWorkflowId(workflowId)
-                        .setIncludeTasks(includeTasks)
-                        .build()
+            WorkflowServicePb.GetWorkflowStatusRequest.newBuilder()
+                .setWorkflowId(workflowId)
+                .setIncludeTasks(includeTasks)
+                .build()
         );
         return protoMapper.fromProto(workflow);
     }
@@ -70,12 +84,12 @@ public class WorkflowClient extends ClientBase {
         Preconditions.checkArgument(StringUtils.isNotBlank(correlationId), "correlationId cannot be blank");
 
         WorkflowServicePb.GetWorkflowsResponse workflows = stub.getWorkflows(
-                WorkflowServicePb.GetWorkflowsRequest.newBuilder()
-                        .setName(name)
-                        .addCorrelationId(correlationId)
-                        .setIncludeClosed(includeClosed)
-                        .setIncludeTasks(includeTasks)
-                        .build()
+            WorkflowServicePb.GetWorkflowsRequest.newBuilder()
+                .setName(name)
+                .addCorrelationId(correlationId)
+                .setIncludeClosed(includeClosed)
+                .setIncludeTasks(includeTasks)
+                .build()
         );
 
         if (!workflows.containsWorkflowsById(correlationId)) {
@@ -83,9 +97,9 @@ public class WorkflowClient extends ClientBase {
         }
 
         return workflows.getWorkflowsByIdOrThrow(correlationId)
-                .getWorkflowsList().stream()
-                .map(protoMapper::fromProto)
-                .collect(Collectors.toList());
+            .getWorkflowsList().stream()
+            .map(protoMapper::fromProto)
+            .collect(Collectors.toList());
     }
 
     /**
@@ -97,10 +111,10 @@ public class WorkflowClient extends ClientBase {
     public void deleteWorkflow(String workflowId, boolean archiveWorkflow) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "Workflow id cannot be blank");
         stub.removeWorkflow(
-                WorkflowServicePb.RemoveWorkflowRequest.newBuilder()
-                        .setWorkflodId(workflowId)
-                        .setArchiveWorkflow(archiveWorkflow)
-                        .build()
+            WorkflowServicePb.RemoveWorkflowRequest.newBuilder()
+                .setWorkflodId(workflowId)
+                .setArchiveWorkflow(archiveWorkflow)
+                .build()
         );
     }
 
@@ -115,10 +129,10 @@ public class WorkflowClient extends ClientBase {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowName), "Workflow name cannot be blank");
 
         WorkflowServicePb.GetRunningWorkflowsResponse workflows = stub.getRunningWorkflows(
-                WorkflowServicePb.GetRunningWorkflowsRequest.newBuilder()
-                        .setName(workflowName)
-                        .setVersion(version == null ? 1 : version)
-                        .build()
+            WorkflowServicePb.GetRunningWorkflowsRequest.newBuilder()
+                .setName(workflowName)
+                .setVersion(version == null ? 1 : version)
+                .build()
         );
         return workflows.getWorkflowIdsList();
     }
@@ -148,8 +162,8 @@ public class WorkflowClient extends ClientBase {
     public void runDecider(String workflowId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
         stub.decideWorkflow(WorkflowServicePb.DecideWorkflowRequest.newBuilder()
-                .setWorkflowId(workflowId)
-                .build()
+            .setWorkflowId(workflowId)
+            .build()
         );
     }
 
@@ -161,8 +175,8 @@ public class WorkflowClient extends ClientBase {
     public void pauseWorkflow(String workflowId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
         stub.pauseWorkflow(WorkflowServicePb.PauseWorkflowRequest.newBuilder()
-                .setWorkflowId(workflowId)
-                .build()
+            .setWorkflowId(workflowId)
+            .build()
         );
     }
 
@@ -174,8 +188,8 @@ public class WorkflowClient extends ClientBase {
     public void resumeWorkflow(String workflowId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
         stub.resumeWorkflow(WorkflowServicePb.ResumeWorkflowRequest.newBuilder()
-                .setWorkflowId(workflowId)
-                .build()
+            .setWorkflowId(workflowId)
+            .build()
         );
     }
 
@@ -189,9 +203,9 @@ public class WorkflowClient extends ClientBase {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
         Preconditions.checkArgument(StringUtils.isNotBlank(taskReferenceName), "Task reference name cannot be blank");
         stub.skipTaskFromWorkflow(WorkflowServicePb.SkipTaskRequest.newBuilder()
-                .setWorkflowId(workflowId)
-                .setTaskReferenceName(taskReferenceName)
-                .build()
+            .setWorkflowId(workflowId)
+            .setTaskReferenceName(taskReferenceName)
+            .build()
         );
     }
 
@@ -204,13 +218,13 @@ public class WorkflowClient extends ClientBase {
     public String rerunWorkflow(RerunWorkflowRequest rerunWorkflowRequest) {
         Preconditions.checkNotNull(rerunWorkflowRequest, "RerunWorkflowRequest cannot be null");
         return stub.rerunWorkflow(
-                protoMapper.toProto(rerunWorkflowRequest)
+            protoMapper.toProto(rerunWorkflowRequest)
         ).getWorkflowId();
     }
 
     /**
-     * This API has been marked as deprecated and will be removed in a future release.
-     * Please use {@link #restart(String, boolean)} instead.
+     * This API has been marked as deprecated and will be removed in a future release. Please use {@link
+     * #restart(String, boolean)} instead.
      */
     @Deprecated
     public void restart(String workflowId) {
@@ -225,9 +239,9 @@ public class WorkflowClient extends ClientBase {
     public void restart(String workflowId, boolean useLatestDefinitions) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
         stub.restartWorkflow(WorkflowServicePb.RestartWorkflowRequest.newBuilder()
-                .setWorkflowId(workflowId)
-                .setUseLatestDefinitions(useLatestDefinitions)
-                .build()
+            .setWorkflowId(workflowId)
+            .setUseLatestDefinitions(useLatestDefinitions)
+            .build()
         );
     }
 
@@ -239,8 +253,8 @@ public class WorkflowClient extends ClientBase {
     public void retryLastFailedTask(String workflowId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
         stub.retryWorkflow(WorkflowServicePb.RetryWorkflowRequest.newBuilder()
-                .setWorkflowId(workflowId)
-                .build()
+            .setWorkflowId(workflowId)
+            .build()
         );
     }
 
@@ -253,8 +267,8 @@ public class WorkflowClient extends ClientBase {
     public void resetCallbacksForInProgressTasks(String workflowId) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
         stub.resetWorkflowCallbacks(WorkflowServicePb.ResetWorkflowCallbacksRequest.newBuilder()
-                .setWorkflowId(workflowId)
-                .build()
+            .setWorkflowId(workflowId)
+            .build()
         );
     }
 
@@ -267,9 +281,9 @@ public class WorkflowClient extends ClientBase {
     public void terminateWorkflow(String workflowId, String reason) {
         Preconditions.checkArgument(StringUtils.isNotBlank(workflowId), "workflow id cannot be blank");
         stub.terminateWorkflow(WorkflowServicePb.TerminateWorkflowRequest.newBuilder()
-                .setWorkflowId(workflowId)
-                .setReason(reason)
-                .build()
+            .setWorkflowId(workflowId)
+            .setReason(reason)
+            .build()
         );
     }
 
@@ -294,25 +308,29 @@ public class WorkflowClient extends ClientBase {
      * @return the {@link SearchResult} containing the {@link WorkflowSummary} that match the query
      */
     public SearchResult<WorkflowSummary> search(
-            @Nullable Integer start, @Nullable Integer size,
-            @Nullable String sort, @Nullable String freeText, @Nonnull String query) {
+        @Nullable Integer start, @Nullable Integer size,
+        @Nullable String sort, @Nullable String freeText, @Nonnull String query) {
         Preconditions.checkNotNull(query, "query cannot be null");
 
         SearchPb.Request.Builder request = SearchPb.Request.newBuilder();
         request.setQuery(query);
-        if (start != null)
+        if (start != null) {
             request.setStart(start);
-        if (size != null)
+        }
+        if (size != null) {
             request.setSize(size);
-        if (sort != null)
+        }
+        if (sort != null) {
             request.setSort(sort);
-        if (freeText != null)
+        }
+        if (freeText != null) {
             request.setFreeText(freeText);
+        }
 
         WorkflowServicePb.WorkflowSummarySearchResult result = stub.search(request.build());
         return new SearchResult<WorkflowSummary>(
-                result.getTotalHits(),
-                result.getResultsList().stream().map(protoMapper::fromProto).collect(Collectors.toList())
+            result.getTotalHits(),
+            result.getResultsList().stream().map(protoMapper::fromProto).collect(Collectors.toList())
         );
     }
 }

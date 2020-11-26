@@ -1,0 +1,14 @@
+<!-- default log configuration -->
+<Configuration status="WARN">
+    <Appenders>
+        <Console name="CONSOLE">
+            <PatternLayout pattern="%-4r [%t] %-5p %c %x - %m%n"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Root level="INFO">
+            <AppenderRef ref="CONSOLE" />
+        </Root>
+    </Loggers>
+</Configuration>

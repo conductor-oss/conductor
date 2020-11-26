@@ -1,8 +1,28 @@
-rootProject.name='conductor'
+rootProject.name = 'conductor'
 
-include 'client','common','contribs','core','es5-persistence','es6-persistence','jersey','postgres-persistence','zookeeper-lock','redis-lock'
-include 'cassandra-persistence', 'mysql-persistence', 'redis-persistence','server','test-harness','ui'
-include 'grpc', 'grpc-server', 'grpc-client'
+include 'server'
+include 'common'
+include 'core'
+include 'contribs'
+include 'client'
+
+include 'cassandra-persistence'
+include 'redis-persistence'
+include 'mysql-persistence'
+include 'postgres-persistence'
+
+include 'es6-persistence'
+
+include 'redis-lock'
+include 'zookeeper-lock'
+
+include 'azureblob-storage'
+
+include 'rest'
+include 'grpc'
+include 'grpc-server'
+include 'grpc-client'
+
+//include 'test-harness'
 
 rootProject.children.each {it.name="conductor-${it.name}"}
-

@@ -1,0 +1,59 @@
+/*
+ * Copyright 2020 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
+package com.netflix.conductor.contribs.queue.sqs.config;
+
+import com.amazonaws.services.sqs.AmazonSQSClient;
+import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
+import com.netflix.conductor.core.events.EventQueueProvider;
+import com.netflix.conductor.core.events.queue.ObservableQueue;
+import rx.Scheduler;
+
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
+public class SQSEventQueueProvider implements EventQueueProvider {
+
+    private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
+    private final AmazonSQSClient client;
+    private final int batchSize;
+    private final int pollTimeInMS;
+    private final int visibilityTimeoutInSeconds;
+    private final Scheduler scheduler;
+
+    public SQSEventQueueProvider(AmazonSQSClient client, SQSEventQueueProperties properties, Scheduler scheduler) {
+        this.client = client;
+        this.batchSize = properties.getBatchSize();
+        this.pollTimeInMS = properties.getPollTimeMS();
+        this.visibilityTimeoutInSeconds = properties.getVisibilityTimeoutSeconds();
+        this.scheduler = scheduler;
+    }
+
+    @Override
+    public String getQueueType() {
+        return "sqs";
+    }
+
+    @Override
+    public ObservableQueue getQueue(String queueURI) {
+        return queues.computeIfAbsent(queueURI, q -> {
+            Builder builder = new Builder();
+            return builder.withBatchSize(this.batchSize)
+                .withClient(client)
+                .withPollTimeInMS(this.pollTimeInMS)
+                .withQueueName(queueURI)
+                .withVisibilityTimeout(this.visibilityTimeoutInSeconds)
+                .withScheduler(scheduler)
+                .build();
+        });
+    }
+}

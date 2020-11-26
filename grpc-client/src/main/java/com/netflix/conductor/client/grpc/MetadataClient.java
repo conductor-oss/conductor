@@ -1,3 +1,15 @@
+/*
+ * Copyright 2020 Netflix, Inc.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
+ */
 package com.netflix.conductor.client.grpc;
 
 import com.google.common.base.Preconditions;
@@ -11,7 +23,8 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 public class MetadataClient extends ClientBase {
-    private MetadataServiceGrpc.MetadataServiceBlockingStub stub;
+
+    private final MetadataServiceGrpc.MetadataServiceBlockingStub stub;
 
     public MetadataClient(String address, int port) {
         super(address, port);
@@ -26,9 +39,9 @@ public class MetadataClient extends ClientBase {
     public void registerWorkflowDef(WorkflowDef workflowDef) {
         Preconditions.checkNotNull(workflowDef, "Worfklow definition cannot be null");
         stub.createWorkflow(
-                MetadataServicePb.CreateWorkflowRequest.newBuilder()
-                        .setWorkflow(protoMapper.toProto(workflowDef))
-                        .build()
+            MetadataServicePb.CreateWorkflowRequest.newBuilder()
+                .setWorkflow(protoMapper.toProto(workflowDef))
+                .build()
         );
     }
 
@@ -40,11 +53,11 @@ public class MetadataClient extends ClientBase {
     public void updateWorkflowDefs(List<WorkflowDef> workflowDefs) {
         Preconditions.checkNotNull(workflowDefs, "Workflow defs list cannot be null");
         stub.updateWorkflows(
-                MetadataServicePb.UpdateWorkflowsRequest.newBuilder()
-                        .addAllDefs(
-                                workflowDefs.stream().map(protoMapper::toProto)::iterator
-                        )
-                        .build()
+            MetadataServicePb.UpdateWorkflowsRequest.newBuilder()
+                .addAllDefs(
+                    workflowDefs.stream().map(protoMapper::toProto)::iterator
+                )
+                .build()
         );
     }
 
@@ -59,11 +72,12 @@ public class MetadataClient extends ClientBase {
         Preconditions.checkArgument(StringUtils.isNotBlank(name), "name cannot be blank");
 
         MetadataServicePb.GetWorkflowRequest.Builder request =
-                MetadataServicePb.GetWorkflowRequest.newBuilder()
-                        .setName(name);
+            MetadataServicePb.GetWorkflowRequest.newBuilder()
+                .setName(name);
 
-        if (version != null)
+        if (version != null) {
             request.setVersion(version);
+        }
 
         return protoMapper.fromProto(stub.getWorkflow(request.build()).getWorkflow());
     }
@@ -76,10 +90,10 @@ public class MetadataClient extends ClientBase {
     public void registerTaskDefs(List<TaskDef> taskDefs) {
         Preconditions.checkNotNull(taskDefs, "Task defs list cannot be null");
         stub.createTasks(MetadataServicePb.CreateTasksRequest.newBuilder()
-                .addAllDefs(
-                        taskDefs.stream().map(protoMapper::toProto)::iterator
-                )
-                .build()
+            .addAllDefs(
+                taskDefs.stream().map(protoMapper::toProto)::iterator
+            )
+            .build()
         );
     }
 
@@ -91,9 +105,9 @@ public class MetadataClient extends ClientBase {
     public void updateTaskDef(TaskDef taskDef) {
         Preconditions.checkNotNull(taskDef, "Task definition cannot be null");
         stub.updateTask(
-                MetadataServicePb.UpdateTaskRequest.newBuilder()
-                        .setTask(protoMapper.toProto(taskDef))
-                        .build()
+            MetadataServicePb.UpdateTaskRequest.newBuilder()
+                .setTask(protoMapper.toProto(taskDef))
+                .build()
         );
     }
 
@@ -106,24 +120,23 @@ public class MetadataClient extends ClientBase {
     public TaskDef getTaskDef(String taskType) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
         return protoMapper.fromProto(
-                stub.getTask(MetadataServicePb.GetTaskRequest.newBuilder()
-                        .setTaskType(taskType)
-                        .build()
-                ).getTask()
+            stub.getTask(MetadataServicePb.GetTaskRequest.newBuilder()
+                .setTaskType(taskType)
+                .build()
+            ).getTask()
         );
     }
 
     /**
-     * Removes the task definition of a task type from the conductor server.
-     * Use with caution.
+     * Removes the task definition of a task type from the conductor server. Use with caution.
      *
      * @param taskType Task type to be unregistered.
      */
     public void unregisterTaskDef(String taskType) {
         Preconditions.checkArgument(StringUtils.isNotBlank(taskType), "Task type cannot be blank");
         stub.deleteTask(MetadataServicePb.DeleteTaskRequest.newBuilder()
-                .setTaskType(taskType)
-                .build()
+            .setTaskType(taskType)
+            .build()
         );
     }
 }

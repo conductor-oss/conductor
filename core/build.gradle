@@ -1,23 +1,29 @@
 dependencies {
+    implementation project(':conductor-common')
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
 
-    compile project(':conductor-common')
+    implementation "com.fasterxml.jackson.core:jackson-annotations"
+    implementation "com.fasterxml.jackson.core:jackson-databind"
 
-    compile "io.reactivex:rxjava:${revRxJava}"
-    compile "com.google.inject:guice:${revGuice}"
-    compile "com.google.inject.extensions:guice-multibindings:${revGuiceMultiBindings}"
+    implementation "commons-io:commons-io:${revCommonsIo}"
 
-    compile "com.netflix.servo:servo-core:${revServo}"
-    compile "com.netflix.spectator:spectator-api:${revSpectator}"
-    compile "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
-    compile "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
-    compile "com.jayway.jsonpath:json-path:${revJsonPath}"
-    compile "org.apache.commons:commons-lang3:${revCommonsLang3}"
-    compile "com.spotify:completable-futures:${revSpotifyCompletableFutures}"
-    compile "com.amazonaws:aws-java-sdk-s3:${revAwsSdk}"
-    compile "org.apache.bval:bval-jsr:${revBval}"
-    compile "javax.validation:validation-api:${revValidationApi}"
-    // https://mvnrepository.com/artifact/org.glassfish/javax.el
-    compile group: 'org.glassfish', name: 'javax.el', version: "${revJavaElApi}"
-    
-    testCompile "org.slf4j:slf4j-log4j12:${revSlf4jlog4j}"
+    implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
+
+    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
+
+    implementation "com.fasterxml.jackson.core:jackson-core:${revJackson}"
+
+    implementation "com.spotify:completable-futures:${revSpotifyCompletableFutures}"
+
+    implementation "com.jayway.jsonpath:json-path:${revJsonPath}"
+
+    implementation "io.reactivex:rxjava:${revRxJava}"
+
+    implementation "com.netflix.servo:servo-core:${revServo}"
+    implementation "com.netflix.spectator:spectator-api:${revSpectator}"
+
+    implementation "org.apache.bval:bval-jsr:${revBval}"
+
+    implementation "javax.inject:javax.inject:1"
 }
