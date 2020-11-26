@@ -94,7 +94,10 @@
           "defaultCase": [],
           "forkTasks": [],
           "startDelay": 0,
-          "joinOn": ["integration_task_1", "integration_task_2"],
+          "joinOn": [
+            "integration_task_1",
+            "integration_task_2"
+          ],
           "optional": false,
           "defaultExclusiveJoinTask": [],
           "asyncComplete": false,
@@ -109,5 +112,6 @@
   "restartable": true,
   "workflowStatusListenerEnabled": false,
   "timeoutPolicy": "ALERT_ONLY",
-  "timeoutSeconds": 0
+  "timeoutSeconds": 0,
+  "ownerEmail": "test@harness.com"
 }

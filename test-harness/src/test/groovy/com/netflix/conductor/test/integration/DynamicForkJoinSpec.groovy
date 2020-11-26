@@ -1,67 +1,32 @@
-/**
+/*
  * Copyright 2020 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
-
 package com.netflix.conductor.test.integration
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.WorkflowExecutor
-import com.netflix.conductor.core.metadata.MetadataMapperService
-import com.netflix.conductor.service.ExecutionService
-import com.netflix.conductor.service.MetadataService
-import com.netflix.conductor.test.util.WorkflowTestUtil
-import com.netflix.conductor.tests.utils.TestModule
-import com.netflix.governator.guice.test.ModulesForTesting
+import com.netflix.conductor.test.base.AbstractSpecification
 import spock.lang.Shared
-import spock.lang.Specification
 
-import javax.inject.Inject
-
-@ModulesForTesting([TestModule.class])
-class DynamicForkJoinSpec extends Specification {
-
-    @Inject
-    ExecutionService workflowExecutionService
-
-    @Inject
-    MetadataService metadataService
-
-    @Inject
-    WorkflowExecutor workflowExecutor
-
-    @Inject
-    WorkflowTestUtil workflowTestUtil
-
-    @Inject
-    MetadataMapperService metadataMapperService
+class DynamicForkJoinSpec extends AbstractSpecification {
 
     @Shared
     def DYNAMIC_FORK_JOIN_WF = "DynamicFanInOutTest"
 
-
     def setup() {
         workflowTestUtil.registerWorkflows('dynamic_fork_join_integration_test.json')
     }
-
-    def cleanup() {
-        workflowTestUtil.clearWorkflows()
-    }
-
 
     def "Test dynamic fork join success flow"() {
         when: " a dynamic fork join workflow is started"
@@ -160,7 +125,8 @@ class DynamicForkJoinSpec extends Specification {
         setup: "Make sure that the integration_task_2 does not have any retry count"
         def persistedTask2Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_2').get()
         def modifiedTask2Definition = new TaskDef(persistedTask2Definition.name,
-                persistedTask2Definition.description, 0, persistedTask2Definition.timeoutSeconds)
+                persistedTask2Definition.description, persistedTask2Definition.ownerEmail, 0,
+                persistedTask2Definition.timeoutSeconds, persistedTask2Definition.responseTimeoutSeconds)
         metadataService.updateTaskDef(modifiedTask2Definition)
 
         when: " a dynamic fork join workflow is started"
@@ -240,7 +206,8 @@ class DynamicForkJoinSpec extends Specification {
         setup: "Make sure that the integration_task_2 does not have any retry count"
         def persistedTask2Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_2').get()
         def modifiedTask2Definition = new TaskDef(persistedTask2Definition.name,
-                persistedTask2Definition.description, 0, persistedTask2Definition.timeoutSeconds)
+                persistedTask2Definition.description, persistedTask2Definition.ownerEmail, 0,
+                persistedTask2Definition.timeoutSeconds, persistedTask2Definition.responseTimeoutSeconds)
         metadataService.updateTaskDef(modifiedTask2Definition)
 
         when: " a dynamic fork join workflow is started"
@@ -377,5 +344,4 @@ class DynamicForkJoinSpec extends Specification {
         cleanup: "roll back the change made to integration_task_2 definition"
         metadataService.updateTaskDef(persistedTask2Definition)
     }
-
 }

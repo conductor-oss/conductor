@@ -1,52 +1,31 @@
 /*
  * Copyright 2020 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.test.integration
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.WorkflowExecutor
+import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
 import com.netflix.conductor.dao.QueueDAO
-import com.netflix.conductor.service.ExecutionService
-import com.netflix.conductor.test.util.WorkflowTestUtil
-import com.netflix.conductor.tests.utils.TestModule
-import com.netflix.conductor.tests.utils.UserTask
-import com.netflix.governator.guice.test.ModulesForTesting
-import spock.lang.Specification
-
-import javax.inject.Inject
+import com.netflix.conductor.test.base.AbstractSpecification
+import com.netflix.conductor.test.utils.UserTask
+import org.springframework.beans.factory.annotation.Autowired
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
-@ModulesForTesting([TestModule.class])
-class TaskLimitsWorkflowSpec extends Specification {
+class TaskLimitsWorkflowSpec extends AbstractSpecification {
 
-    @Inject
-    ExecutionService workflowExecutionService
-
-    @Inject
-    WorkflowExecutor workflowExecutor
-
-    @Inject
-    WorkflowTestUtil workflowTestUtil
-
-    @Inject
+    @Autowired
     QueueDAO queueDAO
-
-    @Inject
-    UserTask userTask
 
     def RATE_LIMITED_SYSTEM_TASK_WORKFLOW = 'test_rate_limit_system_task_workflow'
     def RATE_LIMITED_SIMPLE_TASK_WORKFLOW = 'test_rate_limit_simple_task_workflow'
@@ -58,10 +37,6 @@ class TaskLimitsWorkflowSpec extends Specification {
                 'rate_limited_simple_task_workflow_integration_test.json',
                 'concurrency_limited_task_workflow_integration_test.json'
         )
-    }
-
-    def cleanup() {
-        workflowTestUtil.clearWorkflows()
     }
 
     def "Verify that the rate limiting for system tasks is honored"() {
@@ -79,7 +54,7 @@ class TaskLimitsWorkflowSpec extends Specification {
 
         when: "Execute the user task"
         def scheduledTask1 = workflowExecutionService.getExecutionStatus(workflowInstanceId, true).tasks[0]
-        workflowExecutor.executeSystemTask(userTask, scheduledTask1.taskId, 30)
+        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(UserTask.NAME), scheduledTask1.taskId, 30)
 
         then: "Verify the state of the workflow is completed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
@@ -103,7 +78,7 @@ class TaskLimitsWorkflowSpec extends Specification {
 
         when: "Execute the user task on the second workflow"
         def scheduledTask2 = workflowExecutionService.getExecutionStatus(workflowTwoInstanceId, true).tasks[0]
-        workflowExecutor.executeSystemTask(userTask, scheduledTask2.taskId, 30)
+        workflowExecutor.executeSystemTask(WorkflowSystemTask.get(UserTask.NAME), scheduledTask2.taskId, 30)
 
         then: "Verify the state of the workflow is still in running state"
         with(workflowExecutionService.getExecutionStatus(workflowTwoInstanceId, true)) {

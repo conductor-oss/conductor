@@ -41,7 +41,6 @@ public class RedisProperties {
     @Value("${EC2_AVAILABILITY_ZONE:us-east-1c}")
     private String availabilityZone;
 
-    // SBMTODO: default null value (?)
     @Value("${workflow.dynomite.cluster:#{null}}")
     private String cluster;
 

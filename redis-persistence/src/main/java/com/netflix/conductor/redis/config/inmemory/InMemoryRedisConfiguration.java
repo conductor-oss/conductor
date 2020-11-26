@@ -12,6 +12,9 @@
  */
 package com.netflix.conductor.redis.config.inmemory;
 
+import static com.netflix.conductor.redis.config.utils.RedisQueuesProvider.DEFAULT_CLIENT_INJECTION_NAME;
+import static com.netflix.conductor.redis.config.utils.RedisQueuesProvider.READ_CLIENT_INJECTION_NAME;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -41,9 +44,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.commands.JedisCommands;
-
-import static com.netflix.conductor.redis.config.utils.RedisQueuesProvider.DEFAULT_CLIENT_INJECTION_NAME;
-import static com.netflix.conductor.redis.config.utils.RedisQueuesProvider.READ_CLIENT_INJECTION_NAME;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)
@@ -76,6 +76,11 @@ public class InMemoryRedisConfiguration {
     }
 
     @Bean
+    public JedisProxy jedisProxy(@Qualifier(DEFAULT_CLIENT_INJECTION_NAME) JedisCommands jedisCommands) {
+        return new JedisProxy(jedisCommands);
+    }
+
+    @Bean
     public ShardingStrategy shardingStrategy(ShardSupplier shardSupplier, RedisProperties properties) {
         return new RedisQueuesShardingStrategyProvider(shardSupplier, properties).get();
     }
@@ -94,19 +99,19 @@ public class InMemoryRedisConfiguration {
 
     @Bean
     public ExecutionDAO redisExecutionDAO(JedisProxy jedisProxy, ObjectMapper objectMapper,
-                                          RedisProperties properties) {
+        RedisProperties properties) {
         return new RedisExecutionDAO(jedisProxy, objectMapper, properties);
     }
 
     @Bean
     public EventHandlerDAO eventHandlerDAO(JedisProxy jedisProxy, ObjectMapper objectMapper,
-                                           RedisProperties properties) {
+        RedisProperties properties) {
         return new RedisEventHandlerDAO(jedisProxy, objectMapper, properties);
     }
 
     @Bean
     public RateLimitingDAO rateLimitingDAO(JedisProxy jedisProxy, ObjectMapper objectMapper,
-                                           RedisProperties properties) {
+        RedisProperties properties) {
         return new RedisRateLimitingDAO(jedisProxy, objectMapper, properties);
     }
 

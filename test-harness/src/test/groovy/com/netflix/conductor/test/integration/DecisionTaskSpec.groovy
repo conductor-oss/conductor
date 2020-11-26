@@ -1,52 +1,26 @@
-/**
+/*
  * Copyright 2020 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
-
 package com.netflix.conductor.test.integration
-
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.WorkflowExecutor
-import com.netflix.conductor.service.ExecutionService
-import com.netflix.conductor.service.MetadataService
-import com.netflix.conductor.test.util.WorkflowTestUtil
-import com.netflix.conductor.tests.utils.TestModule
-import com.netflix.governator.guice.test.ModulesForTesting
+import com.netflix.conductor.test.base.AbstractSpecification
 import spock.lang.Shared
-import spock.lang.Specification
 import spock.lang.Unroll
-
-import javax.inject.Inject
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
-@ModulesForTesting([TestModule.class])
-class DecisionTaskSpec extends Specification {
-
-    @Inject
-    ExecutionService workflowExecutionService
-
-    @Inject
-    MetadataService metadataService
-
-    @Inject
-    WorkflowExecutor workflowExecutor
-
-    @Inject
-    WorkflowTestUtil workflowTestUtil
+class DecisionTaskSpec extends AbstractSpecification {
 
     @Shared
     def DECISION_WF = "DecisionWorkflow"
@@ -57,16 +31,11 @@ class DecisionTaskSpec extends Specification {
     @Shared
     def COND_TASK_WF = "ConditionalTaskWF"
 
-
     def setup() {
         //initialization code for each feature
         workflowTestUtil.registerWorkflows('simple_decision_task_integration_test.json',
                 'decision_and_fork_join_integration_test.json',
                 'conditional_task_workflow_integration_test.json')
-    }
-
-    def cleanup() {
-        workflowTestUtil.clearWorkflows()
     }
 
     def "Test simple decision workflow"() {
@@ -376,5 +345,4 @@ class DecisionTaskSpec extends Specification {
             tasks[3].status == Task.Status.COMPLETED
         }
     }
-
 }

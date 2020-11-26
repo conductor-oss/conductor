@@ -12,9 +12,12 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import static com.netflix.conductor.rest.config.RequestMappingConstants.WORKFLOW_BULK;
+
 import com.netflix.conductor.core.utils.BulkResponse;
 import com.netflix.conductor.service.WorkflowBulkService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.List;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -22,10 +25,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-
-import static com.netflix.conductor.rest.config.RequestMappingConstants.WORKFLOW_BULK;
 
 /**
  * Synchronous Bulk APIs to process the workflows in batches
@@ -74,7 +73,7 @@ public class WorkflowBulkResource {
     @PostMapping("/restart")
     @Operation(summary = "Restart the list of completed workflow")
     public BulkResponse restart(@RequestBody List<String> workflowIds,
-        @RequestParam(value = "useLatestDefinitions", defaultValue = "false") boolean useLatestDefinitions) {
+        @RequestParam(value = "useLatestDefinitions", defaultValue = "false", required = false) boolean useLatestDefinitions) {
         return workflowBulkService.restart(workflowIds, useLatestDefinitions);
     }
 

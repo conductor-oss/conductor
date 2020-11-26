@@ -1,8 +1,3 @@
-//plugins {
-//    // FIXME This is temporary until the server module refactoring is completed.
-//    id 'com.github.johnrengelman.shadow' version '1.2.3'
-//}
-
 dependencies {
     implementation project(':conductor-common')
     implementation project(':conductor-core')

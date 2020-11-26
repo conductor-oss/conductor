@@ -12,6 +12,10 @@
  */
 package com.netflix.conductor.rest.controllers;
 
+import static com.netflix.conductor.rest.config.RequestMappingConstants.TASKS;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
+
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -21,6 +25,8 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
+import java.util.List;
+import java.util.Map;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -29,13 +35,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.List;
-import java.util.Map;
-
-import static com.netflix.conductor.rest.config.RequestMappingConstants.TASKS;
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 @RestController
 @RequestMapping(TASKS)
@@ -50,16 +49,16 @@ public class TaskResource {
     @GetMapping("/poll/{tasktype}")
     @Operation(summary = "Poll for a task of a certain type")
     public Task poll(@PathVariable("tasktype") String taskType,
-        @RequestParam("workerid") String workerId,
-        @RequestParam("domain") String domain) {
+        @RequestParam(value = "workerid", required = false) String workerId,
+        @RequestParam(value = "domain", required = false) String domain) {
         return taskService.poll(taskType, workerId, domain);
     }
 
     @GetMapping("/poll/batch/{tasktype}")
     @Operation(summary = "Batch poll for a task of a certain type")
     public List<Task> batchPoll(@PathVariable("tasktype") String taskType,
-        @RequestParam("workerid") String workerId,
-        @RequestParam("domain") String domain,
+        @RequestParam(value = "workerid", required = false) String workerId,
+        @RequestParam(value = "domain", required = false) String domain,
         @RequestParam(value = "count", defaultValue = "1") int count,
         @RequestParam(value = "timeout", defaultValue = "100") int timeout) {
         return taskService.batchPoll(taskType, workerId, domain, count, timeout);
@@ -68,8 +67,8 @@ public class TaskResource {
     @GetMapping("/in_progress/{tasktype}")
     @Operation(summary = "Get in progress tasks. The results are paginated.")
     public List<Task> getTasks(@PathVariable("tasktype") String taskType,
-        @RequestParam("startKey") String startKey,
-        @RequestParam(value = "count", defaultValue = "100") int count) {
+        @RequestParam(value = "startKey", required = false) String startKey,
+        @RequestParam(value = "count", defaultValue = "100", required = false) int count) {
         return taskService.getTasks(taskType, startKey, count);
     }
 
@@ -89,7 +88,7 @@ public class TaskResource {
     @PostMapping("/{taskId}/ack")
     @Operation(summary = "Ack Task is received")
     public String ack(@PathVariable("taskId") String taskId,
-        @RequestParam("workerid") String workerId) {
+        @RequestParam(value = "workerid", required = false) String workerId) {
         return taskService.ackTaskReceived(taskId, workerId);
     }
 
@@ -120,7 +119,7 @@ public class TaskResource {
 
     @GetMapping("/queue/sizes")
     @Operation(summary = "Get Task type queue sizes")
-    public Map<String, Integer> size(@RequestParam("taskType") List<String> taskTypes) {
+    public Map<String, Integer> size(@RequestParam(value = "taskType", required = false) List<String> taskTypes) {
         return taskService.getTaskQueueSizes(taskTypes);
     }
 
@@ -158,11 +157,12 @@ public class TaskResource {
         description = "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
             " If order is not specified, defaults to ASC")
     @GetMapping(value = "/search", produces = APPLICATION_JSON_VALUE)
-    public SearchResult<TaskSummary> search(@RequestParam(value = "start", defaultValue = "0") int start,
-        @RequestParam(value = "size", defaultValue = "100") int size,
-        @RequestParam("sort") String sort,
-        @RequestParam(value = "freeText", defaultValue = "*") String freeText,
-        @RequestParam("query") String query) {
+    public SearchResult<TaskSummary> search(
+        @RequestParam(value = "start", defaultValue = "0", required = false) int start,
+        @RequestParam(value = "size", defaultValue = "100", required = false) int size,
+        @RequestParam(value = "sort", required = false) String sort,
+        @RequestParam(value = "freeText", defaultValue = "*", required = false) String freeText,
+        @RequestParam(value = "query", required = false) String query) {
         return taskService.search(start, size, sort, freeText, query);
     }
 

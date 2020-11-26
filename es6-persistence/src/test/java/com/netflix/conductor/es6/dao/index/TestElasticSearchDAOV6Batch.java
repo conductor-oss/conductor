@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 public class TestElasticSearchDAOV6Batch extends ElasticSearchDaoBaseTest {
 
     @Test
-    public void indexTaskWithBatchSizeTwo() throws Exception {
+    public void indexTaskWithBatchSizeTwo() {
         String correlationId = "some-correlation-id";
 
         Task task = new Task();

@@ -6,13 +6,13 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-annotations"
     implementation "com.fasterxml.jackson.core:jackson-databind"
 
-    implementation "commons-io:commons-io:${revCommonsIo}"
+    implementation "commons-io:commons-io"
 
     implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
 
-    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
+    implementation "org.apache.commons:commons-lang3"
 
-    implementation "com.fasterxml.jackson.core:jackson-core:${revJackson}"
+    implementation "com.fasterxml.jackson.core:jackson-core"
 
     implementation "com.spotify:completable-futures:${revSpotifyCompletableFutures}"
 
@@ -23,7 +23,7 @@ dependencies {
     implementation "com.netflix.servo:servo-core:${revServo}"
     implementation "com.netflix.spectator:spectator-api:${revSpectator}"
 
-    implementation "org.apache.bval:bval-jsr:${revBval}"
+    implementation "org.apache.bval:bval-jsr"
 
     implementation "javax.inject:javax.inject:1"
 }

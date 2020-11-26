@@ -7,7 +7,7 @@ dependencies {
     implementation "com.amazonaws:aws-java-sdk-s3:${revAwsSdk}"
     implementation "com.amazonaws:aws-java-sdk-sqs:${revAwsSdk}"
 
-    implementation "org.apache.commons:commons-lang3:${revCommonsLang3}"
+    implementation "org.apache.commons:commons-lang3:"
 
     implementation "net.thisptr:jackson-jq:${revJq}"
     // SBMTODO: remove guava dep

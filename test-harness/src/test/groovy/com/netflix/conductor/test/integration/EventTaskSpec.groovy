@@ -1,57 +1,30 @@
 /*
  * Copyright 2020 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.test.integration
 
 import com.netflix.conductor.common.metadata.tasks.Task
-import com.netflix.conductor.common.metadata.workflow.TaskType
+import com.netflix.conductor.common.metadata.tasks.TaskType
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.WorkflowExecutor
-import com.netflix.conductor.core.execution.WorkflowSweeper
-import com.netflix.conductor.service.ExecutionService
-import com.netflix.conductor.test.util.WorkflowTestUtil
-import com.netflix.conductor.tests.utils.TestModule
-import com.netflix.governator.guice.test.ModulesForTesting
-import spock.lang.Specification
-
-import javax.inject.Inject
+import com.netflix.conductor.test.base.AbstractSpecification
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
-@ModulesForTesting([TestModule.class])
-class EventTaskSpec extends Specification {
-
-    @Inject
-    ExecutionService workflowExecutionService
-
-    @Inject
-    WorkflowExecutor workflowExecutor
-
-    @Inject
-    WorkflowTestUtil workflowTestUtil
+class EventTaskSpec extends AbstractSpecification {
 
     def EVENT_BASED_WORKFLOW = 'test_event_workflow'
 
     def setup() {
-        workflowTestUtil.registerWorkflows(
-                'event_workflow_integration_test.json'
-        )
-    }
-
-    def cleanup() {
-        workflowTestUtil.clearWorkflows()
+        workflowTestUtil.registerWorkflows('event_workflow_integration_test.json')
     }
 
     def "Verify that a event based simple work flow is executed"() {
@@ -59,7 +32,7 @@ class EventTaskSpec extends Specification {
         def workflowInstanceId = workflowExecutor.startWorkflow(EVENT_BASED_WORKFLOW, 1,
                 '', [:], null, null, null)
 
-        and:"Sleep for 1 second to mimic the event trigger"
+        and: "Sleep for 1 second to mimic the event trigger"
         Thread.sleep(1000)
 
         then: "Retrieve the workflow "
@@ -73,10 +46,10 @@ class EventTaskSpec extends Specification {
             tasks[1].status == Task.Status.SCHEDULED
         }
 
-        when:"The integration_task_1 is polled and completed"
+        when: "The integration_task_1 is polled and completed"
         def polledAndCompletedTry1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker')
 
-        then:"verify that the task was polled and completed and the workflow is in a complete state"
+        then: "verify that the task was polled and completed and the workflow is in a complete state"
         verifyPolledAndAcknowledgedTask(polledAndCompletedTry1)
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
@@ -84,7 +57,5 @@ class EventTaskSpec extends Specification {
             tasks[1].taskType == 'integration_task_1'
             tasks[1].status == Task.Status.COMPLETED
         }
-
     }
-
 }

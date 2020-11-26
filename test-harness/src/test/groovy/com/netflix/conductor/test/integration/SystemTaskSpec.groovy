@@ -15,61 +15,33 @@ package com.netflix.conductor.test.integration
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.WorkflowExecutor
 import com.netflix.conductor.core.execution.WorkflowRepairService
 import com.netflix.conductor.core.execution.WorkflowSweeper
 import com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
 import com.netflix.conductor.dao.QueueDAO
-import com.netflix.conductor.service.ExecutionService
-import com.netflix.conductor.service.MetadataService
-import com.netflix.conductor.test.util.WorkflowTestUtil
-import com.netflix.conductor.tests.utils.TestModule
-import com.netflix.conductor.tests.utils.UserTask
-import com.netflix.governator.guice.test.ModulesForTesting
+import com.netflix.conductor.test.base.AbstractSpecification
+import org.springframework.beans.factory.annotation.Autowired
 import spock.lang.Shared
-import spock.lang.Specification
-
-import javax.inject.Inject
 
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
-@ModulesForTesting([TestModule.class])
-class SystemTaskSpec extends Specification {
+class SystemTaskSpec extends AbstractSpecification {
 
-    @Inject
-    ExecutionService workflowExecutionService
-
-    @Inject
-    MetadataService metadataService
-
-    @Inject
-    WorkflowExecutor workflowExecutor
-
-    @Inject
-    WorkflowTestUtil workflowTestUtil
-
-    @Inject
+    @Autowired
     QueueDAO queueDAO
 
-    @Inject
+    @Autowired
     WorkflowSweeper workflowSweeper
 
-    @Inject
+    @Autowired
     WorkflowRepairService workflowRepairService
-
-    @Inject
-    UserTask userTask
 
     @Shared
     def ASYNC_COMPLETE_SYSTEM_TASK_WORKFLOW = 'async_complete_integration_test_wf'
 
     def setup() {
         workflowTestUtil.registerWorkflows('simple_workflow_with_async_complete_system_task_integration_test.json')
-    }
-
-    def cleanup() {
-        workflowTestUtil.clearWorkflows()
     }
 
     def "Test system task with asyncComplete set to true"() {
@@ -89,7 +61,7 @@ class SystemTaskSpec extends Specification {
                 correlationId, input, null, null, null)
 
         then: "ensure that the workflow has started"
-        with (workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1
             tasks[0].taskType == 'integration_task_1'

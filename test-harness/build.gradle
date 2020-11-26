@@ -12,46 +12,30 @@ buildscript {
 apply plugin: 'docker-compose'
 apply plugin: 'groovy'
 
-configurations.all {
-    resolutionStrategy {
-        force "com.fasterxml.jackson.core:jackson-core:${revJacksonCore}"
-        force "com.fasterxml.jackson.core:jackson-databind:${revJacksonDatabind}"
-        force "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider:${revJaxrsJackson}"
-    }
-}
 dependencies {
 
-    testCompile project(':conductor-core')
-    testCompile project(':conductor-jersey')
-    testCompile project(':conductor-redis-persistence').sourceSets.test.output
-    testCompile project(':conductor-mysql-persistence').sourceSets.test.output
-    testCompile project(':conductor-postgres-persistence').sourceSets.test.output
-    testCompile project(':conductor-client')
-    testCompile project(':conductor-server')
-    testCompile project(':conductor-grpc-client')
-    testCompile project(':conductor-grpc-server')
-    testCompile "org.elasticsearch:elasticsearch:${revElasticSearch5}"
-    testCompile "org.eclipse.jetty:jetty-server:${revJetteyServer}"
-    testCompile "org.eclipse.jetty:jetty-servlet:${revJettyServlet}"
-    testCompile "org.rarefiedredis.redis:redis-java:${revRarefiedRedis}"
-    testCompile "com.sun.jersey.contribs:jersey-guice:${revJerseyGuice}"
+    testImplementation project(':conductor-core')
+    testImplementation project(':conductor-common')
+    testImplementation project(':conductor-contribs')
+    testImplementation project(':conductor-server')
+    testImplementation project(':conductor-rest')
+    testImplementation project(':conductor-redis-persistence')
+    testImplementation project(':conductor-mysql-persistence')
+    testImplementation project(':conductor-postgres-persistence')
+    testImplementation project(':conductor-grpc')
+    testImplementation project(':conductor-grpc-server')
+    testImplementation project(':conductor-grpc-client')
+    testImplementation project(':conductor-client')
 
-    testCompile "com.google.inject.extensions:guice-servlet:${revGuiceServlet}"
-    testCompile "io.swagger:swagger-jersey-jaxrs:${revSwaggerJersey}"
-    testCompile "org.awaitility:awaitility:${revAwaitility}"
+    testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
+    testImplementation "org.spockframework:spock-core:${revSpock}"
+    testImplementation "org.spockframework:spock-spring:${revSpock}"
 
-    testCompile "org.codehaus.groovy:groovy-all:${revGroovy}"
-    testCompile "org.spockframework:spock-core:${revSpock}"
-    testCompile "org.spockframework:spock-guice:${revSpock}"
-    testCompile 'com.netflix.governator:governator-test-spock:latest.release'
-    testCompile "org.elasticsearch:elasticsearch:${revElasticSearch5}"
-    testCompile "org.elasticsearch.client:transport:${revElasticSearch5}"
-    testCompile "org.elasticsearch.client:elasticsearch-rest-client:${revElasticSearch5}"
-    testCompile "org.elasticsearch.client:elasticsearch-rest-high-level-client:${revElasticSearch5}"
+    testImplementation "org.testcontainers:elasticsearch:${revTestESContainer}"
 }
 
-dockerCompose{
-    integrationTestDocker{
+dockerCompose {
+    integrationTestDocker {
         useComposeFiles = ["./docker-compose.yml"]
         startedServices = ["mysqldb", "postgresdb"]
         waitForTcpPorts = true
@@ -78,14 +62,8 @@ test.doFirst {
 
 test.finalizedBy("intDockerDown")
 
-
 test {
     testLogging {
         exceptionFormat = 'full'
     }
-}
-
-task server(type: JavaExec) {
-    main = 'com.netflix.conductor.demo.Main'
-    classpath = sourceSets.test.runtimeClasspath
 }

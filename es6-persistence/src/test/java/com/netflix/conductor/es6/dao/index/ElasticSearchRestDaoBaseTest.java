@@ -30,12 +30,6 @@ abstract class ElasticSearchRestDaoBaseTest extends ElasticSearchTest {
         RestClientBuilder restClientBuilder = RestClient.builder(new HttpHost(host, port, "http"));
         restClient = restClientBuilder.build();
 
-        Map<String, String> params = new HashMap<>();
-        params.put("wait_for_status", "yellow");
-        params.put("timeout", "30s");
-
-        restClient.performRequest("GET", "/_cluster/health", params);
-
         indexDAO = new ElasticSearchRestDAOV6(restClientBuilder, properties, objectMapper);
         indexDAO.setup();
     }

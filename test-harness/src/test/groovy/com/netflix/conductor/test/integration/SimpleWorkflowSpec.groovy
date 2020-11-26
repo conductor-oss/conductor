@@ -1,60 +1,37 @@
 /*
  * Copyright 2020 Netflix, Inc.
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
+ * <p>
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on
+ * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations under the License.
  */
 package com.netflix.conductor.test.integration
 
 import com.netflix.conductor.common.metadata.tasks.Task
 import com.netflix.conductor.common.metadata.tasks.TaskDef
 import com.netflix.conductor.common.metadata.tasks.TaskResult
-import com.netflix.conductor.common.metadata.workflow.TaskType
+import com.netflix.conductor.common.metadata.tasks.TaskType
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask
 import com.netflix.conductor.common.run.Workflow
-import com.netflix.conductor.core.execution.ApplicationException
-import com.netflix.conductor.core.execution.WorkflowExecutor
+import com.netflix.conductor.core.exception.ApplicationException
 import com.netflix.conductor.dao.QueueDAO
-import com.netflix.conductor.service.ExecutionService
-import com.netflix.conductor.service.MetadataService
-import com.netflix.conductor.test.util.WorkflowTestUtil
-import com.netflix.conductor.tests.utils.TestModule
-import com.netflix.governator.guice.test.ModulesForTesting
+import com.netflix.conductor.test.base.AbstractSpecification
 import org.apache.commons.lang3.StringUtils
+import org.springframework.beans.factory.annotation.Autowired
 import spock.lang.Shared
-import spock.lang.Specification
 
-import javax.inject.Inject
-
-import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT
+import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT
 import static com.netflix.conductor.test.util.WorkflowTestUtil.verifyPolledAndAcknowledgedTask
 
-@ModulesForTesting([TestModule.class])
-class SimpleWorkflowSpec extends Specification {
+class SimpleWorkflowSpec extends AbstractSpecification {
 
-    @Inject
-    ExecutionService workflowExecutionService
-
-    @Inject
-    MetadataService metadataService
-
-    @Inject
-    WorkflowExecutor workflowExecutor
-
-    @Inject
-    WorkflowTestUtil workflowTestUtil
-
-    @Inject
+    @Autowired
     QueueDAO queueDAO
 
     @Shared
@@ -68,10 +45,6 @@ class SimpleWorkflowSpec extends Specification {
         //Register LINEAR_WORKFLOW_T1_T2,  RTOWF, WORKFLOW_WITH_OPTIONAL_TASK
         workflowTestUtil.registerWorkflows('simple_workflow_1_integration_test.json',
                 'simple_workflow_with_resp_time_out_integration_test.json')
-    }
-
-    def cleanup() {
-        workflowTestUtil.clearWorkflows()
     }
 
     def "Test simple workflow completion"() {
@@ -150,7 +123,7 @@ class SimpleWorkflowSpec extends Specification {
                 null, null, null)
 
         then: "verify the workflow has started and the input params have propagated"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)){
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1
             input['param2'] == null
@@ -160,14 +133,14 @@ class SimpleWorkflowSpec extends Specification {
         }
 
         when: "'integration_task_1' is polled and completed with output data"
-        def pollAndCompleteTask1Try1= workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker',
-                ['someOtherKey': ['a':1, 'A': null], 'someKey': null])
+        def pollAndCompleteTask1Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker',
+                ['someOtherKey': ['a': 1, 'A': null], 'someKey': null])
 
         then: "verify that the 'integration_task_1' was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(pollAndCompleteTask1Try1)
 
         and: "verify that the task is completed and the output data has propagated as input data to 'integration_task_2'"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)){
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2
             tasks[0].taskType == 'integration_task_1'
@@ -181,10 +154,11 @@ class SimpleWorkflowSpec extends Specification {
     }
 
     def "Test simple workflow terminal error condition"() {
-        setup:"Modify the task definition and the workflow output definition"
+        setup: "Modify the task definition and the workflow output definition"
         def persistedTask1Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_1').get()
         def modifiedTask1Definition = new TaskDef(persistedTask1Definition.name, persistedTask1Definition.description,
-                1, persistedTask1Definition.timeoutSeconds)
+                persistedTask1Definition.ownerEmail, 1, persistedTask1Definition.timeoutSeconds,
+                persistedTask1Definition.responseTimeoutSeconds)
         metadataService.updateTaskDef(modifiedTask1Definition)
         def workflowDef = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1)
 
@@ -203,7 +177,7 @@ class SimpleWorkflowSpec extends Specification {
                 null, null, null)
 
         then: "verify that the workflow has started"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)){
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 1
         }
@@ -334,17 +308,23 @@ class SimpleWorkflowSpec extends Specification {
         verifyPolledAndAcknowledgedTask(polledIntegrationTask2Try1)
 
         and: "verify that the workflow is in a completed state"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)){
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
         }
     }
-
 
     def "Test if the workflow definitions with and without schema version can be registered"() {
         given: "A workflow definition with no schema version"
         def workflowDef1 = new WorkflowDef()
         workflowDef1.name = 'Test_schema_version1'
         workflowDef1.version = 1
+        workflowDef1.ownerEmail = "test@harness.com"
+
+        and: "A new workflow task is created"
+        def workflowTask = new WorkflowTask()
+        workflowTask.name = 'integration_task_1'
+        workflowTask.taskReferenceName = 't1'
+        workflowDef1.tasks.add(workflowTask)
 
         and: "The workflow definition with no schema version is saved"
         metadataService.updateWorkflowDef(workflowDef1)
@@ -354,6 +334,8 @@ class SimpleWorkflowSpec extends Specification {
         workflowDef2.name = 'Test_schema_version2'
         workflowDef2.version = 1
         workflowDef2.schemaVersion = 2
+        workflowDef2.ownerEmail = "test@harness.com"
+        workflowDef2.tasks.add(workflowTask)
 
         and: "The workflow definition with schema version is persisted"
         metadataService.updateWorkflowDef(workflowDef2)
@@ -369,24 +351,24 @@ class SimpleWorkflowSpec extends Specification {
         foundWorkflowDef2.schemaVersion == 2
     }
 
-
     def "Test Simple workflow restart without using the latest definition"() {
-        setup:"Register a task definition with no retries"
+        setup: "Register a task definition with no retries"
         def persistedTask1Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_1').get()
         def modifiedTaskDefinition = new TaskDef(persistedTask1Definition.name, persistedTask1Definition.description,
-                0, persistedTask1Definition.timeoutSeconds)
+                persistedTask1Definition.ownerEmail, 0, persistedTask1Definition.timeoutSeconds,
+                persistedTask1Definition.responseTimeoutSeconds)
         metadataService.updateTaskDef(modifiedTaskDefinition)
 
-        when:"Get the workflow definition associated with the simple workflow"
+        when: "Get the workflow definition associated with the simple workflow"
         WorkflowDef workflowDefinition = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1)
 
-        then:"Ensure that there is a workflow definition"
+        then: "Ensure that there is a workflow definition"
         workflowDefinition
         workflowDefinition.failureWorkflow
         StringUtils.isNotBlank(workflowDefinition.failureWorkflow)
 
-        when:"Start a simple workflow with non null params"
-        def correlationId = 'integration_test_1'+ UUID.randomUUID().toString()
+        when: "Start a simple workflow with non null params"
+        def correlationId = 'integration_test_1' + UUID.randomUUID().toString()
         def workflowInput = new HashMap()
         String inputParam1 = 'p1 value'
         workflowInput['param1'] = inputParam1
@@ -396,34 +378,34 @@ class SimpleWorkflowSpec extends Specification {
                 correlationId, workflowInput,
                 null, null, null)
 
-        then:"A workflow instance has started"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)){
+        then: "A workflow instance has started"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
         }
 
-        when:"poll the task that is queued and fail the task"
+        when: "poll the task that is queued and fail the task"
         def polledIntegrationTask1Try1 = workflowTestUtil.pollAndFailTask('integration_task_1', 'task1.integration.worker', 'failed..')
 
-        then:"The workflow ends up in a failed state"
+        then: "The workflow ends up in a failed state"
         verifyPolledAndAcknowledgedTask(polledIntegrationTask1Try1)
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)){
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.FAILED
             tasks[0].status == Task.Status.FAILED
             tasks[0].taskType == 'integration_task_1'
         }
 
-        when:"Rewind the workflow which is in the failed state without the latest definition"
+        when: "Rewind the workflow which is in the failed state without the latest definition"
         workflowExecutor.rewind(workflowInstanceId, false)
 
-        then:"verify that the rewound workflow is in a running state"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)){
+        then: "verify that the rewound workflow is in a running state"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
         }
 
-        when:"Poll for the 'integration_task_1' "
+        when: "Poll for the 'integration_task_1' "
         def polledIntegrationTask1Try2 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker')
 
-        then:"verify that the task is polled and the workflow is in a running state"
+        then: "verify that the task is polled and the workflow is in a running state"
         verifyPolledAndAcknowledgedTask(polledIntegrationTask1Try2)
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
@@ -448,22 +430,23 @@ class SimpleWorkflowSpec extends Specification {
 
     def "Test Simple workflow restart with the latest definition"() {
 
-        setup:"Register a task definition with no retries"
+        setup: "Register a task definition with no retries"
         def persistedTask1Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_1').get()
         def modifiedTaskDefinition = new TaskDef(persistedTask1Definition.name, persistedTask1Definition.description,
-                0, persistedTask1Definition.timeoutSeconds)
+                persistedTask1Definition.ownerEmail, 0, persistedTask1Definition.timeoutSeconds,
+                persistedTask1Definition.responseTimeoutSeconds)
         metadataService.updateTaskDef(modifiedTaskDefinition)
 
-        when:"Get the workflow definition associated with the simple workflow"
+        when: "Get the workflow definition associated with the simple workflow"
         WorkflowDef workflowDefinition = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1)
 
-        then:"Ensure that there is a workflow definition"
+        then: "Ensure that there is a workflow definition"
         workflowDefinition
         workflowDefinition.failureWorkflow
         StringUtils.isNotBlank(workflowDefinition.failureWorkflow)
 
-        when:"Start a simple workflow with non null params"
-        def correlationId = 'integration_test_1'+ UUID.randomUUID().toString()
+        when: "Start a simple workflow with non null params"
+        def correlationId = 'integration_test_1' + UUID.randomUUID().toString()
         def workflowInput = new HashMap()
         String inputParam1 = 'p1 value'
         workflowInput['param1'] = inputParam1
@@ -473,15 +456,15 @@ class SimpleWorkflowSpec extends Specification {
                 correlationId, workflowInput,
                 null, null, null)
 
-        then:"A workflow instance has started"
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)){
+        then: "A workflow instance has started"
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
         }
 
-        when:"poll the task that is queued and fail the task"
+        when: "poll the task that is queued and fail the task"
         def polledIntegrationTask1Try1 = workflowTestUtil.pollAndFailTask('integration_task_1', 'task1.integration.worker', 'failed..')
 
-        then:"the workflow ends up in a failed state"
+        then: "the workflow ends up in a failed state"
         verifyPolledAndAcknowledgedTask(polledIntegrationTask1Try1)
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.FAILED
@@ -489,7 +472,7 @@ class SimpleWorkflowSpec extends Specification {
             tasks[0].taskType == 'integration_task_1'
         }
 
-        when:"A new version of the workflow definition is registered"
+        when: "A new version of the workflow definition is registered"
         WorkflowTask workflowTask = new WorkflowTask()
         workflowTask.name = 'integration_task_20'
         workflowTask.taskReferenceName = 'task_added'
@@ -499,18 +482,18 @@ class SimpleWorkflowSpec extends Specification {
         workflowDefinition.version = 2
         metadataService.updateWorkflowDef(workflowDefinition)
 
-        and:"rewind/restart the workflow with the latest workflow definition"
+        and: "rewind/restart the workflow with the latest workflow definition"
         workflowExecutor.rewind(workflowInstanceId, true)
 
-        then:"verify that the rewound workflow is in a running state"
+        then: "verify that the rewound workflow is in a running state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
         }
 
-        when:"Poll and complete the 'integration_task_1' "
+        when: "Poll and complete the 'integration_task_1' "
         def polledIntegrationTask1Try2 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker')
 
-        then:"verify that the task is polled and the workflow is in a running state"
+        then: "verify that the task is polled and the workflow is in a running state"
         verifyPolledAndAcknowledgedTask(polledIntegrationTask1Try2)
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
@@ -518,7 +501,7 @@ class SimpleWorkflowSpec extends Specification {
             tasks[0].taskType == 'integration_task_1'
         }
 
-        when:"Poll and complete the 'integration_task_2' "
+        when: "Poll and complete the 'integration_task_2' "
         def polledIntegrationTask2 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task1.integration.worker')
 
         then: "verify that the task is polled and acknowledged"
@@ -530,7 +513,7 @@ class SimpleWorkflowSpec extends Specification {
         when: "Poll and complete the 'integration_task_20' "
         def polledIntegrationTask20Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_20', 'task1.integration.worker')
 
-        then:"verify that the task is polled and acknowledged"
+        then: "verify that the task is polled and acknowledged"
         verifyPolledAndAcknowledgedTask(polledIntegrationTask20Try1)
         def polledIntegrationTask20 = polledIntegrationTask20Try1[0] as Task
         polledIntegrationTask20.workflowInstanceId == workflowInstanceId
@@ -546,14 +529,15 @@ class SimpleWorkflowSpec extends Specification {
     }
 
     def "Test simple workflow with task retries"() {
-        setup:"Change the task definition to ensure that it has retries and delay between retries"
+        setup: "Change the task definition to ensure that it has retries and delay between retries"
         def integrationTask2Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_2').get()
         def modifiedTaskDefinition = new TaskDef(integrationTask2Definition.name, integrationTask2Definition.description,
-                3, integrationTask2Definition.timeoutSeconds)
+                integrationTask2Definition.ownerEmail, 3, integrationTask2Definition.timeoutSeconds,
+                integrationTask2Definition.responseTimeoutSeconds)
         modifiedTaskDefinition.retryDelaySeconds = 2
         metadataService.updateTaskDef(modifiedTaskDefinition)
 
-        when:"A new simple workflow is started"
+        when: "A new simple workflow is started"
         def correlationId = 'integration_test_1'
         def workflowInput = new HashMap()
         workflowInput['param1'] = 'p1 value'
@@ -562,20 +546,20 @@ class SimpleWorkflowSpec extends Specification {
                 correlationId, workflowInput,
                 null, null, null)
 
-        then:"verify that the workflow has started"
+        then: "verify that the workflow has started"
         workflowInstanceId
         def workflow = workflowExecutionService.getExecutionStatus(workflowInstanceId, true)
         workflow.status == Workflow.WorkflowStatus.RUNNING
 
-        when:"Poll for the first task and complete the task"
+        when: "Poll for the first task and complete the task"
         def polledIntegrationTask1 = workflowExecutionService.poll('integration_task_1', 'task1.integration.worker')
         def ackPolledIntegrationTask1 = workflowExecutionService.ackTaskReceived(polledIntegrationTask1.taskId)
         polledIntegrationTask1.status = Task.Status.COMPLETED
-        def polledIntegrationTask1Output = "task1.output -> " + polledIntegrationTask1.inputData['p1'] +"."+ polledIntegrationTask1.inputData['p2']
+        def polledIntegrationTask1Output = "task1.output -> " + polledIntegrationTask1.inputData['p1'] + "." + polledIntegrationTask1.inputData['p2']
         polledIntegrationTask1.outputData['op'] = polledIntegrationTask1Output
         workflowExecutionService.updateTask(polledIntegrationTask1)
 
-        then:"verify that the 'integration_task_1' is polled and completed"
+        then: "verify that the 'integration_task_1' is polled and completed"
         ackPolledIntegrationTask1
         with(polledIntegrationTask1) {
             inputData.containsKey('p1')
@@ -585,22 +569,22 @@ class SimpleWorkflowSpec extends Specification {
         }
 
         //Need to figure out how to use expect and where here
-        when:" 'integration_task_2'  is polled and marked as failed for the first time"
+        when: " 'integration_task_2'  is polled and marked as failed for the first time"
         Tuple polledAndFailedTaskTry1 = workflowTestUtil.pollAndFailTask('integration_task_2', 'task2.integration.worker', 'failure...0', null, 2)
 
-        then:"verify that the task was polled and the input params of the tasks are as expected"
+        then: "verify that the task was polled and the input params of the tasks are as expected"
         verifyPolledAndAcknowledgedTask(polledAndFailedTaskTry1, ['tp2': polledIntegrationTask1Output, 'tp1': 'p1 value'])
 
-        when:" 'integration_task_2'  is polled and marked as failed for the second time"
-        Tuple polledAndFailedTaskTry2 = workflowTestUtil.pollAndFailTask('integration_task_2', 'task2.integration.worker', 'failure...0', null,2)
+        when: " 'integration_task_2'  is polled and marked as failed for the second time"
+        Tuple polledAndFailedTaskTry2 = workflowTestUtil.pollAndFailTask('integration_task_2', 'task2.integration.worker', 'failure...0', null, 2)
 
-        then:"verify that the task was polled and the input params of the tasks are as expected"
+        then: "verify that the task was polled and the input params of the tasks are as expected"
         verifyPolledAndAcknowledgedTask(polledAndFailedTaskTry2, ['tp2': polledIntegrationTask1Output, 'tp1': 'p1 value'])
 
-        when:"'integration_task_2'  is polled and marked as completed for the third time"
+        when: "'integration_task_2'  is polled and marked as completed for the third time"
         def polledAndCompletedTry3 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker')
 
-        then:"verify that the task was polled and the input params of the tasks are as expected"
+        then: "verify that the task was polled and the input params of the tasks are as expected"
         verifyPolledAndAcknowledgedTask(polledAndCompletedTry3, ['tp2': polledIntegrationTask1Output, 'tp1': 'p1 value'])
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
@@ -622,26 +606,27 @@ class SimpleWorkflowSpec extends Specification {
     }
 
     def "Test simple workflow with retry at workflow level"() {
-        setup:"Change the task definition to ensure that it has retries and no delay between retries"
+        setup: "Change the task definition to ensure that it has retries and no delay between retries"
         def integrationTask1Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_1').get()
         def modifiedTaskDefinition = new TaskDef(integrationTask1Definition.name, integrationTask1Definition.description,
-                1, integrationTask1Definition.timeoutSeconds)
+                integrationTask1Definition.ownerEmail, 1, integrationTask1Definition.timeoutSeconds,
+                integrationTask1Definition.responseTimeoutSeconds)
         modifiedTaskDefinition.retryDelaySeconds = 0
         metadataService.updateTaskDef(modifiedTaskDefinition)
 
-        when:"Start a simple workflow with non null params"
-        def correlationId = 'retry_test'+ UUID.randomUUID().toString()
+        when: "Start a simple workflow with non null params"
+        def correlationId = 'retry_test' + UUID.randomUUID().toString()
         def workflowInput = new HashMap()
         String inputParam1 = 'p1 value'
         workflowInput['param1'] = inputParam1
         workflowInput['param2'] = 'p2 value'
 
-        and:"start a simple workflow with input params"
+        and: "start a simple workflow with input params"
         def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, workflowInput,
                 null, null, null)
 
-        then:"verify that the workflow has started and the next task is scheduled"
+        then: "verify that the workflow has started and the next task is scheduled"
         workflowInstanceId
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
@@ -654,10 +639,10 @@ class SimpleWorkflowSpec extends Specification {
             StringUtils.isNotBlank(failureWorkflow)
         }
 
-        when:"The first task 'integration_task_1' is polled and failed"
+        when: "The first task 'integration_task_1' is polled and failed"
         Tuple polledAndFailedTask1Try1 = workflowTestUtil.pollAndFailTask('integration_task_1', 'task1.integration.worker', 'failure...0')
 
-        then:"verify that the task was polled and acknowledged and the workflow is still in a running state"
+        then: "verify that the task was polled and acknowledged and the workflow is still in a running state"
         verifyPolledAndAcknowledgedTask(polledAndFailedTask1Try1)
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
@@ -667,10 +652,10 @@ class SimpleWorkflowSpec extends Specification {
             tasks[1].getInputData().get("p3") == tasks[1].getTaskId()
         }
 
-        when:"The first task 'integration_task_1' is polled and failed for the second time"
+        when: "The first task 'integration_task_1' is polled and failed for the second time"
         Tuple polledAndFailedTask1Try2 = workflowTestUtil.pollAndFailTask('integration_task_1', 'task1.integration.worker', 'failure...0')
 
-        then:"verify that the task was polled and acknowledged and the workflow is still in a running state"
+        then: "verify that the task was polled and acknowledged and the workflow is still in a running state"
         verifyPolledAndAcknowledgedTask(polledAndFailedTask1Try2)
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.FAILED
@@ -679,7 +664,7 @@ class SimpleWorkflowSpec extends Specification {
             tasks[1].status == Task.Status.FAILED
         }
 
-        when:"The workflow is retried"
+        when: "The workflow is retried"
         workflowExecutor.retry(workflowInstanceId)
 
         then:
@@ -692,10 +677,10 @@ class SimpleWorkflowSpec extends Specification {
             tasks[2].getInputData().get("p3") == tasks[2].getTaskId()
         }
 
-        when:"The 'integration_task_1' task is polled and is completed"
+        when: "The 'integration_task_1' task is polled and is completed"
         def polledAndCompletedTry3 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task2.integration.worker')
 
-        then:"verify that the task was polled and acknowledged"
+        then: "verify that the task was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(polledAndCompletedTry3)
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
@@ -704,10 +689,10 @@ class SimpleWorkflowSpec extends Specification {
             tasks[3].status == Task.Status.SCHEDULED
         }
 
-        when:"The 'integration_task_2' task is polled and is completed"
+        when: "The 'integration_task_2' task is polled and is completed"
         def polledAndCompletedTaskTry1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker')
 
-        then:"verify that the task was polled and acknowledged"
+        then: "verify that the task was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(polledAndCompletedTaskTry1)
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
@@ -721,13 +706,13 @@ class SimpleWorkflowSpec extends Specification {
     }
 
     def "Test Long running simple workflow"() {
-        given:"A new simple workflow is started"
+        given: "A new simple workflow is started"
         def correlationId = 'integration_test_1'
         def workflowInput = new HashMap()
         workflowInput['param1'] = 'p1 value'
         workflowInput['param2'] = 'p2 value'
 
-        when:"start a new workflow with the input"
+        when: "start a new workflow with the input"
         def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, workflowInput,
                 null, null, null)
@@ -747,47 +732,47 @@ class SimpleWorkflowSpec extends Specification {
         pollTaskTry1.status = Task.Status.IN_PROGRESS
         workflowExecutionService.updateTask(pollTaskTry1)
 
-        then:"verify that the task is polled and acknowledged"
+        then: "verify that the task is polled and acknowledged"
         pollTaskTry1
         ackReceivedTaskTry1
 
-        and:"the input data of the data is as expected"
+        and: "the input data of the data is as expected"
         pollTaskTry1.inputData.containsKey('p1')
         pollTaskTry1.inputData['p1'] == 'p1 value'
         pollTaskTry1.inputData.containsKey('p2')
         pollTaskTry1.inputData['p1'] == 'p1 value'
 
-        and:"the task queue reflects the presence of 'integration_task_1' "
+        and: "the task queue reflects the presence of 'integration_task_1' "
         workflowExecutionService.getTaskQueueSizes(['integration_task_1']).get('integration_task_1') == 1
 
-        when:"the 'integration_task_1' task is polled again"
+        when: "the 'integration_task_1' task is polled again"
         def pollTaskTry2 = workflowExecutionService.poll('integration_task_1', 'task1.integration.worker')
 
-        then:"verify that there was no task polled"
+        then: "verify that there was no task polled"
         !pollTaskTry2
 
-        when:"the 'integration_task_1' is polled again after a delay of 5 seconds and completed"
+        when: "the 'integration_task_1' is polled again after a delay of 5 seconds and completed"
         Thread.sleep(5000)
         def task1Try3Tuple = workflowTestUtil.pollAndCompleteTask('integration_task_1',
                 'task1.integration.worker', ['op': 'task1.done'])
 
-        then:"verify that the task is polled and acknowledged"
+        then: "verify that the task is polled and acknowledged"
         verifyPolledAndAcknowledgedTask(task1Try3Tuple, [:])
 
-        and:"verify that the workflow is updated with the latest task"
+        and: "verify that the workflow is updated with the latest task"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             tasks[0].status == Task.Status.COMPLETED
             tasks[0].taskType == 'integration_task_1'
             tasks[0].outputData['op'] == 'task1.done'
         }
 
-        when:"the 'integration_task_1' is polled and completed"
+        when: "the 'integration_task_1' is polled and completed"
         def task2Try1Tuple = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker')
 
-        then:"verify that the task was polled and completed with the expected inputData for the task that was polled"
+        then: "verify that the task was polled and completed with the expected inputData for the task that was polled"
         verifyPolledAndAcknowledgedTask(task2Try1Tuple, ['tp2': 'task1.done', 'tp1': 'p1 value'])
 
-        and:"The workflow is in a completed state and reflects the tasks that are completed"
+        and: "The workflow is in a completed state and reflects the tasks that are completed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 2
@@ -801,13 +786,13 @@ class SimpleWorkflowSpec extends Specification {
 
     def "Test simple workflow when the task's call back after seconds are reset"() {
 
-        given:"A new simple workflow is started"
+        given: "A new simple workflow is started"
         def correlationId = 'integration_test_1'
         def workflowInput = new HashMap()
         workflowInput['param1'] = 'p1 value'
         workflowInput['param2'] = 'p2 value'
 
-        when:"start a new workflow with the input"
+        when: "start a new workflow with the input"
         def workflowInstanceId = workflowExecutor.startWorkflow(LINEAR_WORKFLOW_T1_T2, 1,
                 correlationId, workflowInput,
                 null, null, null)
@@ -829,56 +814,56 @@ class SimpleWorkflowSpec extends Specification {
         pollTaskTry1.status = Task.Status.IN_PROGRESS
         workflowExecutionService.updateTask(pollTaskTry1)
 
-        then:"verify that the task is polled and acknowledged"
+        then: "verify that the task is polled and acknowledged"
         pollTaskTry1
         ackReceivedTaskTry1
 
-        and:"the input data of the data is as expected"
+        and: "the input data of the data is as expected"
         pollTaskTry1.inputData.containsKey('p1')
         pollTaskTry1.inputData['p1'] == 'p1 value'
         pollTaskTry1.inputData.containsKey('p2')
         pollTaskTry1.inputData['p1'] == 'p1 value'
 
-        and:"the task queue reflects the presence of 'integration_task_1' "
+        and: "the task queue reflects the presence of 'integration_task_1' "
         workflowExecutionService.getTaskQueueSizes(['integration_task_1']).get('integration_task_1') == 1
 
-        when:"the 'integration_task_1' task is polled again"
+        when: "the 'integration_task_1' task is polled again"
         def pollTaskTry2 = workflowExecutionService.poll('integration_task_1', 'task1.integration.worker')
 
-        then:"verify that there was no task polled"
+        then: "verify that there was no task polled"
         !pollTaskTry2
 
-        when:"the 'integration_task_1' task is polled again"
+        when: "the 'integration_task_1' task is polled again"
         def pollTaskTry3 = workflowExecutionService.poll('integration_task_1', 'task1.integration.worker')
 
-        then:"verify that there was no task polled"
+        then: "verify that there was no task polled"
         !pollTaskTry3
 
-        when:"The callbackSeconds of the tasks in progress for the workflow are reset"
+        when: "The callbackSeconds of the tasks in progress for the workflow are reset"
         workflowExecutor.resetCallbacksForWorkflow(workflowInstanceId)
 
-        and:"the 'integration_task_1' is polled again after all the in progress tasks are reset"
+        and: "the 'integration_task_1' is polled again after all the in progress tasks are reset"
         def task1Try4Tuple = workflowTestUtil.pollAndCompleteTask('integration_task_1',
                 'task1.integration.worker', ['op': 'task1.done'])
 
-        then:"verify that the task is polled and acknowledged"
+        then: "verify that the task is polled and acknowledged"
         verifyPolledAndAcknowledgedTask(task1Try4Tuple)
 
-        and:"verify that the workflow is updated with the latest task"
+        and: "verify that the workflow is updated with the latest task"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             tasks[0].status == Task.Status.COMPLETED
             tasks[0].taskType == 'integration_task_1'
             tasks[0].outputData['op'] == 'task1.done'
         }
 
-        when:"the 'integration_task_1' is polled and completed"
+        when: "the 'integration_task_1' is polled and completed"
         def task2Try1Tuple = workflowTestUtil.pollAndCompleteTask('integration_task_2',
                 'task2.integration.worker')
 
-        then:"verify that the task was polled and completed with the expected inputData for the task that was polled"
+        then: "verify that the task was polled and completed with the expected inputData for the task that was polled"
         verifyPolledAndAcknowledgedTask(task2Try1Tuple, ['tp2': 'task1.done', 'tp1': 'p1 value'])
 
-        and:"The workflow is in a completed state and reflects the tasks that are completed"
+        and: "The workflow is in a completed state and reflects the tasks that are completed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 2
@@ -890,10 +875,11 @@ class SimpleWorkflowSpec extends Specification {
     }
 
     def "Test non restartable simple workflow"() {
-        setup:"Change the task definition to ensure that it has no retries and register a non restartable workflow"
+        setup: "Change the task definition to ensure that it has no retries and register a non restartable workflow"
         def integrationTask1Definition = workflowTestUtil.getPersistedTaskDefinition('integration_task_1').get()
         def modifiedTaskDefinition = new TaskDef(integrationTask1Definition.name, integrationTask1Definition.description,
-                0, integrationTask1Definition.timeoutSeconds)
+                integrationTask1Definition.ownerEmail, 0, integrationTask1Definition.timeoutSeconds,
+                integrationTask1Definition.responseTimeoutSeconds)
         metadataService.updateTaskDef(modifiedTaskDefinition)
 
         def simpleWorkflowDefinition = metadataService.getWorkflowDef(LINEAR_WORKFLOW_T1_T2, 1)
@@ -901,7 +887,7 @@ class SimpleWorkflowSpec extends Specification {
         simpleWorkflowDefinition.restartable = false
         metadataService.updateWorkflowDef(simpleWorkflowDefinition)
 
-        when:"A non restartable workflow is started"
+        when: "A non restartable workflow is started"
         def correlationId = 'integration_test_1'
         def workflowInput = new HashMap()
         workflowInput['param1'] = 'p1 value'
@@ -911,40 +897,40 @@ class SimpleWorkflowSpec extends Specification {
                 correlationId, workflowInput,
                 null, null, null)
 
-        and:"the 'integration_task_1' is polled and failed"
+        and: "the 'integration_task_1' is polled and failed"
         Tuple polledAndFailedTaskTry1 = workflowTestUtil.pollAndFailTask('integration_task_1',
                 'task1.integration.worker', 'failure...0')
 
-        then:"verify that the task was polled and acknowledged"
+        then: "verify that the task was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(polledAndFailedTaskTry1)
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)){
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.FAILED
             tasks[0].status == Task.Status.FAILED
             tasks[0].taskType == 'integration_task_1'
         }
 
-        when:"The failed workflow is rewound"
+        when: "The failed workflow is rewound"
         workflowExecutor.rewind(workflowInstanceId, false)
 
-        and:"The first task 'integration_task_1' is polled and completed"
+        and: "The first task 'integration_task_1' is polled and completed"
         def task1Try2 = workflowTestUtil.pollAndCompleteTask('integration_task_1', 'task1.integration.worker',
                 ['op': 'task1.done'])
 
-        then:"Verify that the task is polled and acknowledged"
+        then: "Verify that the task is polled and acknowledged"
         verifyPolledAndAcknowledgedTask(task1Try2)
-        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)){
+        with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks[0].status == Task.Status.COMPLETED
             tasks[0].taskType == 'integration_task_1'
         }
 
-        when:"The second task 'integration_task_2' is polled and completed"
+        when: "The second task 'integration_task_2' is polled and completed"
         def task2Try1 = workflowTestUtil.pollAndCompleteTask('integration_task_2', 'task2.integration.worker')
 
-        then:"Verify that the task was polled and acknowledged"
+        then: "Verify that the task was polled and acknowledged"
         verifyPolledAndAcknowledgedTask(task2Try1, ['tp2': 'task1.done', 'tp1': 'p1 value'])
 
-        and:"The workflow is in a completed state and reflects the tasks that are completed"
+        and: "The workflow is in a completed state and reflects the tasks that are completed"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 2
@@ -955,14 +941,14 @@ class SimpleWorkflowSpec extends Specification {
             output['o3'] == 'task1.done'
         }
 
-        when:"The successfully completed non restartable workflow is rewound"
+        when: "The successfully completed non restartable workflow is rewound"
         workflowExecutor.rewind(workflowInstanceId, false)
 
-        then:"Ensure that an exception is thrown"
+        then: "Ensure that an exception is thrown"
         def exceptionThrown = thrown(ApplicationException)
         exceptionThrown
 
-        cleanup:"clean up the changes made to the task and workflow definition during start up"
+        cleanup: "clean up the changes made to the task and workflow definition during start up"
         metadataService.updateTaskDef(integrationTask1Definition)
         simpleWorkflowDefinition.name = LINEAR_WORKFLOW_T1_T2
         simpleWorkflowDefinition.restartable = true
