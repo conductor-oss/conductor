@@ -13,6 +13,7 @@
 package com.netflix.conductor.cassandra.config;
 
 import com.datastax.driver.core.Cluster;
+import com.datastax.driver.core.Metadata;
 import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.cassandra.dao.CassandraEventHandlerDAO;
@@ -22,6 +23,8 @@ import com.netflix.conductor.cassandra.util.Statements;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.MetadataDAO;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -31,14 +34,31 @@ import org.springframework.context.annotation.Configuration;
 @ConditionalOnProperty(name = "db", havingValue = "cassandra")
 public class CassandraConfiguration {
 
+    private static final Logger LOGGER = LoggerFactory.getLogger(CassandraConfiguration.class);
+
     @Bean
     public Cluster cluster(CassandraProperties properties) {
-        return new CassandraClusterProvider(properties).get();
+        String host = properties.getHostAddress();
+        int port = properties.getPort();
+
+        LOGGER.info("Connecting to cassandra cluster with host:{}, port:{}", host, port);
+
+        Cluster cluster = Cluster.builder()
+            .addContactPoint(host)
+            .withPort(port)
+            .build();
+
+        Metadata metadata = cluster.getMetadata();
+        LOGGER.info("Connected to cluster: {}", metadata.getClusterName());
+        metadata.getAllHosts().forEach(h -> LOGGER.info("Datacenter:{}, host:{}, rack: {}", h.getDatacenter(),
+            h.getEndPoint().resolve().getHostName(), h.getRack()));
+        return cluster;
     }
 
     @Bean
     public Session session(Cluster cluster) {
-        return new CassandraSessionProvider(cluster).get();
+        LOGGER.info("Initializing cassandra session");
+        return cluster.connect();
     }
 
     @Bean

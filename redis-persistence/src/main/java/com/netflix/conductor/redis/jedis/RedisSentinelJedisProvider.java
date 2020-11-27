@@ -15,16 +15,14 @@ package com.netflix.conductor.redis.jedis;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
+import java.util.HashSet;
+import java.util.Set;
+import javax.inject.Provider;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.commands.JedisCommands;
-
-import javax.inject.Inject;
-import javax.inject.Provider;
-import java.util.HashSet;
-import java.util.Set;
 
 @SuppressWarnings("rawtypes")
 public class RedisSentinelJedisProvider implements Provider<JedisCommands> {
@@ -32,7 +30,6 @@ public class RedisSentinelJedisProvider implements Provider<JedisCommands> {
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisSentinelJedisProvider.class);
     private final JedisSentinel jedisSentinel;
 
-    @Inject
     public RedisSentinelJedisProvider(HostSupplier hostSupplier, RedisProperties properties) {
         GenericObjectPoolConfig genericObjectPoolConfig = new GenericObjectPoolConfig();
         genericObjectPoolConfig.setMinIdle(5);

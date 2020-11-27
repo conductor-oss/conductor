@@ -15,7 +15,7 @@ dependencies {
 
     implementation "com.github.rholder:guava-retrying:${revGuavaRetrying}"
 
-    implementation "org.apache.bval:bval-jsr"
+    implementation "org.apache.bval:bval-jsr:${revBval}"
 
     implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
     implementation "com.github.vmg.protogen:protogen-annotations:${revProtogenAnnotations}"

@@ -17,21 +17,15 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.service.ExecutionLockService;
 import com.netflix.conductor.zookeeper.config.ZookeeperProperties;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import javax.inject.Provider;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.test.TestingServer;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,7 +36,6 @@ public class ZookeeperLockTest {
 
     TestingServer zkServer;
     ZookeeperProperties properties;
-    Provider<Lock> mockProvider;
 
     @Before
     public void setUp() throws Exception {
@@ -107,35 +100,6 @@ public class ZookeeperLockTest {
 
         worker3.unlockNotify.release();
         worker3.join();
-    }
-
-    @Ignore
-    public void testExecutionLockService() throws Exception {
-        int numLocks = 10;
-        int contentionFactor = 4;
-        int numThreads = 10;
-        List<String> locksIDs = new ArrayList<>(numLocks * 2 ^ (contentionFactor - 1));
-        for (int i = 0; i < numLocks; i++) {
-            locksIDs.add("testlock-" + i);
-        }
-        for (int i = 0; i < contentionFactor; i++) {
-            locksIDs.addAll(locksIDs);
-        }
-        List<MultiLockWorker> workers = new ArrayList<>(numThreads);
-        ExecutionLockService executionLock = new ExecutionLockService(new ConductorProperties(), mockProvider);
-        for (int i = 0; i < numThreads; i++) {
-            List<String> workerLockIDs = new ArrayList<>(locksIDs);
-            Collections.shuffle(workerLockIDs);
-            MultiLockWorker lockWorker = new MultiLockWorker(executionLock, workerLockIDs);
-            lockWorker.start();
-            workers.add(lockWorker);
-        }
-        for (int i = 0; i < numThreads; i++) {
-            for (MultiLockWorker worker : workers) {
-                worker.join();
-                assertTrue(worker.isFinishedSuccessfully());
-            }
-        }
     }
 
     private static class Worker extends Thread {

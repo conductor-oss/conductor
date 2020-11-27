@@ -17,14 +17,13 @@ import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import java.nio.file.Paths;
 import java.util.concurrent.ThreadFactory;
-import javax.inject.Provider;
 import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class PostgresDataSourceProvider implements Provider<DataSource> {
+public class PostgresDataSourceProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PostgresDataSourceProvider.class);
 
@@ -34,8 +33,7 @@ public class PostgresDataSourceProvider implements Provider<DataSource> {
         this.properties = properties;
     }
 
-    @Override
-    public DataSource get() {
+    public DataSource getDataSource() {
         HikariDataSource dataSource = null;
         try {
             dataSource = new HikariDataSource(createConfiguration());
