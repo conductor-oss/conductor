@@ -31,7 +31,7 @@ public class PostgresConfiguration {
 
     @Bean
     public DataSource dataSource(PostgresProperties config) {
-        return new PostgresDataSourceProvider(config).get();
+        return new PostgresDataSourceProvider(config).getDataSource();
     }
 
     @Bean

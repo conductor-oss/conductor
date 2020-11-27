@@ -15,16 +15,14 @@ package com.netflix.conductor.mysql.config;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import java.util.concurrent.ThreadFactory;
+import javax.sql.DataSource;
 import org.flywaydb.core.Flyway;
 import org.flywaydb.core.api.configuration.FluentConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Provider;
-import javax.sql.DataSource;
-import java.util.concurrent.ThreadFactory;
-
-public class MySQLDataSourceProvider implements Provider<DataSource> {
+public class MySQLDataSourceProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MySQLDataSourceProvider.class);
 
@@ -34,8 +32,7 @@ public class MySQLDataSourceProvider implements Provider<DataSource> {
         this.properties = properties;
     }
 
-    @Override
-    public DataSource get() {
+    public DataSource getDataSource() {
         HikariDataSource dataSource = null;
         try {
             dataSource = new HikariDataSource(createConfiguration());

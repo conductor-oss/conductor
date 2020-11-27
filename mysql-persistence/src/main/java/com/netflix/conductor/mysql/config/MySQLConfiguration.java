@@ -31,7 +31,7 @@ public class MySQLConfiguration {
 
     @Bean
     public DataSource dataSource(MySQLProperties properties) {
-        return new MySQLDataSourceProvider(properties).get();
+        return new MySQLDataSourceProvider(properties).getDataSource();
     }
 
     @Bean

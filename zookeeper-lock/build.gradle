@@ -3,7 +3,6 @@ dependencies {
     implementation project(':conductor-core')
     implementation 'org.springframework.boot:spring-boot-starter'
 
-    implementation "javax.inject:javax.inject:1"
     implementation "org.apache.commons:commons-lang3"
     implementation "org.apache.curator:curator-recipes:${revCuratorRecipes}"
 

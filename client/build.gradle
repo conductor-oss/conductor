@@ -17,7 +17,7 @@ dependencies {
     implementation "com.fasterxml.jackson.jaxrs:jackson-jaxrs-json-provider"
 
     implementation "org.apache.commons:commons-lang3"
-    implementation "commons-io:commons-io"
+    implementation "commons-io:commons-io:${revCommonsIo}"
 
     implementation "org.slf4j:slf4j-api"
 }

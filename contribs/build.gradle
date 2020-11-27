@@ -23,8 +23,6 @@ dependencies {
 
     implementation "io.reactivex:rxjava:${revRxJava}"
 
-    implementation "javax.inject:javax.inject:1"
-
     implementation "com.netflix.spectator:spectator-reg-metrics3:${revSpectator}"
 
     testImplementation "org.eclipse.jetty:jetty-server:${revJettyServer}"

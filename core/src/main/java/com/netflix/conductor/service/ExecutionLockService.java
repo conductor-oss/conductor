@@ -15,27 +15,25 @@ package com.netflix.conductor.service;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.metrics.Monitors;
+import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-
-import javax.inject.Provider;
-import java.util.concurrent.TimeUnit;
 
 @Service
 public class ExecutionLockService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ExecutionLockService.class);
     private final ConductorProperties properties;
-    private final Provider<Lock> lockProvider;
+    private final Lock lock;
     private final long lockLeaseTime;
     private final long lockTimeToTry;
 
     @Autowired
-    public ExecutionLockService(ConductorProperties properties, Provider<Lock> lockProvider) {
+    public ExecutionLockService(ConductorProperties properties, Lock lock) {
         this.properties = properties;
-        this.lockProvider = lockProvider;
+        this.lock = lock;
         this.lockLeaseTime = properties.getLockLeaseTimeMs();
         this.lockTimeToTry = properties.getLockTimeToTryMs();
     }
@@ -59,7 +57,6 @@ public class ExecutionLockService {
 
     public boolean acquireLock(String lockId, long timeToTryMs, long leaseTimeMs) {
         if (properties.isWorkflowExecutionLockEnabled()) {
-            Lock lock = lockProvider.get();
             if (!lock.acquireLock(lockId, timeToTryMs, leaseTimeMs, TimeUnit.MILLISECONDS)) {
                 LOGGER.debug("Thread {} failed to acquire lock to lockId {}.", Thread.currentThread().getId(), lockId);
                 Monitors.recordAcquireLockUnsuccessful();
@@ -77,7 +74,6 @@ public class ExecutionLockService {
      */
     public void waitForLock(String lockId) {
         if (properties.isWorkflowExecutionLockEnabled()) {
-            Lock lock = lockProvider.get();
             lock.acquireLock(lockId);
             LOGGER.debug("Thread {} acquired lock to lockId {}.", Thread.currentThread().getId(), lockId);
         }
@@ -85,7 +81,6 @@ public class ExecutionLockService {
 
     public void releaseLock(String lockId) {
         if (properties.isWorkflowExecutionLockEnabled()) {
-            Lock lock = lockProvider.get();
             lock.releaseLock(lockId);
             LOGGER.debug("Thread {} released lock to lockId {}.", Thread.currentThread().getId(), lockId);
         }
@@ -93,7 +88,7 @@ public class ExecutionLockService {
 
     public void deleteLock(String lockId) {
         if (properties.isWorkflowExecutionLockEnabled()) {
-            lockProvider.get().deleteLock(lockId);
+            lock.deleteLock(lockId);
             LOGGER.debug("Thread {} deleted lockId {}.", Thread.currentThread().getId(), lockId);
         }
     }

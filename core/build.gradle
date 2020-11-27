@@ -6,7 +6,7 @@ dependencies {
     implementation "com.fasterxml.jackson.core:jackson-annotations"
     implementation "com.fasterxml.jackson.core:jackson-databind"
 
-    implementation "commons-io:commons-io"
+    implementation "commons-io:commons-io:${revCommonsIo}"
 
     implementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
 
@@ -23,7 +23,5 @@ dependencies {
     implementation "com.netflix.servo:servo-core:${revServo}"
     implementation "com.netflix.spectator:spectator-api:${revSpectator}"
 
-    implementation "org.apache.bval:bval-jsr"
-
-    implementation "javax.inject:javax.inject:1"
+    implementation "org.apache.bval:bval-jsr:${revBval}"
 }
