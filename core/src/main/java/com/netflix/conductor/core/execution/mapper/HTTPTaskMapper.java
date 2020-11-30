@@ -11,6 +11,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -23,6 +24,7 @@ import java.util.Optional;
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#HTTP} to a {@link Task}
  * of type {@link TaskType#HTTP} with {@link Task.Status#SCHEDULED}
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 public class HTTPTaskMapper implements TaskMapper {
 
@@ -31,14 +33,15 @@ public class HTTPTaskMapper implements TaskMapper {
     private final ParametersUtils parametersUtils;
     private final MetadataDAO metadataDAO;
 
+    @Autowired
     public HTTPTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
         this.parametersUtils = parametersUtils;
         this.metadataDAO = metadataDAO;
     }
 
     @Override
-    public String getTaskType() {
-        return TaskType.HTTP.name();
+    public TaskType getTaskType() {
+        return TaskType.HTTP;
     }
 
     /**

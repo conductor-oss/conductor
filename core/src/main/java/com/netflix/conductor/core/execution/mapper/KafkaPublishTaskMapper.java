@@ -23,6 +23,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 public class KafkaPublishTaskMapper implements TaskMapper {
 
@@ -39,14 +41,15 @@ public class KafkaPublishTaskMapper implements TaskMapper {
     private final ParametersUtils parametersUtils;
     private final MetadataDAO metadataDAO;
 
+    @Autowired
     public KafkaPublishTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
         this.parametersUtils = parametersUtils;
         this.metadataDAO = metadataDAO;
     }
 
     @Override
-    public String getTaskType() {
-        return TaskType.KAFKA_PUBLISH.name();
+    public TaskType getTaskType() {
+        return TaskType.KAFKA_PUBLISH;
     }
 
     /**

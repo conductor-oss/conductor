@@ -21,19 +21,20 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.execution.SystemTaskType;
 import com.netflix.conductor.dao.MetadataDAO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DO_WHILE} to a {@link
  * Task} of type {@link SystemTaskType#DO_WHILE}
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 public class DoWhileTaskMapper implements TaskMapper {
 
@@ -41,13 +42,14 @@ public class DoWhileTaskMapper implements TaskMapper {
 
     private final MetadataDAO metadataDAO;
 
+    @Autowired
     public DoWhileTaskMapper(MetadataDAO metadataDAO) {
         this.metadataDAO = metadataDAO;
     }
 
     @Override
-    public String getTaskType() {
-        return TaskType.DO_WHILE.name();
+    public TaskType getTaskType() {
+        return TaskType.DO_WHILE;
     }
 
     /**

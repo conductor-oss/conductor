@@ -42,8 +42,8 @@ public class WaitTaskMapper implements TaskMapper {
     }
 
     @Override
-    public String getTaskType() {
-        return TaskType.WAIT.name();
+    public TaskType getTaskType() {
+        return TaskType.WAIT;
     }
 
     @Override

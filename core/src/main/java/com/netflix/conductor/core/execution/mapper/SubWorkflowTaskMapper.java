@@ -35,8 +35,8 @@ public class SubWorkflowTaskMapper implements TaskMapper {
     }
 
     @Override
-    public String getTaskType() {
-        return TaskType.SUB_WORKFLOW.name();
+    public TaskType getTaskType() {
+        return TaskType.SUB_WORKFLOW;
     }
 
     @SuppressWarnings("rawtypes")

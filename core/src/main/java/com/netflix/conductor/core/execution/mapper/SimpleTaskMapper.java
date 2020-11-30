@@ -44,8 +44,8 @@ public class SimpleTaskMapper implements TaskMapper {
     }
 
     @Override
-    public String getTaskType() {
-        return TaskType.SIMPLE.name();
+    public TaskType getTaskType() {
+        return TaskType.SIMPLE;
     }
 
     /**

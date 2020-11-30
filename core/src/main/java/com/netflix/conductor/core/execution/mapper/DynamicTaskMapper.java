@@ -22,19 +22,20 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DYNAMIC} to a {@link
  * Task} based on definition derived from the dynamic task name defined in {@link WorkflowTask#getInputParameters()}
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 public class DynamicTaskMapper implements TaskMapper {
 
@@ -43,14 +44,15 @@ public class DynamicTaskMapper implements TaskMapper {
     private final ParametersUtils parametersUtils;
     private final MetadataDAO metadataDAO;
 
+    @Autowired
     public DynamicTaskMapper(ParametersUtils parametersUtils, MetadataDAO metadataDAO) {
         this.parametersUtils = parametersUtils;
         this.metadataDAO = metadataDAO;
     }
 
     @Override
-    public String getTaskType() {
-        return TaskType.DYNAMIC.name();
+    public TaskType getTaskType() {
+        return TaskType.DYNAMIC;
     }
 
     /**

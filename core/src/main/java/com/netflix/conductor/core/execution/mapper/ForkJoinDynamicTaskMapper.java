@@ -31,6 +31,7 @@ import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -46,6 +47,7 @@ import java.util.stream.Collectors;
  * LinkedList of {@link Task} beginning with a {@link SystemTaskType#FORK}, followed by the user defined dynamic tasks
  * and a {@link SystemTaskType#JOIN} at the end
  */
+@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Component
 public class ForkJoinDynamicTaskMapper implements TaskMapper {
 
@@ -57,6 +59,7 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
     private static final TypeReference<List<WorkflowTask>> ListOfWorkflowTasks = new TypeReference<List<WorkflowTask>>() {
     };
 
+    @Autowired
     public ForkJoinDynamicTaskMapper(ParametersUtils parametersUtils, ObjectMapper objectMapper,
         MetadataDAO metadataDAO) {
         this.parametersUtils = parametersUtils;
@@ -65,8 +68,8 @@ public class ForkJoinDynamicTaskMapper implements TaskMapper {
     }
 
     @Override
-    public String getTaskType() {
-        return TaskType.FORK_JOIN_DYNAMIC.name();
+    public TaskType getTaskType() {
+        return TaskType.FORK_JOIN_DYNAMIC;
     }
 
     /**

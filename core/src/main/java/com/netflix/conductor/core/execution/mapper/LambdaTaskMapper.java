@@ -45,8 +45,8 @@ public class LambdaTaskMapper implements TaskMapper {
     }
 
     @Override
-    public String getTaskType() {
-        return TaskType.LAMBDA.name();
+    public TaskType getTaskType() {
+        return TaskType.LAMBDA;
     }
 
     @Override

@@ -13,13 +13,13 @@
 package com.netflix.conductor.core.execution.mapper;
 
 import com.netflix.conductor.common.metadata.tasks.Task;
+import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
-
 import java.util.List;
 
 public interface TaskMapper {
 
-    String getTaskType();
+    TaskType getTaskType();
 
     List<Task> getMappedTasks(TaskMapperContext taskMapperContext) throws TerminateWorkflowException;
 }

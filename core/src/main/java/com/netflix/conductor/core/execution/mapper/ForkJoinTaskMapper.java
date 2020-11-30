@@ -38,8 +38,8 @@ public class ForkJoinTaskMapper implements TaskMapper {
     public static final Logger LOGGER = LoggerFactory.getLogger(ForkJoinTaskMapper.class);
 
     @Override
-    public String getTaskType() {
-        return TaskType.FORK_JOIN.name();
+    public TaskType getTaskType() {
+        return TaskType.FORK_JOIN;
     }
 
     /**

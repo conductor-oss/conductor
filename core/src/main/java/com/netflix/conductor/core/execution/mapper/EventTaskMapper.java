@@ -20,6 +20,7 @@ import com.netflix.conductor.core.execution.tasks.Event;
 import com.netflix.conductor.core.utils.ParametersUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -33,13 +34,14 @@ public class EventTaskMapper implements TaskMapper {
 
     private final ParametersUtils parametersUtils;
 
+    @Autowired
     public EventTaskMapper(ParametersUtils parametersUtils) {
         this.parametersUtils = parametersUtils;
     }
 
     @Override
-    public String getTaskType() {
-        return TaskType.EVENT.name();
+    public TaskType getTaskType() {
+        return TaskType.EVENT;
     }
 
     @Override

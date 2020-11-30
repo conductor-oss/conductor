@@ -21,16 +21,15 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.events.ScriptEvaluator;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.SystemTaskType;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
-
-import javax.script.ScriptException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import javax.script.ScriptException;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 /**
  * An implementation of {@link TaskMapper} to map a {@link WorkflowTask} of type {@link TaskType#DECISION} to a List
@@ -43,8 +42,8 @@ public class DecisionTaskMapper implements TaskMapper {
     private static final Logger LOGGER = LoggerFactory.getLogger(DecisionTaskMapper.class);
 
     @Override
-    public String getTaskType() {
-        return TaskType.DECISION.name();
+    public TaskType getTaskType() {
+        return TaskType.DECISION;
     }
 
     /**
