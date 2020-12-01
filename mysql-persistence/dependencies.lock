@@ -907,6 +907,10 @@
         "org.slf4j:slf4j-log4j12": {
             "locked": "1.8.0-alpha1",
             "requested": "1.8.0-alpha1"
+        },
+        "org.testinfected.hamcrest-matchers:all-matchers": {
+            "locked": "1.8",
+            "requested": "1.8"
         }
     },
     "testCompileClasspath": {
@@ -1067,6 +1071,10 @@
         "org.slf4j:slf4j-log4j12": {
             "locked": "1.8.0-alpha1",
             "requested": "1.8.0-alpha1"
+        },
+        "org.testinfected.hamcrest-matchers:all-matchers": {
+            "locked": "1.8",
+            "requested": "1.8"
         }
     },
     "testRuntime": {
@@ -1227,6 +1235,10 @@
         "org.slf4j:slf4j-log4j12": {
             "locked": "1.8.0-alpha1",
             "requested": "1.8.0-alpha1"
+        },
+        "org.testinfected.hamcrest-matchers:all-matchers": {
+            "locked": "1.8",
+            "requested": "1.8"
         }
     },
     "testRuntimeClasspath": {
@@ -1387,6 +1399,10 @@
         "org.slf4j:slf4j-log4j12": {
             "locked": "1.8.0-alpha1",
             "requested": "1.8.0-alpha1"
+        },
+        "org.testinfected.hamcrest-matchers:all-matchers": {
+            "locked": "1.8",
+            "requested": "1.8"
         }
     }
 }

@@ -111,6 +111,9 @@ public abstract class MySQLBaseDAO {
                 return result;
             } catch (Throwable th) {
                 tx.rollback();
+                if (th instanceof ApplicationException) {
+                    throw th;
+                }
                 throw new ApplicationException(BACKEND_ERROR, th.getMessage(), th);
             } finally {
                 tx.setAutoCommit(previousAutoCommitMode);

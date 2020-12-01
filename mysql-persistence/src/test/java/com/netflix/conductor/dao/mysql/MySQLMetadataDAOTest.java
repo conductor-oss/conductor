@@ -9,6 +9,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -20,6 +21,10 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static com.netflix.conductor.core.execution.ApplicationException.Code.CONFLICT;
+import static com.netflix.conductor.core.execution.ApplicationException.Code.NOT_FOUND;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -35,6 +40,9 @@ public class MySQLMetadataDAOTest {
     @Rule
     public TestName name = new TestName();
 
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
     @Before
     public void setup() throws Exception {
         testUtil = new MySQLDAOTestUtil(name.getMethodName());
@@ -47,14 +55,29 @@ public class MySQLMetadataDAOTest {
         testUtil.getDataSource().close();
     }
 
-    @Test(expected=ApplicationException.class)
-    public void testDuplicate() throws Exception {
+    @Test
+    public void testDuplicateWorkflowDef() throws Exception {
+
+        thrown.expect(ApplicationException.class);
+        thrown.expectMessage("Workflow with testDuplicate.1 already exists!");
+        thrown.expect(hasProperty("code", is(CONFLICT)));
+
         WorkflowDef def = new WorkflowDef();
         def.setName("testDuplicate");
         def.setVersion(1);
 
         dao.createWorkflowDef(def);
         dao.createWorkflowDef(def);
+    }
+
+    @Test
+    public void testRemoveNotExistingWorkflowDef() throws Exception {
+
+        thrown.expect(ApplicationException.class);
+        thrown.expectMessage("No such workflow definition: test version: 1");
+        thrown.expect(hasProperty("code", is(NOT_FOUND)));
+
+        dao.removeWorkflowDef("test", 1);
     }
 
     @Test
@@ -195,8 +218,13 @@ public class MySQLMetadataDAOTest {
         assertEquals(def.getName(), all.get(0).getName());
     }
 
-    @Test(expected=ApplicationException.class)
-    public void testRemoveTaskDef() throws Exception {
+    @Test
+    public void testRemoveNotExistingTaskDef() {
+
+        thrown.expect(ApplicationException.class);
+        thrown.expectMessage("No such task definition");
+        thrown.expect(hasProperty("code", is(NOT_FOUND)));
+
         dao.removeTaskDef("test" + UUID.randomUUID().toString());
     }
 
