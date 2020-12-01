@@ -20,13 +20,21 @@ import (
 type TaskResultStatus string
 
 type TaskResult struct {
-	Status TaskResultStatus				`json:"status"`
-	WorkflowInstanceId string			`json:"workflowInstanceId"`
-	TaskId string						`json:"taskId"`
-	ReasonForIncompletion string		`json:"reasonForIncompletion"`
-	CallbackAfterSeconds int64			`json:"callbackAfterSeconds"`
-	WorkerId string						`json:"workerId"`
-	OutputData map[string]interface{}	`json:"outputData"`
+	Status 					TaskResultStatus			`json:"status"`
+	WorkflowInstanceId 		string						`json:"workflowInstanceId"`
+	TaskId 					string						`json:"taskId"`
+	ReasonForIncompletion 	string						`json:"reasonForIncompletion"`
+	CallbackAfterSeconds 	int64						`json:"callbackAfterSeconds"`
+	WorkerId 				string						`json:"workerId"`
+	OutputData 				map[string]interface{}		`json:"outputData"`
+	Logs       				[]LogMessage             	`json:"logs"`
+}
+
+// LogMessage used to sent logs to conductor server
+type LogMessage struct {
+	Log    	       string    `json:"log"`
+	TaskID         string    `json:"taskId"`
+	CreatedTime    int       `json:"createdTime"`
 }
 
 // "Constructor" to initialze non zero value defaults
