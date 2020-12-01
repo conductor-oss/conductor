@@ -192,7 +192,10 @@ func (c *ConductorHttpClient) PollForTask(taskType string, workerid string, doma
     url := c.httpClient.MakeUrl("/tasks/poll/{taskType}", "{taskType}", taskType)
     params := map[string]string{
         "workerid": workerid,
-        "domain":   domain,
+    }
+    // only add the domain if requested, otherwise conductor will silently fail (https://github.com/Netflix/conductor/issues/1952)
+    if domain != "" {
+        params["domain"] = domain
     }
     outputString, err := c.httpClient.Get(url, params, nil)
     if err != nil {
@@ -207,7 +210,10 @@ func (c *ConductorHttpClient) AckTask(taskId, workerid, domain string) (string, 
     url := c.httpClient.MakeUrl("/tasks/{taskId}/ack", "{taskId}", taskId)
     params := map[string]string{
         "workerid": workerid,
-	"domain": domain,
+    }
+    // only add the domain if requested, otherwise conductor will silently fail (https://github.com/Netflix/conductor/issues/1952)
+    if domain != "" {
+        params["domain"] = domain
     }
     headers := map[string]string{"Accept": "application/json"}
     outputString, err := c.httpClient.Post(url, params, headers, "")
