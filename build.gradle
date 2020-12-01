@@ -83,10 +83,10 @@ tasks.coveralls {
     description = "Uploads the aggregated coverage report to Coveralls"
 }
 
-task runApp {
-    dependsOn ':conductor-server:bootRun'
-}
-
-task server {
-    dependsOn ':conductor-server:bootRun'
-}
+//task runApp {
+//    dependsOn ':conductor-server:bootRun'
+//}
+//
+//task server {
+//    dependsOn ':conductor-server:bootRun'
+//}

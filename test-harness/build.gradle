@@ -14,18 +14,20 @@ apply plugin: 'groovy'
 
 dependencies {
 
-    testImplementation project(':conductor-core')
-    testImplementation project(':conductor-common')
-    testImplementation project(':conductor-contribs')
+
     testImplementation project(':conductor-server')
+    testImplementation project(':conductor-common')
     testImplementation project(':conductor-rest')
+    testImplementation project(':conductor-core')
+    testImplementation project(':conductor-contribs')
     testImplementation project(':conductor-redis-persistence')
     testImplementation project(':conductor-mysql-persistence')
     testImplementation project(':conductor-postgres-persistence')
-    testImplementation project(':conductor-grpc')
+    testImplementation project(':conductor-cassandra-persistence')
+    testImplementation project(':conductor-es6-persistence')
     testImplementation project(':conductor-grpc-server')
-    testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-client')
+    testImplementation project(':conductor-grpc-client')
 
     testImplementation "com.fasterxml.jackson.core:jackson-databind"
     testImplementation "com.fasterxml.jackson.core:jackson-core"
