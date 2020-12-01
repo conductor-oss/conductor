@@ -110,8 +110,7 @@ router.get('/id/:workflowId', async (req, res, next) => {
       map(task => {
         if (task.taskType === 'SUB_WORKFLOW') {
           const subWorkflowId = task.subWorkflowId;
-
-          if (subWorkflowId != null) {
+          if (subWorkflowId != null && task.inputData.subWorkflowDefinition === undefined) {
             return {
               name: task.inputData.subWorkflowName,
               version: task.inputData.subWorkflowVersion,
