@@ -128,6 +128,24 @@ public class TestKafkaPublishTask {
 		Assert.assertEquals(Task.Status.COMPLETED, task.getStatus());
 	}
 
+	@Test
+	public void kafkaPublishSuccess_AsyncComplete() {
+
+		Task task = getTask();
+		task.getInputData().put("asyncComplete", true);
+
+		KafkaProducerManager producerManager = Mockito.mock(KafkaProducerManager.class);
+		KafkaPublishTask kPublishTask = new KafkaPublishTask(new SystemPropertiesConfiguration(), producerManager, objectMapper);
+
+		Producer producer = Mockito.mock(Producer.class);
+
+		Mockito.when(producerManager.getProducer(Mockito.any())).thenReturn(producer);
+		Mockito.when(producer.send(Mockito.any())).thenReturn(Mockito.mock(Future.class));
+
+		kPublishTask.start(Mockito.mock(Workflow.class), task, Mockito.mock(WorkflowExecutor.class));
+		Assert.assertEquals(Task.Status.IN_PROGRESS, task.getStatus());
+	}
+
 	private Task getTask() {
 		Task task = new Task();
 		KafkaPublishTask.Input input = new KafkaPublishTask.Input();

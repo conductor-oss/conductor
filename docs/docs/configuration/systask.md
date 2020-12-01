@@ -582,11 +582,16 @@ For example, if you have a decision where the first condition is met, you want t
 
 ## Kafka Publish Task
 
-A kafka Publish task is used to push messages to another microservice via kafka
+A kafka Publish task is used to push messages to another microservice via kafka.
 
 **Parameters:**
 
-The task expects an input parameter named ```kafka_request``` as part of the task's input with the following details:
+|name|type|description|
+|---|---|---|
+| kafka_request | kafkaRequest | JSON object (see below) |
+| asyncComplete | Boolean | ```false``` to mark status COMPLETED upon execution ; ```true``` to keep it IN_PROGRESS, wait for an external event (via Conductor or SQS or EventHandler) to complete it. |
+
+```kafkaRequest``` JSON object:
 
 |name|description|
 |---|---|
@@ -601,10 +606,6 @@ The task expects an input parameter named ```kafka_request``` as part of the tas
 
 The producer created in the kafka task is cached. By default the cache size is 10 and expiry time is 120000 ms. To change the defaults following can be modified kafka.publish.producer.cache.size,kafka.publish.producer.cache.time.ms respectively.  
 
-**Kafka Task Output**
-
-Task status transitions to COMPLETED
-
 **Example**
 
 Task sample
@@ -614,6 +615,7 @@ Task sample
   "name": "call_kafka",
   "taskReferenceName": "call_kafka",
   "inputParameters": {
+    "asyncComplete": false,
     "kafka_request": {
       "topic": "userTopic",
       "value": "Message to publish",

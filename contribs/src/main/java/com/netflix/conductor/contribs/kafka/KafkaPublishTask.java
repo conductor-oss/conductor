@@ -92,7 +92,11 @@ public class KafkaPublishTask extends WorkflowSystemTask {
 			Future<RecordMetadata> recordMetaDataFuture = kafkaPublish(input);
 			try {
 				recordMetaDataFuture.get();
-				task.setStatus(Task.Status.COMPLETED);
+				if (isAsyncComplete(task)) {
+					task.setStatus(Task.Status.IN_PROGRESS);
+				} else {
+					task.setStatus(Task.Status.COMPLETED);
+				}
 				long timeTakenToCompleteTask = Instant.now().toEpochMilli() - taskStartMillis;
 				logger.debug("Published message {}, Time taken {}", input, timeTakenToCompleteTask);
 
