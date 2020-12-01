@@ -12,6 +12,9 @@
  */
 package com.netflix.conductor.common.workflow;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
@@ -19,24 +22,20 @@ import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.SubWorkflowParams;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
-
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import javax.validation.ConstraintViolation;
+import javax.validation.Validation;
+import javax.validation.Validator;
+import javax.validation.ValidatorFactory;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -106,47 +105,13 @@ public class SubWorkflowParamsTest {
         def.getTasks().add(task);
         subWorkflowParams.setWorkflowDefinition(def);
 
-        String expected = "{\n"
-            + "  \"name\" : \"test_workflow\",\n"
-            + "  \"version\" : 1,\n"
-            + "  \"workflowDefinition\" : {\n"
-            + "    \"inputParameters\" : [ ],\n"
-            + "    \"name\" : \"test_workflow\",\n"
-            + "    \"outputParameters\" : { },\n"
-            + "    \"restartable\" : true,\n"
-            + "    \"schemaVersion\" : 2,\n"
-            + "    \"tasks\" : [ {\n"
-            + "      \"asyncComplete\" : false,\n"
-            + "      \"decisionCases\" : { },\n"
-            + "      \"defaultCase\" : [ ],\n"
-            + "      \"defaultExclusiveJoinTask\" : [ ],\n"
-            + "      \"forkTasks\" : [ ],\n"
-            + "      \"inputParameters\" : { },\n"
-            + "      \"joinOn\" : [ ],\n"
-            + "      \"loopOver\" : [ ],\n"
-            + "      \"name\" : \"test_task\",\n"
-            + "      \"optional\" : false,\n"
-            + "      \"startDelay\" : 0,\n"
-            + "      \"taskReferenceName\" : \"t1\",\n"
-            + "      \"type\" : \"SIMPLE\"\n"
-            + "    } ],\n"
-            + "    \"timeoutPolicy\" : \"ALERT_ONLY\",\n"
-            + "    \"timeoutSeconds\" : 0,\n"
-            + "    \"variables\" : { },\n"
-            + "    \"version\" : 1,\n"
-            + "    \"workflowStatusListenerEnabled\" : false\n"
-            + "  }\n"
-            + "}";
-
         objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
         objectMapper.enable(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY);
         objectMapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
 
-        assertEquals(expected, objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(subWorkflowParams));
-
-        SubWorkflowParams actualSubWorkflowParam = objectMapper.readValue(expected, SubWorkflowParams.class);
-        assertEquals(subWorkflowParams, actualSubWorkflowParam);
-        assertEquals(def, actualSubWorkflowParam.getWorkflowDefinition());
-        assertEquals(def, actualSubWorkflowParam.getWorkflowDef());
+        String serializedParams = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(subWorkflowParams);
+        SubWorkflowParams deserializedParams = objectMapper.readValue(serializedParams, SubWorkflowParams.class);
+        assertEquals(def, deserializedParams.getWorkflowDefinition());
+        assertEquals(def, deserializedParams.getWorkflowDef());
     }
 }

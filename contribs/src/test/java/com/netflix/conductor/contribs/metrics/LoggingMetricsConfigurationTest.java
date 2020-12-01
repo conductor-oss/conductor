@@ -12,23 +12,24 @@
  */
 package com.netflix.conductor.contribs.metrics;
 
-import com.codahale.metrics.MetricRegistry;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.slf4j.Logger;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-import org.springframework.test.context.junit4.SpringRunner;
-
-import java.util.concurrent.TimeUnit;
-
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-// SBMTODO: revisit verify(?)
+import com.codahale.metrics.MetricRegistry;
+import com.netflix.conductor.contribs.metrics.LoggingMetricsConfiguration.Slf4jReporterProvider;
+import java.util.concurrent.TimeUnit;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.slf4j.Logger;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.junit4.SpringRunner;
+
 @RunWith(SpringRunner.class)
+@TestPropertySource(properties = {"conductor.metrics.logger.enabled=true"})
 public class LoggingMetricsConfigurationTest {
 
     @Test
@@ -37,13 +38,15 @@ public class LoggingMetricsConfigurationTest {
         doReturn(true).when(logger).isInfoEnabled(any());
 
         new ApplicationContextRunner()
-            .withPropertyValues("conductor.metrics.logger.reportPeriodSeconds:1")
-            .withUserConfiguration(MetricsRegistryConfiguration.class, LoggingMetricsConfiguration.class)
+            .withPropertyValues("conductor.metrics.logger.enabled:true")
+            .withUserConfiguration(MetricsRegistryConfiguration.class)
             .run(context -> {
                 MetricRegistry metricRegistry = context.getBean(MetricRegistry.class);
+                Slf4jReporterProvider reporterProvider = new Slf4jReporterProvider(metricRegistry, logger, 1);
                 metricRegistry.counter("test").inc();
 
-                verify(logger, timeout(TimeUnit.SECONDS.toMillis(10))).info(any());
+                reporterProvider.getReporter();
+                verify(logger, timeout(TimeUnit.SECONDS.toMillis(10))).isInfoEnabled(null);
             });
     }
 }
