@@ -8,7 +8,7 @@ dependencies {
     // SBMTODO: remove guava dep
     implementation "com.google.guava:guava:${revGuava}"
 
-    implementation "com.sun.jersey:jersey-client:1.19.4"
+    implementation "com.sun.jersey:jersey-client:${revJersey}"
 
     implementation "com.netflix.spectator:spectator-api:${revSpectator}"
     implementation "com.netflix.eureka:eureka-client:${revEurekaClient}"

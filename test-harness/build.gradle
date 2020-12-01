@@ -27,6 +27,17 @@ dependencies {
     testImplementation project(':conductor-grpc-client')
     testImplementation project(':conductor-client')
 
+    testImplementation "com.fasterxml.jackson.core:jackson-databind"
+    testImplementation "com.fasterxml.jackson.core:jackson-core"
+
+    testImplementation "org.apache.commons:commons-lang3"
+
+    testImplementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
+    testImplementation "com.google.guava:guava:${revGuava}"
+
+    testImplementation "redis.clients:jedis:${revJedis}"
+    testImplementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
+
     testImplementation "org.codehaus.groovy:groovy-all:${revGroovy}"
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
