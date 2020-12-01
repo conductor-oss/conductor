@@ -159,6 +159,9 @@ public class PostgresQueueDAOTest {
 		// Assert that all messages were persisted and no extras are in there
 		assertEquals("Queue size mismatch", totalSize, dao.getSize(queueName));
 
+		List<Message> zeroPoll = dao.pollMessages(queueName, 0, 10_000);
+		assertTrue("Zero poll should be empty", zeroPoll.isEmpty());
+
 		final int firstPollSize = 3;
 		List<Message> firstPoll = dao.pollMessages(queueName, firstPollSize, 10_000);
 		assertNotNull("First poll was null", firstPoll);
@@ -295,7 +298,21 @@ public class PostgresQueueDAOTest {
 
 	@Test
 	public void processUnacksTest() {
-		final String queueName = "process_unacks_test";
+		processUnacks(() -> {
+			// Process unacks
+			dao.processUnacks("process_unacks_test");
+		}, "process_unacks_test");
+	}
+
+	@Test
+	public void processAllUnacksTest() {
+		processUnacks(() -> {
+			// Process all unacks
+			dao.processAllUnacks();
+		}, "process_unacks_test");
+	}
+
+	private void processUnacks(Runnable unack, String queueName) {
 		// Count of messages in the queue(s)
 		final int count = 10;
 		// Number of messages to process acks for
@@ -333,9 +350,7 @@ public class PostgresQueueDAOTest {
 		assertNotNull(uacked);
 		assertEquals(uacked.longValue(), unackedCount - 1);
 
-
-		// Process unacks
-		dao.processUnacks(queueName);
+		unack.run();
 
 		// Check uacks for both queues after processing
 		Map<String, Map<String, Map<String, Long>>> details = dao.queuesDetailVerbose();

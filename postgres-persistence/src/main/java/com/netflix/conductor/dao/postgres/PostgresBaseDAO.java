@@ -43,6 +43,7 @@ import static java.lang.System.getProperty;
 public abstract class PostgresBaseDAO {
 
     private static final String ER_LOCK_DEADLOCK = "40P01";
+    private static final String ER_SERIALIZATION_FAILURE = "40001";
     private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_NAME = "conductor.postgres.deadlock.retry.max";
     private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE = "3";
     private static final int MAX_RETRY_ON_DEADLOCK = getMaxRetriesOnDeadLock();
@@ -257,7 +258,8 @@ public abstract class PostgresBaseDAO {
         if (sqlException == null){
             return false;
         }
-        return ER_LOCK_DEADLOCK.equals(sqlException.getSQLState());
+        return ER_LOCK_DEADLOCK.equals(sqlException.getSQLState())
+                || ER_SERIALIZATION_FAILURE.equals(sqlException.getSQLState());
     }
 
     private SQLException findCauseSQLException(Throwable throwable) {

@@ -68,6 +68,21 @@ public class PostgresExecutionDAOTest extends ExecutionDAOTest {
         assertEquals(10, bycorrelationId.size());
     }
 
+    @Test
+    public void testRemoveWorkflow() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("workflow");
+
+        Workflow workflow = createTestWorkflow();
+        workflow.setWorkflowDefinition(def);
+
+        List<String> ids = generateWorkflows(workflow, 1);
+
+        assertEquals(1, getExecutionDAO().getPendingWorkflowCount("workflow"));
+        ids.forEach(wfId -> getExecutionDAO().removeWorkflow(wfId));
+        assertEquals(0, getExecutionDAO().getPendingWorkflowCount("workflow"));
+    }
+
     @Override
     public ExecutionDAO getExecutionDAO() {
         return executionDAO;
