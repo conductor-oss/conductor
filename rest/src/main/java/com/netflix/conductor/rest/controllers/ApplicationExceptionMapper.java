@@ -16,17 +16,18 @@ import com.fasterxml.jackson.databind.exc.InvalidFormatException;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.metrics.Monitors;
+import java.util.Map;
+import javax.servlet.http.HttpServletRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import javax.servlet.http.HttpServletRequest;
-import java.util.Map;
-
 @RestControllerAdvice
+@Order(ValidationExceptionMapper.ORDER + 1)
 public class ApplicationExceptionMapper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationExceptionMapper.class);

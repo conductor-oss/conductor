@@ -16,34 +16,36 @@ import com.netflix.conductor.common.validation.ErrorResponse;
 import com.netflix.conductor.common.validation.ValidationError;
 import com.netflix.conductor.core.utils.Utils;
 import com.netflix.conductor.metrics.Monitors;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.ControllerAdvice;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
-
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import javax.servlet.http.HttpServletRequest;
 import javax.validation.ConstraintViolation;
 import javax.validation.ConstraintViolationException;
 import javax.validation.ValidationException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 /**
  * This class converts Hibernate {@link ValidationException} into http response.
  */
-@ControllerAdvice
+@RestControllerAdvice
+@Order(ValidationExceptionMapper.ORDER)
 public class ValidationExceptionMapper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ApplicationExceptionMapper.class);
 
+    public static final int ORDER = Ordered.HIGHEST_PRECEDENCE;
+
     private final String host = Utils.getServerId();
 
     @ExceptionHandler(ValidationException.class)
-    @ResponseBody
     public ResponseEntity<ErrorResponse> toResponse(HttpServletRequest request, ValidationException exception) {
         logException(request, exception);
 
