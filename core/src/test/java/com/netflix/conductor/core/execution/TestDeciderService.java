@@ -1015,6 +1015,22 @@ public class TestDeciderService {
         assertNotNull(workflow.getOutput());
         assertEquals("taskValue", workflow.getOutput().get("taskKey"));
     }
+    
+    // when workflow definition has outputParameters defined
+    @Test
+    public void testUpdateWorkflowOutput_WhenDefinitionHasOutputParameters() {
+    	Workflow workflow = new Workflow();
+    	WorkflowDef workflowDef = new WorkflowDef();
+    	workflowDef.setOutputParameters(new HashMap() {{ put("workflowKey", "workflowValue"); }});
+    	workflow.setWorkflowDefinition(workflowDef);
+    	Task task = new Task();
+    	task.setReferenceTaskName("test_task");
+    	task.setOutputData(new HashMap() {{ put("taskKey", "taskValue"); }});
+    	workflow.getTasks().add(task);
+    	deciderService.updateWorkflowOutput(workflow, null);
+    	assertNotNull(workflow.getOutput());
+    	assertEquals("workflowValue", workflow.getOutput().get("workflowKey"));
+    }
 
     @Test
     public void testCheckWorkflowTimeout() {

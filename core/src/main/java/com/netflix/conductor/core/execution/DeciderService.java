@@ -299,7 +299,7 @@ public class DeciderService {
 
         WorkflowDef workflowDef = workflow.getWorkflowDefinition();
         Map<String, Object> output;
-        if (workflowDef.getOutputParameters() != null && !workflowDef.getOutputParameters().isEmpty()) {
+        if (workflowDef.getOutputParameters() != null && !workflowDef.getOutputParameters().isEmpty() && !(TaskType.TERMINATE.name().equals(last.getTaskType()))) {
             Workflow workflowInstance = populateWorkflowAndTaskData(workflow);
             output = parametersUtils.getTaskInput(workflowDef.getOutputParameters(), workflowInstance, null, null);
         } else if (StringUtils.isNotBlank(last.getExternalOutputPayloadStoragePath())) {
