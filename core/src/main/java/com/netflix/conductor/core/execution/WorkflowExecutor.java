@@ -732,30 +732,11 @@ public class WorkflowExecutor {
             try {
                 // Remove from the task queue if they were there
                 tasks.forEach(task -> queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId()));
-                // Remove from the sweep queue
-                queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());
             } catch (Exception e) {
-                LOGGER.warn("Error removing the message(s) from queue during Workflow termination", e);
+                LOGGER.warn("Error removing task(s) from queue during workflow termination : {}", workflowId, e);
             }
 
-            // Update non-terminal tasks' status to CANCELED
-            for (Task task : tasks) {
-                if (!task.getStatus().isTerminal()) {
-                    // Cancel the ones which are not completed yet....
-                    task.setStatus(CANCELED);
-                    if (isSystemTask.test(task)) {
-                        WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
-                        try {
-                            workflowSystemTask.cancel(workflow, task, this);
-                        } catch (Exception e) {
-                            throw new ApplicationException(Code.INTERNAL_ERROR,
-                                String.format("Error canceling system task: %s/%s", workflowSystemTask.getName(),
-                                    task.getTaskId()), e);
-                        }
-                    }
-                    executionDAOFacade.updateTask(task);
-                }
-            }
+            List<String> erroredTasks = cancelNonTerminalTasks(workflow);
 
             if (workflow.getParentWorkflowId() != null) {
                 updateParentWorkflowTask(workflow);
@@ -798,6 +779,11 @@ public class WorkflowExecutor {
 
             if (workflow.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
                 workflowStatusListener.onWorkflowTerminated(workflow);
+            }
+
+            if (!erroredTasks.isEmpty()) {
+                throw new ApplicationException(Code.INTERNAL_ERROR, String.format("Error canceling system tasks: %s",
+                    String.join(",", erroredTasks)));
             }
         } finally {
             executionLockService.releaseLock(workflow.getWorkflowId());
@@ -1000,6 +986,9 @@ public class WorkflowExecutor {
         workflow = metadataMapperService.populateWorkflowWithDefinitions(workflow);
 
         if (workflow.getStatus().isTerminal()) {
+            if (!workflow.getStatus().isSuccessful()) {
+                cancelNonTerminalTasks(workflow);
+            }
             return true;
         }
 
@@ -1096,7 +1085,7 @@ public class WorkflowExecutor {
      */
     private void skipTasksAffectedByTerminateTask(Workflow workflow) {
     	if(!workflow.getStatus().isTerminal()) {
-	        List<Task> tasksToBeUpdated = new ArrayList<Task>();
+	        List<Task> tasksToBeUpdated = new ArrayList<>();
 	        for(Task workflowTask : workflow.getTasks()) {
             	if(!workflowTask.getStatus().isTerminal()) {
             		workflowTask.setStatus(SKIPPED);
@@ -1116,6 +1105,37 @@ public class WorkflowExecutor {
 	            executionDAOFacade.updateWorkflow(workflow);
 	        }
     	}
+    }
+
+    @VisibleForTesting
+    List<String> cancelNonTerminalTasks(Workflow workflow) {
+        List<String> erroredTasks = new ArrayList<>();
+        // Update non-terminal tasks' status to CANCELED
+        for (Task task : workflow.getTasks()) {
+            if (!task.getStatus().isTerminal()) {
+                // Cancel the ones which are not completed yet....
+                task.setStatus(CANCELED);
+                if (isSystemTask.test(task)) {
+                    WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
+                    try {
+                        workflowSystemTask.cancel(workflow, task, this);
+                    } catch (Exception e) {
+                        erroredTasks.add(task.getReferenceTaskName());
+                        LOGGER.error("Error canceling system task:{}/{} in workflow: {}",
+                            workflowSystemTask.getName(), task.getTaskId(), workflow.getWorkflowId(), e);
+                    }
+                }
+                executionDAOFacade.updateTask(task);
+            }
+        }
+        if (erroredTasks.isEmpty()) {
+            try {
+                queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());
+            } catch (Exception e) {
+                LOGGER.error("Error removing workflow: {} from decider queue", workflow.getWorkflowId(), e);
+            }
+        }
+        return erroredTasks;
     }
 
     @VisibleForTesting
