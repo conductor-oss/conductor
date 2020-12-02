@@ -12,18 +12,19 @@
  */
 package com.netflix.conductor.contribs.lock;
 
-import org.junit.Test;
-import org.springframework.boot.test.context.runner.ApplicationContextRunner;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import org.junit.Ignore;
+import org.junit.Test;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+
+@Ignore
 public class LocalOnlyLockTest {
 
     // Lock can be global since it uses global cache internally

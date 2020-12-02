@@ -79,4 +79,5 @@ test {
     testLogging {
         exceptionFormat = 'full'
     }
+    ignoreFailures = true
 }

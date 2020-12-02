@@ -26,3 +26,5 @@ Upgraded protobuf-java to 3.13.0
 Upgraded grpc-protobuf to 1.33.+
 Renamed DynoProxy to JedisProxy
 Removed support for EmbeddedElasticSearch
+
+Ignored a flaky test class - LocalOnlyLockTest.
