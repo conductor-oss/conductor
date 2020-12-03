@@ -12,10 +12,6 @@
  */
 package com.netflix.conductor.rest.controllers;
 
-import static com.netflix.conductor.rest.config.RequestMappingConstants.WORKFLOW;
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
-
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -25,8 +21,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.service.WorkflowService;
 import io.swagger.v3.oas.annotations.Operation;
-import java.util.List;
-import java.util.Map;
+import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -35,7 +30,15 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
+import java.util.Map;
+
+import static com.netflix.conductor.rest.config.RequestMappingConstants.WORKFLOW;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
 
 @RestController
 @RequestMapping(WORKFLOW)
@@ -140,6 +143,7 @@ public class WorkflowResource {
 
     @PostMapping("/{workflowId}/restart")
     @Operation(summary = "Restarts a completed workflow")
+    @ResponseStatus(value = HttpStatus.NO_CONTENT) // for backwards compatibility with 2.x client which expects a 204 for this request
     public void restart(@PathVariable("workflowId") String workflowId,
         @RequestParam(value = "useLatestDefinitions", defaultValue = "false", required = false) boolean useLatestDefinitions) {
         workflowService.restartWorkflow(workflowId, useLatestDefinitions);
@@ -147,12 +151,14 @@ public class WorkflowResource {
 
     @PostMapping("/{workflowId}/retry")
     @Operation(summary = "Retries the last failed task")
+    @ResponseStatus(value = HttpStatus.NO_CONTENT) // for backwards compatibility with 2.x client which expects a 204 for this request
     public void retry(@PathVariable("workflowId") String workflowId) {
         workflowService.retryWorkflow(workflowId);
     }
 
     @PostMapping("/{workflowId}/resetcallbacks")
     @Operation(summary = "Resets callback times of all non-terminal SIMPLE tasks to 0")
+    @ResponseStatus(value = HttpStatus.NO_CONTENT) // for backwards compatibility with 2.x client which expects a 204 for this request
     public void resetWorkflow(@PathVariable("workflowId") String workflowId) {
         workflowService.resetWorkflow(workflowId);
     }

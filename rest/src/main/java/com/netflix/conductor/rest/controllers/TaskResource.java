@@ -12,10 +12,6 @@
  */
 package com.netflix.conductor.rest.controllers;
 
-import static com.netflix.conductor.rest.config.RequestMappingConstants.TASKS;
-import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
-import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
-
 import com.netflix.conductor.common.metadata.tasks.PollData;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskExecLog;
@@ -25,8 +21,7 @@ import com.netflix.conductor.common.run.SearchResult;
 import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.service.TaskService;
 import io.swagger.v3.oas.annotations.Operation;
-import java.util.List;
-import java.util.Map;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,8 +31,16 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+import static com.netflix.conductor.rest.config.RequestMappingConstants.TASKS;
+import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
+import static org.springframework.http.MediaType.TEXT_PLAIN_VALUE;
+
 @RestController
-@RequestMapping(TASKS)
+@RequestMapping(value = TASKS, produces = APPLICATION_JSON_VALUE)
 public class TaskResource {
 
     private final TaskService taskService;
@@ -49,34 +52,37 @@ public class TaskResource {
     @GetMapping("/poll/{tasktype}")
     @Operation(summary = "Poll for a task of a certain type")
     public Task poll(@PathVariable("tasktype") String taskType,
-        @RequestParam(value = "workerid", required = false) String workerId,
-        @RequestParam(value = "domain", required = false) String domain) {
+                     @RequestParam(value = "workerid", required = false) String workerId,
+                     @RequestParam(value = "domain", required = false) String domain) {
         return taskService.poll(taskType, workerId, domain);
     }
 
     @GetMapping("/poll/batch/{tasktype}")
     @Operation(summary = "Batch poll for a task of a certain type")
     public List<Task> batchPoll(@PathVariable("tasktype") String taskType,
-        @RequestParam(value = "workerid", required = false) String workerId,
-        @RequestParam(value = "domain", required = false) String domain,
-        @RequestParam(value = "count", defaultValue = "1") int count,
-        @RequestParam(value = "timeout", defaultValue = "100") int timeout) {
+                                @RequestParam(value = "workerid", required = false) String workerId,
+                                @RequestParam(value = "domain", required = false) String domain,
+                                @RequestParam(value = "count", defaultValue = "1") int count,
+                                @RequestParam(value = "timeout", defaultValue = "100") int timeout) {
         return taskService.batchPoll(taskType, workerId, domain, count, timeout);
     }
 
     @GetMapping("/in_progress/{tasktype}")
     @Operation(summary = "Get in progress tasks. The results are paginated.")
     public List<Task> getTasks(@PathVariable("tasktype") String taskType,
-        @RequestParam(value = "startKey", required = false) String startKey,
-        @RequestParam(value = "count", defaultValue = "100", required = false) int count) {
+                               @RequestParam(value = "startKey", required = false) String startKey,
+                               @RequestParam(value = "count", defaultValue = "100", required = false) int count) {
         return taskService.getTasks(taskType, startKey, count);
     }
 
-    @GetMapping("/in_progress/{workflowId}/{taskRefName}")
+    @GetMapping(value = "/in_progress/{workflowId}/{taskRefName}")
     @Operation(summary = "Get in progress task for a given workflow id.")
-    public Task getPendingTaskForWorkflow(@PathVariable("workflowId") String workflowId,
-        @PathVariable("taskRefName") String taskReferenceName) {
-        return taskService.getPendingTaskForWorkflow(workflowId, taskReferenceName);
+    public ResponseEntity<Task> getPendingTaskForWorkflow(@PathVariable("workflowId") String workflowId,
+                                                          @PathVariable("taskRefName") String taskReferenceName) {
+        // for backwards compatibility with 2.x client which expects a 204 when no Task is found
+        return Optional.ofNullable(taskService.getPendingTaskForWorkflow(workflowId, taskReferenceName))
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
     }
 
     @PostMapping(produces = {TEXT_PLAIN_VALUE, APPLICATION_JSON_VALUE})
@@ -88,7 +94,7 @@ public class TaskResource {
     @PostMapping("/{taskId}/ack")
     @Operation(summary = "Ack Task is received")
     public String ack(@PathVariable("taskId") String taskId,
-        @RequestParam(value = "workerid", required = false) String workerId) {
+                      @RequestParam(value = "workerid", required = false) String workerId) {
         return taskService.ackTaskReceived(taskId, workerId);
     }
 
@@ -106,14 +112,15 @@ public class TaskResource {
 
     @GetMapping("/{taskId}")
     @Operation(summary = "Get task by Id")
-    public Task getTask(@PathVariable("taskId") String taskId) {
-        return taskService.getTask(taskId);
+    public ResponseEntity<Task> getTask(@PathVariable("taskId") String taskId) {
+        // for backwards compatibility with 2.x client which expects a 204 when no Task is found
+        return Optional.ofNullable(taskService.getTask(taskId)).map(ResponseEntity::ok).orElse(ResponseEntity.noContent().build());
     }
 
     @DeleteMapping("/queue/{taskType}/{taskId}")
     @Operation(summary = "Remove Task from a Task type queue")
     public void removeTaskFromQueue(@PathVariable("taskType") String taskType,
-        @PathVariable("taskId") String taskId) {
+                                    @PathVariable("taskId") String taskId) {
         taskService.removeTaskFromQueue(taskType, taskId);
     }
 
@@ -154,22 +161,22 @@ public class TaskResource {
     }
 
     @Operation(summary = "Search for tasks based in payload and other parameters",
-        description = "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
-            " If order is not specified, defaults to ASC")
+            description = "use sort options as sort=<field>:ASC|DESC e.g. sort=name&sort=workflowId:DESC." +
+                    " If order is not specified, defaults to ASC")
     @GetMapping(value = "/search", produces = APPLICATION_JSON_VALUE)
     public SearchResult<TaskSummary> search(
-        @RequestParam(value = "start", defaultValue = "0", required = false) int start,
-        @RequestParam(value = "size", defaultValue = "100", required = false) int size,
-        @RequestParam(value = "sort", required = false) String sort,
-        @RequestParam(value = "freeText", defaultValue = "*", required = false) String freeText,
-        @RequestParam(value = "query", required = false) String query) {
+            @RequestParam(value = "start", defaultValue = "0", required = false) int start,
+            @RequestParam(value = "size", defaultValue = "100", required = false) int size,
+            @RequestParam(value = "sort", required = false) String sort,
+            @RequestParam(value = "freeText", defaultValue = "*", required = false) String freeText,
+            @RequestParam(value = "query", required = false) String query) {
         return taskService.search(start, size, sort, freeText, query);
     }
 
     @Operation(summary = "Get the external uri where the task payload is to be stored")
     @GetMapping("/externalstoragelocation")
     public ExternalStorageLocation getExternalStorageLocation(@RequestParam("path") String path,
-        @RequestParam("operation") String operation, @RequestParam("payloadType") String payloadType) {
+                                                              @RequestParam("operation") String operation, @RequestParam("payloadType") String payloadType) {
         return taskService.getExternalStorageLocation(path, operation, payloadType);
     }
 }

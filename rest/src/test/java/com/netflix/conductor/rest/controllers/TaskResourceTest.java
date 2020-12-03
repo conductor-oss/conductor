@@ -21,6 +21,7 @@ import com.netflix.conductor.common.run.TaskSummary;
 import com.netflix.conductor.service.TaskService;
 import org.junit.Before;
 import org.junit.Test;
+import org.springframework.http.ResponseEntity;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -97,7 +99,9 @@ public class TaskResourceTest {
         task.setDomain("test");
         task.setStatus(Task.Status.IN_PROGRESS);
         when(mockTaskService.getPendingTaskForWorkflow(anyString(), anyString())).thenReturn(task);
-        assertEquals(task, taskResource.getPendingTaskForWorkflow("SIMPLE", "123"));
+        ResponseEntity<Task> entity = taskResource.getPendingTaskForWorkflow("SIMPLE", "123");
+        assertNotNull(entity);
+        assertEquals(task, entity.getBody());
     }
 
     @Test
@@ -138,7 +142,9 @@ public class TaskResourceTest {
         task.setDomain("test");
         task.setStatus(Task.Status.IN_PROGRESS);
         when(mockTaskService.getTask(anyString())).thenReturn(task);
-        assertEquals(task, taskResource.getTask("123"));
+        ResponseEntity<Task> entity = taskResource.getTask("123");
+        assertNotNull(entity);
+        assertEquals(task, entity.getBody());
     }
 
     @Test
