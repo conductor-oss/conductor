@@ -31,7 +31,7 @@ import redis.clients.jedis.commands.JedisCommands;
 import redis.clients.jedis.params.ZAddParams;
 
 /**
- * Proxy for the Dynomite client
+ * Proxy for the {@link JedisCommands} object.
  */
 public class JedisProxy {
 

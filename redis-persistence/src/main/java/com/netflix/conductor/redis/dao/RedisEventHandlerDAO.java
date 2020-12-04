@@ -36,8 +36,8 @@ public class RedisEventHandlerDAO extends BaseDynoDAO implements EventHandlerDAO
     private final static String EVENT_HANDLERS = "EVENT_HANDLERS";
     private final static String EVENT_HANDLERS_BY_EVENT = "EVENT_HANDLERS_BY_EVENT";
 
-    public RedisEventHandlerDAO(JedisProxy dynoClient, ObjectMapper objectMapper, RedisProperties properties) {
-        super(dynoClient, objectMapper, properties);
+    public RedisEventHandlerDAO(JedisProxy jedisProxy, ObjectMapper objectMapper, RedisProperties properties) {
+        super(jedisProxy, objectMapper, properties);
     }
 
     @Override
@@ -48,7 +48,7 @@ public class RedisEventHandlerDAO extends BaseDynoDAO implements EventHandlerDAO
                 "EventHandler with name " + eventHandler.getName() + " already exists!");
         }
         index(eventHandler);
-        dynoClient.hset(nsKey(EVENT_HANDLERS), eventHandler.getName(), toJson(eventHandler));
+        jedisProxy.hset(nsKey(EVENT_HANDLERS), eventHandler.getName(), toJson(eventHandler));
         recordRedisDaoRequests("addEventHandler");
     }
 
@@ -61,7 +61,7 @@ public class RedisEventHandlerDAO extends BaseDynoDAO implements EventHandlerDAO
                 "EventHandler with name " + eventHandler.getName() + " not found!");
         }
         index(eventHandler);
-        dynoClient.hset(nsKey(EVENT_HANDLERS), eventHandler.getName(), toJson(eventHandler));
+        jedisProxy.hset(nsKey(EVENT_HANDLERS), eventHandler.getName(), toJson(eventHandler));
         recordRedisDaoRequests("updateEventHandler");
     }
 
@@ -71,14 +71,14 @@ public class RedisEventHandlerDAO extends BaseDynoDAO implements EventHandlerDAO
         if (existing == null) {
             throw new ApplicationException(Code.NOT_FOUND, "EventHandler with name " + name + " not found!");
         }
-        dynoClient.hdel(nsKey(EVENT_HANDLERS), name);
+        jedisProxy.hdel(nsKey(EVENT_HANDLERS), name);
         recordRedisDaoRequests("removeEventHandler");
         removeIndex(existing);
     }
 
     @Override
     public List<EventHandler> getAllEventHandlers() {
-        Map<String, String> all = dynoClient.hgetAll(nsKey(EVENT_HANDLERS));
+        Map<String, String> all = jedisProxy.hgetAll(nsKey(EVENT_HANDLERS));
         List<EventHandler> handlers = new LinkedList<>();
         all.forEach((key, json) -> {
             EventHandler eventHandler = readValue(json, EventHandler.class);
@@ -91,19 +91,19 @@ public class RedisEventHandlerDAO extends BaseDynoDAO implements EventHandlerDAO
     private void index(EventHandler eventHandler) {
         String event = eventHandler.getEvent();
         String key = nsKey(EVENT_HANDLERS_BY_EVENT, event);
-        dynoClient.sadd(key, eventHandler.getName());
+        jedisProxy.sadd(key, eventHandler.getName());
     }
 
     private void removeIndex(EventHandler eventHandler) {
         String event = eventHandler.getEvent();
         String key = nsKey(EVENT_HANDLERS_BY_EVENT, event);
-        dynoClient.srem(key, eventHandler.getName());
+        jedisProxy.srem(key, eventHandler.getName());
     }
 
     @Override
     public List<EventHandler> getEventHandlersForEvent(String event, boolean activeOnly) {
         String key = nsKey(EVENT_HANDLERS_BY_EVENT, event);
-        Set<String> names = dynoClient.smembers(key);
+        Set<String> names = jedisProxy.smembers(key);
         List<EventHandler> handlers = new LinkedList<>();
         for (String name : names) {
             try {
@@ -124,7 +124,7 @@ public class RedisEventHandlerDAO extends BaseDynoDAO implements EventHandlerDAO
 
     private EventHandler getEventHandler(String name) {
         EventHandler eventHandler = null;
-        String json = dynoClient.hget(nsKey(EVENT_HANDLERS), name);
+        String json = jedisProxy.hget(nsKey(EVENT_HANDLERS), name);
         if (json != null) {
             eventHandler = readValue(json, EventHandler.class);
         }

@@ -61,8 +61,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
     private final static String EVENT_EXECUTION = "EVENT_EXECUTION";
     private final int ttlEventExecutionSeconds;
 
-    public RedisExecutionDAO(JedisProxy dynoClient, ObjectMapper objectMapper, RedisProperties properties) {
-        super(dynoClient, objectMapper, properties);
+    public RedisExecutionDAO(JedisProxy jedisProxy, ObjectMapper objectMapper, RedisProperties properties) {
+        super(jedisProxy, objectMapper, properties);
 
         ttlEventExecutionSeconds = properties.getEventExecutionPersistenceTTL();
     }
@@ -140,7 +140,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
             recordRedisDaoRequests("createTask", task.getTaskType(), task.getWorkflowType());
 
             String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
-            Long added = dynoClient
+            Long added = jedisProxy
                 .hset(nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()), taskKey, task.getTaskId());
             if (added < 1) {
                 LOGGER.debug("Task already scheduled, skipping the run " + task.getTaskId() + ", ref=" + task
@@ -158,7 +158,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
                 task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType());
 
             String inProgressTaskKey = nsKey(IN_PROGRESS_TASKS, task.getTaskDefName());
-            dynoClient.sadd(inProgressTaskKey, task.getTaskId());
+            jedisProxy.sadd(inProgressTaskKey, task.getTaskId());
             LOGGER.debug(
                 "Scheduled task added to IN_PROGRESS_TASKS with inProgressTaskKey: {}, workflowId: {}, taskId: {}, taskType: {} during createTasks",
                 inProgressTaskKey, task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType());
@@ -178,19 +178,19 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
         if (taskDefinition.isPresent() && taskDefinition.get().concurrencyLimit() > 0) {
 
             if (task.getStatus() != null && task.getStatus().equals(Status.IN_PROGRESS)) {
-                dynoClient.sadd(nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
+                jedisProxy.sadd(nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
                 LOGGER.debug(
                     "Workflow Task added to TASKS_IN_PROGRESS_STATUS with tasksInProgressKey: {}, workflowId: {}, taskId: {}, taskType: {}, taskStatus: {} during updateTask",
                     nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName(), task.getTaskId()),
                     task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType(), task.getStatus().name());
             } else {
-                dynoClient.srem(nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
+                jedisProxy.srem(nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
                 LOGGER.debug(
                     "Workflow Task removed from TASKS_IN_PROGRESS_STATUS with tasksInProgressKey: {}, workflowId: {}, taskId: {}, taskType: {}, taskStatus: {} during updateTask",
                     nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName(), task.getTaskId()),
                     task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType(), task.getStatus().name());
                 String key = nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName());
-                dynoClient.zrem(key, task.getTaskId());
+                jedisProxy.zrem(key, task.getTaskId());
                 LOGGER.debug(
                     "Workflow Task removed from TASK_LIMIT_BUCKET with taskLimitBucketKey: {}, workflowId: {}, taskId: {}, taskType: {}, taskStatus: {} during updateTask",
                     key, task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType(), task.getStatus().name());
@@ -203,19 +203,19 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
             .orElse("n/a"), task.getWorkflowType());
 
         recordRedisDaoRequests("updateTask", task.getTaskType(), task.getWorkflowType());
-        dynoClient.set(nsKey(TASK, task.getTaskId()), payload);
+        jedisProxy.set(nsKey(TASK, task.getTaskId()), payload);
         LOGGER.debug(
             "Workflow task payload saved to TASK with taskKey: {}, workflowId: {}, taskId: {}, taskType: {} during updateTask",
             nsKey(TASK, task.getTaskId()), task.getWorkflowInstanceId(), task.getTaskId(), task.getTaskType());
         if (task.getStatus() != null && task.getStatus().isTerminal()) {
-            dynoClient.srem(nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getTaskId());
+            jedisProxy.srem(nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getTaskId());
             LOGGER.debug(
                 "Workflow Task removed from TASKS_IN_PROGRESS_STATUS with tasksInProgressKey: {}, workflowId: {}, taskId: {}, taskType: {}, taskStatus: {} during updateTask",
                 nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getWorkflowInstanceId(), task.getTaskId(),
                 task.getTaskType(), task.getStatus().name());
         }
 
-        Set<String> taskIds = dynoClient.smembers(nsKey(WORKFLOW_TO_TASKS, task.getWorkflowInstanceId()));
+        Set<String> taskIds = jedisProxy.smembers(nsKey(WORKFLOW_TO_TASKS, task.getWorkflowInstanceId()));
         if (!taskIds.contains(task.getTaskId())) {
             correlateTaskToWorkflowInDS(task.getTaskId(), task.getWorkflowInstanceId());
         }
@@ -243,10 +243,10 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
         String rateLimitKey = nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName());
         double score = System.currentTimeMillis();
         String taskId = task.getTaskId();
-        dynoClient.zaddnx(rateLimitKey, score, taskId);
+        jedisProxy.zaddnx(rateLimitKey, score, taskId);
         recordRedisDaoRequests("checkTaskRateLimiting", task.getTaskType(), task.getWorkflowType());
 
-        Set<String> ids = dynoClient.zrangeByScore(rateLimitKey, 0, score + 1, limit);
+        Set<String> ids = jedisProxy.zrangeByScore(rateLimitKey, 0, score + 1, limit);
         boolean rateLimited = !ids.contains(taskId);
         if (rateLimited) {
             LOGGER.info("Task execution count limited. task - {}:{}, limit: {}, current: {}", task.getTaskId(),
@@ -254,8 +254,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
             String inProgressKey = nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName());
             //Cleanup any items that are still present in the rate limit bucket but not in progress anymore!
             ids.stream()
-                .filter(id -> !dynoClient.sismember(inProgressKey, id))
-                .forEach(id2 -> dynoClient.zrem(rateLimitKey, id2));
+                .filter(id -> !jedisProxy.sismember(inProgressKey, id))
+                .forEach(id2 -> jedisProxy.zrem(rateLimitKey, id2));
             Monitors.recordTaskRateLimited(task.getTaskDefName(), limit);
         }
         return rateLimited;
@@ -264,11 +264,11 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
     private void removeTaskMappings(Task task) {
         String taskKey = task.getReferenceTaskName() + "" + task.getRetryCount();
 
-        dynoClient.hdel(nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()), taskKey);
-        dynoClient.srem(nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getTaskId());
-        dynoClient.srem(nsKey(WORKFLOW_TO_TASKS, task.getWorkflowInstanceId()), task.getTaskId());
-        dynoClient.srem(nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
-        dynoClient.zrem(nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName()), task.getTaskId());
+        jedisProxy.hdel(nsKey(SCHEDULED_TASKS, task.getWorkflowInstanceId()), taskKey);
+        jedisProxy.srem(nsKey(IN_PROGRESS_TASKS, task.getTaskDefName()), task.getTaskId());
+        jedisProxy.srem(nsKey(WORKFLOW_TO_TASKS, task.getWorkflowInstanceId()), task.getTaskId());
+        jedisProxy.srem(nsKey(TASKS_IN_PROGRESS_STATUS, task.getTaskDefName()), task.getTaskId());
+        jedisProxy.zrem(nsKey(TASK_LIMIT_BUCKET, task.getTaskDefName()), task.getTaskId());
     }
 
     @Override
@@ -280,7 +280,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
         }
         removeTaskMappings(task);
 
-        dynoClient.del(nsKey(TASK, task.getTaskId()));
+        jedisProxy.del(nsKey(TASK, task.getTaskId()));
         recordRedisDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
         return true;
     }
@@ -293,7 +293,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
         }
         removeTaskMappings(task);
 
-        dynoClient.expire(nsKey(TASK, task.getTaskId()), ttlSeconds);
+        jedisProxy.expire(nsKey(TASK, task.getTaskId()), ttlSeconds);
         recordRedisDaoRequests("removeTask", task.getTaskType(), task.getWorkflowType());
         return true;
     }
@@ -301,7 +301,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
     @Override
     public Task getTask(String taskId) {
         Preconditions.checkNotNull(taskId, "taskId cannot be null");
-        return Optional.ofNullable(dynoClient.get(nsKey(TASK, taskId)))
+        return Optional.ofNullable(jedisProxy.get(nsKey(TASK, taskId)))
             .map(json -> {
                 Task task = readValue(json, Task.class);
                 recordRedisDaoRequests("getTask", task.getTaskType(), task.getWorkflowType());
@@ -315,7 +315,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
     public List<Task> getTasks(List<String> taskIds) {
         return taskIds.stream()
             .map(taskId -> nsKey(TASK, taskId))
-            .map(dynoClient::get)
+            .map(jedisProxy::get)
             .filter(Objects::nonNull)
             .map(jsonString -> {
                 Task task = readValue(jsonString, Task.class);
@@ -329,7 +329,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
     @Override
     public List<Task> getTasksForWorkflow(String workflowId) {
         Preconditions.checkNotNull(workflowId, "workflowId cannot be null");
-        Set<String> taskIds = dynoClient.smembers(nsKey(WORKFLOW_TO_TASKS, workflowId));
+        Set<String> taskIds = jedisProxy.smembers(nsKey(WORKFLOW_TO_TASKS, workflowId));
         recordRedisDaoRequests("getTasksForWorkflow");
         return getTasks(new ArrayList<>(taskIds));
     }
@@ -337,7 +337,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
     @Override
     public List<Task> getPendingTasksForTaskType(String taskName) {
         Preconditions.checkNotNull(taskName, "task name cannot be null");
-        Set<String> taskIds = dynoClient.smembers(nsKey(IN_PROGRESS_TASKS, taskName));
+        Set<String> taskIds = jedisProxy.smembers(nsKey(IN_PROGRESS_TASKS, taskName));
         recordRedisDaoRequests("getPendingTasksForTaskType");
         return getTasks(new ArrayList<>(taskIds));
     }
@@ -361,12 +361,12 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
             // Remove from lists
             String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, workflow.getWorkflowName(),
                 dateStr(workflow.getCreateTime()));
-            dynoClient.srem(key, workflowId);
-            dynoClient.srem(nsKey(CORR_ID_TO_WORKFLOWS, workflow.getCorrelationId()), workflowId);
-            dynoClient.srem(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflowId);
+            jedisProxy.srem(key, workflowId);
+            jedisProxy.srem(nsKey(CORR_ID_TO_WORKFLOWS, workflow.getCorrelationId()), workflowId);
+            jedisProxy.srem(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflowId);
 
             // Remove the object
-            dynoClient.del(nsKey(WORKFLOW, workflowId));
+            jedisProxy.del(nsKey(WORKFLOW, workflowId));
             for (Task task : workflow.getTasks()) {
                 removeTask(task.getTaskId());
             }
@@ -383,12 +383,12 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
             // Remove from lists
             String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, workflow.getWorkflowName(),
                 dateStr(workflow.getCreateTime()));
-            dynoClient.srem(key, workflowId);
-            dynoClient.srem(nsKey(CORR_ID_TO_WORKFLOWS, workflow.getCorrelationId()), workflowId);
-            dynoClient.srem(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflowId);
+            jedisProxy.srem(key, workflowId);
+            jedisProxy.srem(nsKey(CORR_ID_TO_WORKFLOWS, workflow.getCorrelationId()), workflowId);
+            jedisProxy.srem(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflowId);
 
             // Remove the object
-            dynoClient.expire(nsKey(WORKFLOW, workflowId), ttlSeconds);
+            jedisProxy.expire(nsKey(WORKFLOW, workflowId), ttlSeconds);
             for (Task task : workflow.getTasks()) {
                 removeTaskWithExpiry(task.getTaskId(), ttlSeconds);
             }
@@ -400,8 +400,8 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
     @Override
     public void removeFromPendingWorkflow(String workflowType, String workflowId) {
         recordRedisDaoRequests("removePendingWorkflow");
-        dynoClient.del(nsKey(SCHEDULED_TASKS, workflowId));
-        dynoClient.srem(nsKey(PENDING_WORKFLOWS, workflowType), workflowId);
+        jedisProxy.del(nsKey(SCHEDULED_TASKS, workflowId));
+        jedisProxy.srem(nsKey(PENDING_WORKFLOWS, workflowType), workflowId);
     }
 
     @Override
@@ -411,7 +411,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
     @Override
     public Workflow getWorkflow(String workflowId, boolean includeTasks) {
-        String json = dynoClient.get(nsKey(WORKFLOW, workflowId));
+        String json = jedisProxy.get(nsKey(WORKFLOW, workflowId));
         Workflow workflow = null;
 
         if (json != null) {
@@ -438,7 +438,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
         Preconditions.checkNotNull(workflowName, "workflowName cannot be null");
         List<String> workflowIds;
         recordRedisDaoRequests("getRunningWorkflowsByName");
-        Set<String> pendingWorkflows = dynoClient.smembers(nsKey(PENDING_WORKFLOWS, workflowName));
+        Set<String> pendingWorkflows = jedisProxy.smembers(nsKey(PENDING_WORKFLOWS, workflowName));
         workflowIds = new LinkedList<>(pendingWorkflows);
         return workflowIds;
     }
@@ -470,7 +470,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
         List<String> dateStrs = dateStrBetweenDates(startTime, endTime);
         dateStrs.forEach(dateStr -> {
             String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, workflowName, dateStr);
-            dynoClient.smembers(key).forEach(workflowId -> {
+            jedisProxy.smembers(key).forEach(workflowId -> {
                 try {
                     Workflow workflow = getWorkflow(workflowId);
                     if (workflow.getCreateTime() >= startTime && workflow.getCreateTime() <= endTime) {
@@ -512,24 +512,24 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
         String payload = toJson(workflow);
         // Store the workflow object
-        dynoClient.set(nsKey(WORKFLOW, workflow.getWorkflowId()), payload);
+        jedisProxy.set(nsKey(WORKFLOW, workflow.getWorkflowId()), payload);
         recordRedisDaoRequests("storeWorkflow", "n/a", workflow.getWorkflowName());
         recordRedisDaoPayloadSize("storeWorkflow", payload.length(), "n/a", workflow.getWorkflowName());
         if (!update) {
             // Add to list of workflows for a workflowdef
             String key = nsKey(WORKFLOW_DEF_TO_WORKFLOWS, workflow.getWorkflowName(),
                 dateStr(workflow.getCreateTime()));
-            dynoClient.sadd(key, workflow.getWorkflowId());
+            jedisProxy.sadd(key, workflow.getWorkflowId());
             if (workflow.getCorrelationId() != null) {
                 // Add to list of workflows for a correlationId
-                dynoClient.sadd(nsKey(CORR_ID_TO_WORKFLOWS, workflow.getCorrelationId()), workflow.getWorkflowId());
+                jedisProxy.sadd(nsKey(CORR_ID_TO_WORKFLOWS, workflow.getCorrelationId()), workflow.getWorkflowId());
             }
         }
         // Add or remove from the pending workflows
         if (workflow.getStatus().isTerminal()) {
-            dynoClient.srem(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflow.getWorkflowId());
+            jedisProxy.srem(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflow.getWorkflowId());
         } else {
-            dynoClient.sadd(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflow.getWorkflowId());
+            jedisProxy.sadd(nsKey(PENDING_WORKFLOWS, workflow.getWorkflowName()), workflow.getWorkflowId());
         }
 
         workflow.setTasks(tasks);
@@ -545,7 +545,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
     @VisibleForTesting
     void correlateTaskToWorkflowInDS(String taskId, String workflowInstanceId) {
         String workflowToTaskKey = nsKey(WORKFLOW_TO_TASKS, workflowInstanceId);
-        dynoClient.sadd(workflowToTaskKey, taskId);
+        jedisProxy.sadd(workflowToTaskKey, taskId);
         LOGGER.debug("Task mapped in WORKFLOW_TO_TASKS with workflowToTaskKey: {}, workflowId: {}, taskId: {}",
             workflowToTaskKey, workflowInstanceId, taskId);
     }
@@ -553,14 +553,14 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
     public long getPendingWorkflowCount(String workflowName) {
         String key = nsKey(PENDING_WORKFLOWS, workflowName);
         recordRedisDaoRequests("getPendingWorkflowCount");
-        return dynoClient.scard(key);
+        return jedisProxy.scard(key);
     }
 
     @Override
     public long getInProgressTaskCount(String taskDefName) {
         String inProgressKey = nsKey(TASKS_IN_PROGRESS_STATUS, taskDefName);
         recordRedisDaoRequests("getInProgressTaskCount");
-        return dynoClient.scard(inProgressKey);
+        return jedisProxy.scard(inProgressKey);
     }
 
     @Override
@@ -571,10 +571,10 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
             String json = objectMapper.writeValueAsString(eventExecution);
             recordRedisDaoEventRequests("addEventExecution", eventExecution.getEvent());
             recordRedisDaoPayloadSize("addEventExecution", json.length(), eventExecution.getEvent(), "n/a");
-            boolean added = dynoClient.hsetnx(key, eventExecution.getId(), json) == 1L;
+            boolean added = jedisProxy.hsetnx(key, eventExecution.getId(), json) == 1L;
 
             if (ttlEventExecutionSeconds > 0) {
-                dynoClient.expire(key, ttlEventExecutionSeconds);
+                jedisProxy.expire(key, ttlEventExecutionSeconds);
             }
 
             return added;
@@ -592,7 +592,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
                 eventExecution.getMessageId());
             String json = objectMapper.writeValueAsString(eventExecution);
             LOGGER.info("updating event execution {}", key);
-            dynoClient.hset(key, eventExecution.getId(), json);
+            jedisProxy.hset(key, eventExecution.getId(), json);
             recordRedisDaoEventRequests("updateEventExecution", eventExecution.getEvent());
             recordRedisDaoPayloadSize("updateEventExecution", json.length(), eventExecution.getEvent(), "n/a");
         } catch (Exception e) {
@@ -607,7 +607,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
             String key = nsKey(EVENT_EXECUTION, eventExecution.getName(), eventExecution.getEvent(),
                 eventExecution.getMessageId());
             LOGGER.info("removing event execution {}", key);
-            dynoClient.hdel(key, eventExecution.getId());
+            jedisProxy.hdel(key, eventExecution.getId());
             recordRedisDaoEventRequests("removeEventExecution", eventExecution.getEvent());
         } catch (Exception e) {
             throw new ApplicationException(Code.BACKEND_ERROR,
@@ -623,7 +623,7 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
             List<EventExecution> executions = new LinkedList<>();
             for (int i = 0; i < max; i++) {
                 String field = messageId + "_" + i;
-                String value = dynoClient.hget(key, field);
+                String value = jedisProxy.hget(key, field);
                 if (value == null) {
                     break;
                 }

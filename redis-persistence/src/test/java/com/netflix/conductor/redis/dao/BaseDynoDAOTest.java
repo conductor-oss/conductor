@@ -26,7 +26,7 @@ import static org.mockito.Mockito.when;
 public class BaseDynoDAOTest {
 
     @Mock
-    private JedisProxy dynoClient;
+    private JedisProxy jedisProxy;
 
     @Mock
     private ObjectMapper objectMapper;
@@ -38,7 +38,7 @@ public class BaseDynoDAOTest {
     @Before
     public void setUp() {
         properties = mock(RedisProperties.class);
-        this.baseDynoDAO = new BaseDynoDAO(dynoClient, objectMapper, properties);
+        this.baseDynoDAO = new BaseDynoDAO(jedisProxy, objectMapper, properties);
     }
 
     @Test

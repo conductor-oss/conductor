@@ -27,11 +27,11 @@ public class BaseDynoDAO {
     private static final String DAO_NAME = "redis";
     private final String domain;
     private final RedisProperties properties;
-    protected JedisProxy dynoClient;
+    protected JedisProxy jedisProxy;
     protected ObjectMapper objectMapper;
 
-    protected BaseDynoDAO(JedisProxy dynoClient, ObjectMapper objectMapper, RedisProperties properties) {
-        this.dynoClient = dynoClient;
+    protected BaseDynoDAO(JedisProxy jedisProxy, ObjectMapper objectMapper, RedisProperties properties) {
+        this.jedisProxy = jedisProxy;
         this.objectMapper = objectMapper;
         this.properties = properties;
         this.domain = properties.getDomain();
@@ -57,7 +57,7 @@ public class BaseDynoDAO {
     }
 
     public JedisProxy getDyno() {
-        return dynoClient;
+        return jedisProxy;
     }
 
     String toJson(Object value) {

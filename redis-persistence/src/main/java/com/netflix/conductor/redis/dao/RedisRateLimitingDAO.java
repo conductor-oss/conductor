@@ -32,8 +32,8 @@ public class RedisRateLimitingDAO extends BaseDynoDAO implements RateLimitingDAO
 
     private static final String TASK_RATE_LIMIT_BUCKET = "TASK_RATE_LIMIT_BUCKET";
 
-    public RedisRateLimitingDAO(JedisProxy dynoClient, ObjectMapper objectMapper, RedisProperties properties) {
-        super(dynoClient, objectMapper, properties);
+    public RedisRateLimitingDAO(JedisProxy jedisProxy, ObjectMapper objectMapper, RedisProperties properties) {
+        super(jedisProxy, objectMapper, properties);
     }
 
     /**
@@ -77,14 +77,14 @@ public class RedisRateLimitingDAO extends BaseDynoDAO implements RateLimitingDAO
             long currentTimeEpochMillis = System.currentTimeMillis();
             long currentTimeEpochMinusRateLimitBucket = currentTimeEpochMillis - (rateLimitFrequencyInSeconds * 1000);
             String key = nsKey(TASK_RATE_LIMIT_BUCKET, task.getTaskDefName());
-            dynoClient.zremrangeByScore(key, "-inf", String.valueOf(currentTimeEpochMinusRateLimitBucket));
+            jedisProxy.zremrangeByScore(key, "-inf", String.valueOf(currentTimeEpochMinusRateLimitBucket));
             int currentBucketCount = Math.toIntExact(
-                dynoClient.zcount(key,
+                jedisProxy.zcount(key,
                     currentTimeEpochMinusRateLimitBucket,
                     currentTimeEpochMillis));
             if (currentBucketCount < rateLimitPerFrequency) {
-                dynoClient.zadd(key, currentTimeEpochMillis, String.valueOf(currentTimeEpochMillis));
-                dynoClient.expire(key, rateLimitFrequencyInSeconds);
+                jedisProxy.zadd(key, currentTimeEpochMillis, String.valueOf(currentTimeEpochMillis));
+                jedisProxy.expire(key, rateLimitFrequencyInSeconds);
                 LOGGER.info(
                     "TaskId: {} with TaskDefinition of: {} has rateLimitPerFrequency: {} and rateLimitFrequencyInSeconds: {} within the rate limit with current count {}",
                     task.getTaskId(), task.getTaskDefName(), rateLimitPerFrequency, rateLimitFrequencyInSeconds,

@@ -12,9 +12,6 @@
  */
 package com.netflix.conductor.redis.config.redissentinel;
 
-import static com.netflix.conductor.redis.config.utils.RedisQueuesProvider.DEFAULT_CLIENT_INJECTION_NAME;
-import static com.netflix.conductor.redis.config.utils.RedisQueuesProvider.READ_CLIENT_INJECTION_NAME;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.dao.EventHandlerDAO;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -46,6 +43,9 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.commands.JedisCommands;
+
+import static com.netflix.conductor.redis.config.utils.RedisQueuesProvider.DEFAULT_CLIENT_INJECTION_NAME;
+import static com.netflix.conductor.redis.config.utils.RedisQueuesProvider.READ_CLIENT_INJECTION_NAME;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)
@@ -88,10 +88,10 @@ public class RedisSentinelConfiguration {
     }
 
     @Bean
-    public RedisQueues redisQueues(@Qualifier(DEFAULT_CLIENT_INJECTION_NAME) JedisCommands dynoClient,
-        @Qualifier(READ_CLIENT_INJECTION_NAME) JedisCommands dynoClientRead,
+    public RedisQueues redisQueues(@Qualifier(DEFAULT_CLIENT_INJECTION_NAME) JedisCommands jedisCommands,
+        @Qualifier(READ_CLIENT_INJECTION_NAME) JedisCommands jedisCommandsRead,
         ShardSupplier shardSupplier, RedisProperties properties, ShardingStrategy shardingStrategy) {
-        return new RedisQueuesProvider(dynoClient, dynoClientRead, shardSupplier, properties, shardingStrategy).get();
+        return new RedisQueuesProvider(jedisCommands, jedisCommandsRead, shardSupplier, properties, shardingStrategy).get();
     }
 
     @Bean

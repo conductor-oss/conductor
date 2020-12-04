@@ -28,8 +28,8 @@ public class RedisPollDataDAO extends BaseDynoDAO implements PollDataDAO {
 
     private final static String POLL_DATA = "POLL_DATA";
 
-    public RedisPollDataDAO(JedisProxy dynoClient, ObjectMapper objectMapper, RedisProperties properties) {
-        super(dynoClient, objectMapper, properties);
+    public RedisPollDataDAO(JedisProxy jedisProxy, ObjectMapper objectMapper, RedisProperties properties) {
+        super(jedisProxy, objectMapper, properties);
     }
 
     @Override
@@ -43,7 +43,7 @@ public class RedisPollDataDAO extends BaseDynoDAO implements PollDataDAO {
         String payload = toJson(pollData);
         recordRedisDaoRequests("updatePollData");
         recordRedisDaoPayloadSize("updatePollData", payload.length(), "n/a", "n/a");
-        dynoClient.hset(key, field, payload);
+        jedisProxy.hset(key, field, payload);
     }
 
     @Override
@@ -53,7 +53,7 @@ public class RedisPollDataDAO extends BaseDynoDAO implements PollDataDAO {
         String key = nsKey(POLL_DATA, taskDefName);
         String field = (domain == null) ? "DEFAULT" : domain;
 
-        String pollDataJsonString = dynoClient.hget(key, field);
+        String pollDataJsonString = jedisProxy.hget(key, field);
         recordRedisDaoRequests("getPollData");
         recordRedisDaoPayloadSize("getPollData", StringUtils.length(pollDataJsonString), "n/a", "n/a");
 
@@ -70,7 +70,7 @@ public class RedisPollDataDAO extends BaseDynoDAO implements PollDataDAO {
 
         String key = nsKey(POLL_DATA, taskDefName);
 
-        Map<String, String> pMapdata = dynoClient.hgetAll(key);
+        Map<String, String> pMapdata = jedisProxy.hgetAll(key);
         List<PollData> pollData = new ArrayList<>();
         if (pMapdata != null) {
             pMapdata.values().forEach(pollDataJsonString -> {

@@ -26,24 +26,24 @@ public class RedisQueuesProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisQueuesProvider.class);
 
-    private final JedisCommands dynoClient;
-    private final JedisCommands dynoClientRead;
+    private final JedisCommands jedisCommands;
+    private final JedisCommands jedisCommandsRead;
     private final ShardSupplier shardSupplier;
     private final RedisProperties properties;
     private final ShardingStrategy shardingStrategy;
 
-    public RedisQueuesProvider(JedisCommands dynoClient, JedisCommands dynoClientRead, ShardSupplier shardSupplier,
-        RedisProperties properties, ShardingStrategy shardingStrategy
+    public RedisQueuesProvider(JedisCommands jedisCommands, JedisCommands jedisCommandsRead, ShardSupplier shardSupplier,
+                               RedisProperties properties, ShardingStrategy shardingStrategy
     ) {
-        this.dynoClient = dynoClient;
-        this.dynoClientRead = dynoClientRead;
+        this.jedisCommands = jedisCommands;
+        this.jedisCommandsRead = jedisCommandsRead;
         this.shardSupplier = shardSupplier;
         this.properties = properties;
         this.shardingStrategy = shardingStrategy;
     }
 
     public RedisQueues get() {
-        RedisQueues queues = new RedisQueues(dynoClient, dynoClientRead, properties.getQueuePrefix(), shardSupplier,
+        RedisQueues queues = new RedisQueues(jedisCommands, jedisCommandsRead, properties.getQueuePrefix(), shardSupplier,
             60_000, 60_000, shardingStrategy);
         LOGGER.info("DynoQueueDAO initialized with prefix " + properties.getQueuePrefix() + "!");
         return queues;
