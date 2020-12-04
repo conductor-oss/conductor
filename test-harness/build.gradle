@@ -36,6 +36,7 @@ dependencies {
 
     testImplementation "com.google.protobuf:protobuf-java:${revProtoBuf}"
     testImplementation "com.google.guava:guava:${revGuava}"
+    testImplementation "org.springframework:spring-web"
 
     testImplementation "redis.clients:jedis:${revJedis}"
     testImplementation "com.netflix.dyno-queues:dyno-queues-redis:${revDynoQueues}"
@@ -79,5 +80,4 @@ test {
     testLogging {
         exceptionFormat = 'full'
     }
-    ignoreFailures = true
 }
