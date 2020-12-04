@@ -1,7 +1,7 @@
-//plugins {
-//    id 'application'
-//    id 'org.springframework.boot'
-//}
+plugins {
+    id 'application'
+    id 'org.springframework.boot'
+}
 
 dependencies {
 
@@ -19,10 +19,11 @@ dependencies {
     implementation 'org.apache.logging.log4j:log4j-web'
 }
 
-//application {
-//    mainClass = 'com.netflix.conductor.Conductor'
-//}
-//
-//bootJar {
-//    mainClassName = 'com.netflix.conductor.Conductor'
-//}
+jar {
+    enabled = true
+}
+
+bootJar {
+    mainClassName = 'com.netflix.conductor.Conductor'
+    classifier = 'boot'
+}
