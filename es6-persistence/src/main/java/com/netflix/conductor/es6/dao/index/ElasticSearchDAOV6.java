@@ -63,6 +63,7 @@ import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -206,6 +207,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     }
 
     @Override
+    @PostConstruct
     public void setup() throws Exception {
         waitForHealthyCluster();
 
