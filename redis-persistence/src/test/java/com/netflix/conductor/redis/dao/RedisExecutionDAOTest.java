@@ -19,7 +19,7 @@ import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.ExecutionDAOTest;
-import com.netflix.conductor.redis.config.utils.JedisProxy;
+import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisMock;
 import org.junit.Before;

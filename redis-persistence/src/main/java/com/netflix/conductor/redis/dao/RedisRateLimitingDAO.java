@@ -17,16 +17,19 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.metrics.Monitors;
-import com.netflix.conductor.redis.config.utils.JedisProxy;
+import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
+import com.netflix.conductor.redis.configuration.AnyRedisCondition;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
 @Component
+@Conditional(AnyRedisCondition.class)
 public class RedisRateLimitingDAO extends BaseDynoDAO implements RateLimitingDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisRateLimitingDAO.class);

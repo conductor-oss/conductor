@@ -16,7 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.dao.PollDataDAOTest;
-import com.netflix.conductor.redis.config.utils.JedisProxy;
+import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisMock;
 import org.junit.Before;

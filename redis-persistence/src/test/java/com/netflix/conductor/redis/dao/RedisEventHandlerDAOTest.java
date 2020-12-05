@@ -18,7 +18,7 @@ import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action;
 import com.netflix.conductor.common.metadata.events.EventHandler.Action.Type;
 import com.netflix.conductor.common.metadata.events.EventHandler.StartWorkflow;
-import com.netflix.conductor.redis.config.utils.JedisProxy;
+import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisMock;
 import org.junit.Before;

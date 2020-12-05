@@ -3,7 +3,7 @@ package com.netflix.conductor.redis.configuration;
 import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 
-class AnyRedisCondition extends AnyNestedCondition {
+public class AnyRedisCondition extends AnyNestedCondition {
 
     public AnyRedisCondition() {
         super(ConfigurationPhase.PARSE_CONFIGURATION);

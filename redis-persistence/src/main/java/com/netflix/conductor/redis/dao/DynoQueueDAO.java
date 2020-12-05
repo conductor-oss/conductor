@@ -13,9 +13,11 @@
 package com.netflix.conductor.redis.dao;
 
 import com.netflix.conductor.dao.QueueDAO;
+import com.netflix.conductor.redis.configuration.AnyRedisCondition;
 import com.netflix.dyno.queues.DynoQueue;
 import com.netflix.dyno.queues.Message;
 import com.netflix.dyno.queues.redis.RedisQueues;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
@@ -26,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Component
+@Conditional(AnyRedisCondition.class)
 public class DynoQueueDAO implements QueueDAO {
 
     private final RedisQueues queues;

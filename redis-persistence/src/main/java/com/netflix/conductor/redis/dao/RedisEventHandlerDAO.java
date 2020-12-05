@@ -18,10 +18,12 @@ import com.netflix.conductor.common.metadata.events.EventHandler;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.dao.EventHandlerDAO;
-import com.netflix.conductor.redis.config.utils.JedisProxy;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
+import com.netflix.conductor.redis.configuration.AnyRedisCondition;
+import com.netflix.conductor.redis.jedis.JedisProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.util.LinkedList;
@@ -30,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Component
+@Conditional(AnyRedisCondition.class)
 public class RedisEventHandlerDAO extends BaseDynoDAO implements EventHandlerDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisEventHandlerDAO.class);

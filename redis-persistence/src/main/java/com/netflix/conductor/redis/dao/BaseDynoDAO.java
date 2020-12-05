@@ -15,8 +15,8 @@ package com.netflix.conductor.redis.dao;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.metrics.Monitors;
-import com.netflix.conductor.redis.config.utils.JedisProxy;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
+import com.netflix.conductor.redis.jedis.JedisProxy;
 import org.apache.commons.lang3.StringUtils;
 
 import java.io.IOException;

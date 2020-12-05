@@ -24,10 +24,12 @@ import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.metrics.Monitors;
-import com.netflix.conductor.redis.config.utils.JedisProxy;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
+import com.netflix.conductor.redis.configuration.AnyRedisCondition;
+import com.netflix.conductor.redis.jedis.JedisProxy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
@@ -44,6 +46,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Component
+@Conditional(AnyRedisCondition.class)
 public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(RedisExecutionDAO.class);
