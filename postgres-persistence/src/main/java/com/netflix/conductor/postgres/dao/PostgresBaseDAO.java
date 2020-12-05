@@ -12,6 +12,12 @@
  */
 package com.netflix.conductor.postgres.dao;
 
+import static com.netflix.conductor.core.exception.ApplicationException.Code.BACKEND_ERROR;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.INTERNAL_ERROR;
+import static java.lang.Integer.parseInt;
+import static java.lang.System.getProperty;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,10 +29,6 @@ import com.netflix.conductor.postgres.util.LazyToString;
 import com.netflix.conductor.postgres.util.Query;
 import com.netflix.conductor.postgres.util.QueryFunction;
 import com.netflix.conductor.postgres.util.TransactionalFunction;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.sql.DataSource;
 import java.io.IOException;
 import java.sql.Connection;
 import java.sql.SQLException;
@@ -35,16 +37,14 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
-
-import static com.netflix.conductor.core.exception.ApplicationException.Code.BACKEND_ERROR;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.INTERNAL_ERROR;
-import static java.lang.Integer.parseInt;
-import static java.lang.System.getProperty;
+import javax.sql.DataSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public abstract class PostgresBaseDAO {
 
     private static final String ER_LOCK_DEADLOCK = "40P01";
+    private static final String ER_SERIALIZATION_FAILURE = "40001";
     private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_NAME = "conductor.postgres.deadlock.retry.max";
     private static final String MAX_RETRY_ON_DEADLOCK_PROPERTY_DEFAULT_VALUE = "3";
     private static final int MAX_RETRY_ON_DEADLOCK = getMaxRetriesOnDeadLock();
@@ -125,6 +125,9 @@ public abstract class PostgresBaseDAO {
                 return result;
             } catch (Throwable th) {
                 tx.rollback();
+                if (th instanceof ApplicationException) {
+                    throw th;
+                }
                 throw new ApplicationException(BACKEND_ERROR, th.getMessage(), th);
             } finally {
                 tx.setAutoCommit(previousAutoCommitMode);
@@ -255,7 +258,8 @@ public abstract class PostgresBaseDAO {
         if (sqlException == null) {
             return false;
         }
-        return ER_LOCK_DEADLOCK.equals(sqlException.getSQLState());
+        return ER_LOCK_DEADLOCK.equals(sqlException.getSQLState())
+            || ER_SERIALIZATION_FAILURE.equals(sqlException.getSQLState());
     }
 
     private SQLException findCauseSQLException(Throwable throwable) {

@@ -12,6 +12,15 @@
  */
 package com.netflix.conductor.postgres.dao;
 
+import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.NOT_FOUND;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -19,28 +28,23 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.postgres.util.PostgresDAOTestUtil;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TestName;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -55,10 +59,14 @@ public class PostgresMetadataDAOTest {
     @Rule
     public TestName name = new TestName();
 
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
     @Before
     public void setup() {
         testUtil = new PostgresDAOTestUtil(objectMapper, name.getMethodName().toLowerCase());
-        metadataDAO = new PostgresMetadataDAO(testUtil.getObjectMapper(), testUtil.getDataSource(), testUtil.getTestProperties());
+        metadataDAO = new PostgresMetadataDAO(testUtil.getObjectMapper(), testUtil.getDataSource(),
+            testUtil.getTestProperties());
     }
 
     @After
@@ -67,14 +75,27 @@ public class PostgresMetadataDAOTest {
         testUtil.getDataSource().close();
     }
 
-    @Test(expected= ApplicationException.class)
-    public void testDuplicate() {
+    @Test
+    public void testDuplicateWorkflowDef() {
+        expectedException.expect(ApplicationException.class);
+        expectedException.expectMessage("Workflow with testDuplicate.1 already exists!");
+        expectedException.expect(hasProperty("code", is(CONFLICT)));
+
         WorkflowDef def = new WorkflowDef();
         def.setName("testDuplicate");
         def.setVersion(1);
 
         metadataDAO.createWorkflowDef(def);
         metadataDAO.createWorkflowDef(def);
+    }
+
+    @Test
+    public void testRemoveNotExistingWorkflowDef() {
+        expectedException.expect(ApplicationException.class);
+        expectedException.expectMessage("No such workflow definition: test version: 1");
+        expectedException.expect(hasProperty("code", is(NOT_FOUND)));
+
+        metadataDAO.removeWorkflowDef("test", 1);
     }
 
     @Test
@@ -168,8 +189,8 @@ public class PostgresMetadataDAOTest {
         def.setDescription("description");
         def.setCreatedBy("unit_test");
         def.setCreateTime(1L);
-        def.setInputKeys(Arrays.asList("a","b","c"));
-        def.setOutputKeys(Arrays.asList("01","o2"));
+        def.setInputKeys(Arrays.asList("a", "b", "c"));
+        def.setOutputKeys(Arrays.asList("01", "o2"));
         def.setOwnerApp("ownerApp");
         def.setRetryCount(3);
         def.setRetryDelaySeconds(100);
@@ -189,7 +210,7 @@ public class PostgresMetadataDAOTest {
         assertTrue(EqualsBuilder.reflectionEquals(def, found));
         assertEquals("updated description", found.getDescription());
 
-        for(int i = 0; i < 9; i++) {
+        for (int i = 0; i < 9; i++) {
             TaskDef tdf = new TaskDef("taskA" + i);
             metadataDAO.createTaskDef(tdf);
         }
@@ -202,11 +223,11 @@ public class PostgresMetadataDAOTest {
         List<String> sorted = allnames.stream().sorted().collect(Collectors.toList());
         assertEquals(def.getName(), sorted.get(0));
 
-        for(int i = 0; i < 9; i++) {
-            assertEquals(def.getName() + i, sorted.get(i+1));
+        for (int i = 0; i < 9; i++) {
+            assertEquals(def.getName() + i, sorted.get(i + 1));
         }
 
-        for(int i = 0; i < 9; i++) {
+        for (int i = 0; i < 9; i++) {
             metadataDAO.removeTaskDef(def.getName() + i);
         }
         all = metadataDAO.getAllTaskDefs();
@@ -215,8 +236,12 @@ public class PostgresMetadataDAOTest {
         assertEquals(def.getName(), all.get(0).getName());
     }
 
-    @Test(expected=ApplicationException.class)
-    public void testRemoveTaskDef() throws Exception {
+    @Test
+    public void testRemoveNotExistingTaskDef() {
+        expectedException.expect(ApplicationException.class);
+        expectedException.expectMessage("No such task definition");
+        expectedException.expect(hasProperty("code", is(NOT_FOUND)));
+
         metadataDAO.removeTaskDef("test" + UUID.randomUUID().toString());
     }
 
@@ -244,7 +269,7 @@ public class PostgresMetadataDAOTest {
 
         List<EventHandler> byEvents = metadataDAO.getEventHandlersForEvent(event1, true);
         assertNotNull(byEvents);
-        assertEquals(0, byEvents.size());		//event is marked as in-active
+        assertEquals(0, byEvents.size());        //event is marked as in-active
 
         eventHandler.setActive(true);
         eventHandler.setEvent(event2);

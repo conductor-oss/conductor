@@ -27,6 +27,7 @@ dependencies {
     implementation "com.zaxxer:HikariCP"
     implementation "org.flywaydb:flyway-core"
 
+    testImplementation "org.testinfected.hamcrest-matchers:all-matchers:${revHamcrestAllMatchers}"
     testImplementation project(':conductor-core').sourceSets.test.output
 }
 

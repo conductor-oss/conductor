@@ -12,6 +12,19 @@
  */
 package com.netflix.conductor.core.execution;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
@@ -46,16 +59,6 @@ import com.netflix.spectator.api.Counter;
 import com.netflix.spectator.api.DefaultRegistry;
 import com.netflix.spectator.api.Registry;
 import com.netflix.spectator.api.Spectator;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -70,19 +73,15 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -1006,6 +1005,27 @@ public class TestDeciderService {
         assertEquals("taskValue", workflow.getOutput().get("taskKey"));
     }
 
+    // when workflow definition has outputParameters defined
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    @Test
+    public void testUpdateWorkflowOutput_WhenDefinitionHasOutputParameters() {
+        Workflow workflow = new Workflow();
+        WorkflowDef workflowDef = new WorkflowDef();
+        workflowDef.setOutputParameters(new HashMap() {{
+            put("workflowKey", "workflowValue");
+        }});
+        workflow.setWorkflowDefinition(workflowDef);
+        Task task = new Task();
+        task.setReferenceTaskName("test_task");
+        task.setOutputData(new HashMap() {{
+            put("taskKey", "taskValue");
+        }});
+        workflow.getTasks().add(task);
+        deciderService.updateWorkflowOutput(workflow, null);
+        assertNotNull(workflow.getOutput());
+        assertEquals("workflowValue", workflow.getOutput().get("workflowKey"));
+    }
+
     @Test
     public void testCheckWorkflowTimeout() {
         Counter counter = registry.counter("workflow_failure", "class", "WorkflowMonitor", "workflowName", "test",
@@ -1275,4 +1295,3 @@ public class TestDeciderService {
         return workflowDef;
     }
 }
-

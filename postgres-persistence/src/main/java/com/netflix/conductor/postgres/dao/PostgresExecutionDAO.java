@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.postgres.dao;
 
+import static com.netflix.conductor.core.exception.ApplicationException.Code.BACKEND_ERROR;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
@@ -27,8 +29,6 @@ import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.postgres.util.Query;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.sql.Date;
 import java.sql.SQLException;
@@ -39,8 +39,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static com.netflix.conductor.core.exception.ApplicationException.Code.BACKEND_ERROR;
+import javax.sql.DataSource;
 
 public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDAO, RateLimitingDAO, PollDataDAO {
 
@@ -65,7 +64,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
     public List<Task> getPendingTasksByWorkflow(String taskDefName, String workflowId) {
         // @formatter:off
         String GET_IN_PROGRESS_TASKS_FOR_WORKFLOW = "SELECT json_data FROM task_in_progress tip "
-            + "INNER JOIN task t ON t.task_id = tip.task_id " + "WHERE task_def_name = ? AND workflow_id = ?";
+            + "INNER JOIN task t ON t.task_id = tip.task_id " + "WHERE task_def_name = ? AND workflow_id = ? FOR SHARE";
         // @formatter:on
 
         return queryWithTransaction(GET_IN_PROGRESS_TASKS_FOR_WORKFLOW,
@@ -106,8 +105,8 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
     public List<Task> createTasks(List<Task> tasks) {
         List<Task> created = Lists.newArrayListWithCapacity(tasks.size());
 
-        withTransaction(connection -> {
-            for (Task task : tasks) {
+        for (Task task : tasks) {
+            withTransaction(connection -> {
                 validate(task);
 
                 task.setScheduledTime(System.currentTimeMillis());
@@ -119,7 +118,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
                 if (!scheduledTaskAdded) {
                     logger.trace("Task already scheduled, skipping the run " + task.getTaskId() + ", ref="
                         + task.getReferenceTaskName() + ", key=" + taskKey);
-                    continue;
+                    return;
                 }
 
                 insertOrUpdateTaskData(connection, task);
@@ -128,8 +127,8 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
                 updateTask(connection, task);
 
                 created.add(task);
-            }
-        });
+            });
+        }
 
         return created;
     }
@@ -229,7 +228,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
         Preconditions.checkNotNull(taskName, "task name cannot be null");
         // @formatter:off
         String GET_IN_PROGRESS_TASKS_FOR_TYPE = "SELECT json_data FROM task_in_progress tip "
-            + "INNER JOIN task t ON t.task_id = tip.task_id " + "WHERE task_def_name = ?";
+            + "INNER JOIN task t ON t.task_id = tip.task_id " + "WHERE task_def_name = ? FOR UPDATE SKIP LOCKED";
         // @formatter:on
 
         return queryWithTransaction(GET_IN_PROGRESS_TASKS_FOR_TYPE,
@@ -238,7 +237,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
 
     @Override
     public List<Task> getTasksForWorkflow(String workflowId) {
-        String GET_TASKS_FOR_WORKFLOW = "SELECT task_id FROM workflow_to_task WHERE workflow_id = ?";
+        String GET_TASKS_FOR_WORKFLOW = "SELECT task_id FROM workflow_to_task WHERE workflow_id = ? FOR SHARE";
         return getWithRetriedTransactions(tx -> query(tx, GET_TASKS_FOR_WORKFLOW, q -> {
             List<String> taskIds = q.addParameter(workflowId).executeScalarList(String.class);
             return getTasks(tx, taskIds);
@@ -318,7 +317,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
     @Override
     public List<String> getRunningWorkflowIds(String workflowName, int version) {
         Preconditions.checkNotNull(workflowName, "workflowName cannot be null");
-        String GET_PENDING_WORKFLOW_IDS = "SELECT workflow_id FROM workflow_pending WHERE workflow_type = ?";
+        String GET_PENDING_WORKFLOW_IDS = "SELECT workflow_id FROM workflow_pending WHERE workflow_type = ? FOR SHARE SKIP LOCKED";
 
         return queryWithTransaction(GET_PENDING_WORKFLOW_IDS,
             q -> q.addParameter(workflowName).executeScalarList(String.class));
@@ -364,7 +363,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
         withTransaction(tx -> {
             // @formatter:off
             String GET_ALL_WORKFLOWS_FOR_WORKFLOW_DEF = "SELECT workflow_id FROM workflow_def_to_workflow "
-                + "WHERE workflow_def = ? AND date_str BETWEEN ? AND ?";
+                + "WHERE workflow_def = ? AND date_str BETWEEN ? AND ? FOR SHARE SKIP LOCKED";
             // @formatter:on
 
             List<String> workflowIds = query(tx, GET_ALL_WORKFLOWS_FOR_WORKFLOW_DEF, q -> q.addParameter(workflowName)
@@ -387,7 +386,7 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
     @Override
     public List<Workflow> getWorkflowsByCorrelationId(String workflowName, String correlationId, boolean includeTasks) {
         Preconditions.checkNotNull(correlationId, "correlationId cannot be null");
-        String GET_WORKFLOWS_BY_CORRELATION_ID = "SELECT w.json_data FROM workflow w left join workflow_def_to_workflow wd on w.workflow_id = wd.workflow_id  WHERE w.correlation_id = ? and wd.workflow_def = ?";
+        String GET_WORKFLOWS_BY_CORRELATION_ID = "SELECT w.json_data FROM workflow w left join workflow_def_to_workflow wd on w.workflow_id = wd.workflow_id  WHERE w.correlation_id = ? and wd.workflow_def = ? FOR SHARE SKIP LOCKED";
 
         return queryWithTransaction(GET_WORKFLOWS_BY_CORRELATION_ID,
             q -> q.addParameter(correlationId).addParameter(workflowName).executeAndFetch(Workflow.class));
@@ -602,15 +601,14 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
          * is that if we try the INSERT first, the sequence will be increased even if the ON CONFLICT happens.
          */
         String UPDATE_TASK = "UPDATE task SET json_data=?, modified_on=CURRENT_TIMESTAMP WHERE task_id=?";
-        int rowsUpdated = query(connection, UPDATE_TASK,
-            q -> q.addJsonParameter(task).addParameter(task.getTaskId()).executeUpdate());
+        int rowsUpdated = query(connection, UPDATE_TASK, q -> q.addJsonParameter(task).addParameter(task.getTaskId()).executeUpdate());
 
         if (rowsUpdated == 0) {
             String INSERT_TASK = "INSERT INTO task (task_id, json_data, modified_on) VALUES (?, ?, CURRENT_TIMESTAMP) ON CONFLICT (task_id) DO UPDATE SET json_data=excluded.json_data, modified_on=excluded.modified_on";
-            execute(connection, INSERT_TASK,
-                q -> q.addParameter(task.getTaskId()).addJsonParameter(task).executeUpdate());
+            execute(connection, INSERT_TASK, q -> q.addParameter(task.getTaskId()).addJsonParameter(task).executeUpdate());
         }
     }
+
 
     private void removeTaskData(Connection connection, Task task) {
         String REMOVE_TASK = "DELETE FROM task WHERE task_id = ?";
@@ -758,16 +756,13 @@ public class PostgresExecutionDAO extends PostgresBaseDAO implements ExecutionDA
     }
 
     private void insertOrUpdatePollData(Connection connection, PollData pollData, String domain) {
-
         /*
          * Most times the row will be updated so let's try the update first. This used to be an 'INSERT/ON CONFLICT do update' sql statement. The problem with that
          * is that if we try the INSERT first, the sequence will be increased even if the ON CONFLICT happens. Since polling happens *a lot*, the sequence can increase
          * dramatically even though it won't be used.
          */
         String UPDATE_POLL_DATA = "UPDATE poll_data SET json_data=?, modified_on=CURRENT_TIMESTAMP WHERE queue_name=? AND domain=?";
-        int rowsUpdated = query(connection, UPDATE_POLL_DATA,
-            q -> q.addJsonParameter(pollData).addParameter(pollData.getQueueName()).addParameter(domain)
-                .executeUpdate());
+        int rowsUpdated = query(connection, UPDATE_POLL_DATA, q -> q.addJsonParameter(pollData).addParameter(pollData.getQueueName()).addParameter(domain).executeUpdate());
 
         if (rowsUpdated == 0) {
             String INSERT_POLL_DATA = "INSERT INTO poll_data (queue_name, domain, json_data, modified_on) VALUES (?, ?, ?, CURRENT_TIMESTAMP) ON CONFLICT (queue_name,domain) DO UPDATE SET json_data=excluded.json_data, modified_on=excluded.modified_on";

@@ -12,27 +12,28 @@
  */
 package com.netflix.conductor.contribs.tasks.kafka;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
 import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.common.serialization.IntegerSerializer;
 import org.apache.kafka.common.serialization.LongSerializer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-
-import static org.junit.Assert.assertEquals;
 
 @SuppressWarnings({"unchecked", "rawtypes"})
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
@@ -46,7 +47,7 @@ public class KafkaPublishTaskTest {
     public void missingRequest_Fail() {
         KafkaPublishTask kafkaPublishTask = new KafkaPublishTask(getKafkaProducerManager(), objectMapper);
         Task task = new Task();
-        kafkaPublishTask.start(Mockito.mock(Workflow.class), task, Mockito.mock(WorkflowExecutor.class));
+        kafkaPublishTask.start(mock(Workflow.class), task, mock(WorkflowExecutor.class));
         assertEquals(Task.Status.FAILED, task.getStatus());
     }
 
@@ -61,7 +62,7 @@ public class KafkaPublishTaskTest {
         task.getInputData().put(KafkaPublishTask.REQUEST_PARAMETER_NAME, input);
 
         KafkaPublishTask kPublishTask = new KafkaPublishTask(getKafkaProducerManager(), objectMapper);
-        kPublishTask.start(Mockito.mock(Workflow.class), task, Mockito.mock(WorkflowExecutor.class));
+        kPublishTask.start(mock(Workflow.class), task, mock(WorkflowExecutor.class));
         assertEquals(Task.Status.FAILED, task.getStatus());
     }
 
@@ -78,7 +79,7 @@ public class KafkaPublishTaskTest {
         task.getInputData().put(KafkaPublishTask.REQUEST_PARAMETER_NAME, input);
 
         KafkaPublishTask kPublishTask = new KafkaPublishTask(getKafkaProducerManager(), objectMapper);
-        kPublishTask.start(Mockito.mock(Workflow.class), task, Mockito.mock(WorkflowExecutor.class));
+        kPublishTask.start(mock(Workflow.class), task, mock(WorkflowExecutor.class));
         assertEquals(Task.Status.FAILED, task.getStatus());
     }
 
@@ -88,21 +89,21 @@ public class KafkaPublishTaskTest {
 
         Task task = getTask();
 
-        KafkaProducerManager producerManager = Mockito.mock(KafkaProducerManager.class);
+        KafkaProducerManager producerManager = mock(KafkaProducerManager.class);
         KafkaPublishTask kafkaPublishTask = new KafkaPublishTask(producerManager, objectMapper);
 
-        Producer producer = Mockito.mock(Producer.class);
+        Producer producer = mock(Producer.class);
 
-        Mockito.when(producerManager.getProducer(Mockito.any())).thenReturn(producer);
-        Future publishingFuture = Mockito.mock(Future.class);
-        Mockito.when(producer.send(Mockito.any())).thenReturn(publishingFuture);
+        when(producerManager.getProducer(any())).thenReturn(producer);
+        Future publishingFuture = mock(Future.class);
+        when(producer.send(any())).thenReturn(publishingFuture);
 
-        ExecutionException executionException = Mockito.mock(ExecutionException.class);
+        ExecutionException executionException = mock(ExecutionException.class);
 
-        Mockito.when(executionException.getMessage()).thenReturn("Execution exception");
-        Mockito.when(publishingFuture.get()).thenThrow(executionException);
+        when(executionException.getMessage()).thenReturn("Execution exception");
+        when(publishingFuture.get()).thenThrow(executionException);
 
-        kafkaPublishTask.start(Mockito.mock(Workflow.class), task, Mockito.mock(WorkflowExecutor.class));
+        kafkaPublishTask.start(mock(Workflow.class), task, mock(WorkflowExecutor.class));
         assertEquals(Task.Status.FAILED, task.getStatus());
         assertEquals("Failed to invoke kafka task due to: Execution exception", task.getReasonForIncompletion());
     }
@@ -113,15 +114,15 @@ public class KafkaPublishTaskTest {
 
         Task task = getTask();
 
-        KafkaProducerManager producerManager = Mockito.mock(KafkaProducerManager.class);
+        KafkaProducerManager producerManager = mock(KafkaProducerManager.class);
         KafkaPublishTask kPublishTask = new KafkaPublishTask(producerManager, objectMapper);
 
-        Producer producer = Mockito.mock(Producer.class);
+        Producer producer = mock(Producer.class);
 
-        Mockito.when(producerManager.getProducer(Mockito.any())).thenReturn(producer);
-        Mockito.when(producer.send(Mockito.any())).thenThrow(new RuntimeException("Unknown exception"));
+        when(producerManager.getProducer(any())).thenReturn(producer);
+        when(producer.send(any())).thenThrow(new RuntimeException("Unknown exception"));
 
-        kPublishTask.start(Mockito.mock(Workflow.class), task, Mockito.mock(WorkflowExecutor.class));
+        kPublishTask.start(mock(Workflow.class), task, mock(WorkflowExecutor.class));
         assertEquals(Task.Status.FAILED, task.getStatus());
         assertEquals("Failed to invoke kafka task due to: Unknown exception", task.getReasonForIncompletion());
     }
@@ -131,16 +132,34 @@ public class KafkaPublishTaskTest {
 
         Task task = getTask();
 
-        KafkaProducerManager producerManager = Mockito.mock(KafkaProducerManager.class);
+        KafkaProducerManager producerManager = mock(KafkaProducerManager.class);
         KafkaPublishTask kPublishTask = new KafkaPublishTask(producerManager, objectMapper);
 
-        Producer producer = Mockito.mock(Producer.class);
+        Producer producer = mock(Producer.class);
 
-        Mockito.when(producerManager.getProducer(Mockito.any())).thenReturn(producer);
-        Mockito.when(producer.send(Mockito.any())).thenReturn(Mockito.mock(Future.class));
+        when(producerManager.getProducer(any())).thenReturn(producer);
+        when(producer.send(any())).thenReturn(mock(Future.class));
 
-        kPublishTask.start(Mockito.mock(Workflow.class), task, Mockito.mock(WorkflowExecutor.class));
+        kPublishTask.start(mock(Workflow.class), task, mock(WorkflowExecutor.class));
         assertEquals(Task.Status.COMPLETED, task.getStatus());
+    }
+
+    @Test
+    public void kafkaPublishSuccess_AsyncComplete() {
+
+        Task task = getTask();
+        task.getInputData().put("asyncComplete", true);
+
+        KafkaProducerManager producerManager = mock(KafkaProducerManager.class);
+        KafkaPublishTask kPublishTask = new KafkaPublishTask(producerManager, objectMapper);
+
+        Producer producer = mock(Producer.class);
+
+        when(producerManager.getProducer(any())).thenReturn(producer);
+        when(producer.send(any())).thenReturn(mock(Future.class));
+
+        kPublishTask.start(mock(Workflow.class), task, mock(WorkflowExecutor.class));
+        assertEquals(Task.Status.IN_PROGRESS, task.getStatus());
     }
 
     private Task getTask() {

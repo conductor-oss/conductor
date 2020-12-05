@@ -32,9 +32,6 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
     @Shared
     def PARENT_WORKFLOW_WITH_TERMINATE_TASK = 'test_terminate_task_parent_wf'
 
-    @Shared
-    def SUBWORKFLOW_FOR_TERMINATE_TEST = 'test_terminate_task_sub_wf'
-
     def setup() {
         workflowTestUtil.registerWorkflows(
                 'failure_workflow_for_terminate_task_workflow.json',
@@ -55,7 +52,7 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
         def workflowInstanceId = workflowExecutor.startWorkflow(WORKFLOW_WITH_TERMINATE_TASK, 1,
                 '', workflowInput, null, null, null)
 
-        then: "Ensure that the workflow has started and the first task is in scheduled state"
+        then: "Ensure that the workflow has started and the first task is in scheduled state and workflow output should be terminate task's output"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.COMPLETED
             tasks.size() == 2
@@ -63,6 +60,8 @@ class LambdaAndTerminateTaskSpec extends AbstractSpecification {
             tasks[0].taskType == 'LAMBDA'
             tasks[1].status == Task.Status.COMPLETED
             tasks[1].taskType == 'TERMINATE'
+            output.size() == 1
+            output as String == "[result:[testvalue:true]]"
         }
     }
 

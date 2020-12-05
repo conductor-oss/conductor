@@ -10,5 +10,5 @@ dependencies {
     implementation "org.apache.commons:commons-lang3"
 
     testImplementation "io.grpc:grpc-testing:${revGrpc}"
-    testImplementation 'org.testinfected.hamcrest-matchers:all-matchers:1.8'
+    testImplementation "org.testinfected.hamcrest-matchers:all-matchers:${revHamcrestAllMatchers}"
 }

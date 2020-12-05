@@ -12,6 +12,29 @@
  */
 package com.netflix.conductor.core.execution;
 
+import static java.util.Comparator.comparingInt;
+import static java.util.stream.Collectors.groupingBy;
+import static java.util.stream.Collectors.maxBy;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
@@ -41,6 +64,7 @@ import com.netflix.conductor.core.execution.mapper.SubWorkflowTaskMapper;
 import com.netflix.conductor.core.execution.mapper.TaskMapper;
 import com.netflix.conductor.core.execution.mapper.UserDefinedTaskMapper;
 import com.netflix.conductor.core.execution.mapper.WaitTaskMapper;
+import com.netflix.conductor.core.execution.tasks.Lambda;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.Terminate;
 import com.netflix.conductor.core.execution.tasks.Wait;
@@ -54,15 +78,6 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionLockService;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.stubbing.Answer;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -77,29 +92,14 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
-
-import static java.util.Comparator.comparingInt;
-import static java.util.stream.Collectors.groupingBy;
-import static java.util.stream.Collectors.maxBy;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyBoolean;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.stubbing.Answer;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -136,6 +136,9 @@ public class TestWorkflowExecutor {
         taskMappers.put("WAIT", new WaitTaskMapper(parametersUtils));
         taskMappers.put("HTTP", new HTTPTaskMapper(parametersUtils, metadataDAO));
         taskMappers.put("LAMBDA", new LambdaTaskMapper(parametersUtils, metadataDAO));
+
+        new SubWorkflow(objectMapper);
+        new Lambda();
 
         DeciderService deciderService = new DeciderService(parametersUtils, metadataDAO, externalPayloadStorageUtils,
             taskMappers, 60);
@@ -1313,7 +1316,6 @@ public class TestWorkflowExecutor {
 
     @Test
     public void testUpdateParentWorkflow() {
-        new SubWorkflow(objectMapper);
         // Case 1: When Subworkflow is in terminal state
         // 1A: Parent Workflow is IN_PROGRESS
         // Expectation: Parent workflow's Subworkflow task should complete
@@ -1509,6 +1511,38 @@ public class TestWorkflowExecutor {
 
         workflowExecutor.scheduleNextIteration(loopTask, workflow);
         verify(executionDAOFacade).getTaskPollDataByDomain("TEST", "domain1");
+    }
+
+    @Test
+    public void testCancelNonTerminalTasks() {
+        Workflow workflow = generateSampleWorkflow();
+
+        Task subWorkflowTask = new Task();
+        subWorkflowTask.setTaskId(UUID.randomUUID().toString());
+        subWorkflowTask.setTaskType(TaskType.SUB_WORKFLOW.name());
+        subWorkflowTask.setStatus(Status.IN_PROGRESS);
+
+        Task lambdaTask = new Task();
+        lambdaTask.setTaskId(UUID.randomUUID().toString());
+        lambdaTask.setTaskType(TaskType.LAMBDA.name());
+        lambdaTask.setStatus(Status.SCHEDULED);
+
+        Task simpleTask = new Task();
+        simpleTask.setTaskId(UUID.randomUUID().toString());
+        simpleTask.setTaskType(TaskType.SIMPLE.name());
+        simpleTask.setStatus(Status.COMPLETED);
+
+        workflow.getTasks().addAll(Arrays.asList(subWorkflowTask, lambdaTask, simpleTask));
+
+        List<String> erroredTasks = workflowExecutor.cancelNonTerminalTasks(workflow);
+        assertTrue(erroredTasks.isEmpty());
+        ArgumentCaptor<Task> argumentCaptor = ArgumentCaptor.forClass(Task.class);
+        verify(executionDAOFacade, times(2)).updateTask(argumentCaptor.capture());
+        assertEquals(2, argumentCaptor.getAllValues().size());
+        assertEquals(TaskType.SUB_WORKFLOW.name(), argumentCaptor.getAllValues().get(0).getTaskType());
+        assertEquals(Status.CANCELED, argumentCaptor.getAllValues().get(0).getStatus());
+        assertEquals(TaskType.LAMBDA.name(), argumentCaptor.getAllValues().get(1).getTaskType());
+        assertEquals(Status.CANCELED, argumentCaptor.getAllValues().get(1).getStatus());
     }
 
     private Workflow generateSampleWorkflow() {

@@ -12,6 +12,19 @@
  */
 package com.netflix.conductor.core.execution;
 
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.CANCELED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED_WITH_TERMINAL_ERROR;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
+import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.INVALID_INPUT;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.NOT_FOUND;
+
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.tasks.PollData;
@@ -31,6 +44,7 @@ import com.netflix.conductor.common.utils.TaskUtils;
 import com.netflix.conductor.core.WorkflowContext;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
+import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.core.exception.TerminateWorkflowException;
 import com.netflix.conductor.core.execution.tasks.SubWorkflow;
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask;
@@ -44,12 +58,6 @@ import com.netflix.conductor.dao.MetadataDAO;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.service.ExecutionLockService;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -62,19 +70,11 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.CANCELED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.FAILED_WITH_TERMINAL_ERROR;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.IN_PROGRESS;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.SCHEDULED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.SKIPPED;
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.valueOf;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.SUB_WORKFLOW;
-import static com.netflix.conductor.common.metadata.tasks.TaskType.TERMINATE;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.INVALID_INPUT;
-import static com.netflix.conductor.core.exception.ApplicationException.Code.NOT_FOUND;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 
 /**
  * Workflow services provider interface
@@ -742,30 +742,11 @@ public class WorkflowExecutor {
             try {
                 // Remove from the task queue if they were there
                 tasks.forEach(task -> queueDAO.remove(QueueUtils.getQueueName(task), task.getTaskId()));
-                // Remove from the sweep queue
-                queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());
             } catch (Exception e) {
-                LOGGER.warn("Error removing the message(s) from queue during Workflow termination", e);
+                LOGGER.warn("Error removing task(s) from queue during workflow termination : {}", workflowId, e);
             }
 
-            // Update non-terminal tasks' status to CANCELED
-            for (Task task : tasks) {
-                if (!task.getStatus().isTerminal()) {
-                    // Cancel the ones which are not completed yet....
-                    task.setStatus(CANCELED);
-                    if (isSystemTask.test(task)) {
-                        WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
-                        try {
-                            workflowSystemTask.cancel(workflow, task, this);
-                        } catch (Exception e) {
-                            throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR,
-                                String.format("Error canceling system task: %s/%s", workflowSystemTask.getName(),
-                                    task.getTaskId()), e);
-                        }
-                    }
-                    executionDAOFacade.updateTask(task);
-                }
-            }
+            List<String> erroredTasks = cancelNonTerminalTasks(workflow);
 
             if (workflow.getParentWorkflowId() != null) {
                 updateParentWorkflowTask(workflow);
@@ -796,8 +777,7 @@ public class WorkflowExecutor {
                     workflow.getOutput().put("conductor.failure_workflow", failureWFId);
                 } catch (Exception e) {
                     LOGGER.error("Failed to start error workflow", e);
-                    workflow.getOutput().put("conductor.failure_workflow",
-                        "Error workflow " + failureWorkflow + " failed to start.  reason: " + e.getMessage());
+                    workflow.getOutput().put("conductor.failure_workflow", "Error workflow " + failureWorkflow + " failed to start.  reason: " + e.getMessage());
                     Monitors.recordWorkflowStartError(failureWorkflow, WorkflowContext.get().getClientApp());
                 }
                 executionDAOFacade.updateWorkflow(workflow);
@@ -805,11 +785,15 @@ public class WorkflowExecutor {
             executionDAOFacade.removeFromPendingWorkflow(workflow.getWorkflowName(), workflow.getWorkflowId());
 
             // Send to atlas
-            Monitors
-                .recordWorkflowTermination(workflow.getWorkflowName(), workflow.getStatus(), workflow.getOwnerApp());
+            Monitors.recordWorkflowTermination(workflow.getWorkflowName(), workflow.getStatus(), workflow.getOwnerApp());
 
             if (workflow.getWorkflowDefinition().isWorkflowStatusListenerEnabled()) {
                 workflowStatusListener.onWorkflowTerminated(workflow);
+            }
+
+            if (!erroredTasks.isEmpty()) {
+                throw new ApplicationException(Code.INTERNAL_ERROR, String.format("Error canceling system tasks: %s",
+                    String.join(",", erroredTasks)));
             }
         } finally {
             executionLockService.releaseLock(workflow.getWorkflowId());
@@ -1026,6 +1010,9 @@ public class WorkflowExecutor {
         workflow = metadataMapperService.populateWorkflowWithDefinitions(workflow);
 
         if (workflow.getStatus().isTerminal()) {
+            if (!workflow.getStatus().isSuccessful()) {
+                cancelNonTerminalTasks(workflow);
+            }
             return true;
         }
 
@@ -1126,7 +1113,7 @@ public class WorkflowExecutor {
      */
     private void skipTasksAffectedByTerminateTask(Workflow workflow) {
         if (!workflow.getStatus().isTerminal()) {
-            List<Task> tasksToBeUpdated = new ArrayList<Task>();
+            List<Task> tasksToBeUpdated = new ArrayList<>();
             for (Task workflowTask : workflow.getTasks()) {
                 if (!workflowTask.getStatus().isTerminal()) {
                     workflowTask.setStatus(SKIPPED);
@@ -1147,6 +1134,37 @@ public class WorkflowExecutor {
                 executionDAOFacade.updateWorkflow(workflow);
             }
         }
+    }
+
+    @VisibleForTesting
+    List<String> cancelNonTerminalTasks(Workflow workflow) {
+        List<String> erroredTasks = new ArrayList<>();
+        // Update non-terminal tasks' status to CANCELED
+        for (Task task : workflow.getTasks()) {
+            if (!task.getStatus().isTerminal()) {
+                // Cancel the ones which are not completed yet....
+                task.setStatus(CANCELED);
+                if (isSystemTask.test(task)) {
+                    WorkflowSystemTask workflowSystemTask = WorkflowSystemTask.get(task.getTaskType());
+                    try {
+                        workflowSystemTask.cancel(workflow, task, this);
+                    } catch (Exception e) {
+                        erroredTasks.add(task.getReferenceTaskName());
+                        LOGGER.error("Error canceling system task:{}/{} in workflow: {}",
+                            workflowSystemTask.getName(), task.getTaskId(), workflow.getWorkflowId(), e);
+                    }
+                }
+                executionDAOFacade.updateTask(task);
+            }
+        }
+        if (erroredTasks.isEmpty()) {
+            try {
+                queueDAO.remove(DECIDER_QUEUE, workflow.getWorkflowId());
+            } catch (Exception e) {
+                LOGGER.error("Error removing workflow: {} from decider queue", workflow.getWorkflowId(), e);
+            }
+        }
+        return erroredTasks;
     }
 
     @VisibleForTesting

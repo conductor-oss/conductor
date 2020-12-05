@@ -55,7 +55,10 @@
     }
   ],
   "inputParameters": [],
-  "outputParameters": {},
+  "outputParameters": {
+    "o1": "${lambda0.output}",
+    "o2": "${t2.output}"
+  },
   "failureWorkflow": "failure_workflow",
   "schemaVersion": 2,
   "restartable": true,

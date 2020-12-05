@@ -21,6 +21,7 @@ ext {
     revGrpc = '1.33.+'
     revGuava = '30.0-jre'
     revGuavaRetrying = '2.0.0'
+    revHamcrestAllMatchers = '1.8'
     revHealth = '1.1.+'
     revJedis = '3.3.0'
     revJersey = '1.19.4'

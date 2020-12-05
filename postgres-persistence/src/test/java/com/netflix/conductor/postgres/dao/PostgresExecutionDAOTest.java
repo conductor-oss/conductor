@@ -12,6 +12,9 @@
  */
 package com.netflix.conductor.postgres.dao;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
@@ -19,6 +22,7 @@ import com.netflix.conductor.common.run.Workflow;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.ExecutionDAOTest;
 import com.netflix.conductor.postgres.util.PostgresDAOTestUtil;
+import java.util.List;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -28,11 +32,6 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -78,6 +77,21 @@ public class PostgresExecutionDAOTest extends ExecutionDAOTest {
             .getWorkflowsByCorrelationId("pending_count_correlation_jtest", "corr001", true);
         assertNotNull(bycorrelationId);
         assertEquals(10, bycorrelationId.size());
+    }
+
+    @Test
+    public void testRemoveWorkflow() {
+        WorkflowDef def = new WorkflowDef();
+        def.setName("workflow");
+
+        Workflow workflow = createTestWorkflow();
+        workflow.setWorkflowDefinition(def);
+
+        List<String> ids = generateWorkflows(workflow, 1);
+
+        assertEquals(1, getExecutionDAO().getPendingWorkflowCount("workflow"));
+        ids.forEach(wfId -> getExecutionDAO().removeWorkflow(wfId));
+        assertEquals(0, getExecutionDAO().getPendingWorkflowCount("workflow"));
     }
 
     @Override

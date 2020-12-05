@@ -18,9 +18,6 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Uninterruptibles;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.postgres.util.Query;
-
-import javax.sql.DataSource;
 import java.sql.Connection;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,6 +26,7 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import javax.sql.DataSource;
 
 public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
@@ -78,22 +76,39 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
     @Override
     public List<String> pop(String queueName, int count, int timeout) {
-        List<Message> messages = getWithTransactionWithOutErrorPropagation(
-            tx -> popMessages(tx, queueName, count, timeout));
-        if (messages == null) {
-            return new ArrayList<>();
-        }
-        return messages.stream().map(Message::getId).collect(Collectors.toList());
+        return pollMessages(queueName, count, timeout).stream().map(Message::getId).collect(Collectors.toList());
     }
 
     @Override
     public List<Message> pollMessages(String queueName, int count, int timeout) {
-        List<Message> messages = getWithTransactionWithOutErrorPropagation(
-            tx -> popMessages(tx, queueName, count, timeout));
-        if (messages == null) {
-            return new ArrayList<>();
+        if (timeout < 1) {
+            List<Message> messages = getWithTransactionWithOutErrorPropagation(
+                tx -> popMessages(tx, queueName, count, timeout));
+            if (messages == null) {
+                return new ArrayList<>();
+            }
+            return messages;
         }
-        return messages;
+
+        long start = System.currentTimeMillis();
+        final List<Message> messages = new ArrayList<>();
+
+        while (true) {
+            List<Message> messagesSlice = getWithTransactionWithOutErrorPropagation(
+                tx -> popMessages(tx, queueName, count - messages.size(), timeout));
+            if (messagesSlice == null) {
+                logger.warn("Unable to poll {} messages from {} due to tx conflict, only {} popped", count, queueName,
+                    messages.size());
+                // conflict could have happened, returned messages popped so far
+                return messages;
+            }
+
+            messages.addAll(messagesSlice);
+            if (messages.size() >= count || ((System.currentTimeMillis() - start) > timeout)) {
+                return messages;
+            }
+            Uninterruptibles.sleepUninterruptibly(100, TimeUnit.MILLISECONDS);
+        }
     }
 
     @Override
@@ -131,7 +146,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
 
     @Override
     public Map<String, Long> queuesDetail() {
-        final String GET_QUEUES_DETAIL = "SELECT queue_name, (SELECT count(*) FROM queue_message WHERE popped = false AND queue_name = q.queue_name) AS size FROM queue q";
+        final String GET_QUEUES_DETAIL = "SELECT queue_name, (SELECT count(*) FROM queue_message WHERE popped = false AND queue_name = q.queue_name) AS size FROM queue q FOR SHARE SKIP LOCKED";
         return queryWithTransaction(GET_QUEUES_DETAIL, q -> q.executeAndFetch(rs -> {
             Map<String, Long> detail = Maps.newHashMap();
             while (rs.next()) {
@@ -149,7 +164,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
         final String GET_QUEUES_DETAIL_VERBOSE = "SELECT queue_name, \n"
             + "       (SELECT count(*) FROM queue_message WHERE popped = false AND queue_name = q.queue_name) AS size,\n"
             + "       (SELECT count(*) FROM queue_message WHERE popped = true AND queue_name = q.queue_name) AS uacked \n"
-            + "FROM queue q";
+            + "FROM queue q FOR SHARE SKIP LOCKED";
         // @formatter:on
 
         return queryWithTransaction(GET_QUEUES_DETAIL_VERBOSE, q -> q.executeAndFetch(rs -> {
@@ -172,17 +187,60 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
      * @since 1.11.6
      */
     public void processAllUnacks() {
-
         logger.trace("processAllUnacks started");
 
-        final String PROCESS_ALL_UNACKS = "UPDATE queue_message SET popped = false WHERE popped = true AND (current_timestamp - (60 ||' seconds')::interval) > deliver_on";
-        executeWithTransaction(PROCESS_ALL_UNACKS, Query::executeUpdate);
+        getWithRetriedTransactions(tx -> {
+            String LOCK_TASKS = "SELECT message_id FROM queue_message WHERE popped = true AND (deliver_on + (60 ||' seconds')::interval)  <  current_timestamp FOR UPDATE SKIP LOCKED";
+
+            List<String> messages = query(tx, LOCK_TASKS, p -> p.executeAndFetch(rs -> {
+                List<String> results = new ArrayList<>();
+                while (rs.next()) {
+                    results.add(rs.getString("message_id"));
+                }
+                return results;
+            }));
+
+            if (messages.size() == 0) {
+                return 0;
+            }
+            String msgIdsString = String.join(",", messages);
+
+            final String PROCESS_UNACKS = "UPDATE queue_message SET popped = false WHERE message_id IN (?)";
+            Integer unacked = query(tx, PROCESS_UNACKS, q -> q.addParameter(msgIdsString).executeUpdate());
+            if (unacked > 0) {
+                logger.debug("Unacked {} messages: {} from all queues", unacked, messages);
+            }
+            return unacked;
+        });
     }
 
     @Override
     public void processUnacks(String queueName) {
-        final String PROCESS_UNACKS = "UPDATE queue_message SET popped = false WHERE queue_name = ? AND popped = true AND (current_timestamp - (60 ||' seconds')::interval)  > deliver_on";
-        executeWithTransaction(PROCESS_UNACKS, q -> q.addParameter(queueName).executeUpdate());
+        getWithRetriedTransactions(tx -> {
+            String LOCK_TASKS = "SELECT message_id FROM queue_message WHERE queue_name = ? AND popped = true AND (deliver_on + (60 ||' seconds')::interval)  <  current_timestamp FOR UPDATE SKIP LOCKED";
+
+            List<String> messages = query(tx, LOCK_TASKS, p -> p.addParameter(queueName)
+                .executeAndFetch(rs -> {
+                    List<String> results = new ArrayList<>();
+                    while (rs.next()) {
+                        results.add(rs.getString("message_id"));
+                    }
+                    return results;
+                }));
+
+            if (messages.size() == 0) {
+                return 0;
+            }
+            String msgIdsString = String.join(",", messages);
+
+            final String PROCESS_UNACKS = "UPDATE queue_message SET popped = false WHERE queue_name = ? AND message_id IN (?)";
+            Integer unacked = query(tx, PROCESS_UNACKS,
+                q -> q.addParameter(queueName).addParameter(msgIdsString).executeUpdate());
+            if (unacked > 0) {
+                logger.debug("Unacked {} messages: {} from queue: {}", unacked, messages, queueName);
+            }
+            return unacked;
+        });
     }
 
     @Override
@@ -197,7 +255,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
     }
 
     private boolean existsMessage(Connection connection, String queueName, String messageId) {
-        final String EXISTS_MESSAGE = "SELECT EXISTS(SELECT 1 FROM queue_message WHERE queue_name = ? AND message_id = ?)";
+        final String EXISTS_MESSAGE = "SELECT EXISTS(SELECT 1 FROM queue_message WHERE queue_name = ? AND message_id = ?) FOR SHARE";
         return query(connection, EXISTS_MESSAGE, q -> q.addParameter(queueName).addParameter(messageId).exists());
     }
 
@@ -231,7 +289,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
             return Collections.emptyList();
         }
 
-        final String PEEK_MESSAGES = "SELECT message_id, priority, payload FROM queue_message WHERE queue_name = ? AND popped = false AND deliver_on <= (current_timestamp + (1000 ||' microseconds')::interval) ORDER BY priority DESC, deliver_on, created_on LIMIT ?";
+        final String PEEK_MESSAGES = "SELECT message_id, priority, payload FROM queue_message WHERE queue_name = ? AND popped = false AND deliver_on <= (current_timestamp + (1000 ||' microseconds')::interval) ORDER BY priority DESC, deliver_on, created_on LIMIT ? FOR UPDATE SKIP LOCKED";
 
         return query(connection, PEEK_MESSAGES, p -> p.addParameter(queueName)
             .addParameter(count).executeAndFetch(rs -> {
@@ -248,13 +306,7 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
     }
 
     private List<Message> popMessages(Connection connection, String queueName, int count, int timeout) {
-        long start = System.currentTimeMillis();
         List<Message> messages = peekMessages(connection, queueName, count);
-
-        while (messages.size() < count && ((System.currentTimeMillis() - start) < timeout)) {
-            Uninterruptibles.sleepUninterruptibly(200, TimeUnit.MILLISECONDS);
-            messages = peekMessages(connection, queueName, count);
-        }
 
         if (messages.isEmpty()) {
             return messages;
@@ -273,21 +325,18 @@ public class PostgresQueueDAO extends PostgresBaseDAO implements QueueDAO {
         return poppedMessages;
     }
 
+    @Override
+    public boolean containsMessage(String queueName, String messageId) {
+        return getWithRetriedTransactions(tx -> existsMessage(tx, queueName, messageId));
+    }
 
     private void createQueueIfNotExists(Connection connection, String queueName) {
         logger.trace("Creating new queue '{}'", queueName);
-        final String EXISTS_QUEUE = "SELECT EXISTS(SELECT 1 FROM queue WHERE queue_name = ?)";
+        final String EXISTS_QUEUE = "SELECT EXISTS(SELECT 1 FROM queue WHERE queue_name = ?) FOR SHARE";
         boolean exists = query(connection, EXISTS_QUEUE, q -> q.addParameter(queueName).exists());
         if (!exists) {
             final String CREATE_QUEUE = "INSERT INTO queue (queue_name) VALUES (?) ON CONFLICT (queue_name) DO NOTHING";
             execute(connection, CREATE_QUEUE, q -> q.addParameter(queueName).executeUpdate());
         }
-    }
-
-    @Override
-    public boolean containsMessage(String queueName, String messageId) {
-        final String EXISTS_QUEUE = "SELECT EXISTS(SELECT 1 FROM queue_message WHERE queue_name = ? AND message_id = ? )";
-        return queryWithTransaction(EXISTS_QUEUE,
-            q -> q.addParameter(queueName).addParameter(messageId).exists());
     }
 }

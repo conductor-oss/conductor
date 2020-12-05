@@ -12,12 +12,24 @@
  */
 package com.netflix.conductor.postgres.dao;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.postgres.util.PostgresDAOTestUtil;
 import com.netflix.conductor.postgres.util.Query;
+import java.sql.Connection;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -30,19 +42,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
-
-import java.sql.Connection;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -169,6 +168,9 @@ public class PostgresQueueDAOTest {
 
         // Assert that all messages were persisted and no extras are in there
         assertEquals("Queue size mismatch", totalSize, queueDAO.getSize(queueName));
+
+        List<Message> zeroPoll = queueDAO.pollMessages(queueName, 0, 10_000);
+        assertTrue("Zero poll should be empty", zeroPoll.isEmpty());
 
         final int firstPollSize = 3;
         List<Message> firstPoll = queueDAO.pollMessages(queueName, firstPollSize, 10_000);
@@ -309,7 +311,21 @@ public class PostgresQueueDAOTest {
 
     @Test
     public void processUnacksTest() {
-        final String queueName = "process_unacks_test";
+        processUnacks(() -> {
+            // Process unacks
+            queueDAO.processUnacks("process_unacks_test");
+        }, "process_unacks_test");
+    }
+
+    @Test
+    public void processAllUnacksTest() {
+        processUnacks(() -> {
+            // Process all unacks
+            queueDAO.processAllUnacks();
+        }, "process_unacks_test");
+    }
+
+    private void processUnacks(Runnable unack, String queueName) {
         // Count of messages in the queue(s)
         final int count = 10;
         // Number of messages to process acks for
@@ -349,8 +365,7 @@ public class PostgresQueueDAOTest {
         assertNotNull(uacked);
         assertEquals(uacked.longValue(), unackedCount - 1);
 
-        // Process unacks
-        queueDAO.processUnacks(queueName);
+        unack.run();
 
         // Check uacks for both queues after processing
         Map<String, Map<String, Map<String, Long>>> details = queueDAO.queuesDetailVerbose();

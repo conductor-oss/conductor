@@ -12,6 +12,15 @@
  */
 package com.netflix.conductor.mysql.dao;
 
+import static com.netflix.conductor.core.exception.ApplicationException.Code.CONFLICT;
+import static com.netflix.conductor.core.exception.ApplicationException.Code.NOT_FOUND;
+import static org.hamcrest.Matchers.hasProperty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.events.EventHandler;
@@ -19,28 +28,23 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.mysql.util.MySQLDAOTestUtil;
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringRunner;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.TestName;
+import org.junit.runner.RunWith;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.test.context.junit4.SpringRunner;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -55,6 +59,9 @@ public class MySQLMetadataDAOTest {
     @Rule
     public TestName name = new TestName();
 
+    @Rule
+    public ExpectedException thrown = ExpectedException.none();
+
     @Before
     public void setup() {
         testUtil = new MySQLDAOTestUtil(objectMapper, name.getMethodName());
@@ -68,14 +75,27 @@ public class MySQLMetadataDAOTest {
         testUtil.getDataSource().close();
     }
 
-    @Test(expected = ApplicationException.class)
-    public void testDuplicate() {
+    @Test
+    public void testDuplicateWorkflowDef() {
+        thrown.expect(ApplicationException.class);
+        thrown.expectMessage("Workflow with testDuplicate.1 already exists!");
+        thrown.expect(hasProperty("code", is(CONFLICT)));
+
         WorkflowDef def = new WorkflowDef();
         def.setName("testDuplicate");
         def.setVersion(1);
 
         metadataDAO.createWorkflowDef(def);
         metadataDAO.createWorkflowDef(def);
+    }
+
+    @Test
+    public void testRemoveNotExistingWorkflowDef() {
+        thrown.expect(ApplicationException.class);
+        thrown.expectMessage("No such workflow definition: test version: 1");
+        thrown.expect(hasProperty("code", is(NOT_FOUND)));
+
+        metadataDAO.removeWorkflowDef("test", 1);
     }
 
     @Test
@@ -216,8 +236,12 @@ public class MySQLMetadataDAOTest {
         assertEquals(def.getName(), all.get(0).getName());
     }
 
-    @Test(expected = ApplicationException.class)
-    public void testRemoveTaskDef() {
+    @Test
+    public void testRemoveNotExistingTaskDef() {
+        thrown.expect(ApplicationException.class);
+        thrown.expectMessage("No such task definition");
+        thrown.expect(hasProperty("code", is(NOT_FOUND)));
+
         metadataDAO.removeTaskDef("test" + UUID.randomUUID().toString());
     }
 

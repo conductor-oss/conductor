@@ -46,7 +46,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
                 'simple_workflow_1_integration_test.json'
         )
     }
-    
+
     /// Workflow Resource endpoints
 
     def "Verify Start workflow fails when QueueDAO is unavailable"() {
@@ -84,7 +84,7 @@ class QueueResiliencySpec extends AbstractResiliencySpecification {
         workflowResource.terminate(workflowInstanceId, "Terminated from a test")
 
         then: "Verify that terminate is successful without any exceptions"
-        1 * queueDAO.remove(*_) >> { throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "Queue remove failed from Spy") }
+        2 * queueDAO.remove(*_) >> { throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "Queue remove failed from Spy") }
         0 * queueDAO._
         with(workflowResource.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.TERMINATED
