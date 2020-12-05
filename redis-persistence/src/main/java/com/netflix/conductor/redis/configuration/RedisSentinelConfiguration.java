@@ -13,7 +13,6 @@
 package com.netflix.conductor.redis.configuration;
 
 import com.netflix.conductor.redis.config.utils.RedisProperties;
-import com.netflix.conductor.redis.jedis.ConfigurationHostSupplierProvider;
 import com.netflix.conductor.redis.jedis.JedisSentinel;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
@@ -22,7 +21,6 @@ import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.commands.JedisCommands;
@@ -36,11 +34,6 @@ import java.util.Set;
 public class RedisSentinelConfiguration extends JedisCommandsConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(RedisSentinelConfiguration.class);
-
-    @Bean
-    public HostSupplier hostSupplier(RedisProperties properties) {
-        return new ConfigurationHostSupplierProvider(properties).get();
-    }
 
     @Override
     protected JedisCommands createJedisCommands(RedisProperties properties, HostSupplier hostSupplier, TokenMapSupplier tokenMapSupplier) {

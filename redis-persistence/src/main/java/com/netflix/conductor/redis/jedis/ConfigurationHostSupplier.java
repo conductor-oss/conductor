@@ -23,18 +23,19 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ConfigurationHostSupplierProvider {
+public class ConfigurationHostSupplier implements HostSupplier {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationHostSupplierProvider.class);
+    private static final Logger log = LoggerFactory.getLogger(ConfigurationHostSupplier.class);
 
     private final RedisProperties properties;
 
-    public ConfigurationHostSupplierProvider(RedisProperties properties) {
+    public ConfigurationHostSupplier(RedisProperties properties) {
         this.properties = properties;
     }
 
-    public HostSupplier get() {
-        return this::parseHostsFromConfig;
+    @Override
+    public List<Host> getHosts() {
+        return parseHostsFromConfig();
     }
 
     private List<Host> parseHostsFromConfig() {
@@ -42,7 +43,7 @@ public class ConfigurationHostSupplierProvider {
         if (hosts == null) {
             // FIXME This type of validation probably doesn't belong here.
             String message = "Missing dynomite/redis hosts. Ensure 'workflow.dynomite.cluster.hosts' has been set in the supplied configuration.";
-            LOGGER.error(message);
+            log.error(message);
             throw new RuntimeException(message);
         }
         return parseHostsFrom(hosts);

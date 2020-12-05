@@ -18,23 +18,25 @@ import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostBuilder;
 import com.netflix.dyno.connectionpool.HostSupplier;
 
-import javax.inject.Provider;
+import java.util.List;
 
-public class LocalHostSupplierProvider {
+public class LocalhostHostSupplier implements HostSupplier {
 
     private final RedisProperties properties;
 
-    public LocalHostSupplierProvider(RedisProperties properties) {
+    public LocalhostHostSupplier(RedisProperties properties) {
         this.properties = properties;
     }
 
-    public HostSupplier get() {
+    @Override
+    public List<Host> getHosts() {
         Host dynoHost = new HostBuilder()
-            .setHostname("localhost")
-            .setIpAddress("0")
-            .setRack(properties.getAvailabilityZone())
-            .setStatus(Host.Status.Up)
-            .createHost();
-        return () -> Lists.newArrayList(dynoHost);
+                .setHostname("localhost")
+                .setIpAddress("0")
+                .setRack(properties.getAvailabilityZone())
+                .setStatus(Host.Status.Up)
+                .createHost();
+        return Lists.newArrayList(dynoHost);
     }
+
 }

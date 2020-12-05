@@ -1,6 +1,7 @@
 package com.netflix.conductor.redis.configuration;
 
 import com.netflix.conductor.redis.config.utils.RedisProperties;
+import com.netflix.conductor.redis.jedis.ConfigurationHostSupplier;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.connectionpool.TokenMapSupplier;
 import org.springframework.context.annotation.Bean;
@@ -9,7 +10,12 @@ import redis.clients.jedis.commands.JedisCommands;
 import static com.netflix.conductor.redis.configuration.RedisCommonConfiguration.DEFAULT_CLIENT_INJECTION_NAME;
 import static com.netflix.conductor.redis.configuration.RedisCommonConfiguration.READ_CLIENT_INJECTION_NAME;
 
-public abstract class JedisCommandsConfigurer {
+abstract class JedisCommandsConfigurer {
+
+    @Bean
+    public HostSupplier hostSupplier(RedisProperties properties) {
+        return new ConfigurationHostSupplier(properties);
+    }
 
     @Bean(name = DEFAULT_CLIENT_INJECTION_NAME)
     public JedisCommands jedisCommands(RedisProperties properties, HostSupplier hostSupplier,
@@ -24,5 +30,5 @@ public abstract class JedisCommandsConfigurer {
     }
 
     protected abstract JedisCommands createJedisCommands(RedisProperties properties, HostSupplier hostSupplier,
-                                                TokenMapSupplier tokenMapSupplier);
+                                                         TokenMapSupplier tokenMapSupplier);
 }

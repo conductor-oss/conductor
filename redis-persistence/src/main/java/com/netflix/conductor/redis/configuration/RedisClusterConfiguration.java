@@ -12,16 +12,13 @@
  */
 package com.netflix.conductor.redis.configuration;
 
-import com.netflix.conductor.redis.configuration.JedisCommandsConfigurer;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
-import com.netflix.conductor.redis.jedis.ConfigurationHostSupplierProvider;
 import com.netflix.conductor.redis.jedis.JedisCluster;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.connectionpool.TokenMapSupplier;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.commands.JedisCommands;
@@ -30,11 +27,6 @@ import redis.clients.jedis.commands.JedisCommands;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "db", havingValue = "redis_cluster")
 public class RedisClusterConfiguration extends JedisCommandsConfigurer {
-
-    @Bean
-    public HostSupplier hostSupplier(RedisProperties properties) {
-        return new ConfigurationHostSupplierProvider(properties).get();
-    }
 
     @Override
     protected JedisCommands createJedisCommands(RedisProperties properties, HostSupplier hostSupplier, TokenMapSupplier tokenMapSupplier) {

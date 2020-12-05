@@ -24,23 +24,23 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class ConfigurationHostSupplierProviderTest {
+public class ConfigurationHostSupplierTest {
 
     private RedisProperties properties;
 
-    private ConfigurationHostSupplierProvider provider;
+    private ConfigurationHostSupplier configurationHostSupplier;
 
     @Before
     public void setUp() {
         properties = mock(RedisProperties.class);
-        provider = new ConfigurationHostSupplierProvider(properties);
+        configurationHostSupplier = new ConfigurationHostSupplier(properties);
     }
 
     @Test
     public void getHost() {
         when(properties.getHosts()).thenReturn("dyno1:8102:us-east-1c");
 
-        List<Host> hosts = provider.get().getHosts();
+        List<Host> hosts = configurationHostSupplier.getHosts();
         assertEquals(1, hosts.size());
 
         Host firstHost = hosts.get(0);
@@ -54,7 +54,7 @@ public class ConfigurationHostSupplierProviderTest {
     public void getMultipleHosts() {
         when(properties.getHosts()).thenReturn("dyno1:8102:us-east-1c;dyno2:8103:us-east-1c");
 
-        List<Host> hosts = provider.get().getHosts();
+        List<Host> hosts = configurationHostSupplier.getHosts();
         assertEquals(2, hosts.size());
 
         Host firstHost = hosts.get(0);
@@ -74,7 +74,7 @@ public class ConfigurationHostSupplierProviderTest {
     public void getAuthenticatedHost() {
         when(properties.getHosts()).thenReturn("redis1:6432:us-east-1c:password");
 
-        List<Host> hosts = provider.get().getHosts();
+        List<Host> hosts = configurationHostSupplier.getHosts();
         assertEquals(1, hosts.size());
 
         Host firstHost = hosts.get(0);
