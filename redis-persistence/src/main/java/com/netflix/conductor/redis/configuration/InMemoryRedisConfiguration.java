@@ -12,29 +12,29 @@
  */
 package com.netflix.conductor.redis.configuration;
 
-import com.netflix.conductor.redis.configuration.JedisCommandsConfigurer;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisMock;
-import com.netflix.conductor.redis.jedis.LocalHostSupplierProvider;
+import com.netflix.conductor.redis.jedis.LocalhostHostSupplier;
 import com.netflix.dyno.connectionpool.HostSupplier;
-import com.netflix.dyno.connectionpool.TokenMapSupplier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import redis.clients.jedis.commands.JedisCommands;
+
+import static com.netflix.conductor.redis.configuration.RedisCommonConfiguration.DEFAULT_CLIENT_INJECTION_NAME;
+import static com.netflix.conductor.redis.configuration.RedisCommonConfiguration.READ_CLIENT_INJECTION_NAME;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "db", havingValue = "memory", matchIfMissing = true)
-public class InMemoryRedisConfiguration extends JedisCommandsConfigurer {
+public class InMemoryRedisConfiguration {
 
     @Bean
     public HostSupplier hostSupplier(RedisProperties properties) {
-        return new LocalHostSupplierProvider(properties).get();
+        return new LocalhostHostSupplier(properties);
     }
 
-    @Override
-    protected JedisCommands createJedisCommands(RedisProperties properties, HostSupplier hostSupplier, TokenMapSupplier tokenMapSupplier) {
+    @Bean(name = {DEFAULT_CLIENT_INJECTION_NAME, READ_CLIENT_INJECTION_NAME})
+    public JedisMock jedisMock() {
         return new JedisMock();
     }
 }
