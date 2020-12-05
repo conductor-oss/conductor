@@ -15,36 +15,13 @@ package com.netflix.conductor.test.integration.http;
 import com.netflix.conductor.client.http.MetadataClient;
 import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
-import com.netflix.conductor.dao.IndexDAO;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 public class HttpEndToEndTest extends AbstractHttpEndToEndTest {
 
-    @Autowired
-    private IndexDAO indexDAO;
-
-    @BeforeClass
-    public static void setup() {
-
-        container.start();
-
-        String httpHostAddress = container.getHttpHostAddress();
-        System.setProperty("workflow.elasticsearch.url", "http://" + httpHostAddress);
-    }
-
-    @AfterClass
-    public static void cleanup() {
-        container.stop();
-    }
-
     @Before
     public void init() throws Exception {
-        indexDAO.setup();
-
         apiRoot = String.format("http://localhost:%d/api/", port);
 
         taskClient = new TaskClient();

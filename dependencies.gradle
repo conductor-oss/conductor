@@ -43,5 +43,5 @@ ext {
     revSpectator = '0.114.0'
     revSpock = '1.3-groovy-2.5'
     revSpotifyCompletableFutures = '0.3.3'
-    revTestESContainer = '1.15.0'
+    revTestContainer = '1.15.0'
 }

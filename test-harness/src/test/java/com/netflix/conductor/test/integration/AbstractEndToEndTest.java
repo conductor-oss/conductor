@@ -12,25 +12,39 @@
  */
 package com.netflix.conductor.test.integration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskType;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowTask;
 import com.netflix.conductor.common.run.Workflow;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import org.apache.http.HttpHost;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.context.TestPropertySource;
 import org.testcontainers.elasticsearch.ElasticsearchContainer;
 import org.testcontainers.utility.DockerImageName;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 @TestPropertySource(properties = {"workflow.indexing.enabled=true", "workflow.elasticsearch.version=6"})
 public abstract class AbstractEndToEndTest {
+
+    private static final Logger log = LoggerFactory.getLogger(AbstractEndToEndTest.class);
 
     private static final String TASK_DEFINITION_PREFIX = "task_";
     private static final String DEFAULT_DESCRIPTION = "description";
@@ -38,9 +52,52 @@ public abstract class AbstractEndToEndTest {
     private static final String DEFAULT_NULL_VALUE = "null";
     protected static final String DEFAULT_EMAIL_ADDRESS = "test@harness.com";
 
-    protected static final ElasticsearchContainer container = new ElasticsearchContainer(DockerImageName
-        .parse("docker.elastic.co/elasticsearch/elasticsearch-oss")
-        .withTag("6.8.12")); // this should match the client version
+    private static final ElasticsearchContainer container = new ElasticsearchContainer(DockerImageName
+            .parse("docker.elastic.co/elasticsearch/elasticsearch-oss")
+            .withTag("6.8.12")); // this should match the client version
+
+    private static RestClient restClient;
+
+    // Initialization happens in a static block so the container is initialized
+    // only once for all the sub-class tests in a CI environment
+    // container is stopped when JVM exits
+    // https://www.testcontainers.org/test_framework_integration/manual_lifecycle_control/#singleton-containers
+    static {
+        container.start();
+        String httpHostAddress = container.getHttpHostAddress();
+        System.setProperty("workflow.elasticsearch.url", "http://" + httpHostAddress);
+        log.info("Initialized Elasticsearch {}", container.getContainerId());
+    }
+
+    @BeforeClass
+    public static void initializeEs() {
+        String httpHostAddress = container.getHttpHostAddress();
+        String host = httpHostAddress.split(":")[0];
+        int port = Integer.parseInt(httpHostAddress.split(":")[1]);
+
+        RestClientBuilder restClientBuilder = RestClient.builder(new HttpHost(host, port, "http"));
+        restClient = restClientBuilder.build();
+    }
+
+    @AfterClass
+    public static void cleanupEs() throws Exception {
+        // deletes all indices
+        Response beforeResponse = restClient.performRequest("GET", "/_cat/indices");
+        Reader streamReader = new InputStreamReader(beforeResponse.getEntity().getContent());
+        BufferedReader bufferedReader = new BufferedReader(streamReader);
+
+        String line;
+        while ((line = bufferedReader.readLine()) != null) {
+            String[] fields = line.split("\\s");
+            String endpoint = String.format("/%s", fields[2]);
+
+            restClient.performRequest("DELETE", endpoint);
+        }
+
+        if (restClient != null) {
+            restClient.close();
+        }
+    }
 
     @Test
     public void testEphemeralWorkflowsWithStoredTasks() {

@@ -45,36 +45,13 @@ dependencies {
     testImplementation "org.spockframework:spock-core:${revSpock}"
     testImplementation "org.spockframework:spock-spring:${revSpock}"
 
-    testImplementation "org.testcontainers:elasticsearch:${revTestESContainer}"
-}
+    testImplementation "org.elasticsearch.client:elasticsearch-rest-client"
+    testImplementation "org.elasticsearch.client:elasticsearch-rest-high-level-client"
 
-dockerCompose {
-    integrationTestDocker {
-        useComposeFiles = ["./docker-compose.yml"]
-        startedServices = ["mysqldb", "postgresdb"]
-        waitForTcpPorts = true
-        isRequiredBy(tasks.test)
-        projectName = project.name
-    }
+    testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
+    testImplementation "org.testcontainers:mysql:${revTestContainer}"
+    testImplementation "org.testcontainers:postgresql:${revTestContainer}"
 }
-
-task intDockerStart() {
-    group = "Postgres and Mysql data access based Integration Test"
-    description "Starts a local db container for postgres and mysql data access integration tests."
-    dependsOn integrationTestDockerComposeDownForced
-    dependsOn integrationTestDockerComposeUp
-}
-
-task intDockerDown(dependsOn: integrationTestDockerComposeDownForced) {
-    group = "Postgres and Mysql data access based Integration Test"
-    description "Stops a local db container for postgres and mysql data access integration tests."
-}
-
-test.doFirst {
-    dockerCompose.exposeAsSystemProperties(test)
-}
-
-test.finalizedBy("intDockerDown")
 
 test {
     testLogging {

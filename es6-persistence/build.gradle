@@ -13,5 +13,5 @@ dependencies {
     implementation "org.elasticsearch.client:elasticsearch-rest-high-level-client"
 
     testImplementation "org.awaitility:awaitility:${revAwaitility}"
-    testImplementation "org.testcontainers:elasticsearch:${revTestESContainer}"
+    testImplementation "org.testcontainers:elasticsearch:${revTestContainer}"
 }

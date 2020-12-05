@@ -15,35 +15,13 @@ package com.netflix.conductor.test.integration.grpc;
 import com.netflix.conductor.client.grpc.MetadataClient;
 import com.netflix.conductor.client.grpc.TaskClient;
 import com.netflix.conductor.client.grpc.WorkflowClient;
-import com.netflix.conductor.dao.IndexDAO;
-import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
-import org.springframework.beans.factory.annotation.Autowired;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 public class GrpcEndToEndTest extends AbstractGrpcEndToEndTest {
 
-    @Autowired
-    private IndexDAO indexDAO;
-
-    @BeforeClass
-    public static void setup() {
-        container.start();
-
-        String httpHostAddress = container.getHttpHostAddress();
-        System.setProperty("workflow.elasticsearch.url", "http://" + httpHostAddress);
-    }
-
-    @AfterClass
-    public static void cleanup() {
-        container.stop();
-    }
-
     @Before
     public void init() throws Exception {
-        indexDAO.setup();
-
         taskClient = new TaskClient("localhost", 8092);
         workflowClient = new WorkflowClient("localhost", 8092);
         metadataClient = new MetadataClient("localhost", 8092);
