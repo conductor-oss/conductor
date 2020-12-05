@@ -12,7 +12,15 @@
  */
 package com.netflix.conductor.redis.config.utils;
 
-import static com.netflix.conductor.redis.config.utils.RedisQueuesProvider.DEFAULT_CLIENT_INJECTION_NAME;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Component;
+import redis.clients.jedis.ScanParams;
+import redis.clients.jedis.ScanResult;
+import redis.clients.jedis.Tuple;
+import redis.clients.jedis.commands.JedisCommands;
+import redis.clients.jedis.params.ZAddParams;
 
 import java.util.HashMap;
 import java.util.HashSet;
@@ -21,18 +29,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
-import redis.clients.jedis.ScanParams;
-import redis.clients.jedis.ScanResult;
-import redis.clients.jedis.Tuple;
-import redis.clients.jedis.commands.JedisCommands;
-import redis.clients.jedis.params.ZAddParams;
+
+import static com.netflix.conductor.redis.configuration.RedisCommonConfiguration.DEFAULT_CLIENT_INJECTION_NAME;
 
 /**
  * Proxy for the {@link JedisCommands} object.
  */
+@Component
 public class JedisProxy {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(JedisProxy.class);
@@ -143,10 +146,9 @@ public class JedisProxy {
 
     public Map<String, String> hgetAll(String key) {
         Map<String, String> m = new HashMap<>();
-        JedisCommands dyno = jedisCommands;
         int cursor = 0;
         do {
-            ScanResult<Entry<String, String>> scanResult = dyno.hscan(key, "" + cursor);
+            ScanResult<Entry<String, String>> scanResult = jedisCommands.hscan(key, "" + cursor);
             cursor = Integer.parseInt(scanResult.getCursor());
             for (Entry<String, String> r : scanResult.getResult()) {
                 m.put(r.getKey(), r.getValue());
@@ -163,11 +165,10 @@ public class JedisProxy {
 
     public Set<String> hkeys(String key) {
         LOGGER.trace("hkeys {}", key);
-        JedisCommands client = jedisCommands;
         Set<String> keys = new HashSet<>();
         int cursor = 0;
         do {
-            ScanResult<Entry<String, String>> sr = client.hscan(key, "" + cursor);
+            ScanResult<Entry<String, String>> sr = jedisCommands.hscan(key, "" + cursor);
             cursor = Integer.parseInt(sr.getCursor());
             List<Entry<String, String>> result = sr.getResult();
             for (Entry<String, String> e : result) {
@@ -207,14 +208,13 @@ public class JedisProxy {
 
     public Set<String> smembers(String key) {
         LOGGER.trace("smembers {}", key);
-        JedisCommands client = jedisCommands;
         Set<String> r = new HashSet<>();
         int cursor = 0;
         ScanParams sp = new ScanParams();
         sp.count(50);
 
         do {
-            ScanResult<String> scanResult = client.sscan(key, "" + cursor, sp);
+            ScanResult<String> scanResult = jedisCommands.sscan(key, "" + cursor, sp);
             cursor = Integer.parseInt(scanResult.getCursor());
             r.addAll(scanResult.getResult());
         } while (cursor > 0);

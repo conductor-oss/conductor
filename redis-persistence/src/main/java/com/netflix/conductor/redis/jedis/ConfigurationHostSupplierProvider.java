@@ -19,12 +19,11 @@ import com.netflix.dyno.connectionpool.HostSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Provider;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ConfigurationHostSupplierProvider implements Provider<HostSupplier> {
+public class ConfigurationHostSupplierProvider {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConfigurationHostSupplierProvider.class);
 
@@ -34,7 +33,6 @@ public class ConfigurationHostSupplierProvider implements Provider<HostSupplier>
         this.properties = properties;
     }
 
-    @Override
     public HostSupplier get() {
         return this::parseHostsFromConfig;
     }

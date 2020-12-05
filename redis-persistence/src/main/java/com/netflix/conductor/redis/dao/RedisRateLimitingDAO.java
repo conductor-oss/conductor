@@ -22,10 +22,11 @@ import com.netflix.conductor.redis.config.utils.RedisProperties;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-//@Trace
+@Component
 public class RedisRateLimitingDAO extends BaseDynoDAO implements RateLimitingDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisRateLimitingDAO.class);

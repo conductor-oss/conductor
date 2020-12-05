@@ -20,7 +20,7 @@ import com.netflix.dyno.connectionpool.HostSupplier;
 
 import javax.inject.Provider;
 
-public class LocalHostSupplierProvider implements Provider<HostSupplier> {
+public class LocalHostSupplierProvider {
 
     private final RedisProperties properties;
 
@@ -28,7 +28,6 @@ public class LocalHostSupplierProvider implements Provider<HostSupplier> {
         this.properties = properties;
     }
 
-    @Override
     public HostSupplier get() {
         Host dynoHost = new HostBuilder()
             .setHostname("localhost")

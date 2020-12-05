@@ -28,6 +28,7 @@ import com.netflix.conductor.redis.config.utils.JedisProxy;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -42,7 +43,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-//@Trace
+@Component
 public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
 
     public static final Logger LOGGER = LoggerFactory.getLogger(RedisExecutionDAO.class);

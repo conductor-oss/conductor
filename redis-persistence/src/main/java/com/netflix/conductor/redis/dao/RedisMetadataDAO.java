@@ -25,6 +25,7 @@ import com.netflix.conductor.redis.config.utils.RedisProperties;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -37,7 +38,7 @@ import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-//@Trace
+@Component
 public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisMetadataDAO.class);

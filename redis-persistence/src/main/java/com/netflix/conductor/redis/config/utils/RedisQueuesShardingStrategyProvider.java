@@ -19,10 +19,9 @@ import com.netflix.dyno.queues.redis.sharding.ShardingStrategy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Provider;
 import java.util.List;
 
-public class RedisQueuesShardingStrategyProvider implements Provider<ShardingStrategy> {
+public class RedisQueuesShardingStrategyProvider {
 
     public static final String LOCAL_ONLY_STRATEGY = "localOnly";
     public static final String ROUND_ROBIN_STRATEGY = "roundRobin";
@@ -36,7 +35,6 @@ public class RedisQueuesShardingStrategyProvider implements Provider<ShardingStr
         this.properties = properties;
     }
 
-    @Override
     public ShardingStrategy get() {
         String shardingStrat = properties.getQueueShardingStrategy();
         if (shardingStrat.equals(LOCAL_ONLY_STRATEGY)) {

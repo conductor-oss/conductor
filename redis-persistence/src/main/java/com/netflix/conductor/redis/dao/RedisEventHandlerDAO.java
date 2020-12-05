@@ -22,13 +22,14 @@ import com.netflix.conductor.redis.config.utils.JedisProxy;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-//@Trace
+@Component
 public class RedisEventHandlerDAO extends BaseDynoDAO implements EventHandlerDAO {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisEventHandlerDAO.class);

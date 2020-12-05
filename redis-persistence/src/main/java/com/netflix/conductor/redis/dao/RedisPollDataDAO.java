@@ -19,11 +19,13 @@ import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.redis.config.utils.JedisProxy;
 import com.netflix.conductor.redis.config.utils.RedisProperties;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+@Component
 public class RedisPollDataDAO extends BaseDynoDAO implements PollDataDAO {
 
     private final static String POLL_DATA = "POLL_DATA";
