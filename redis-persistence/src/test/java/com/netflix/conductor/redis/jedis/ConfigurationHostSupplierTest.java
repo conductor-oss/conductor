@@ -12,7 +12,8 @@
  */
 package com.netflix.conductor.redis.jedis;
 
-import com.netflix.conductor.redis.config.utils.RedisProperties;
+import com.netflix.conductor.redis.config.RedisProperties;
+import com.netflix.conductor.redis.dynoqueue.ConfigurationHostSupplier;
 import com.netflix.dyno.connectionpool.Host;
 import org.junit.Before;
 import org.junit.Test;

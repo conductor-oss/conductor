@@ -10,8 +10,9 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.redis.config.utils;
+package com.netflix.conductor.redis.dynoqueue;
 
+import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.dyno.queues.Message;
 import com.netflix.dyno.queues.ShardSupplier;
 import com.netflix.dyno.queues.redis.sharding.RoundRobinStrategy;
@@ -46,7 +47,7 @@ public class RedisQueuesShardingStrategyProvider {
         }
     }
 
-    static final class LocalOnlyStrategy implements ShardingStrategy {
+    public static final class LocalOnlyStrategy implements ShardingStrategy {
 
         private static final Logger LOGGER = LoggerFactory.getLogger(LocalOnlyStrategy.class);
 

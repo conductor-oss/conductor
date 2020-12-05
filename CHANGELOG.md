@@ -28,3 +28,4 @@ Renamed DynoProxy to JedisProxy
 Removed support for EmbeddedElasticSearch
 
 Ignored a flaky test class - LocalOnlyLockTest.
+Test Harness module uses TestContainers for MySql,Postgres & Elasticsearch

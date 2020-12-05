@@ -13,8 +13,8 @@
 package com.netflix.conductor.redis.dao;
 
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.redis.config.utils.RedisProperties;
-import com.netflix.conductor.redis.config.utils.RedisQueuesShardingStrategyProvider;
+import com.netflix.conductor.redis.config.RedisProperties;
+import com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider;
 import com.netflix.conductor.redis.jedis.JedisMock;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.queues.ShardSupplier;
@@ -32,7 +32,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.netflix.conductor.redis.config.utils.RedisQueuesShardingStrategyProvider.LOCAL_ONLY_STRATEGY;
+import static com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider.LOCAL_ONLY_STRATEGY;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Mockito.mock;

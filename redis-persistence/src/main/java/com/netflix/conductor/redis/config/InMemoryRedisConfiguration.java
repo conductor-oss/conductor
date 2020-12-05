@@ -10,18 +10,17 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.redis.configuration;
+package com.netflix.conductor.redis.config;
 
-import com.netflix.conductor.redis.config.utils.RedisProperties;
+import com.netflix.conductor.redis.dynoqueue.LocalhostHostSupplier;
 import com.netflix.conductor.redis.jedis.JedisMock;
-import com.netflix.conductor.redis.jedis.LocalhostHostSupplier;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import static com.netflix.conductor.redis.configuration.RedisCommonConfiguration.DEFAULT_CLIENT_INJECTION_NAME;
-import static com.netflix.conductor.redis.configuration.RedisCommonConfiguration.READ_CLIENT_INJECTION_NAME;
+import static com.netflix.conductor.redis.config.RedisCommonConfiguration.DEFAULT_CLIENT_INJECTION_NAME;
+import static com.netflix.conductor.redis.config.RedisCommonConfiguration.READ_CLIENT_INJECTION_NAME;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)

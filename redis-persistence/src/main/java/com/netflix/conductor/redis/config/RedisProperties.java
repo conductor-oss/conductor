@@ -10,12 +10,14 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.redis.config.utils;
+package com.netflix.conductor.redis.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 @Component
+@Conditional(AnyRedisCondition.class)
 public class RedisProperties {
 
     // TODO Are cluster and cluster name really different things?
@@ -65,7 +67,7 @@ public class RedisProperties {
     @Value("${queues.dynomite.nonQuorum.port:22122}")
     private int queuesNonQuorumPort;
 
-    @Value("${workflow.dyno.queue.sharding.strategy:#{T(com.netflix.conductor.redis.config.utils.RedisQueuesShardingStrategyProvider).ROUND_ROBIN_STRATEGY}}")
+    @Value("${workflow.dyno.queue.sharding.strategy:#{T(com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider).ROUND_ROBIN_STRATEGY}}")
     private String queueShardingStrategy;
 
     /**

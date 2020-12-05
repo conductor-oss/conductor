@@ -17,7 +17,7 @@ import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.redis.jedis.JedisProxy;
-import com.netflix.conductor.redis.config.utils.RedisProperties;
+import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisMock;
 import org.junit.Before;
 import org.junit.Test;

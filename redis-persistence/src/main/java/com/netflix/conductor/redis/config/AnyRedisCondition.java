@@ -1,4 +1,4 @@
-package com.netflix.conductor.redis.configuration;
+package com.netflix.conductor.redis.config;
 
 import org.springframework.boot.autoconfigure.condition.AnyNestedCondition;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;

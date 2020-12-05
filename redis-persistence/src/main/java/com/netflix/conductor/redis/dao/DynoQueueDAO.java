@@ -13,7 +13,7 @@
 package com.netflix.conductor.redis.dao;
 
 import com.netflix.conductor.dao.QueueDAO;
-import com.netflix.conductor.redis.configuration.AnyRedisCondition;
+import com.netflix.conductor.redis.config.AnyRedisCondition;
 import com.netflix.dyno.queues.DynoQueue;
 import com.netflix.dyno.queues.Message;
 import com.netflix.dyno.queues.redis.RedisQueues;

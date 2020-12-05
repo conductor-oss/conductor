@@ -12,7 +12,7 @@
  */
 package com.netflix.conductor.redis.jedis;
 
-import com.netflix.conductor.redis.configuration.AnyRedisCondition;
+import com.netflix.conductor.redis.config.AnyRedisCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -32,7 +32,7 @@ import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.Set;
 
-import static com.netflix.conductor.redis.configuration.RedisCommonConfiguration.DEFAULT_CLIENT_INJECTION_NAME;
+import static com.netflix.conductor.redis.config.RedisCommonConfiguration.DEFAULT_CLIENT_INJECTION_NAME;
 
 /**
  * Proxy for the {@link JedisCommands} object.

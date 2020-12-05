@@ -10,42 +10,30 @@
  * an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the
  * specific language governing permissions and limitations under the License.
  */
-package com.netflix.conductor.redis.configuration;
+package com.netflix.conductor.redis.config;
 
-import com.netflix.conductor.redis.config.utils.RedisProperties;
-import com.netflix.conductor.redis.jedis.JedisSentinel;
+import com.netflix.conductor.redis.jedis.JedisCluster;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.connectionpool.TokenMapSupplier;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
-import redis.clients.jedis.JedisSentinelPool;
+import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.commands.JedisCommands;
-
-import java.util.HashSet;
-import java.util.Set;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "db", havingValue = "redis_sentinel")
-public class RedisSentinelConfiguration extends JedisCommandsConfigurer {
-
-    private static final Logger log = LoggerFactory.getLogger(RedisSentinelConfiguration.class);
+@ConditionalOnProperty(name = "db", havingValue = "redis_cluster")
+public class RedisClusterConfiguration extends JedisCommandsConfigurer {
 
     @Override
     protected JedisCommands createJedisCommands(RedisProperties properties, HostSupplier hostSupplier, TokenMapSupplier tokenMapSupplier) {
         GenericObjectPoolConfig genericObjectPoolConfig = new GenericObjectPoolConfig();
-        genericObjectPoolConfig.setMinIdle(5);
         genericObjectPoolConfig.setMaxTotal(properties.getMaxConnectionsPerHost());
-        log.info("Starting conductor server using redis_sentinel and cluster " + properties.getClusterName());
-        Set<String> sentinels = new HashSet<>();
-        for (Host host : hostSupplier.getHosts()) {
-            sentinels.add(host.getHostName() + ":" + host.getPort());
-        }
-        return new JedisSentinel(
-                new JedisSentinelPool(properties.getClusterName(), sentinels, genericObjectPoolConfig));
+        Host host = hostSupplier.getHosts().get(0);
+        return new JedisCluster(
+                new redis.clients.jedis.JedisCluster(new HostAndPort(host.getHostName(), host.getPort()),
+                        genericObjectPoolConfig));
     }
 }

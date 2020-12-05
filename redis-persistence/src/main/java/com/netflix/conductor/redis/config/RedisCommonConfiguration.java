@@ -1,8 +1,7 @@
-package com.netflix.conductor.redis.configuration;
+package com.netflix.conductor.redis.config;
 
 import com.google.inject.ProvisionException;
-import com.netflix.conductor.redis.config.utils.RedisProperties;
-import com.netflix.conductor.redis.config.utils.RedisQueuesShardingStrategyProvider;
+import com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.connectionpool.TokenMapSupplier;

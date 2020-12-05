@@ -14,7 +14,7 @@ package com.netflix.conductor.redis.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.redis.jedis.JedisProxy;
-import com.netflix.conductor.redis.config.utils.RedisProperties;
+import com.netflix.conductor.redis.config.RedisProperties;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;

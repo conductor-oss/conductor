@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.redis.config.utils;
 
+import com.netflix.conductor.redis.config.RedisProperties;
+import com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider;
 import com.netflix.dyno.queues.Message;
 import com.netflix.dyno.queues.ShardSupplier;
 import org.junit.Test;
