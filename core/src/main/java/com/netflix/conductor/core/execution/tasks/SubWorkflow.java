@@ -135,11 +135,6 @@ public class SubWorkflow extends WorkflowSystemTask {
 		if(!subWorkflowStatus.isTerminal()){
 			return false;
 		}
-		if (subWorkflow.getExternalOutputPayloadStoragePath() != null) {
-			task.setExternalOutputPayloadStoragePath(subWorkflow.getExternalOutputPayloadStoragePath());
-		} else {
-			task.getOutputData().putAll(subWorkflow.getOutput());
-		}
 
 		updateTaskStatus(subWorkflow, task);
 		return true;
@@ -196,8 +191,15 @@ public class SubWorkflow extends WorkflowSystemTask {
 				throw new ApplicationException(ApplicationException.Code.INTERNAL_ERROR, "Subworkflow status does not conform to relevant task status.");
 		}
 
-		if (status.isTerminal() && !status.isSuccessful()) {
-			task.setReasonForIncompletion(subworkflow.getReasonForIncompletion());
+		if (status.isTerminal()) {
+			if (subworkflow.getExternalOutputPayloadStoragePath() != null) {
+				task.setExternalOutputPayloadStoragePath(subworkflow.getExternalOutputPayloadStoragePath());
+			} else {
+				task.getOutputData().putAll(subworkflow.getOutput());
+			}
+			if(!status.isSuccessful()) {
+				task.setReasonForIncompletion(subworkflow.getReasonForIncompletion());
+			}
 		}
 	}
 }
