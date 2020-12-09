@@ -1,0 +1,15 @@
+name: Move assigned pull requests into To do
+
+on:
+  pull_request:
+    types: [ opened, reopened ]
+
+jobs:
+  automate-project-columns:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: alex-page/github-project-automation-plus@v0.3.0
+        with:
+          project: Backlog
+          column: To do
+          repo-token: ${{ secrets.PROJECT_MANAGEMENT_TOKEN }}
