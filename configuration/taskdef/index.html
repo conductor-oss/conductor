@@ -252,29 +252,30 @@
                 <h2 id="task-definition">Task Definition<a class="headerlink" href="#task-definition" title="Permanent link">&para;</a></h2>
 <p>Conductor maintains a registry of worker tasks.  A task MUST be registered before being used in a workflow.</p>
 <p><strong>Example</strong></p>
-<pre class="codehilite"><code class="language-json">{
-  &quot;name&quot;: &quot;encode_task&quot;,
-  &quot;retryCount&quot;: 3,
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_task&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">3</span><span class="p">,</span>
 
-  &quot;timeoutSeconds&quot;: 1200,
-  &quot;pollTimeoutSeconds&quot;: 3600,
-  &quot;inputKeys&quot;: [
-    &quot;sourceRequestId&quot;,
-    &quot;qcElementType&quot;
-  ],
-  &quot;outputKeys&quot;: [
-    &quot;state&quot;,
-    &quot;skipped&quot;,
-    &quot;result&quot;
-  ],
-  &quot;timeoutPolicy&quot;: &quot;TIME_OUT_WF&quot;,
-  &quot;retryLogic&quot;: &quot;FIXED&quot;,
-  &quot;retryDelaySeconds&quot;: 600,
-  &quot;responseTimeoutSeconds&quot;: 3600,
-  &quot;concurrentExecLimit&quot;: 100,
-  &quot;rateLimitFrequencyInSeconds&quot;: 60,
-  &quot;rateLimitPerFrequency&quot;: 50
-}</code></pre>
+  <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">1200</span><span class="p">,</span>
+  <span class="nt">&quot;pollTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">3600</span><span class="p">,</span>
+  <span class="nt">&quot;inputKeys&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="s2">&quot;sourceRequestId&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;qcElementType&quot;</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;outputKeys&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="s2">&quot;state&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;skipped&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;result&quot;</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;TIME_OUT_WF&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">600</span><span class="p">,</span>
+  <span class="nt">&quot;responseTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">3600</span><span class="p">,</span>
+  <span class="nt">&quot;concurrentExecLimit&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+  <span class="nt">&quot;rateLimitFrequencyInSeconds&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+  <span class="nt">&quot;rateLimitPerFrequency&quot;</span><span class="p">:</span> <span class="mi">50</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <table>
@@ -397,17 +398,19 @@ Note: Rate limiting is only supported for the Redis-persistence module and is no
 <li><code>inputTemplate</code> allows to define default values, which can be overridden by values provided in Workflow.</li>
 <li>Eg: In your Task Definition, you can define your inputTemplate as:</li>
 </ul>
-<pre class="codehilite"><code class="language-json">&quot;inputTemplate&quot;: {
-    &quot;url&quot;: &quot;https://some_url:7004&quot;
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="s2">&quot;inputTemplate&quot;</span><span class="err">:</span> <span class="p">{</span>
+    <span class="nt">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;https://some_url:7004&quot;</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <ul>
 <li>Now, in your workflow Definition, when using above task, you can use the default <code>url</code> or override with something else in the task's <code>inputParameters</code>.</li>
 </ul>
-<pre class="codehilite"><code class="language-json">&quot;inputParameters&quot;: {
-    &quot;url&quot;: &quot;${workflow.input.some_new_url}&quot;
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="s2">&quot;inputParameters&quot;</span><span class="err">:</span> <span class="p">{</span>
+    <span class="nt">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.some_new_url}&quot;</span>
+<span class="p">}</span>
+</pre></div>
               
             </div>
           </div>

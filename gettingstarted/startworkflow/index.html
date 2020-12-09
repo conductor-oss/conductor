@@ -291,15 +291,16 @@
 </table>
 <p><strong>Example:</strong></p>
 <p>Send a <code>POST</code> request to <code>/workflow</code> with payload like:</p>
-<pre class="codehilite"><code class="language-json">{
-    &quot;name&quot;: &quot;encode_and_deploy&quot;,
-    &quot;version&quot;: 1,
-    &quot;correlationId&quot;: &quot;my_unique_correlation_id&quot;,
-    &quot;input&quot;: {
-        &quot;param1&quot;: &quot;value1&quot;,
-        &quot;param2&quot;: &quot;value2&quot;
-    }
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_and_deploy&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="nt">&quot;correlationId&quot;</span><span class="p">:</span> <span class="s2">&quot;my_unique_correlation_id&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;param1&quot;</span><span class="p">:</span> <span class="s2">&quot;value1&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;param2&quot;</span><span class="p">:</span> <span class="s2">&quot;value2&quot;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <h2 id="dynamic-workflows">Dynamic Workflows<a class="headerlink" href="#dynamic-workflows" title="Permanent link">&para;</a></h2>
@@ -307,50 +308,51 @@
 <p>This enables you to provide a workflow definition embedded with the required task definitions to the Start Workflow Request in the <code>workflowDef</code> parameter, avoiding the need to register the blueprints before execution.</p>
 <p><strong>Example:</strong></p>
 <p>Send a <code>POST</code> request to <code>/workflow</code> with payload like:</p>
-<pre class="codehilite"><code class="language-json">{
-  &quot;name&quot;: &quot;my_adhoc_unregistered_workflow&quot;,
-  &quot;workflowDef&quot;: {
-    &quot;ownerApp&quot;: &quot;my_owner_app&quot;,
-    &quot;ownerEmail&quot;: &quot;my_owner_email@test.com&quot;,
-    &quot;createdBy&quot;: &quot;my_username&quot;,
-    &quot;name&quot;: &quot;my_adhoc_unregistered_workflow&quot;,
-    &quot;description&quot;: &quot;Test Workflow setup&quot;,
-    &quot;version&quot;: 1,
-    &quot;tasks&quot;: [
-        {
-            &quot;name&quot;: &quot;fetch_data&quot;,
-            &quot;type&quot;: &quot;HTTP&quot;,
-            &quot;taskReferenceName&quot;: &quot;fetch_data&quot;,
-            &quot;inputParameters&quot;: {
-              &quot;http_request&quot;: {
-                &quot;connectionTimeOut&quot;: &quot;3600&quot;,
-                &quot;readTimeOut&quot;: &quot;3600&quot;,
-                &quot;uri&quot;: &quot;${workflow.input.uri}&quot;,
-                &quot;method&quot;: &quot;GET&quot;,
-                &quot;accept&quot;: &quot;application/json&quot;,
-                &quot;content-Type&quot;: &quot;application/json&quot;,
-                &quot;headers&quot;: {
-                }
-              }
-            },
-            &quot;taskDefinition&quot;: {
-                &quot;name&quot;: &quot;fetch_data&quot;,
-                &quot;retryCount&quot;: 0,
-                &quot;timeoutSeconds&quot;: 3600,
-                &quot;timeoutPolicy&quot;: &quot;TIME_OUT_WF&quot;,
-                &quot;retryLogic&quot;: &quot;FIXED&quot;,
-                &quot;retryDelaySeconds&quot;: 0,
-                &quot;responseTimeoutSeconds&quot;: 3000
-            }
-        }
-    ],
-    &quot;outputParameters&quot;: {
-    }
-  },
-  &quot;input&quot;: {
-    &quot;uri&quot;: &quot;http://www.google.com&quot;
-  }
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_adhoc_unregistered_workflow&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;workflowDef&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;ownerApp&quot;</span><span class="p">:</span> <span class="s2">&quot;my_owner_app&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;ownerEmail&quot;</span><span class="p">:</span> <span class="s2">&quot;my_owner_email@test.com&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;createdBy&quot;</span><span class="p">:</span> <span class="s2">&quot;my_username&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;my_adhoc_unregistered_workflow&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Test Workflow setup&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">{</span>
+            <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;fetch_data&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;HTTP&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;fetch_data&quot;</span><span class="p">,</span>
+            <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+              <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;connectionTimeOut&quot;</span><span class="p">:</span> <span class="s2">&quot;3600&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;readTimeOut&quot;</span><span class="p">:</span> <span class="s2">&quot;3600&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.uri}&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;GET&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;accept&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;headers&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="p">}</span>
+              <span class="p">}</span>
+            <span class="p">},</span>
+            <span class="nt">&quot;taskDefinition&quot;</span><span class="p">:</span> <span class="p">{</span>
+                <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;fetch_data&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;retryCount&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="nt">&quot;timeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">3600</span><span class="p">,</span>
+                <span class="nt">&quot;timeoutPolicy&quot;</span><span class="p">:</span> <span class="s2">&quot;TIME_OUT_WF&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;retryLogic&quot;</span><span class="p">:</span> <span class="s2">&quot;FIXED&quot;</span><span class="p">,</span>
+                <span class="nt">&quot;retryDelaySeconds&quot;</span><span class="p">:</span> <span class="mi">0</span><span class="p">,</span>
+                <span class="nt">&quot;responseTimeoutSeconds&quot;</span><span class="p">:</span> <span class="mi">3000</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">],</span>
+    <span class="nt">&quot;outputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="p">}</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;input&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;uri&quot;</span><span class="p">:</span> <span class="s2">&quot;http://www.google.com&quot;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <div class="admonition note">

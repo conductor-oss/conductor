@@ -246,36 +246,37 @@
                 <h2 id="workflow-definition">Workflow Definition<a class="headerlink" href="#workflow-definition" title="Permanent link">&para;</a></h2>
 <p>Workflows are defined using a JSON based DSL.</p>
 <p><strong>Example</strong></p>
-<pre class="codehilite"><code class="language-json">{
-  &quot;name&quot;: &quot;encode_and_deploy&quot;,
-  &quot;description&quot;: &quot;Encodes a file and deploys to CDN&quot;,
-  &quot;version&quot;: 1,
-  &quot;tasks&quot;: [
-    {
-      &quot;name&quot;: &quot;encode&quot;,
-      &quot;taskReferenceName&quot;: &quot;encode&quot;,
-      &quot;type&quot;: &quot;SIMPLE&quot;,
-      &quot;inputParameters&quot;: {
-        &quot;fileLocation&quot;: &quot;${workflow.input.fileLocation}&quot;
-      }
-    },
-    {
-      &quot;name&quot;: &quot;deploy&quot;,
-      &quot;taskReferenceName&quot;: &quot;d1&quot;,
-      &quot;type&quot;: &quot;SIMPLE&quot;,
-      &quot;inputParameters&quot;: {
-        &quot;fileLocation&quot;: &quot;${encode.output.encodeLocation}&quot;
-      }
-    }
-  ],
-  &quot;outputParameters&quot;: {
-    &quot;cdn_url&quot;: &quot;${d1.output.location}&quot;
-  },
-  &quot;failureWorkflow&quot;: &quot;cleanup_encode_resources&quot;,
-  &quot;restartable&quot;: true,
-  &quot;workflowStatusListenerEnabled&quot;: true,
-  &quot;schemaVersion&quot;: 2
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode_and_deploy&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;description&quot;</span><span class="p">:</span> <span class="s2">&quot;Encodes a file and deploys to CDN&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;version&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
+  <span class="nt">&quot;tasks&quot;</span><span class="p">:</span> <span class="p">[</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;encode&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;encode&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;fileLocation&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.fileLocation}&quot;</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="p">{</span>
+      <span class="nt">&quot;name&quot;</span><span class="p">:</span> <span class="s2">&quot;deploy&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;taskReferenceName&quot;</span><span class="p">:</span> <span class="s2">&quot;d1&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;type&quot;</span><span class="p">:</span> <span class="s2">&quot;SIMPLE&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;fileLocation&quot;</span><span class="p">:</span> <span class="s2">&quot;${encode.output.encodeLocation}&quot;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">],</span>
+  <span class="nt">&quot;outputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;cdn_url&quot;</span><span class="p">:</span> <span class="s2">&quot;${d1.output.location}&quot;</span>
+  <span class="p">},</span>
+  <span class="nt">&quot;failureWorkflow&quot;</span><span class="p">:</span> <span class="s2">&quot;cleanup_encode_resources&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;restartable&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+  <span class="nt">&quot;workflowStatusListenerEnabled&quot;</span><span class="p">:</span> <span class="kc">true</span><span class="p">,</span>
+  <span class="nt">&quot;schemaVersion&quot;</span><span class="p">:</span> <span class="mi">2</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <table>
@@ -422,66 +423,70 @@ Workflow input is a JSON payload that is available via <code>${workflow.input...
 </div>
 <p><strong>Example</strong></p>
 <p>Consider a task with input configured to use input/output parameters from workflow and a task named <strong>loc_task</strong>.</p>
-<pre class="codehilite"><code class="language-json">{
-  &quot;inputParameters&quot;: {
-    &quot;movieId&quot;: &quot;${workflow.input.movieId}&quot;,
-    &quot;url&quot;: &quot;${workflow.input.fileLocation}&quot;,
-    &quot;lang&quot;: &quot;${loc_task.output.languages[0]}&quot;,
-    &quot;http_request&quot;: {
-      &quot;method&quot;: &quot;POST&quot;,
-      &quot;url&quot;: &quot;http://example.com/${loc_task.output.fileId}/encode&quot;,
-      &quot;body&quot;: {
-        &quot;recipe&quot;: &quot;${workflow.input.recipe}&quot;,
-        &quot;params&quot;: {
-          &quot;width&quot;: 100,
-          &quot;height&quot;: 100
-        }
-      },
-      &quot;headers&quot;: {
-        &quot;Accept&quot;: &quot;application/json&quot;,
-        &quot;Content-Type&quot;: &quot;application/json&quot;
-      }
-    }
-  }
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;inputParameters&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.movieId}&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.fileLocation}&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;lang&quot;</span><span class="p">:</span> <span class="s2">&quot;${loc_task.output.languages[0]}&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;http://example.com/${loc_task.output.fileId}/encode&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;body&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;recipe&quot;</span><span class="p">:</span> <span class="s2">&quot;${workflow.input.recipe}&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
+          <span class="nt">&quot;width&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+          <span class="nt">&quot;height&quot;</span><span class="p">:</span> <span class="mi">100</span>
+        <span class="p">}</span>
+      <span class="p">},</span>
+      <span class="nt">&quot;headers&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;Accept&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <p>Consider the following as the <em>workflow input</em></p>
-<pre class="codehilite"><code class="language-json">{
-  &quot;movieId&quot;: &quot;movie_123&quot;,
-  &quot;fileLocation&quot;:&quot;s3://moviebucket/file123&quot;,
-  &quot;recipe&quot;:&quot;png&quot;
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;movie_123&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;fileLocation&quot;</span><span class="p">:</span><span class="s2">&quot;s3://moviebucket/file123&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;recipe&quot;</span><span class="p">:</span><span class="s2">&quot;png&quot;</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <p>And the output of the <em>loc_task</em> as the following;</p>
-<pre class="codehilite"><code class="language-json">{
-  &quot;fileId&quot;: &quot;file_xxx_yyy_zzz&quot;,
-  &quot;languages&quot;: [&quot;en&quot;,&quot;ja&quot;,&quot;es&quot;]
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;fileId&quot;</span><span class="p">:</span> <span class="s2">&quot;file_xxx_yyy_zzz&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;languages&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;en&quot;</span><span class="p">,</span><span class="s2">&quot;ja&quot;</span><span class="p">,</span><span class="s2">&quot;es&quot;</span><span class="p">]</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <p>When scheduling the task, Conductor will merge the values from workflow input and loc_task's output and create the input to the task as follows:</p>
-<pre class="codehilite"><code class="language-json">{
-  &quot;movieId&quot;: &quot;movie_123&quot;,
-  &quot;url&quot;: &quot;s3://moviebucket/file123&quot;,
-  &quot;lang&quot;: &quot;en&quot;,
-  &quot;http_request&quot;: {
-    &quot;method&quot;: &quot;POST&quot;,
-    &quot;url&quot;: &quot;http://example.com/file_xxx_yyy_zzz/encode&quot;,
-    &quot;body&quot;: {
-      &quot;recipe&quot;: &quot;png&quot;,
-      &quot;params&quot;: {
-        &quot;width&quot;: 100,
-        &quot;height&quot;: 100
-      }
-    },
-    &quot;headers&quot;: {
-        &quot;Accept&quot;: &quot;application/json&quot;,
-        &quot;Content-Type&quot;: &quot;application/json&quot;
-    }
-  }
-}</code></pre>
+<div class="codehilite"><pre><span></span><span class="p">{</span>
+  <span class="nt">&quot;movieId&quot;</span><span class="p">:</span> <span class="s2">&quot;movie_123&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;s3://moviebucket/file123&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;lang&quot;</span><span class="p">:</span> <span class="s2">&quot;en&quot;</span><span class="p">,</span>
+  <span class="nt">&quot;http_request&quot;</span><span class="p">:</span> <span class="p">{</span>
+    <span class="nt">&quot;method&quot;</span><span class="p">:</span> <span class="s2">&quot;POST&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;url&quot;</span><span class="p">:</span> <span class="s2">&quot;http://example.com/file_xxx_yyy_zzz/encode&quot;</span><span class="p">,</span>
+    <span class="nt">&quot;body&quot;</span><span class="p">:</span> <span class="p">{</span>
+      <span class="nt">&quot;recipe&quot;</span><span class="p">:</span> <span class="s2">&quot;png&quot;</span><span class="p">,</span>
+      <span class="nt">&quot;params&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;width&quot;</span><span class="p">:</span> <span class="mi">100</span><span class="p">,</span>
+        <span class="nt">&quot;height&quot;</span><span class="p">:</span> <span class="mi">100</span>
+      <span class="p">}</span>
+    <span class="p">},</span>
+    <span class="nt">&quot;headers&quot;</span><span class="p">:</span> <span class="p">{</span>
+        <span class="nt">&quot;Accept&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span><span class="p">,</span>
+        <span class="nt">&quot;Content-Type&quot;</span><span class="p">:</span> <span class="s2">&quot;application/json&quot;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
 
 
 <h3 id="workflow-notifications">Workflow notifications<a class="headerlink" href="#workflow-notifications" title="Permanent link">&para;</a></h3>

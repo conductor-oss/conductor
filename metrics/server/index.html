@@ -364,14 +364,15 @@
 Log4j supports various appenders that can print metrics into a console/file or even send them to remote metrics collectors over e.g. syslog channel.</p>
 <p>Conductor provides optional modules that connect metrics registry with the logging framework.
 To enable these modules, configure following additional modules property in config.properties:</p>
-<pre class="codehilite"><code>conductor.additional.modules=com.netflix.conductor.contribs.metrics.MetricsRegistryModule,com.netflix.conductor.contribs.metrics.LoggingMetricsModule
-com.netflix.conductor.contribs.metrics.LoggingMetricsModule.reportPeriodSeconds=15</code></pre>
+<div class="codehilite"><pre><span></span>conductor.additional.modules=com.netflix.conductor.contribs.metrics.MetricsRegistryModule,com.netflix.conductor.contribs.metrics.LoggingMetricsModule
+com.netflix.conductor.contribs.metrics.LoggingMetricsModule.reportPeriodSeconds=15
+</pre></div>
 
 
 <p>This will push all available metrics into log4j every 15 seconds.</p>
 <p>By default, the metrics will be handled as a regular log message (just printed to console with default log4j.properties).
 In order to change that, you can use following log4j configuration that prints metrics into a dedicated file:</p>
-<pre class="codehilite"><code>log4j.rootLogger=INFO,console,file
+<div class="codehilite"><pre><span></span>log4j.rootLogger=INFO,console,file
 
 log4j.appender.console=org.apache.log4j.ConsoleAppender
 log4j.appender.console.layout=org.apache.log4j.PatternLayout
@@ -393,11 +394,13 @@ log4j.appender.fileMetrics.layout=org.apache.log4j.PatternLayout
 log4j.appender.fileMetrics.layout.ConversionPattern=%d{ISO8601} %5p [%t] (%C) - %m%n
 
 log4j.logger.ConductorMetrics=INFO,console,fileMetrics
-log4j.additivity.ConductorMetrics=false</code></pre>
+log4j.additivity.ConductorMetrics=false
+</pre></div>
 
 
 <p>This configuration is bundled with conductor-server in file: log4j-file-appender.properties and can be utilized by setting env var:</p>
-<pre class="codehilite"><code>LOG4J_PROP=log4j-file-appender.properties</code></pre>
+<div class="codehilite"><pre><span></span>LOG4J_PROP=log4j-file-appender.properties
+</pre></div>
 
 
 <p>This variable is used by <em>startup.sh</em> script.</p>
@@ -407,13 +410,14 @@ One way of achieving this is to use: log4j file appender -&gt; logstash -&gt; El
 <p>Considering the above setup, you can deploy logstash to consume the contents of /app/logs/metrics.log file, process it and send further to elasticsearch.</p>
 <p>Following configuration needs to be used in logstash to achieve it:</p>
 <p>pipeline.yml:</p>
-<pre class="codehilite"><code>- pipeline.id: conductor_metrics
+<div class="codehilite"><pre><span></span>- pipeline.id: conductor_metrics
   path.config: &quot;/usr/share/logstash/pipeline/logstash_metrics.conf&quot;
-  pipeline.workers: 2</code></pre>
+  pipeline.workers: 2
+</pre></div>
 
 
 <p>logstash_metrics.conf</p>
-<pre class="codehilite"><code>input {
+<div class="codehilite"><pre><span></span>input {
 
  file {
   path =&amp;gt; [&quot;/conductor-server-logs/metrics.log&quot;]
@@ -442,14 +446,15 @@ output {
  elasticsearch {
   hosts =&amp;gt; [&quot;elasticsearch:9200&quot;]
  }
-}</code></pre>
+}
+</pre></div>
 
 
 <p>Note: In addition to forwarding the metrics into ElasticSearch, logstash will extract following fields from each metric: name, type, count, value and set proper types</p>
 <h3 id="integration-with-fluentd-using-a-syslog-channel">Integration with fluentd using a syslog channel<a class="headerlink" href="#integration-with-fluentd-using-a-syslog-channel" title="Permanent link">&para;</a></h3>
 <p>Another example of metrics collection uses: log4j syslog appender -&gt; fluentd -&gt; prometheus.</p>
 <p>In this case, a specific log4j properties file needs to be used so that metrics are pushed into a syslog channel:</p>
-<pre class="codehilite"><code>    log4j.rootLogger=INFO,console,file
+<div class="codehilite"><pre><span></span>    log4j.rootLogger=INFO,console,file
 
     log4j.appender.console=org.apache.log4j.ConsoleAppender
     log4j.appender.console.layout=org.apache.log4j.PatternLayout
@@ -470,67 +475,69 @@ output {
     log4j.appender.server.layout.ConversionPattern=%d{ISO8601} %5p [%t] (%C) - %m%n
 
     log4j.logger.ConductorMetrics=INFO,console,server
-    log4j.additivity.ConductorMetrics=false</code></pre>
+    log4j.additivity.ConductorMetrics=false
+</pre></div>
 
 
 <p>And on the fluentd side you need following configuration:</p>
-<pre class="codehilite"><code>    &lt;source&gt;
+<div class="codehilite"><pre><span></span>    <span class="nt">&lt;source&gt;</span>
       @type prometheus
-    &lt;/source&gt;
+    <span class="nt">&lt;/source&gt;</span>
 
-    &lt;source&gt;
+    <span class="nt">&lt;source&gt;</span>
       @type syslog
       port 5170
       bind 0.0.0.0
       tag conductor
-        &lt;parse&gt;
+        <span class="nt">&lt;parse&gt;</span>
          ; only allow TIMER metrics of workflow execution and extract tenant ID
           @type regexp
-          expression /^.*type=TIMER, name=workflow_execution.class-WorkflowMonitor.+workflowName-(?&lt;tenant&gt;.*)_(?&lt;workflow&gt;.+), count=(?&lt;count&gt;\d+), min=(?&lt;min&gt;[\d.]+), max=(?&lt;max&gt;[\d.]+), mean=(?&lt;mean&gt;[\d.]+).*$/
+          expression /^.*type=TIMER, name=workflow_execution.class-WorkflowMonitor.+workflowName-(?<span class="nt">&lt;tenant&gt;</span>.*)_(?<span class="nt">&lt;workflow&gt;</span>.+), count=(?<span class="nt">&lt;count&gt;</span>\d+), min=(?<span class="nt">&lt;min&gt;</span>[\d.]+), max=(?<span class="nt">&lt;max&gt;</span>[\d.]+), mean=(?<span class="nt">&lt;mean&gt;</span>[\d.]+).*$/
           types count:integer,min:float,max:float,mean:float
-        &lt;/parse&gt;
-    &lt;/source&gt;
+        <span class="nt">&lt;/parse&gt;</span>
+    <span class="nt">&lt;/source&gt;</span>
 
-    &lt;filter conductor.local1.info&gt;
+    <span class="nt">&lt;filter</span> <span class="err">conductor.local1.info</span><span class="nt">&gt;</span>
         @type prometheus
-        &lt;metric&gt;
+        <span class="nt">&lt;metric&gt;</span>
           name conductor_workflow_count
           type gauge
           desc The total number of executed workflows
           key count
-          &lt;labels&gt;
-            workflow ${workflow}
-            tenant ${tenant}
-            user ${email}
-          &lt;/labels&gt;
-        &lt;/metric&gt;
-        &lt;metric&gt;
+          <span class="nt">&lt;labels&gt;</span>
+            workflow <span class="cp">${</span><span class="n">workflow</span><span class="cp">}</span>
+            tenant <span class="cp">${</span><span class="n">tenant</span><span class="cp">}</span>
+            user <span class="cp">${</span><span class="n">email</span><span class="cp">}</span>
+          <span class="nt">&lt;/labels&gt;</span>
+        <span class="nt">&lt;/metric&gt;</span>
+        <span class="nt">&lt;metric&gt;</span>
           name conductor_workflow_max_duration
           type gauge
           desc Max duration in millis for a workflow
           key max
-          &lt;labels&gt;
-            workflow ${workflow}
-            tenant ${tenant}
-            user ${email}
-          &lt;/labels&gt;
-        &lt;/metric&gt;
-        &lt;metric&gt;
+          <span class="nt">&lt;labels&gt;</span>
+            workflow <span class="cp">${</span><span class="n">workflow</span><span class="cp">}</span>
+            tenant <span class="cp">${</span><span class="n">tenant</span><span class="cp">}</span>
+            user <span class="cp">${</span><span class="n">email</span><span class="cp">}</span>
+          <span class="nt">&lt;/labels&gt;</span>
+        <span class="nt">&lt;/metric&gt;</span>
+        <span class="nt">&lt;metric&gt;</span>
           name conductor_workflow_mean_duration
           type gauge
           desc Mean duration in millis for a workflow
           key mean
-          &lt;labels&gt;
-            workflow ${workflow}
-            tenant ${tenant}
-            user ${email}
-          &lt;/labels&gt;
-        &lt;/metric&gt;
-    &lt;/filter&gt;
+          <span class="nt">&lt;labels&gt;</span>
+            workflow <span class="cp">${</span><span class="n">workflow</span><span class="cp">}</span>
+            tenant <span class="cp">${</span><span class="n">tenant</span><span class="cp">}</span>
+            user <span class="cp">${</span><span class="n">email</span><span class="cp">}</span>
+          <span class="nt">&lt;/labels&gt;</span>
+        <span class="nt">&lt;/metric&gt;</span>
+    <span class="nt">&lt;/filter&gt;</span>
 
-    &lt;match **&gt;
+    <span class="nt">&lt;match</span> <span class="err">**</span><span class="nt">&gt;</span>
       @type stdout
-    &lt;/match&gt;</code></pre>
+    <span class="nt">&lt;/match&gt;</span>
+</pre></div>
 
 
 <p>With above configuration, fluentd will:
