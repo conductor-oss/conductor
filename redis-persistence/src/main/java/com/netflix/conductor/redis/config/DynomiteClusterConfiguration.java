@@ -20,7 +20,6 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.commands.JedisCommands;
 
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnProperty(name = "db", havingValue = "dynomite")
 public class DynomiteClusterConfiguration extends JedisCommandsConfigurer {
