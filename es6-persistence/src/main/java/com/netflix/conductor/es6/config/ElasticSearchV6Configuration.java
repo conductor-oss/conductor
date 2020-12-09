@@ -35,7 +35,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Optional;
 
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)
 @Conditional(ElasticSearchConditions.ElasticSearchV6Enabled.class)
 public class ElasticSearchV6Configuration {

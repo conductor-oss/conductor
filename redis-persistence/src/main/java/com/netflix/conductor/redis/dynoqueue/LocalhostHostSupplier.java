@@ -38,5 +38,4 @@ public class LocalhostHostSupplier implements HostSupplier {
                 .createHost();
         return Lists.newArrayList(dynoHost);
     }
-
 }

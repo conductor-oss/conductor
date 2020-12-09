@@ -14,6 +14,7 @@ package com.netflix.conductor.es6.config;
 
 import com.google.common.annotations.VisibleForTesting;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Component
+@Conditional(ElasticSearchConditions.ElasticSearchV6Enabled.class)
 public class ElasticSearchProperties {
 
     @Value("${workflow.elasticsearch.url:localhost:9300}")
