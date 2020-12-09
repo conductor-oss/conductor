@@ -13,9 +13,11 @@
 package com.netflix.conductor.azureblob.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(prefix = "workflow", name = "external.payload.storage", havingValue = "AZURE_BLOB")
 public class AzureBlobProperties {
 
     public static final String CONNECTION_STRING_PROPERTY_NAME = "workflow.external.payload.storage.azure_blob.connection_string";

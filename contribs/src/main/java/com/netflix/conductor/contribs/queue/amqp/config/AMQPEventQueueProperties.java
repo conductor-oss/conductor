@@ -13,9 +13,11 @@
 package com.netflix.conductor.contribs.queue.amqp.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(prefix = "workflow", name = "amqp.event.queue.enabled", havingValue = "true")
 public class AMQPEventQueueProperties {
 
     @Value("${workflow.event.queues.amqp.batchSize:1}")

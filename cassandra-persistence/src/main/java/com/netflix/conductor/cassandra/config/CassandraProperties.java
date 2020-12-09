@@ -14,9 +14,11 @@ package com.netflix.conductor.cassandra.config;
 
 import com.datastax.driver.core.ConsistencyLevel;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(name = "db", havingValue = "cassandra")
 public class CassandraProperties {
 
     @Value("${workflow.cassandra.host:127.0.0.1}")

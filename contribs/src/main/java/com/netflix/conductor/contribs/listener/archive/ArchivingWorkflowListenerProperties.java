@@ -13,10 +13,12 @@
 package com.netflix.conductor.contribs.listener.archive;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(prefix = "workflow", name = "status.listener.type", havingValue = "archive")
 public class ArchivingWorkflowListenerProperties {
 
     private final Environment environment;

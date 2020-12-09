@@ -13,9 +13,11 @@
 package com.netflix.conductor.contribs.storage.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(prefix = "workflow", name = "external.payload.storage", havingValue = "S3")
 public class S3Properties {
 
     @Value("${workflow.external.payload.storage.s3.bucket:conductor_payloads}")

@@ -13,9 +13,11 @@
 package com.netflix.conductor.redislock.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(prefix = "workflow.decider", name = "locking.server", havingValue = "REDIS")
 public class RedisLockProperties {
 
     @Value("${workflow.redis.locking.server.type:single}")

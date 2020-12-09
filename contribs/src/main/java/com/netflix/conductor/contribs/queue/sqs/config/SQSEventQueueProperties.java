@@ -13,9 +13,11 @@
 package com.netflix.conductor.contribs.queue.sqs.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(prefix = "workflow", name = "sqs.event.queue.enabled", havingValue = "true")
 public class SQSEventQueueProperties {
 
     @Value("${workflow.event.queues.sqs.batchSize:1}")

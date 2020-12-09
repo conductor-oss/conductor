@@ -19,7 +19,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.env.Environment;
 import rx.Scheduler;
 
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration
 @ConditionalOnProperty(prefix = "workflow", name = "nats.event.queue.enabled", havingValue = "true")
 public class NATSConfiguration {

@@ -13,11 +13,13 @@
 package com.netflix.conductor.postgres.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
 @Component
+@ConditionalOnProperty(name = "db", havingValue = "postgres")
 public class PostgresProperties {
 
     @Value("${jdbc.url:jdbc:postgresql://localhost:5432/conductor}")

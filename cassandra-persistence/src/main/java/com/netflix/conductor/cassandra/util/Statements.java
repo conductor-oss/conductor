@@ -14,6 +14,7 @@ package com.netflix.conductor.cassandra.util;
 
 import com.datastax.driver.core.querybuilder.QueryBuilder;
 import com.netflix.conductor.cassandra.config.CassandraProperties;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
@@ -109,6 +110,7 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KE
  * </ul>
  */
 @Component
+@ConditionalOnProperty(name = "db", havingValue = "cassandra")
 public class Statements {
 
     private final String keyspace;

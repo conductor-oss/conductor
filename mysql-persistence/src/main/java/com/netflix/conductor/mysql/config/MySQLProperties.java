@@ -13,11 +13,13 @@
 package com.netflix.conductor.mysql.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
 @Component
+@ConditionalOnProperty(name = "db", havingValue = "mysql")
 public class MySQLProperties {
 
     @Value("${jdbc.url:jdbc:mysql://localhost:3306/conductor}")

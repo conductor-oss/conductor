@@ -13,9 +13,11 @@
 package com.netflix.conductor.contribs.queue.nats.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(prefix = "workflow", name = "nats_stream.event.queue.enabled", havingValue = "true")
 public class NATSProperties {
 
     @Value("${io.nats.streaming.clusterId:test-cluster}")
