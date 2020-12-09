@@ -192,6 +192,7 @@ Sub Workflow task allows for nesting a workflow within another workflow.
 |name|type|description|
 |---|---|---|
 | subWorkflowParam | Map[String, Any] | See below |
+| inputParameters | Map[String, Any] | `input` of the sub workflow |
 
 **subWorkflowParam**
 
@@ -215,6 +216,9 @@ Sub Workflow task allows for nesting a workflow within another workflow.
 	"name": "sub_workflow_task",
 	"taskReferenceName": "sub1",
 	"type": "SUB_WORKFLOW",
+	"inputParameters": {
+		"anything": "${workflow.input.anythingValue}"
+	},
 	"subWorkflowParam": {
 		"name": "deployment_workflow",
 		"version": 1,
@@ -241,8 +245,7 @@ Sub Workflow task allows for nesting a workflow within another workflow.
 			"workflowStatusListenerEnabled": true,
 			"schemaVersion": 2
 		}
-	},
-	"anythingelse": "value"
+	}
 }
 ```
 
