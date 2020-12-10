@@ -23,6 +23,7 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.core.Response;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -87,11 +88,15 @@ class PayloadStorage implements ExternalPayloadStorage {
             try (BufferedOutputStream bufferedOutputStream = new BufferedOutputStream(connection.getOutputStream())) {
                 long count = IOUtils.copy(payload, bufferedOutputStream);
                 bufferedOutputStream.flush();
-                logger.debug("Uploaded {} bytes to uri: {}", count, uri);
-
                 // Check the HTTP response code
                 int responseCode = connection.getResponseCode();
-                logger.debug("Upload completed with HTTP response code: {}", responseCode);
+                if (Response.Status.fromStatusCode(responseCode).getFamily()
+                        != Response.Status.Family.SUCCESSFUL) {
+                    String errorMsg = String.format("Unable to upload. Response code: %d", responseCode);
+                    logger.error(errorMsg);
+                    throw new ConductorClientException(errorMsg);
+                }
+                logger.debug("Uploaded {} bytes to uri: {}, with HTTP response code: {}", count, uri, responseCode);
             }
         } catch (URISyntaxException | MalformedURLException e) {
             String errorMsg = String.format("Invalid path specified: %s", uri);
