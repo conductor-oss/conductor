@@ -36,7 +36,7 @@ public class CassandraProperties {
     @Value("${workflow.cassandra.shard.size:100}")
     private int shardSize;
 
-    @Value("${:workflow.cassandra.replication.strategy:SimpleStrategy}")
+    @Value("${workflow.cassandra.replication.strategy:SimpleStrategy}")
     private String replicationStrategy;
 
     @Value("${workflow.cassandra.replication.factor.key:replication_factor}")
