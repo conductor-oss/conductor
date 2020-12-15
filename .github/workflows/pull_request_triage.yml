@@ -1,8 +1,8 @@
-name: Move assigned pull requests into To do
+name: Move new pull requests into To do
 
 on:
   pull_request:
-    types: [ opened, reopened ]
+    types: [opened, reopened]
 
 jobs:
   automate-project-columns:
@@ -12,4 +12,4 @@ jobs:
         with:
           project: Backlog
           column: To do
-          repo-token: ${{ secrets.PROJECT_MANAGEMENT_TOKEN }}
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
