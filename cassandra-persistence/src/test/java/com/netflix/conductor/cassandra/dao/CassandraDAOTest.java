@@ -86,10 +86,11 @@ public class CassandraDAOTest {
 
     @Before
     public void setUp() {
+        String keyspaceName = "junit";
         properties = mock(CassandraProperties.class);
         when(properties.getHostAddress()).thenReturn("127.0.0.1");
         when(properties.getPort()).thenReturn(9142);
-        when(properties.getCassandraKeyspace()).thenReturn("junit");
+        when(properties.getCassandraKeyspace()).thenReturn(keyspaceName);
         when(properties.getShardSize()).thenReturn(100);
         when(properties.getReplicationStrategy()).thenReturn("SimpleStrategy");
         when(properties.getReplicationFactorKey()).thenReturn("replication_factor");
@@ -99,7 +100,7 @@ public class CassandraDAOTest {
         when(properties.getTaskDefRefreshTimeSecs()).thenReturn(60);
         when(properties.getEventHandlerRefreshTimeSecs()).thenReturn(60);
         when(properties.getEventExecutionPersistenceTTL()).thenReturn(5);
-        Statements statements = new Statements(properties);
+        Statements statements = new Statements(keyspaceName);
         metadataDAO = new CassandraMetadataDAO(session, objectMapper, properties, statements);
         executionDAO = new CassandraExecutionDAO(session, objectMapper, properties, statements);
         eventHandlerDAO = new CassandraEventHandlerDAO(session, objectMapper, properties, statements);

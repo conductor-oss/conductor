@@ -77,4 +77,9 @@ public class CassandraConfiguration {
         CassandraProperties properties, Statements statements) {
         return new CassandraEventHandlerDAO(session, objectMapper, properties, statements);
     }
+
+    @Bean
+    public Statements statements(CassandraProperties cassandraProperties) {
+        return new Statements(cassandraProperties.getCassandraKeyspace());
+    }
 }

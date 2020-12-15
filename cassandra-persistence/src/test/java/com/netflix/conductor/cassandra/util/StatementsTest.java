@@ -12,13 +12,10 @@
  */
 package com.netflix.conductor.cassandra.util;
 
-import com.netflix.conductor.cassandra.config.CassandraProperties;
 import org.junit.Before;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class StatementsTest {
 
@@ -26,9 +23,7 @@ public class StatementsTest {
 
     @Before
     public void setUp() {
-        CassandraProperties properties = mock(CassandraProperties.class);
-        when(properties.getCassandraKeyspace()).thenReturn("junit");
-        statements = new Statements(properties);
+        statements = new Statements("junit");
     }
 
     @Test

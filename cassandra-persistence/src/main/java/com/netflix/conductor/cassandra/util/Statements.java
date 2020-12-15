@@ -13,9 +13,6 @@
 package com.netflix.conductor.cassandra.util;
 
 import com.datastax.driver.core.querybuilder.QueryBuilder;
-import com.netflix.conductor.cassandra.config.CassandraProperties;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
 
 import static com.datastax.driver.core.querybuilder.QueryBuilder.bindMarker;
 import static com.datastax.driver.core.querybuilder.QueryBuilder.eq;
@@ -109,14 +106,13 @@ import static com.netflix.conductor.cassandra.util.Constants.WORKFLOW_VERSION_KE
  * <li>DELETE FROM conductor.event_handlers WHERE handlers='handlers' AND event_handler_name=?; </li>
  * </ul>
  */
-@Component
-@ConditionalOnProperty(name = "db", havingValue = "cassandra")
+
 public class Statements {
 
     private final String keyspace;
 
-    public Statements(CassandraProperties properties) {
-        this.keyspace = properties.getCassandraKeyspace();
+    public Statements(String keyspace) {
+        this.keyspace = keyspace;
     }
 
     // MetadataDAO
