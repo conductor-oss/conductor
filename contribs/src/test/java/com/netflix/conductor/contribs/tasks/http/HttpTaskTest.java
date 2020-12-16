@@ -97,8 +97,8 @@ public class HttpTaskTest {
     @Before
     public void setup() {
         workflowExecutor = mock(WorkflowExecutor.class);
-        RestTemplateProvider restTemplateProvider = new RestTemplateProvider(150, 100);
-        httpTask = new HttpTask(restTemplateProvider, objectMapper);
+        DefaultRestTemplateProvider defaultRestTemplateProvider = new DefaultRestTemplateProvider(150, 100);
+        httpTask = new HttpTask(defaultRestTemplateProvider, objectMapper);
     }
 
     @Test

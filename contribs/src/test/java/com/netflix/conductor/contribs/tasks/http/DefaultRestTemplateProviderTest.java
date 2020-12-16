@@ -19,15 +19,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertSame;
 
-public class RestTemplateProviderTest {
+public class DefaultRestTemplateProviderTest {
 
     @Test
     public void differentObjectsForDifferentThreads() throws InterruptedException {
-        RestTemplateProvider restTemplateProvider = new RestTemplateProvider(150, 100);
-        final RestTemplate restTemplate = restTemplateProvider.getRestTemplate(new HttpTask.Input());
+        DefaultRestTemplateProvider defaultRestTemplateProvider = new DefaultRestTemplateProvider(150, 100);
+        final RestTemplate restTemplate = defaultRestTemplateProvider.getRestTemplate(new HttpTask.Input());
         final StringBuilder result = new StringBuilder();
         Thread t1 = new Thread(() -> {
-            RestTemplate restTemplate1 = restTemplateProvider.getRestTemplate(new HttpTask.Input());
+            RestTemplate restTemplate1 = defaultRestTemplateProvider.getRestTemplate(new HttpTask.Input());
             if (restTemplate1 != restTemplate) {
                 result.append("different");
             }
@@ -39,9 +39,9 @@ public class RestTemplateProviderTest {
 
     @Test
     public void sameObjectForSameThread() {
-        RestTemplateProvider restTemplateProvider = new RestTemplateProvider(150, 100);
-        RestTemplate client1 = restTemplateProvider.getRestTemplate(new HttpTask.Input());
-        RestTemplate client2 = restTemplateProvider.getRestTemplate(new HttpTask.Input());
+        DefaultRestTemplateProvider defaultRestTemplateProvider = new DefaultRestTemplateProvider(150, 100);
+        RestTemplate client1 = defaultRestTemplateProvider.getRestTemplate(new HttpTask.Input());
+        RestTemplate client2 = defaultRestTemplateProvider.getRestTemplate(new HttpTask.Input());
         assertSame(client1, client2);
         assertNotNull(client1);
     }
