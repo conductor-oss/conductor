@@ -17,7 +17,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.stereotype.Component;
 
-import java.net.URI;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,24 +38,6 @@ public class ElasticSearchProperties {
 
     @Value("${workflow.elasticsearch.cluster.health.color:green}")
     private String clusterHealthColor;
-
-    @Value("${workflow.elasticsearch.embedded.data.path:path.data}")
-    private String embeddedDataPath;
-
-    @Value("${workflow.elasticsearch.embedded.data.home:path.home}")
-    private String embeddedHomePath;
-
-    @Value("${workflow.elasticsearch.embedded.port:9200}")
-    private int embeddedPort;
-
-    @Value("${workflow.elasticsearch.embedded.cluster.name:elasticsearch_test}")
-    private String embeddedClusterName;
-
-    @Value("${workflow.elasticsearch.embedded.host:127.0.0.1}")
-    private String embeddedHost;
-
-    @Value("${workflow.elasticsearch.embedded.settings.file:embedded-es.yml}")
-    private String embeddedSettingsFile;
 
     @Value("${workflow.elasticsearch.archive.search.batchSize:5000}")
     private int archiveSearchBatchSize;
@@ -113,30 +96,6 @@ public class ElasticSearchProperties {
         return clusterHealthColor;
     }
 
-    public String getEmbeddedDataPath() {
-        return embeddedDataPath;
-    }
-
-    public String getEmbeddedHomePath() {
-        return embeddedHomePath;
-    }
-
-    public int getEmbeddedPort() {
-        return embeddedPort;
-    }
-
-    public String getEmbeddedClusterName() {
-        return embeddedClusterName;
-    }
-
-    public String getEmbeddedHost() {
-        return embeddedHost;
-    }
-
-    public String getEmbeddedSettingsFile() {
-        return embeddedSettingsFile;
-    }
-
     public int getArchiveSearchBatchSize() {
         return archiveSearchBatchSize;
     }
@@ -186,14 +145,22 @@ public class ElasticSearchProperties {
         this.url = url;
     }
 
-    public List<URI> getURIs() {
+    public List<URL> getURLs() {
         String clusterAddress = getURL();
         String[] hosts = clusterAddress.split(",");
         return Arrays.stream(hosts)
             .map(host ->
                 (host.startsWith("http://") || host.startsWith("https://") || host.startsWith("tcp://"))
-                    ? URI.create(host)
-                    : URI.create("tcp://" + host)
+                    ? toURL(host)
+                    : toURL("tcp://" + host)
             ).collect(Collectors.toList());
+    }
+
+    private URL toURL(String url) {
+        try {
+            return new URL(url);
+        } catch (MalformedURLException e) {
+            throw new IllegalArgumentException(url + "can not be converted to java.net.URL");
+        }
     }
 }

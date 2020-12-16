@@ -31,7 +31,7 @@ import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
 
 import java.net.InetAddress;
-import java.net.URI;
+import java.net.URL;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,12 +50,12 @@ public class ElasticSearchV6Configuration {
 
         TransportClient transportClient = new PreBuiltTransportClient(settings);
 
-        List<URI> clusterAddresses = properties.getURIs();
+        List<URL> clusterAddresses = properties.getURLs();
 
         if (clusterAddresses.isEmpty()) {
             log.warn("workflow.elasticsearch.url is not set.  Indexing will remain DISABLED.");
         }
-        for (URI hostAddress : clusterAddresses) {
+        for (URL hostAddress : clusterAddresses) {
             int port = Optional.ofNullable(hostAddress.getPort()).orElse(9200);
             try {
                 transportClient
@@ -69,7 +69,7 @@ public class ElasticSearchV6Configuration {
 
     @Bean
     public RestClient restClient(ElasticSearchProperties properties) {
-        RestClientBuilder restClientBuilder = RestClient.builder(convertToHttpHosts(properties.getURIs()));
+        RestClientBuilder restClientBuilder = RestClient.builder(convertToHttpHosts(properties.getURLs()));
         if (properties.getElasticsearchRestClientConnectionRequestTimeout() > 0) {
             restClientBuilder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
                     .setConnectionRequestTimeout(properties.getElasticsearchRestClientConnectionRequestTimeout()));
@@ -79,7 +79,7 @@ public class ElasticSearchV6Configuration {
 
     @Bean
     public RestClientBuilder restClientBuilder(ElasticSearchProperties properties) {
-        return RestClient.builder(convertToHttpHosts(properties.getURIs()));
+        return RestClient.builder(convertToHttpHosts(properties.getURLs()));
     }
 
     @Bean
@@ -93,8 +93,8 @@ public class ElasticSearchV6Configuration {
         }
     }
 
-    private HttpHost[] convertToHttpHosts(List<URI> hosts) {
+    private HttpHost[] convertToHttpHosts(List<URL> hosts) {
         return hosts.stream()
-                .map(host -> new HttpHost(host.getHost(), host.getPort(), host.getScheme())).toArray(HttpHost[]::new);
+                .map(host -> new HttpHost(host.getHost(), host.getPort(), host.getProtocol())).toArray(HttpHost[]::new);
     }
 }
