@@ -31,6 +31,8 @@ import com.spotify.futures.CompletableFutures;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -49,7 +51,11 @@ import java.util.stream.Collectors;
 
 /**
  * Event Processor is used to dispatch actions based on the incoming events to execution queue.
+ *
+ * <p><code>Set workflow.default.event.processor.enabled=false</code> to disable event processing.</p>
  */
+@Component
+@ConditionalOnProperty(prefix = "workflow", name = "default.event.processor.enabled", havingValue = "true", matchIfMissing = true)
 public class SimpleEventProcessor implements EventProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleEventProcessor.class);
@@ -85,8 +91,9 @@ public class SimpleEventProcessor implements EventProcessor {
             Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(this::refresh, 60, 60, TimeUnit.SECONDS);
             LOGGER.info("Event Processing is ENABLED. executorThreadCount set to {}", executorThreadCount);
         } else {
-            LOGGER.warn("Event processing is DISABLED. executorThreadCount set to {}", executorThreadCount);
-            executorService = null;
+            LOGGER.warn("workflow.event.processor.thread.count={} must be greater than 0. " +
+                    "To disable event processing, set workflow.default.event.processor.enabled=false", executorThreadCount);
+            throw new IllegalStateException("workflow.event.processor.thread.count must be greater than 0");
         }
     }
 

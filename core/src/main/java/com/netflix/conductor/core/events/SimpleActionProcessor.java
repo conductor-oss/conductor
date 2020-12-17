@@ -26,6 +26,7 @@ import com.netflix.conductor.metrics.Monitors;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +35,7 @@ import java.util.Optional;
 /**
  * Action Processor subscribes to the Event Actions queue and processes the actions (e.g. start workflow etc)
  */
+@Component
 public class SimpleActionProcessor implements ActionProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleActionProcessor.class);
@@ -42,8 +44,9 @@ public class SimpleActionProcessor implements ActionProcessor {
     private final ParametersUtils parametersUtils;
     private final JsonUtils jsonUtils;
 
-    public SimpleActionProcessor(WorkflowExecutor workflowExecutor, ParametersUtils parametersUtils,
-        JsonUtils jsonUtils) {
+    public SimpleActionProcessor(WorkflowExecutor workflowExecutor,
+                                 ParametersUtils parametersUtils,
+                                 JsonUtils jsonUtils) {
         this.workflowExecutor = workflowExecutor;
         this.parametersUtils = parametersUtils;
         this.jsonUtils = jsonUtils;
@@ -72,7 +75,7 @@ public class SimpleActionProcessor implements ActionProcessor {
     }
 
     private Map<String, Object> completeTask(Action action, Object payload, TaskDetails taskDetails, Status status,
-        String event, String messageId) {
+                                             String event, String messageId) {
 
         Map<String, Object> input = new HashMap<>();
         input.put("workflowId", taskDetails.getWorkflowId());
@@ -99,8 +102,8 @@ public class SimpleActionProcessor implements ActionProcessor {
 
         if (task == null) {
             replaced.put("error",
-                "No task found with taskId: " + taskId + ", reference name: " + taskRefName + ", workflowId: "
-                    + workflowId);
+                    "No task found with taskId: " + taskId + ", reference name: " + taskRefName + ", workflowId: "
+                            + workflowId);
             return replaced;
         }
 
@@ -113,11 +116,11 @@ public class SimpleActionProcessor implements ActionProcessor {
         try {
             workflowExecutor.updateTask(new TaskResult(task));
             LOGGER.debug("Updated task: {} in workflow:{} with status: {} for event: {} for message:{}", taskId,
-                workflowId, status, event, messageId);
+                    workflowId, status, event, messageId);
         } catch (RuntimeException e) {
             Monitors.recordEventActionError(action.getAction().name(), task.getTaskType(), event);
             LOGGER.error("Error updating task: {} in workflow: {} in action: {} for event: {} for message: {}",
-                taskDetails.getTaskRefName(), taskDetails.getWorkflowId(), action.getAction(), event, messageId, e);
+                    taskDetails.getTaskRefName(), taskDetails.getWorkflowId(), action.getAction(), event, messageId, e);
             replaced.put("error", e.getMessage());
             throw e;
         }
@@ -133,25 +136,25 @@ public class SimpleActionProcessor implements ActionProcessor {
 
             Map<String, Object> paramsMap = new HashMap<>();
             Optional.ofNullable(params.getCorrelationId())
-                .ifPresent(value -> paramsMap.put("correlationId", value));
+                    .ifPresent(value -> paramsMap.put("correlationId", value));
             Map<String, Object> replaced = parametersUtils.replace(paramsMap, payload);
 
             workflowInput.put("conductor.event.messageId", messageId);
             workflowInput.put("conductor.event.name", event);
 
             String workflowId = workflowExecutor.startWorkflow(params.getName(), params.getVersion(),
-                Optional.ofNullable(replaced.get("correlationId")).map(Object::toString)
-                    .orElse(params.getCorrelationId()),
-                workflowInput, null, event, params.getTaskToDomain());
+                    Optional.ofNullable(replaced.get("correlationId")).map(Object::toString)
+                            .orElse(params.getCorrelationId()),
+                    workflowInput, null, event, params.getTaskToDomain());
             output.put("workflowId", workflowId);
             LOGGER
-                .debug("Started workflow: {}/{}/{} for event: {} for message:{}", params.getName(), params.getVersion(),
-                    workflowId, event, messageId);
+                    .debug("Started workflow: {}/{}/{} for event: {} for message:{}", params.getName(), params.getVersion(),
+                            workflowId, event, messageId);
 
         } catch (RuntimeException e) {
             Monitors.recordEventActionError(action.getAction().name(), params.getName(), event);
             LOGGER.error("Error starting workflow: {}, version: {}, for event: {} for message: {}", params.getName(),
-                params.getVersion(), event, messageId, e);
+                    params.getVersion(), event, messageId, e);
             output.put("error", e.getMessage());
             throw e;
         }

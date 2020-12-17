@@ -15,16 +15,23 @@ package com.netflix.conductor.core.events.queue;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.dao.QueueDAO;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.stereotype.Component;
 import rx.Scheduler;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Provides an event queue using the {@link QueueDAO} implementation.
+ * Default provider for {@link com.netflix.conductor.core.events.queue.ObservableQueue}
+ * that listens on the <i>conductor</i> queue prefix.
+ *
+ * <p><code>Set workflow.default.event.queue.enabled=false</code> to disable the default queue.</p>
  *
  * @see ConductorObservableQueue
  */
+@Component
+@ConditionalOnProperty(prefix = "workflow", name = "default.event.queue.enabled", havingValue = "true", matchIfMissing = true)
 public class ConductorEventQueueProvider implements EventQueueProvider {
 
     private final Map<String, ObservableQueue> queues = new ConcurrentHashMap<>();
