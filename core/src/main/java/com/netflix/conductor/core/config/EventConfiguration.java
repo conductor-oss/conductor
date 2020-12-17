@@ -27,6 +27,7 @@ import com.netflix.conductor.core.utils.ParametersUtils;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import rx.Scheduler;
@@ -36,37 +37,50 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 
+/**
+ * Default event processing configuration that is enabled by default.
+ *
+ * <p>Set <code>workflow.event.processing.enabled=false</code> to <i>disable</i> event processing.</p>
+ */
 @Configuration(proxyBeanMethods = false)
+@ConditionalOnProperty(prefix = "workflow", name = "event.processing.enabled", havingValue = "true", matchIfMissing = true)
 public class EventConfiguration {
 
     @Bean
     public ActionProcessor actionProcessor(WorkflowExecutor workflowExecutor, ParametersUtils parametersUtils,
-        JsonUtils jsonUtils) {
+                                           JsonUtils jsonUtils) {
         return new SimpleActionProcessor(workflowExecutor, parametersUtils, jsonUtils);
     }
 
     @Bean
     public EventProcessor eventProcessor(ExecutionService executionService, MetadataService metadataService,
-        ActionProcessor actionProcessor, EventQueues eventQueues, JsonUtils jsonUtils, ConductorProperties properties,
-        ObjectMapper objectMapper) {
+                                         ActionProcessor actionProcessor, EventQueues eventQueues, JsonUtils jsonUtils, ConductorProperties properties,
+                                         ObjectMapper objectMapper) {
         return new SimpleEventProcessor(executionService, metadataService, actionProcessor, eventQueues, jsonUtils,
-            properties, objectMapper);
+                properties, objectMapper);
     }
 
     @Bean
     public Scheduler scheduler(ConductorProperties properties) {
         ThreadFactory threadFactory = new ThreadFactoryBuilder()
-            .setNameFormat("event-queue-poll-scheduler-thread-%d")
-            .build();
+                .setNameFormat("event-queue-poll-scheduler-thread-%d")
+                .build();
         Executor executorService = Executors
-            .newFixedThreadPool(properties.getEventSchedulerPollThreadCount(), threadFactory);
+                .newFixedThreadPool(properties.getEventSchedulerPollThreadCount(), threadFactory);
 
         return Schedulers.from(executorService);
     }
 
+    /**
+     * Default provider for {@link com.netflix.conductor.core.events.queue.ObservableQueue}
+     * that listens on the <i>conductor</i> queue prefix.
+     *
+     * <p><code>Set workflow.default.event.queue.enabled=false</code> to disable the default queue.</p>
+     */
     @Bean
+    @ConditionalOnProperty(prefix = "workflow", name = "default.event.queue.enabled", havingValue = "true", matchIfMissing = true)
     public EventQueueProvider conductorEventQueueProvider(QueueDAO queueDAO, ConductorProperties properties,
-        Scheduler scheduler) {
+                                                          Scheduler scheduler) {
         return new ConductorEventQueueProvider(queueDAO, properties, scheduler);
     }
 }
