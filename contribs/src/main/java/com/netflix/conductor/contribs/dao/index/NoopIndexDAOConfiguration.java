@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(prefix = "workflow", name = "indexing.enabled", havingValue = "false")
+@ConditionalOnProperty(name = "conductor.indexing.enabled", havingValue = "false")
 public class NoopIndexDAOConfiguration {
 
     @Bean

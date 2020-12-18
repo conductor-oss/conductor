@@ -1,0 +1,172 @@
+{
+  "properties": [
+    {
+      "name": "conductor.db.type",
+      "type": "java.lang.String",
+      "description": "The type of database to be used while running the Conductor application."
+    },
+    {
+      "name": "conductor.indexing.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable indexing to elasticsearch. If set to false, a no-op implementation will be used."
+    },
+    {
+      "name": "conductor.grpc-server.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable the gRPC server."
+    },
+    {
+      "name": "conductor.external-payload-storage.type",
+      "type": "java.lang.String",
+      "description": "The type of payload storage to be used for externalizing large payloads."
+    },
+    {
+      "name": "conductor.default-event-processor.enabled",
+      "type": "java.lang.Boolean",
+      "description": "If set to true, use the provided default event processor for handling events."
+    },
+    {
+      "name": "conductor.default-event-queue.type",
+      "type": "java.lang.String",
+      "description": "The default event queue type to listen on for the WAIT task."
+    },
+    {
+      "name": "conductor.workflow-status-listener.type",
+      "type": "java.lang.String",
+      "description": "The implementation of the workflow status listener to be used."
+    },
+    {
+      "name": "conductor.workflow-execution-lock.type",
+      "type": "java.lang.String",
+      "description": "The implementation of the workflow execution lock to be used."
+    },
+    {
+      "name": "conductor.event-queues.default.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable the use of the underlying queue implementation to provide queues for consuming events."
+    },
+    {
+      "name": "conductor.event-queues.sqs.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable the use of AWS SQS implementation to provide queues for consuming events."
+    },
+    {
+      "name": "conductor.event-queues.amqp.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable the use of RabbitMQ implementation to provide queues for consuming events."
+    },
+    {
+      "name": "conductor.event-queues.nats.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable the use of NATS implementation to provide queues for consuming events."
+    },
+    {
+      "name": "conductor.event-queues.nats-stream.enabled",
+      "type": "java.lang.Boolean",
+      "description": "Enable the use of NATS Streaming implementation to provide queues for consuming events."
+    }
+  ],
+  "hints": [
+    {
+      "name": "conductor.db.type",
+      "values": [
+        {
+          "value": "memory",
+          "description": "Use in-memory redis as the database implementation."
+        },
+        {
+          "value": "cassandra",
+          "description": "Use cassandra as the database implementation."
+        },
+        {
+          "value": "mysql",
+          "description": "Use MySQL as the database implementation."
+        },
+        {
+          "value": "postgres",
+          "description": "Use Postgres as the database implementation."
+        },
+        {
+          "value": "dynomite",
+          "description": "Use Dynomite as the database implementation."
+        },
+        {
+          "value": "redis_cluster",
+          "description": "Use Redis Cluster configuration as the database implementation."
+        },
+        {
+          "value": "redis_sentinel",
+          "description": "Use Redis Sentinel configuration as the database implementation."
+        }
+      ]
+    },
+    {
+      "name": "conductor.external-payload-storage.type",
+      "values": [
+        {
+          "value": "dummy",
+          "description": "Use the dummy no-op implementation as the external payload storage."
+        },
+        {
+          "value": "azureblob",
+          "description": "Use Azure Blob as the external payload storage."
+        },
+        {
+          "value": "s3",
+          "description": "Use AWS S3 as the external payload storage."
+        }
+      ]
+    },
+    {
+      "name": "conductor.default-event-queue.type",
+      "values": [
+        {
+          "value": "sqs",
+          "description": "Use AWS SQS as the event queue to listen on for the WAIT task."
+        },
+        {
+          "value": "amqp",
+          "description": "Use RabbitMQ as the event queue to listen on for the WAIT task."
+        }
+      ]
+    },
+    {
+      "name": "conductor.workflow-status-listener.type",
+      "values": [
+        {
+          "value": "stub",
+          "description": "Use the no-op implementation of the workflow status listener."
+        },
+        {
+          "value": "archive",
+          "description": "Use then archive implementation which immediately archives the workflow upon termination or completion as the workflow status listener."
+        },
+        {
+          "value": "queue_publisher",
+          "description": "Use the publisher implementation which publishes a message to the underlying queue implementation upon termination or completion as the workflow status listener."
+        }
+      ]
+    },
+    {
+      "name": "conductor.workflow-execution-lock.type",
+      "values": [
+        {
+          "value": "noop_lock",
+          "description": "Use the no-op implementation as the lock provider."
+        },
+        {
+          "value": "local_only",
+          "description": "Use the local in-memory cache based implementation as the lock provider."
+        },
+        {
+          "value": "redis",
+          "description": "Use the redis-lock implementation as the lock provider."
+        },
+        {
+          "value": "zookeeper",
+          "description": "Use the zookeeper-lock implementation as the lock provider."
+        }
+      ]
+    }
+  ]
+}

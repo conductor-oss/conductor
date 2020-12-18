@@ -13,6 +13,7 @@
 package com.netflix.conductor.redis.dao;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.config.RedisProperties;
 import org.junit.Before;
@@ -32,13 +33,15 @@ public class BaseDynoDAOTest {
     private ObjectMapper objectMapper;
 
     private RedisProperties properties;
+    private ConductorProperties conductorProperties;
 
     private BaseDynoDAO baseDynoDAO;
 
     @Before
     public void setUp() {
         properties = mock(RedisProperties.class);
-        this.baseDynoDAO = new BaseDynoDAO(jedisProxy, objectMapper, properties);
+        conductorProperties = mock(ConductorProperties.class);
+        this.baseDynoDAO = new BaseDynoDAO(jedisProxy, objectMapper, conductorProperties, properties);
     }
 
     @Test
@@ -53,7 +56,7 @@ public class BaseDynoDAOTest {
 
         assertEquals("test.key1.key2", baseDynoDAO.nsKey(keys));
 
-        when(properties.getStack()).thenReturn("stack");
+        when(conductorProperties.getStack()).thenReturn("stack");
         assertEquals("test.stack.key1.key2", baseDynoDAO.nsKey(keys));
     }
 }

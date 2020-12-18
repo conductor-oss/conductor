@@ -36,8 +36,8 @@ public class DefaultRestTemplateProvider implements RestTemplateProvider {
     private final int defaultConnectTimeout;
 
     @Autowired
-    public DefaultRestTemplateProvider(@Value("${http.task.read.timeout:150}") int readTimeout,
-                                       @Value("${http.task.connect.timeout:100}") int connectTimeout) {
+    public DefaultRestTemplateProvider(@Value("${conductor.tasks.http.readTimeout:150}") int readTimeout,
+                                       @Value("${conductor.tasks.http.connectTimeout:100}") int connectTimeout) {
         this.threadLocalRestTemplate = ThreadLocal.withInitial(RestTemplate::new);
         this.defaultReadTimeout = readTimeout;
         this.defaultConnectTimeout = connectTimeout;

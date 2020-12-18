@@ -12,6 +12,8 @@
  */
 package com.netflix.conductor.service;
 
+import com.netflix.conductor.annotations.Audit;
+import com.netflix.conductor.annotations.Trace;
 import com.netflix.conductor.common.metadata.workflow.RerunWorkflowRequest;
 import com.netflix.conductor.common.metadata.workflow.SkipTaskRequest;
 import com.netflix.conductor.common.metadata.workflow.StartWorkflowRequest;
@@ -24,19 +26,17 @@ import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.core.utils.Utils;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
-//@Audit
-//@Trace
+@Audit
+@Trace
 @Service
 public class WorkflowServiceImpl implements WorkflowService {
 
@@ -44,14 +44,12 @@ public class WorkflowServiceImpl implements WorkflowService {
     private final WorkflowExecutor workflowExecutor;
     private final ExecutionService executionService;
     private final MetadataService metadataService;
-    private final int maxSearchSize;
 
     public WorkflowServiceImpl(WorkflowExecutor workflowExecutor, ExecutionService executionService,
-        MetadataService metadataService, @Value("${workflow.max.search.size:5000}") int maxSearchSize) {
+        MetadataService metadataService) {
         this.workflowExecutor = workflowExecutor;
         this.executionService = executionService;
         this.metadataService = metadataService;
-        this.maxSearchSize = maxSearchSize;
     }
 
     /**

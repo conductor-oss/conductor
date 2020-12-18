@@ -12,163 +12,146 @@
  */
 package com.netflix.conductor.core.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
+@ConfigurationProperties("conductor.app")
 public class ConductorProperties {
 
     /**
-     * Current environment. e.g. test, prod
+     * Name of the stack within which the app is running. e.g. devint, testintg, staging, prod etc.
      */
-    @Value("${environment:test}")
-    private String environment;
+    private String stack = "test";
 
     /**
-     * name of the stack under which the app is running. e.g. devint, testintg, staging, prod etc.
+     * The id with the app has been registered.
      */
-    @Value("${STACK:test}")
-    private String stack;
+    private String appId = "conductor";
 
     /**
-     * APP_ID
+     * The maximum number of threads to be allocated to the executor service threadpool.
      */
-    @Value("${APP_ID:conductor}")
-    private String appId;
+    private int executorServiceMaxThreadCount = 50;
 
     /**
-     * maximum number of threads to be allocated to the executor service threadpool
+     * The frequency in seconds, at which the workflow sweeper should run to evaluate running workflows.
      */
-    @Value("${workflow.executor.service.max.threads:50}")
-    private int executorServiceMaxThreads;
+    private int sweepFrequencySeconds = 30;
 
     /**
-     * time frequency in seconds, at which the workflow sweeper should run to evaluate running workflows
+     * Used to enable/disable the workflow sweeper.
      */
-    @Value("${decider.sweep.frequency.seconds:30}")
-    private int sweepFrequency;
+    private boolean sweepDisabled = false;
 
     /**
-     * when set to true, the sweep is disabled
+     * The number of threads to configure the threadpool in the workflow sweeper.
      */
-    @Value("${decider.sweep.disable:false}")
-    private boolean disableSweep;
-
-    @Value("${workflow.sweeper.thread.count:5}")
-    private int sweeperThreadCount;
+    private int sweeperThreadCount = 5;
 
     /**
-     * Number of threads to be used by the event processor
+     * The number of threads to configure the threadpool in the event processor.
      */
-    @Value("${workflow.event.processor.thread.count:2}")
-    private int eventProcessorThreadCount;
+    private int eventProcessorThreadCount = 2;
 
     /**
-     * when set to true, message from the event processing are indexed
+     * Used to enable/disable the indexing of messages within event payloads.
      */
-    @Value("${workflow.event.message.indexing.enabled:true}")
-    private boolean eventMessageIndexingEnabled;
+    private boolean eventMessageIndexingEnabled = true;
 
     /**
-     * when set to true, event execution results are indexed
+     * Used to enable/disable the indexing of event execution results.
      */
-    @Value("${workflow.event.execution.indexing.enabled:true}")
-    private boolean eventExecutionIndexingEnabled;
-
-    @Value("${workflow.decider.locking.enabled:false}")
-    private boolean enableWorkflowExecutionLock;
-
-    @Value("${workflow.locking.lease.time.ms:60000}")
-    private long lockLeaseTimeMs;
-
-    @Value("${workflow.locking.time.to.try.ms:500}")
-    private long lockTimeToTryMs;
-
-    @Value("${tasks.active.worker.lastpoll:10}")
-    private int activeWorkerLastPollSecs;
-
-    @Value("${task.queue.message.postponeSeconds:60}")
-    private int queueTaskMessagePostponeSeconds;
-
-    @Value("${task.requeue.timeout:60000}")
-    private int taskRequeueTimeout;
+    private boolean eventExecutionIndexingEnabled = true;
 
     /**
-     * if true(default), enables task execution log indexing
+     * Used to enable/disable the workflow execution lock.
      */
-    @Value("${workflow.taskExecLog.indexing.enabled:true}")
-    private boolean taskExecLogIndexingEnabled;
+    private boolean workflowExecutionLockEnabled = false;
 
     /**
-     * when set to true, the indexing operation to elasticsearch will be performed asynchronously
+     * The time (in milliseconds) for which the lock is leased for.
      */
-    @Value("${async.indexing.enabled:false}")
-    private boolean enableAsyncIndexing;
+    private long lockLeaseTimeMs = 60000;
 
     /**
-     * the number of threads to be used within the threadpool for system task workers
+     * The time (in milliseconds) for which the thread will block in an attempt to acquire the lock.
      */
-    @Value("${workflow.system.task.worker.thread.count:10}")
-    private int systemTaskWorkerThreadCount;
+    private long lockTimeToTryMs = 500;
 
     /**
-     * the interval (in seconds) after which a system task will be checked for completion
+     * The time (in seconds) that is used to consider if a worker is actively polling for a task.
      */
-    @Value("${workflow.system.task.worker.callback.seconds:30}")
-    private int systemTaskWorkerCallbackSeconds;
+    private int activeWorkerLastPollSecs = 10;
 
     /**
-     * the interval (in seconds) at which system task queues will be polled by the system task workers
+     * The time (in seconds) for which a task execution will be postponed if being rate limited or concurrent execution
+     * limited.
      */
-    @Value("${workflow.system.task.worker.poll.interval:50}")
-    private int systemTaskWorkerPollInterval;
+    private int taskExecutionPostponeSeconds = 60;
 
     /**
-     * the namespace for the system task workers to provide instance level isolation
+     * Used to enable/disable the indexing of task execution logs.
      */
-    @Value("${workflow.system.task.worker.executionNameSpace:}")
-    private String systemTaskWorkerExecutionNamespace;
+    private boolean taskExecLogIndexingEnabled = true;
 
     /**
-     * the number of threads to be used within the threadpool for system task workers in each isolation group
+     * Used to enable/disable asynchronous indexing to elasticsearch.
      */
-    @Value("${workflow.isolated.system.task.worker.thread.count:1}")
-    private int systemTaskWorkerIsolatedThreadCount;
+    private boolean asyncIndexingEnabled = false;
 
     /**
-     * the max number of system tasks to poll
+     * The number of threads to be used within the threadpool for system task workers.
      */
-    @Value("${workflow.system.task.queue.pollCount:1}")
-    private int systemTaskMaxPollCount;
+    private int systemTaskWorkerThreadCount = 10;
 
     /**
-     * when set to true, the background task workers executing async system tasks (eg HTTP) are disabled
+     * The interval (in seconds) after which a system task will be checked by the system task worker for completion.
      */
-    @Value("${conductor.disable.async.workers:false}")
-    private boolean disableAsyncWorkers;
+    private int systemTaskWorkerCallbackSeconds = 30;
 
     /**
-     * the duration of workflow execution which qualifies a workflow as a short-running workflow for async updating to
-     * the index
+     * The interval (in seconds) at which system task queues will be polled by the system task workers.
      */
-    @Value("${async.update.short.workflow.duration.seconds:30}")
-    private int asyncUpdateShortRunningWorkflowDuration;
+    private int systemTaskWorkerPollInterval = 50;
 
     /**
-     * the delay with which short-running workflows will be updated in the index
+     * The namespace for the system task workers to provide instance level isolation.
      */
-    @Value("${async.update.delay.seconds:60}")
-    private int asyncUpdateDelay;
+    private String systemTaskWorkerExecutionNamespace = "";
 
     /**
-     * true if owner email is mandatory for task definitions and workflow definitions
+     * The number of threads to be used within the threadpool for system task workers in each isolation group.
      */
-    @Value("${workflow.owner.email.mandatory:true}")
-    private boolean ownerEmailMandatory;
+    private int isolatedSystemTaskWorkerThreadCount = 1;
+
+    /**
+     * The max number of system tasks to be polled in a single request.
+     */
+    private int systemTaskMaxPollCount = 1;
+
+    /**
+     * Used to enable/disable the system task workers that execute async system tasks like HTTP, etc.
+     */
+    private boolean systemTaskWorkersDisabled = false;
+
+    /**
+     * The duration of workflow execution which qualifies a workflow as a short-running workflow when async indexing to
+     * elasticsearch is enabled.
+     */
+    private int asyncUpdateShortRunningWorkflowDuration = 30;
+
+    /**
+     * The delay with which short-running workflows will be updated in the elasticsearch index when async indexing is
+     * enabled.
+     */
+    private int asyncUpdateDelay = 60;
+
+    /**
+     * Used to control the validation for owner email field as mandatory within workflow and task definitions.
+     */
+    private boolean ownerEmailMandatory = true;
 
     /**
      * Configuration to enable {@link com.netflix.conductor.core.execution.WorkflowRepairService}, that tries to keep
@@ -176,257 +159,402 @@ public class ConductorProperties {
      * <p>
      * This is disabled by default; To enable, the Queueing layer must implement QueueDAO.containsMessage method.
      */
-    @Value("${workflow.repairservice.enabled:false}")
-    private boolean workflowRepairServiceEnabled;
+    private boolean workflowRepairServiceEnabled = false;
 
     /**
-     * the number of threads to be use in Scheduler used for polling events from multiple event queues. By default, a
+     * The number of threads to be usde in Scheduler used for polling events from multiple event queues. By default, a
      * thread count equal to the number of CPU cores is chosen.
      */
-    @Value("${workflow.event.queue.scheduler.poll.thread.count:#{T(java.lang.Runtime).getRuntime().availableProcessors()}}")
-    private int eventSchedulerPollThreadCount;
+    private int eventQueueSchedulerPollThreadCount = Runtime.getRuntime().availableProcessors();
 
-    @Value("${workflow.dyno.queues.pollingInterval:100}")
-    private int eventQueuePollInterval;
+    /**
+     * The time interval (in milliseconds) at which the default event queues will be polled.
+     */
+    private int eventQueuePollIntervalMs = 100;
 
-    @Value("${workflow.dyno.queues.pollCount:10}")
-    private int eventQueuePollCount;
+    /**
+     * The number of messages to be polled from a default event queue in a single operation.
+     */
+    private int eventQueuePollCount = 10;
 
-    @Value("${workflow.dyno.queues.longPollTimeout:1000}")
-    private int eventQueueLongPollTimeout;
+    /**
+     * The timeout (in milliseconds) for the poll operation on the default event queue.
+     */
+    private int eventQueueLongPollTimeout = 1000;
 
     /**
      * The threshold of the workflow input payload size in KB beyond which the payload will be stored in {@link
-     * com.netflix.conductor.common.utils.ExternalPayloadStorage}
+     * com.netflix.conductor.common.utils.ExternalPayloadStorage}.
      */
-    @Value("${conductor.workflow.input.payload.threshold.kb:5120}")
-    private Long workflowInputPayloadSizeThresholdKB;
+    private Long workflowInputPayloadSizeThresholdKB = 5120L;
 
     /**
      * The maximum threshold of the workflow input payload size in KB beyond which input will be rejected and the
-     * workflow will be marked as FAILED
+     * workflow will be marked as FAILED.
      */
-    @Value("${conductor.max.workflow.input.payload.threshold.kb:10240}")
-    private Long maxWorkflowInputPayloadSizeThresholdKB;
+    private Long maxWorkflowInputPayloadSizeThresholdKB = 10240L;
 
     /**
      * The threshold of the workflow output payload size in KB beyond which the payload will be stored in {@link
-     * com.netflix.conductor.common.utils.ExternalPayloadStorage}
+     * com.netflix.conductor.common.utils.ExternalPayloadStorage}.
      */
-    @Value("${conductor.workflow.output.payload.threshold.kb:5120}")
-    private Long workflowOutputPayloadSizeThresholdKB;
+    private Long workflowOutputPayloadSizeThresholdKB = 5120L;
 
     /**
      * The maximum threshold of the workflow output payload size in KB beyond which output will be rejected and the
-     * workflow will be marked as FAILED
+     * workflow will be marked as FAILED.
      */
-    @Value("${conductor.max.workflow.output.payload.threshold.kb:10240}")
-    private Long maxWorkflowOutputPayloadSizeThresholdKB;
+    private Long maxWorkflowOutputPayloadSizeThresholdKB = 10240L;
 
     /**
      * The threshold of the task input payload size in KB beyond which the payload will be stored in {@link
-     * com.netflix.conductor.common.utils.ExternalPayloadStorage}
+     * com.netflix.conductor.common.utils.ExternalPayloadStorage}.
      */
-    @Value("${conductor.task.input.payload.threshold.kb:3072}")
-    private Long taskInputPayloadSizeThresholdKB;
+    private Long taskInputPayloadSizeThresholdKB = 3072L;
 
     /**
      * The maximum threshold of the task input payload size in KB beyond which the task input will be rejected and the
-     * task will be marked as FAILED_WITH_TERMINAL_ERROR
+     * task will be marked as FAILED_WITH_TERMINAL_ERROR.
      */
-    @Value("${conductor.max.task.input.payload.threshold.kb:10240}")
-    private Long maxTaskInputPayloadSizeThresholdKB;
+    private Long maxTaskInputPayloadSizeThresholdKB = 10240L;
 
     /**
      * The threshold of the task output payload size in KB beyond which the payload will be stored in {@link
-     * com.netflix.conductor.common.utils.ExternalPayloadStorage}
+     * com.netflix.conductor.common.utils.ExternalPayloadStorage}.
      */
-    @Value("${conductor.task.output.payload.threshold.kb:3072}")
-    private Long taskOutputPayloadSizeThresholdKB;
+    private Long taskOutputPayloadSizeThresholdKB = 3072L;
 
     /**
      * The maximum threshold of the task output payload size in KB beyond which the task input will be rejected and the
-     * task will be marked as FAILED_WITH_TERMINAL_ERROR
+     * task will be marked as FAILED_WITH_TERMINAL_ERROR.
      */
-    @Value("${conductor.max.task.output.payload.threshold.kb:10240}")
-    private Long maxTaskOutputPayloadSizeThresholdKB;
+    private Long maxTaskOutputPayloadSizeThresholdKB = 10240L;
 
     /**
      * The maximum threshold of the workflow variables payload size in KB beyond which the task changes will be rejected
-     * and the task will be marked as FAILED_WITH_TERMINAL_ERROR
+     * and the task will be marked as FAILED_WITH_TERMINAL_ERROR.
      */
-    @Value("${conductor.max.workflow.variables.payload.threshold.kb:256}")
-    private Long maxWorkflowVariablesPayloadSizeThresholdKB;
-
-    public String getEnvironment() {
-        return environment;
-    }
+    private Long maxWorkflowVariablesPayloadSizeThresholdKB = 256L;
 
     public String getStack() {
         return stack;
+    }
+
+    public void setStack(String stack) {
+        this.stack = stack;
     }
 
     public String getAppId() {
         return appId;
     }
 
-    public int getExecutorServiceMaxThreads() {
-        return executorServiceMaxThreads;
+    public void setAppId(String appId) {
+        this.appId = appId;
     }
 
-    public int getSweepFrequency() {
-        return sweepFrequency;
+    public int getExecutorServiceMaxThreadCount() {
+        return executorServiceMaxThreadCount;
     }
 
-    public boolean disableSweep() {
-        return disableSweep;
+    public void setExecutorServiceMaxThreadCount(int executorServiceMaxThreadCount) {
+        this.executorServiceMaxThreadCount = executorServiceMaxThreadCount;
+    }
+
+    public int getSweepFrequencySeconds() {
+        return sweepFrequencySeconds;
+    }
+
+    public void setSweepFrequencySeconds(int sweepFrequencySeconds) {
+        this.sweepFrequencySeconds = sweepFrequencySeconds;
+    }
+
+    public boolean isSweepDisabled() {
+        return sweepDisabled;
+    }
+
+    public void setSweepDisabled(boolean sweepDisabled) {
+        this.sweepDisabled = sweepDisabled;
     }
 
     public int getSweeperThreadCount() {
         return sweeperThreadCount;
     }
 
+    public void setSweeperThreadCount(int sweeperThreadCount) {
+        this.sweeperThreadCount = sweeperThreadCount;
+    }
+
     public int getEventProcessorThreadCount() {
         return eventProcessorThreadCount;
+    }
+
+    public void setEventProcessorThreadCount(int eventProcessorThreadCount) {
+        this.eventProcessorThreadCount = eventProcessorThreadCount;
     }
 
     public boolean isEventMessageIndexingEnabled() {
         return eventMessageIndexingEnabled;
     }
 
+    public void setEventMessageIndexingEnabled(boolean eventMessageIndexingEnabled) {
+        this.eventMessageIndexingEnabled = eventMessageIndexingEnabled;
+    }
+
     public boolean isEventExecutionIndexingEnabled() {
         return eventExecutionIndexingEnabled;
     }
 
+    public void setEventExecutionIndexingEnabled(boolean eventExecutionIndexingEnabled) {
+        this.eventExecutionIndexingEnabled = eventExecutionIndexingEnabled;
+    }
+
     public boolean isWorkflowExecutionLockEnabled() {
-        return enableWorkflowExecutionLock;
+        return workflowExecutionLockEnabled;
+    }
+
+    public void setWorkflowExecutionLockEnabled(boolean workflowExecutionLockEnabled) {
+        this.workflowExecutionLockEnabled = workflowExecutionLockEnabled;
     }
 
     public long getLockLeaseTimeMs() {
         return lockLeaseTimeMs;
     }
 
+    public void setLockLeaseTimeMs(long lockLeaseTimeMs) {
+        this.lockLeaseTimeMs = lockLeaseTimeMs;
+    }
+
     public long getLockTimeToTryMs() {
         return lockTimeToTryMs;
+    }
+
+    public void setLockTimeToTryMs(long lockTimeToTryMs) {
+        this.lockTimeToTryMs = lockTimeToTryMs;
     }
 
     public int getActiveWorkerLastPollSecs() {
         return activeWorkerLastPollSecs;
     }
 
-    public int getQueueTaskMessagePostponeSeconds() {
-        return queueTaskMessagePostponeSeconds;
+    public void setActiveWorkerLastPollSecs(int activeWorkerLastPollSecs) {
+        this.activeWorkerLastPollSecs = activeWorkerLastPollSecs;
     }
 
-    public int getTaskRequeueTimeout() {
-        return taskRequeueTimeout;
+    public int getTaskExecutionPostponeSeconds() {
+        return taskExecutionPostponeSeconds;
+    }
+
+    public void setTaskExecutionPostponeSeconds(int taskExecutionPostponeSeconds) {
+        this.taskExecutionPostponeSeconds = taskExecutionPostponeSeconds;
     }
 
     public boolean isTaskExecLogIndexingEnabled() {
         return taskExecLogIndexingEnabled;
     }
 
-    public boolean enableAsyncIndexing() {
-        return enableAsyncIndexing;
+    public void setTaskExecLogIndexingEnabled(boolean taskExecLogIndexingEnabled) {
+        this.taskExecLogIndexingEnabled = taskExecLogIndexingEnabled;
+    }
+
+    public boolean isAsyncIndexingEnabled() {
+        return asyncIndexingEnabled;
+    }
+
+    public void setAsyncIndexingEnabled(boolean asyncIndexingEnabled) {
+        this.asyncIndexingEnabled = asyncIndexingEnabled;
     }
 
     public int getSystemTaskWorkerThreadCount() {
         return systemTaskWorkerThreadCount;
     }
 
+    public void setSystemTaskWorkerThreadCount(int systemTaskWorkerThreadCount) {
+        this.systemTaskWorkerThreadCount = systemTaskWorkerThreadCount;
+    }
+
     public int getSystemTaskWorkerCallbackSeconds() {
         return systemTaskWorkerCallbackSeconds;
+    }
+
+    public void setSystemTaskWorkerCallbackSeconds(int systemTaskWorkerCallbackSeconds) {
+        this.systemTaskWorkerCallbackSeconds = systemTaskWorkerCallbackSeconds;
     }
 
     public int getSystemTaskWorkerPollInterval() {
         return systemTaskWorkerPollInterval;
     }
 
+    public void setSystemTaskWorkerPollInterval(int systemTaskWorkerPollInterval) {
+        this.systemTaskWorkerPollInterval = systemTaskWorkerPollInterval;
+    }
+
     public String getSystemTaskWorkerExecutionNamespace() {
         return systemTaskWorkerExecutionNamespace;
     }
 
-    public int getSystemTaskWorkerIsolatedThreadCount() {
-        return systemTaskWorkerIsolatedThreadCount;
+    public void setSystemTaskWorkerExecutionNamespace(String systemTaskWorkerExecutionNamespace) {
+        this.systemTaskWorkerExecutionNamespace = systemTaskWorkerExecutionNamespace;
+    }
+
+    public int getIsolatedSystemTaskWorkerThreadCount() {
+        return isolatedSystemTaskWorkerThreadCount;
+    }
+
+    public void setIsolatedSystemTaskWorkerThreadCount(int isolatedSystemTaskWorkerThreadCount) {
+        this.isolatedSystemTaskWorkerThreadCount = isolatedSystemTaskWorkerThreadCount;
     }
 
     public int getSystemTaskMaxPollCount() {
         return systemTaskMaxPollCount;
     }
 
-    public boolean disableAsyncWorkers() {
-        return disableAsyncWorkers;
+    public void setSystemTaskMaxPollCount(int systemTaskMaxPollCount) {
+        this.systemTaskMaxPollCount = systemTaskMaxPollCount;
+    }
+
+    public boolean isSystemTaskWorkersDisabled() {
+        return systemTaskWorkersDisabled;
+    }
+
+    public void setSystemTaskWorkersDisabled(boolean systemTaskWorkersDisabled) {
+        this.systemTaskWorkersDisabled = systemTaskWorkersDisabled;
     }
 
     public int getAsyncUpdateShortRunningWorkflowDuration() {
         return asyncUpdateShortRunningWorkflowDuration;
     }
 
+    public void setAsyncUpdateShortRunningWorkflowDuration(int asyncUpdateShortRunningWorkflowDuration) {
+        this.asyncUpdateShortRunningWorkflowDuration = asyncUpdateShortRunningWorkflowDuration;
+    }
+
     public int getAsyncUpdateDelay() {
         return asyncUpdateDelay;
+    }
+
+    public void setAsyncUpdateDelay(int asyncUpdateDelay) {
+        this.asyncUpdateDelay = asyncUpdateDelay;
     }
 
     public boolean isOwnerEmailMandatory() {
         return ownerEmailMandatory;
     }
 
+    public void setOwnerEmailMandatory(boolean ownerEmailMandatory) {
+        this.ownerEmailMandatory = ownerEmailMandatory;
+    }
+
     public boolean isWorkflowRepairServiceEnabled() {
         return workflowRepairServiceEnabled;
     }
 
-    public int getEventSchedulerPollThreadCount() {
-        return eventSchedulerPollThreadCount;
+    public void setWorkflowRepairServiceEnabled(boolean workflowRepairServiceEnabled) {
+        this.workflowRepairServiceEnabled = workflowRepairServiceEnabled;
     }
 
-    public int getEventQueuePollInterval() {
-        return eventQueuePollInterval;
+    public int getEventQueueSchedulerPollThreadCount() {
+        return eventQueueSchedulerPollThreadCount;
+    }
+
+    public void setEventQueueSchedulerPollThreadCount(int eventQueueSchedulerPollThreadCount) {
+        this.eventQueueSchedulerPollThreadCount = eventQueueSchedulerPollThreadCount;
+    }
+
+    public int getEventQueuePollIntervalMs() {
+        return eventQueuePollIntervalMs;
+    }
+
+    public void setEventQueuePollIntervalMs(int eventQueuePollIntervalMs) {
+        this.eventQueuePollIntervalMs = eventQueuePollIntervalMs;
     }
 
     public int getEventQueuePollCount() {
         return eventQueuePollCount;
     }
 
+    public void setEventQueuePollCount(int eventQueuePollCount) {
+        this.eventQueuePollCount = eventQueuePollCount;
+    }
+
     public int getEventQueueLongPollTimeout() {
         return eventQueueLongPollTimeout;
+    }
+
+    public void setEventQueueLongPollTimeout(int eventQueueLongPollTimeout) {
+        this.eventQueueLongPollTimeout = eventQueueLongPollTimeout;
     }
 
     public Long getWorkflowInputPayloadSizeThresholdKB() {
         return workflowInputPayloadSizeThresholdKB;
     }
 
+    public void setWorkflowInputPayloadSizeThresholdKB(Long workflowInputPayloadSizeThresholdKB) {
+        this.workflowInputPayloadSizeThresholdKB = workflowInputPayloadSizeThresholdKB;
+    }
+
     public Long getMaxWorkflowInputPayloadSizeThresholdKB() {
         return maxWorkflowInputPayloadSizeThresholdKB;
+    }
+
+    public void setMaxWorkflowInputPayloadSizeThresholdKB(Long maxWorkflowInputPayloadSizeThresholdKB) {
+        this.maxWorkflowInputPayloadSizeThresholdKB = maxWorkflowInputPayloadSizeThresholdKB;
     }
 
     public Long getWorkflowOutputPayloadSizeThresholdKB() {
         return workflowOutputPayloadSizeThresholdKB;
     }
 
+    public void setWorkflowOutputPayloadSizeThresholdKB(Long workflowOutputPayloadSizeThresholdKB) {
+        this.workflowOutputPayloadSizeThresholdKB = workflowOutputPayloadSizeThresholdKB;
+    }
+
     public Long getMaxWorkflowOutputPayloadSizeThresholdKB() {
         return maxWorkflowOutputPayloadSizeThresholdKB;
+    }
+
+    public void setMaxWorkflowOutputPayloadSizeThresholdKB(Long maxWorkflowOutputPayloadSizeThresholdKB) {
+        this.maxWorkflowOutputPayloadSizeThresholdKB = maxWorkflowOutputPayloadSizeThresholdKB;
     }
 
     public Long getTaskInputPayloadSizeThresholdKB() {
         return taskInputPayloadSizeThresholdKB;
     }
 
+    public void setTaskInputPayloadSizeThresholdKB(Long taskInputPayloadSizeThresholdKB) {
+        this.taskInputPayloadSizeThresholdKB = taskInputPayloadSizeThresholdKB;
+    }
+
     public Long getMaxTaskInputPayloadSizeThresholdKB() {
         return maxTaskInputPayloadSizeThresholdKB;
+    }
+
+    public void setMaxTaskInputPayloadSizeThresholdKB(Long maxTaskInputPayloadSizeThresholdKB) {
+        this.maxTaskInputPayloadSizeThresholdKB = maxTaskInputPayloadSizeThresholdKB;
     }
 
     public Long getTaskOutputPayloadSizeThresholdKB() {
         return taskOutputPayloadSizeThresholdKB;
     }
 
+    public void setTaskOutputPayloadSizeThresholdKB(Long taskOutputPayloadSizeThresholdKB) {
+        this.taskOutputPayloadSizeThresholdKB = taskOutputPayloadSizeThresholdKB;
+    }
+
     public Long getMaxTaskOutputPayloadSizeThresholdKB() {
         return maxTaskOutputPayloadSizeThresholdKB;
+    }
+
+    public void setMaxTaskOutputPayloadSizeThresholdKB(Long maxTaskOutputPayloadSizeThresholdKB) {
+        this.maxTaskOutputPayloadSizeThresholdKB = maxTaskOutputPayloadSizeThresholdKB;
     }
 
     public Long getMaxWorkflowVariablesPayloadSizeThresholdKB() {
         return maxWorkflowVariablesPayloadSizeThresholdKB;
     }
 
-    //SBMTODO: is this needed (?)
+    public void setMaxWorkflowVariablesPayloadSizeThresholdKB(Long maxWorkflowVariablesPayloadSizeThresholdKB) {
+        this.maxWorkflowVariablesPayloadSizeThresholdKB = maxWorkflowVariablesPayloadSizeThresholdKB;
+    }
 
     /**
      * @return Returns all the configurations in a map.

@@ -114,7 +114,7 @@ public class SystemTaskWorkerCoordinator {
     }
 
     private void pollAndExecute(String queueName) {
-        if (properties.disableAsyncWorkers()) {
+        if (properties.isSystemTaskWorkersDisabled()) {
             LOGGER.warn("System Task Worker is DISABLED.  Not polling for system task in queue : {}", queueName);
             return;
         }

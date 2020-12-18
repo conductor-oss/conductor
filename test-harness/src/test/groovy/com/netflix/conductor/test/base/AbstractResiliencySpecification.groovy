@@ -28,8 +28,8 @@ import redis.clients.jedis.commands.JedisCommands
 import spock.mock.DetachedMockFactory
 
 @TestPropertySource(properties = [
-        "conductor.disable.async.workers=true",
-        "queue.spy.enabled=true"
+        "conductor.app.systemTaskWorkersDisabled=true",
+        "conductor.integ-test.queueSpyEnabled=true"
 ])
 abstract class AbstractResiliencySpecification extends AbstractSpecification {
 
@@ -38,7 +38,7 @@ abstract class AbstractResiliencySpecification extends AbstractSpecification {
 
         @Primary
         @Bean
-        @ConditionalOnProperty(name = "queue.spy.enabled", havingValue = "true")
+        @ConditionalOnProperty(name = "conductor.integ-test.queueSpyEnabled", havingValue = "true")
         QueueDAO SpyQueueDAO() {
             DetachedMockFactory detachedMockFactory = new DetachedMockFactory()
             JedisCommands jedisMock = new JedisMock()

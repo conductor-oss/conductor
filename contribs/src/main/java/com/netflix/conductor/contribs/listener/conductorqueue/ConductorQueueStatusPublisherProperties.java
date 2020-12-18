@@ -12,25 +12,28 @@
  */
 package com.netflix.conductor.contribs.listener.conductorqueue;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
-@ConditionalOnProperty(prefix = "workflow", name = "status.listener.type", havingValue = "queue_status_publisher")
+@ConfigurationProperties("conductor.workflow-status-listener.queue-publisher")
 public class ConductorQueueStatusPublisherProperties {
 
-    @Value("${workflowstatuslistener.publisher.success.queue:_callbackSuccessQueue}")
-    private String successStatusQueue;
+    private String successQueue = "_callbackSuccessQueue";
 
-    @Value("${workflowstatuslistener.publisher.failure.queue:_callbackFailureQueue}")
-    private String failureStatusQueue;
+    private String failureQueue = "_callbackFailureQueue";
 
-    public String getSuccessStatusQueue() {
-        return successStatusQueue;
+    public String getSuccessQueue() {
+        return successQueue;
     }
 
-    public String getFailureStatusQueue() {
-        return failureStatusQueue;
+    public void setSuccessQueue(String successQueue) {
+        this.successQueue = successQueue;
+    }
+
+    public String getFailureQueue() {
+        return failureQueue;
+    }
+
+    public void setFailureQueue(String failureQueue) {
+        this.failureQueue = failureQueue;
     }
 }

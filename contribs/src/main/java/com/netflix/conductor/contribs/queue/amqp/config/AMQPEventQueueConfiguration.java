@@ -22,11 +22,13 @@ import java.util.HashMap;
 import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(prefix = "workflow", name = "amqp.event.queue.enabled", havingValue = "true")
+@EnableConfigurationProperties(AMQPEventQueueProperties.class)
+@ConditionalOnProperty(name = "conductor.event-queues.amqp.enabled", havingValue = "true")
 public class AMQPEventQueueConfiguration {
 
     private enum QUEUE_TYPE {
@@ -53,7 +55,7 @@ public class AMQPEventQueueConfiguration {
         return new AMQPEventQueueProvider(properties, QUEUE_TYPE.AMQP_EXCHANGE.getType(), true);
     }
 
-    @ConditionalOnProperty(prefix = "workflow", name = "events.default.queue.type", havingValue = "amqp")
+    @ConditionalOnProperty(name = "conductor.default-event-queue.type", havingValue = "amqp")
     @Bean
     public Map<Status, ObservableQueue> getQueues(ConductorProperties conductorProperties,
         AMQPEventQueueProperties properties) {

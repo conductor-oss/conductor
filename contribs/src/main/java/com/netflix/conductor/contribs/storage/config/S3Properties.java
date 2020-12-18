@@ -12,32 +12,47 @@
  */
 package com.netflix.conductor.contribs.storage.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
-@ConditionalOnProperty(prefix = "workflow", name = "external.payload.storage", havingValue = "S3")
+@ConfigurationProperties("conductor.external-payload-storage.s3")
 public class S3Properties {
 
-    @Value("${workflow.external.payload.storage.s3.bucket:conductor_payloads}")
-    private String bucketName;
+    /**
+     * The s3 bucket name where the payloads will be stored
+     */
+    private String bucketName = "conductor_payloads";
 
-    @Value("${workflow.external.payload.storage.s3.signedurlexpirationseconds:5}")
-    private int expirationSeconds;
+    /**
+     * The time (in seconds) for which the signed url will be valid
+     */
+    private int signedUrlExpirationSeconds = 5;
 
-    @Value("${workflow.external.payload.storage.s3.region:us-east-1}")
-    private String region;
+    /**
+     * The AWS region of the s3 bucket
+     */
+    private String region = "us-east-1";
 
     public String getBucketName() {
         return bucketName;
     }
 
-    public int getExpirationSeconds() {
-        return expirationSeconds;
+    public void setBucketName(String bucketName) {
+        this.bucketName = bucketName;
+    }
+
+    public int getSignedUrlExpirationSeconds() {
+        return signedUrlExpirationSeconds;
+    }
+
+    public void setSignedUrlExpirationSeconds(int signedUrlExpirationSeconds) {
+        this.signedUrlExpirationSeconds = signedUrlExpirationSeconds;
     }
 
     public String getRegion() {
         return region;
+    }
+
+    public void setRegion(String region) {
+        this.region = region;
     }
 }

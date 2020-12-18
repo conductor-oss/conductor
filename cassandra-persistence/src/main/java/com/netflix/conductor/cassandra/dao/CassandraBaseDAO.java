@@ -125,7 +125,7 @@ public abstract class CassandraBaseDAO {
     }
 
     private String getCreateKeyspaceStatement() {
-        return SchemaBuilder.createKeyspace(properties.getCassandraKeyspace())
+        return SchemaBuilder.createKeyspace(properties.getKeyspace())
             .ifNotExists()
             .with()
             .replication(
@@ -136,7 +136,7 @@ public abstract class CassandraBaseDAO {
     }
 
     private String getCreateWorkflowsTableStatement() {
-        return SchemaBuilder.createTable(properties.getCassandraKeyspace(), TABLE_WORKFLOWS)
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_WORKFLOWS)
             .ifNotExists()
             .addPartitionKey(WORKFLOW_ID_KEY, DataType.uuid())
             .addPartitionKey(SHARD_ID_KEY, DataType.cint())
@@ -149,7 +149,7 @@ public abstract class CassandraBaseDAO {
     }
 
     private String getCreateTaskLookupTableStatement() {
-        return SchemaBuilder.createTable(properties.getCassandraKeyspace(), TABLE_TASK_LOOKUP)
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_LOOKUP)
             .ifNotExists()
             .addPartitionKey(TASK_ID_KEY, DataType.uuid())
             .addColumn(WORKFLOW_ID_KEY, DataType.uuid())
@@ -157,7 +157,7 @@ public abstract class CassandraBaseDAO {
     }
 
     private String getCreateTaskDefLimitTableStatement() {
-        return SchemaBuilder.createTable(properties.getCassandraKeyspace(), TABLE_TASK_DEF_LIMIT)
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_DEF_LIMIT)
             .ifNotExists()
             .addPartitionKey(TASK_DEF_NAME_KEY, DataType.text())
             .addClusteringColumn(TASK_ID_KEY, DataType.uuid())
@@ -166,7 +166,7 @@ public abstract class CassandraBaseDAO {
     }
 
     private String getCreateWorkflowDefsTableStatement() {
-        return SchemaBuilder.createTable(properties.getCassandraKeyspace(), TABLE_WORKFLOW_DEFS)
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_WORKFLOW_DEFS)
             .ifNotExists()
             .addPartitionKey(WORKFLOW_DEF_NAME_KEY, DataType.text())
             .addClusteringColumn(WORKFLOW_VERSION_KEY, DataType.cint())
@@ -175,7 +175,7 @@ public abstract class CassandraBaseDAO {
     }
 
     private String getCreateWorkflowDefsIndexTableStatement() {
-        return SchemaBuilder.createTable(properties.getCassandraKeyspace(), TABLE_WORKFLOW_DEFS_INDEX)
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_WORKFLOW_DEFS_INDEX)
             .ifNotExists()
             .addPartitionKey(WORKFLOW_DEF_INDEX_KEY, DataType.text())
             .addClusteringColumn(WORKFLOW_DEF_NAME_VERSION_KEY, DataType.text())
@@ -184,7 +184,7 @@ public abstract class CassandraBaseDAO {
     }
 
     private String getCreateTaskDefsTableStatement() {
-        return SchemaBuilder.createTable(properties.getCassandraKeyspace(), TABLE_TASK_DEFS)
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_TASK_DEFS)
             .ifNotExists()
             .addPartitionKey(TASK_DEFS_KEY, DataType.text())
             .addClusteringColumn(TASK_DEF_NAME_KEY, DataType.text())
@@ -193,7 +193,7 @@ public abstract class CassandraBaseDAO {
     }
 
     private String getCreateEventHandlersTableStatement() {
-        return SchemaBuilder.createTable(properties.getCassandraKeyspace(), TABLE_EVENT_HANDLERS)
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_EVENT_HANDLERS)
             .ifNotExists()
             .addPartitionKey(HANDLERS_KEY, DataType.text())
             .addClusteringColumn(EVENT_HANDLER_NAME_KEY, DataType.text())
@@ -202,7 +202,7 @@ public abstract class CassandraBaseDAO {
     }
 
     private String getCreateEventExecutionsTableStatement() {
-        return SchemaBuilder.createTable(properties.getCassandraKeyspace(), TABLE_EVENT_EXECUTIONS)
+        return SchemaBuilder.createTable(properties.getKeyspace(), TABLE_EVENT_EXECUTIONS)
             .ifNotExists()
             .addPartitionKey(MESSAGE_ID_KEY, DataType.text())
             .addPartitionKey(EVENT_HANDLER_NAME_KEY, DataType.text())

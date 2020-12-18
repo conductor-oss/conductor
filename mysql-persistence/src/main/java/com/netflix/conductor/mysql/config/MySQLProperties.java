@@ -12,112 +12,183 @@
  */
 package com.netflix.conductor.mysql.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
-
+import java.sql.Connection;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
-@ConditionalOnProperty(name = "db", havingValue = "mysql")
+@ConfigurationProperties("conductor.mysql")
 public class MySQLProperties {
 
-    @Value("${jdbc.url:jdbc:mysql://localhost:3306/conductor}")
-    private String jdbcUrl;
+    /**
+     * The jdbc url to be used for connecting to the database
+     */
+    private String jdbcUrl = "jdbc:mysql://localhost:3306/conductor";
 
-    @Value("${jdbc.username:conductor}")
-    private String jdbcUsername;
+    /**
+     * The username to be used for connections
+     */
+    private String jdbcUsername = "conductor";
 
-    @Value("${jdbc.password:password}")
-    private String jdbcPassword;
+    /**
+     * The password to be used for connections
+     */
+    private String jdbcPassword = "password";
 
-    @Value("${flyway.enabled:true}")
-    private boolean flywayEnabled;
+    /**
+     * Used to enable/disable flyway migrations
+     */
+    private boolean flywayEnabled = true;
 
-    @Value("${flyway.table:#{null}}")
-    private String flywayTable;
+    /**
+     * Used to override the default flyway migration table
+     */
+    private String flywayTable = null;
 
     // The defaults are currently in line with the HikariConfig defaults, which are unfortunately private.
-    @Value("${conductor.mysql.connection.pool.size.max:-1}")
-    private int connectionPoolMaxSize;
-
-    @Value("${conductor.mysql.connection.pool.idle.min:-1}")
-    private int connectionPoolMinIdle;
-
-    @Value("${conductor.mysql.connection.lifetime.max:#{T(java.util.concurrent.TimeUnit).MINUTES.toMillis(30)}}")
-    private long connectionMaxLifetime;
-
-    @Value("${conductor.mysql.connection.idle.timeout:#{T(java.util.concurrent.TimeUnit).MINUTES.toMillis(10)}}")
-    private long connectionIdleTimeout;
-
-    @Value("${conductor.mysql.connection.timeout:#{T(java.util.concurrent.TimeUnit).MINUTES.toMillis(30)}}")
-    private long connectionTimeout;
-
-    @Value("${conductor.mysql.transaction.isolation.level:}")
-    private String transactionIsolationLevel;
+    /**
+     * The maximum size that the connection pool is allowed to reach including idle and in-use connections
+     */
+    private int connectionPoolMaxSize = -1;
 
     /**
-     * This is consistent with the current default when building the Hikari Client.
+     * The minimum number of idle connections that the connection pool tries to maintain in the pool
      */
-    @Value("${conductor.mysql.autocommit:false}")
-    private boolean autoCommit;
+    private int connectionPoolMinIdle = -1;
 
     /**
-     * the refresh time for the in-memory task definition cache
+     * The maximum lifetime of a connection (in milliseconds) in the pool
      */
-    @Value("${conductor.taskdef.cache.refresh.time.seconds:60}")
-    private int taskDefCacheRefreshTimeSecs;
+    private long connectionMaxLifetime = TimeUnit.MINUTES.toMillis(30);
+
+    /**
+     * The maximum amount of time (in milliseconds) that a connection is allowed to sit idle in the pool
+     */
+    private long connectionIdleTimeout = TimeUnit.MINUTES.toMillis(10);
+
+    /**
+     * The maximum amount of time (in milliseconds) that a client will wait for a connection from the pool
+     */
+    private long connectionTimeout = TimeUnit.MINUTES.toMillis(30);
+
+    /**
+     * The transaction isolation level as specified in {@link Connection}
+     */
+    private String transactionIsolationLevel = "";
+
+    //This is consistent with the current default when building the Hikari Client.
+    /**
+     * The auto-commit behavior of the connections in the pool
+     */
+    private boolean autoCommit = false;
+
+    /**
+     * The time in seconds after which the in-memory task definitions cache will be refreshed
+     */
+    private int taskDefCacheRefreshTimeSecs = 60;
 
 
     public String getJdbcUrl() {
         return jdbcUrl;
     }
 
-    public String getJdbcUserName() {
+    public void setJdbcUrl(String jdbcUrl) {
+        this.jdbcUrl = jdbcUrl;
+    }
+
+    public String getJdbcUsername() {
         return jdbcUsername;
+    }
+
+    public void setJdbcUsername(String jdbcUsername) {
+        this.jdbcUsername = jdbcUsername;
     }
 
     public String getJdbcPassword() {
         return jdbcPassword;
     }
 
+    public void setJdbcPassword(String jdbcPassword) {
+        this.jdbcPassword = jdbcPassword;
+    }
+
     public boolean isFlywayEnabled() {
         return flywayEnabled;
+    }
+
+    public void setFlywayEnabled(boolean flywayEnabled) {
+        this.flywayEnabled = flywayEnabled;
     }
 
     public Optional<String> getFlywayTable() {
         return Optional.ofNullable(flywayTable);
     }
 
+    public void setFlywayTable(String flywayTable) {
+        this.flywayTable = flywayTable;
+    }
+
     public int getConnectionPoolMaxSize() {
         return connectionPoolMaxSize;
+    }
+
+    public void setConnectionPoolMaxSize(int connectionPoolMaxSize) {
+        this.connectionPoolMaxSize = connectionPoolMaxSize;
     }
 
     public int getConnectionPoolMinIdle() {
         return connectionPoolMinIdle;
     }
 
+    public void setConnectionPoolMinIdle(int connectionPoolMinIdle) {
+        this.connectionPoolMinIdle = connectionPoolMinIdle;
+    }
+
     public long getConnectionMaxLifetime() {
         return connectionMaxLifetime;
+    }
+
+    public void setConnectionMaxLifetime(long connectionMaxLifetime) {
+        this.connectionMaxLifetime = connectionMaxLifetime;
     }
 
     public long getConnectionIdleTimeout() {
         return connectionIdleTimeout;
     }
 
+    public void setConnectionIdleTimeout(long connectionIdleTimeout) {
+        this.connectionIdleTimeout = connectionIdleTimeout;
+    }
+
     public long getConnectionTimeout() {
         return connectionTimeout;
+    }
+
+    public void setConnectionTimeout(long connectionTimeout) {
+        this.connectionTimeout = connectionTimeout;
     }
 
     public String getTransactionIsolationLevel() {
         return transactionIsolationLevel;
     }
 
+    public void setTransactionIsolationLevel(String transactionIsolationLevel) {
+        this.transactionIsolationLevel = transactionIsolationLevel;
+    }
+
     public boolean isAutoCommit() {
         return autoCommit;
     }
 
-    public int getTaskDefRefreshTimeSecs() {
+    public void setAutoCommit(boolean autoCommit) {
+        this.autoCommit = autoCommit;
+    }
+
+    public int getTaskDefCacheRefreshTimeSecs() {
         return taskDefCacheRefreshTimeSecs;
+    }
+
+    public void setTaskDefCacheRefreshTimeSecs(int taskDefCacheRefreshTimeSecs) {
+        this.taskDefCacheRefreshTimeSecs = taskDefCacheRefreshTimeSecs;
     }
 }

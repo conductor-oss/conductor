@@ -106,7 +106,7 @@ public class CassandraMetadataDAO extends CassandraBaseDAO implements MetadataDA
         this.deleteTaskDefStatement = session.prepare(statements.getDeleteTaskDefStatement())
             .setConsistencyLevel(properties.getWriteConsistencyLevel());
 
-        int cacheRefreshTime = properties.getTaskDefRefreshTimeSecs();
+        int cacheRefreshTime = properties.getTaskDefCacheRefreshTimeSecs();
         Executors.newSingleThreadScheduledExecutor()
             .scheduleWithFixedDelay(this::refreshTaskDefsCache, 0, cacheRefreshTime, TimeUnit.SECONDS);
     }

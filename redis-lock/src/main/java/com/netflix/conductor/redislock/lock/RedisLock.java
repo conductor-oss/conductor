@@ -35,7 +35,7 @@ public class RedisLock implements Lock {
     public RedisLock(Redisson redisson, RedisLockProperties properties) {
         this.properties = properties;
         this.redisson = redisson;
-        LOCK_NAMESPACE = properties.getLockingNamespace();
+        LOCK_NAMESPACE = properties.getNamespace();
     }
 
     @Override

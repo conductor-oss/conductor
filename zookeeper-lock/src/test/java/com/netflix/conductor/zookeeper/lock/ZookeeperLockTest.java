@@ -41,11 +41,11 @@ public class ZookeeperLockTest {
     public void setUp() throws Exception {
         zkServer = new TestingServer(2181);
         properties = mock(ZookeeperProperties.class);
-        when(properties.getZkConnection()).thenReturn("localhost:2181");
-        when(properties.getZkSessiontimeoutMs()).thenReturn(CuratorFrameworkFactory.builder().getSessionTimeoutMs());
-        when(properties.getZkConnectiontimeoutMs())
+        when(properties.getConnectionString()).thenReturn("localhost:2181");
+        when(properties.getSessionTimeoutMs()).thenReturn(CuratorFrameworkFactory.builder().getSessionTimeoutMs());
+        when(properties.getConnectionTimeoutMs())
             .thenReturn(CuratorFrameworkFactory.builder().getConnectionTimeoutMs());
-        when(properties.getLockingNamespace()).thenReturn("");
+        when(properties.getNamespace()).thenReturn("");
     }
 
     @After

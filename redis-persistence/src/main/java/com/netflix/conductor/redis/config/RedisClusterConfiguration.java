@@ -12,6 +12,7 @@
  */
 package com.netflix.conductor.redis.config;
 
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.jedis.JedisCluster;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
@@ -23,16 +24,17 @@ import redis.clients.jedis.HostAndPort;
 import redis.clients.jedis.commands.JedisCommands;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "db", havingValue = "redis_cluster")
+@ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_cluster")
 public class RedisClusterConfiguration extends JedisCommandsConfigurer {
 
     @Override
-    protected JedisCommands createJedisCommands(RedisProperties properties, HostSupplier hostSupplier, TokenMapSupplier tokenMapSupplier) {
+    protected JedisCommands createJedisCommands(RedisProperties properties, ConductorProperties conductorProperties,
+        HostSupplier hostSupplier, TokenMapSupplier tokenMapSupplier) {
         GenericObjectPoolConfig genericObjectPoolConfig = new GenericObjectPoolConfig();
         genericObjectPoolConfig.setMaxTotal(properties.getMaxConnectionsPerHost());
         Host host = hostSupplier.getHosts().get(0);
         return new JedisCluster(
-                new redis.clients.jedis.JedisCluster(new HostAndPort(host.getHostName(), host.getPort()),
-                        genericObjectPoolConfig));
+            new redis.clients.jedis.JedisCluster(new HostAndPort(host.getHostName(), host.getPort()),
+                genericObjectPoolConfig));
     }
 }

@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.dao.MetadataDAO;
@@ -54,10 +55,11 @@ public class RedisMetadataDAO extends BaseDynoDAO implements MetadataDAO {
     private static final String className = RedisMetadataDAO.class.getSimpleName();
     private Map<String, TaskDef> taskDefCache = new HashMap<>();
 
-    public RedisMetadataDAO(JedisProxy jedisProxy, ObjectMapper objectMapper, RedisProperties properties) {
-        super(jedisProxy, objectMapper, properties);
+    public RedisMetadataDAO(JedisProxy jedisProxy, ObjectMapper objectMapper,
+        ConductorProperties conductorProperties, RedisProperties properties) {
+        super(jedisProxy, objectMapper, conductorProperties, properties);
         refreshTaskDefs();
-        int cacheRefreshTime = properties.getTaskDefRefreshTimeSecs();
+        int cacheRefreshTime = properties.getTaskDefCacheRefreshTimeSecs();
         Executors.newSingleThreadScheduledExecutor()
             .scheduleWithFixedDelay(this::refreshTaskDefs, cacheRefreshTime, cacheRefreshTime, TimeUnit.SECONDS);
     }

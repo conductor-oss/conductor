@@ -33,28 +33,30 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties(ConductorProperties.class)
 public class ConductorCoreConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(ConductorCoreConfiguration.class);
 
-    @ConditionalOnProperty(prefix = "workflow", name = "decider.locking.server", havingValue = "noop_lock", matchIfMissing = true)
+    @ConditionalOnProperty(name = "conductor.workflow-execution-lock.type", havingValue = "noop_lock", matchIfMissing = true)
     @Bean
     public Lock provideLock() {
         return new NoopLock();
     }
 
-    @ConditionalOnProperty(prefix = "workflow", name = "external.payload.storage", havingValue = "DUMMY", matchIfMissing = true)
+    @ConditionalOnProperty(name = "conductor.external-payload-storage.type", havingValue = "dummy", matchIfMissing = true)
     @Bean
     public ExternalPayloadStorage dummyExternalPayloadStorage() {
-        LOGGER.info("Initialized dummy payload storage");
+        LOGGER.info("Initialized dummy payload storage!");
         return new DummyPayloadStorage();
     }
 
-    @ConditionalOnProperty(prefix = "workflow", name = "status.listener.type", havingValue = "stub", matchIfMissing = true)
+    @ConditionalOnProperty(name = "conductor.workflow-status-listener.type", havingValue = "stub", matchIfMissing = true)
     @Bean
     public WorkflowStatusListener workflowStatusListener() {
         return new WorkflowStatusListenerStub();
@@ -66,7 +68,7 @@ public class ConductorCoreConfiguration {
             .setNameFormat("conductor-worker-%d")
             .setDaemon(true)
             .build();
-        return Executors.newFixedThreadPool(conductorProperties.getExecutorServiceMaxThreads(), threadFactory);
+        return Executors.newFixedThreadPool(conductorProperties.getExecutorServiceMaxThreadCount(), threadFactory);
     }
 
     @Bean

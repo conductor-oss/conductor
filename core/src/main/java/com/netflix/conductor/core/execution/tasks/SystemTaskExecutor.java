@@ -139,7 +139,7 @@ class SystemTaskExecutor {
     }
 
     private ExecutionConfig createExecutionConfig() {
-        int threadCount = properties.getSystemTaskWorkerIsolatedThreadCount();
+        int threadCount = properties.getIsolatedSystemTaskWorkerThreadCount();
         String threadNameFormat = "isolated-system-task-worker-%d";
         return new ExecutionConfig(threadCount, threadNameFormat);
     }

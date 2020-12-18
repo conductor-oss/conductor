@@ -26,11 +26,13 @@ import com.netflix.conductor.dao.MetadataDAO;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "db", havingValue = "cassandra")
+@EnableConfigurationProperties(CassandraProperties.class)
+@ConditionalOnProperty(name = "conductor.db.type", havingValue = "cassandra")
 public class CassandraConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(CassandraConfiguration.class);
@@ -80,6 +82,6 @@ public class CassandraConfiguration {
 
     @Bean
     public Statements statements(CassandraProperties cassandraProperties) {
-        return new Statements(cassandraProperties.getCassandraKeyspace());
+        return new Statements(cassandraProperties.getKeyspace());
     }
 }

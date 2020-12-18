@@ -33,7 +33,7 @@ public class SQSEventQueueProvider implements EventQueueProvider {
     public SQSEventQueueProvider(AmazonSQSClient client, SQSEventQueueProperties properties, Scheduler scheduler) {
         this.client = client;
         this.batchSize = properties.getBatchSize();
-        this.pollTimeInMS = properties.getPollTimeMS();
+        this.pollTimeInMS = properties.getPollTimeMs();
         this.visibilityTimeoutInSeconds = properties.getVisibilityTimeoutSeconds();
         this.scheduler = scheduler;
     }

@@ -60,7 +60,7 @@ log4j.properties file path is optional and allows finer control over the logging
 # redis_cluster: AWS Elasticache Redis (cluster mode enabled).See [http://docs.aws.amazon.com/AmazonElastiCache/latest/UserGuide/Clusters.Create.CON.RedisCluster.html]
 # redis_sentinel: Redis HA with Redis Sentinel. See [https://redis.io/topics/sentinel]
 # dynomite : Dynomite cluster.  Use this for HA configuration.
-db=dynomite
+conductor.db.type=dynomite
 
 # Dynomite Cluster details.
 # format is host:port:rack separated by semicolon
@@ -114,7 +114,7 @@ Clients connects to the server via HTTP load balancer or using Discovery (on Net
 Conductor server can be used with a standlone Redis or ElastiCache server.  To configure the server, change the config to use the following:
 
 ```properties
-db=redis
+conductor.db.type=redis
 
 # For AWS Elasticache Redis (cluster mode enabled) the format is configuration_endpoint:port:us-east-1e.
 # The region in this case does not matter
@@ -130,7 +130,7 @@ See [Technical Details](../technicaldetails/#maintaining-workflow-consistency-wi
 
 Locking Service is disabled by default. Enable this by setting:
 
-```decider.locking.enabled: true```
+```conductor.app.workflowExecutionLockEnabled: true```
 
 Setup Zookeeper cluster connection string:
 

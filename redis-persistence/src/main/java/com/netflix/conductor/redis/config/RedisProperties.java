@@ -12,140 +12,182 @@
  */
 package com.netflix.conductor.redis.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
+import com.netflix.conductor.core.config.ConductorProperties;
+import com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
-@Conditional(AnyRedisCondition.class)
+@ConfigurationProperties("conductor.redis")
 public class RedisProperties {
 
-    // TODO Are cluster and cluster name really different things?
+    private final ConductorProperties conductorProperties;
 
-    /**
-     * name of the stack under which the app is running. e.g. devint, testintg, staging, prod etc.
-     */
-    @Value("${STACK:test}")
-    private String stack;
-
-    @Value("${APP_ID:conductor}")
-    private String appId;
+    @Autowired
+    public RedisProperties(ConductorProperties conductorProperties) {
+        this.conductorProperties = conductorProperties;
+    }
 
     /**
      * Data center region. If hosting on Amazon the value is something like us-east-1, us-west-2 etc.
      */
-    @Value("${EC2_REGION:us-east-1}")
-    private String region;
+    private String dataCenterRegion = "us-east-1";
 
     /**
-     * Availability zone / rack. For AWS deployments, the value is something like us-east-1a, etc.
+     * Local rack / availability zone. For AWS deployments, the value is something like us-east-1a, etc.
      */
-    @Value("${EC2_AVAILABILITY_ZONE:us-east-1c}")
-    private String availabilityZone;
-
-    @Value("${workflow.dynomite.cluster:#{null}}")
-    private String cluster;
-
-    @Value("${workflow.dynomite.cluster.name:}")
-    private String clusterName;
-
-    @Value("${workflow.dynomite.cluster.hosts:#{null}}")
-    private String hosts;
-
-    @Value("${workflow.namespace.prefix:#{null}}")
-    private String workflowNamespacePrefix;
-
-    @Value("${workflow.namespace.queue.prefix:#{null}}")
-    private String queueNamespacePrefix;
-
-    @Value("${workflow.dyno.keyspace.domain:#{null}}")
-    private String keyspaceDomain;
-
-    @Value("${workflow.dynomite.connection.maxConnsPerHost:10}")
-    private int maxConnectionsPerHost;
-
-    @Value("${queues.dynomite.nonQuorum.port:22122}")
-    private int queuesNonQuorumPort;
-
-    @Value("${workflow.dyno.queue.sharding.strategy:#{T(com.netflix.conductor.redis.dynoqueue.RedisQueuesShardingStrategyProvider).ROUND_ROBIN_STRATEGY}}")
-    private String queueShardingStrategy;
+    private String availabilityZone = "us-east-1c";
 
     /**
-     * the refresh time for the in-memory task definition cache
+     * The name of the redis / dynomite cluster
      */
-    @Value("${conductor.taskdef.cache.refresh.time.seconds:60}")
-    private int taskDefCacheRefreshTimeSecs;
+    private String clusterName = "";
 
     /**
-     * The time to live in seconds of the event execution persisted
+     * Dynomite Cluster details. Format is host:port:rack separated by semicolon
      */
-    @Value("${workflow.event.execution.persistence.ttl.seconds:0}")
-    private int eventExecutionPersistenceTTLSecs;
+    private String hosts = null;
 
-    public String getStack() {
-        return stack;
+    /**
+     * The prefix used to prepend workflow data in redis
+     */
+    private String workflowNamespacePrefix = null;
+
+    /**
+     * The prefix used to prepend keys for queues in redis
+     */
+    private String queueNamespacePrefix = null;
+
+    /**
+     * The domain name to be used in the key prefix for logical separation of workflow data and queues in a shared redis
+     * setup
+     */
+    private String keyspaceDomain = null;
+
+    /**
+     * The maximum number of connections that can be managed by the connection pool on a given instance
+     */
+    private int maxConnectionsPerHost = 10;
+
+    /**
+     * The read connection port to be used for connecting to dyno-queues
+     */
+    private int queuesNonQuorumPort = 22122;
+
+    /**
+     * The sharding strategy to be used for the dyno queue configuration
+     */
+    private String queueShardingStrategy = RedisQueuesShardingStrategyProvider.ROUND_ROBIN_STRATEGY;
+
+    /**
+     * The time in seconds after which the in-memory task definitions cache will be refreshed
+     */
+    private int taskDefCacheRefreshTimeSecs = 60;
+
+    /**
+     * The time to live in seconds for which the event execution will be persisted
+     */
+    private int eventExecutionPersistenceTTLSecs = 60;
+
+    public String getDataCenterRegion() {
+        return dataCenterRegion;
     }
 
-    public String getAppId() {
-        return appId;
-    }
-
-    public String getRegion() {
-        return region;
+    public void setDataCenterRegion(String dataCenterRegion) {
+        this.dataCenterRegion = dataCenterRegion;
     }
 
     public String getAvailabilityZone() {
         return availabilityZone;
     }
 
-    public String getCluster() {
-        return cluster;
+    public void setAvailabilityZone(String availabilityZone) {
+        this.availabilityZone = availabilityZone;
     }
 
     public String getClusterName() {
         return clusterName;
     }
 
+    public void setClusterName(String clusterName) {
+        this.clusterName = clusterName;
+    }
+
     public String getHosts() {
         return hosts;
+    }
+
+    public void setHosts(String hosts) {
+        this.hosts = hosts;
     }
 
     public String getWorkflowNamespacePrefix() {
         return workflowNamespacePrefix;
     }
 
+    public void setWorkflowNamespacePrefix(String workflowNamespacePrefix) {
+        this.workflowNamespacePrefix = workflowNamespacePrefix;
+    }
+
     public String getQueueNamespacePrefix() {
         return queueNamespacePrefix;
     }
 
-    public String getDomain() {
+    public void setQueueNamespacePrefix(String queueNamespacePrefix) {
+        this.queueNamespacePrefix = queueNamespacePrefix;
+    }
+
+    public String getKeyspaceDomain() {
         return keyspaceDomain;
+    }
+
+    public void setKeyspaceDomain(String keyspaceDomain) {
+        this.keyspaceDomain = keyspaceDomain;
     }
 
     public int getMaxConnectionsPerHost() {
         return maxConnectionsPerHost;
     }
 
-    public int getNonQuorumPort() {
+    public void setMaxConnectionsPerHost(int maxConnectionsPerHost) {
+        this.maxConnectionsPerHost = maxConnectionsPerHost;
+    }
+
+    public int getQueuesNonQuorumPort() {
         return queuesNonQuorumPort;
+    }
+
+    public void setQueuesNonQuorumPort(int queuesNonQuorumPort) {
+        this.queuesNonQuorumPort = queuesNonQuorumPort;
     }
 
     public String getQueueShardingStrategy() {
         return queueShardingStrategy;
     }
 
-    public int getTaskDefRefreshTimeSecs() {
+    public void setQueueShardingStrategy(String queueShardingStrategy) {
+        this.queueShardingStrategy = queueShardingStrategy;
+    }
+
+    public int getTaskDefCacheRefreshTimeSecs() {
         return taskDefCacheRefreshTimeSecs;
     }
 
-    public int getEventExecutionPersistenceTTL() {
+    public void setTaskDefCacheRefreshTimeSecs(int taskDefCacheRefreshTimeSecs) {
+        this.taskDefCacheRefreshTimeSecs = taskDefCacheRefreshTimeSecs;
+    }
+
+    public int getEventExecutionPersistenceTTLSecs() {
         return eventExecutionPersistenceTTLSecs;
     }
 
+    public void setEventExecutionPersistenceTTLSecs(int eventExecutionPersistenceTTLSecs) {
+        this.eventExecutionPersistenceTTLSecs = eventExecutionPersistenceTTLSecs;
+    }
+
     public String getQueuePrefix() {
-        String prefix = getQueueNamespacePrefix() + "." + getStack();
-        if (getDomain() != null) {
-            prefix = prefix + "." + getDomain();
+        String prefix = getQueueNamespacePrefix() + "." + conductorProperties.getStack();
+        if (getKeyspaceDomain() != null) {
+            prefix = prefix + "." + getKeyspaceDomain();
         }
         return prefix;
     }

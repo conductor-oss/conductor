@@ -42,7 +42,7 @@ public class PostgresMetadataDAO extends PostgresBaseDAO implements MetadataDAO,
     public PostgresMetadataDAO(ObjectMapper objectMapper, DataSource dataSource, PostgresProperties properties) {
         super(objectMapper, dataSource);
 
-        int cacheRefreshTime = properties.getTaskDefRefreshTimeSecs();
+        int cacheRefreshTime = properties.getTaskDefCacheRefreshTimeSecs();
         Executors.newSingleThreadScheduledExecutor()
             .scheduleWithFixedDelay(this::refreshTaskDefs, cacheRefreshTime, cacheRefreshTime, TimeUnit.SECONDS);
     }

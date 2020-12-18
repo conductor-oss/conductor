@@ -16,11 +16,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.dao.QueueDAO;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(prefix = "workflow", name = "status.listener.type", havingValue = "queue_status_publisher")
+@EnableConfigurationProperties(ConductorQueueStatusPublisherProperties.class)
+@ConditionalOnProperty(name = "conductor.workflow-status-listener.type", havingValue = "queue_publisher")
 public class ConductorQueueStatusPublisherConfiguration {
 
     @Bean

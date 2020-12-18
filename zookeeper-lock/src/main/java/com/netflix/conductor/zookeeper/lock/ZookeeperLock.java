@@ -40,12 +40,12 @@ public class ZookeeperLock implements Lock {
     private final String zkPath;
 
     public ZookeeperLock(ZookeeperProperties properties) {
-        String lockNamespace = properties.getLockingNamespace();
+        String lockNamespace = properties.getNamespace();
         RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
         client = CuratorFrameworkFactory.newClient(
-            properties.getZkConnection(),
-            properties.getZkSessiontimeoutMs(),
-            properties.getZkConnectiontimeoutMs(),
+            properties.getConnectionString(),
+            properties.getSessionTimeoutMs(),
+            properties.getConnectionTimeoutMs(),
             retryPolicy
         );
         client.start();

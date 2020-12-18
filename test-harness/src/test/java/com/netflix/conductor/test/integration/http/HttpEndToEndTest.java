@@ -17,11 +17,10 @@ import com.netflix.conductor.client.http.TaskClient;
 import com.netflix.conductor.client.http.WorkflowClient;
 import org.junit.Before;
 
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 public class HttpEndToEndTest extends AbstractHttpEndToEndTest {
 
     @Before
-    public void init() throws Exception {
+    public void init() {
         apiRoot = String.format("http://localhost:%d/api/", port);
 
         taskClient = new TaskClient();

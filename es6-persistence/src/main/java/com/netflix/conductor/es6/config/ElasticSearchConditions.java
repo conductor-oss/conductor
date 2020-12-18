@@ -27,13 +27,13 @@ public class ElasticSearchConditions {
         }
 
         @SuppressWarnings("unused")
-        @ConditionalOnProperty(prefix = "workflow", name = "indexing.enabled", havingValue = "true", matchIfMissing = true)
+        @ConditionalOnProperty(name = "conductor.indexing.enabled", havingValue = "true", matchIfMissing = true)
         static class enabledIndexing {
 
         }
 
         @SuppressWarnings("unused")
-        @ConditionalOnProperty(prefix = "workflow", name = "elasticsearch.version", havingValue = "6", matchIfMissing = true)
+        @ConditionalOnProperty(name = "conductor.elasticsearch.version", havingValue = "6", matchIfMissing = true)
         static class enabledES6 {
 
         }

@@ -42,8 +42,8 @@ import org.springframework.test.context.junit4.SpringRunner;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(properties = {
-    "conductor.grpc.server.enabled=true",
-    "conductor.grpc.server.port=8092"
+    "conductor.grpc-server.enabled=true",
+    "conductor.grpc-server.port=8092"
 })
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
 public abstract class AbstractGrpcEndToEndTest extends AbstractEndToEndTest {

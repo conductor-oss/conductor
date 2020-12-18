@@ -12,141 +12,192 @@
  */
 package com.netflix.conductor.es6.config;
 
-import com.google.common.annotations.VisibleForTesting;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Conditional;
-import org.springframework.stereotype.Component;
-
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
-@Conditional(ElasticSearchConditions.ElasticSearchV6Enabled.class)
+@ConfigurationProperties("conductor.elasticsearch")
 public class ElasticSearchProperties {
 
-    @Value("${workflow.elasticsearch.url:localhost:9300}")
-    private String url;
+    /**
+     * The url for the elasticsearch cluster. Format -- host:port
+     */
+    private String url = "localhost:9300";
 
-    @Value("${workflow.elasticsearch.index.name:conductor}")
-    private String indexName;
+    /**
+     * The index prefix to be used when creating indices
+     */
+    private String indexPrefix = "conductor";
 
-    @Value("${workflow.elasticsearch.tasklog.index.name:task_log}")
-    private String taskLogIndexName;
+    /**
+     * The color of the elasticserach cluster to wait for to confirm healthy status
+     */
+    private String clusterHealthColor = "green";
 
-    @Value("${workflow.elasticsearch.cluster.health.color:green}")
-    private String clusterHealthColor;
+    /**
+     * The size of the batch to be used for bulk indexing in async mode
+     */
+    private int indexBatchSize = 1;
 
-    @Value("${workflow.elasticsearch.archive.search.batchSize:5000}")
-    private int archiveSearchBatchSize;
+    /**
+     * The size of the queue used for holding async indexing tasks
+     */
+    private int asyncWorkerQueueSize = 100;
 
-    @Value("${workflow.elasticsearch.index.batchSize:1}")
-    private int indexBatchSize;
+    /**
+     * The maximum number of threads allowed in the async pool
+     */
+    private int asyncMaxPoolSize = 12;
 
-    @Value("${workflow.elasticsearch.async.dao.worker.queue.size:100}")
-    private int asyncWorkerQueueSize;
+    /**
+     * The time in seconds after which the async buffers will be flushed (if no activity) to prevent data loss
+     */
+    private int asyncBufferFlushTimeoutSecs = 10;
 
-    @Value("${workflow.elasticsearch.async.dao.max.pool.size:12}")
-    private int asyncMaxPoolSize;
+    /**
+     * The number of shards that the index will be created with
+     */
+    private int indexShardCount = 5;
 
-    @Value("${workflow.elasticsearch.async.buffer.flush.timeout.seconds:10}")
-    private int asyncBufferFlushTimeout;
+    /**
+     * The number of replicas that the index will be configured to have
+     */
+    private int indexReplicasCount = 1;
 
-    @Value("${workflow.elasticsearch.index.shard.count:5}")
-    private int indexShardCount;
+    /**
+     * The number of task log results that will be returned in the response
+     */
+    private int taskLogResultLimit = 10;
 
-    @Value("${workflow.elasticsearch.index.replicas.count:1}")
-    private int indexReplicasCount;
+    /**
+     * The timeout in milliseconds used when requesting a connection from the connection manager
+     */
+    private int restClientConnectionRequestTimeoutMs = -1;
 
-    @Value("${tasklog.elasticsearch.query.size:10}")
-    private int taskLogResultLimit;
-
-    @Value("${workflow.elasticsearch.rest.client.connectionRequestTimeout.milliseconds:-1}")
-    private int restClientConnectionRequestTimeout;
-
-    @Value("${workflow.elasticsearch.auto.index.management.enabled:true}")
-    private boolean elasticSearchAutoIndexManagementEnabled;
+    /**
+     * Used to control if index management is to be enabled or will be controlled externally
+     */
+    private boolean autoIndexManagementEnabled = true;
 
     /**
      * Document types are deprecated in ES6 and removed from ES7. This property can be used to disable the use of
      * specific document types with an override. This property is currently used in ES6 module.
      * <p>
      * <em>Note that this property will only take effect if
-     * {@link ElasticSearchProperties#isElasticSearchAutoIndexManagementEnabled} is set to false and index management is
-     * handled outside of this module.</em>
+     * {@link ElasticSearchProperties#isAutoIndexManagementEnabled} is set to false and index management is handled
+     * outside of this module.</em>
      */
-    @Value("${workflow.elasticsearch.document.type.override:}")
-    private String elasticSearchDocumentTypeOverride;
+    private String documentTypeOverride = "";
 
-    public String getURL() {
+    public String getUrl() {
         return url;
     }
 
-    public String getIndexName() {
-        return indexName;
+    public void setUrl(String url) {
+        this.url = url;
     }
 
-    public String getTaskLogIndexName() {
-        return taskLogIndexName;
+    public String getIndexPrefix() {
+        return indexPrefix;
+    }
+
+    public void setIndexPrefix(String indexPrefix) {
+        this.indexPrefix = indexPrefix;
     }
 
     public String getClusterHealthColor() {
         return clusterHealthColor;
     }
 
-    public int getArchiveSearchBatchSize() {
-        return archiveSearchBatchSize;
+    public void setClusterHealthColor(String clusterHealthColor) {
+        this.clusterHealthColor = clusterHealthColor;
     }
 
     public int getIndexBatchSize() {
         return indexBatchSize;
     }
 
+    public void setIndexBatchSize(int indexBatchSize) {
+        this.indexBatchSize = indexBatchSize;
+    }
+
     public int getAsyncWorkerQueueSize() {
         return asyncWorkerQueueSize;
+    }
+
+    public void setAsyncWorkerQueueSize(int asyncWorkerQueueSize) {
+        this.asyncWorkerQueueSize = asyncWorkerQueueSize;
     }
 
     public int getAsyncMaxPoolSize() {
         return asyncMaxPoolSize;
     }
 
-    public int getAsyncBufferFlushTimeout() {
-        return asyncBufferFlushTimeout;
+    public void setAsyncMaxPoolSize(int asyncMaxPoolSize) {
+        this.asyncMaxPoolSize = asyncMaxPoolSize;
     }
 
-    public int getElasticSearchIndexShardCount() {
+    public int getAsyncBufferFlushTimeoutSecs() {
+        return asyncBufferFlushTimeoutSecs;
+    }
+
+    public void setAsyncBufferFlushTimeoutSecs(int asyncBufferFlushTimeoutSecs) {
+        this.asyncBufferFlushTimeoutSecs = asyncBufferFlushTimeoutSecs;
+    }
+
+    public int getIndexShardCount() {
         return indexShardCount;
     }
 
-    public int getElasticSearchIndexReplicasCount() {
+    public void setIndexShardCount(int indexShardCount) {
+        this.indexShardCount = indexShardCount;
+    }
+
+    public int getIndexReplicasCount() {
         return indexReplicasCount;
     }
 
-    public int getElasticSearchTasklogResultLimit() {
+    public void setIndexReplicasCount(int indexReplicasCount) {
+        this.indexReplicasCount = indexReplicasCount;
+    }
+
+    public int getTaskLogResultLimit() {
         return taskLogResultLimit;
     }
 
-    public int getElasticsearchRestClientConnectionRequestTimeout() {
-        return restClientConnectionRequestTimeout;
+    public void setTaskLogResultLimit(int taskLogResultLimit) {
+        this.taskLogResultLimit = taskLogResultLimit;
     }
 
-    public boolean isElasticSearchAutoIndexManagementEnabled() {
-        return elasticSearchAutoIndexManagementEnabled;
+    public int getRestClientConnectionRequestTimeoutMs() {
+        return restClientConnectionRequestTimeoutMs;
     }
 
-    public String getElasticSearchDocumentTypeOverride() {
-        return elasticSearchDocumentTypeOverride;
+    public void setRestClientConnectionRequestTimeoutMs(int restClientConnectionRequestTimeoutMs) {
+        this.restClientConnectionRequestTimeoutMs = restClientConnectionRequestTimeoutMs;
     }
 
-    @VisibleForTesting
-    public void setURL(String url) {
-        this.url = url;
+    public boolean isAutoIndexManagementEnabled() {
+        return autoIndexManagementEnabled;
+    }
+
+    public void setAutoIndexManagementEnabled(boolean autoIndexManagementEnabled) {
+        this.autoIndexManagementEnabled = autoIndexManagementEnabled;
+    }
+
+    public String getDocumentTypeOverride() {
+        return documentTypeOverride;
+    }
+
+    public void setDocumentTypeOverride(String documentTypeOverride) {
+        this.documentTypeOverride = documentTypeOverride;
     }
 
     public List<URL> getURLs() {
-        String clusterAddress = getURL();
+        String clusterAddress = getUrl();
         String[] hosts = clusterAddress.split(",");
         return Arrays.stream(hosts)
             .map(host ->

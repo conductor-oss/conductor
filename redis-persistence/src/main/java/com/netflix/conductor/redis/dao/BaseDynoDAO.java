@@ -14,12 +14,12 @@ package com.netflix.conductor.redis.dao;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisProxy;
-import org.apache.commons.lang3.StringUtils;
-
 import java.io.IOException;
+import org.apache.commons.lang3.StringUtils;
 
 public class BaseDynoDAO {
 
@@ -27,14 +27,17 @@ public class BaseDynoDAO {
     private static final String DAO_NAME = "redis";
     private final String domain;
     private final RedisProperties properties;
+    private final ConductorProperties conductorProperties;
     protected JedisProxy jedisProxy;
     protected ObjectMapper objectMapper;
 
-    protected BaseDynoDAO(JedisProxy jedisProxy, ObjectMapper objectMapper, RedisProperties properties) {
+    protected BaseDynoDAO(JedisProxy jedisProxy, ObjectMapper objectMapper,
+        ConductorProperties conductorProperties, RedisProperties properties) {
         this.jedisProxy = jedisProxy;
         this.objectMapper = objectMapper;
+        this.conductorProperties = conductorProperties;
         this.properties = properties;
-        this.domain = properties.getDomain();
+        this.domain = properties.getKeyspaceDomain();
     }
 
     String nsKey(String... nsValues) {
@@ -43,7 +46,7 @@ public class BaseDynoDAO {
         if (StringUtils.isNotBlank(rootNamespace)) {
             namespacedKey.append(rootNamespace).append(NAMESPACE_SEP);
         }
-        String stack = properties.getStack();
+        String stack = conductorProperties.getStack();
         if (StringUtils.isNotBlank(stack)) {
             namespacedKey.append(stack).append(NAMESPACE_SEP);
         }

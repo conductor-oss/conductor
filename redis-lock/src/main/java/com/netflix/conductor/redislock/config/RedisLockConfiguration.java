@@ -15,19 +15,19 @@ package com.netflix.conductor.redislock.config;
 import com.netflix.conductor.core.sync.Lock;
 import com.netflix.conductor.redislock.config.RedisLockProperties.REDIS_SERVER_TYPE;
 import com.netflix.conductor.redislock.lock.RedisLock;
+import java.util.Arrays;
 import org.redisson.Redisson;
 import org.redisson.config.Config;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-import java.util.Arrays;
-
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration
-@ConditionalOnProperty(prefix = "workflow.decider", name = "locking.server", havingValue = "REDIS")
+@EnableConfigurationProperties(RedisLockProperties.class)
+@ConditionalOnProperty(name = "conductor.workflow-execution-lock.type", havingValue = "redis")
 public class RedisLockConfiguration {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RedisLockConfiguration.class);
@@ -36,16 +36,16 @@ public class RedisLockConfiguration {
     public Redisson getRedisson(RedisLockProperties properties) {
         RedisLockProperties.REDIS_SERVER_TYPE redisServerType;
         try {
-            redisServerType = properties.getRedisServerType();
+            redisServerType = properties.getServerType();
         } catch (IllegalArgumentException ie) {
-            final String message = "Invalid Redis server type: " + properties.getRedisServerType()
+            final String message = "Invalid Redis server type: " + properties.getServerType()
                 + ", supported values are: " + Arrays.toString(REDIS_SERVER_TYPE.values());
             LOGGER.error(message);
             throw new RuntimeException(message, ie);
         }
-        String redisServerAddress = properties.getRedisServerAddress();
-        String redisServerPassword = properties.getRedisServerPassword();
-        String masterName = properties.getRedisServerMasterName();
+        String redisServerAddress = properties.getServerAddress();
+        String redisServerPassword = properties.getServerPassword();
+        String masterName = properties.getServerMasterName();
 
         Config redisConfig = new Config();
 

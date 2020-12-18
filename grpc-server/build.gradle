@@ -4,7 +4,6 @@ dependencies {
     implementation project(':conductor-grpc')
 
     implementation 'org.springframework.boot:spring-boot-starter'
-    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
 
     implementation "io.grpc:grpc-netty:${revGrpc}"
     implementation "io.grpc:grpc-services:${revGrpc}"

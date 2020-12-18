@@ -25,6 +25,10 @@ def javaProjects = subprojects.findAll {
     it.name != "ui"
 }
 
+configure(javaProjects) {
+    compileJava.inputs.files(processResources)
+}
+
 apply from: "$rootDir/dependencies.gradle"
 
 // change the ES version used by Spring Boot Dependency Management plugin

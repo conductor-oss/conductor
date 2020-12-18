@@ -19,19 +19,20 @@ import com.netflix.conductor.contribs.queue.sqs.SQSObservableQueue.Builder;
 import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.events.EventQueueProvider;
 import com.netflix.conductor.core.events.queue.ObservableQueue;
+import java.util.HashMap;
+import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import rx.Scheduler;
 
-import java.util.HashMap;
-import java.util.Map;
-
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration
-@ConditionalOnProperty(prefix = "workflow", name = "sqs.event.queue.enabled", havingValue = "true")
+@EnableConfigurationProperties(SQSEventQueueProperties.class)
+@ConditionalOnProperty(name = "conductor.event-queues.sqs.enabled", havingValue = "true")
 public class SQSEventQueueConfiguration {
 
     @ConditionalOnMissingBean
@@ -46,7 +47,7 @@ public class SQSEventQueueConfiguration {
         return new SQSEventQueueProvider(sqsClient, properties, scheduler);
     }
 
-    @ConditionalOnProperty(prefix = "workflow", name = "events.default.queue.type", havingValue = "sqs", matchIfMissing = true)
+    @ConditionalOnProperty(name = "conductor.default-event-queue.type", havingValue = "sqs", matchIfMissing = true)
     @Bean
     public Map<Status, ObservableQueue> getQueues(ConductorProperties conductorProperties,
         SQSEventQueueProperties properties, AmazonSQSClient sqsClient) {

@@ -18,6 +18,7 @@ import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.RetryLogic;
 import com.netflix.conductor.common.metadata.tasks.TaskDef.TimeoutPolicy;
 import com.netflix.conductor.common.metadata.workflow.WorkflowDef;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.config.RedisProperties;
@@ -54,12 +55,13 @@ public class RedisMetadataDAOTest {
 
     @Before
     public void init() {
+        ConductorProperties conductorProperties = mock(ConductorProperties.class);
         RedisProperties properties = mock(RedisProperties.class);
-        when(properties.getTaskDefRefreshTimeSecs()).thenReturn(60);
+        when(properties.getTaskDefCacheRefreshTimeSecs()).thenReturn(60);
         JedisCommands jedisMock = new JedisMock();
         JedisProxy jedisProxy = new JedisProxy(jedisMock);
 
-        redisMetadataDAO = new RedisMetadataDAO(jedisProxy, objectMapper, properties);
+        redisMetadataDAO = new RedisMetadataDAO(jedisProxy, objectMapper, conductorProperties, properties);
     }
 
     @Test(expected = ApplicationException.class)

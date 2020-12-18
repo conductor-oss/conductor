@@ -199,8 +199,8 @@ public class ExecutionDAOFacade {
         workflow.setCreateTime(System.currentTimeMillis());
         executionDAO.createWorkflow(workflow);
         // Add to decider queue
-        queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), properties.getSweepFrequency());
-        if (properties.enableAsyncIndexing()) {
+        queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), properties.getSweepFrequencySeconds());
+        if (properties.isAsyncIndexingEnabled()) {
             indexDAO.asyncIndexWorkflow(workflow);
         } else {
             indexDAO.indexWorkflow(workflow);
@@ -220,7 +220,7 @@ public class ExecutionDAOFacade {
             workflow.setEndTime(System.currentTimeMillis());
         }
         executionDAO.updateWorkflow(workflow);
-        if (properties.enableAsyncIndexing()) {
+        if (properties.isAsyncIndexingEnabled()) {
             if (workflow.getStatus().isTerminal() && workflow.getEndTime() - workflow.getStartTime()
                 < properties.getAsyncUpdateShortRunningWorkflowDuration() * 1000) {
                 final String workflowId = workflow.getWorkflowId();
@@ -323,7 +323,7 @@ public class ExecutionDAOFacade {
         try {
             getWorkflowById(workflowId, true);
             executionDAO.removeWorkflow(workflowId);
-            if (properties.enableAsyncIndexing()) {
+            if (properties.isAsyncIndexingEnabled()) {
                 indexDAO.asyncRemoveWorkflow(workflowId);
             } else {
                 indexDAO.removeWorkflow(workflowId);
@@ -384,7 +384,7 @@ public class ExecutionDAOFacade {
              * of tasks on a system failure. So only index for each update if async indexing is not enabled.
              * If it *is* enabled, tasks will be indexed only when a workflow is in terminal state.
              */
-            if (!properties.enableAsyncIndexing()) {
+            if (!properties.isAsyncIndexingEnabled()) {
                 indexDAO.indexTask(task);
             }
         } catch (Exception e) {
@@ -454,7 +454,7 @@ public class ExecutionDAOFacade {
 
     private void indexEventExecution(EventExecution eventExecution) {
         if (properties.isEventExecutionIndexingEnabled()) {
-            if (properties.enableAsyncIndexing()) {
+            if (properties.isAsyncIndexingEnabled()) {
                 indexDAO.asyncAddEventExecution(eventExecution);
             } else {
                 indexDAO.addEventExecution(eventExecution);
@@ -476,7 +476,7 @@ public class ExecutionDAOFacade {
 
     public void addTaskExecLog(List<TaskExecLog> logs) {
         if (properties.isTaskExecLogIndexingEnabled()) {
-            if (properties.enableAsyncIndexing()) {
+            if (properties.isAsyncIndexingEnabled()) {
                 indexDAO.asyncAddTaskExecutionLogs(logs);
             } else {
                 indexDAO.addTaskExecutionLogs(logs);
@@ -485,7 +485,7 @@ public class ExecutionDAOFacade {
     }
 
     public void addMessage(String queue, Message message) {
-        if (properties.enableAsyncIndexing()) {
+        if (properties.isAsyncIndexingEnabled()) {
             indexDAO.asyncAddMessage(queue, message);
         } else {
             indexDAO.addMessage(queue, message);

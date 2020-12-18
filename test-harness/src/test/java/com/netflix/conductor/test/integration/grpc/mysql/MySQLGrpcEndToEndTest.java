@@ -21,23 +21,21 @@ import org.junit.runner.RunWith;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @RunWith(SpringRunner.class)
 @TestPropertySource(properties = {
-    "db=mysql",
-    "conductor.grpc.server.port=8094",
-    "jdbc.url=jdbc:tc:mysql:///conductor", // "tc" prefix starts the MySql container
-    "jdbc.username=root",
-    "jdbc.password=root",
-    "conductor.mysql.connection.pool.size.min=8",
-    "conductor.mysql.connection.pool.size.max=8",
-    "conductor.mysql.connection.pool.idle.min=300000",
+    "conductor.db.type=mysql",
+    "conductor.grpc-server.port=8094",
+    "conductor.mysql.jdbcUrl=jdbc:tc:mysql:///conductor", // "tc" prefix starts the MySql container
+    "conductor.mysql.jdbcUsername=root",
+    "conductor.mysql.jdbcPassword=root",
+    "conductor.mysql.connectionPoolMaxSize=8",
+    "conductor.mysql.connectionPoolMinIdle=300000",
     "spring.flyway.enabled=false"
 })
 public class MySQLGrpcEndToEndTest extends AbstractGrpcEndToEndTest {
 
     @Before
-    public void init() throws Exception {
+    public void init() {
         taskClient = new TaskClient("localhost", 8094);
         workflowClient = new WorkflowClient("localhost", 8094);
         metadataClient = new MetadataClient("localhost", 8094);

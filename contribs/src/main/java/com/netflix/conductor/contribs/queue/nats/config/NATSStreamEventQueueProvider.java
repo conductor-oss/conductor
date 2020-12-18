@@ -34,14 +34,14 @@ public class NATSStreamEventQueueProvider implements EventQueueProvider {
     private final String natsUrl;
     private final Scheduler scheduler;
 
-    public NATSStreamEventQueueProvider(NATSProperties properties, Scheduler scheduler) {
+    public NATSStreamEventQueueProvider(NATSStreamProperties properties, Scheduler scheduler) {
         LOGGER.info("NATS Stream Event Queue Provider init");
         this.scheduler = scheduler;
 
         // Get NATS Streaming options
         clusterId = properties.getClusterId();
         durableName = properties.getDurableName();
-        natsUrl = properties.getNatsUrl();
+        natsUrl = properties.getUrl();
 
         LOGGER.info("NATS Streaming clusterId=" + clusterId +
             ", natsUrl=" + natsUrl + ", durableName=" + durableName);

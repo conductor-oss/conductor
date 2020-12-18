@@ -79,7 +79,7 @@ public class DeciderService {
     public DeciderService(ParametersUtils parametersUtils, MetadataDAO metadataDAO,
         ExternalPayloadStorageUtils externalPayloadStorageUtils,
         @Qualifier("taskProcessorsMap") Map<String, TaskMapper> taskMappers,
-        @Value("${workflow.task.pending.time.threshold.minutes:60}") long taskPendingTimeThresholdMins) {
+        @Value("${conductor.app.taskPendingTimeThresholdMins:60}") long taskPendingTimeThresholdMins) {
         this.metadataDAO = metadataDAO;
         this.parametersUtils = parametersUtils;
         this.taskMappers = taskMappers;

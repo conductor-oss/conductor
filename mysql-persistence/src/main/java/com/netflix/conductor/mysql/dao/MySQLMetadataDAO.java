@@ -42,7 +42,7 @@ public class MySQLMetadataDAO extends MySQLBaseDAO implements MetadataDAO, Event
     public MySQLMetadataDAO(ObjectMapper objectMapper, DataSource dataSource, MySQLProperties properties) {
         super(objectMapper, dataSource);
 
-        int cacheRefreshTime = properties.getTaskDefRefreshTimeSecs();
+        int cacheRefreshTime = properties.getTaskDefCacheRefreshTimeSecs();
         Executors.newSingleThreadScheduledExecutor()
             .scheduleWithFixedDelay(this::refreshTaskDefs, cacheRefreshTime, cacheRefreshTime, TimeUnit.SECONDS);
     }

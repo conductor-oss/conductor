@@ -21,22 +21,22 @@ public class AnyRedisCondition extends AnyNestedCondition {
         super(ConfigurationPhase.PARSE_CONFIGURATION);
     }
 
-    @ConditionalOnProperty(name = "db", havingValue = "dynomite")
+    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "dynomite")
     static class DynomiteClusterCondition {
 
     }
 
-    @ConditionalOnProperty(name = "db", havingValue = "memory")
+    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "memory")
     static class InMemoryRedisCondition {
 
     }
 
-    @ConditionalOnProperty(name = "db", havingValue = "redis_cluster")
+    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_cluster")
     static class RedisClusterConfiguration {
 
     }
 
-    @ConditionalOnProperty(name = "db", havingValue = "redis_sentinel")
+    @ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_sentinel")
     static class RedisSentinelConfiguration {
 
     }

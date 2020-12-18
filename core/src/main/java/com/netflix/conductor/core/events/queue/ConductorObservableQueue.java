@@ -45,7 +45,7 @@ public class ConductorObservableQueue implements ObservableQueue {
     ConductorObservableQueue(String queueName, QueueDAO queueDAO, ConductorProperties properties, Scheduler scheduler) {
         this.queueName = queueName;
         this.queueDAO = queueDAO;
-        this.pollTimeInMS = properties.getEventQueuePollInterval();
+        this.pollTimeInMS = properties.getEventQueuePollIntervalMs();
         this.pollCount = properties.getEventQueuePollCount();
         this.longPollTimeout = properties.getEventQueueLongPollTimeout();
         this.scheduler = scheduler;

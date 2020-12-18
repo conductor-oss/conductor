@@ -14,16 +14,18 @@ package com.netflix.conductor.contribs.queue.nats.config;
 
 import com.netflix.conductor.core.events.EventQueueProvider;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import rx.Scheduler;
 
 @Configuration
-@ConditionalOnProperty(prefix = "workflow", name = "nats_stream.event.queue.enabled", havingValue = "true")
+@EnableConfigurationProperties(NATSStreamProperties.class)
+@ConditionalOnProperty(name = "conductor.event-queues.nats-stream.enabled", havingValue = "true")
 public class NATSStreamConfiguration {
 
     @Bean
-    public EventQueueProvider natsEventQueueProvider(NATSProperties properties, Scheduler scheduler) {
+    public EventQueueProvider natsEventQueueProvider(NATSStreamProperties properties, Scheduler scheduler) {
         return new NATSStreamEventQueueProvider(properties, scheduler);
     }
 }

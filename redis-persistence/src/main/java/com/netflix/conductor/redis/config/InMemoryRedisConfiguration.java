@@ -23,7 +23,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "db", havingValue = "memory")
+@ConditionalOnProperty(name = "conductor.db.type", havingValue = "memory")
 public class InMemoryRedisConfiguration {
 
     @Bean

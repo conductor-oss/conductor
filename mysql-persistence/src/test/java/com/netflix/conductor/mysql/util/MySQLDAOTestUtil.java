@@ -40,9 +40,9 @@ public class MySQLDAOTestUtil {
         properties = mock(MySQLProperties.class);
         when(properties.getJdbcUrl()).thenReturn("jdbc:mysql://localhost:33307/" + dbName
             + "?useSSL=false&useUnicode=true&useJDBCCompliantTimezoneShift=true&useLegacyDatetimeCode=false&serverTimezone=UTC");
-        when(properties.getJdbcUserName()).thenReturn("root");
+        when(properties.getJdbcUsername()).thenReturn("root");
         when(properties.getJdbcPassword()).thenReturn("root");
-        when(properties.getTaskDefRefreshTimeSecs()).thenReturn(60);
+        when(properties.getTaskDefCacheRefreshTimeSecs()).thenReturn(60);
         createDatabase(dbName);
         this.objectMapper = objectMapper;
         this.dataSource = getDataSource(properties);
@@ -71,7 +71,7 @@ public class MySQLDAOTestUtil {
     private HikariDataSource getDataSource(MySQLProperties properties) {
         HikariDataSource dataSource = new HikariDataSource();
         dataSource.setJdbcUrl(properties.getJdbcUrl());
-        dataSource.setUsername(properties.getJdbcUserName());
+        dataSource.setUsername(properties.getJdbcUsername());
         dataSource.setPassword(properties.getJdbcPassword());
         dataSource.setAutoCommit(false);
 

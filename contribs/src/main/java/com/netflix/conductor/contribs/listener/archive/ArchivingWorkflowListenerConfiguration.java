@@ -15,17 +15,19 @@ package com.netflix.conductor.contribs.listener.archive;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.core.orchestration.ExecutionDAOFacade;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(prefix = "workflow", name = "status.listener.type", havingValue = "archive")
+@EnableConfigurationProperties(ArchivingWorkflowListenerProperties.class)
+@ConditionalOnProperty(name = "conductor.workflow-status-listener.type", havingValue = "archive")
 public class ArchivingWorkflowListenerConfiguration {
 
     @Bean
     public WorkflowStatusListener getWorkflowStatusListener(ExecutionDAOFacade executionDAOFacade,
         ArchivingWorkflowListenerProperties properties) {
-        if (properties.getWorkflowArchivalTTL() > 0) {
+        if (properties.getTtlSeconds() > 0) {
             return new ArchivingWithTTLWorkflowStatusListener(executionDAOFacade, properties);
         } else {
             return new ArchivingWorkflowStatusListener(executionDAOFacade);

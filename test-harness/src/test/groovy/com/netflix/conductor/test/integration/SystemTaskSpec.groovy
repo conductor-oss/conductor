@@ -17,10 +17,10 @@ import com.netflix.conductor.common.metadata.tasks.TaskResult
 import com.netflix.conductor.common.run.Workflow
 import com.netflix.conductor.core.execution.WorkflowRepairService
 import com.netflix.conductor.core.execution.WorkflowSweeper
-import com.netflix.conductor.core.execution.tasks.SystemTaskWorkerCoordinator
 import com.netflix.conductor.core.execution.tasks.WorkflowSystemTask
 import com.netflix.conductor.dao.QueueDAO
 import com.netflix.conductor.test.base.AbstractSpecification
+import com.netflix.conductor.test.utils.UserTask
 import org.springframework.beans.factory.annotation.Autowired
 import spock.lang.Shared
 
@@ -86,10 +86,10 @@ class SystemTaskSpec extends AbstractSpecification {
 
         when: "the system task is started by issuing a system task call"
         List<String> polledTaskIds = queueDAO.pop("USER_TASK", 1, 200)
-        WorkflowSystemTask systemTask = SystemTaskWorkerCoordinator.taskNameWorkflowTaskMapping.get("USER_TASK")
+        WorkflowSystemTask systemTask = WorkflowSystemTask.get(UserTask.NAME)
         workflowExecutor.executeSystemTask(systemTask, polledTaskIds.get(0), 30)
 
-        then: "verify that the system task is in a state"
+        then: "verify that the system task is in IN_PROGRESS state"
         with(workflowExecutionService.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.RUNNING
             tasks.size() == 2

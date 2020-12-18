@@ -100,7 +100,7 @@ public class WorkflowRepairService {
         if (!workflow.getStatus().isTerminal()) {
             String queueName = WorkflowExecutor.DECIDER_QUEUE;
             if (!queueDAO.containsMessage(queueName, workflow.getWorkflowId())) {
-                queueDAO.push(queueName, workflow.getWorkflowId(), properties.getSweepFrequency());
+                queueDAO.push(queueName, workflow.getWorkflowId(), properties.getSweepFrequencySeconds());
                 Monitors.recordQueueMessageRepushFromRepairService(queueName);
                 return true;
             }

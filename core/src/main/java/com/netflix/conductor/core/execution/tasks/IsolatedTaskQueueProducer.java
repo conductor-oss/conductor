@@ -16,18 +16,17 @@ import com.google.common.annotations.VisibleForTesting;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.core.utils.QueueUtils;
 import com.netflix.conductor.service.MetadataService;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
-
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
 
 @Component
 public class IsolatedTaskQueueProducer {
@@ -36,16 +35,16 @@ public class IsolatedTaskQueueProducer {
     private final MetadataService metadataService;
 
     public IsolatedTaskQueueProducer(MetadataService metadataService,
-        @Value("${workflow.isolated.system.task.enable:false}") boolean enableIsolatedSystemTask,
-        @Value("${workflow.isolated.system.task.poll.time.secs:10}") int isolatedSystemTaskPollInterval) {
+        @Value("${conductor.app.isolatedSystemTaskEnabled:false}") boolean isolatedSystemTaskEnabled,
+        @Value("${conductor.app.isolatedSystemTaskQueuePollIntervalSecs:10}") int isolatedSystemTaskQueuePollIntervalSecs) {
 
         this.metadataService = metadataService;
 
-        if (enableIsolatedSystemTask) {
+        if (isolatedSystemTaskEnabled) {
             LOGGER.info("Listening for isolation groups");
 
             Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(this::addTaskQueues, 1000,
-                isolatedSystemTaskPollInterval, TimeUnit.SECONDS);
+                isolatedSystemTaskQueuePollIntervalSecs, TimeUnit.SECONDS);
         } else {
             LOGGER.info("Isolated System Task Worker DISABLED");
         }
@@ -59,9 +58,8 @@ public class IsolatedTaskQueueProducer {
                 .filter(taskDef -> StringUtils.isNotBlank(taskDef.getIsolationGroupId())
                     || StringUtils.isNotBlank(taskDef.getExecutionNameSpace()))
                 .collect(Collectors.toSet());
-        } catch (RuntimeException unknownException) {
-            LOGGER.error("Unknown exception received in getting isolation groups, sleeping and retrying",
-                unknownException);
+        } catch (RuntimeException e) {
+            LOGGER.error("Unknown exception received in getting isolation groups, sleeping and retrying", e);
         }
         return isolationExecutionNameSpaces;
     }

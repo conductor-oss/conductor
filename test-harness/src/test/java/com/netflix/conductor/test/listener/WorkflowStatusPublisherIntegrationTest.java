@@ -12,6 +12,9 @@
  */
 package com.netflix.conductor.test.listener;
 
+import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
+import static org.junit.Assert.assertEquals;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
@@ -24,6 +27,13 @@ import com.netflix.conductor.core.execution.WorkflowExecutor;
 import com.netflix.conductor.dao.QueueDAO;
 import com.netflix.conductor.service.ExecutionService;
 import com.netflix.conductor.service.MetadataService;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -33,22 +43,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit4.SpringRunner;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
-
-import static com.netflix.conductor.common.metadata.tasks.Task.Status.COMPLETED;
-import static org.junit.Assert.assertEquals;
-
 @RunWith(SpringRunner.class)
 @SpringBootTest(properties = {
-    "workflow.status.listener.type=queue_status_publisher",
-    "workflowstatuslistener.publisher.success.queue=dummy",
-    "workflowstatuslistener.publisher.failure.queue=dummy"
+    "conductor.workflow-status-listener.type=queue_publisher",
+    "conductor.workflow-status-listener.queue-publisher.successQueue=dummy",
+    "conductor.workflow-status-listener.queue-publisher.failureQueue=dummy"
 })
 @TestPropertySource(locations = "classpath:application-integrationtest.properties")
 public class WorkflowStatusPublisherIntegrationTest {

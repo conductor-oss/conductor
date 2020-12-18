@@ -12,54 +12,87 @@
  */
 package com.netflix.conductor.redislock.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
-@ConditionalOnProperty(prefix = "workflow.decider", name = "locking.server", havingValue = "REDIS")
+@ConfigurationProperties("conductor.redis-lock")
 public class RedisLockProperties {
 
-    @Value("${workflow.redis.locking.server.type:single}")
-    private String serverType;
+    /**
+     * The redis server configuration to be used. Valid configurations are listed in: {@link REDIS_SERVER_TYPE}
+     */
+    private String serverType = "single";
 
-    @Value("${workflow.redis.locking.server.address:redis://127.0.0.1:6379}")
-    private String serverAddress;
+    /**
+     * The address of the redis server following format -- host:port
+     */
+    private String serverAddress = "redis://127.0.0.1:6379";
 
-    @Value("${workflow.redis.locking.server.password:#{null}}")
-    private String serverPassword;
+    /**
+     * The password for redis authentication
+     */
+    private String serverPassword = null;
 
-    @Value("${workflow.redis.locking.server.master.name:master}")
-    private String serverMasterName;
+    /**
+     * The master server name used by Redis Sentinel servers and master change monitoring task
+     */
+    private String serverMasterName = "master";
 
-    @Value("${workflow.decider.locking.namespace:}")
-    private String lockingNamespace;
+    /**
+     * The namespace to use to prepend keys used for locking in redis
+     */
+    private String namespace = "";
 
-    @Value("${workflow.decider.locking.exceptions.ignore:false}")
-    private boolean ignoreLockingExceptions;
+    /**
+     * Enable to otionally continue without a lock to not block executions until the locking service becomes available
+     */
+    private boolean ignoreLockingExceptions = false;
 
-    public REDIS_SERVER_TYPE getRedisServerType() {
+    public REDIS_SERVER_TYPE getServerType() {
         return REDIS_SERVER_TYPE.valueOf(serverType.toUpperCase());
     }
 
-    public String getRedisServerAddress() {
+    public void setServerType(String serverType) {
+        this.serverType = serverType;
+    }
+
+    public String getServerAddress() {
         return serverAddress;
     }
 
-    public String getRedisServerPassword() {
+    public void setServerAddress(String serverAddress) {
+        this.serverAddress = serverAddress;
+    }
+
+    public String getServerPassword() {
         return serverPassword;
     }
 
-    public String getRedisServerMasterName() {
+    public void setServerPassword(String serverPassword) {
+        this.serverPassword = serverPassword;
+    }
+
+    public String getServerMasterName() {
         return serverMasterName;
     }
 
-    public String getLockingNamespace() {
-        return lockingNamespace;
+    public void setServerMasterName(String serverMasterName) {
+        this.serverMasterName = serverMasterName;
+    }
+
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
     }
 
     public boolean isIgnoreLockingExceptions() {
         return ignoreLockingExceptions;
+    }
+
+    public void setIgnoreLockingExceptions(boolean ignoreLockingExceptions) {
+        this.ignoreLockingExceptions = ignoreLockingExceptions;
     }
 
     public enum REDIS_SERVER_TYPE {

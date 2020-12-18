@@ -62,7 +62,7 @@ public class CassandraEventHandlerDAO extends CassandraBaseDAO implements EventH
         deleteEventHandlerStatement = session.prepare(statements.getDeleteEventHandlerStatement())
             .setConsistencyLevel(properties.getWriteConsistencyLevel());
 
-        int cacheRefreshTime = properties.getEventHandlerRefreshTimeSecs();
+        int cacheRefreshTime = properties.getEventHandlerCacheRefreshTimeSecs();
         Executors.newSingleThreadScheduledExecutor().scheduleWithFixedDelay(this::refreshEventHandlersCache, 0,
             cacheRefreshTime, TimeUnit.SECONDS);
     }

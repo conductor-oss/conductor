@@ -20,6 +20,7 @@ import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
 import com.netflix.conductor.common.run.Workflow;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.exception.ApplicationException.Code;
 import com.netflix.conductor.dao.ExecutionDAO;
@@ -65,10 +66,11 @@ public class RedisExecutionDAO extends BaseDynoDAO implements ExecutionDAO {
     private final static String EVENT_EXECUTION = "EVENT_EXECUTION";
     private final int ttlEventExecutionSeconds;
 
-    public RedisExecutionDAO(JedisProxy jedisProxy, ObjectMapper objectMapper, RedisProperties properties) {
-        super(jedisProxy, objectMapper, properties);
+    public RedisExecutionDAO(JedisProxy jedisProxy, ObjectMapper objectMapper, ConductorProperties conductorProperties,
+        RedisProperties properties) {
+        super(jedisProxy, objectMapper, conductorProperties, properties);
 
-        ttlEventExecutionSeconds = properties.getEventExecutionPersistenceTTL();
+        ttlEventExecutionSeconds = properties.getEventExecutionPersistenceTTLSecs();
     }
 
     private static String dateStr(Long timeInMs) {

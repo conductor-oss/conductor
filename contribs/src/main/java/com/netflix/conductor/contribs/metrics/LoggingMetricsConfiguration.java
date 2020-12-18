@@ -25,11 +25,11 @@ import org.springframework.context.annotation.Configuration;
 /**
  * Metrics logging reporter, dumping all metrics into an Slf4J logger.
  * <p>
- * Enable in config: conductor.metrics.logger.enabled=true
+ * Enable in config: conductor.metrics-logger.enabled=true
  * <p>
- * additional config: conductor.metrics.logger.reportPeriodSeconds=15
+ * additional config: conductor.metrics-logger.reportPeriodSeconds=15
  */
-@ConditionalOnProperty(value = "conductor.metrics.logger.enabled", havingValue = "true")
+@ConditionalOnProperty(value = "conductor.metrics-logger.enabled", havingValue = "true")
 @Configuration
 public class LoggingMetricsConfiguration {
 
@@ -39,7 +39,7 @@ public class LoggingMetricsConfiguration {
     // This way one can cleanly separate the metrics stream from rest of the logs
     private static final Logger METRICS_LOGGER = LoggerFactory.getLogger("ConductorMetrics");
 
-    @Value("${conductor.metrics.logger.reportPeriodSeconds:30}")
+    @Value("${conductor.metrics-logger.reportPeriodSeconds:30}")
     private long reportInterval;
 
     @Bean
