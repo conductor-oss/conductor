@@ -24,6 +24,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.test.context.junit4.SpringRunner;
 
 import javax.validation.ConstraintViolationException;
+import java.util.Optional;
 import java.util.Set;
 
 import static com.netflix.conductor.TestUtils.getConstraintViolationMessages;
@@ -45,7 +46,7 @@ public class EventServiceTest {
             MetadataService metadataService = mock(MetadataService.class);
             EventProcessor eventProcessor = mock(SimpleEventProcessor.class);
             EventQueues eventQueues = mock(EventQueues.class);
-            return new EventServiceImpl(metadataService, eventProcessor, eventQueues);
+            return new EventServiceImpl(metadataService, Optional.of(eventProcessor), eventQueues);
         }
     }
 

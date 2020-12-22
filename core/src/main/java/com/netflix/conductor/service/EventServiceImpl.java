@@ -19,9 +19,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
-//@Audit
-//@Trace
 @Service
 public class EventServiceImpl implements EventService {
 
@@ -29,9 +28,10 @@ public class EventServiceImpl implements EventService {
     private final EventProcessor eventProcessor;
     private final EventQueues eventQueues;
 
-    public EventServiceImpl(MetadataService metadataService, EventProcessor eventProcessor, EventQueues eventQueues) {
+    public EventServiceImpl(MetadataService metadataService, Optional<EventProcessor> optionalEventProcessor, EventQueues eventQueues) {
         this.metadataService = metadataService;
-        this.eventProcessor = eventProcessor;
+        // EventProcessor is optional and may not be enabled
+        this.eventProcessor = optionalEventProcessor.orElse(null);
         this.eventQueues = eventQueues;
     }
 
@@ -89,6 +89,9 @@ public class EventServiceImpl implements EventService {
      * @return map of event queues
      */
     public Map<String, ?> getEventQueues(boolean verbose) {
+        if(eventProcessor == null) {
+            throw new IllegalStateException("Event processing is DISABLED");
+        }
         return (verbose ? eventProcessor.getQueueSizes() : eventProcessor.getQueues());
     }
 
