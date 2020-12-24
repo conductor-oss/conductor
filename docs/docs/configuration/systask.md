@@ -192,6 +192,7 @@ Sub Workflow task allows for nesting a workflow within another workflow.
 |name|type|description|
 |---|---|---|
 | subWorkflowParam | Map[String, Any] | See below |
+| inputParameters | Map[String, Any] | `input` of the sub workflow |
 
 **subWorkflowParam**
 
@@ -216,34 +217,34 @@ Sub Workflow task allows for nesting a workflow within another workflow.
 	"taskReferenceName": "sub1",
 	"type": "SUB_WORKFLOW",
 	"inputParameters": {
-		"subWorkflowParam": {
-			"name": "deployment_workflow",
-			"version": 1,
-			"taskToDomain": {
-				"*": "mydomain"
-			},
-			"workflowDefinition": {
-				"name": "deployment_workflow",
-				"description": "Deploys to CDN",
-				"version": 1,
-				"tasks": [{
-					"name": "deploy",
-					"taskReferenceName": "d1",
-					"type": "SIMPLE",
-					"inputParameters": {
-						"fileLocation": "${workflow.input.encodeLocation}"
-					}
-				}],
-				"outputParameters": {
-					"cdn_url": "${d1.output.location}"
-				},
-				"failureWorkflow": "cleanup_encode_resources",
-				"restartable": true,
-				"workflowStatusListenerEnabled": true,
-				"schemaVersion": 2
-			}
+		"anything": "${workflow.input.anythingValue}"
+	},
+	"subWorkflowParam": {
+		"name": "deployment_workflow",
+		"version": 1,
+		"taskToDomain": {
+			"*": "mydomain"
 		},
-		"anythingelse": "value"
+		"workflowDefinition": {
+			"name": "deployment_workflow",
+			"description": "Deploys to CDN",
+			"version": 1,
+			"tasks": [{
+				"name": "deploy",
+				"taskReferenceName": "d1",
+				"type": "SIMPLE",
+				"inputParameters": {
+					"fileLocation": "${workflow.input.encodeLocation}"
+				}
+			}],
+			"outputParameters": {
+				"cdn_url": "${d1.output.location}"
+			},
+			"failureWorkflow": "cleanup_encode_resources",
+			"restartable": true,
+			"workflowStatusListenerEnabled": true,
+			"schemaVersion": 2
+		}
 	}
 }
 ```

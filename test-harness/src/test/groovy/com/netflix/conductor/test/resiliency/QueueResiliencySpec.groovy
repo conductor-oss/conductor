@@ -103,7 +103,7 @@ class QueueResiliencySpec extends Specification {
         workflowResource.terminate(workflowInstanceId, "Terminated from a test")
 
         then: "Verify that terminate is successful without any exceptions"
-        1 * queueDAO.remove(*_) >> { throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "Queue remove failed from Spy") }
+        2 * queueDAO.remove(*_) >> { throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, "Queue remove failed from Spy") }
         0 * queueDAO._
         with(workflowResource.getExecutionStatus(workflowInstanceId, true)) {
             status == Workflow.WorkflowStatus.TERMINATED

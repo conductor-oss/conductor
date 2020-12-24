@@ -614,6 +614,14 @@
             "locked": "3.1.0",
             "requested": "3.1.0"
         },
+        "org.powermock:powermock-api-mockito2": {
+            "locked": "2.0.9",
+            "requested": "2.0.9"
+        },
+        "org.powermock:powermock-module-junit4": {
+            "locked": "2.0.9",
+            "requested": "2.0.9"
+        },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
@@ -724,6 +732,14 @@
         "org.mockito:mockito-core": {
             "locked": "3.1.0",
             "requested": "3.1.0"
+        },
+        "org.powermock:powermock-api-mockito2": {
+            "locked": "2.0.9",
+            "requested": "2.0.9"
+        },
+        "org.powermock:powermock-module-junit4": {
+            "locked": "2.0.9",
+            "requested": "2.0.9"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
@@ -836,6 +852,14 @@
             "locked": "3.1.0",
             "requested": "3.1.0"
         },
+        "org.powermock:powermock-api-mockito2": {
+            "locked": "2.0.9",
+            "requested": "2.0.9"
+        },
+        "org.powermock:powermock-module-junit4": {
+            "locked": "2.0.9",
+            "requested": "2.0.9"
+        },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
                 "com.netflix.conductor:conductor-common"
@@ -946,6 +970,14 @@
         "org.mockito:mockito-core": {
             "locked": "3.1.0",
             "requested": "3.1.0"
+        },
+        "org.powermock:powermock-api-mockito2": {
+            "locked": "2.0.9",
+            "requested": "2.0.9"
+        },
+        "org.powermock:powermock-module-junit4": {
+            "locked": "2.0.9",
+            "requested": "2.0.9"
         },
         "org.slf4j:slf4j-api": {
             "firstLevelTransitive": [
