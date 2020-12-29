@@ -13,6 +13,7 @@
 package com.netflix.conductor.redis.config;
 
 
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.jedis.JedisStandalone;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
@@ -32,7 +33,10 @@ public class RedisStandaloneConfiguration extends JedisCommandsConfigurer {
     private static final Logger log = LoggerFactory.getLogger(RedisSentinelConfiguration.class);
 
     @Override
-    protected JedisCommands createJedisCommands(RedisProperties properties, HostSupplier hostSupplier, TokenMapSupplier tokenMapSupplier) {
+    protected JedisCommands createJedisCommands(RedisProperties properties,
+                                                ConductorProperties conductorProperties,
+                                                HostSupplier hostSupplier,
+                                                TokenMapSupplier tokenMapSupplier) {
         JedisPoolConfig config = new JedisPoolConfig();
         config.setMinIdle(2);
         config.setMaxTotal(properties.getMaxConnectionsPerHost());
