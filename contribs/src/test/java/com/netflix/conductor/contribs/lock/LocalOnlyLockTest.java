@@ -107,7 +107,7 @@ public class LocalOnlyLockTest {
 //    @Test
 //    public void testLockConfiguration() {
 //        new ApplicationContextRunner()
-//            .withPropertyValues("workflow.decider.locking.server=LOCAL_ONLY")
+//            .withPropertyValues("conductor.workflow-execution-lock.type=local_only")
 //            .withUserConfiguration(LocalOnlyLockConfiguration.class)
 //            .run(context -> {
 //                LocalOnlyLock lock = context.getBean(LocalOnlyLock.class);

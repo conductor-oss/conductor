@@ -26,6 +26,7 @@ import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Conditional;
 import org.springframework.context.annotation.Configuration;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Configuration(proxyBeanMethods = false)
+@EnableConfigurationProperties(ElasticSearchProperties.class)
 @Conditional(ElasticSearchConditions.ElasticSearchV6Enabled.class)
 public class ElasticSearchV6Configuration {
 
@@ -70,9 +72,9 @@ public class ElasticSearchV6Configuration {
     @Bean
     public RestClient restClient(ElasticSearchProperties properties) {
         RestClientBuilder restClientBuilder = RestClient.builder(convertToHttpHosts(properties.getURLs()));
-        if (properties.getElasticsearchRestClientConnectionRequestTimeout() > 0) {
+        if (properties.getRestClientConnectionRequestTimeoutMs() > 0) {
             restClientBuilder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
-                    .setConnectionRequestTimeout(properties.getElasticsearchRestClientConnectionRequestTimeout()));
+                    .setConnectionRequestTimeout(properties.getRestClientConnectionRequestTimeoutMs()));
         }
         return restClientBuilder.build();
     }
@@ -85,7 +87,7 @@ public class ElasticSearchV6Configuration {
     @Bean
     public IndexDAO es6IndexDAO(RestClientBuilder restClientBuilder, Client client, ElasticSearchProperties properties,
         ObjectMapper objectMapper) {
-        String url = properties.getURL();
+        String url = properties.getUrl();
         if (url.startsWith("http") || url.startsWith("https")) {
             return new ElasticSearchRestDAOV6(restClientBuilder, properties, objectMapper);
         } else {

@@ -50,11 +50,11 @@ public class KafkaProducerManager {
     };
 
     @Autowired
-    public KafkaProducerManager(@Value("${kafka.publish.request.timeout.ms: 100}") String publishRequestTimeoutMs,
-        @Value("${kafka.publish.max.block.ms:500}") String maxBlockMs,
-        @Value("${kafka.publish.producer.cache.size:10}") int cacheSize,
-        @Value("${kafka.publish.producer.cache.time.ms:120000}") int cacheTimeMs) {
-        this.requestTimeoutConfig = publishRequestTimeoutMs;
+    public KafkaProducerManager(@Value("${conductor.tasks.kafka-publish.requestTimeoutMs: 100}") String requestTimeoutMs,
+        @Value("${conductor.tasks.kafka-publish.maxBlockMs:500}") String maxBlockMs,
+        @Value("${conductor.tasks.kafka-publish.cacheSize:10}") int cacheSize,
+        @Value("${conductor.tasks.kafka-publish.cacheTimeMs:120000}") int cacheTimeMs) {
+        this.requestTimeoutConfig = requestTimeoutMs;
         this.maxBlockMsConfig = maxBlockMs;
         this.kafkaProducerCache = CacheBuilder.newBuilder().removalListener(LISTENER)
             .maximumSize(cacheSize).expireAfterAccess(cacheTimeMs, TimeUnit.MILLISECONDS)

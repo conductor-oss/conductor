@@ -1,0 +1,29 @@
+{
+  "properties": [
+    {
+      "name": "conductor.app.isolatedSystemTaskEnabled",
+      "type": "java.lang.Boolean",
+      "description": "Used to enable/disable use of isolation groups for system task workers."
+    },
+    {
+      "name": "conductor.app.isolatedSystemTaskPollIntervalSecs",
+      "type": "java.lang.Integer",
+      "description": "The time interval (in seconds) at which new isolated task queues will be polled and added to the system task queue repository."
+    },
+    {
+      "name": "conductor.app.taskPendingTimeThresholdMins",
+      "type": "java.lang.Long",
+      "description": "The time threshold (in minutes) beyond which a warning log will be emitted for a task if it stays in the same state for this duration."
+    },
+    {
+      "name": "conductor.workflow-monitor.metadataRefreshInterval",
+      "type": "java.lang.Integer",
+      "description": "The interval (counter) after which the workflow monitor refreshes the metadata definitions from the datastore for reporting."
+    },
+    {
+      "name": "conductor.workflow-monitor.statsFrequencySeconds",
+      "type": "java.lang.Integer",
+      "description": "The time (in seconds) at which the workflow monitor publishes metrics about the system."
+    }
+  ]
+}

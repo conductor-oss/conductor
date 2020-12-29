@@ -12,37 +12,61 @@
  */
 package com.netflix.conductor.zookeeper.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Component;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
+@ConfigurationProperties("conductor.zookeeper-lock")
 public class ZookeeperProperties {
 
-    @Value("${workflow.zookeeper.lock.connection:localhost:2181}")
-    private String connection;
+    /**
+     * The connection string to be used to connect to the Zookeeper cluster
+     */
+    private String connectionString = "localhost:2181";
 
-    @Value("${workflow.zookeeper.lock.sessionTimeoutMs:#{T(org.apache.curator.framework.CuratorFrameworkFactory).builder().getSessionTimeoutMs()}}")
-    private int sessionTimeoutMs;
+    /**
+     * The session timeout for the curator
+     */
+    private int sessionTimeoutMs = CuratorFrameworkFactory.builder().getSessionTimeoutMs();
 
-    @Value("${workflow.zookeeper.lock.connectionTimeoutMs#{T(org.apache.curator.framework.CuratorFrameworkFactory).builder().getConnectionTimeoutMs()}}")
-    private int connectionTimeoutMs;
+    /**
+     * The connection timeout for the curator
+     */
+    private int connectionTimeoutMs = CuratorFrameworkFactory.builder().getConnectionTimeoutMs();
 
-    @Value("${workflow.decider.locking.namespace:}")
-    private String lockingNamespace;
+    /**
+     * The namespace to use within the zookeeper cluster
+     */
+    private String namespace = "";
 
-    public String getZkConnection() {
-        return connection;
+    public String getConnectionString() {
+        return connectionString;
     }
 
-    public int getZkSessiontimeoutMs() {
+    public void setConnectionString(String connectionString) {
+        this.connectionString = connectionString;
+    }
+
+    public int getSessionTimeoutMs() {
         return sessionTimeoutMs;
     }
 
-    public int getZkConnectiontimeoutMs() {
+    public void setSessionTimeoutMs(int sessionTimeoutMs) {
+        this.sessionTimeoutMs = sessionTimeoutMs;
+    }
+
+    public int getConnectionTimeoutMs() {
         return connectionTimeoutMs;
     }
 
-    public String getLockingNamespace() {
-        return lockingNamespace;
+    public void setConnectionTimeoutMs(int connectionTimeoutMs) {
+        this.connectionTimeoutMs = connectionTimeoutMs;
+    }
+
+    public String getNamespace() {
+        return namespace;
+    }
+
+    public void setNamespace(String namespace) {
+        this.namespace = namespace;
     }
 }

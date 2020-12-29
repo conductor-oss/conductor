@@ -1,0 +1,39 @@
+{
+  "properties": [
+    {
+      "name": "conductor.metrics-logger.reportPeriodSeconds",
+      "type": "java.lang.Long",
+      "description": "The interval (in seconds) at which the metrics will be reported into the log stream by the metrics-logger."
+    },
+    {
+      "name": "conductor.tasks.http.readTimeout",
+      "type": "java.lang.Integer",
+      "description": "The read timeout of the underlying HttpClient used by the HTTP task."
+    },
+    {
+      "name": "conductor.tasks.http.connectTimeout",
+      "type": "java.lang.Integer",
+      "description": "The connection timeout of the underlying HttpClient used by the HTTP task."
+    },
+    {
+      "name": "conductor.tasks.kafka-publish.requestTimeoutMs",
+      "type": "java.lang.String",
+      "description": "The request.timeout.ms value that the kafka producer is configured with in the KAFKA_PUBLISH task."
+    },
+    {
+      "name": "conductor.tasks.kafka-publish.maxBlockMs",
+      "type": "java.lang.String",
+      "description": "The max.block.ms value that the kafka producer is configured with in the KAFKA_PUBLISH task."
+    },
+    {
+      "name": "conductor.tasks.kafka-publish.cacheSize",
+      "type": "java.lang.Integer",
+      "description": "The maximum number of entries permitted in the in-memory cache used by the KAFKA_PUBLISH task."
+    },
+    {
+      "name": "conductor.tasks.kafka-publish.cacheTimeMs",
+      "type": "java.lang.Integer",
+      "description": "The duration after which a cached entry will be removed from the in-memory cache used by the KAFKA_PUBLISH task."
+    }
+  ]
+}

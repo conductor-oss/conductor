@@ -12,137 +12,190 @@
  */
 package com.netflix.conductor.contribs.queue.amqp.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
+import com.rabbitmq.client.AMQP.PROTOCOL;
+import com.rabbitmq.client.ConnectionFactory;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
-@ConditionalOnProperty(prefix = "workflow", name = "amqp.event.queue.enabled", havingValue = "true")
+@ConfigurationProperties("conductor.event-queues.amqp")
 public class AMQPEventQueueProperties {
 
-    @Value("${workflow.event.queues.amqp.batchSize:1}")
-    private int batchSize;
+    private int batchSize = 1;
 
-    @Value("${workflow.event.queues.amqp.pollTimeInMs:100}")
-    private int pollTimeMS;
+    private int pollTimeMs = 100;
 
-    @Value("${workflow.event.queues.amqp.hosts:#{T(com.rabbitmq.client.ConnectionFactory).DEFAULT_HOST}}")
-    private String hosts;
+    private String hosts = ConnectionFactory.DEFAULT_HOST;
 
-    @Value("${workflow.event.queues.amqp.username:#{T(com.rabbitmq.client.ConnectionFactory).DEFAULT_USER}}")
-    private String username;
+    private String username = ConnectionFactory.DEFAULT_USER;
 
-    @Value("${workflow.event.queues.amqp.password:#{T(com.rabbitmq.client.ConnectionFactory).DEFAULT_PASS}}")
-    private String password;
+    private String password = ConnectionFactory.DEFAULT_PASS;
 
-    @Value("${workflow.event.queues.amqp.virtualHost:#{T(com.rabbitmq.client.ConnectionFactory).DEFAULT_VHOST}}")
-    private String virtualHost;
+    private String virtualHost = ConnectionFactory.DEFAULT_VHOST;
 
-    @Value("${workflow.event.queues.amqp.port:#{T(com.rabbitmq.client.AMQP.PROTOCOL).PORT}}")
-    private int port;
+    private int port = PROTOCOL.PORT;
 
-    @Value("${workflow.event.queues.amqp.connectionTimeout:#{T(com.rabbitmq.client.ConnectionFactory).DEFAULT_CONNECTION_TIMEOUT}}")
-    private int connectionTimeout;
+    private int connectionTimeout = ConnectionFactory.DEFAULT_CONNECTION_TIMEOUT;
 
-    @Value("${workflow.event.queues.amqp.useNio:false}")
-    private boolean useNio;
+    private boolean useNio = false;
 
-    @Value("${workflow.event.queues.amqp.durable:true}")
-    private boolean durable;
+    private boolean durable = true;
 
-    @Value("${workflow.event.queues.amqp.exclusive:false}")
-    private boolean exclusive;
+    private boolean exclusive = false;
 
-    @Value("${workflow.event.queues.amqp.autoDelete:false}")
-    private boolean autoDelete;
+    private boolean autoDelete = false;
 
-    @Value("${workflow.event.queues.amqp.contentType:application/json}")
-    private String contentType;
+    private String contentType = "application/json";
 
-    @Value("${workflow.event.queues.amqp.contentEncoding:UTF-8}")
-    private String contentEncoding;
+    private String contentEncoding = "UTF-8";
 
-    @Value("${workflow.event.queues.amqp.amqp_exchange:topic}")
-    private String exchangeType;
+    private String exchangeType = "topic";
 
-    @Value("${workflow.event.queues.amqp.deliveryMode:2}")
-    private int deliveryMode;
+    private int deliveryMode = 2;
 
-    @Value("${workflow.listener.queue.useExchange:true}")
-    private boolean useExchange;
+    private boolean useExchange = true;
 
-    @Value("${workflow.listener.queue.prefix:}")
-    private String listenerQueuePrefix;
+    private String listenerQueuePrefix = "";
 
     public int getBatchSize() {
         return batchSize;
     }
 
-    public int getPollTimeMS() {
-        return pollTimeMS;
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+    }
+
+    public int getPollTimeMs() {
+        return pollTimeMs;
+    }
+
+    public void setPollTimeMs(int pollTimeMs) {
+        this.pollTimeMs = pollTimeMs;
     }
 
     public String getHosts() {
         return hosts;
     }
 
+    public void setHosts(String hosts) {
+        this.hosts = hosts;
+    }
+
     public String getUsername() {
         return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
     }
 
     public String getPassword() {
         return password;
     }
 
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
     public String getVirtualHost() {
         return virtualHost;
+    }
+
+    public void setVirtualHost(String virtualHost) {
+        this.virtualHost = virtualHost;
     }
 
     public int getPort() {
         return port;
     }
 
+    public void setPort(int port) {
+        this.port = port;
+    }
+
     public int getConnectionTimeout() {
         return connectionTimeout;
+    }
+
+    public void setConnectionTimeout(int connectionTimeout) {
+        this.connectionTimeout = connectionTimeout;
     }
 
     public boolean isUseNio() {
         return useNio;
     }
 
+    public void setUseNio(boolean useNio) {
+        this.useNio = useNio;
+    }
+
     public boolean isDurable() {
         return durable;
+    }
+
+    public void setDurable(boolean durable) {
+        this.durable = durable;
     }
 
     public boolean isExclusive() {
         return exclusive;
     }
 
+    public void setExclusive(boolean exclusive) {
+        this.exclusive = exclusive;
+    }
+
     public boolean isAutoDelete() {
         return autoDelete;
+    }
+
+    public void setAutoDelete(boolean autoDelete) {
+        this.autoDelete = autoDelete;
     }
 
     public String getContentType() {
         return contentType;
     }
 
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
+
     public String getContentEncoding() {
         return contentEncoding;
+    }
+
+    public void setContentEncoding(String contentEncoding) {
+        this.contentEncoding = contentEncoding;
     }
 
     public String getExchangeType() {
         return exchangeType;
     }
 
+    public void setExchangeType(String exchangeType) {
+        this.exchangeType = exchangeType;
+    }
+
     public int getDeliveryMode() {
         return deliveryMode;
+    }
+
+    public void setDeliveryMode(int deliveryMode) {
+        this.deliveryMode = deliveryMode;
     }
 
     public boolean isUseExchange() {
         return useExchange;
     }
 
+    public void setUseExchange(boolean useExchange) {
+        this.useExchange = useExchange;
+    }
+
     public String getListenerQueuePrefix() {
         return listenerQueuePrefix;
+    }
+
+    public void setListenerQueuePrefix(String listenerQueuePrefix) {
+        this.listenerQueuePrefix = listenerQueuePrefix;
     }
 }

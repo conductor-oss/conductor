@@ -15,6 +15,7 @@ package com.netflix.conductor.redis.dao;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Preconditions;
 import com.netflix.conductor.common.metadata.tasks.PollData;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.config.RedisProperties;
@@ -33,8 +34,9 @@ public class RedisPollDataDAO extends BaseDynoDAO implements PollDataDAO {
 
     private final static String POLL_DATA = "POLL_DATA";
 
-    public RedisPollDataDAO(JedisProxy jedisProxy, ObjectMapper objectMapper, RedisProperties properties) {
-        super(jedisProxy, objectMapper, properties);
+    public RedisPollDataDAO(JedisProxy jedisProxy, ObjectMapper objectMapper,
+        ConductorProperties conductorProperties, RedisProperties properties) {
+        super(jedisProxy, objectMapper, conductorProperties, properties);
     }
 
     @Override

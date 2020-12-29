@@ -36,7 +36,7 @@ public class SchedulerConfiguration {
                 .setNameFormat("event-queue-poll-scheduler-thread-%d")
                 .build();
         Executor executorService = Executors
-                .newFixedThreadPool(properties.getEventSchedulerPollThreadCount(), threadFactory);
+                .newFixedThreadPool(properties.getEventQueueSchedulerPollThreadCount(), threadFactory);
 
         return Schedulers.from(executorService);
     }

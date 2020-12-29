@@ -16,6 +16,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisMock;
@@ -44,11 +45,12 @@ public class RedisRateLimitDAOTest {
 
     @Before
     public void init() {
+        ConductorProperties conductorProperties = mock(ConductorProperties.class);
         RedisProperties properties = mock(RedisProperties.class);
         JedisCommands jedisMock = new JedisMock();
         JedisProxy jedisProxy = new JedisProxy(jedisMock);
 
-        rateLimitingDao = new RedisRateLimitingDAO(jedisProxy, objectMapper, properties);
+        rateLimitingDao = new RedisRateLimitingDAO(jedisProxy, objectMapper, conductorProperties, properties);
     }
 
     @Test

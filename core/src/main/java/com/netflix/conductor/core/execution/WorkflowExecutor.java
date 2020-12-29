@@ -113,7 +113,7 @@ public class WorkflowExecutor {
         this.metadataMapperService = metadataMapperService;
         this.executionDAOFacade = executionDAOFacade;
         this.activeWorkerLastPollInSecs = properties.getActiveWorkerLastPollSecs();
-        this.queueTaskMessagePostponeSeconds = properties.getQueueTaskMessagePostponeSeconds();
+        this.queueTaskMessagePostponeSeconds = properties.getTaskExecutionPostponeSeconds();
         this.workflowStatusListener = workflowStatusListener;
         this.executionLockService = executionLockService;
         this.parametersUtils = parametersUtils;
@@ -346,7 +346,7 @@ public class WorkflowExecutor {
     }
 
     private final Predicate<PollData> validateLastPolledTime = pollData ->
-        pollData.getLastPollTime() > System.currentTimeMillis() - (activeWorkerLastPollInSecs * 1000);
+        pollData.getLastPollTime() > System.currentTimeMillis() - (activeWorkerLastPollInSecs * 1000L);
 
     private final Predicate<Task> isSystemTask = task -> SystemTaskType.is(task.getTaskType());
 
@@ -593,7 +593,7 @@ public class WorkflowExecutor {
         workflow.setStatus(WorkflowStatus.RUNNING);
         workflow.setLastRetriedTime(System.currentTimeMillis());
         // Add to decider queue
-        queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), properties.getSweepFrequency());
+        queueDAO.push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), properties.getSweepFrequencySeconds());
         executionDAOFacade.updateWorkflow(workflow);
 
         // taskToBeRescheduled would set task `retried` to true, and hence it's important to updateTasks after obtaining task copy from taskToBeRescheduled.
@@ -1619,7 +1619,7 @@ public class WorkflowExecutor {
             }
 
             queueDAO
-                .push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), properties.getSweepFrequency());
+                .push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), properties.getSweepFrequencySeconds());
             executionDAOFacade.updateWorkflow(workflow);
 
             decide(workflowId);
@@ -1662,7 +1662,7 @@ public class WorkflowExecutor {
             }
             // Add to decider queue
             queueDAO
-                .push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), properties.getSweepFrequency());
+                .push(DECIDER_QUEUE, workflow.getWorkflowId(), workflow.getPriority(), properties.getSweepFrequencySeconds());
             executionDAOFacade.updateWorkflow(workflow);
             //update tasks in datastore to update workflow-tasks relationship for archived workflows
             executionDAOFacade.updateTasks(workflow.getTasks());

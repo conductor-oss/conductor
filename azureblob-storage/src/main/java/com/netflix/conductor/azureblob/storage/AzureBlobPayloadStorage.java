@@ -28,16 +28,15 @@ import com.netflix.conductor.common.run.ExternalStorageLocation;
 import com.netflix.conductor.common.utils.ExternalPayloadStorage;
 import com.netflix.conductor.core.exception.ApplicationException;
 import com.netflix.conductor.core.utils.IDGenerator;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * An implementation of {@link ExternalPayloadStorage} using Azure Blob for storing large JSON payload data.
@@ -83,10 +82,7 @@ public class AzureBlobPayloadStorage implements ExternalPayloadStorage {
                 sasTokenCredential = null;
             }
         } else {
-            String msg = "Missing property "
-                + AzureBlobProperties.CONNECTION_STRING_PROPERTY_NAME
-                + " OR "
-                + AzureBlobProperties.ENDPOINT_PROPERTY_NAME;
+            String msg = "Missing property for connectionString OR endpoint";
             LOGGER.error(msg);
             throw new ApplicationException(ApplicationException.Code.BACKEND_ERROR, msg);
         }

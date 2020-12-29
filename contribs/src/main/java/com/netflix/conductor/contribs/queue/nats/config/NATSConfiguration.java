@@ -20,7 +20,7 @@ import org.springframework.core.env.Environment;
 import rx.Scheduler;
 
 @Configuration
-@ConditionalOnProperty(prefix = "workflow", name = "nats.event.queue.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.event-queues.nats.enabled", havingValue = "true")
 public class NATSConfiguration {
 
     @Bean

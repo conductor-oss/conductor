@@ -48,10 +48,10 @@ public class RedisLockTest {
         redisServer.start();
 
         RedisLockProperties properties = mock(RedisLockProperties.class);
-        when(properties.getRedisServerType()).thenReturn(REDIS_SERVER_TYPE.SINGLE);
-        when(properties.getRedisServerAddress()).thenReturn(testServerAddress);
-        when(properties.getRedisServerMasterName()).thenReturn("master");
-        when(properties.getLockingNamespace()).thenReturn("");
+        when(properties.getServerType()).thenReturn(REDIS_SERVER_TYPE.SINGLE);
+        when(properties.getServerAddress()).thenReturn(testServerAddress);
+        when(properties.getServerMasterName()).thenReturn("master");
+        when(properties.getNamespace()).thenReturn("");
         when(properties.isIgnoreLockingExceptions()).thenReturn(false);
 
         Config redissonConfig = new Config();

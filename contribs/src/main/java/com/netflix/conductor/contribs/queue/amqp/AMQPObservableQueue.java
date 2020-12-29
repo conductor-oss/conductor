@@ -276,7 +276,7 @@ public class AMQPObservableQueue implements ObservableQueue {
             this.factory = buildConnectionFactory();
             // messages polling settings
             this.batchSize = properties.getBatchSize();
-            this.pollTimeInMS = properties.getPollTimeMS();
+            this.pollTimeInMS = properties.getPollTimeMs();
         }
 
         private Address[] buildAddressesFromHosts() {

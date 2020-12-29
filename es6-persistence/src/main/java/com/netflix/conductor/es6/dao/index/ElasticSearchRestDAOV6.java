@@ -157,13 +157,13 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
         this.clusterHealthColor = properties.getClusterHealthColor();
         this.bulkRequests = new ConcurrentHashMap<>();
         this.indexBatchSize = properties.getIndexBatchSize();
-        this.asyncBufferFlushTimeout = properties.getAsyncBufferFlushTimeout();
+        this.asyncBufferFlushTimeout = properties.getAsyncBufferFlushTimeoutSecs();
         this.properties = properties;
 
-        this.indexPrefix = properties.getIndexName();
-        if (!properties.isElasticSearchAutoIndexManagementEnabled() &&
-            StringUtils.isNotBlank(properties.getElasticSearchDocumentTypeOverride())) {
-            docTypeOverride = properties.getElasticSearchDocumentTypeOverride();
+        this.indexPrefix = properties.getIndexPrefix();
+        if (!properties.isAutoIndexManagementEnabled() &&
+            StringUtils.isNotBlank(properties.getDocumentTypeOverride())) {
+            docTypeOverride = properties.getDocumentTypeOverride();
         } else {
             docTypeOverride = "";
         }
@@ -233,7 +233,7 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
     public void setup() throws Exception {
         waitForHealthyCluster();
 
-        if (properties.isElasticSearchAutoIndexManagementEnabled()) {
+        if (properties.isAutoIndexManagementEnabled()) {
             createIndexesTemplates();
             createWorkflowIndex();
             createTaskIndex();
@@ -352,8 +352,8 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
                 ObjectNode setting = objectMapper.createObjectNode();
                 ObjectNode indexSetting = objectMapper.createObjectNode();
 
-                indexSetting.put("number_of_shards", properties.getElasticSearchIndexShardCount());
-                indexSetting.put("number_of_replicas", properties.getElasticSearchIndexReplicasCount());
+                indexSetting.put("number_of_shards", properties.getIndexShardCount());
+                indexSetting.put("number_of_replicas", properties.getIndexReplicasCount());
 
                 setting.set("index", indexSetting);
 
@@ -547,7 +547,7 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
             SearchSourceBuilder searchSourceBuilder = new SearchSourceBuilder();
             searchSourceBuilder.query(query);
             searchSourceBuilder.sort(new FieldSortBuilder("createdTime").order(SortOrder.ASC));
-            searchSourceBuilder.size(properties.getElasticSearchTasklogResultLimit());
+            searchSourceBuilder.size(properties.getTaskLogResultLimit());
 
             // Generate the actual request to send to ES.
             String docType = StringUtils.isBlank(docTypeOverride) ? LOG_DOC_TYPE : docTypeOverride;
@@ -974,7 +974,7 @@ public class ElasticSearchRestDAOV6 extends ElasticSearchBaseDAO implements Inde
 
     /**
      * Flush the buffers if bulk requests have not been indexed for the past {@link
-     * ElasticSearchProperties#getAsyncBufferFlushTimeout()} seconds. This is to prevent data loss in case the
+     * ElasticSearchProperties#getAsyncBufferFlushTimeoutSecs()} seconds. This is to prevent data loss in case the
      * instance is terminated, while the buffer still holds documents to be indexed.
      */
     private void flushBulkRequests() {

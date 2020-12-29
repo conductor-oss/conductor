@@ -30,7 +30,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
-@ConditionalOnProperty(prefix = "workflow", name = "external.payload.storage", havingValue = "mock")
+@ConditionalOnProperty(name = "conductor.external-payload-storage.type", havingValue = "mock")
 @Component
 public class MockExternalPayloadStorage implements ExternalPayloadStorage {
 

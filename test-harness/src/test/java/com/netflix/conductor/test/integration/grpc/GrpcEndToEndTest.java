@@ -17,11 +17,10 @@ import com.netflix.conductor.client.grpc.TaskClient;
 import com.netflix.conductor.client.grpc.WorkflowClient;
 import org.junit.Before;
 
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 public class GrpcEndToEndTest extends AbstractGrpcEndToEndTest {
 
     @Before
-    public void init() throws Exception {
+    public void init() {
         taskClient = new TaskClient("localhost", 8092);
         workflowClient = new WorkflowClient("localhost", 8092);
         metadataClient = new MetadataClient("localhost", 8092);

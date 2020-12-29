@@ -13,111 +13,178 @@
 package com.netflix.conductor.cassandra.config;
 
 import com.datastax.driver.core.ConsistencyLevel;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
-@ConditionalOnProperty(name = "db", havingValue = "cassandra")
+@ConfigurationProperties("conductor.cassandra")
 public class CassandraProperties {
 
-    @Value("${workflow.cassandra.host:127.0.0.1}")
-    private String hostAddress;
-
-    @Value("${workflow.cassandra.port:9142}")
-    private int port;
-
-    @Value("${workflow.cassandra.cluster:}")
-    private String cluster;
-
-    @Value("${workflow.cassandra.keyspace:conductor}")
-    private String keyspace;
-
-    @Value("${workflow.cassandra.shard.size:100}")
-    private int shardSize;
-
-    @Value("${workflow.cassandra.replication.strategy:SimpleStrategy}")
-    private String replicationStrategy;
-
-    @Value("${workflow.cassandra.replication.factor.key:replication_factor}")
-    private String replicationFactorKey;
-
-    @Value("${workflow.cassandra.replication.factor.value:3}")
-    private int replicationFactorValue;
-
-    @Value("${workflow.cassandra.read.consistency.level:#{T(com.datastax.driver.core.ConsistencyLevel).LOCAL_QUORUM.name()}}")
-    private String readConsistencyLevel;
-
-    @Value("${workflow.cassandra.write.consistency.level:#{T(com.datastax.driver.core.ConsistencyLevel).LOCAL_QUORUM.name()}}")
-    private String writeConsistencyLevel;
+    /**
+     * The address for the cassandra database host
+     */
+    private String hostAddress = "127.0.0.1";
 
     /**
-     * the refresh time for the in-memory task definition cache
+     * The port to be used to connect to the cassandra database instance
      */
-    @Value("${conductor.taskdef.cache.refresh.time.seconds:60}")
-    private int taskDefCacheRefreshTimeSecs;
+    private int port = 9142;
 
     /**
-     * the refresh time for the in-memory event handler cache
+     * The name of the cassandra cluster
      */
-    @Value("${conductor.eventhandler.cache.refresh.time.seconds:60}")
-    private int eventHandlerRefreshTimeSecs;
+    private String cluster = "";
 
     /**
-     * The time to live in seconds of the event execution persisted
+     * The keyspace to be used in the cassandra datastore
      */
-    @Value("${workflow.event.execution.persistence.ttl.seconds:0}")
-    private int eventExecutionPersistenceTTLSecs;
+    private String keyspace = "conductor";
+
+    /**
+     * The number of tasks to be stored in a single partition which will be used for sharding workflows in the
+     * datastore
+     */
+    private int shardSize = 100;
+
+    /**
+     * The replication strategy with which to configure the keyspace
+     */
+    private String replicationStrategy = "SimpleStrategy";
+
+    /**
+     * The key to be used while configuring the replication factor
+     */
+    private String replicationFactorKey = "replication_factor";
+
+    /**
+     * The replication factor value with which the keyspace is configured
+     */
+    private int replicationFactorValue = 3;
+
+    /**
+     * The consistency level to be used for read operations
+     */
+    private String readConsistencyLevel = ConsistencyLevel.LOCAL_QUORUM.name();
+
+    /**
+     * The consistency level to be used for write operations
+     */
+    private String writeConsistencyLevel = ConsistencyLevel.LOCAL_QUORUM.name();
+
+    /**
+     * The time in seconds after which the in-memory task definitions cache will be refreshed
+     */
+    private int taskDefCacheRefreshTimeSecs = 60;
+
+    /**
+     * The time in seconds after which the in-memory event handler cache will be refreshed
+     */
+    private int eventHandlerCacheRefreshTimeSecs = 60;
+
+    /**
+     * The time to live in seconds for which the event execution will be persisted
+     */
+    private int eventExecutionPersistenceTTLSecs = 0;
 
     public String getHostAddress() {
         return hostAddress;
+    }
+
+    public void setHostAddress(String hostAddress) {
+        this.hostAddress = hostAddress;
     }
 
     public int getPort() {
         return port;
     }
 
-    public String getCassandraCluster() {
+    public void setPort(int port) {
+        this.port = port;
+    }
+
+    public String getCluster() {
         return cluster;
     }
 
-    public String getCassandraKeyspace() {
+    public void setCluster(String cluster) {
+        this.cluster = cluster;
+    }
+
+    public String getKeyspace() {
         return keyspace;
+    }
+
+    public void setKeyspace(String keyspace) {
+        this.keyspace = keyspace;
     }
 
     public int getShardSize() {
         return shardSize;
     }
 
+    public void setShardSize(int shardSize) {
+        this.shardSize = shardSize;
+    }
+
     public String getReplicationStrategy() {
         return replicationStrategy;
+    }
+
+    public void setReplicationStrategy(String replicationStrategy) {
+        this.replicationStrategy = replicationStrategy;
     }
 
     public String getReplicationFactorKey() {
         return replicationFactorKey;
     }
 
+    public void setReplicationFactorKey(String replicationFactorKey) {
+        this.replicationFactorKey = replicationFactorKey;
+    }
+
     public int getReplicationFactorValue() {
         return replicationFactorValue;
+    }
+
+    public void setReplicationFactorValue(int replicationFactorValue) {
+        this.replicationFactorValue = replicationFactorValue;
     }
 
     public ConsistencyLevel getReadConsistencyLevel() {
         return ConsistencyLevel.valueOf(readConsistencyLevel);
     }
 
+    public void setReadConsistencyLevel(String readConsistencyLevel) {
+        this.readConsistencyLevel = readConsistencyLevel;
+    }
+
     public ConsistencyLevel getWriteConsistencyLevel() {
         return ConsistencyLevel.valueOf(writeConsistencyLevel);
     }
 
-    public int getTaskDefRefreshTimeSecs() {
+    public void setWriteConsistencyLevel(String writeConsistencyLevel) {
+        this.writeConsistencyLevel = writeConsistencyLevel;
+    }
+
+    public int getTaskDefCacheRefreshTimeSecs() {
         return taskDefCacheRefreshTimeSecs;
     }
 
-    public int getEventHandlerRefreshTimeSecs() {
-        return eventHandlerRefreshTimeSecs;
+    public void setTaskDefCacheRefreshTimeSecs(int taskDefCacheRefreshTimeSecs) {
+        this.taskDefCacheRefreshTimeSecs = taskDefCacheRefreshTimeSecs;
     }
 
-    public int getEventExecutionPersistenceTTL() {
+    public int getEventHandlerCacheRefreshTimeSecs() {
+        return eventHandlerCacheRefreshTimeSecs;
+    }
+
+    public void setEventHandlerCacheRefreshTimeSecs(int eventHandlerCacheRefreshTimeSecs) {
+        this.eventHandlerCacheRefreshTimeSecs = eventHandlerCacheRefreshTimeSecs;
+    }
+
+    public int getEventExecutionPersistenceTTLSecs() {
         return eventExecutionPersistenceTTLSecs;
+    }
+
+    public void setEventExecutionPersistenceTTLSecs(int eventExecutionPersistenceTTLSecs) {
+        this.eventExecutionPersistenceTTLSecs = eventExecutionPersistenceTTLSecs;
     }
 }

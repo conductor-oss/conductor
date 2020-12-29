@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
-@ConditionalOnProperty(prefix = "workflow", name = "decider.locking.server", havingValue = "LOCAL_ONLY")
+@ConditionalOnProperty(name = "conductor.workflow-execution-lock.type", havingValue = "local_only")
 public class LocalOnlyLockConfiguration {
 
     @Bean

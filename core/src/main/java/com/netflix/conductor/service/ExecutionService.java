@@ -66,7 +66,6 @@ public class ExecutionService {
     private final QueueDAO queueDAO;
     private final ExternalPayloadStorage externalPayloadStorage;
 
-    private final int taskRequeueTimeout;
     private final int queueTaskMessagePostponeSeconds;
 
     private static final int MAX_POLL_TIMEOUT_MS = 5000;
@@ -82,8 +81,7 @@ public class ExecutionService {
         this.queueDAO = queueDAO;
         this.externalPayloadStorage = externalPayloadStorage;
 
-        this.taskRequeueTimeout = properties.getTaskRequeueTimeout();
-        this.queueTaskMessagePostponeSeconds = properties.getQueueTaskMessagePostponeSeconds();
+        this.queueTaskMessagePostponeSeconds = properties.getTaskExecutionPostponeSeconds();
     }
 
     public Task poll(String taskType, String workerId) {
@@ -261,49 +259,6 @@ public class ExecutionService {
                 String.format("No such task found by taskId: %s", taskId));
         }
         queueDAO.remove(QueueUtils.getQueueName(task), taskId);
-    }
-
-    public int requeuePendingTasks() {
-        long threshold = System.currentTimeMillis() - taskRequeueTimeout;
-        List<WorkflowDef> workflowDefs = metadataDAO.getAllWorkflowDefs();
-        int count = 0;
-        for (WorkflowDef workflowDef : workflowDefs) {
-            List<Workflow> workflows = workflowExecutor
-                .getRunningWorkflows(workflowDef.getName(), workflowDef.getVersion());
-            for (Workflow workflow : workflows) {
-                count += requeuePendingTasks(workflow, threshold);
-            }
-        }
-        return count;
-    }
-
-    private int requeuePendingTasks(Workflow workflow, long threshold) {
-
-        int count = 0;
-        List<Task> tasks = workflow.getTasks();
-        for (Task pending : tasks) {
-            if (SystemTaskType.is(pending.getTaskType())) {
-                continue;
-            }
-            if (pending.getStatus().isTerminal()) {
-                continue;
-            }
-            if (pending.getUpdateTime() < threshold) {
-                LOGGER.debug("Requeuing Task: {} of taskType: {} in Workflow: {}", pending.getTaskId(),
-                    pending.getTaskType(), workflow.getWorkflowId());
-                long callback = pending.getCallbackAfterSeconds();
-                if (callback < 0) {
-                    callback = 0;
-                }
-                boolean pushed = queueDAO
-                    .pushIfNotExists(QueueUtils.getQueueName(pending), pending.getTaskId(), workflow.getPriority(),
-                        callback);
-                if (pushed) {
-                    count++;
-                }
-            }
-        }
-        return count;
     }
 
     public int requeuePendingTasks(String taskType) {

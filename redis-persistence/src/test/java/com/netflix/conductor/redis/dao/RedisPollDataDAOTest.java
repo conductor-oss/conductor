@@ -12,21 +12,22 @@
  */
 package com.netflix.conductor.redis.dao;
 
+import static org.mockito.Mockito.mock;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.config.ObjectMapperConfiguration;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.dao.PollDataDAO;
 import com.netflix.conductor.dao.PollDataDAOTest;
-import com.netflix.conductor.redis.jedis.JedisProxy;
 import com.netflix.conductor.redis.config.RedisProperties;
 import com.netflix.conductor.redis.jedis.JedisMock;
+import com.netflix.conductor.redis.jedis.JedisProxy;
 import org.junit.Before;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.test.context.junit4.SpringRunner;
 import redis.clients.jedis.commands.JedisCommands;
-
-import static org.mockito.Mockito.mock;
 
 @ContextConfiguration(classes = {ObjectMapperConfiguration.class})
 @RunWith(SpringRunner.class)
@@ -39,11 +40,12 @@ public class RedisPollDataDAOTest extends PollDataDAOTest {
 
     @Before
     public void init() {
+        ConductorProperties conductorProperties = mock(ConductorProperties.class);
         RedisProperties properties = mock(RedisProperties.class);
         JedisCommands jedisMock = new JedisMock();
         JedisProxy jedisProxy = new JedisProxy(jedisMock);
 
-        redisPollDataDAO = new RedisPollDataDAO(jedisProxy, objectMapper, properties);
+        redisPollDataDAO = new RedisPollDataDAO(jedisProxy, objectMapper, conductorProperties, properties);
     }
 
     @Override

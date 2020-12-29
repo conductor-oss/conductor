@@ -17,6 +17,7 @@ import com.netflix.conductor.common.config.ObjectMapperConfiguration;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.Task.Status;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.dao.ExecutionDAO;
 import com.netflix.conductor.dao.ExecutionDAOTest;
 import com.netflix.conductor.redis.jedis.JedisProxy;
@@ -48,11 +49,12 @@ public class RedisExecutionDAOTest extends ExecutionDAOTest {
 
     @Before
     public void init() {
+        ConductorProperties conductorProperties = mock(ConductorProperties.class);
         RedisProperties properties = mock(RedisProperties.class);
         JedisCommands jedisMock = new JedisMock();
         JedisProxy jedisProxy = new JedisProxy(jedisMock);
 
-        executionDAO = new RedisExecutionDAO(jedisProxy, objectMapper, properties);
+        executionDAO = new RedisExecutionDAO(jedisProxy, objectMapper, conductorProperties, properties);
     }
 
     @Test

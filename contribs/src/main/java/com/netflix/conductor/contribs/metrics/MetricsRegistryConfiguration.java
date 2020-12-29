@@ -20,7 +20,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
-@ConditionalOnProperty(value = "conductor.metrics.logger.enabled", havingValue = "true")
+@ConditionalOnProperty(value = "conductor.metrics-logger.enabled", havingValue = "true")
 @Configuration
 public class MetricsRegistryConfiguration {
 

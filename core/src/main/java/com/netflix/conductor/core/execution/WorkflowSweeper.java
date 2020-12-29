@@ -61,7 +61,7 @@ public class WorkflowSweeper {
         ScheduledExecutorService deciderPool = Executors.newScheduledThreadPool(1);
         deciderPool.scheduleWithFixedDelay(() -> {
             try {
-                boolean disable = properties.disableSweep();
+                boolean disable = properties.isSweepDisabled();
                 if (disable) {
                     LOGGER.info("Workflow sweep is disabled.");
                     return;
@@ -103,7 +103,7 @@ public class WorkflowSweeper {
                     boolean done = workflowExecutor.decide(workflowId);
                     if (!done) {
                         queueDAO.setUnackTimeout(WorkflowExecutor.DECIDER_QUEUE, workflowId,
-                            properties.getSweepFrequency() * 1000);
+                            properties.getSweepFrequencySeconds() * 1000);
                     } else {
                         queueDAO.remove(WorkflowExecutor.DECIDER_QUEUE, workflowId);
                     }
@@ -117,7 +117,7 @@ public class WorkflowSweeper {
                 } catch (Exception e) {
                     queueDAO
                         .setUnackTimeout(WorkflowExecutor.DECIDER_QUEUE, workflowId,
-                            properties.getSweepFrequency() * 1000);
+                            properties.getSweepFrequencySeconds() * 1000);
                     Monitors.error(CLASS_NAME, "sweep");
                     LOGGER.error("Error running sweep for " + workflowId, e);
                 }

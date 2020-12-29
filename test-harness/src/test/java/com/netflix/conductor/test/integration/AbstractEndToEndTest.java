@@ -41,7 +41,7 @@ import java.util.Optional;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-@TestPropertySource(properties = {"workflow.indexing.enabled=true", "workflow.elasticsearch.version=6"})
+@TestPropertySource(properties = {"conductor.indexing.enabled=true", "conductor.elasticsearch.version=6"})
 public abstract class AbstractEndToEndTest {
 
     private static final Logger log = LoggerFactory.getLogger(AbstractEndToEndTest.class);
@@ -65,7 +65,7 @@ public abstract class AbstractEndToEndTest {
     static {
         container.start();
         String httpHostAddress = container.getHttpHostAddress();
-        System.setProperty("workflow.elasticsearch.url", "http://" + httpHostAddress);
+        System.setProperty("conductor.elasticsearch.url", "http://" + httpHostAddress);
         log.info("Initialized Elasticsearch {}", container.getContainerId());
     }
 

@@ -21,12 +21,14 @@ import com.netflix.conductor.postgres.dao.PostgresMetadataDAO;
 import com.netflix.conductor.postgres.dao.PostgresQueueDAO;
 import javax.sql.DataSource;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "db", havingValue = "postgres")
+@EnableConfigurationProperties(PostgresProperties.class)
+@ConditionalOnProperty(name = "conductor.db.type", havingValue = "postgres")
 public class PostgresConfiguration {
 
     @Bean

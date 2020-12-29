@@ -1,3 +1,18 @@
+/**
+ * Copyright 2020 Netflix, Inc.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package com.netflix.conductor.rest.startup;
 
 import com.netflix.conductor.common.config.ObjectMapperProvider;
@@ -30,7 +45,7 @@ import static org.springframework.http.MediaType.APPLICATION_JSON_VALUE;
 @Component
 public class KitchenSinkInitializer {
 
-    private static final Logger log = LoggerFactory.getLogger(KitchenSinkInitializer.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(KitchenSinkInitializer.class);
 
     private final RestTemplate restTemplate;
 
@@ -62,11 +77,11 @@ public class KitchenSinkInitializer {
     public void setupKitchenSink() {
         try {
             if (loadSamples) {
-                log.info("Loading Kitchen Sink examples");
+                LOGGER.info("Loading Kitchen Sink examples");
                 createKitchenSink();
             }
         } catch (Exception e) {
-            log.error("Error initializing kitchen sink", e);
+            LOGGER.error("Error initializing kitchen sink", e);
         }
     }
 
@@ -97,21 +112,21 @@ public class KitchenSinkInitializer {
         restTemplate.postForEntity(url("/api/metadata/workflow/"), request, Map.class);
 
         restTemplate.postForEntity(url("/api/workflow/kitchensink"), Collections.singletonMap("task2Name", "task_5"), String.class);
-        log.info("Kitchen sink workflow is created!");
+        LOGGER.info("Kitchen sink workflow is created!");
 
         /*
          * Kitchensink example with ephemeral workflow and stored tasks
          */
         request = new HttpEntity<>(readToString(ephemeralWorkflowWithStoredTasks), headers);
         restTemplate.postForEntity(url("/api/workflow/"), request, String.class);
-        log.info("Ephemeral Kitchen sink workflow with stored tasks is created!");
+        LOGGER.info("Ephemeral Kitchen sink workflow with stored tasks is created!");
 
         /*
          * Kitchensink example with ephemeral workflow and ephemeral tasks
          */
         request = new HttpEntity<>(readToString(ephemeralWorkflowWithEphemeralTasks), headers);
         restTemplate.postForEntity(url("/api/workflow/"), request, String.class);
-        log.info("Ephemeral Kitchen sink workflow with ephemeral tasks is created!");
+        LOGGER.info("Ephemeral Kitchen sink workflow with ephemeral tasks is created!");
     }
 
     private String readToString(Resource resource) throws IOException {

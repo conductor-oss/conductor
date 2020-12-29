@@ -26,7 +26,7 @@ public class AMQPConstants {
      */
     public static String AMQP_EXCHANGE_TYPE = "amqp_exchange";
 
-    public static String PROPERTY_KEY_TEMPLATE = "workflow.event.queues.amqp.%s";
+    public static String PROPERTY_KEY_TEMPLATE = "conductor.event-queues.amqp.%s";
 
     /**
      * default content type for the message read from rabbitmq

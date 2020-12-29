@@ -136,7 +136,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
         ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
         this.elasticSearchClient = elasticSearchClient;
-        this.indexPrefix = properties.getIndexName();
+        this.indexPrefix = properties.getIndexPrefix();
         this.workflowIndexName = getIndexName(WORKFLOW_DOC_TYPE);
         this.taskIndexName = getIndexName(TASK_DOC_TYPE);
         this.logIndexPrefix = this.indexPrefix + "_" + LOG_DOC_TYPE;
@@ -146,12 +146,12 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
         int maximumPoolSize = properties.getAsyncMaxPoolSize();
         this.bulkRequests = new ConcurrentHashMap<>();
         this.indexBatchSize = properties.getIndexBatchSize();
-        this.asyncBufferFlushTimeout = properties.getAsyncBufferFlushTimeout();
+        this.asyncBufferFlushTimeout = properties.getAsyncBufferFlushTimeoutSecs();
         this.properties = properties;
 
-        if (!properties.isElasticSearchAutoIndexManagementEnabled() &&
-            StringUtils.isNotBlank(properties.getElasticSearchDocumentTypeOverride())) {
-            docTypeOverride = properties.getElasticSearchDocumentTypeOverride();
+        if (!properties.isAutoIndexManagementEnabled() &&
+            StringUtils.isNotBlank(properties.getDocumentTypeOverride())) {
+            docTypeOverride = properties.getDocumentTypeOverride();
         } else {
             docTypeOverride = "";
         }
@@ -211,7 +211,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
     public void setup() throws Exception {
         waitForHealthyCluster();
 
-        if (properties.isElasticSearchAutoIndexManagementEnabled()) {
+        if (properties.isAutoIndexManagementEnabled()) {
             createIndexesTemplates();
             createWorkflowIndex();
             createTaskIndex();
@@ -291,8 +291,8 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
             try {
                 CreateIndexRequest createIndexRequest = new CreateIndexRequest(indexName);
                 createIndexRequest.settings(Settings.builder()
-                    .put("index.number_of_shards", properties.getElasticSearchIndexShardCount())
-                    .put("index.number_of_replicas", properties.getElasticSearchIndexReplicasCount())
+                    .put("index.number_of_shards", properties.getIndexShardCount())
+                    .put("index.number_of_replicas", properties.getIndexReplicasCount())
                 );
 
                 elasticSearchClient.admin()
@@ -450,7 +450,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
             final SearchRequestBuilder srb = elasticSearchClient.prepareSearch(logIndexPrefix + "*")
                 .setQuery(query)
                 .setTypes(docType)
-                .setSize(properties.getElasticSearchTasklogResultLimit())
+                .setSize(properties.getTaskLogResultLimit())
                 .addSort(SortBuilders.fieldSort("createdTime").order(SortOrder.ASC));
 
             return mapTaskExecLogsResponse(srb.execute().actionGet());
@@ -791,7 +791,7 @@ public class ElasticSearchDAOV6 extends ElasticSearchBaseDAO implements IndexDAO
 
     /**
      * Flush the buffers if bulk requests have not been indexed for the past {@link
-     * ElasticSearchProperties#getAsyncBufferFlushTimeout()} seconds. This is to prevent data loss in case the instance
+     * ElasticSearchProperties#getAsyncBufferFlushTimeoutSecs()} seconds. This is to prevent data loss in case the instance
      * is terminated, while the buffer still holds documents to be indexed.
      */
     private void flushBulkRequests() {

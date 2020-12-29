@@ -72,7 +72,7 @@ public class ExecutionDAOFacadeTest {
         PollDataDAO pollDataDAO = mock(PollDataDAO.class);
         ConductorProperties properties = mock(ConductorProperties.class);
         when(properties.isEventExecutionIndexingEnabled()).thenReturn(true);
-        when(properties.enableAsyncIndexing()).thenReturn(true);
+        when(properties.isAsyncIndexingEnabled()).thenReturn(true);
         executionDAOFacade = new ExecutionDAOFacade(executionDAO, queueDAO, indexDAO, rateLimitingDao, pollDataDAO,
             objectMapper, properties);
     }

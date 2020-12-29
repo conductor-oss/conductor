@@ -21,9 +21,8 @@ import org.springframework.context.annotation.Configuration;
 
 import java.util.List;
 
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration
-@ConditionalOnProperty(name = "conductor.grpc.server.enabled", havingValue = "true")
+@ConditionalOnProperty(name = "conductor.grpc-server.enabled", havingValue = "true")
 @EnableConfigurationProperties(GRPCServerProperties.class)
 public class GrpcConfiguration {
 

@@ -12,10 +12,13 @@
  */
 package com.netflix.conductor.redis.config;
 
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.redis.jedis.JedisSentinel;
 import com.netflix.dyno.connectionpool.Host;
 import com.netflix.dyno.connectionpool.HostSupplier;
 import com.netflix.dyno.connectionpool.TokenMapSupplier;
+import java.util.HashSet;
+import java.util.Set;
 import org.apache.commons.pool2.impl.GenericObjectPoolConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,18 +27,15 @@ import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.JedisSentinelPool;
 import redis.clients.jedis.commands.JedisCommands;
 
-import java.util.HashSet;
-import java.util.Set;
-
-@SuppressWarnings("SpringJavaInjectionPointsAutowiringInspection")
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "db", havingValue = "redis_sentinel")
+@ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_sentinel")
 public class RedisSentinelConfiguration extends JedisCommandsConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(RedisSentinelConfiguration.class);
 
     @Override
-    protected JedisCommands createJedisCommands(RedisProperties properties, HostSupplier hostSupplier, TokenMapSupplier tokenMapSupplier) {
+    protected JedisCommands createJedisCommands(RedisProperties properties, ConductorProperties conductorProperties,
+        HostSupplier hostSupplier, TokenMapSupplier tokenMapSupplier) {
         GenericObjectPoolConfig genericObjectPoolConfig = new GenericObjectPoolConfig();
         genericObjectPoolConfig.setMinIdle(5);
         genericObjectPoolConfig.setMaxTotal(properties.getMaxConnectionsPerHost());
@@ -45,6 +45,6 @@ public class RedisSentinelConfiguration extends JedisCommandsConfigurer {
             sentinels.add(host.getHostName() + ":" + host.getPort());
         }
         return new JedisSentinel(
-                new JedisSentinelPool(properties.getClusterName(), sentinels, genericObjectPoolConfig));
+            new JedisSentinelPool(properties.getClusterName(), sentinels, genericObjectPoolConfig));
     }
 }

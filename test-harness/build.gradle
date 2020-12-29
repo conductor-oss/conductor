@@ -1,20 +1,6 @@
-buildscript {
-
-    repositories {
-        jcenter()
-    }
-
-    dependencies {
-        classpath "com.avast.gradle:gradle-docker-compose-plugin:${revDockerCompose}"
-    }
-}
-
-apply plugin: 'docker-compose'
 apply plugin: 'groovy'
 
 dependencies {
-
-
     testImplementation project(':conductor-server')
     testImplementation project(':conductor-common')
     testImplementation project(':conductor-rest')

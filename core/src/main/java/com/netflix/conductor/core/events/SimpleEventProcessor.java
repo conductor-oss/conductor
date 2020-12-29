@@ -52,10 +52,10 @@ import java.util.stream.Collectors;
 /**
  * Event Processor is used to dispatch actions based on the incoming events to execution queue.
  *
- * <p><code>Set workflow.default.event.processor.enabled=false</code> to disable event processing.</p>
+ * <p><code>Set conductor.default-event-processor.enabled=false</code> to disable event processing.</p>
  */
 @Component
-@ConditionalOnProperty(prefix = "workflow", name = "default.event.processor.enabled", havingValue = "true", matchIfMissing = true)
+@ConditionalOnProperty(name = "conductor.default-event-processor.enabled", havingValue = "true", matchIfMissing = true)
 public class SimpleEventProcessor implements EventProcessor {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SimpleEventProcessor.class);
@@ -92,7 +92,7 @@ public class SimpleEventProcessor implements EventProcessor {
             LOGGER.info("Event Processing is ENABLED. executorThreadCount set to {}", executorThreadCount);
         } else {
             LOGGER.warn("workflow.event.processor.thread.count={} must be greater than 0. " +
-                    "To disable event processing, set workflow.default.event.processor.enabled=false", executorThreadCount);
+                    "To disable event processing, set conductor.default-event-processor.enabled=false", executorThreadCount);
             throw new IllegalStateException("workflow.event.processor.thread.count must be greater than 0");
         }
     }

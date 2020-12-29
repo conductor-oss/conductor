@@ -52,10 +52,10 @@ public class PostgresDAOTestUtil {
         createDb(dataSource, dbName);
 
         when(properties.getJdbcUrl()).thenReturn(JDBC_URL_PREFIX + dbName);
-        when(properties.getJdbcUserName()).thenReturn("postgres");
+        when(properties.getJdbcUsername()).thenReturn("postgres");
         when(properties.getJdbcPassword()).thenReturn("postgres");
         when(properties.isFlywayEnabled()).thenReturn(true);
-        when(properties.getTaskDefRefreshTimeSecs()).thenReturn(60);
+        when(properties.getTaskDefCacheRefreshTimeSecs()).thenReturn(60);
 
         this.dataSource = getDataSource(properties);
     }
@@ -64,7 +64,7 @@ public class PostgresDAOTestUtil {
 
         HikariDataSource dataSource = new HikariDataSource();
         dataSource.setJdbcUrl(properties.getJdbcUrl());
-        dataSource.setUsername(properties.getJdbcUserName());
+        dataSource.setUsername(properties.getJdbcUsername());
         dataSource.setPassword(properties.getJdbcPassword());
         dataSource.setAutoCommit(false);
 

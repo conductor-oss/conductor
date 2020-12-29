@@ -23,10 +23,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import javax.validation.constraints.NotEmpty;
-import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 //@Audit
 //@Trace
@@ -111,7 +109,7 @@ public class AdminServiceImpl implements AdminService {
      */
     public String requeueSweep(String workflowId) {
         boolean pushed = queueDAO
-            .pushIfNotExists(WorkflowExecutor.DECIDER_QUEUE, workflowId, properties.getSweepFrequency());
+            .pushIfNotExists(WorkflowExecutor.DECIDER_QUEUE, workflowId, properties.getSweepFrequencySeconds());
         return pushed + "." + workflowId;
     }
 }

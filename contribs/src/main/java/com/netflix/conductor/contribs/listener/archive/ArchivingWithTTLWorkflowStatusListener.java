@@ -35,11 +35,11 @@ public class ArchivingWithTTLWorkflowStatusListener implements WorkflowStatusLis
     public ArchivingWithTTLWorkflowStatusListener(ExecutionDAOFacade executionDAOFacade,
         ArchivingWorkflowListenerProperties properties) {
         this.executionDAOFacade = executionDAOFacade;
-        this.archiveTTLSeconds = properties.getWorkflowArchivalTTL();
+        this.archiveTTLSeconds = properties.getTtlSeconds();
         this.delayArchiveSeconds = properties.getWorkflowArchivalDelay();
 
         this.scheduledThreadPoolExecutor = new ScheduledThreadPoolExecutor(
-            properties.getWorkflowArchivalDelayQueueWorkerThreadCount(),
+            properties.getDelayQueueWorkerThreadCount(),
             (runnable, executor) -> {
                 LOGGER.warn("Request {} to delay archiving index dropped in executor {}", runnable, executor);
                 Monitors.recordDiscardedArchivalCount();

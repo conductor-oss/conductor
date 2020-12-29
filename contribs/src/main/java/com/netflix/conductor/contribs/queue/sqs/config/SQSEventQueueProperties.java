@@ -12,46 +12,73 @@
  */
 package com.netflix.conductor.contribs.queue.sqs.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.stereotype.Component;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@Component
-@ConditionalOnProperty(prefix = "workflow", name = "sqs.event.queue.enabled", havingValue = "true")
+@ConfigurationProperties("conductor.event-queues.sqs")
 public class SQSEventQueueProperties {
 
-    @Value("${workflow.event.queues.sqs.batchSize:1}")
-    private int batchSize;
+    /**
+     * The maximum number of messages to be fetched from the queue in a single request
+     */
+    private int batchSize = 1;
 
-    @Value("${workflow.event.queues.sqs.pollTimeInMS:100}")
-    private int pollTimeMS;
+    /**
+     * The polling interval (in milliseconds)
+     */
+    private int pollTimeMs = 100;
 
-    @Value("${workflow.event.queues.sqs.visibilityTimeoutInSeconds:60}")
-    private int visibilityTimeoutSeconds;
+    /**
+     * The visibility timeout (in seconds) for the message on the queue
+     */
+    private int visibilityTimeoutSeconds = 60;
 
-    @Value("${workflow.listener.queue.prefix:}")
-    private String listenerQueuePrefix;
+    /**
+     * The prefix to be used for the default listener queues
+     */
+    private String listenerQueuePrefix = "";
 
-    @Value("${workflow.listener.queue.authorizedAccounts:}")
-    private String authorizedAccounts;
+    /**
+     * The AWS account Ids authorized to send messages to the queues
+     */
+    private String authorizedAccounts = "";
 
     public int getBatchSize() {
         return batchSize;
     }
 
-    public int getPollTimeMS() {
-        return pollTimeMS;
+    public void setBatchSize(int batchSize) {
+        this.batchSize = batchSize;
+    }
+
+    public int getPollTimeMs() {
+        return pollTimeMs;
+    }
+
+    public void setPollTimeMs(int pollTimeMs) {
+        this.pollTimeMs = pollTimeMs;
     }
 
     public int getVisibilityTimeoutSeconds() {
         return visibilityTimeoutSeconds;
     }
 
+    public void setVisibilityTimeoutSeconds(int visibilityTimeoutSeconds) {
+        this.visibilityTimeoutSeconds = visibilityTimeoutSeconds;
+    }
+
     public String getListenerQueuePrefix() {
         return listenerQueuePrefix;
     }
 
+    public void setListenerQueuePrefix(String listenerQueuePrefix) {
+        this.listenerQueuePrefix = listenerQueuePrefix;
+    }
+
     public String getAuthorizedAccounts() {
         return authorizedAccounts;
+    }
+
+    public void setAuthorizedAccounts(String authorizedAccounts) {
+        this.authorizedAccounts = authorizedAccounts;
     }
 }

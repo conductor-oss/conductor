@@ -90,16 +90,16 @@ public class CassandraDAOTest {
         properties = mock(CassandraProperties.class);
         when(properties.getHostAddress()).thenReturn("127.0.0.1");
         when(properties.getPort()).thenReturn(9142);
-        when(properties.getCassandraKeyspace()).thenReturn(keyspaceName);
+        when(properties.getKeyspace()).thenReturn(keyspaceName);
         when(properties.getShardSize()).thenReturn(100);
         when(properties.getReplicationStrategy()).thenReturn("SimpleStrategy");
         when(properties.getReplicationFactorKey()).thenReturn("replication_factor");
         when(properties.getReplicationFactorValue()).thenReturn(1);
         when(properties.getReadConsistencyLevel()).thenReturn(ConsistencyLevel.LOCAL_ONE);
         when(properties.getWriteConsistencyLevel()).thenReturn(ConsistencyLevel.LOCAL_ONE);
-        when(properties.getTaskDefRefreshTimeSecs()).thenReturn(60);
-        when(properties.getEventHandlerRefreshTimeSecs()).thenReturn(60);
-        when(properties.getEventExecutionPersistenceTTL()).thenReturn(5);
+        when(properties.getTaskDefCacheRefreshTimeSecs()).thenReturn(60);
+        when(properties.getEventHandlerCacheRefreshTimeSecs()).thenReturn(60);
+        when(properties.getEventExecutionPersistenceTTLSecs()).thenReturn(5);
         Statements statements = new Statements(keyspaceName);
         metadataDAO = new CassandraMetadataDAO(session, objectMapper, properties, statements);
         executionDAO = new CassandraExecutionDAO(session, objectMapper, properties, statements);
@@ -613,7 +613,7 @@ public class CassandraDAOTest {
 
     private void addWorkflowDefinition(WorkflowDef workflowDef) throws Exception {
         //INSERT INTO conductor.workflow_definitions (workflow_def_name,version,workflow_definition) VALUES (?,?,?);
-        String table = properties.getCassandraKeyspace() + "." + TABLE_WORKFLOW_DEFS;
+        String table = properties.getKeyspace() + "." + TABLE_WORKFLOW_DEFS;
         String queryString = "UPDATE " + table
             + " SET workflow_definition='" + objectMapper.writeValueAsString(workflowDef)
             + "' WHERE workflow_def_name='" + workflowDef.getName()
@@ -624,7 +624,7 @@ public class CassandraDAOTest {
 
     private void addEventExecution(EventExecution eventExecution) throws Exception {
         //INSERT INTO junit.event_executions (message_id,event_handler_name,event_execution_id,payload) VALUES (?,?,?,?)
-        String table = properties.getCassandraKeyspace() + "." + TABLE_EVENT_EXECUTIONS;
+        String table = properties.getKeyspace() + "." + TABLE_EVENT_EXECUTIONS;
         String queryString = "INSERT INTO " + table
             + " (message_id, event_handler_name, event_execution_id, payload) "
             + "VALUES ('" + eventExecution.getMessageId()

@@ -19,10 +19,9 @@ import com.netflix.conductor.common.run.WorkflowSummary;
 import com.netflix.conductor.core.events.queue.Message;
 import com.netflix.conductor.core.listener.WorkflowStatusListener;
 import com.netflix.conductor.dao.QueueDAO;
+import java.util.Collections;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Collections;
 
 /**
  * Publishes a {@link Message} containing a {@link WorkflowSummary} to the undlerying {@link QueueDAO} implementation on
@@ -41,8 +40,8 @@ public class ConductorQueueStatusPublisher implements WorkflowStatusListener {
         ConductorQueueStatusPublisherProperties properties) {
         this.queueDAO = queueDAO;
         this.objectMapper = objectMapper;
-        this.successStatusQueue = properties.getSuccessStatusQueue();
-        this.failureStatusQueue = properties.getFailureStatusQueue();
+        this.successStatusQueue = properties.getSuccessQueue();
+        this.failureStatusQueue = properties.getFailureQueue();
     }
 
     @Override

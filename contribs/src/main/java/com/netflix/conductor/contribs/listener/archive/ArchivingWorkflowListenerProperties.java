@@ -12,17 +12,16 @@
  */
 package com.netflix.conductor.contribs.listener.archive;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.core.env.Environment;
-import org.springframework.stereotype.Component;
 
-@Component
-@ConditionalOnProperty(prefix = "workflow", name = "status.listener.type", havingValue = "archive")
+@ConfigurationProperties("conductor.workflow-status-listener.archival")
 public class ArchivingWorkflowListenerProperties {
 
     private final Environment environment;
 
+    @Autowired
     public ArchivingWorkflowListenerProperties(Environment environment) {
         this.environment = environment;
     }
@@ -30,28 +29,34 @@ public class ArchivingWorkflowListenerProperties {
     /**
      * The time to live in seconds for workflow archiving module. Currently, only RedisExecutionDAO supports this
      */
-    @Value("${workflow.archival.ttl.seconds:0}")
-    private int workflowArchivalTTL;
+    private int ttlSeconds = 0;
 
     /**
-     * the number of threads to process the delay queue in workflow archival
+     * The number of threads to process the delay queue in workflow archival
      */
-    @Value("${workflow.archival.delay.queue.worker.thread.count:5}")
-    private int workflowArchivalDelayQueueWorkerThreadCount;
+    private int delayQueueWorkerThreadCount = 5;
 
-    public int getWorkflowArchivalTTL() {
-        return workflowArchivalTTL;
+    public int getTtlSeconds() {
+        return ttlSeconds;
+    }
+
+    public void setTtlSeconds(int ttlSeconds) {
+        this.ttlSeconds = ttlSeconds;
+    }
+
+    public int getDelayQueueWorkerThreadCount() {
+        return delayQueueWorkerThreadCount;
+    }
+
+    public void setDelayQueueWorkerThreadCount(int delayQueueWorkerThreadCount) {
+        this.delayQueueWorkerThreadCount = delayQueueWorkerThreadCount;
     }
 
     /**
-     * the time to delay the archival of workflow
+     * The time to delay the archival of workflow
      */
     public int getWorkflowArchivalDelay() {
-        return environment.getProperty("workflow.archival.delay.seconds", Integer.class,
+        return environment.getProperty("conductor.workflow-status-listener.archival.delaySeconds", Integer.class,
             environment.getProperty("async.update.delay.seconds", Integer.class, 60));
-    }
-
-    public int getWorkflowArchivalDelayQueueWorkerThreadCount() {
-        return workflowArchivalDelayQueueWorkerThreadCount;
     }
 }

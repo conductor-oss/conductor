@@ -15,6 +15,7 @@ package com.netflix.conductor.redis.dao;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.conductor.common.metadata.tasks.Task;
 import com.netflix.conductor.common.metadata.tasks.TaskDef;
+import com.netflix.conductor.core.config.ConductorProperties;
 import com.netflix.conductor.dao.RateLimitingDAO;
 import com.netflix.conductor.metrics.Monitors;
 import com.netflix.conductor.redis.jedis.JedisProxy;
@@ -36,8 +37,9 @@ public class RedisRateLimitingDAO extends BaseDynoDAO implements RateLimitingDAO
 
     private static final String TASK_RATE_LIMIT_BUCKET = "TASK_RATE_LIMIT_BUCKET";
 
-    public RedisRateLimitingDAO(JedisProxy jedisProxy, ObjectMapper objectMapper, RedisProperties properties) {
-        super(jedisProxy, objectMapper, properties);
+    public RedisRateLimitingDAO(JedisProxy jedisProxy, ObjectMapper objectMapper,
+        ConductorProperties conductorProperties, RedisProperties properties) {
+        super(jedisProxy, objectMapper, conductorProperties, properties);
     }
 
     /**

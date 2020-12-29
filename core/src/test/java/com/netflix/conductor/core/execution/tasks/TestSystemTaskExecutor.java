@@ -63,7 +63,7 @@ public class TestSystemTaskExecutor {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(10);
         when(properties.getSystemTaskWorkerCallbackSeconds()).thenReturn(30);
         when(properties.getSystemTaskMaxPollCount()).thenReturn(1);
-        when(properties.getSystemTaskWorkerIsolatedThreadCount()).thenReturn(1);
+        when(properties.getIsolatedSystemTaskWorkerThreadCount()).thenReturn(1);
     }
 
     @After
@@ -83,7 +83,7 @@ public class TestSystemTaskExecutor {
 
     @Test
     public void testGetExecutionConfigForIsolatedSystemTask() {
-        when(properties.getSystemTaskWorkerIsolatedThreadCount()).thenReturn(7);
+        when(properties.getIsolatedSystemTaskWorkerThreadCount()).thenReturn(7);
         systemTaskExecutor = new SystemTaskExecutor(queueDAO, workflowExecutor, properties, executionService);
         assertEquals(systemTaskExecutor.getExecutionConfig("test-iso").getSemaphoreUtil().availableSlots(), 7);
     }
@@ -208,7 +208,7 @@ public class TestSystemTaskExecutor {
     @Test
     public void testMultipleQueuesExecution() {
         when(properties.getSystemTaskWorkerThreadCount()).thenReturn(1);
-        when(properties.getSystemTaskWorkerIsolatedThreadCount()).thenReturn(1);
+        when(properties.getIsolatedSystemTaskWorkerThreadCount()).thenReturn(1);
         String sysTask = "taskId";
         String isolatedTask = "isolatedTaskId";
         when(queueDAO.pop(TEST_TASK, 1, 200)).thenReturn(Collections.singletonList(sysTask));

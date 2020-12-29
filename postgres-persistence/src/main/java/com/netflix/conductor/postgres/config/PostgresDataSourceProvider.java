@@ -51,7 +51,7 @@ public class PostgresDataSourceProvider {
     private HikariConfig createConfiguration() {
         HikariConfig hikariConfig = new HikariConfig();
         hikariConfig.setJdbcUrl(properties.getJdbcUrl());
-        hikariConfig.setUsername(properties.getJdbcUserName());
+        hikariConfig.setUsername(properties.getJdbcUsername());
         hikariConfig.setPassword(properties.getJdbcPassword());
         hikariConfig.setAutoCommit(false);
         hikariConfig.setMaximumPoolSize(properties.getConnectionPoolMaxSize());

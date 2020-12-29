@@ -45,13 +45,13 @@ public class WorkflowMonitor {
     private int refreshCounter = 0;
 
     public WorkflowMonitor(MetadataDAO metadataDAO, QueueDAO queueDAO, ExecutionDAOFacade executionDAOFacade,
-        @Value("${workflow.monitor.metadata.refresh.counter:10}") int metadataRefreshInterval,
-        @Value("${workflow.monitor.stats.freq.seconds:60}") int statsFrequencyInSeconds) {
+        @Value("${conductor.workflow-monitor.metadataRefreshInterval:10}") int metadataRefreshInterval,
+        @Value("${conductor.workflow-monitor.statsFrequencySeconds:60}") int statsFrequencySeconds) {
         this.metadataDAO = metadataDAO;
         this.queueDAO = queueDAO;
         this.executionDAOFacade = executionDAOFacade;
         this.metadataRefreshInterval = metadataRefreshInterval;
-        this.statsFrequencyInSeconds = statsFrequencyInSeconds;
+        this.statsFrequencyInSeconds = statsFrequencySeconds;
         init();
     }
 

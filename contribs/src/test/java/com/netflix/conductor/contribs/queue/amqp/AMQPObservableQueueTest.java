@@ -82,7 +82,7 @@ public class AMQPObservableQueueTest {
     public void setUp() {
         properties = mock(AMQPEventQueueProperties.class);
         when(properties.getBatchSize()).thenReturn(1);
-        when(properties.getPollTimeMS()).thenReturn(100);
+        when(properties.getPollTimeMs()).thenReturn(100);
         when(properties.getHosts()).thenReturn(ConnectionFactory.DEFAULT_HOST);
         when(properties.getUsername()).thenReturn(ConnectionFactory.DEFAULT_USER);
         when(properties.getPassword()).thenReturn(ConnectionFactory.DEFAULT_PASS);
