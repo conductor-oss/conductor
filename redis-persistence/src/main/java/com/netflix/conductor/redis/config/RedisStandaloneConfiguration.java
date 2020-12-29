@@ -26,7 +26,7 @@ import redis.clients.jedis.JedisPoolConfig;
 import redis.clients.jedis.commands.JedisCommands;
 
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "db", havingValue = "redis_standalone")
+@ConditionalOnProperty(name = "conductor.db.type", havingValue = "redis_standalone")
 public class RedisStandaloneConfiguration extends JedisCommandsConfigurer {
 
     private static final Logger log = LoggerFactory.getLogger(RedisSentinelConfiguration.class);
